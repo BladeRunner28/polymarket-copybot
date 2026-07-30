@@ -1,0 +1,44 @@
+{
+  "name": "polymarket-copybot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hermes-operated Polymarket copy-trading RESEARCH system. PAPER TRADING ONLY — never places real trades, never touches private keys.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "seed": "tsx prisma/seed.ts",
+    "scan:leaderboard": "tsx scripts/scan-leaderboard.ts",
+    "scan:wallets": "tsx scripts/scan-wallets.ts",
+    "monitor:trades": "tsx scripts/monitor-trades.ts",
+    "score:trades": "tsx scripts/score-trades.ts",
+    "paper:update-pnl": "tsx scripts/update-pnl.ts",
+    "review:outcomes": "tsx scripts/review-outcomes.ts",
+    "update:rules": "tsx scripts/update-rules.ts",
+    "report:daily": "tsx scripts/report-daily.ts",
+    "test": "vitest run"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

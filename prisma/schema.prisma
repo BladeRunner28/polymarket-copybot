@@ -1,0 +1,257 @@
+// Polymarket Copy-Trading Research Bot — PAPER TRADING ONLY.
+// This schema stores research, scoring, and simulated trades.
+// There are intentionally NO fields for private keys, signatures, or real orders.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model LeaderboardScan {
+  id             String   @id @default(cuid())
+  source         String // "polymarket" | "demo"
+  scannedAt      DateTime @default(now())
+  walletCount    Int
+  lookbackDays   Int
+  rawSummaryJson String // JSON string
+}
+
+model WalletProfile {
+  id                   String   @id @default(cuid())
+  address              String   @unique
+  label                String?
+  sourceRank           Int?
+  status               String   @default("watch") // track | watch | ignore
+  roi30d               Float    @default(0)
+  consistencyScore     Float    @default(0)
+  copyabilityScore     Float    @default(0)
+  oneHitWonderPenalty  Float    @default(0)
+  globalScore          Float    @default(0)
+  bestCategory         String?
+  categoryStrengthsJson String  @default("{}")
+  averageTradeSize     Float    @default(0)
+  tradeCount30d        Int      @default(0)
+  resolvedTradeCount30d Int     @default(0)
+  winRate30d           Float    @default(0)
+  averageLiquidity     Float    @default(0)
+  averageSpread        Float    @default(0)
+  averageEntryTiming   Float    @default(0) // 0 = very early, 1 = at resolution
+  copyabilityNotes     String?
+  riskNotes            String?
+  isDemo               Boolean  @default(false)
+  lastScannedAt        DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  observedTrades ObservedTrade[]
+}
+
+model ObservedTrade {
+  id             String   @id @default(cuid())
+  walletAddress  String
+  marketId       String
+  conditionId    String?
+  marketQuestion String
+  marketCategory String?
+  outcome        String // "YES" | "NO" | token name
+  side           String // "BUY" | "SELL"
+  walletEntryPrice Float
+  detectedPrice  Float
+  size           Float
+  timestamp      DateTime
+  rawTradeJson   String   @default("{}")
+  isDemo         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  wallet    WalletProfile?   @relation(fields: [walletAddress], references: [address])
+  decisions DecisionJournal[]
+
+  @@unique([walletAddress, marketId, outcome, side, timestamp])
+  @@index([walletAddress])
+  @@index([marketId])
+}
+
+model MarketSnapshot {
+  id               String   @id @default(cuid())
+  marketId         String
+  conditionId      String?
+  question         String
+  category         String?
+  yesPrice         Float?
+  noPrice          Float?
+  bestBid          Float?
+  bestAsk          Float?
+  spread           Float?
+  liquidity        Float?
+  volume           Float?
+  timeToResolution Float? // hours; null if unknown
+  isDemo           Boolean  @default(false)
+  collectedAt      DateTime @default(now())
+  rawMarketJson    String   @default("{}")
+
+  @@index([marketId])
+}
+
+model DecisionJournal {
+  id                    String   @id @default(cuid())
+  observedTradeId       String
+  walletAddress         String
+  marketId              String
+  decision              String // paper_copy | watchlist | skip
+  copyScore             Float
+  confidence            Float
+  reasonsJson           String   @default("[]")
+  risksJson             String   @default("[]")
+  walletQualityScore    Float    @default(0)
+  roiScore              Float    @default(0)
+  consistencyScore      Float    @default(0)
+  copyabilityScore      Float    @default(0)
+  categoryFitScore      Float    @default(0)
+  entryTimingScore      Float    @default(0)
+  spreadScore           Float    @default(0)
+  liquidityScore        Float    @default(0)
+  thesisScore           Float    @default(0)
+  simulatedPositionSize Float?
+  ruleSetVersion        Int?
+  isDemo                Boolean  @default(false)
+  createdAt             DateTime @default(now())
+
+  observedTrade ObservedTrade  @relation(fields: [observedTradeId], references: [id])
+  paperTrades   PaperTrade[]
+  outcomeReviews OutcomeReview[]
+
+  @@index([walletAddress])
+  @@index([decision])
+}
+
+model PaperTrade {
+  id                    String    @id @default(cuid())
+  botId                 String    @default("STANDARD") // partitions the portfolios
+  decisionJournalId     String
+  walletAddress         String
+  marketId              String
+  outcome               String
+  side                  String
+  entryPrice            Float
+  currentPrice          Float
+  simulatedPositionSize Float // USD, always 5..20
+  unrealizedPnl         Float     @default(0)
+  realizedPnl           Float?
+  status                String    @default("open") // open | closed | resolved
+  isDemo                Boolean   @default(false)
+  openedAt              DateTime  @default(now())
+  closedAt              DateTime?
+  resolvedAt            DateTime?
+
+  decision     DecisionJournal @relation(fields: [decisionJournalId], references: [id])
+  pnlSnapshots PnlSnapshot[]
+  outcomeReviews OutcomeReview[]
+
+  @@index([status])
+  @@index([walletAddress])
+  @@index([botId, status])
+}
+
+model PnlSnapshot {
+  id           String   @id @default(cuid())
+  paperTradeId String
+  price        Float
+  pnl          Float
+  collectedAt  DateTime @default(now())
+
+  paperTrade PaperTrade @relation(fields: [paperTradeId], references: [id])
+
+  @@index([paperTradeId])
+}
+
+model OutcomeReview {
+  id                String    @id @default(cuid())
+  decisionJournalId String
+  paperTradeId      String?
+  reviewTime        DateTime  @default(now())
+  priceAfter1h      Float?
+  priceAfter6h      Float?
+  priceAfter24h     Float?
+  finalOutcome      String? // "YES" | "NO" | null if unresolved
+  simulatedPnl      Float?
+  wasDecisionGood   Boolean?
+  lessonsJson       String    @default("[]")
+  createdAt         DateTime  @default(now())
+
+  decision   DecisionJournal @relation(fields: [decisionJournalId], references: [id])
+  paperTrade PaperTrade?     @relation(fields: [paperTradeId], references: [id])
+}
+
+model BotBankroll {
+  id               String   @id @default(cuid())
+  botId            String   @unique // "STANDARD" | "BANKROLL_200"
+  principal        Float    @default(0)   // $0.00 for infinite, $200.00 for compounding
+  cashBalance      Float    @default(0)   // Liquid capital currently available for trades
+  realizedPnl      Float    @default(0)
+  minPositionSize  Float    @default(0.25)
+  maxPositionSize  Float    @default(20.00)
+  updatedAt        DateTime @updatedAt
+}
+
+model RuleSet {
+  id        String   @id @default(cuid())
+  version   Int      @unique
+  active    Boolean  @default(false)
+  rulesJson String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  changesFrom RuleChange[] @relation("oldRuleSet")
+  changesTo   RuleChange[] @relation("newRuleSet")
+}
+
+model RuleChange {
+  id              String   @id @default(cuid())
+  oldRuleSetId    String?
+  newRuleSetId    String
+  changedBy       String   @default("hermes")
+  reason          String
+  evidenceSummary String
+  beforeJson      String
+  afterJson       String
+  createdAt       DateTime @default(now())
+
+  oldRuleSet RuleSet? @relation("oldRuleSet", fields: [oldRuleSetId], references: [id])
+  newRuleSet RuleSet  @relation("newRuleSet", fields: [newRuleSetId], references: [id])
+}
+
+model DailyReport {
+  id              String   @id @default(cuid())
+  date            String   @unique // YYYY-MM-DD
+  paperPnl        Float
+  winRate         Float
+  compoundingPnl  Float    @default(0) // Capped Bankroll Bot PnL
+  compoundingWinRate Float @default(0) // Capped Bankroll Bot Win Rate
+  openPositions   Int
+  newSignals      Int
+  copiedSignals   Int
+  watchedSignals  Int
+  skippedSignals  Int
+  bestWalletsJson String   @default("[]")
+  worstWalletsJson String  @default("[]")
+  ruleChangesJson String   @default("[]")
+  summary         String
+  sentToDiscord   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model AgentState {
+  id             String   @id
+  name           String
+  emoji          String   @default("🤖")
+  role           String   @default("")
+  status         String   @default("idle") // idle | working | error | offline
+  currentTask    String   @default("")
+  tasksCompleted Int      @default(0)
+  totalCost      Float    @default(0)
+  updatedAt      DateTime @updatedAt
+}
