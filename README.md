@@ -1,23 +1,23 @@
 <div align="center">
 
-<h1>🐉 PolyHydra CopyBot</h1>
+<h1>🐍 Medusa CopyBot</h1>
 <p><i>A Multi-Bot, Multi-Strategy Polymarket Copy-Trading Engine</i></p>
 
 ```text
-      /^|^\
-     / / \ \
-   _/ /   \ \_
-  / | |   | | \
- / /| |   | |\ \
-| | | |   | | | |
-| | | |   | | | |
- \ \| |   | |/ /
-  \ \ |   | / /
-   \ \|   |/ /
-    \ \   / /
-     \ \ / /
-      \   /
-       | |
+       / \   / \   / \
+      ( o ) ( o ) ( o )
+       \ /   \ /   \ /
+       / \   / \   / \
+      (   ) (   ) (   )
+       \ /___\ /___\ /
+      __\           /__
+     /                 \
+    /  ( )       ( )    \
+   |                     |
+   |    \         /      |
+    \    \_______/      /
+     \                 /
+      \_______________/
 ```
 
 **v1.0 Multi-Bot Engine**
