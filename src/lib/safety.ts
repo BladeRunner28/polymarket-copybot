@@ -38,3 +38,24 @@ export function clampPaperSize(usd: number, botId: string = "STANDARD"): number 
   if (!Number.isFinite(usd)) return limits.min;
   return Math.min(limits.max, Math.max(limits.min, usd));
 }
+
+/**
+ * Feature: Phase 1 - Circuit Breaker
+ * PBI: Auto-halts execution if a bot fires off an abnormal burst of trades.
+ * Prevents blowing up the portfolio during network/bot tilt anomalies.
+ */
+export async function checkCircuitBreaker(prisma: any, botId: string): Promise<void> {
+  const FIVE_MINUTES_AGO = new Date(Date.now() - 5 * 60 * 1000);
+  const MAX_TRADES_PER_5M = 15; // Strict threshold for copy anomalies
+
+  const recentTrades = await prisma.paperTrade.count({
+    where: {
+      botId,
+      openedAt: { gte: FIVE_MINUTES_AGO }
+    }
+  });
+
+  if (recentTrades >= MAX_TRADES_PER_5M) {
+    throw new Error(`CIRCUIT BREAKER TRIPPED for ${botId}: ${recentTrades} trades in the last 5 minutes exceeds threshold of ${MAX_TRADES_PER_5M}. Halting execution.`);
+  }
+}

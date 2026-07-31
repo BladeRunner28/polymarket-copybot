@@ -16,6 +16,10 @@ export interface TradeScoreInput {
   spread?: number;
   liquidity?: number;
   timeToResolutionHours?: number;
+  // Feature: Phase 1 - Orderbook Imbalance (OBI) 
+  // Defines if the current L2 orderbook is severely tilted against our side.
+  // A positive number means OBI is in our favor, heavily negative is dangerous.
+  orderbookImbalance?: number; 
 }
 
 export interface TradeScoreResult {
@@ -64,6 +68,11 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     hardSkips.push(
       `price ${input.currentPrice.toFixed(3)} near certainty (band ${(1 - rules.maxEntryPrice).toFixed(2)}–${rules.maxEntryPrice.toFixed(2)}) — limited upside`
     );
+  // Feature: Phase 1 - Orderbook Imbalance (OBI)
+  // Protect against massive sell walls directly against our entry direction.
+  if (input.orderbookImbalance !== undefined && input.orderbookImbalance < -0.40) {
+    hardSkips.push(`Orderbook Imbalance is severely hostile (${input.orderbookImbalance.toFixed(2)}). Smart money sell-wall detected.`);
+  }
 
   // --- Component scores ---
   const walletQualityScore = clamp(input.walletGlobalScore);

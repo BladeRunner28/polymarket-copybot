@@ -7,7 +7,7 @@
  */
 
 import { prisma } from "./db";
-import { assertPaperOnly, clampPaperSize, PAPER_MAX_SIZE_USD, PAPER_MIN_SIZE_USD } from "./safety";
+import { assertPaperOnly, clampPaperSize, checkCircuitBreaker } from "./safety";
 
 export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: number): number {
   if (entryPrice <= 0) return 0;
@@ -29,6 +29,9 @@ export async function openPaperTrade(params: {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";
   let size = params.simulatedPositionSize;
+
+  // Enforce Phase 1 Safety: Circuit Breaker
+  await checkCircuitBreaker(prisma, botId);
 
   if (botId === "BANKROLL_200") {
     // Scale parent position size (0.25 to 20) down to (0.10 to 10)
