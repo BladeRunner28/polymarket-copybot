@@ -70,8 +70,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     );
   // Feature: Phase 1 - Orderbook Imbalance (OBI)
   // Protect against massive sell walls directly against our entry direction.
-  if (input.orderbookImbalance !== undefined && input.orderbookImbalance < -0.40) {
-    hardSkips.push(`Orderbook Imbalance is severely hostile (${input.orderbookImbalance.toFixed(2)}). Smart money sell-wall detected.`);
+  if (input.orderbookImbalance !== undefined && input.orderbookImbalance < rules.minOrderbookImbalance) {
+    hardSkips.push(`Orderbook Imbalance is severely hostile (${input.orderbookImbalance.toFixed(2)} < ${rules.minOrderbookImbalance.toFixed(2)}). Smart money sell-wall detected.`);
   }
 
   // --- Component scores ---

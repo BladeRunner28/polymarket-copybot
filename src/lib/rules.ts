@@ -20,6 +20,7 @@ export interface Rules {
   // Wallet-level gates
   minWalletGlobalScore: number; // ignore signals from wallets below this
   minResolvedTrades: number; // wallets with fewer resolved trades are unproven
+  minOrderbookImbalance: number; // skip if OBI is below this (e.g., heavily negative)
   // Scoring weights (wallet)
   weightRoi: number;
   weightConsistency: number;
@@ -41,6 +42,7 @@ export const DEFAULT_RULES: Rules = {
   maxCopiesPerWalletPerDay: 10,
   minWalletGlobalScore: 55,
   minResolvedTrades: 5,
+  minOrderbookImbalance: -0.40,
   weightRoi: 0.35,
   weightConsistency: 0.35,
   weightCopyability: 0.3,
