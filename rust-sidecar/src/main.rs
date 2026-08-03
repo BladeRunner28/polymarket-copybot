@@ -6,6 +6,8 @@ use tokio::net::TcpListener;
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
+mod adapters;
+
 const POLYMARKET_CTF: &str = "0x4bFB41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E";
 
 #[derive(Deserialize, Debug)]
@@ -25,9 +27,24 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
     println!("🚀 [Shadow FAK] Received Execution Intent for {}: ${:.2} on {} at {:.1}¢", 
         intent.bot_id, intent.size_usd, intent.outcome, intent.price * 100.0);
     
-    // Simulate FAK execution: here we'd query L2 depth. 
-    // For now, we simulate a 100% fill and bounce the result back to Node.js.
     let client = reqwest::Client::new();
+
+    // Feature: Phase 5 Cross-Market Routing (Dry-Run)
+    // If the venue is Kalshi or PredictIt, query the specific adapter's L2 depth first.
+    let mut executed_price = intent.price;
+    
+    if intent.venue == "Kalshi" {
+        if let Ok(kalshi_price) = adapters::fetch_kalshi_depth(&client, &intent.market_id).await {
+            println!("⚖️ [Depth Guard] Kalshi L2 depth confirmed at {:.1}¢", kalshi_price * 100.0);
+            executed_price = kalshi_price;
+        }
+    } else if intent.venue == "PredictIt" {
+        if let Ok(pi_price) = adapters::fetch_predictit_depth(&client, &intent.market_id).await {
+            println!("⚖️ [Depth Guard] PredictIt L2 depth confirmed at {:.1}¢", pi_price * 100.0);
+            executed_price = pi_price;
+        }
+    }
+
     let payload = json!({
         "botId": intent.bot_id,
         "decisionJournalId": intent.decision_journal_id,
@@ -35,7 +52,7 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
         "marketId": intent.market_id,
         "outcome": intent.outcome,
         "side": intent.side,
-        "entryPrice": intent.price,
+        "entryPrice": executed_price,
         "simulatedPositionSize": intent.size_usd,
         "venue": intent.venue,
         "status": "open",

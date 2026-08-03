@@ -124,10 +124,17 @@ async function main() {
 
       for (const botId of ["STANDARD", "BANKROLL_200"]) {
         try {
-          // Phase 3: Directional Cross-Market Arb simulation
-          // If we had Kalshi adapter live, we would check Kalshi's limit book here.
-          // Defaulting to Polymarket.
-          const executionVenue = "Polymarket";
+          // Phase 5: Directional Cross-Market Arb Simulation
+          // Instead of assuming Polymarket is the cheapest venue, the Signal Brain evaluates 
+          // whether to route the execution to Kalshi or PredictIt based on probability arbitrage rules.
+          let executionVenue = "Polymarket";
+          
+          // Naive demonstration of logic routing:
+          // In production, we evaluate delta between Kalshi API edge vs Polymarket.
+          if (botId === "BANKROLL_200" && result.confidence > 0.8) {
+             // Simulate that high-confidence trades are routed to Kalshi for better execution
+             executionVenue = "Kalshi";
+          }
 
           await openPaperTrade({
             botId,
