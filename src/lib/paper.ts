@@ -25,9 +25,11 @@ export async function openPaperTrade(params: {
   simulatedPositionSize: number;
   isDemo?: boolean;
   botId?: string; // <--- NEW
+  venue?: string; // Phase 3: Multi-Venue expansion
 }) {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";
+  const venue = params.venue ?? "Polymarket";
   let size = params.simulatedPositionSize;
 
   // Enforce Phase 1 Safety: Circuit Breaker
@@ -53,9 +55,10 @@ export async function openPaperTrade(params: {
       });
     }
 
-    return tx.paperTrade.create({
+    return await tx.paperTrade.create({
       data: {
         botId,
+        venue,
         decisionJournalId: params.decisionJournalId,
         walletAddress: params.walletAddress,
         marketId: params.marketId,

@@ -98,6 +98,7 @@ model MarketSnapshot {
 
 model DecisionJournal {
   id                    String   @id @default(cuid())
+  venue                 String   @default("Polymarket") // Polymarket, Kalshi, PredictIt, etc.
   observedTradeId       String
   walletAddress         String
   marketId              String
@@ -131,6 +132,7 @@ model DecisionJournal {
 model PaperTrade {
   id                    String    @id @default(cuid())
   botId                 String    @default("STANDARD") // partitions the portfolios
+  venue                 String    @default("Polymarket") // Multi-venue routing
   decisionJournalId     String
   walletAddress         String
   marketId              String

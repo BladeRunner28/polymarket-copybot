@@ -124,8 +124,14 @@ async function main() {
 
       for (const botId of ["STANDARD", "BANKROLL_200"]) {
         try {
+          // Phase 3: Directional Cross-Market Arb simulation
+          // If we had Kalshi adapter live, we would check Kalshi's limit book here.
+          // Defaulting to Polymarket.
+          const executionVenue = "Polymarket";
+
           await openPaperTrade({
             botId,
+            venue: executionVenue,
             decisionJournalId: decision.id,
             walletAddress: t.walletAddress,
             marketId: t.marketId,
