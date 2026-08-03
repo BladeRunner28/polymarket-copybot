@@ -2,7 +2,7 @@
 name = "polyhydra-whale-signal"
 version = "0.1.0"
 edition = "2021"
-description = "Phase 2: Zero-Latency Ingestion Sidecar (HarrierOnChain Whale Signal)"
+description = "Phase 4: Live Execution Engine Migration (HarrierOnChain Core)"
 
 [dependencies]
 tokio = { version = "1", features = ["full", "macros"] }
@@ -11,3 +11,4 @@ futures-util = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 reqwest = { version = "0.11", features = ["json"] }
+axum = "0.7"

@@ -41,9 +41,37 @@ export async function openPaperTrade(params: {
     size = 0.10 + percent * (10.00 - 0.10);
   }
 
+  // Ensure absolute bounds enforcement
   size = clampPaperSize(size, botId);
 
-  return prisma.$transaction(async (tx) => {
+  // Feature: Phase 4 (Shadow Production)
+  // Route the C-200 bot through the Rust FAK Execution API instead of direct DB write.
+  if (botId === "BANKROLL_200") {
+    console.log(`[Node.js] Dispatching Execution Intent to Rust Core for ${botId}...`);
+    try {
+      await fetch("http://127.0.0.1:3014/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bot_id: botId,
+          venue,
+          market_id: params.marketId,
+          outcome: params.outcome,
+          side: params.side,
+          price: params.entryPrice,
+          size_usd: size,
+          decision_journal_id: params.decisionJournalId,
+          wallet_address: params.walletAddress
+        })
+      });
+      // Rust webhook will handle the DB write upon successful simulation
+      return { id: "rust-pending" };
+    } catch (e) {
+      throw new Error(`Rust Execution Engine offline or failed: ${e}`);
+    }
+  }
+
+  return await prisma.$transaction(async (tx) => {
     if (botId !== "STANDARD") {
       const bankroll = await tx.botBankroll.findUniqueOrThrow({ where: { botId } });
       if (bankroll.cashBalance < size) {
