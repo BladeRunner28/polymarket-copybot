@@ -72,7 +72,7 @@ describe("paper trade creation", () => {
       side: "BUY",
       entryPrice: 0.5,
       simulatedPositionSize: 999, // absurd — must clamp to 20
-    });
+    }) as any;
     expect(t.status).toBe("open");
     expect(t.simulatedPositionSize).toBeLessThanOrEqual(20);
     expect(t.simulatedPositionSize).toBeGreaterThanOrEqual(0.25);
@@ -91,7 +91,7 @@ describe("hourly PnL updates", () => {
       side: "BUY",
       entryPrice: 0.5,
       simulatedPositionSize: 10,
-    });
+    }) as any;
     const updated = await updatePaperTradePrice(t.id, 0.6);
     // $10 at 0.5 = 20 shares; at 0.6 -> $12 -> +$2
     expect(updated.unrealizedPnl).toBeCloseTo(2, 1);
@@ -116,7 +116,7 @@ describe("hourly PnL updates", () => {
       side: "BUY",
       entryPrice: 0.5,
       simulatedPositionSize: 10,
-    });
+    }) as any;
     const resolved = await resolvePaperTrade(t.id, true);
     expect(resolved.status).toBe("resolved");
     expect(resolved.realizedPnl).toBeCloseTo(10, 1);
