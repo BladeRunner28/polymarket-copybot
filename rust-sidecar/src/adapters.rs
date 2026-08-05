@@ -58,16 +58,30 @@ pub async fn fetch_predictit_depth(client: &Client, market_ticker: &str) -> Resu
         let search_term = market_ticker.to_lowercase().replace("-", " ");
         
         if let Some(markets) = json["markets"].as_array() {
+            let mut best_match = None;
+            let mut best_score = 0.0;
+
             for market in markets {
                 if let Some(name) = market["name"].as_str() {
-                    if name.to_lowercase().contains(&search_term) {
-                        // Grab the first contract's BestBuyYesCost
-                        if let Some(contracts) = market["contracts"].as_array() {
-                            if let Some(contract) = contracts.first() {
-                                if let Some(best_buy) = contract["bestBuyYesCost"].as_f64() {
-                                    return Ok(best_buy);
-                                }
-                            }
+                    // Phase 5 Enhancement: ImMike's Market Matching AI
+                    // Use Jaro string similarity instead of naive exact contains
+                    let similarity = strsim::jaro(&name.to_lowercase(), &search_term);
+                    
+                    if similarity > best_score && similarity > 0.85 {
+                        best_score = similarity;
+                        best_match = Some(market.clone());
+                    }
+                }
+            }
+
+            if let Some(market) = best_match {
+                println!("🎯 [PredictIt AI Matcher] Matched '{}' -> '{}' (Score: {:.2})", 
+                    market_ticker, market["name"].as_str().unwrap_or(""), best_score);
+                
+                if let Some(contracts) = market["contracts"].as_array() {
+                    if let Some(contract) = contracts.first() {
+                        if let Some(best_buy) = contract["bestBuyYesCost"].as_f64() {
+                            return Ok(best_buy);
                         }
                     }
                 }
