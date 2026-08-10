@@ -44,6 +44,27 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
             executed_price = pi_price;
         }
     }
+    
+    // Feature: Phase 6 ImMike's Maker Copying
+    // If this is the compounding bot, place the order slightly above the best bid instead of crossing the spread.
+    let mut execution_note = "FAK Shadow Execution via Rust".to_string();
+    
+    if intent.bot_id == "BANKROLL_200" {
+        // Assuming the passed `intent.price` is the Ask (since we're a Taker by default),
+        // simulate placing a Maker limit order near the Bid to capture the spread.
+        // We simulate a 2-cent spread improvement.
+        let maker_improvement = 0.02;
+        
+        if intent.side.to_uppercase() == "BUY" {
+            executed_price = f64::max(0.01, executed_price - maker_improvement);
+            println!("📈 [Maker Execution] Parked BUY limit order inside spread at {:.1}¢ (avoided {:.1}¢ taker fee)", executed_price * 100.0, maker_improvement * 100.0);
+        } else {
+            executed_price = f64::min(0.99, executed_price + maker_improvement);
+            println!("📉 [Maker Execution] Parked SELL limit order inside spread at {:.1}¢ (avoided {:.1}¢ taker fee)", executed_price * 100.0, maker_improvement * 100.0);
+        }
+        
+        execution_note = "MAKER Shadow Execution (Spread Captured)".to_string();
+    }
 
     let payload = json!({
         "botId": intent.bot_id,
@@ -56,7 +77,7 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
         "simulatedPositionSize": intent.size_usd,
         "venue": intent.venue,
         "status": "open",
-        "executionNote": "FAK Shadow Execution via Rust"
+        "executionNote": execution_note
     });
 
     tokio::spawn(async move {
