@@ -246,6 +246,16 @@ model DailyReport {
   createdAt       DateTime @default(now())
 }
 
+model RegulatorySignal {
+  id               String   @id @default(cuid())
+  source           String   // e.g., "quiver_congress_trade", "unitedstates_congress"
+  marketCategory   String   // e.g., "Politics", "Crypto"
+  sentimentScore   Float    // -1.0 (Bearish) to 1.0 (Bullish)
+  confidence       Float    // 0.0 to 1.0
+  rawPayload       String   // JSON of the event
+  processedAt      DateTime @default(now())
+}
+
 model AgentState {
   id             String   @id
   name           String
@@ -255,5 +265,29 @@ model AgentState {
   currentTask    String   @default("")
   tasksCompleted Int      @default(0)
   totalCost      Float    @default(0)
+  updatedAt      DateTime @updatedAt
+}
+
+// v40 (2026-08-31, Homerun audit): per-token flash-crash circuit breaker
+// trips. A trip halts new copies on that market for tokenCircuitBreakerCooldownMin.
+model TokenCircuitTrip {
+  id        String   @id @default(cuid())
+  marketId  String
+  trippedAt DateTime @default(now())
+  reason    String // e.g. "flash move 0.21 -> 0.09 in 5m"
+  @@index([marketId, trippedAt])
+}
+
+// v40 (2026-08-31, Homerun audit): insider/anomaly wallet scoring — weighted
+// components (timing alpha, pre-news timing, Brier, concentration, cluster
+// correlation, …) stored per tracked wallet. Score 0..1; flagged >= 0.72,
+// watch >= 0.60. Computed by scripts/score-insiders.ts.
+model WalletInsiderScore {
+  walletAddress  String   @id
+  score          Float
+  flagged        Boolean  @default(false)
+  watch          Boolean  @default(false)
+  nResolved      Int      @default(0)
+  componentsJson String // { winRate, timingAlpha, brier, preNewsTiming, ... }
   updatedAt      DateTime @updatedAt
 }

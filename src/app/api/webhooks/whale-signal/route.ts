@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { requireInternalAuth } from '@/lib/internal-auth';
 
 export async function POST(req: Request) {
+  const denied = requireInternalAuth(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const txHash = body.transactionHash;

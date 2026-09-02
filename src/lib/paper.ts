@@ -15,6 +15,32 @@ export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: nu
   return Math.round((shares * currentPrice - sizeUsd) * 100) / 100;
 }
 
+/**
+ * v41 (2026-08-31 report, user-approved): C-200 (BANKROLL_200) size mapping.
+ * Maps the STANDARD-scale parent size (0.25-20) into the C-200 band
+ * ($0.20-$20 - overall cap raised from $10) and applies calibration-band
+ * multipliers from the N=1,076 C-200 calibration analysis:
+ *   entry < 0.20  x1.5  - the only significant positive edge (excess +0.31, z=+4.47)
+ *   0.20-0.40     x1.0  - positive excess (z=+2.72) but dollar-negative; watch
+ *   0.40-0.60     x0.75 - dead zone: half the volume, -$305 (25% trim)
+ *   entry >= 0.60 x0.5  - significant premium drag on favorites (z=-2.49/-2.42)
+ * Band sizing lives HERE (single source of truth); the v37 rules-layer
+ * factors (deadZoneSizeFactor / longshotSizeFactor) are neutralized at 1.0
+ * (RuleSet v39) so the bands apply exactly once. Caller clamps the result.
+ */
+export function mapBankroll200Size(standardScaleSize: number, entryPrice: number): number {
+  const percent = (standardScaleSize - 0.25) / (20.0 - 0.25);
+  let size = 0.2 + percent * (20.0 - 0.2);
+  // Only apply band multipliers to sane prices (0..1 markets); non-finite or
+  // <=0 entries (bad data) fall through at x1.0.
+  if (Number.isFinite(entryPrice) && entryPrice > 0) {
+    if (entryPrice < 0.2) size *= 1.5;
+    else if (entryPrice >= 0.6) size *= 0.5;
+    else if (entryPrice >= 0.4) size *= 0.75;
+  }
+  return size;
+}
+
 export async function openPaperTrade(params: {
   decisionJournalId: string;
   walletAddress: string;
@@ -36,9 +62,8 @@ export async function openPaperTrade(params: {
   await checkCircuitBreaker(prisma, botId);
 
   if (botId === "BANKROLL_200") {
-    // Scale parent position size (0.25 to 20) down to (0.10 to 10)
-    const percent = (size - 0.25) / (20.00 - 0.25);
-    size = 0.10 + percent * (10.00 - 0.10);
+    // v41: calibration-band mapping + overall cap raise ($10 -> $20).
+    size = mapBankroll200Size(size, params.entryPrice);
   }
 
   // Ensure absolute bounds enforcement
@@ -98,6 +123,53 @@ export async function openPaperTrade(params: {
         unrealizedPnl: 0,
         status: "open",
         isDemo: params.isDemo ?? false,
+      },
+    });
+  });
+}
+
+/**
+ * Record an execution result coming back from the Rust execution engine
+ * (execution-result webhook). The ONLY place — besides resolve/close — that
+ * mutates BotBankroll, so the cash ledger stays consistent with paper.ts.
+ */
+export async function recordExecutionResult(body: {
+  botId: string;
+  venue: string;
+  decisionJournalId: string;
+  walletAddress: string;
+  marketId: string;
+  outcome: string;
+  side: string;
+  entryPrice: number;
+  simulatedPositionSize: number;
+}): Promise<void> {
+  assertPaperOnly("recordExecutionResult");
+  await prisma.$transaction(async (tx) => {
+    // 1. If compounding bot, deduct cash
+    if (body.botId !== "STANDARD") {
+      const bankroll = await tx.botBankroll.findUniqueOrThrow({ where: { botId: body.botId } });
+      if (bankroll.cashBalance < body.simulatedPositionSize) {
+        throw new Error(`Insufficient capital`);
+      }
+      await tx.botBankroll.update({
+        where: { botId: body.botId },
+        data: { cashBalance: { decrement: body.simulatedPositionSize } },
+      });
+    }
+    // 2. Write the trade based on Rust's FAK fill confirmation
+    await tx.paperTrade.create({
+      data: {
+        botId: body.botId,
+        venue: body.venue,
+        decisionJournalId: body.decisionJournalId,
+        walletAddress: body.walletAddress,
+        marketId: body.marketId,
+        outcome: body.outcome,
+        side: body.side,
+        entryPrice: body.entryPrice,
+        currentPrice: body.entryPrice,
+        simulatedPositionSize: body.simulatedPositionSize,
       },
     });
   });

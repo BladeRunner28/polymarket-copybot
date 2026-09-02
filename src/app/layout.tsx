@@ -15,8 +15,12 @@ const NAV = [
   { href: "/paper-trades", label: "Paper Trades" },
   { href: "/journal", label: "Decision Journal" },
   { href: "/performance", label: "Performance" },
+  { href: "/analytics", label: "Analytics" },
   { href: "/rules", label: "Rules" },
+  { href: "/roadmap", label: "Roadmap" },
   { href: "/reports", label: "Reports" },
+  { href: "/cron-health", label: "Cron Health" },
+  { href: "/atlas.html", label: "Atlas", external: true },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,15 +37,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </span>
               </div>
               <nav className="flex gap-1 text-sm flex-wrap">
-                {NAV.map((n) => (
-                  <Link
-                    key={n.href}
-                    href={n.href}
-                    className="px-3 py-1.5 rounded-md text-dim hover:text-ink hover:bg-edge/60 transition-colors"
-                  >
-                    {n.label}
-                  </Link>
-                ))}
+                {NAV.map((n) =>
+                  n.external ? (
+                    <a
+                      key={n.href}
+                      href={n.href}
+                      className="px-3 py-1.5 rounded-md text-accent hover:text-ink hover:bg-edge/60 transition-colors"
+                    >
+                      {n.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={n.href}
+                      href={n.href}
+                      className="px-3 py-1.5 rounded-md text-dim hover:text-ink hover:bg-edge/60 transition-colors"
+                    >
+                      {n.label}
+                    </Link>
+                  )
+                )}
               </nav>
             </div>
           </header>

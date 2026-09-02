@@ -83,6 +83,21 @@ async function main() {
     log(`Tracked-wallet cap: kept top ${MAX_TRACKED}, demoted ${demote.length} to watch.`);
   }
 
+  // v33 (tuning review #9): demo wallets are inert in live mode (monitor only
+  // watches isDemo:false) but are excluded from the cap query above, so stale
+  // demo `track` rows can accumulate and inflate the tracked count (observed:
+  // 31 marked track vs 25 cap = 25 live + 6 demo). Demote them so the count is
+  // truthful. Non-destructive — data is retained, just no longer "tracked".
+  if (!adapter.isDemo) {
+    const demoDemoted = await prisma.walletProfile.updateMany({
+      where: { status: "track", isDemo: true },
+      data: { status: "watch" },
+    });
+    if (demoDemoted.count > 0) {
+      log(`Demo-track cleanup: demoted ${demoDemoted.count} demo wallets to watch.`);
+    }
+  }
+
   if (failures.length) {
     logError(`Failures (${failures.length}):\n` + failures.slice(0, 5).join("\n"));
     if (profiled === 0) {

@@ -14,7 +14,7 @@ const TEST_DB = path.join(__dirname, "test.db");
 // The Prisma client binds to the test DB via vitest.setup.ts.
 import { prisma } from "../src/lib/db";
 import { openPaperTrade, updatePaperTradePrice, resolvePaperTrade, computePnl } from "../src/lib/paper";
-import { getActiveRules, applyRuleChanges, DEFAULT_RULES } from "../src/lib/rules";
+import { getActiveRules, applyRuleChanges, DEFAULT_RULES, type Rules } from "../src/lib/rules";
 import { proposeRuleChanges } from "../src/lib/rule-updater";
 import { computeBenchmarks } from "../src/lib/benchmarks";
 
@@ -206,6 +206,20 @@ describe("automatic rule changes", () => {
     const scoreChange = proposals.find((p) => p.field === "minCopyScore");
     expect(scoreChange).toBeDefined();
     expect(scoreChange!.newValue).toBeGreaterThan(DEFAULT_RULES.minCopyScore);
+  });
+
+  it("never relaxes the copy bar below the best-bucket floor (v37)", () => {
+    const winning = Array.from({ length: 8 }, () => ({ pnl: 5, spread: 0.01, liquidity: 50_000, drift: 0.01, walletScore: 70 }));
+    // Above the floor: relax allowed, but clamps at highScoreCapMin (80).
+    const relaxedRules: Rules = { ...DEFAULT_RULES, minCopyScore: 82 };
+    const proposals = proposeRuleChanges(winning, relaxedRules);
+    const scoreChange = proposals.find((p) => p.field === "minCopyScore");
+    expect(scoreChange).toBeDefined();
+    expect(scoreChange!.newValue).toBeGreaterThanOrEqual(DEFAULT_RULES.highScoreCapMin);
+    // At the floor (v37 live state): no relax proposal at all.
+    const atFloor: Rules = { ...DEFAULT_RULES, minCopyScore: DEFAULT_RULES.highScoreCapMin };
+    const proposalsAtFloor = proposeRuleChanges(winning, atFloor);
+    expect(proposalsAtFloor.find((p) => p.field === "minCopyScore")).toBeUndefined();
   });
 });
 

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medusa CopyBot Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1280px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #34d399; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1100px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+    .footer pre { display: inline-block; text-align: left; color: #475569; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>🐍 Medusa CopyBot — System Architecture</h1>
+      </div>
+      <p class="subtitle">Polymarket copy-trading research engine · paper-only · Next.js + Rust + Python + Hermes cron on M4 Pro</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1240 1260">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ================= ARROWS (behind boxes) ================= -->
+        <!-- A1 Polymarket -> Scanners -->
+        <line x1="175" y1="220" x2="175" y2="321" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="185" y="280" fill="#94a3b8" font-size="9">trades · leaderboard</text>
+        <!-- A2 Scanners -> Webhooks -->
+        <line x1="180" y1="425" x2="180" y2="561" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="190" y="505" fill="#94a3b8" font-size="9">whale-signal</text>
+        <!-- A3 Quiver -> Research bot -->
+        <line x1="430" y1="180" x2="430" y2="321" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="440" y="260" fill="#94a3b8" font-size="9">congress trades</text>
+        <!-- A4 Congress.gov -> Research bot -->
+        <path d="M 660 180 L 660 295 L 540 295 L 540 321" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="600" y="288" fill="#94a3b8" font-size="9">bills · votes</text>
+        <!-- A5 GovInfo -> Research bot -->
+        <path d="M 890 180 L 890 282 L 580 282 L 580 321" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="700" y="275" fill="#94a3b8" font-size="9">federal register</text>
+        <!-- A6 Research bot -> Webhooks (authed, dashed rose) -->
+        <path d="M 640 375 L 705 375 L 705 545 L 272 545 L 272 561" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="420" y="538" fill="#fb7185" font-size="9">research-signal (Bearer INTERNAL_API_SECRET)</text>
+        <!-- A7 Local LLM -> jsonl chip -->
+        <line x1="820" y1="425" x2="820" y2="436" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <!-- A8 Scanners -> l2 chip -->
+        <line x1="180" y1="425" x2="180" y2="436" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <!-- A9 Webhooks -> Scorer -->
+        <line x1="272" y1="645" x2="316" y2="645" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="288" y="638" fill="#94a3b8" font-size="8">signals</text>
+        <!-- A10 Forecasting -> Scorer -->
+        <line x1="598" y1="602" x2="554" y2="602" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="570" y="595" fill="#94a3b8" font-size="8">delta</text>
+        <!-- A11 Rules -> Scorer -->
+        <line x1="598" y1="692" x2="554" y2="692" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="566" y="685" fill="#94a3b8" font-size="8">thresholds</text>
+        <!-- A12 Scorer -> DB -->
+        <line x1="552" y1="645" x2="876" y2="645" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="700" y="638" fill="#94a3b8" font-size="9">paper decisions</text>
+        <!-- A13 Scorer -> Rust sidecar -->
+        <path d="M 435 727 L 435 800 L 195 800 L 195 831" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="245" y="793" fill="#94a3b8" font-size="9">C-200 intents</text>
+        <!-- A14 Rust sidecar -> Webhooks (execution-result) -->
+        <path d="M 332 872 L 332 729 L 167 729" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="205" y="745" fill="#94a3b8" font-size="8">execution-result</text>
+        <!-- A15 DB -> Dashboard -->
+        <path d="M 1182 645 L 1210 645 L 1210 1080 L 922 1080 L 922 1013" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="1210" y="875" fill="#94a3b8" font-size="8" text-anchor="middle">queries</text>
+        <!-- A16 Cron -> Execution (trigger) -->
+        <line x1="315" y1="958" x2="315" y2="934" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrowhead)"/>
+        <text x="325" y="950" fill="#fb923c" font-size="8">triggers</text>
+        <!-- A17 Cron -> Discord (deliver) -->
+        <line x1="652" y1="1065" x2="946" y2="1065" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="800" y="1058" fill="#94a3b8" font-size="9">deliver reports</text>
+
+        <!-- ================= EXTERNAL BOUNDARY ================= -->
+        <rect x="30" y="60" width="1180" height="180" rx="12" fill="rgba(251, 191, 36, 0.04)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="76" fill="#fbbf24" font-size="10" font-weight="600">EXTERNAL DATA SOURCES — public APIs (keyless)</text>
+
+        <rect x="60" y="110" width="230" height="110" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="60" y="110" width="230" height="110" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="none"/>
+        <text x="175" y="132" fill="white" font-size="12" font-weight="600" text-anchor="middle">Polymarket</text>
+        <text x="175" y="152" fill="#94a3b8" font-size="8" text-anchor="middle">gamma-api — markets, CLOB</text>
+        <text x="175" y="166" fill="#94a3b8" font-size="8" text-anchor="middle">data-api — leaderboard,</text>
+        <text x="175" y="180" fill="#94a3b8" font-size="8" text-anchor="middle">activity, positions</text>
+        <text x="175" y="200" fill="#fbbf24" font-size="7" text-anchor="middle">keyless · rate-limited (CF 429)</text>
+
+        <rect x="340" y="110" width="180" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="430" y="132" fill="white" font-size="11" font-weight="600" text-anchor="middle">Quiver Quant</text>
+        <text x="430" y="150" fill="#94a3b8" font-size="8" text-anchor="middle">congress trades, lobbying</text>
+        <text x="430" y="164" fill="#94a3b8" font-size="8" text-anchor="middle">stock disclosures API</text>
+
+        <rect x="570" y="110" width="180" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="660" y="132" fill="white" font-size="11" font-weight="600" text-anchor="middle">Congress.gov</text>
+        <text x="660" y="150" fill="#94a3b8" font-size="8" text-anchor="middle">bill text, votes</text>
+        <text x="660" y="164" fill="#94a3b8" font-size="8" text-anchor="middle">committee actions</text>
+
+        <rect x="800" y="110" width="180" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="890" y="132" fill="white" font-size="11" font-weight="600" text-anchor="middle">GovInfo.gov</text>
+        <text x="890" y="150" fill="#94a3b8" font-size="8" text-anchor="middle">federal register</text>
+        <text x="890" y="164" fill="#94a3b8" font-size="8" text-anchor="middle">regulatory notices</text>
+
+        <!-- ================= INGESTION BOUNDARY ================= -->
+        <rect x="30" y="270" width="1180" height="210" rx="12" fill="rgba(52, 211, 153, 0.03)" stroke="#34d399" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="286" fill="#34d399" font-size="10" font-weight="600">DATA INGESTION — collectors (Hermes cron)</text>
+
+        <rect x="60" y="325" width="240" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="180" y="347" fill="white" font-size="11" font-weight="600" text-anchor="middle">Whale scanners (TS)</text>
+        <text x="180" y="365" fill="#94a3b8" font-size="8" text-anchor="middle">scan-leaderboard · scan-wallets</text>
+        <text x="180" y="379" fill="#94a3b8" font-size="8" text-anchor="middle">monitor-trades (10m cycle)</text>
+        <text x="180" y="393" fill="#94a3b8" font-size="8" text-anchor="middle">record-l2 → book history</text>
+
+        <rect x="380" y="325" width="260" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="510" y="347" fill="white" font-size="11" font-weight="600" text-anchor="middle">Research Bot (Python)</text>
+        <text x="510" y="365" fill="#94a3b8" font-size="8" text-anchor="middle">quiver.py · congress_api.py</text>
+        <text x="510" y="379" fill="#94a3b8" font-size="8" text-anchor="middle">govinfo_api.py · nlp_bill_parser</text>
+        <text x="510" y="393" fill="#34d399" font-size="8" text-anchor="middle">→ RegulatorySignal payloads</text>
+
+        <rect x="720" y="325" width="200" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="820" y="347" fill="white" font-size="11" font-weight="600" text-anchor="middle">Local LLM Sentiment</text>
+        <text x="820" y="365" fill="#94a3b8" font-size="8" text-anchor="middle">qwen2.5:7b · ollama :11434</text>
+        <text x="820" y="379" fill="#94a3b8" font-size="8" text-anchor="middle">shadow A/B — rules vs model</text>
+        <text x="820" y="393" fill="#94a3b8" font-size="8" text-anchor="middle">None on failure (safe)</text>
+
+        <rect x="60" y="440" width="240" height="28" rx="5" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="180" y="459" fill="#a78bfa" font-size="8" text-anchor="middle">data/l2/ book history → fill model</text>
+        <rect x="720" y="440" width="200" height="28" rx="5" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="820" y="459" fill="#a78bfa" font-size="8" text-anchor="middle">data/sentiment-ab.jsonl · compared Mon</text>
+
+        <!-- ================= CORE BOUNDARY ================= -->
+        <rect x="30" y="510" width="830" height="240" rx="12" fill="rgba(34, 211, 238, 0.03)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="526" fill="#22d3ee" font-size="10" font-weight="600">CORE ENGINE — Next.js :3013 (launchd · KeepAlive)</text>
+
+        <rect x="60" y="565" width="212" height="160" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="166" y="587" fill="white" font-size="12" font-weight="600" text-anchor="middle">Webhooks</text>
+        <text x="166" y="605" fill="#94a3b8" font-size="8" text-anchor="middle">POST /api/webhooks/*</text>
+        <text x="166" y="623" fill="#94a3b8" font-size="8" text-anchor="middle">whale-signal</text>
+        <text x="166" y="637" fill="#94a3b8" font-size="8" text-anchor="middle">research-signal</text>
+        <text x="166" y="651" fill="#94a3b8" font-size="8" text-anchor="middle">execution-result</text>
+        <text x="166" y="700" fill="#fb7185" font-size="7" text-anchor="middle">Bearer INTERNAL_API_SECRET</text>
+
+        <rect x="320" y="565" width="232" height="160" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="436" y="587" fill="white" font-size="12" font-weight="600" text-anchor="middle">Scorer</text>
+        <text x="436" y="605" fill="#94a3b8" font-size="8" text-anchor="middle">score-trades.ts · copyScore</text>
+        <text x="436" y="619" fill="#94a3b8" font-size="8" text-anchor="middle">short-TTR lane · per-cycle caps</text>
+        <text x="436" y="633" fill="#94a3b8" font-size="8" text-anchor="middle">premium overlay (Wang-calb.)</text>
+        <text x="436" y="647" fill="#94a3b8" font-size="8" text-anchor="middle">rules v38: minCopyScore 80,</text>
+        <text x="436" y="661" fill="#94a3b8" font-size="8" text-anchor="middle">walletCap 40 · maxOpen 225</text>
+        <text x="436" y="712" fill="#fb7185" font-size="7" text-anchor="middle">paper-only · circuit breaker</text>
+
+        <rect x="600" y="565" width="230" height="75" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="715" y="587" fill="white" font-size="11" font-weight="600" text-anchor="middle">Bayesian Evidence Agg</text>
+        <text x="715" y="605" fill="#94a3b8" font-size="8" text-anchor="middle">src/lib/forecasting (v39)</text>
+        <text x="715" y="622" fill="#94a3b8" font-size="8" text-anchor="middle">signals → calibrated delta</text>
+
+        <rect x="600" y="660" width="230" height="65" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="715" y="682" fill="white" font-size="11" font-weight="600" text-anchor="middle">Rule versions</text>
+        <text x="715" y="700" fill="#94a3b8" font-size="8" text-anchor="middle">v36 drift → v37 caps → v38</text>
+        <text x="715" y="714" fill="#94a3b8" font-size="8" text-anchor="middle">EOD auto-tune chain 22:01</text>
+
+        <!-- ================= DATA STORE ================= -->
+        <rect x="880" y="540" width="300" height="210" rx="12" fill="rgba(167, 139, 250, 0.03)" stroke="#a78bfa" stroke-width="1" stroke-dasharray="6,4"/>
+        <text x="892" y="556" fill="#a78bfa" font-size="10" font-weight="600">DATA STORE — Prisma SQLite</text>
+        <rect x="895" y="570" width="270" height="165" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1030" y="592" fill="white" font-size="11" font-weight="600" text-anchor="middle">dev.db</text>
+        <text x="1030" y="612" fill="#94a3b8" font-size="8" text-anchor="middle">Trades — paper book</text>
+        <text x="1030" y="628" fill="#94a3b8" font-size="8" text-anchor="middle">Wallets · RuleSet versions</text>
+        <text x="1030" y="644" fill="#94a3b8" font-size="8" text-anchor="middle">RegulatorySignal</text>
+        <text x="1030" y="660" fill="#94a3b8" font-size="8" text-anchor="middle">Outcomes · Bankroll</text>
+        <text x="1030" y="676" fill="#94a3b8" font-size="8" text-anchor="middle">AgentState</text>
+        <text x="1030" y="712" fill="#a78bfa" font-size="7" text-anchor="middle">DATETIME = unix-ms ints</text>
+
+        <!-- ================= EXECUTION BOUNDARY ================= -->
+        <rect x="30" y="780" width="830" height="150" rx="12" fill="rgba(251, 113, 133, 0.03)" stroke="#fb7185" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="796" fill="#fb7185" font-size="10" font-weight="600">EXECUTION — paper trading only (no real money)</text>
+
+        <rect x="60" y="835" width="272" height="75" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="196" y="857" fill="white" font-size="11" font-weight="600" text-anchor="middle">Rust Sidecar :3014</text>
+        <text x="196" y="875" fill="#94a3b8" font-size="8" text-anchor="middle">execution engine (C-200 route)</text>
+        <text x="196" y="889" fill="#94a3b8" font-size="8" text-anchor="middle">maker-parked fills (no taker fees)</text>
+        <text x="196" y="903" fill="#94a3b8" font-size="8" text-anchor="middle">watchdog-supervised (15m)</text>
+
+        <rect x="390" y="835" width="240" height="75" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="510" y="857" fill="white" font-size="11" font-weight="600" text-anchor="middle">Paper Engine</text>
+        <text x="510" y="875" fill="#94a3b8" font-size="8" text-anchor="middle">src/lib/paper.ts · safety.ts</text>
+        <text x="510" y="895" fill="#fb7185" font-size="8" font-weight="600" text-anchor="middle">PAPER ONLY — no private keys</text>
+
+        <!-- ================= ORCHESTRATION BOUNDARY ================= -->
+        <rect x="30" y="960" width="600" height="230" rx="12" fill="rgba(251, 146, 60, 0.03)" stroke="#fb923c" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="976" fill="#fb923c" font-size="10" font-weight="600">ORCHESTRATION — Hermes cron jobs</text>
+        <text x="60" y="1000" fill="#94a3b8" font-size="8">monitor-score 10m · update-pnl 1h · scan-wallets 1h</text>
+        <text x="60" y="1018" fill="#94a3b8" font-size="8">eod 22:00 → auto-tune chain (v36→v38) + Discord</text>
+        <text x="60" y="1036" fill="#94a3b8" font-size="8">tuning-review 07:00 → Discord</text>
+        <text x="60" y="1054" fill="#94a3b8" font-size="8">research-bot 6h · sidecar-watchdog 15m</text>
+        <text x="60" y="1072" fill="#94a3b8" font-size="8">l2-watchdog 15m · caffeinate-watchdog 15m</text>
+        <text x="60" y="1090" fill="#94a3b8" font-size="8">calibrate-premium (1st/15th) → overlay refit</text>
+        <text x="60" y="1108" fill="#94a3b8" font-size="8">repo-scout Mon 13:00 → Discord</text>
+        <text x="60" y="1126" fill="#94a3b8" font-size="8">sentiment-A/B Mon 13:15 → Discord</text>
+        <text x="60" y="1144" fill="#94a3b8" font-size="8">c-200 daily report 18:00 → Discord</text>
+        <text x="60" y="1166" fill="#fb923c" font-size="7">recs are advisory — user approves rule changes</text>
+
+        <!-- ================= OUTPUTS BOUNDARY ================= -->
+        <rect x="650" y="960" width="560" height="230" rx="12" fill="rgba(34, 211, 238, 0.03)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="662" y="976" fill="#22d3ee" font-size="10" font-weight="600">OUTPUTS</text>
+
+        <rect x="680" y="1015" width="240" height="130" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="800" y="1037" fill="white" font-size="11" font-weight="600" text-anchor="middle">Max HQ Dashboard</text>
+        <text x="800" y="1055" fill="#94a3b8" font-size="8" text-anchor="middle">Next.js :3013 · embedded hub</text>
+        <text x="800" y="1071" fill="#94a3b8" font-size="8" text-anchor="middle">analytics · paper-trades</text>
+        <text x="800" y="1085" fill="#94a3b8" font-size="8" text-anchor="middle">performance · roadmap · rules</text>
+        <text x="800" y="1099" fill="#94a3b8" font-size="8" text-anchor="middle">signals · wallets · journal</text>
+        <text x="800" y="1130" fill="#22d3ee" font-size="7" text-anchor="middle">kanban = data/roadmap.json</text>
+
+        <rect x="950" y="1015" width="230" height="130" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1065" y="1037" fill="white" font-size="11" font-weight="600" text-anchor="middle">Discord</text>
+        <text x="1065" y="1055" fill="#94a3b8" font-size="8" text-anchor="middle">EOD report · tuning review</text>
+        <text x="1065" y="1069" fill="#94a3b8" font-size="8" text-anchor="middle">c-200 daily · repo scout</text>
+        <text x="1065" y="1083" fill="#94a3b8" font-size="8" text-anchor="middle">sentiment A/B · watchdog alerts</text>
+        <text x="1065" y="1097" fill="#94a3b8" font-size="8" text-anchor="middle">phase-gate PnL trajectory</text>
+        <text x="1065" y="1128" fill="#fb923c" font-size="7" text-anchor="middle">TUI cron output invisible</text>
+
+        <!-- ================= LEGEND ================= -->
+        <text x="42" y="1222" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="120" y="1214" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="142" y="1222" fill="#94a3b8" font-size="8">Frontend / Dashboard</text>
+        <rect x="290" y="1214" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="312" y="1222" fill="#94a3b8" font-size="8">Backend / Core</text>
+        <rect x="430" y="1214" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="452" y="1222" fill="#94a3b8" font-size="8">Data store</text>
+        <rect x="550" y="1214" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1"/>
+        <text x="572" y="1222" fill="#94a3b8" font-size="8">External API</text>
+        <rect x="670" y="1214" width="16" height="10" rx="2" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1"/>
+        <text x="692" y="1222" fill="#94a3b8" font-size="8">Cron / Discord</text>
+        <rect x="800" y="1214" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="822" y="1222" fill="#94a3b8" font-size="8">Safety / Auth</text>
+        <line x1="920" y1="1219" x2="936" y2="1219" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="942" y="1222" fill="#94a3b8" font-size="8">Authed webhook</text>
+        <line x1="1060" y1="1219" x2="1076" y2="1219" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="1082" y="1222" fill="#94a3b8" font-size="8">Cron trigger</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Ingest — 4 public feeds</h3>
+        </div>
+        <ul>
+          <li>• Polymarket gamma/data APIs (keyless, rate-limited)</li>
+          <li>• Quiver congressional stock disclosures</li>
+          <li>• Congress.gov bill text + votes</li>
+          <li>• GovInfo federal register notices</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Decide — calibrated scoring</h3>
+        </div>
+        <ul>
+          <li>• copyScore + walletScore with caps (40/225)</li>
+          <li>• short-TTR lane = 63.6% of copies</li>
+          <li>• premium overlay (Wang-transform, biweekly refit)</li>
+          <li>• Bayesian evidence agg (v39) → sentiment delta</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>Execute &amp; learn — paper only</h3>
+        </div>
+        <ul>
+          <li>• Rust sidecar :3014 maker-parked fills</li>
+          <li>• Prisma SQLite paper book (~10.5k trades)</li>
+          <li>• EOD auto-tune chain v36→v38</li>
+          <li>• Weekly sentiment A/B → Discord</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      Medusa CopyBot · polymarket-copybot · generated 2026-08-31 · Next.js :3013 · Rust sidecar :3014 · Hermes cron orchestration
+      <pre>
+     __
+    / _)  Medusa CopyBot — paper trading only
+ .-^^^-/ /
+__/       /
+&lt;__.|_|-|_|</pre>
+    </p>
+  </div>
+</body>
+</html>

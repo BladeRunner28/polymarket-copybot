@@ -17,7 +17,8 @@ export const PAPER_MAX_SIZE_USD = 20;
 
 export const BOT_LIMITS: Record<string, { min: number; max: number }> = {
   STANDARD: { min: 0.25, max: 20.00 },
-  BANKROLL_200: { min: 0.10, max: 10.00 }
+  // v41 (2026-08-31, approved): C-200 overall cap raised $10 -> $20.
+  BANKROLL_200: { min: 0.10, max: 20.00 }
 };
 
 /** Throws if anything ever tries to execute a real trade. */

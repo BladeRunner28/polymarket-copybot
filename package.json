@@ -16,6 +16,7 @@
     "score:trades": "tsx scripts/score-trades.ts",
     "paper:update-pnl": "tsx scripts/update-pnl.ts",
     "review:outcomes": "tsx scripts/review-outcomes.ts",
+    "export:training": "tsx scripts/export-training-data.ts",
     "update:rules": "tsx scripts/update-rules.ts",
     "report:daily": "tsx scripts/report-daily.ts",
     "test": "vitest run"

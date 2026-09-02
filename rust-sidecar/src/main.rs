@@ -28,6 +28,7 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
         intent.bot_id, intent.size_usd, intent.outcome, intent.price * 100.0);
     
     let client = reqwest::Client::new();
+    let token = env::var("INTERNAL_API_SECRET").unwrap_or_default();
 
     // Feature: Phase 5 Cross-Market Routing (Dry-Run)
     // If the venue is Kalshi or PredictIt, query the specific adapter's L2 depth first.
@@ -82,6 +83,7 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
 
     tokio::spawn(async move {
         let _ = client.post("http://127.0.0.1:3013/api/webhooks/execution-result")
+            .bearer_auth(&token)
             .json(&payload)
             .send()
             .await;
@@ -102,6 +104,7 @@ async fn start_whale_subscriber() {
         let _ = ws_stream.send(Message::Text(subscribe_msg.to_string())).await;
         
         let client = reqwest::Client::new();
+        let token = env::var("INTERNAL_API_SECRET").unwrap_or_default();
         while let Some(msg) = ws_stream.next().await {
             if let Ok(Message::Text(text)) = msg {
                 if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&text) {
@@ -111,8 +114,10 @@ async fn start_whale_subscriber() {
                         println!("🐋 Zero-Latency Whale Trade Detected! Tx: {}", tx_hash);
                         let client_clone = client.clone();
                         let payload = log.clone();
+                        let token_for_post = token.clone();
                         tokio::spawn(async move {
                             let _ = client_clone.post("http://127.0.0.1:3013/api/webhooks/whale-signal")
+                                .bearer_auth(token_for_post)
                                 .json(&payload).send().await;
                         });
                     }

@@ -1,0 +1,226 @@
+{
+  "columns": [
+    "Backlog",
+    "Scheduled",
+    "In Progress",
+    "In Review",
+    "Done"
+  ],
+  "cards": [
+    {
+      "id": "phase-a",
+      "title": "Phase A — Wang premium overlay",
+      "column": "Done",
+      "effort": "~half day",
+      "dates": "Shipped 2026-08-31 (v38)",
+      "note": "λ̂ calibration table refit biweekly (1st & 15th) via scripts/calibrate-premium.py. Measurement-first: size factor clamp(1−k·λ̂) on C-200 main-lane copies.",
+      "tags": [
+        "premium",
+        "shipped"
+      ]
+    },
+    {
+      "id": "phase-a2",
+      "title": "Phase A2 — Calibrated sentiment evidence aggregation",
+      "column": "Done",
+      "effort": "~half day",
+      "dates": "Shipped 2026-08-31 (v39)",
+      "note": "Bayesian log-odds aggregation (src/lib/forecasting) replaces the Phase-8 fixed ±boost: delta = posterior − market. Measurement window → Sep 14 outcome review.",
+      "tags": [
+        "sentiment",
+        "shipped",
+        "measuring"
+      ]
+    },
+    {
+      "id": "phase-a2-review",
+      "title": "Phase A2 outcome review",
+      "column": "Scheduled",
+      "dates": "Sep 14",
+      "note": "Compare [SENTIMENT]-logged decisions against the legacy boost regime over the 2-week window; syncs with biweekly calibration.",
+      "tags": [
+        "review"
+      ]
+    },
+    {
+      "id": "phase-b",
+      "title": "Phase B — Kelly sizing replaces band sizing",
+      "column": "Scheduled",
+      "effort": "~1 day",
+      "dates": "Sep 15–16",
+      "gate": "Ships with the Sep 15 λ̂ refit so Kelly starts on fresh calibration",
+      "note": "Port oracle3 ModelInformedSizer semantics (Apache-2.0): edge = bucket-λ-adjusted premium, Kelly ≤ 0.15×bankroll, confidence-scaled. Replaces heuristic band multipliers; paper caps kept. Input (audited 2026-08-31): drafts/octagon-audit.md — MIT reference impl for executable-quote Kelly (edge vs ask, not midpoint), liquidity haircut, per-category concentration + drawdown gates; calibrate to Polymarket, don't copy Kalshi defaults. Ref (awesome-options audit 2026-09-01): Thorp (2006) 'Kelly Criterion in Blackjack, Sports Betting, and the Stock Market' — canonical binary-bet fractional-Kelly treatment; read before the Sep 15 refit. Predicted impact (2026-09-01, calibration-based): +$5–25/day (+3–15% of ~$165/day window) — long-shot <0.20 band up-sized 3–6x (z=4.14 edge), 0.80+ favorite band → ~0 trades (significant −8.7pp), executable-quote edge ~1c/trade. FALSIFIABLE TARGETS: (1) long-shot band share of realized PnL rises 3–6x vs pre-Kelly 48d window; (2) 0.80+ band trades ≈ 0; (3) no increase in max drawdown.",
+      "tags": [
+        "kelly",
+        "sizing"
+      ]
+    },
+    {
+      "id": "phase-c",
+      "title": "Phase C — Constraint-based cross-venue arb",
+      "column": "Backlog",
+      "effort": "~2–3 days",
+      "dates": "Design Sep 15–30 · build early Oct",
+      "gate": "Kalshi circuit breaker must recover (realized ≥ −$50; currently −$223.80)",
+      "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern).",
+      "tags": [
+        "kalshi",
+        "arb"
+      ]
+    },
+    {
+      "id": "storage-health",
+      "title": "Storage drive health — /Volumes/Storage",
+      "column": "Done",
+      "dates": "Verified healthy 2026-08-31",
+      "note": "Earlier I/O hang was transient (drive-sleep wake-up). Re-test: small write 0.2ms, 50MB write 1,159 MB/s, checksum OK. Ready for the dataset move.",
+      "tags": [
+        "infra",
+        "done"
+      ]
+    },
+    {
+      "id": "dataset-move",
+      "title": "Move PMA dataset (~130GiB) to /Volumes/Storage",
+      "column": "Done",
+      "dates": "Moved 2026-08-31",
+      "note": "rsync complete: 49,486 files / 50G verified (count + size match, 404.5M trades readable via the /tmp/pma symlink). Source deleted — primary disk freed.",
+      "tags": [
+        "infra",
+        "storage"
+      ]
+    },
+    {
+      "id": "v40-homerun",
+      "title": "v40 — Homerun-audit features: risk gates, circuit breaker, insider scoring, L2 recorder",
+      "column": "Done",
+      "dates": "Shipped 2026-08-31 (v40)",
+      "note": "Daily-loss + gross-exposure gates and per-token flash-crash breaker in score-trades; 11-component insider wallet scoring (WalletInsiderScore, EOD refresh); L2 order-book recorder (data/l2/, cron watchdog) for future fill modeling.",
+      "tags": [
+        "risk",
+        "shipped"
+      ]
+    },
+    {
+      "id": "phase-d-insider-gating",
+      "title": "Phase D — Insider-score copy gating",
+      "column": "Backlog",
+      "effort": "~half day",
+      "gate": "Measurement window first: ≥2 weeks of WalletInsiderScore data before gating copy selection",
+      "note": "Wire the 11-component insider score into copy selection (e.g. boost/penalize wallets above flagged/watch thresholds) behind a rules flag — same measurement-first pattern as Phase A2.",
+      "tags": [
+        "insider",
+        "gating"
+      ]
+    },
+    {
+      "id": "phase-d2-fill-model",
+      "title": "Phase D2 — Cox-PH paper fill model",
+      "column": "Backlog",
+      "effort": "~1–2 days",
+      "gate": "~2 weeks of L2 book history in data/l2/ (≈ mid-Sep)",
+      "note": "Port the homerun fill-simulator concept (AGPL read-only): P(fill within Δt) from book context + time-to-resolution covariate — makes paper fills realistic instead of assumed-at-price. Ref (awesome-options audit 2026-09-01): FlashAlpha flashalpha-fill-simulator (MIT) — stale-quote guards, deterministic tiebreaks, patient-then-cross exit; borrow methodology for P(fill) over data/l2/ books.",
+      "tags": [
+        "fill-model",
+        "l2"
+      ]
+    },
+    {
+      "id": "phase-local1",
+      "title": "Phase Local-1 — Local LLM sentiment (qwen2.5:7b, shadow A/B)",
+      "column": "In Progress",
+      "dates": "Shipped 2026-08-31 (shadow)",
+      "gate": "A/B review after ~1 week of accumulation (scripts/compare-sentiment.py)",
+      "note": "Research bot scores sentiment with a local 7B via ollama (:11434, launchd) alongside the rules → data/sentiment-ab.jsonl. Live pipeline unchanged until the A/B shows the local model wins.",
+      "tags": [
+        "local-llm",
+        "sentiment",
+        "ab"
+      ]
+    },
+    {
+      "id": "phase-astro1",
+      "title": "Phase Astro-1 — Astrological sentiment shadow feed",
+      "column": "In Progress",
+      "dates": "Shipped 2026-08-31 (shadow, backfilled 61d)",
+      "gate": "First verdict: NO SIGNIFICANT SIGNAL (n=47d, corr −0.168, |t|=1.1) — re-run compare-astro.py monthly; promote only if |t|≥2 + replication, D-tier cap (0.2) only",
+      "note": "Human-recommended astro feed settled empirically: deterministic DE440s ephemeris → D-tier daily score → data/astro-shadow.jsonl; joined against PaperTrade realized PnL. Stayed in shadow per measurement-first standard.",
+      "tags": [
+        "astro",
+        "shadow",
+        "sentiment"
+      ]
+    },
+    {
+      "id": "phase-ml1",
+      "title": "Phase ML-1 — Outcome labeling → train → shadow A/B",
+      "column": "In Progress",
+      "effort": "~2 days (train part, after Phase B)",
+      "dates": "Labeling started 2026-08-31",
+      "gate": "Train + shadow A/B after Phase B ships; promote only if model beats copyScore on held-out labels (measurement-first)",
+      "note": "Labeling pipeline FIXED 2026-08-31: review-outcomes 404'd on archived gamma slugs forever (0 labels in history); CLOB winner-flag fallback by conditionId now labels 200/night via EOD (orderBy decision asc → real-PnL copies first). 529 labels exported (329 paper_copy 84% good +$1.39 avg; 200 skip). npm run export:training → training_data.csv. Next: XGBoost on decision features → wasDecisionGood; shadow-A/B vs live ruleset; the training_data.csv header-only era is over.",
+      "tags": [
+        "ml",
+        "training",
+        "labels"
+      ]
+    },
+    {
+      "id": "phase-ml2",
+      "title": "Phase ML-2 — Independent-entry ML lane (dual-track)",
+      "column": "Backlog",
+      "effort": "~3–5 days",
+      "gate": "Ships after Phase B (Kelly) + ML-1 shadow A/B shows model edge on held-out labels; era-aware training (ruleSetVersion feature)",
+      "note": "The step that makes dual-track real: ML lane generates its OWN entries from market features (MarketSnapshot: price/drift/TTR/liquidity/category + calibration-band edges + sentiment deltas) with NO whale signal. Schema: DecisionJournal.observedTradeId → nullable (or MLEntry table); new MarketSnapshot-driven scanner; ML-1 botId lane with separate bankroll (multi-lane pattern proven by STANDARD/C-200). Shadow → paper, flag-revertible. Caveat: current 529 labels are all v1–v3 era vs live v38 — train era-aware.",
+      "tags": [
+        "ml",
+        "dual-track",
+        "market-scan"
+      ]
+    },
+    {
+      "id": "phase-data1",
+      "title": "Phase Data-1 — External dataset wiring (PMA / Manifold / Odds API)",
+      "column": "In Progress",
+      "effort": "~2–3 days",
+      "dates": "Started 2026-09-01",
+      "gate": "Shadow feeds accumulate ≥2 weeks; promote only if gap signals beat baseline (measurement-first)",
+      "note": "PMA (largest public Polymarket+Kalshi tape, 36GiB — source of the 692M-trade calibration baseline) re-fetched + wired for win-rate-by-price + ML-2 tape features; Manifold API keyless gap-detection (cross-platform prob gaps); Odds API sportsbook-vs-Polymarket gaps (free key) for the short-TTR sports lane. All shadow-first.",
+      "tags": [
+        "data",
+        "datasets",
+        "shadow"
+      ]
+    },
+    {
+      "id": "phase-gdelt",
+      "title": "Phase GDELT-1 — OSINT news sentiment feed (A2 coverage fix)",
+      "column": "In Progress",
+      "effort": "Collector ~1h; A2 wiring ~half day",
+      "dates": "Carded 2026-09-01; collector built 2026-09-01; cloud feed activated 2026-09-01",
+      "gate": "A2 evidence wiring ships AFTER Phase B (Sep 15); shadow accumulation starts when collector lands",
+      "note": "GDELT (keyless, 15-min updates, tone/Goldstein scores) fixes the measured A2 reach problem (sentiment evidence touches 0.08% of decisions — 148/191k). Collector: api.gdeltproject.org doc API → data/gdelt-shadow.jsonl (same shadow pattern as astro/odds/manifold). Wiring: map events → research-categories → evidence rows feeding src/lib/forecasting. Card now, collect now, integrate post-B. Collector LIVE: political-research-bot/src/gdelt_shadow.py -> data/gdelt-shadow.jsonl (148 rows first run, 6 categories, 6-hourly via research-bot cron). Dual-feed: keyless legacy DOC API (http only; https hangs; 1 req/5s; no per-article tone — uses timelinetone category aggregates) + GDELT Cloud ACTIVE 2026-09-01 (gdeltcloud.com/api/v2, stories w/ significance/geo/entities; GDELT_API_KEY in .env perms 600; NOTE: cloud API flaky on cold calls — 4x retry w/ 10s backoff in collector). First full cloud run: 148 rows/6 categories. A2 wiring still post-Phase B (Sep 15).",
+      "tags": [
+        "osint",
+        "sentiment",
+        "gdelt",
+        "a2"
+      ]
+    },
+    {
+      "id": "phase-gdelt-atlas",
+      "title": "GDELT Atlas viewer — dark-mode world map + news feed",
+      "column": "In Progress",
+      "effort": "Built 2026-09-01 (~1 session)",
+      "dates": "Built 2026-09-01",
+      "gate": "Static snapshot (no CORS on Cloud API). Rebuild with build.py when API is up; refresh script optional.",
+      "note": "~/gdelt-atlas/atlas.html — self-contained dark-mode Monitor surface: 177-country equirectangular SVG map (pre-projected, no map lib), hover tooltip, click-to-pin country panel (stories/avg sig/max sig/top cat), filterable story feed (significance chips, category chips, opens story URL). Data: 148 real GDELT Cloud stories (44 countries covered) embedded as JSON snapshot. NOTE: Atlas GPR/Pulse indices need PAID plan (Academic tier returns 'not included'); map uses coverage intensity + significance + categories instead. Build: gdelt-atlas/build.py --stories <json> --out atlas.html (ne110.geojson included). Weekly rebuild cron: copybot-gdelt-atlas-rebuild (Mon 09:00, Discord, no_agent; fetch_stories.py w/ 3-retry backoff + MIN_STORIES=50 guard → build.py → summary). GDELT Cloud MCP server installed in Hermes (gdelt-cloud, 46 tools, key via MCP_GDELT_CLOUD_API_KEY env ref) 2026-09-01.",
+      "tags": [
+        "gdelt",
+        "atlas",
+        "viz",
+        "dark-mode"
+      ]
+    }
+  ]
+}

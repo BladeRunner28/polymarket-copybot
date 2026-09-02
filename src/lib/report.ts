@@ -13,17 +13,24 @@ function today(): string {
 
 export async function generateDailyReport(): Promise<{ id: string; summary: string; sent: boolean }> {
   const date = today();
-  const dayStart = new Date(`${date}T00:00:00Z`);
+
+  // Rolling window: count activity since the previous report run instead of a
+  // UTC calendar day. The EOD job runs at 22:00 local (03:00 UTC), so a
+  // UTC-midnight window silently dropped every resolution detected between
+  // 03:00 and 24:00 UTC (~21h/day) — reports showed "$0.00 today" even on days
+  // with real wins. Fallback: trailing 24h on the first run.
+  const prevReport = await prisma.dailyReport.findFirst({ orderBy: { createdAt: "desc" } });
+  const windowStart = prevReport?.createdAt ?? new Date(Date.now() - 86_400_000);
 
   const [openTrades, resolvedToday, decisionsToday, ruleChangesToday, allResolved, bankrolls] =
     await Promise.all([
       prisma.paperTrade.findMany({ where: { status: "open" } }),
       prisma.paperTrade.findMany({
-        where: { status: "resolved", resolvedAt: { gte: dayStart } },
+        where: { status: "resolved", resolvedAt: { gte: windowStart } },
       }),
-      prisma.decisionJournal.findMany({ where: { createdAt: { gte: dayStart } } }),
+      prisma.decisionJournal.findMany({ where: { createdAt: { gte: windowStart } } }),
       prisma.ruleChange.findMany({
-        where: { createdAt: { gte: dayStart } },
+        where: { createdAt: { gte: windowStart } },
         include: { newRuleSet: true },
       }),
       prisma.paperTrade.findMany({ where: { status: "resolved" } }),
@@ -57,6 +64,18 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
 
   const cmpBankroll = bankrolls.find((b) => b.botId === "BANKROLL_200");
   const totalCmpCapital = cmpBankroll ? cmpBankroll.principal + cmpTotalPnl : 0;
+
+  // Bankroll ledger invariant: cash should equal principal + realized − open
+  // notional. Surface drift so accounting bugs show up in the daily report.
+  let ledgerNote: string | undefined;
+  if (cmpBankroll) {
+    const openNotional = compoundOpen.reduce((a, t) => a + t.simulatedPositionSize, 0);
+    const expectedCash = cmpBankroll.principal + (cmpBankroll.realizedPnl ?? 0) - openNotional;
+    const cashGap = Math.round((cmpBankroll.cashBalance - expectedCash) * 100) / 100;
+    if (Math.abs(cashGap) > 5) {
+      ledgerNote = `• ⚠️ BANKROLL_200 cash ledger off by $${cashGap.toFixed(2)} vs paper-trade ledger (run reconcile-bankroll)`;
+    }
+  }
 
   const copied = decisionsToday.filter((d) => d.decision === "paper_copy").length;
   const watched = decisionsToday.filter((d) => d.decision === "watchlist").length;
@@ -100,6 +119,7 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
     `• Win Rate: ${(cmpWinRate * 100).toFixed(1)}% | Open Positions: ${compoundOpen.length}`,
     `• Sizing Range: $0.10 - $10.00`,
     `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
+    ledgerNote,
     ``,
     `**System Activity:**`,
     `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})`,

@@ -108,10 +108,16 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
   }
 
   // 5) Winning comfortably: relax threshold slightly to catch more signals.
-  if (totalPnl > 20 && winRate > 0.6 && rules.minCopyScore > 55) {
+  // v31: never relax below the sweet-spot floor — scores < sweetSpotMinScore
+  // are the losing tail (55–69 was −$0.99/trade, −24% edge in Aug 2026 data).
+  // v37: the floor follows the current best-known bar — highScoreCapMin (80)
+  // is the proven best bucket in 30d data (+$0.57/trade), so a hot streak
+  // can't erode the v37 quality bar back to the sweet-spot floor.
+  const copyFloor = Math.max(rules.highScoreCapMin, rules.sweetSpotMinScore, 55);
+  if (totalPnl > 20 && winRate > 0.6 && rules.minCopyScore > copyFloor) {
     proposals.push({
       field: "minCopyScore",
-      newValue: Math.max(55, rules.minCopyScore - 2),
+      newValue: Math.max(copyFloor, rules.minCopyScore - 2),
       reason: "Strategy is winning — cautiously widening the funnel",
       evidence: `total PnL +${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}%`,
     });

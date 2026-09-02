@@ -1,10 +1,32 @@
+# deps / builds
 node_modules/
 .next/
+.next/standalone/
+.vercel
+coverage/
+venv-calib/
+rust-sidecar/target/
+*.pyc
+__pycache__/
+
+# logs
 logs/
+
+# secrets — never commit
+.env
+.env.local
+*.pem
+*.key
+
+# databases (runtime state)
 *.db
 *.db-journal
 prisma/dev.db*
-.env
-.env.local
-.vercel
-coverage/
+
+# large runtime data (L2 book history — 700MB+; keep the small research JSONL)
+data/l2/
+
+# large binaries / regenerable assets
+de421.bsp
+*.bsp
+*.tsbuildinfo

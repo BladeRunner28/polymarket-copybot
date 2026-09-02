@@ -27,6 +27,7 @@ export default async function PaperTrades() {
                 <tr className="text-left text-xs text-dim uppercase tracking-wide border-b border-edge">
                   <th className="py-2 pr-3">Opened</th>
                   <th className="py-2 pr-3">Bot</th>
+                  <th className="py-2 pr-3">Venue</th>
                   <th className="py-2 pr-3">Wallet</th>
                   <th className="py-2 pr-3">Market</th>
                   <th className="py-2 pr-3">Outcome</th>
@@ -51,6 +52,9 @@ export default async function PaperTrades() {
                       </td>
                       <td className="py-2 pr-3 text-xs text-dim">
                         {t.botId === "STANDARD" ? "STD" : t.botId === "BANKROLL_200" ? "C-200" : t.botId}
+                      </td>
+                      <td className="py-2 pr-3 text-xs text-dim">
+                        {t.venue}
                       </td>
                         <td className="py-2 pr-3">
                         <Link href={`/wallets/${t.walletAddress}`} className="hover:text-accent">

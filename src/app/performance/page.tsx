@@ -3,6 +3,8 @@ import { computeBenchmarks } from "@/lib/benchmarks";
 import { Card, Stat, Empty, Pnl, Addr } from "@/components/ui";
 import { LineChart } from "@/components/chart";
 import Link from "next/link";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +71,20 @@ export default async function Performance() {
   }
 
   const buckets = [bench.botFiltered, bench.blindCopy, bench.watchlist, bench.skipped];
+
+  // Calibration significance (data/calibration-analysis.json — refreshed
+  // nightly by the EOD job via scripts/analyze-calibration.py). Missing or
+  // corrupt file → section hidden, page still renders.
+  let cal: {
+    total?: { n: number; excessReturn: number; z: number; realizedPnl: number };
+    bands?: Array<{ band: string; n: number; winRate: number; excessReturn: number; z: number; p: number; significant: boolean; realizedPnl: number }>;
+    hours?: Array<{ hour: number; n: number; winRate: number; excessReturn: number; z: number; p: number; significant: boolean; realizedPnl: number }>;
+  } | null = null;
+  try {
+    cal = JSON.parse(readFileSync(join(process.cwd(), "data", "calibration-analysis.json"), "utf8"));
+  } catch {
+    cal = null;
+  }
 
   return (
     <div className="space-y-4">
@@ -160,6 +176,89 @@ export default async function Performance() {
           )}
         </Card>
       </div>
+
+      {cal && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card title={`Calibration Significance — Price Bands${cal.total ? ` (N=${cal.total.n})` : ""}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-dim uppercase border-b border-edge">
+                    <th className="py-2 pr-3">Entry</th>
+                    <th className="py-2 pr-3">N</th>
+                    <th className="py-2 pr-3">Win %</th>
+                    <th className="py-2 pr-3">Excess</th>
+                    <th className="py-2 pr-3">z</th>
+                    <th className="py-2">PnL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(cal.bands ?? []).map((b) => (
+                    <tr key={b.band} className={`border-b border-edge/40 ${b.significant ? "bg-warn/5" : ""}`}>
+                      <td className="py-2 pr-3 font-mono text-xs">
+                        {b.band}
+                        {b.significant && <span className="text-warn ml-1" title="|z|≥2 significant">**</span>}
+                      </td>
+                      <td className="py-2 pr-3 font-mono text-xs">{b.n}</td>
+                      <td className="py-2 pr-3 font-mono text-xs">{(b.winRate * 100).toFixed(1)}%</td>
+                      <td className={`py-2 pr-3 font-mono text-xs ${b.excessReturn > 0 ? "text-pos" : "text-neg"}`}>
+                        {b.excessReturn >= 0 ? "+" : ""}
+                        {b.excessReturn.toFixed(4)}
+                      </td>
+                      <td className={`py-2 pr-3 font-mono text-xs ${b.significant ? "text-ink font-bold" : "text-dim"}`}>
+                        {b.z >= 0 ? "+" : ""}
+                        {b.z.toFixed(2)}
+                      </td>
+                      <td className="py-2 font-mono text-xs"><Pnl value={b.realizedPnl} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-dim mt-2">
+              Excess return = win rate − mean entry price; ** = |z|≥2 significant. Refreshed nightly by the EOD job
+              (scripts/analyze-calibration.py, port of jon-becker/prediction-market-analysis).
+            </p>
+          </Card>
+          <Card title="Returns by Hour (ET)">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-dim uppercase border-b border-edge">
+                    <th className="py-2 pr-3">Hour</th>
+                    <th className="py-2 pr-3">N</th>
+                    <th className="py-2 pr-3">Win %</th>
+                    <th className="py-2 pr-3">Excess</th>
+                    <th className="py-2 pr-3">z</th>
+                    <th className="py-2">PnL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(cal.hours ?? []).map((h) => (
+                    <tr key={h.hour} className={`border-b border-edge/40 ${h.significant ? "bg-warn/5" : ""}`}>
+                      <td className="py-1.5 pr-3 font-mono text-xs">
+                        {String(h.hour).padStart(2, "0")}:00
+                        {h.significant && <span className="text-warn ml-1" title="|z|≥2 significant">**</span>}
+                      </td>
+                      <td className="py-1.5 pr-3 font-mono text-xs">{h.n}</td>
+                      <td className="py-1.5 pr-3 font-mono text-xs">{(h.winRate * 100).toFixed(1)}%</td>
+                      <td className={`py-1.5 pr-3 font-mono text-xs ${h.excessReturn > 0 ? "text-pos" : "text-neg"}`}>
+                        {h.excessReturn >= 0 ? "+" : ""}
+                        {h.excessReturn.toFixed(4)}
+                      </td>
+                      <td className={`py-1.5 pr-3 font-mono text-xs ${h.significant ? "text-ink font-bold" : "text-dim"}`}>
+                        {h.z >= 0 ? "+" : ""}
+                        {h.z.toFixed(2)}
+                      </td>
+                      <td className="py-1.5 font-mono text-xs"><Pnl value={h.realizedPnl} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

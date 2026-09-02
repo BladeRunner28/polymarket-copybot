@@ -10,6 +10,31 @@ import { computePnl } from "../src/lib/paper";
 import { log, logError } from "../src/lib/redact";
 
 const HYPOTHETICAL_SIZE = 10;
+const CLOB_API = "https://clob.polymarket.com";
+
+/**
+ * Resolve archived markets via the CLOB API. Gamma 404s dead/renamed slugs
+ * (the root cause of the empty OutcomeReview table), but CLOB keeps every
+ * market by conditionId with a per-token `winner` flag — keyless, read-only.
+ */
+async function fetchResolvedViaClob(conditionId: string | null) {
+  if (!conditionId) return null;
+  const res = await fetch(
+    `${CLOB_API}/markets/${encodeURIComponent(conditionId)}`,
+    {
+      headers: { accept: "application/json", "user-agent": "copybot-research/0.1 (paper-trading-only)" },
+      signal: AbortSignal.timeout(15000),
+    }
+  );
+  if (!res.ok) throw new Error(`clob ${res.status}`);
+  const m = (await res.json()) as {
+    closed?: boolean;
+    tokens?: Array<{ outcome: string; winner: boolean }>;
+  };
+  if (!m.closed) return null;
+  const winner = (m.tokens ?? []).find((t) => t.winner === true);
+  return winner ? { resolved: true as const, winningOutcome: winner.outcome } : null;
+}
 
 async function main() {
   const adapter = getAdapter();
@@ -19,6 +44,9 @@ async function main() {
       ...(adapter.isDemo ? {} : { isDemo: false }),
     },
     include: { observedTrade: true, paperTrades: true },
+    // paper_copy < skip < watchlist alphabetically — real-PnL labels first,
+    // so the ML training set fills with actual outcomes before hypotheticals.
+    orderBy: { decision: "asc" },
     take: 200,
   });
   if (pending.length === 0) {
@@ -32,8 +60,14 @@ async function main() {
 
   for (const d of pending) {
     try {
-      const m = await adapter.fetchMarket(d.marketId);
-      if (!m.resolved || !m.winningOutcome) continue; // not resolved yet
+      let m: { resolved?: boolean; winningOutcome?: string } | null = null;
+      try {
+        m = await adapter.fetchMarket(d.marketId);
+      } catch {
+        // Gamma 404s archived slugs — CLOB still serves them by conditionId.
+        m = await fetchResolvedViaClob(d.observedTrade.conditionId);
+      }
+      if (!m || !m.resolved || !m.winningOutcome) continue; // not resolved yet
 
       const won = m.winningOutcome === d.observedTrade.outcome;
       const pt = d.paperTrades[0];
