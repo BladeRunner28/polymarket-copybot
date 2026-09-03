@@ -221,6 +221,20 @@
         "viz",
         "dark-mode"
       ]
+    },
+    {
+      "id": "phase-c200-exec-leak",
+      "title": "C-200 execution-leak investigation (capital question → category fix)",
+      "column": "Done",
+      "effort": "2 audit passes + v45 impl",
+      "dates": "2026-09-02→03",
+      "gate": "n/a — complete",
+      "note": "COMPLETED 2026-09-03: Step1+Step2 findings. Leak = category mix, not capital/venue/drift. v45 LIVE: per-bot blacklists, market-slug cap 15, whale guard.",
+      "tags": [
+        "c200",
+        "execution",
+        "v45"
+      ]
     }
   ]
 }
