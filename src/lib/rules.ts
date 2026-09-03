@@ -124,6 +124,25 @@ export interface Rules {
   // gate is symmetric [1−max, max] and lowering it would kill the <0.15
   // long-shot edge). 0 = disabled.
   standardMaxEntryPrice: number;
+  // v45 (execution-leak Step 2, 2026-09-03, approved): per-bot market-category
+  // blacklists — the structural −EV slug set (lol/cs2/nfl/… lose for BOTH
+  // bots regardless of venue; verified 2026-09-03: C-200 −$801, STANDARD
+  // −$4.4k+ recoverable). Per-bot because dota2/elon are C-200-positive
+  // (+$87/+$30) while STANDARD-negative. Question-fragment slugs (what/of/the/
+  // where/which) are deliberately EXCLUDED — they wrap hundreds of real
+  // markets each. Empty array = disabled.
+  c200Blacklist: string[];
+  standardBlacklist: string[];
+  // v45: per-market-slug open-position cap for C-200. The v41 research-category
+  // gate maps esports to "Other" (uncapped), letting lol/cs2 pile up without a
+  // gate; this caps open positions per raw marketCategory slug. 0 = disabled.
+  maxMarketSlugPositions: number;
+  // v45: whale-liquidity guard — wallets trading large size (> whaleSizeUsd)
+  // in their home category are often the liquidity, not the edge (esports pros
+  // score 78–82 via category-fit but their trades don't move markets). Caps
+  // the category-fit score component at whaleCategoryFitCap for those trades.
+  whaleSizeUsd: number;
+  whaleCategoryFitCap: number;
 }
 
 export const DEFAULT_RULES: Rules = {
@@ -203,6 +222,12 @@ export const DEFAULT_RULES: Rules = {
   maxDrawdownPct: 0.2,
   // v44: STANDARD entries ≥ 0.85 are the worst band (z=−2.50, p=0.013).
   standardMaxEntryPrice: 0.85,
+  // v45 defaults (live values land in the DB ruleset at activation).
+  c200Blacklist: [],
+  standardBlacklist: [],
+  maxMarketSlugPositions: 0,
+  whaleSizeUsd: 0,
+  whaleCategoryFitCap: 60,
 };
 
 export async function getActiveRules(): Promise<{ rules: Rules; version: number; id: string }> {
@@ -218,14 +243,15 @@ export async function getActiveRules(): Promise<{ rules: Rules; version: number;
 
 export interface RuleChangeProposal {
   field: keyof Rules;
-  newValue: number;
+  newValue: number | string[];
   reason: string;
   evidence: string;
 }
 
 /**
  * Apply proposals as a new rule version. Old version is deactivated, the new
- * one activated, and a RuleChange row records everything.
+ * one activated, and a RuleChange row records everything. String[] values
+ * (e.g. category blacklists) are supported and stored as JSON.
  */
 export async function applyRuleChanges(
   proposals: RuleChangeProposal[],
@@ -233,12 +259,12 @@ export async function applyRuleChanges(
 ): Promise<{ newVersion: number } | null> {
   if (proposals.length === 0) return null;
   const { rules, version, id: oldId } = await getActiveRules();
-  const before: Record<string, number> = {};
-  const after: Record<string, number> = {};
+  const before: Record<string, number | string[]> = {};
+  const after: Record<string, number | string[]> = {};
   const newRules: Rules = { ...rules };
   for (const p of proposals) {
-    before[p.field] = rules[p.field];
-    (newRules as unknown as Record<string, number>)[p.field] = p.newValue;
+    before[p.field] = rules[p.field] as number | string[];
+    (newRules as unknown as Record<string, number | string[]>)[p.field] = p.newValue;
     after[p.field] = p.newValue;
   }
   const newVersion = version + 1;

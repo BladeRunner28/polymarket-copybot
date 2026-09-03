@@ -100,10 +100,25 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
 
   // --- Component scores ---
   const walletQualityScore = clamp(input.walletGlobalScore);
-  const categoryFitScore =
+  const categoryFitScore = clamp(
     input.walletCategoryWinRate !== undefined
-      ? clamp(input.walletCategoryWinRate * 130 - 15)
-      : 50;
+      ? input.walletCategoryWinRate * 130 - 15
+      : 50
+  );
+  // v45 whale-liquidity guard (execution-leak Step 2, 2026-09-03): wallets
+  // trading large size in their home category are often the liquidity, not the
+  // edge — esports pros score 78–82 via category-fit but their trades don't
+  // move markets (C-200 regular-funnel avg wallet trade $608 vs +EV lane $40).
+  // Cap the category-fit component when the copied trade size is large.
+  // whaleSizeUsd = 0 disables. The cap applies to the category-fit term only,
+  // so a genuinely strong wallet still scores on its other components.
+  const catFit =
+    input.tradeSize !== undefined &&
+    input.tradeSize > 0 &&
+    rules.whaleSizeUsd > 0 &&
+    input.tradeSize > rules.whaleSizeUsd
+      ? Math.min(categoryFitScore, rules.whaleCategoryFitCap)
+      : categoryFitScore;
   const entryTimingScore = clamp(100 - (drift / Math.max(rules.maxPriceDrift, 0.001)) * 80);
   const spreadScore = clamp(100 - (spread / Math.max(rules.maxSpread, 0.001)) * 70);
   const liquidityScore = clamp((liquidity / (rules.minLiquidity * 5)) * 100);
@@ -114,7 +129,7 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
 
   let copyScore = clamp(
     walletQualityScore * 0.3 +
-      categoryFitScore * 0.15 +
+      catFit * 0.15 +
       entryTimingScore * 0.2 +
       spreadScore * 0.1 +
       liquidityScore * 0.15 +
@@ -131,7 +146,7 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
 
   const breakdown = {
     walletQualityScore,
-    categoryFitScore,
+    categoryFitScore: catFit,
     entryTimingScore,
     spreadScore,
     liquidityScore,

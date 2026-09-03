@@ -107,10 +107,12 @@ async function main() {
     },
   });
   const c200CategoryCounts = new Map<string, number>();
+  const c200SlugCounts = new Map<string, number>(); // v45: raw marketCategory slug counts
   for (const row of c200OpenRows) {
     const ot = row.decision?.observedTrade;
     const cat = researchCategoryFor(ot?.marketQuestion, ot?.marketCategory);
     if (cat) c200CategoryCounts.set(cat, (c200CategoryCounts.get(cat) ?? 0) + 1);
+    if (ot?.marketCategory) c200SlugCounts.set(ot.marketCategory, (c200SlugCounts.get(ot.marketCategory) ?? 0) + 1);
   }
 
   const unscored = await prisma.observedTrade.findMany({
@@ -383,6 +385,35 @@ async function main() {
             log(`[BANKROLL_200] open-position cap (${rules.maxOpenPositions}) reached — skipping copy ${t.marketId}`);
             continue;
           }
+        }
+
+        // v45 (execution-leak Step 2, approved): per-bot market-category
+        // blacklist — the structural −EV slug set (lol/cs2/nfl/… lose for
+        // BOTH bots regardless of venue; verified 2026-09-03). Per-bot because
+        // dota2/elon are C-200-positive while STANDARD-negative. Question-
+        // fragment slugs (what/of/the/where/which) are NOT blacklisted — they
+        // wrap hundreds of real markets each. Per-bot gate: log + continue
+        // (journal untouched — the sibling bot in this loop may still copy).
+        const botBlacklist =
+          botId === "BANKROLL_200" ? (rules.c200Blacklist ?? []) : (rules.standardBlacklist ?? []);
+        if (t.marketCategory && botBlacklist.includes(t.marketCategory)) {
+          log(`[${botId}] v45 blacklist category "${t.marketCategory}" — skipping copy ${t.marketId}`);
+          continue;
+        }
+
+        // v45: per-market-slug open-position cap for C-200 — closes the hole
+        // where the v41 research-category gate maps esports to uncapped
+        // "Other". Counts open C-200 positions per raw marketCategory slug
+        // (lol/cs2/…); 0 = disabled.
+        if (botId === "BANKROLL_200" && rules.maxMarketSlugPositions > 0 && t.marketCategory) {
+          const slugOpen = (c200SlugCounts.get(t.marketCategory) ?? 0) + 1;
+          if (slugOpen > rules.maxMarketSlugPositions) {
+            log(
+              `[BANKROLL_200] v45 market-slug cap (${t.marketCategory} would be ${slugOpen}/${rules.maxMarketSlugPositions}) — skipping copy ${t.marketId}`
+            );
+            continue;
+          }
+          c200SlugCounts.set(t.marketCategory, slugOpen);
         }
 
         try {

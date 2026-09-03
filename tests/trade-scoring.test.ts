@@ -107,6 +107,29 @@ describe("scoreTrade", () => {
     expect(r.simulatedPositionSize!).toBe(laneRules.shortTtrSizeUsd);
   });
 
+  it("v45: caps the category-fit component for whale-size trades", () => {
+    // A wallet with a top-tier category win rate (0.9 → categoryFit ~102, clamped
+    // to 100) would normally push copyScore up via the 0.15 category-fit weight.
+    // With the whale guard on ($500+ trade), the category-fit term is capped at
+    // whaleCategoryFitCap (60), so the stored breakdown reflects the cap.
+    const whaleRules: Rules = {
+      ...DEFAULT_RULES,
+      whaleSizeUsd: 500,
+      whaleCategoryFitCap: 60,
+    };
+    const r = scoreTrade(
+      { ...GOOD_INPUT, walletCategoryWinRate: 0.9, tradeSize: 2000, currentPrice: 0.502 },
+      whaleRules
+    );
+    expect(r.breakdown.categoryFitScore).toBe(60); // capped, not ~100
+    // sanity: without the guard the same input keeps the uncapped category fit
+    const r2 = scoreTrade(
+      { ...GOOD_INPUT, walletCategoryWinRate: 0.9, tradeSize: 2000, currentPrice: 0.502 },
+      DEFAULT_RULES // whaleSizeUsd = 0 → guard disabled
+    );
+    expect(r2.breakdown.categoryFitScore).toBeGreaterThan(60);
+  });
+
   it("skips when spread exceeds rule threshold", () => {
     const r = scoreTrade({ ...GOOD_INPUT, spread: 0.2 }, DEFAULT_RULES);
     expect(r.decision).toBe("skip");
