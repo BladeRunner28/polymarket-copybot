@@ -14,6 +14,8 @@ import * as fs from "fs";
 import { join } from "path";
 
 // v41 (tuning review #12, 2026-09-01, approved): persistent 404 negative-cache.
+// v44 note (tuning review #13): verified live — cache at the 24-slug cap;
+// remaining "404 failures" in logs are first-time dead slugs being cached.
 // Gamma purges dead/renamed slugs; remembering the last 24 lets hourly runs
 // skip the doomed fetch and jump straight to event-resolution recovery.
 const DEAD_SLUG_CACHE_FILE = join(__dirname, "..", "data", "dead-slug-cache.json");

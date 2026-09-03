@@ -195,7 +195,7 @@ export default async function Overview() {
       )}
 
       {/* Goal Trajectory Tracker for C-200 */}
-      <Card title="C-200 Bot Goal Trajectory (Oct 1st target: $5k/day)">
+      <Card title="C-200 Bot Goal Trajectory (Dec 1st target: $5k/day)">
         <div className="space-y-4 mt-2">
           <div className="flex items-center justify-between text-sm">
             <div className="text-dim">Today's PnL: <span className="text-ink font-mono font-medium">${todayC200Pnl.toFixed(2)}</span></div>

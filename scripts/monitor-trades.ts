@@ -29,7 +29,12 @@ async function main() {
   let newTrades = 0;
   const failures: string[] = [];
 
-  for (const w of tracked) {
+  // v44 (tuning review #13, approved): bounded-concurrency wallet monitoring —
+  // 5 clean 429 windows justify a 4-at-a-time pool (was strictly serial; run
+  // duration is the cadence bind). Per-wallet work stays serial inside each
+  // task so the API burst stays bounded.
+  const CONCURRENCY = 4;
+  const processWallet = async (w: (typeof tracked)[number]) => {
     try {
       const activity = await adapter.fetchWalletActivity(w.address, Math.ceil(MONITOR_HOURS / 24) || 1);
       for (const t of activity) {
@@ -89,7 +94,15 @@ async function main() {
     } catch (e) {
       failures.push(`${w.address}: ${e instanceof Error ? e.message : e}`);
     }
-  }
+  };
+  const queue = [...tracked];
+  const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const w = queue.shift()!;
+      await processWallet(w);
+    }
+  });
+  await Promise.all(workers);
 
   log(`Trade monitor complete: ${newTrades} new observed trades.`);
   if (failures.length) {

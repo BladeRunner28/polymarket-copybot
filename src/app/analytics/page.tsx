@@ -133,16 +133,16 @@ export default async function Analytics() {
   }
   const c200Eq = (eqByBot.get("BANKROLL_200") ?? []).map((p) => ({ x: p.day.slice(5), y: p.cum }));
   const stdEq = (eqByBot.get("STANDARD") ?? []).map((p) => ({ x: p.day.slice(5), y: p.cum }));
-  // Projection: last-7d daily average realized -> linear to Oct 1.
+  // Projection: last-7d daily average realized -> linear to Dec 1.
   const last7 = daily.slice(-7);
   const avg7 = last7.length ? last7.reduce((a, d) => a + d.pnl, 0) / last7.length : 0;
   const projPoints: { x: string; y: number }[] = [];
   if (c200Eq.length > 0) {
     const start = c200Eq[c200Eq.length - 1];
-    const oct1 = new Date("2026-10-01T00:00:00");
+    const dec1 = new Date("2026-12-01T00:00:00");
     const now = new Date();
     let cur = start.y;
-    for (let d = new Date(now); d <= oct1; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(now); d <= dec1; d.setDate(d.getDate() + 1)) {
       projPoints.push({ x: dayKey(d).slice(5), y: Math.round(cur * 100) / 100 });
       cur += avg7;
     }
@@ -326,7 +326,7 @@ export default async function Analytics() {
             />
           </Enlargeable>
           <p className="text-xs text-dim mt-2">
-            Dashed = linear extension of the last-7-day daily average ({fmt$(avg7)}/day) to Oct 1.
+            Dashed = linear extension of the last-7-day daily average ({fmt$(avg7)}/day) to Dec 1.
           </p>
         </Card>
       </div>

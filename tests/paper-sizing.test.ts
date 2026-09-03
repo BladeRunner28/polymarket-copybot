@@ -7,9 +7,9 @@ import { mapBankroll200Size } from "../src/lib/paper";
 
 describe("mapBankroll200Size (v41 calibration-band sizing)", () => {
   it("maps the STANDARD-scale range into the $0.20–$20 band (multiplier applies at the floor too)", () => {
-    // parent 0.25 → mapped 0.2, then ×0.75 at a 0.5 entry = $0.15 (caller clamps ≥ $0.10)
-    expect(mapBankroll200Size(0.25, 0.5)).toBeCloseTo(0.15, 5);
-    expect(mapBankroll200Size(20, 0.5)).toBeCloseTo(15, 5);
+    // parent 0.25 → mapped 0.2, then ×0.5 at a 0.5 entry = $0.10 (v42)
+    expect(mapBankroll200Size(0.25, 0.5)).toBeCloseTo(0.1, 5);
+    expect(mapBankroll200Size(20, 0.5)).toBeCloseTo(10, 5);
   });
 
   it("applies ×1.5 to long-shot entries (< $0.20)", () => {
@@ -22,9 +22,9 @@ describe("mapBankroll200Size (v41 calibration-band sizing)", () => {
     expect(mapBankroll200Size(8, 0.2)).toBeCloseTo(7.97, 2); // boundary stays ×1.0
   });
 
-  it("applies ×0.75 to the 0.40–0.60 dead zone (25% trim)", () => {
-    expect(mapBankroll200Size(8, 0.5)).toBeCloseTo(5.98, 2);
-    expect(mapBankroll200Size(8, 0.4)).toBeCloseTo(5.98, 2); // boundary ×0.75
+  it("applies ×0.5 to the 0.40–0.60 dead zone (v42: deepened from ×0.75)", () => {
+    expect(mapBankroll200Size(8, 0.5)).toBeCloseTo(3.98, 2);
+    expect(mapBankroll200Size(8, 0.4)).toBeCloseTo(3.98, 2); // boundary ×0.5
   });
 
   it("applies ×0.5 to favorites (≥ $0.60)", () => {

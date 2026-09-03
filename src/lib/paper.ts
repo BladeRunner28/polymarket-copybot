@@ -22,7 +22,8 @@ export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: nu
  * multipliers from the N=1,076 C-200 calibration analysis:
  *   entry < 0.20  x1.5  - the only significant positive edge (excess +0.31, z=+4.47)
  *   0.20-0.40     x1.0  - positive excess (z=+2.72) but dollar-negative; watch
- *   0.40-0.60     x0.75 - dead zone: half the volume, -$305 (25% trim)
+ *   0.40-0.60     x0.5  - dead zone: 48% of volume, -$271.70 = 99.9% of total
+ *                         drag (v42, 2026-09-01 report: deepened from x0.75)
  *   entry >= 0.60 x0.5  - significant premium drag on favorites (z=-2.49/-2.42)
  * Band sizing lives HERE (single source of truth); the v37 rules-layer
  * factors (deadZoneSizeFactor / longshotSizeFactor) are neutralized at 1.0
@@ -36,7 +37,7 @@ export function mapBankroll200Size(standardScaleSize: number, entryPrice: number
   if (Number.isFinite(entryPrice) && entryPrice > 0) {
     if (entryPrice < 0.2) size *= 1.5;
     else if (entryPrice >= 0.6) size *= 0.5;
-    else if (entryPrice >= 0.4) size *= 0.75;
+    else if (entryPrice >= 0.4) size *= 0.5; // v42: was x0.75
   }
   return size;
 }

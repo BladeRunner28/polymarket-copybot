@@ -7,6 +7,7 @@
 
 import { prisma } from "./db";
 import { getActiveRules, applyRuleChanges, RuleChangeProposal, Rules } from "./rules";
+import { log } from "./redact";
 
 interface ResolvedSample {
   pnl: number;
@@ -128,6 +129,26 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
 
 /** Full self-improvement pass. Returns what changed (or null). */
 export async function runRuleUpdate(): Promise<{ newVersion: number; changes: RuleChangeProposal[] } | null> {
+  // v44 (tuning review #13, 2026-09-02, approved): governance lockout — the
+  // auto-tune chain must respect a 48h quiet period after any USER-approved
+  // rule change (changedBy != "hermes"; manual applies use hermes-* labels)
+  // so it can't strangle the funnel overnight (v42 auto-tightened drift to
+  // 0.0025 at 22:02, 8h before the approved v43 loosen — v26 déjà vu).
+  const MANUAL_CHANGE_LOCKOUT_HOURS = 48;
+  const lastManual = await prisma.ruleChange.findFirst({
+    where: { changedBy: { not: "hermes" } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (lastManual) {
+    const ageHours = (Date.now() - lastManual.createdAt.getTime()) / 3_600_000;
+    if (ageHours < MANUAL_CHANGE_LOCKOUT_HOURS) {
+      log(
+        `auto rule update SKIPPED: user-approved change "${lastManual.changedBy}" ${ageHours.toFixed(1)}h ago — ${MANUAL_CHANGE_LOCKOUT_HOURS}h lockout`
+      );
+      return null;
+    }
+  }
+
   const { rules } = await getActiveRules();
   const samples = await collectSamples();
   const proposals = proposeRuleChanges(samples, rules);

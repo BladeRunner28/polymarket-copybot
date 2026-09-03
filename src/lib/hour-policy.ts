@@ -4,12 +4,14 @@
  * Calibration analysis of N=1,076 C-200 trades (scripts/analyze-calibration.py,
  * ET hours via ZoneInfo("America/New_York")) found significant hourly
  * effects on C-200 PnL:
- *   20:00 ET  excess -0.27 (z=-3.31), -$91  -> blackout new C-200 entries
- *   23:00 ET  excess -0.25 (z=-2.90), -$98  -> blackout new C-200 entries
+ *   20:00 ET  excess -0.27 (z=-3.31), -$91  -> blackout new entries
+ *   23:00 ET  excess -0.25 (z=-2.90), -$98  -> blackout new entries
  *   10:00 ET  -$178 (worst dollar hour, z=-1.74) -> 50% size haircut
  *   21:00 ET  excess +0.25 (z=+2.80)        -> stays open (no blanket ban)
- * Scoped to BANKROLL_200 (the compounding C-200 book); the STANDARD
- * long-dated book is unaffected. DST-aware via America/New_York.
+ * v44 (tuning review #13, approved): the 20:00/23:00 blackout now applies to
+ * BOTH books (STANDARD window-opened -$622 worst on record; the same hours
+ * are significant drains). The 10:00 ET haircut stays C-200-only (no
+ * STANDARD evidence for it). DST-aware via America/New_York.
  */
 
 const ET_FORMATTER = new Intl.DateTimeFormat("en-US", {

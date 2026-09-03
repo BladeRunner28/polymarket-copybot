@@ -361,6 +361,14 @@ async function main() {
 
       const executionVenues: Set<string> = new Set();
       for (const botId of ["STANDARD", "BANKROLL_200"]) {
+        // v44 (tuning review #13, approved): hour blackout now covers BOTH
+        // books — 20:00/23:00 ET drains (z=−2.99/−2.42) cost STANDARD too
+        // (window-opened −$622 worst on record); C-200-only gating left
+        // STANDARD exposed. The 10:00 ET haircut stays C-200-only.
+        if (hourPolicy.blackout) {
+          log(`[${botId}] hour blackout ${etHour}:00 ET (significant drain) — skipping copy ${t.marketId}`);
+          continue;
+        }
         // Short-TTR lane is scoped to the compounding bot (C-200) — STANDARD
         // keeps its long-dated book while the lane feeds the daily-PnL channel.
         if (result.lane === "short_ttr" && botId === "STANDARD") continue;
@@ -368,12 +376,6 @@ async function main() {
         // through fresh 70–79 / short-TTR signals instead of being stranded
         // in stale long-dated positions.
         if (botId === "BANKROLL_200") {
-          // v41: 20:00 ET (z=-3.31, -$91) and 23:00 ET (z=-2.90, -$98) are
-          // significant drains - no new C-200 entries in those hours.
-          if (hourPolicy.blackout) {
-            log(`[BANKROLL_200] hour blackout ${etHour}:00 ET (significant drain) — skipping copy ${t.marketId}`);
-            continue;
-          }
           const openCount = await prisma.paperTrade.count({
             where: { botId: "BANKROLL_200", status: "open" },
           });
@@ -452,6 +454,16 @@ async function main() {
                 `${positionSize.toFixed(2)} → ${(positionSize * hourPolicy.sizeFactor).toFixed(2)}`
             );
             positionSize *= hourPolicy.sizeFactor;
+          }
+
+          // v44 (tuning review #13, approved): STANDARD high-side entry cap —
+          // 0.80–1.01 is the worst band (z=−2.50, p=0.013). Enforced per-leg
+          // here, NOT via the shared maxEntryPrice rule (that gate is
+          // symmetric [1−max, max]; lowering it would kill the <0.15 long-shot
+          // edge). C-200 de-risks ≥0.60 via band sizing instead.
+          if (botId === "STANDARD" && rules.standardMaxEntryPrice > 0 && currentPrice > rules.standardMaxEntryPrice) {
+            log(`[STANDARD] high-entry cap (${currentPrice.toFixed(3)} > ${rules.standardMaxEntryPrice.toFixed(2)}) — skipping copy ${t.marketId}`);
+            continue;
           }
 
           await openPaperTrade({

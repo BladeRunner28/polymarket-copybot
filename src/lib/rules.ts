@@ -119,6 +119,11 @@ export interface Rules {
   //   tracked in data/c200-drawdown.json (seeded from principal). 0 = disabled.
   maxCategoryPositions: number;
   maxDrawdownPct: number;
+  // v44 (tuning review #13, 2026-09-02, approved): STANDARD high-side entry
+  // cap. Enforced per-leg in score-trades.ts (NOT via maxEntryPrice — that
+  // gate is symmetric [1−max, max] and lowering it would kill the <0.15
+  // long-shot edge). 0 = disabled.
+  standardMaxEntryPrice: number;
 }
 
 export const DEFAULT_RULES: Rules = {
@@ -196,6 +201,8 @@ export const DEFAULT_RULES: Rules = {
   // v41 risk-gate defaults (live values land in the DB ruleset at activation).
   maxCategoryPositions: 40,
   maxDrawdownPct: 0.2,
+  // v44: STANDARD entries ≥ 0.85 are the worst band (z=−2.50, p=0.013).
+  standardMaxEntryPrice: 0.85,
 };
 
 export async function getActiveRules(): Promise<{ rules: Rules; version: number; id: string }> {
