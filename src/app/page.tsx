@@ -2,7 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card, Stat, Pnl, Badge, Empty } from "@/components/ui";
 import { LineChart } from "@/components/chart";
-import { readFileSync } from "fs";
+import { getActiveRules } from "@/lib/rules";
+import { effectiveExposureCap, exposureCapNote } from "@/lib/exposure-cap";
+import { readFileSync, readdirSync, statSync } from "fs";
 import path from "path";
 
 export const dynamic = "force-dynamic";
@@ -58,14 +60,22 @@ export default async function Overview() {
         take: 100 
       }),
       prisma.paperTrade.aggregate({
-        where: { botId: 'BANKROLL_200', status: { in: ['closed', 'resolved'] }, resolvedAt: { gte: startOfDay } },
+        where: {
+          botId: 'BANKROLL_200',
+          status: { in: ['closed', 'resolved'] },
+          // TR-15 (2026-09-03): include early exits (realized books at
+          // closedAt; resolvedAt is NULL for those rows).
+          OR: [{ resolvedAt: { gte: startOfDay } }, { closedAt: { gte: startOfDay } }],
+        },
         _sum: { realizedPnl: true, unrealizedPnl: true }
       }),
       prisma.paperTrade.aggregate({
         where: { botId: 'BANKROLL_200', status: 'open' },
-        _sum: { unrealizedPnl: true }
+        _sum: { unrealizedPnl: true, simulatedPositionSize: true }
       })
     ]);
+
+  const activeRules = await getActiveRules();
 
   const stdOpen = openTrades.filter(t => t.botId === "STANDARD");
   const cmpOpen = openTrades.filter(t => t.botId === "BANKROLL_200");
@@ -86,8 +96,38 @@ export default async function Overview() {
     ? cmpResolved.filter((t) => (t.realizedPnl ?? 0) > 0).length / cmpResolved.length
     : 0;
 
-  const c200Bankroll = bankrolls.find(b => b.botId === "BANKROLL_200") || { principal: 200, cashBalance: 0 };
+  const c200Bankroll = bankrolls.find(b => b.botId === "BANKROLL_200") || { principal: 200, cashBalance: 0, realizedPnl: 0 };
   const todayC200Pnl = (closedTodayC200._sum.realizedPnl || 0) + (closedTodayC200._sum.unrealizedPnl || 0) + (openTradesC200._sum.unrealizedPnl || 0);
+
+  // v45 risk-gate live state — mirrors scripts/score-trades.ts gate math so the
+  // dashboard shows the same numbers the scorer enforces on the next cycle.
+  const riskRules = activeRules.rules;
+  const c200OpenNotional = openTradesC200._sum.simulatedPositionSize ?? 0;
+  const c200OpenCount = cmpOpen.length;
+  const c200RealizedToday = closedTodayC200._sum.realizedPnl ?? 0;
+  const c200NetWorth =
+    (c200Bankroll.principal ?? 0) + (c200Bankroll.realizedPnl ?? 0) + (openTradesC200._sum.unrealizedPnl ?? 0);
+  let c200Peak = 0;
+  try {
+    c200Peak = JSON.parse(readFileSync(path.join(process.cwd(), "data", "c200-drawdown.json"), "utf-8")).peak ?? 0;
+  } catch { /* not seeded yet */ }
+  c200Peak = Math.max(c200Peak, c200Bankroll.principal ?? 0);
+  const c200DrawdownPct = c200Peak > 0 ? Math.max(0, (c200Peak - c200NetWorth) / c200Peak) : 0;
+  const ddCap = riskRules.maxDrawdownPct > 0 ? riskRules.maxDrawdownPct : 0.2;
+  const c200ExposureCapEff = effectiveExposureCap(
+    riskRules.maxGrossExposureUsd,
+    c200NetWorth,
+    c200Bankroll.principal ?? 0
+  );
+  const exposurePct = c200ExposureCapEff > 0 ? (c200OpenNotional / c200ExposureCapEff) * 100 : 0;
+  const countPct = riskRules.maxOpenPositions > 0 ? (c200OpenCount / riskRules.maxOpenPositions) * 100 : 0;
+  const ddPct = (c200DrawdownPct / ddCap) * 100;
+  const gates = [
+    { label: "Gross exposure", usage: exposurePct, note: `$${c200OpenNotional.toFixed(0)} / $${c200ExposureCapEff.toFixed(0)} eff` },
+    { label: "Open positions", usage: countPct, note: `${c200OpenCount} / ${riskRules.maxOpenPositions}` },
+    { label: "Drawdown", usage: ddPct, note: `${(c200DrawdownPct * 100).toFixed(1)}% / ${(ddCap * 100).toFixed(0)}%` },
+  ];
+  const nearestGate = gates.reduce((a, b) => (b.usage > a.usage ? b : a), gates[0]);
 
   // C-200 phase goals — each phase requires 7 consecutive days at target
   // before advancing to the next (user policy, 2026-08-31).
@@ -164,6 +204,29 @@ export default async function Overview() {
     }
   } catch {
     /* atlas not built yet — card renders with "not yet generated" state */
+  }
+
+  // Latest deliverables (audits / design docs) from the drafts dir, newest first
+  const DRAFTS_DIR = path.join(process.cwd(), "drafts");
+  let recentDrafts: { slug: string; title: string; mtime: string }[] = [];
+  try {
+    recentDrafts = readdirSync(DRAFTS_DIR)
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => {
+        const st = statSync(path.join(DRAFTS_DIR, f));
+        return {
+          slug: f.replace(/\.md$/i, ""),
+          title: f
+            .replace(/\.md$/i, "")
+            .replace(/[-_]+/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+          mtime: new Date(st.mtimeMs).toISOString().slice(0, 10),
+        };
+      })
+      .sort((a, b) => (a.mtime < b.mtime ? 1 : -1))
+      .slice(0, 6);
+  } catch {
+    /* drafts dir missing — card shows empty state */
   }
 
   // Calculate breakdown of C-200 reasons
@@ -244,6 +307,57 @@ export default async function Overview() {
         </div>
       </Card>
 
+      {/* C-200 risk gates — live state vs enforced caps (mirrors score-trades.ts) */}
+      <Card title={`C-200 risk gates — live (ruleset v${activeRules.version})`}>
+        <div className="space-y-3">
+          {gates.map((g) => {
+            const pct = Math.min(100, Math.max(0, g.usage));
+            const color = g.usage >= 95 ? "bg-neg" : g.usage >= 60 ? "bg-warn" : "bg-pos";
+            const isNearest = g.label === nearestGate.label;
+            return (
+              <div key={g.label}>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-dim">
+                    {g.label}
+                    {isNearest && (
+                      <span className="ml-2 text-[9px] uppercase tracking-wider border border-accent/30 bg-accent/10 text-accent px-1.5 py-0.5 rounded-full">
+                        nearest binder
+                      </span>
+                    )}
+                  </span>
+                  <span className={`font-mono ${g.usage >= 100 ? "text-neg" : "text-ink"}`}>
+                    {g.note}
+                    {g.usage >= 100 ? " ⚠ at cap" : ""}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-edge rounded-full overflow-hidden">
+                  <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-edge">
+            <span className="text-dim">Today realized PnL vs daily halt</span>
+            <span
+              className={`font-mono ${
+                c200RealizedToday < (riskRules.dailyLossLimitUsd ?? -150)
+                  ? "text-neg"
+                  : c200RealizedToday < 0
+                    ? "text-warn"
+                    : "text-pos"
+              }`}
+            >
+              {c200RealizedToday >= 0 ? "+" : ""}
+              ${c200RealizedToday.toFixed(2)} vs −{Math.abs(riskRules.dailyLossLimitUsd ?? -150)}
+              {c200RealizedToday < (riskRules.dailyLossLimitUsd ?? -150) ? " · new copies halted" : ""}
+            </span>
+          </div>
+          <div className="text-[10px] text-dim pt-1">
+            Equity-linked exposure cap (v46): {exposureCapNote(riskRules.maxGrossExposureUsd, c200NetWorth, c200Bankroll.principal ?? 0)}
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat
           label="Total Paper PnL (Standard)"
@@ -268,6 +382,36 @@ export default async function Overview() {
 
       <Card title="Paper PnL Over Time">
         <LineChart series={chartData} formatY={(v) => `$${v.toFixed(0)}`} />
+      </Card>
+
+      {/* Deliverables — clickable audits & design docs */}
+      <Card title="Deliverables — latest audits & design docs">
+        {recentDrafts.length === 0 ? (
+          <Empty message="No drafts yet." />
+        ) : (
+          <>
+            <ul className="grid md:grid-cols-2 gap-x-6 gap-y-0.5">
+              {recentDrafts.map((d) => (
+                <li key={d.slug}>
+                  <Link
+                    href={`/drafts/${d.slug}`}
+                    className="flex items-center justify-between gap-3 py-1.5 text-sm group"
+                  >
+                    <span className="text-ink group-hover:text-accent truncate transition-colors">
+                      {d.title}
+                    </span>
+                    <span className="text-[10px] text-dim font-mono shrink-0">{d.mtime}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="text-xs mt-2 pt-2 border-t border-edge">
+              <Link href="/drafts" className="text-accent hover:text-ink transition-colors">
+                Browse all deliverables →
+              </Link>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* GDELT Atlas — global news signal map */}

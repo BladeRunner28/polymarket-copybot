@@ -26,7 +26,13 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
     await Promise.all([
       prisma.paperTrade.findMany({ where: { status: "open" } }),
       prisma.paperTrade.findMany({
-        where: { status: "resolved", resolvedAt: { gte: windowStart } },
+        where: {
+          status: { in: ["closed", "resolved"] },
+          // TR-15 (2026-09-03): include early-exit trades — realized PnL books
+          // at closedAt (resolvedAt NULL), so a resolvedAt-only filter under-
+          // stated "today" for both bots on exit-bleed days.
+          OR: [{ resolvedAt: { gte: windowStart } }, { closedAt: { gte: windowStart } }],
+        },
       }),
       prisma.decisionJournal.findMany({ where: { createdAt: { gte: windowStart } } }),
       prisma.ruleChange.findMany({

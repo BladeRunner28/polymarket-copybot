@@ -53,6 +53,7 @@ export async function openPaperTrade(params: {
   isDemo?: boolean;
   botId?: string; // <--- NEW
   venue?: string; // Phase 3: Multi-Venue expansion
+  marketQuestion?: string; // TR-16: lets the Rust sidecar resolve a real Kalshi ticker
 }) {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";
@@ -82,6 +83,7 @@ export async function openPaperTrade(params: {
           bot_id: botId,
           venue,
           market_id: params.marketId,
+          market_question: params.marketQuestion ?? "",
           outcome: params.outcome,
           side: params.side,
           price: params.entryPrice,

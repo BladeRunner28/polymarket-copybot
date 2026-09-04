@@ -11,6 +11,7 @@ import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
 import { openPaperTrade } from "../src/lib/paper";
 import { c200HourPolicy, etHourNow } from "../src/lib/hour-policy";
+import { effectiveExposureCap } from "../src/lib/exposure-cap";
 import { assertPaperOnly } from "../src/lib/safety";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
@@ -51,7 +52,15 @@ async function main() {
   dayStart.setHours(0, 0, 0, 0);
   const todayC200Pnl =
     (await prisma.paperTrade.aggregate({
-      where: { botId: "BANKROLL_200", status: { in: ["closed", "resolved"] }, resolvedAt: { gte: dayStart } },
+      where: {
+        botId: "BANKROLL_200",
+        status: { in: ["closed", "resolved"] },
+        // TR-15 (2026-09-03): early-exit trades book realized PnL at closedAt
+        // (resolvedAt stays NULL) — a resolvedAt-only filter made the daily
+        // loss gate blind to exit-bleed days (e.g. 2026-08-31: −$239 early
+        // exits read as +$53). A row matching both arms is counted once.
+        OR: [{ resolvedAt: { gte: dayStart } }, { closedAt: { gte: dayStart } }],
+      },
       _sum: { realizedPnl: true },
     }))._sum.realizedPnl ?? 0;
   const c200OpenNotional =
@@ -100,6 +109,12 @@ async function main() {
   }
   const c200DrawdownPct = peakBankroll > 0 ? Math.max(0, (peakBankroll - c200NetWorth) / peakBankroll) : 0;
 
+  // v46 (2026-09-03, approved): equity-linked gross-exposure cap —
+  // $base + 50% × max(0, net worth − principal). Symmetric: shrinks when
+  // equity falls back. Stays at the base while the book is below principal.
+  const c200Principal = bankrollRow?.principal ?? 0;
+  const c200ExposureCap = effectiveExposureCap(rules.maxGrossExposureUsd, c200NetWorth, c200Principal);
+
   const c200OpenRows = await prisma.paperTrade.findMany({
     where: { botId: "BANKROLL_200", status: "open" },
     select: {
@@ -130,6 +145,11 @@ async function main() {
     watches = 0,
     skips = 0;
   let laneCopies = 0; // short-TTR lane copies (scoped to BANKROLL_200)
+  // TR-14 (2026-09-03): running gross-exposure total for the C-200 book.
+  // Seeded from the cycle-start snapshot and incremented per booked copy so
+  // candidates later in THIS run see earlier acceptances (fixes per-cycle
+  // overshoot past maxGrossExposureUsd).
+  let c200RunningExposure = c200OpenNotional;
 
   for (const t of unscored) {
     const wallet = await prisma.walletProfile.findUnique({ where: { address: t.walletAddress } });
@@ -293,9 +313,9 @@ async function main() {
       const riskGates: string[] = [];
       if (todayC200Pnl < rules.dailyLossLimitUsd)
         riskGates.push(`daily loss limit (today ${todayC200Pnl.toFixed(2)} < ${rules.dailyLossLimitUsd.toFixed(0)})`);
-      if (c200OpenNotional + (result.simulatedPositionSize ?? 0) > rules.maxGrossExposureUsd)
+      if (c200RunningExposure + (result.simulatedPositionSize ?? 0) > c200ExposureCap)
         riskGates.push(
-          `gross exposure cap (${(c200OpenNotional + (result.simulatedPositionSize ?? 0)).toFixed(2)} > ${rules.maxGrossExposureUsd})`
+          `gross exposure cap (${(c200RunningExposure + (result.simulatedPositionSize ?? 0)).toFixed(2)} > ${c200ExposureCap.toFixed(0)} = $${rules.maxGrossExposureUsd} base + 50% above principal)`
         );
       if (rules.tokenCircuitBreakerPct > 0) {
         const windowStart = new Date(Date.now() - rules.tokenCircuitBreakerWindowMin * 60_000);
@@ -497,18 +517,33 @@ async function main() {
             continue;
           }
 
+          // v47 (2026-09-03 daily report, approved): C-200 high-side entry
+          // cap — hard-cap new copy entries at ≤0.80 (the z=−2.48 premium
+          // drag band, −8.5pp excess on 0.80–1.01). Same per-leg pattern:
+          // the symmetric maxEntryPrice must stay at 0.95 to preserve the
+          // <0.20 long-shot edge (z=+4.05). Applies to main + short-TTR lane.
+          if (botId === "BANKROLL_200" && rules.c200MaxEntryPrice > 0 && currentPrice > rules.c200MaxEntryPrice) {
+            log(`[BANKROLL_200] high-entry cap (${currentPrice.toFixed(3)} > ${rules.c200MaxEntryPrice.toFixed(2)}) — skipping copy ${t.marketId}`);
+            continue;
+          }
+
           await openPaperTrade({
             botId,
             venue: executionVenue,
             decisionJournalId: decision.id,
             walletAddress: t.walletAddress,
             marketId: t.marketId,
+            marketQuestion: t.marketQuestion, // TR-16: Kalshi ticker resolution
             outcome: t.outcome,
             side: t.side,
             entryPrice: currentPrice,
             simulatedPositionSize: positionSize || 0.25,
             isDemo: t.isDemo,
           });
+
+          // TR-14 (2026-09-03): count the booked C-200 size against the running
+          // exposure total (only on success; the catch below leaves it untouched).
+          if (botId === "BANKROLL_200") c200RunningExposure += positionSize || 0.25;
 
           // Phase A: surface the premium risk on the journal (reportable).
           if (premiumRisk) {

@@ -15,6 +15,10 @@ struct ExecutionIntent {
     bot_id: String,
     venue: String,
     market_id: String,
+    /// Polymarket question text — needed to resolve a real Kalshi ticker
+    /// (market_id is a Polymarket id, never a Kalshi ticker). TR-16.
+    #[serde(default)]
+    market_question: String,
     outcome: String,
     side: String,
     price: f64,
@@ -32,17 +36,32 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
 
     // Feature: Phase 5 Cross-Market Routing (Dry-Run)
     // If the venue is Kalshi or PredictIt, query the specific adapter's L2 depth first.
+    // TR-16: adapters NEVER fabricate a price now — on any failure we book at
+    // the Polymarket reference price and say so in the execution note.
     let mut executed_price = intent.price;
-    
+    let mut depth_warning: Option<String> = None;
+
     if intent.venue == "Kalshi" {
-        if let Ok(kalshi_price) = adapters::fetch_kalshi_depth(&client, &intent.market_id).await {
-            println!("⚖️ [Depth Guard] Kalshi L2 depth confirmed at {:.1}¢", kalshi_price * 100.0);
-            executed_price = kalshi_price;
+        match adapters::fetch_kalshi_depth(&client, &intent.market_id, &intent.market_question, &intent.side).await {
+            Ok(kalshi_price) => {
+                println!("⚖️ [Depth Guard] Kalshi L2 depth confirmed at {:.1}¢", kalshi_price * 100.0);
+                executed_price = kalshi_price;
+            }
+            Err(e) => {
+                println!("⚠️ [Depth Guard] Kalshi depth unavailable ({e}) — booking at Polymarket reference {:.1}¢", intent.price * 100.0);
+                depth_warning = Some(format!("Kalshi depth unavailable ({e}) — booked at PM reference price"));
+            }
         }
     } else if intent.venue == "PredictIt" {
-        if let Ok(pi_price) = adapters::fetch_predictit_depth(&client, &intent.market_id).await {
-            println!("⚖️ [Depth Guard] PredictIt L2 depth confirmed at {:.1}¢", pi_price * 100.0);
-            executed_price = pi_price;
+        match adapters::fetch_predictit_depth(&client, &intent.market_id).await {
+            Ok(pi_price) => {
+                println!("⚖️ [Depth Guard] PredictIt L2 depth confirmed at {:.1}¢", pi_price * 100.0);
+                executed_price = pi_price;
+            }
+            Err(e) => {
+                println!("⚠️ [Depth Guard] PredictIt depth unavailable ({e}) — booking at Polymarket reference {:.1}¢", intent.price * 100.0);
+                depth_warning = Some(format!("PredictIt depth unavailable ({e}) — booked at PM reference price"));
+            }
         }
     }
     
@@ -64,7 +83,10 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
             println!("📉 [Maker Execution] Parked SELL limit order inside spread at {:.1}¢ (avoided {:.1}¢ taker fee)", executed_price * 100.0, maker_improvement * 100.0);
         }
         
-        execution_note = "MAKER Shadow Execution (Spread Captured)".to_string();
+        execution_note = match depth_warning {
+            Some(w) => format!("MAKER Shadow Execution (Spread Captured) — {w}"),
+            None => "MAKER Shadow Execution (Spread Captured)".to_string(),
+        };
     }
 
     let payload = json!({

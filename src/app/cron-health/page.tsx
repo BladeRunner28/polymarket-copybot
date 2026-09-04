@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { Card, Stat, Empty } from "@/components/ui";
+import { AutoRefresh } from "@/components/live";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,13 @@ export default function CronHealthPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-bold mb-1">Cron Health — Hermes scheduler</h1>
+      <AutoRefresh seconds={60} />
+      <div className="flex items-center gap-3 mb-1 flex-wrap">
+        <h1 className="text-lg font-bold">Cron Health — Hermes scheduler</h1>
+        <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wide font-mono border border-pos/30 bg-pos/10 text-pos px-2 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-pos live-dot-pos" /> live · 60s
+        </span>
+      </div>
       <p className="text-sm text-dim mb-6">
         Source of truth: <code className="text-accent">~/.hermes/cron/jobs.json</code> — all {jobs.length} jobs
         running the copybot pipeline (scripts, agents, watchdogs).

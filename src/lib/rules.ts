@@ -124,6 +124,11 @@ export interface Rules {
   // gate is symmetric [1−max, max] and lowering it would kill the <0.15
   // long-shot edge). 0 = disabled.
   standardMaxEntryPrice: number;
+  // v47 (2026-09-03 daily report, approved): C-200 high-side entry cap —
+  // 0.80+ entries are the z=−2.48 premium drag. Same per-leg enforcement
+  // pattern as standardMaxEntryPrice (never via the symmetric maxEntryPrice).
+  // 0 = disabled.
+  c200MaxEntryPrice: number;
   // v45 (execution-leak Step 2, 2026-09-03, approved): per-bot market-category
   // blacklists — the structural −EV slug set (lol/cs2/nfl/… lose for BOTH
   // bots regardless of venue; verified 2026-09-03: C-200 −$801, STANDARD
@@ -222,6 +227,8 @@ export const DEFAULT_RULES: Rules = {
   maxDrawdownPct: 0.2,
   // v44: STANDARD entries ≥ 0.85 are the worst band (z=−2.50, p=0.013).
   standardMaxEntryPrice: 0.85,
+  // v47: C-200 entries ≥ 0.80 (z=−2.48 premium drag; −8.5pp excess 0.80–1.01).
+  c200MaxEntryPrice: 0.8,
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],
   standardBlacklist: [],
