@@ -35,7 +35,16 @@ async function main() {
 
   for (const w of wallets) {
     try {
-      const trades = await adapter.fetchWalletActivity(w.address, LOOKBACK_DAYS);
+      // TR-17 (tuning review #15, approved): retry-once after a short pause —
+      // the 02:11 all-fetch data-api failure was transient (self-recovered
+      // next run); one in-run retry avoids burning the whole hourly cycle.
+      let trades;
+      try {
+        trades = await adapter.fetchWalletActivity(w.address, LOOKBACK_DAYS);
+      } catch {
+        await new Promise((r) => setTimeout(r, 5000));
+        trades = await adapter.fetchWalletActivity(w.address, LOOKBACK_DAYS);
+      }
       const score = scoreWallet(trades, rules);
       const { status, reason } = walletStatus(score, rules);
       await prisma.walletProfile.update({
