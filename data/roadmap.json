@@ -61,7 +61,7 @@
    "column": "Backlog",
    "effort": "~2–3 days",
    "dates": "Design Sep 15–30 · build early Oct",
-   "gate": "Kalshi circuit breaker must recover (realized ≥ −$50; currently −$223.80)",
+   "gate": "Kalshi circuit breaker must recover (realized ≥ −$50; now −$37.99, clear since kalshi-reprice-92 on 2026-09-05)",
    "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed — botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs.",
    "tags": [
     "kalshi",
@@ -305,10 +305,10 @@
   {
    "id": "kalshi-reprice-92",
    "title": "Re-price the 92 historical Kalshi paper trades (phantom $0.50 fills)",
-   "column": "Backlog",
+   "column": "Done",
    "effort": "~1-2h",
-   "dates": "Opened 2026-09-03",
-   "note": "TR-16 (shipped 2026-09-03) killed the 0.52-stub: the old Rust adapter booked EVERY Kalshi-venue trade at ~$0.50 (0.52 stub − 2¢ maker tweak) regardless of the true market price. All 92 Kalshi PaperTrade rows, their realized PnL, and the Kalshi −$50 circuit-breaker evaluation (kalshiRealized) are priced against that constant. Task: re-price each of the 92 against the real Kalshi (or PM reference) price at the time, quantify the PnL distortion, and decide whether the Kalshi leg stats stay in reports. See drafts/kalshi-whale-review.md appendix.",
+   "dates": "Opened 2026-09-03 · Done 2026-09-05 (tuning review #16 rec 1, approved)",
+   "note": "DONE 2026-09-05 (scripts/reprice-kalshi-92.ts, audit data/kalshi-reprice-audit.json, drafts/kalshi-reprice-92-20260905.md). 73 stub rows (entry 0.50) re-priced onto the honest PM reference at entry time (ObservedTrade.detectedPrice — same convention the non-stub rows booked at); exits were already real PM marks and were left untouched. kalshiRealized −$50.70 → −$37.99 (breaker floor −$50 cleared → routing gate auto-recovers per v37 design). Ledger adjusted +$12.71 (realized −$269.87, cash $1,236.39; invariant gap 0.0). TR-17 exclusions removed from query_bankroll.js + report.ts — Kalshi re-joins C-200 realized series/phase streak. CAVEAT: simulatedPositionSize was band-sized against the phantom 0.50 (parent scale size not stored) — not re-derived; distortion bounded by the ×2 band factor and documented in the audit.",
    "tags": [
     "kalshi",
     "risk",

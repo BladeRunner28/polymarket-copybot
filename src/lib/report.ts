@@ -44,18 +44,16 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
     ]);
 
   const standardOpen = openTrades.filter((t) => t.botId === "STANDARD");
-  // TR-17 (tuning review #15, approved): legacy Kalshi rows are phantom-priced
-  // at the old 0.52 stub — excluded from C-200 PnL until kalshi-reprice-92.
-  // The ledger invariant below stays venue-blind (BotBankroll.realizedPnl
-  // still includes Kalshi until the one-off re-price).
-  const compoundOpenAll = openTrades.filter((t) => t.botId === "BANKROLL_200");
-  const compoundOpen = compoundOpenAll.filter((t) => t.venue !== "Kalshi");
-  
+  // kalshi-reprice-92 (2026-09-05, approved): legacy Kalshi rows re-priced off
+  // the phantom 0.52 stub (kalshiRealized −$50.70 → −$37.99, breaker floor −$50
+  // cleared) — TR-17 venue exclusion lifted, Kalshi re-joins C-200 PnL.
+  const compoundOpen = openTrades.filter((t) => t.botId === "BANKROLL_200");
+
   const stdResolvedToday = resolvedToday.filter((t) => t.botId === "STANDARD");
-  const cmpResolvedToday = resolvedToday.filter((t) => t.botId === "BANKROLL_200" && t.venue !== "Kalshi");
+  const cmpResolvedToday = resolvedToday.filter((t) => t.botId === "BANKROLL_200");
 
   const stdAllResolved = allResolved.filter((t) => t.botId === "STANDARD");
-  const cmpAllResolved = allResolved.filter((t) => t.botId === "BANKROLL_200" && t.venue !== "Kalshi");
+  const cmpAllResolved = allResolved.filter((t) => t.botId === "BANKROLL_200");
 
   const stdPnlToday = stdResolvedToday.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const stdTotalPnl =
@@ -80,7 +78,7 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
   // notional. Surface drift so accounting bugs show up in the daily report.
   let ledgerNote: string | undefined;
   if (cmpBankroll) {
-    const openNotional = compoundOpenAll.reduce((a, t) => a + t.simulatedPositionSize, 0);
+    const openNotional = compoundOpen.reduce((a, t) => a + t.simulatedPositionSize, 0);
     const expectedCash = cmpBankroll.principal + (cmpBankroll.realizedPnl ?? 0) - openNotional;
     const cashGap = Math.round((cmpBankroll.cashBalance - expectedCash) * 100) / 100;
     if (Math.abs(cashGap) > 5) {

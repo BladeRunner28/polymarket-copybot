@@ -36,20 +36,14 @@ async function main() {
     where: {
       botId: 'BANKROLL_200',
       status: { in: ['closed', 'resolved'] },
-      // TR-17 (tuning review #15, approved): the legacy Kalshi leg (92 rows)
-      // is phantom-priced at the old 0.52 stub — excluded from the C-200
-      // realized series / phase streak until kalshi-reprice-92 lands.
-      venue: { not: 'Kalshi' },
+      // kalshi-reprice-92 (2026-09-05, approved): the 92 legacy Kalshi rows
+      // were re-priced off the phantom 0.52 stub onto honest PM-reference
+      // entries (kalshiRealized −$50.70 → −$37.99, breaker floor −$50
+      // cleared) — the TR-17 venue exclusion is lifted, Kalshi re-joins the
+      // realized series / phase streak.
       OR: [{ closedAt: { gte: since14 } }, { resolvedAt: { gte: since14 } }],
     },
     select: { realizedPnl: true, closedAt: true, resolvedAt: true },
-  });
-
-  // Excluded-Kalshi totals (reporting note; the ledger itself is untouched).
-  const kalshiExcluded = await prisma.paperTrade.aggregate({
-    where: { botId: 'BANKROLL_200', venue: 'Kalshi', status: { in: ['closed', 'resolved'] } },
-    _sum: { realizedPnl: true },
-    _count: true,
   });
 
   const byDay = new Map();
@@ -91,7 +85,6 @@ async function main() {
     where: {
       botId: 'BANKROLL_200',
       status: 'open',
-      venue: { not: 'Kalshi' },
     },
     _sum: { unrealizedPnl: true }
   });
@@ -103,11 +96,7 @@ async function main() {
 - **Today's PnL:** $${totalPnl.toFixed(2)}
 - **Status:** ${totalPnl >= goal.target ? '[✅ ON TRACK]' : '[❌ BEHIND]'}
 - **Phase stability:** ${streak}/${STABILITY_DAYS} consecutive days at $${goal.target}/day (advance requires ${STABILITY_DAYS} days stable)
-- **Current Bankroll:** $${(bankroll.cashBalance + realizedToday).toFixed(2)}${
-    kalshiExcluded._count > 0
-      ? `\n- **Kalshi excluded (pre-reprice, kalshi-reprice-92):** ${kalshiExcluded._count} rows, $${(kalshiExcluded._sum.realizedPnl ?? 0).toFixed(2)} realized not counted`
-      : ""
-  }`);
+- **Current Bankroll:** $${(bankroll.cashBalance + realizedToday).toFixed(2)}`);
 }
 
 main().finally(() => prisma.$disconnect());

@@ -66,6 +66,34 @@ async function main() {
     fs.writeFileSync(DEAD_SLUG_CACHE_FILE, JSON.stringify(slugs));
   };
 
+  // v49 (tuning review #16, approved 2026-09-05): absorb transient gamma
+  // burst-limits (429 / Cloudflare 1015). getJson retries at 1s/2s/4s, but a
+  // slug probe can still exhaust that window (a first-time dead-slug fetch
+  // included) and surface as a failure — and since only clean 404s populate
+  // the dead-slug cache, an uncached dead slug gets re-probed (and re-limited)
+  // every hourly run. Fix: cool down 6s and retry the market once (max 3/run)
+  // — the pause breaks the CF burst window — and if it still rate-limits,
+  // consult the parent-event resolution path instead (never a wrong close:
+  // expiry at the last mark still requires a clean 404).
+  let cooldownRetries = 0;
+  const COOLDOWN_RETRY_CAP = 3;
+  const isRateLimited = (msg: string) => /429|1015|rate.?limit|too many requests/i.test(msg);
+
+  const fetchWithCooldown = async (marketId: string) => {
+    try {
+      return await adapter.fetchMarket(marketId);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!isRateLimited(msg) || cooldownRetries >= COOLDOWN_RETRY_CAP) throw e;
+      cooldownRetries++;
+      log(
+        `Rate-limited fetch ${marketId} — cooling down 6s then retrying (${cooldownRetries}/${COOLDOWN_RETRY_CAP}).`
+      );
+      await new Promise((r) => setTimeout(r, 6_000));
+      return await adapter.fetchMarket(marketId);
+    }
+  };
+
   // Shared recovery for dead markets: try the parent-event resolution first;
   // only when the outcome is genuinely unavailable close positions older than
   // 24h at the last known mark — carrying them is pure drag.
@@ -96,14 +124,30 @@ async function main() {
     }
     let m;
     try {
-      m = await adapter.fetchMarket(marketId);
+      m = await fetchWithCooldown(marketId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes("404") || msg.includes("not found")) {
         rememberDeadSlug(marketId);
         await recoverDeadMarket(marketId, trades);
+        failures.push(`${marketId}: ${msg}`);
+      } else if (isRateLimited(msg)) {
+        // Gamma still won't serve the slug after the cooldown retry. Consult
+        // the parent-event path so a market that HAS resolved isn't held
+        // hostage by the slug endpoint — resolution only, never an expiry
+        // close (a rate-limit is not proof of death).
+        const outcome = await fetchEventResolution(marketId);
+        if (outcome) {
+          for (const t of trades) {
+            if (t.status !== "open") continue;
+            await resolvePaperTrade(t.id, outcome === t.outcome);
+            resolved++;
+          }
+        }
+        failures.push(`${marketId}: gamma rate-limited after cooldown retry — transient`);
+      } else {
+        failures.push(`${marketId}: ${msg}`);
       }
-      failures.push(`${marketId}: ${msg}`);
       continue;
     }
     for (const t of trades) {
