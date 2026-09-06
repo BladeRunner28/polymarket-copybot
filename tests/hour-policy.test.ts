@@ -12,10 +12,10 @@ import {
 } from "../src/lib/hour-policy";
 
 describe("v41 C-200 hour policy", () => {
-  it("blackouts exactly 20:00 and 23:00 ET", () => {
-    expect([...C200_BLACKOUT_HOURS_ET].sort()).toEqual([20, 23]);
+  it("blackouts exactly 20:00 ET (v48: 23:00 un-gated — phantom-Kalshi artifact)", () => {
+    expect([...C200_BLACKOUT_HOURS_ET].sort()).toEqual([20]);
     for (let h = 0; h < 24; h++) {
-      const blacked = h === 20 || h === 23;
+      const blacked = h === 20;
       expect(c200HourPolicy(h).blackout).toBe(blacked);
     }
   });

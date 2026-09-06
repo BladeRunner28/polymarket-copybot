@@ -36,8 +36,8 @@
    "id": "phase-a2-review",
    "title": "Phase A2 outcome review",
    "column": "Scheduled",
-   "dates": "Sep 14",
-   "note": "Compare [SENTIMENT]-logged decisions against the legacy boost regime over the 2-week window; syncs with biweekly calibration.",
+   "dates": "Sep 14 (review only)",
+   "note": "Compare [SENTIMENT]-logged decisions against the legacy boost regime over the 2-week window; syncs with biweekly calibration. PULLED-FORWARD IMPLICATION (2026-09-05): review lands inside the Kelly window (Sep 8–Oct 8) — findings are measurement-only; ANY resulting changes are parked until the window closes Oct 8 (lane touches 0.08% of decisions, so deferral cost ≈ nil).",
    "tags": [
     "review"
    ]
@@ -47,9 +47,9 @@
    "title": "Phase B — Kelly sizing replaces band sizing",
    "column": "Scheduled",
    "effort": "~1 day",
-   "dates": "Sep 15–16",
-   "gate": "Ships with the Sep 15 λ̂ refit so Kelly starts on fresh calibration",
-   "note": "Port oracle3 ModelInformedSizer semantics (Apache-2.0): edge = bucket-λ-adjusted premium, Kelly ≤ 0.15×bankroll, confidence-scaled. Replaces heuristic band multipliers; paper caps kept. Input (audited 2026-08-31): drafts/octagon-audit.md — MIT reference impl for executable-quote Kelly (edge vs ask, not midpoint), liquidity haircut, per-category concentration + drawdown gates; calibrate to Polymarket, don't copy Kalshi defaults. Ref (awesome-options audit 2026-09-01): Thorp (2006) 'Kelly Criterion in Blackjack, Sports Betting, and the Stock Market' — canonical binary-bet fractional-Kelly treatment; read before the Sep 15 refit. Predicted impact (2026-09-01, calibration-based): +$5–25/day (+3–15% of ~$165/day window) — long-shot <0.20 band up-sized 3–6x (z=4.14 edge), 0.80+ favorite band → ~0 trades (significant −8.7pp), executable-quote edge ~1c/trade. FALSIFIABLE TARGETS: (1) long-shot band share of realized PnL rises 3–6x vs pre-Kelly 48d window; (2) 0.80+ band trades ≈ 0; (3) no increase in max drawdown.",
+   "dates": "Sep 8 (Tue) — Kelly-window start · window reads Oct 8",
+   "gate": "Ships Tue Sep 8 on the Sep 1 λ̂ refit (7 days old — within the biweekly envelope); the scheduled Sep 15 + Oct 1 refits land mid-window as system-under-test refreshes, not ad hoc changes",
+   "note": "Port oracle3 ModelInformedSizer semantics (Apache-2.0): edge = bucket-λ-adjusted premium, Kelly ≤ 0.15×bankroll, confidence-scaled. Replaces heuristic band multipliers; paper caps kept. Input (audited 2026-08-31): drafts/octagon-audit.md — MIT reference impl for executable-quote Kelly (edge vs ask, not midpoint), liquidity haircut, per-category concentration + drawdown gates; calibrate to Polymarket, don't copy Kalshi defaults. Ref (awesome-options audit 2026-09-01): Thorp (2006) 'Kelly Criterion in Blackjack, Sports Betting, and the Stock Market' — canonical binary-bet fractional-Kelly treatment; read before the Kelly ship (2026-09-08). Predicted impact (2026-09-01, calibration-based): +$5–25/day (+3–15% of ~$165/day window) — long-shot <0.20 band up-sized 3–6x (z=4.14 edge), 0.80+ favorite band → ~0 trades (significant −8.7pp), executable-quote edge ~1c/trade. FALSIFIABLE TARGETS: (1) long-shot band share of realized PnL rises 3–6x vs pre-Kelly 48d window; (2) 0.80+ band trades ≈ 0; (3) no increase in max drawdown. PULLED FORWARD 2026-09-05 (approved): ships Tue Sep 8 on the Sep 1 λ̂ refit (in-envelope); Sep 15 + Oct 1 refits land mid-window as scheduled system refreshes. COMPRESSED: build + review + user approval by Sep 8. Pre-Kelly clean baseline = Sep 4–8 (4 trading days) only. CAVEAT: the +$5–25/day predicted impact was scaled off a ~$165/day window that does NOT match realized data (≈ −$10/day pre-fix) — re-pre-register expected impact on the 4 clean baseline days before ship; window-end reads Oct 8.",
    "tags": [
     "kelly",
     "sizing"
@@ -314,6 +314,59 @@
     "risk",
     "data-quality"
    ]
+  },
+  {
+   "id": "local-32b-baseline",
+   "title": "Baseline: 32B on Mac mini (Monday) — decide RPC split vs Mac-only",
+   "column": "Scheduled",
+   "effort": "~1h",
+   "dates": "Scheduled 2026-09-07 (Mon)",
+   "note": "From the NVIDIA PAIR / 32B-split analysis (drafts/nvidia-pair-setup.md, 2026-09-04): before committing Odin(5070)+Miles(3080) to a llama.cpp RPC 32B split, benchmark the free option we already own. Steps: (1) ollama pull qwen2.5:32b-q4_K_M (or qwen3 equivalent) on the Mac mini; (2) measure decode tok/s + TTFT on a realistic sentiment-shadow prompt; (3) compare vs current 7b lane quality on a small labeled set (data/sentiment-ab.jsonl A/B style); (4) gate: if Mac 32B ≥ ~10 tok/s and quality lifts materially over 7b, adopt Mac-32B as the shadow lane and DROP the RPC split; only build 5070+3080 split if Mac 32B throughput becomes the bottleneck. User has more questions first — card is the parking spot.",
+   "tags": [
+    "local-llm",
+    "benchmark",
+    "phase-local1"
+   ]
+  },
+  {
+   "id": "h2027-funding-schedule",
+   "title": "2027 homelab funding schedule → production forecast inputs",
+   "column": "Scheduled",
+   "effort": "note only — no code",
+   "dates": "Set 2026-09-05",
+   "note": "Homelab hardware purchases unlock ONLY after production CopyBot proves ≥$500/day (7 consecutive days, C-200 advance rule). HARD DEADLINE: TrueNAS R740xd + 12× recert drives (~$3–4.5k) must be purchased by end of Q3 2027 (2027-09-30) — the program's only dated gate. Derived: production proof should land ≈ Q2 2027 to keep sourcing/ordering float. C-200 tuning should size intermediate targets so the cascade holds: Dec 1 2026 ladder → early-2027 production rollout → Q2 2027 proof. Track A (Mac Studio M5 Ultra 256GB ~$9.5k + RTX PRO 5000 48GB ~$5.2–6.5k + Odin RAM) is post-proof with no hard date. Full detail: ~/homelab/roadmap.md sequencing gate + Track B #4.",
+   "tags": [
+    "infra",
+    "forecast",
+    "funding"
+   ]
+  },
+  {
+   "id": "regime-cleanliness-baseline",
+   "title": "Regime-cleanliness baseline — first valid measurement window (clean regime starts 2026-09-04)",
+   "column": "Scheduled",
+   "effort": "note only — no code",
+   "dates": "Opened 2026-09-05",
+   "note": "Attribution (2026-09-05): the Gemini→DeepSeek switch errors (Aug 16–27 outage of daily-report + tuning-review on depleted credits) did NOT cause C-200's losses — that window was the ONLY profitable stretch (+$137.20 / 8d). Real attribution of −$324 realized over 33 trading days (Jul 23–Sep 5): W1 early-regime −$299 (pre-fix era, principal ~$400, category-leak undiagnosed), W3 post-switch −$162 (TR-15 daily-loss-gate blindness — Aug 31 booked −$239 early-exit bleed while gate read +$53, fixed Sep 3), Kalshi phantom stubs (92 rows, opens Aug 11–30, re-priced Sep 5), phantom cash +$1,000 (reconciled Aug 28). Polymarket main lane carries −$286 of it. CLEAN REGIME = Sep 4 onward (post v45 category blacklist / TR-15 / TR-16 / kalshi-reprice / v46). Implications: (1) Kelly window Sep 8–Oct 8 (pulled forward 2026-09-05) is the first measurement on a fixed pipeline — re-base edge/expectancy conclusions there, never on contaminated history; (2) ML-1 gate + production-capital sizing ($500-start evaluation) wait for clean data; (3) h2027-funding-schedule 'proof ≈ Q2 2027' re-baselines after the Kelly window.",
+   "tags": [
+    "data-quality",
+    "forecast",
+    "measurement"
+   ]
+  },
+  {
+   "id": "precommit-mid-oct-kelly-gate",
+   "title": "Pre-commit: Oct 8 Kelly-window gate + concept menu (binding)",
+   "column": "Scheduled",
+   "effort": "decision point only — no code before it",
+   "dates": "Opened 2026-09-05 · reads 2026-10-08 (Kelly window Sep 8–Oct 8, pulled forward)",
+   "note": "BINDING at window close: (1) clean-regime daily expectancy > $0 at current caps; (2) long-shot <0.20 band share of realized PnL 3–6× pre-Kelly share (phase-b falsifiable target); (3) 0.80+ favorite band ≈ 0 trades; (4) no max-drawdown increase vs pre-Kelly clean baseline; (5) 0.40–0.60 mid-band (the −$434 black hole, confirmed 2026-09-05 exit-recovery analysis: entries primary, exits secondary — hold-to-24h still negative) must shrink toward ~0 trades / ~$0 PnL. ALL PASS → unlock the overlay roadmap (ML-1 build, Phase C arb build, GDELT wiring), production-capital sizing, goal-ladder + funding-schedule re-baseline. EXPECTANCY ≤ 0 → stop adding layers; run the concept menu: (a) band-conditional fade-whale test, (b) calibration-only entries, (c) arb-only, (d) ML on market features (NOT whale copies); decide whether the copy lane survives or the bot re-architects around the corrections (premium/timing/category). NO rule/sizing/live-lane changes before the window closes — measurement/observability fixes only (scheduled λ̂ refits Sep 15 + Oct 1 excepted: system-under-test, not changes). Companion: regime-cleanliness-baseline. Observability gap to close pre-window: post-exit token price at +1h/+6h/+24h per early exit (only 211/984 testable today).",
+   "tags": [
+    "kelly",
+    "measurement",
+    "gate",
+    "review"
+   ]
   }
- ]
+]
 }

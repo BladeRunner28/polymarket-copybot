@@ -141,8 +141,17 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
   // short-TTR lane has its own score bar and fixed size, and is the proven
   // +EV channel.
   const confidence = Math.round(((copyScore - rules.watchlistScore) / (100 - rules.watchlistScore)) * 100) / 100;
-  if (confidence < rules.minConfidence && !laneEligible)
-    hardSkips.push(`confidence ${confidence.toFixed(2)} < min ${rules.minConfidence}`);
+  // v48 (2026-09-04 daily report, approved): band-aware admission — the
+  // <longshotMaxPrice band (z=+3.81, the only +PnL band: +$94.59 on 64
+  // trades) is structurally anti-selected by win-rate-derived bars (low win
+  // rate is why it's priced at ~12¢): the global 80/0.7 floors admitted 3 of
+  // 64 of its historical signals. Relax score/confidence floors for that band
+  // only — spread/liquidity/drift and the v47 ≤0.80 cap stay global.
+  const inLongshotBand = p < rules.longshotMaxPrice;
+  const effMinConfidence =
+    inLongshotBand && rules.longshotMinConfidence > 0 ? rules.longshotMinConfidence : rules.minConfidence;
+  if (confidence < effMinConfidence && !laneEligible)
+    hardSkips.push(`confidence ${confidence.toFixed(2)} < min ${effMinConfidence}${inLongshotBand ? " (long-shot floor)" : ""}`);
 
   const breakdown = {
     walletQualityScore,
@@ -266,7 +275,14 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     copyScore = rules.regulatoryScoreCap;
   }
 
-  if (copyScore >= rules.minCopyScore) {
+  const effMinCopyScore =
+    inLongshotBand && rules.longshotMinCopyScore > 0 ? rules.longshotMinCopyScore : rules.minCopyScore;
+  if (inLongshotBand && copyScore >= effMinCopyScore && copyScore < rules.minCopyScore) {
+    reasons.push(
+      `Long-shot band (<$${(rules.longshotMaxPrice * 100).toFixed(0)}¢): admitted on relaxed floor ${effMinCopyScore} (score ${copyScore.toFixed(0)} vs global ${rules.minCopyScore})`
+    );
+  }
+  if (copyScore >= effMinCopyScore) {
     // Band sizing: 70–79 sweet spot and ≥80 (best bucket per 2026-08-29 30d
     // data) both take the top allocation; 55–69 keeps the base curve.
     // Clamped $.25–$20.

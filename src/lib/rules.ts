@@ -129,6 +129,13 @@ export interface Rules {
   // pattern as standardMaxEntryPrice (never via the symmetric maxEntryPrice).
   // 0 = disabled.
   c200MaxEntryPrice: number;
+  // v48 (2026-09-04 daily report, approved): band-aware admission floors for
+  // <longshotMaxPrice entries. The long-shot band (z=+3.81, the only +PnL
+  // band) is structurally anti-selected by win-rate-derived bars (low win
+  // rate is why it's priced at ~12¢). When the entry price < longshotMaxPrice,
+  // the copy/confidence floors relax to these values; 0 = keep global floors.
+  longshotMinCopyScore: number;
+  longshotMinConfidence: number;
   // v45 (execution-leak Step 2, 2026-09-03, approved): per-bot market-category
   // blacklists — the structural −EV slug set (lol/cs2/nfl/… lose for BOTH
   // bots regardless of venue; verified 2026-09-03: C-200 −$801, STANDARD
@@ -148,6 +155,24 @@ export interface Rules {
   // the category-fit score component at whaleCategoryFitCap for those trades.
   whaleSizeUsd: number;
   whaleCategoryFitCap: number;
+  // v49 (Phase B, 2026-09-05 design drafts/phase-b-kelly-design.md): Kelly
+  // sizing for C-200 main-lane copies. When kellyEnabled=1 the calibrated
+  // edge (band λ̂ from data/premium-calibration.json) decides size AND skip:
+  //   fair q = Φ(Φ⁻¹(p) − λ̂);  f* = (q − p)/(1 − p) on the bought token
+  //   size  = min(fraction·f*·avail, maxBankrollPct·avail, maxSizeUsd)
+  // Kelly REPLACES the ×3 confidence boost and the v38 premium-overlay resize
+  // (premiumOverlayEnabled set 0 in the same ruleset change); the paper.ts
+  // v41 band remap is bypassed for Kelly-sized copies (no double sizing).
+  // Admission (copyScore/confidence bars) is unchanged. Short-TTR lane keeps
+  // its fixed size (channel design). avail = bot cashBalance (free cash —
+  // fills already decrement it, so open exposure is NOT subtracted again).
+  // 0 = legacy sizing path, byte-identical to pre-v49 behavior.
+  kellyEnabled: number; // 1 = Kelly sizing active, 0 = legacy
+  kellyFraction: number; // fractional-Kelly multiplier (0.5 = half-Kelly)
+  kellyMaxBankrollPct: number; // per-position cap as % of available bankroll
+  kellyMaxSizeUsd: number; // hard per-position USD cap (executor clamp override)
+  kellyMinBetUsd: number; // skip dust below this
+  kellyMinEdgePct: number; // skip when f* < this (0.02 = 2%)
 }
 
 export const DEFAULT_RULES: Rules = {
@@ -229,12 +254,26 @@ export const DEFAULT_RULES: Rules = {
   standardMaxEntryPrice: 0.85,
   // v47: C-200 entries ≥ 0.80 (z=−2.48 premium drag; −8.5pp excess 0.80–1.01).
   c200MaxEntryPrice: 0.8,
+  // v48: <0.20 long-shot band — median historical copyScore 72 / conf 0.57;
+  // the global 80/0.7 bars admitted 3 of 64 signals.
+  longshotMinCopyScore: 70,
+  longshotMinConfidence: 0.55,
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],
   standardBlacklist: [],
   maxMarketSlugPositions: 0,
   whaleSizeUsd: 0,
   whaleCategoryFitCap: 60,
+  // v49 Phase-B Kelly defaults (drafts/phase-b-kelly-design.md §5). Default
+  // kellyEnabled=0 keeps every ruleset lacking the fields on the LEGACY
+  // sizing path — activation is an explicit rule change (apply-v49.ts sets
+  // kellyEnabled=1 + premiumOverlayEnabled=0 in one ruleset version).
+  kellyEnabled: 0,
+  kellyFraction: 0.5,
+  kellyMaxBankrollPct: 0.1,
+  kellyMaxSizeUsd: 60,
+  kellyMinBetUsd: 2.0,
+  kellyMinEdgePct: 0.02,
 };
 
 export async function getActiveRules(): Promise<{ rules: Rules; version: number; id: string }> {

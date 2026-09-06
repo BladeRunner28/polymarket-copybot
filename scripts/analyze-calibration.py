@@ -78,10 +78,14 @@ def main():
     args = ap.parse_args()
 
     con = sqlite3.connect(DB)
+    # v48 (2026-09-04 daily report, approved): exclude the phantom-priced
+    # legacy Kalshi leg until kalshi-reprice-92 lands — its 0.52-stub rows
+    # distorted the 23:00 ET hour stats (85% of that "drain" was Kalshi).
     rows = con.execute(
         """SELECT entryPrice, realizedPnl, openedAt FROM PaperTrade
            WHERE botId=? AND status IN ('resolved','closed')
-             AND realizedPnl IS NOT NULL AND isDemo=0""",
+             AND realizedPnl IS NOT NULL AND isDemo=0
+             AND venue != 'Kalshi'""",
         (args.bot,),
     ).fetchall()
     con.close()

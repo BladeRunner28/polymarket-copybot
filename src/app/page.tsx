@@ -4,6 +4,8 @@ import { Card, Stat, Pnl, Badge, Empty } from "@/components/ui";
 import { LineChart } from "@/components/chart";
 import { getActiveRules } from "@/lib/rules";
 import { effectiveExposureCap, exposureCapNote } from "@/lib/exposure-cap";
+import { c200HourPolicy, etHourNow } from "@/lib/hour-policy";
+import { researchCategoryFor } from "@/lib/research-categories";
 import { readFileSync, readdirSync, statSync } from "fs";
 import path from "path";
 
@@ -128,6 +130,127 @@ export default async function Overview() {
     { label: "Drawdown", usage: ddPct, note: `${(c200DrawdownPct * 100).toFixed(1)}% / ${(ddCap * 100).toFixed(0)}%` },
   ];
   const nearestGate = gates.reduce((a, b) => (b.usage > a.usage ? b : a), gates[0]);
+
+  // ── Circuit-breaker state — mirrors score-trades.ts gate logic per breaker ──
+  const cooldownMs = (riskRules.tokenCircuitBreakerCooldownMin ?? 30) * 60_000;
+  const [recentTokenTrips, kalshiAgg, c200OpenDetail] = await Promise.all([
+    prisma.tokenCircuitTrip.count({ where: { trippedAt: { gte: new Date(Date.now() - cooldownMs) } } }),
+    prisma.paperTrade.aggregate({
+      where: { botId: "BANKROLL_200", venue: "Kalshi", status: { in: ["closed", "resolved"] } },
+      _sum: { realizedPnl: true },
+    }),
+    prisma.paperTrade.findMany({
+      where: { botId: "BANKROLL_200", status: "open" },
+      select: {
+        decision: { select: { observedTrade: { select: { marketQuestion: true, marketCategory: true } } } },
+      },
+    }),
+  ]);
+  const kalshiRealized = kalshiAgg._sum.realizedPnl ?? 0;
+  const openCatCounts = new Map<string, number>();
+  const openSlugCounts = new Map<string, number>();
+  for (const row of c200OpenDetail) {
+    const ot = row.decision?.observedTrade;
+    const cat = researchCategoryFor(ot?.marketQuestion, ot?.marketCategory);
+    if (cat) openCatCounts.set(cat, (openCatCounts.get(cat) ?? 0) + 1);
+    if (ot?.marketCategory) openSlugCounts.set(ot.marketCategory, (openSlugCounts.get(ot.marketCategory) ?? 0) + 1);
+  }
+  const topCat = [...openCatCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const topSlug = [...openSlugCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const hourPol = c200HourPolicy(etHourNow());
+  const etHourNowLabel = etHourNow();
+
+  type Breaker = { key: string; label: string; tone: "pos" | "warn" | "neg"; state: string; title: string };
+  const breakers: Breaker[] = [];
+  const dailyFloor = riskRules.dailyLossLimitUsd ?? -150;
+  const dailyTrip = c200RealizedToday < dailyFloor;
+  breakers.push({
+    key: "daily-loss",
+    label: "Daily loss limit",
+    tone: dailyTrip ? "neg" : c200RealizedToday < 0 ? "warn" : "pos",
+    state: dailyTrip
+      ? `TRIPPED ${c200RealizedToday >= 0 ? "+" : ""}$${c200RealizedToday.toFixed(2)} — halting new copies`
+      : `${c200RealizedToday >= 0 ? "+" : ""}$${c200RealizedToday.toFixed(2)} vs −$${Math.abs(dailyFloor)}`,
+    title: "Halts new C-200 copies when today's realized PnL (incl. early exits, TR-15) is below the floor",
+  });
+  const exposureTrip = c200OpenNotional >= c200ExposureCapEff;
+  breakers.push({
+    key: "exposure",
+    label: "Gross exposure",
+    tone: exposureTrip ? "neg" : c200ExposureCapEff > 0 && exposurePct >= 60 ? "warn" : "pos",
+    state: exposureTrip
+      ? `AT CAP $${c200OpenNotional.toFixed(0)} / $${c200ExposureCapEff.toFixed(0)}`
+      : `$${c200OpenNotional.toFixed(0)} / $${c200ExposureCapEff.toFixed(0)} eff`,
+    title: exposureCapNote(riskRules.maxGrossExposureUsd, c200NetWorth, c200Bankroll.principal ?? 0),
+  });
+  const posTrip = c200OpenCount >= riskRules.maxOpenPositions;
+  breakers.push({
+    key: "positions",
+    label: "Position cap",
+    tone: posTrip ? "neg" : countPct >= 60 ? "warn" : "pos",
+    state: posTrip ? `AT CAP ${c200OpenCount} / ${riskRules.maxOpenPositions}` : `${c200OpenCount} / ${riskRules.maxOpenPositions}`,
+    title: "Max open C-200 positions (v29 capital recycling)",
+  });
+  const ddTrip = c200DrawdownPct >= ddCap;
+  breakers.push({
+    key: "drawdown",
+    label: "Drawdown gate",
+    tone: ddTrip ? "neg" : ddPct >= 60 ? "warn" : "pos",
+    state: ddTrip
+      ? `TRIPPED ${(c200DrawdownPct * 100).toFixed(1)}% off peak`
+      : `${(c200DrawdownPct * 100).toFixed(1)}% / ${(ddCap * 100).toFixed(0)}% off peak`,
+    title: "Halts new copies when (peak − net worth)/peak exceeds the cap (peak tracked in data/c200-drawdown.json)",
+  });
+  const catCap = riskRules.maxCategoryPositions ?? 0;
+  const catTrip = catCap > 0 && topCat ? topCat[1] >= catCap : false;
+  breakers.push({
+    key: "category",
+    label: "Category cap",
+    tone: catTrip ? "neg" : topCat && catCap > 0 && topCat[1] / catCap >= 0.75 ? "warn" : "pos",
+    state: topCat ? `${topCat[1]} / ${catCap} · ${topCat[0]}` : "no mapped categories open",
+    title: "Max open C-200 positions per research category (v41); unmapped 'Other' uncapped",
+  });
+  const slugCap = riskRules.maxMarketSlugPositions ?? 0;
+  const slugTrip = slugCap > 0 && topSlug ? topSlug[1] >= slugCap : false;
+  breakers.push({
+    key: "slug",
+    label: "Market-slug cap",
+    tone: slugTrip ? "neg" : topSlug && slugCap > 0 && topSlug[1] / slugCap >= 0.75 ? "warn" : "pos",
+    state: topSlug ? `${topSlug[1]} / ${slugCap} · ${topSlug[0]}` : "no slug-mapped positions",
+    title: "Per raw marketCategory slug cap (v45 — closes the esports→'Other' hole)",
+  });
+  const tokenTrip = recentTokenTrips > 0;
+  breakers.push({
+    key: "token",
+    label: "Token circuit breaker",
+    tone: tokenTrip ? "warn" : "pos",
+    state: tokenTrip
+      ? `TRIPPED ×${recentTokenTrips} in last ${Math.round(cooldownMs / 60000)}m`
+      : `clean — no flash moves in last ${Math.round(cooldownMs / 60000)}m`,
+    title: "Per-market flash-move trip (15% in 5m); trips skip that market for the cooldown window",
+  });
+  breakers.push({
+    key: "hour",
+    label: "Hour policy",
+    tone: hourPol.blackout ? "neg" : hourPol.sizeFactor !== 1 ? "warn" : "pos",
+    state: hourPol.blackout
+      ? `BLACKOUT — entries halted (${etHourNowLabel}:00 ET)`
+      : hourPol.sizeFactor !== 1
+        ? `HAIRCUT ×${hourPol.sizeFactor} (${etHourNowLabel}:00 ET)`
+        : `clear (${etHourNowLabel}:00 ET)`,
+    title: "20:00 ET blackout (v48: 23:00 un-gated — phantom-Kalshi artifact); 10:00 ET 50% size haircut (C-200)",
+  });
+  const kalshiFloor = riskRules.kalshiCircuitBreakerPnl ?? -50;
+  const kalshiTrip = kalshiRealized < kalshiFloor;
+  breakers.push({
+    key: "kalshi",
+    label: "Kalshi routing",
+    tone: kalshiTrip ? "neg" : "pos",
+    state: kalshiTrip
+      ? `PAUSED — venue realized $${kalshiRealized.toFixed(0)} < −$${Math.abs(kalshiFloor)}`
+      : `ok — $${kalshiRealized.toFixed(0)} vs −$${Math.abs(kalshiFloor)}`,
+    title: "Kalshi execution pauses while the Kalshi leg's realized PnL is below the floor (phantom-0.50 era trades — see kalshi-reprice-92)",
+  });
 
   // C-200 phase goals — each phase requires 7 consecutive days at target
   // before advancing to the next (user policy, 2026-08-31).
@@ -355,6 +478,37 @@ export default async function Overview() {
           <div className="text-[10px] text-dim pt-1">
             Equity-linked exposure cap (v46): {exposureCapNote(riskRules.maxGrossExposureUsd, c200NetWorth, c200Bankroll.principal ?? 0)}
           </div>
+        </div>
+      </Card>
+
+      {/* Circuit breakers — per-breaker tripped/armed status */}
+      <Card title={`Circuit breakers — status (ruleset v${activeRules.version})`}>
+        <div className="flex flex-wrap gap-2">
+          {breakers.map((b) => {
+            const toneCls =
+              b.tone === "neg"
+                ? "border-neg/40 bg-neg/10 text-neg"
+                : b.tone === "warn"
+                  ? "border-warn/40 bg-warn/10 text-warn"
+                  : "border-pos/30 bg-pos/10 text-pos";
+            const dotCls =
+              b.tone === "neg"
+                ? "bg-neg live-dot-neg"
+                : b.tone === "warn"
+                  ? "bg-warn live-dot-warn"
+                  : "bg-pos live-dot-pos";
+            return (
+              <span
+                key={b.key}
+                title={b.title}
+                className={`inline-flex items-center gap-1.5 border rounded-full pl-2.5 pr-3 py-1 text-[11px] font-mono ${toneCls}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
+                <span className="opacity-80 uppercase tracking-wide text-[9px]">{b.label}</span>
+                <span className="font-medium">{b.state}</span>
+              </span>
+            );
+          })}
         </div>
       </Card>
 

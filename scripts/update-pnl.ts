@@ -10,6 +10,7 @@ import { getActiveRules } from "../src/lib/rules";
 import { updatePaperTradePrice, resolvePaperTrade, closePaperTrade } from "../src/lib/paper";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { log, logError } from "../src/lib/redact";
+import { sweepExitRecovery } from "../src/lib/exit-recovery";
 import * as fs from "fs";
 import { join } from "path";
 
@@ -30,6 +31,7 @@ async function main() {
   });
   if (open.length === 0) {
     log("No open paper trades.");
+    await sweepExitRecovery(adapter);
     return;
   }
 
@@ -207,6 +209,10 @@ async function main() {
       }
     }
   }
+
+  // Exit-recovery logging (observability only — never mutates trade state):
+  // records post-exit token prices for recently closed C-200 trades.
+  await sweepExitRecovery(adapter);
 
   if (failures.length) {
     logError(`Failures (${failures.length}):\n` + failures.slice(0, 5).join("\n"));

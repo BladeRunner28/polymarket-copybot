@@ -67,6 +67,31 @@ describe("scoreTrade", () => {
     expect(r.risks.join(" ")).toContain("confidence");
   });
 
+  it("admits <0.20 long-shots on the v48 relaxed floors (and only in that band)", () => {
+    // Live-style bars: global 80/0.7 would skip a 76.6-score / 0.57-conf
+    // long-shot; the v48 <0.20 floors (70/0.55) admit it.
+    const liveBars: Rules = { ...DEFAULT_RULES, minCopyScore: 80, minConfidence: 0.7 };
+    const input = {
+      walletGlobalScore: 80,
+      walletCategoryWinRate: 0.6,
+      walletEntryPrice: 0.12,
+      currentPrice: 0.12,
+      spread: 0.02,
+      liquidity: 20_000,
+      timeToResolutionHours: 300,
+    };
+    const r = scoreTrade(input, liveBars);
+    expect(r.decision).toBe("paper_copy");
+    expect(r.copyScore).toBeLessThan(liveBars.minCopyScore); // 76.6 < 80 — admitted by the band floor
+    expect(r.reasons.join(" ")).toContain("Long-shot band");
+    // Same signal with the relaxed floors disabled → the global confidence bar skips it.
+    const strict = scoreTrade(input, { ...liveBars, longshotMinCopyScore: 0, longshotMinConfidence: 0 });
+    expect(strict.decision).toBe("skip");
+    // Same wallet outside the band (0.30 entry) → global floors still apply.
+    const mid = scoreTrade({ ...input, walletEntryPrice: 0.3, currentPrice: 0.3 }, liveBars);
+    expect(mid.decision).toBe("skip");
+  });
+
   it("rejects ≥80 late entries (drift beyond the high-score ceiling)", () => {
     const r = scoreTrade({ ...GOOD_INPUT, walletGlobalScore: 95, currentPrice: 0.505 }, DEFAULT_RULES);
     expect(r.decision).toBe("skip");

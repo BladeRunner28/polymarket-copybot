@@ -23,6 +23,7 @@ import {
   premiumRiskTag,
   loadPremiumCalibration,
 } from "../src/lib/premium";
+import { kellySizeForCopy } from "../src/lib/kelly";
 
 async function main() {
   assertPaperOnly("score:trades");
@@ -35,6 +36,14 @@ async function main() {
   const premiumCalibration = loadPremiumCalibration(
     join(__dirname, "..", "data", "premium-calibration.json")
   );
+  if (rules.kellyEnabled === 1 && !premiumCalibration) {
+    // Fail-loud once per run: Kelly is enabled but the λ̂ table is unreadable —
+    // the edge definition doesn't exist. Run continues on legacy sizing (the
+    // per-copy Kelly gate below also requires the table).
+    logError(
+      "[KELLY] kellyEnabled=1 but premium-calibration.json missing/corrupt — Kelly OFF this run, legacy sizing (kellyEnabled stays 1 in rules)"
+    );
+  }
 
   // v37: Kalshi venue circuit breaker (2026-08-30 report) — the recent Kalshi
   // leg is the biggest loss center (closed −$223.80 over Aug 29–31). Computed
@@ -85,6 +94,12 @@ async function main() {
   //      and uncapped. 0 = disabled.
   const DRAW_DOWN_FILE = join(__dirname, "..", "data", "c200-drawdown.json");
   const bankrollRow = await prisma.botBankroll.findUnique({ where: { botId: "BANKROLL_200" } });
+  // v49 Phase B: Kelly's available bankroll is the bot's FREE CASH. Fills
+  // decrement cashBalance at booking (recordExecutionResult), so open
+  // exposure is ALREADY excluded — subtracting c200OpenNotional again would
+  // double-count and starve Kelly below its design cap (the $1,146 test book
+  // in tests/kelly.test.ts is cashBalance scale, reconciled 2026-09-05).
+  const c200AvailableBankroll = bankrollRow?.cashBalance ?? 0;
   const openUnrealAgg = await prisma.paperTrade.aggregate({
     where: { botId: "BANKROLL_200", status: "open" },
     _sum: { unrealizedPnl: true },
@@ -441,40 +456,101 @@ async function main() {
           // Instead of assuming Polymarket is the cheapest venue, the Signal Brain evaluates 
           // whether to route the execution to Kalshi or PredictIt based on probability arbitrage rules.
           let executionVenue = "Polymarket";
-          
           let positionSize = result.simulatedPositionSize;
-          
-          // v29: the ×3 high-confidence boost only applies BELOW the capped
-          // band. Scores ≥ highScoreCapMin are the worst bucket in the Aug
-          // data (score≥80: −$0.77/trade) — they keep the flat capped size
-          // instead of being re-inflated here.
+          let premiumRisk: string | undefined;
+          let kellySized = false; // v49 Phase B: Kelly computed this copy's size
+
           // v37: Kalshi gate — route to Kalshi only when the copy clears the
           // venue score/confidence bars AND the venue's realized PnL is above
           // the circuit-breaker floor (currently tripped: realized < −$50 →
-          // effectively Polymarket-only until the leg recovers).
+          // effectively Polymarket-only until the leg recovers). Single venue
+          // decision (legacy two-arm routing collapsed: conf>0.90 and
+          // 0.8<conf≤0.90 both routed Kalshi when eligible — identical here).
           const kalshiEligible =
             result.copyScore >= rules.kalshiMinCopyScore &&
             result.confidence >= rules.kalshiMinConfidence &&
             kalshiRealized >= rules.kalshiCircuitBreakerPnl;
-          if (botId === "BANKROLL_200" && result.confidence > 0.90 && result.copyScore < rules.highScoreCapMin) {
-            // Apply recommended max allocation increase strictly for high-confidence trades
-            // Expanding limits to 15% of bankroll for the best setups.
-            if (positionSize) {
-              positionSize = Math.min(positionSize * 3, 45.00); 
-            }
-            // Also prioritize Maker limit orders conceptually via cross-venue routing logic.
-            if (kalshiEligible) executionVenue = "Kalshi";
-          } else if (botId === "BANKROLL_200" && result.confidence > 0.8) {
-             // Simulate that high-confidence trades are routed to Kalshi for better execution
-             if (kalshiEligible) executionVenue = "Kalshi";
+          if (botId === "BANKROLL_200" && result.confidence > 0.8 && kalshiEligible) {
+            // High-confidence C-200 trades prefer the Kalshi venue for better
+            // execution when the venue breaker permits.
+            executionVenue = "Kalshi";
           }
           executionVenues.add(executionVenue);
 
+          // v49 Phase B (drafts/phase-b-kelly-design.md): Kelly sizing for
+          // C-200 main-lane copies — the calibrated edge (band λ̂, + Kalshi
+          // venue offset) decides size AND skip. Replaces the ×3 confidence
+          // boost + v38 premium-overlay resize; the paper.ts band remap is
+          // bypassed at open for Kelly-sized copies (no double sizing).
+          // Short-TTR lane keeps its fixed size (channel design); STANDARD
+          // keeps legacy sizing; kellyEnabled=0 → legacy path untouched.
+          const isKellyCandidate =
+            botId === "BANKROLL_200" && result.lane !== "short_ttr" && rules.kellyEnabled === 1;
+          if (isKellyCandidate && premiumCalibration) {
+            const lam =
+              getBandLambda(currentPrice, premiumCalibration.bands) +
+              (executionVenue === "Kalshi" ? premiumCalibration.venueOffsetKalshi : 0);
+            const kelly = kellySizeForCopy({
+              price: currentPrice,
+              outcome: t.outcome as "YES" | "NO",
+              lambda: lam,
+              side: t.side as "BUY" | "SELL",
+              availableBankroll: c200AvailableBankroll,
+              fraction: rules.kellyFraction,
+              maxBankrollPct: rules.kellyMaxBankrollPct,
+              maxSizeUsd: rules.kellyMaxSizeUsd,
+              minBetUsd: rules.kellyMinBetUsd,
+              minEdgePct: rules.kellyMinEdgePct,
+            });
+            const bandLabel = (() => {
+              for (const b of premiumCalibration.bands) {
+                if (currentPrice >= b.lo && currentPrice < b.hi) return `[${b.lo},${b.hi})`;
+              }
+              const last = premiumCalibration.bands[premiumCalibration.bands.length - 1];
+              return last ? `[${last.lo},${last.hi})` : "?";
+            })();
+            if (kelly.skip) {
+              log(
+                `[KELLY] ${t.marketId} band=${bandLabel} λ̂=${lam.toFixed(3)} q=— p=${currentPrice.toFixed(3)} f*=0 avail=$${c200AvailableBankroll.toFixed(0)} size=$0 SKIP ${kelly.reason}`
+              );
+              continue; // C-200 main-lane only — the STANDARD leg is unaffected
+            }
+            positionSize = kelly.sizeUsd;
+            kellySized = true;
+            // Journal tag retained on Kelly-sized copies (design §6) — the
+            // premium λ̂ is the same quantity that drove the sizing.
+            premiumRisk = premiumRiskTag(lam, executionVenue);
+            log(
+              `[KELLY] ${t.marketId} band=${bandLabel} λ̂=${lam.toFixed(3)} q=${kelly.q.toFixed(3)} p=${currentPrice.toFixed(3)} f*=${kelly.fStarApplied.toFixed(4)} avail=$${c200AvailableBankroll.toFixed(0)} size=$${kelly.sizeUsd.toFixed(2)}`
+            );
+          }
+
+          // v29: the ×3 high-confidence boost only applies BELOW the capped
+          // band. Scores ≥ highScoreCapMin are the worst bucket in the Aug
+          // data (score≥80: −$0.77/trade) — they keep the flat capped size
+          // instead of being re-inflated here. Bypassed on Kelly-sized copies:
+          // Kelly already scales by edge (doubling would re-inflate the
+          // long-shot band Kelly just sized).
+          if (
+            !kellySized &&
+            botId === "BANKROLL_200" &&
+            result.confidence > 0.90 &&
+            result.copyScore < rules.highScoreCapMin
+          ) {
+            // Apply recommended max allocation increase strictly for high-confidence trades
+            // Expanding limits to 15% of bankroll for the best setups.
+            if (positionSize) {
+              positionSize = Math.min(positionSize * 3, 45.00);
+            }
+          }
+
           // Phase A (v38): Wang-calibrated premium overlay — measurement-first.
           // C-200 copies only; short-TTR lane copies are tagged but NOT
-          // resized (the fixed lane size is the channel's design).
-          let premiumRisk: string | undefined;
-          if (botId === "BANKROLL_200" && rules.premiumOverlayEnabled === 1 && premiumCalibration && positionSize) {
+          // resized (the fixed lane size is the channel's design). Skipped on
+          // Kelly-sized copies (v49): Kelly already sized from the same λ̂ —
+          // applying the overlay again would double-apply the premium signal.
+          // premiumRisk was set by the Kelly block when kellySized.
+          if (botId === "BANKROLL_200" && rules.premiumOverlayEnabled === 1 && premiumCalibration && positionSize && !kellySized) {
             const lam =
               getBandLambda(currentPrice, premiumCalibration.bands) +
               (executionVenue === "Kalshi" ? premiumCalibration.venueOffsetKalshi : 0);
@@ -539,6 +615,10 @@ async function main() {
             entryPrice: currentPrice,
             simulatedPositionSize: positionSize || 0.25,
             isDemo: t.isDemo,
+            // v49 Phase B: Kelly-sized copies bypass the v41 band remap and
+            // clamp at kellyMaxSizeUsd (executor cap override) — legacy path
+            // (kellyEnabled=0) passes undefined and stays byte-identical.
+            kelly: kellySized ? { maxSizeUsd: rules.kellyMaxSizeUsd } : undefined,
           });
 
           // TR-14 (2026-09-03): count the booked C-200 size against the running

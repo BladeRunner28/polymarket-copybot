@@ -54,6 +54,11 @@ export async function openPaperTrade(params: {
   botId?: string; // <--- NEW
   venue?: string; // Phase 3: Multi-Venue expansion
   marketQuestion?: string; // TR-16: lets the Rust sidecar resolve a real Kalshi ticker
+  // v49 Phase B: set on Kelly-sized copies. Bypasses the v41 calibration-band
+  // remap (mapBankroll200Size — Kelly already sized from the same λ̂ bands;
+  // applying both would double-size) and clamps at kellyMaxSizeUsd instead of
+  // the legacy BOT_LIMITS $20 cap. Omitted → legacy path, byte-identical.
+  kelly?: { maxSizeUsd: number };
 }) {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";
@@ -63,13 +68,15 @@ export async function openPaperTrade(params: {
   // Enforce Phase 1 Safety: Circuit Breaker
   await checkCircuitBreaker(prisma, botId);
 
-  if (botId === "BANKROLL_200") {
-    // v41: calibration-band mapping + overall cap raise ($10 -> $20).
+  if (botId === "BANKROLL_200" && !params.kelly) {
+    // v41: calibration-band mapping + overall cap raise ($10 -> $20). Bypassed
+    // for Kelly-sized copies (v49) — no double sizing with the sizer.
     size = mapBankroll200Size(size, params.entryPrice);
   }
 
-  // Ensure absolute bounds enforcement
-  size = clampPaperSize(size, botId);
+  // Ensure absolute bounds enforcement. Kelly-sized copies clamp at the
+  // rule-set kellyMaxSizeUsd (default $60) via the override.
+  size = clampPaperSize(size, botId, params.kelly?.maxSizeUsd);
 
   // Feature: Phase 4 (Shadow Production)
   // Route the C-200 bot through the Rust FAK Execution API instead of direct DB write.

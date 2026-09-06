@@ -31,6 +31,26 @@ describe("read-only safety / no real trade execution", () => {
     expect(clampPaperSize(12)).toBe(12);
   });
 
+  it("BANKROLL_200 legacy cap is $20 — no drift without an override", () => {
+    expect(clampPaperSize(45, "BANKROLL_200")).toBe(20);
+    expect(clampPaperSize(60, "BANKROLL_200")).toBe(20);
+    expect(clampPaperSize(5, "BANKROLL_200")).toBe(5);
+  });
+
+  it("v49: per-call max override lets Kelly-sized C-200 copies reach kellyMaxSizeUsd", () => {
+    // Kelly path: clamp at the rule-set cap (default $60), never below the
+    // bot floor even if the override is pathological.
+    expect(clampPaperSize(60, "BANKROLL_200", 60)).toBe(60);
+    expect(clampPaperSize(80, "BANKROLL_200", 60)).toBe(60);
+    expect(clampPaperSize(45, "BANKROLL_200", 60)).toBe(45);
+    expect(clampPaperSize(12, "BANKROLL_200", 60)).toBe(12);
+    expect(clampPaperSize(100, "BANKROLL_200", 0.01)).toBe(0.1); // floor guards inverted range
+    // Legacy callers (no override) are untouched — the override is only ever
+    // passed by score-trades.ts on the BANKROLL_200 Kelly path.
+    expect(clampPaperSize(60, "BANKROLL_200")).toBe(20);
+    expect(clampPaperSize(60)).toBe(PAPER_MAX_SIZE_USD);
+  });
+
   it("live adapter source contains no order/signing endpoints", () => {
     const src = fs.readFileSync(
       path.join(__dirname, "../src/lib/adapters/polymarket.ts"),

@@ -33,11 +33,20 @@ export function assertPaperOnly(context: string): void {
   }
 }
 
-/** Clamp a simulated position size into the allowed paper range. */
-export function clampPaperSize(usd: number, botId: string = "STANDARD"): number {
+/**
+ * Clamp a simulated position size into the allowed paper range.
+ *
+ * @param maxUsd optional per-call upper bound override. v49 Phase B: the
+ *   Kelly sizer's kellyMaxSizeUsd (default $60) exceeds the legacy
+ *   BANKROLL_200 cap ($20) by design — the executor must honor the rule-set
+ *   cap for Kelly-sized copies while legacy sizing keeps BOT_LIMITS exactly.
+ *   Never below the bot's floor (avoids an inverted range).
+ */
+export function clampPaperSize(usd: number, botId: string = "STANDARD", maxUsd?: number): number {
   const limits = BOT_LIMITS[botId] || BOT_LIMITS.STANDARD;
   if (!Number.isFinite(usd)) return limits.min;
-  return Math.min(limits.max, Math.max(limits.min, usd));
+  const hi = maxUsd !== undefined ? Math.max(limits.min, maxUsd) : limits.max;
+  return Math.min(hi, Math.max(limits.min, usd));
 }
 
 /**
