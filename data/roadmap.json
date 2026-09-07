@@ -62,7 +62,7 @@
    "effort": "~2–3 days",
    "dates": "Design Sep 15–30 · build early Oct",
    "gate": "Kalshi circuit breaker must recover (realized ≥ −$50; now −$37.99, clear since kalshi-reprice-92 on 2026-09-05)",
-   "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed — botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs.",
+   "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed — botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs. AUDIT INPUT (2026-09-07, user-approved carding; drafts/oracle3-audit-2026-09-07.md + drafts/polymarket-mcp-server-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md): (1) build the arb detector on oracle3's coinjure/matching staged matcher (Apache-2.0 — category·date·template·text·resolution → HIGH/MED/LOW confidence; template fields reject WIN-vs-TIE + cumulative-date false matches; ~0.5–1d incl. PMA validation, LOW risk, shadow-lane first, flag-revertible); (2) fold the mcp-server confirmation-gate + SELL-reduces-by-min(order,pos)/no-position-SELL-adds-exposure semantics (MIT, concept-only, ~2–4h doc work) into the sidecar risk-gate spec. NOTHING ships before the Kelly window closes Oct 8 (precommit-mid-oct-kelly-gate).",
    "tags": [
     "kalshi",
     "arb"
@@ -171,7 +171,7 @@
    "column": "Backlog",
    "effort": "~3–5 days",
    "gate": "Ships after Phase B (Kelly) + ML-1 shadow A/B shows model edge on held-out labels; era-aware training (ruleSetVersion feature)",
-   "note": "The step that makes dual-track real: ML lane generates its OWN entries from market features (MarketSnapshot: price/drift/TTR/liquidity/category + calibration-band edges + sentiment deltas) with NO whale signal. Schema: DecisionJournal.observedTradeId → nullable (or MLEntry table); new MarketSnapshot-driven scanner; ML-1 botId lane with separate bankroll (multi-lane pattern proven by STANDARD/C-200). Shadow → paper, flag-revertible. Caveat: current 529 labels are all v1–v3 era vs live v38 — train era-aware.",
+   "note": "The step that makes dual-track real: ML lane generates its OWN entries from market features (MarketSnapshot: price/drift/TTR/liquidity/category + calibration-band edges + sentiment deltas) with NO whale signal. Schema: DecisionJournal.observedTradeId → nullable (or MLEntry table); new MarketSnapshot-driven scanner; ML-1 botId lane with separate bankroll (multi-lane pattern proven by STANDARD/C-200). Shadow → paper, flag-revertible. Caveat: current 529 labels are all v1–v3 era vs live v38 — train era-aware. AUDIT INPUT (2026-09-07, user-approved carding; drafts/btc15min-audit-2026-09-07.md): before committing to a short-TTR BTC lane, tape-test the late-window trend-persistence hypothesis against the PMA tape — P(resolve | mid ≥0.60 at T−60..120s) vs ask, ~1 dev-day, analysis-only, can run as soon as the Kelly window's observability-only constraint allows; the repo is NO-LICENSE (concepts only, copy nothing). Probability-space threshold taxonomy (extreme-fade 0.68/0.32, momentum band 0.35–0.65, imbalance 0.30, no-trade zone) feeds the ML-2 feature registry as ideas.",
    "tags": [
     "ml",
     "dual-track",
@@ -185,7 +185,7 @@
    "effort": "~2–3 days",
    "dates": "Started 2026-09-01",
    "gate": "Shadow feeds accumulate ≥2 weeks; promote only if gap signals beat baseline (measurement-first)",
-   "note": "PMA (largest public Polymarket+Kalshi tape, 36GiB — source of the 692M-trade calibration baseline) re-fetched + wired for win-rate-by-price + ML-2 tape features; Manifold API keyless gap-detection (cross-platform prob gaps); Odds API sportsbook-vs-Polymarket gaps (free key) for the short-TTR sports lane. All shadow-first.",
+   "note": "PMA (largest public Polymarket+Kalshi tape, 36GiB — source of the 692M-trade calibration baseline) re-fetched + wired for win-rate-by-price + ML-2 tape features; Manifold API keyless gap-detection (cross-platform prob gaps); Odds API sportsbook-vs-Polymarket gaps (free key) for the short-TTR sports lane. All shadow-first. AUDIT INPUT (2026-09-07, user-approved carding; drafts/polymarket-tennis-audit-2026-09-07.md): add a generic sports market→match matcher on the polymarket-tennis pattern (MIT — matching.py: name+date with fold normalization, similarity ladder, both-sides-must-agree via min, ±1-day date bonus, >1-day hard reject, ambiguity margin 0.10 → returns None rather than guess; ~250 LOC pure functions, 94/94 tests upstream, feed-agnostic — needs only {players, scheduled_time, status, winner}) to wire the Odds API feed into the short-TTR sports lane; re-parametrize per sport (upstream esports aliasing unhandled). ~1 dev-day + half-day wiring, LOW risk, flag-revertible, post-Oct-8.",
    "tags": [
     "data",
     "datasets",
@@ -366,6 +366,21 @@
     "measurement",
     "gate",
     "review"
+   ]
+  },
+  {
+   "id": "phase-evidence-cot",
+   "title": "Phase Evidence-COT — keyless CFTC COT provider + snapshot HTTP test harness (digital-oracle audit)",
+   "column": "Backlog",
+   "effort": "~1–2 days",
+   "dates": "Carded 2026-09-07 (user-approved; audits drafts/digital-oracle-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md)",
+   "gate": "Post-Oct-8 (Kelly window); flag-revertible behind the research-signal webhook (v39 evidence pipeline); COT is weekly → C-tier evidence cap (0.3) per the A2 tier rules",
+   "note": "Two narrow adopts from digital-oracle (MIT, source-verified — the repo's '13-source calibrated answer' is LLM prompt heuristics, NO aggregation math in code; v39 Bayesian log-odds strictly dominates, so breadth transfers, doctrine does not): (1) CFTC Commitments-of-Traders provider — the only genuinely new NON-price evidence class in the audit (keyless, weekly, positioning); wire to the research-bot → RegulatorySignal webhook → src/lib/forecasting as C-tier evidence, NOT as a price-derived prior (market-firewall doctrine: price-derived data is the prior, not evidence). (2) Record/replay snapshot HTTP test harness (why upstream runs 246 tests in 0.22s — fixture replay, no network) → research-bot fetcher CI. NOT-portable: LLM agent layer, dead CME FedWatch (403), Eastmoney/yfinance/DDG providers.",
+   "tags": [
+    "evidence",
+    "research-bot",
+    "data",
+    "v39"
    ]
   }
 ]
