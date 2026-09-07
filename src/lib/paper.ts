@@ -20,14 +20,23 @@ export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: nu
  * Maps the STANDARD-scale parent size (0.25-20) into the C-200 band
  * ($0.20-$20 - overall cap raised from $10) and applies calibration-band
  * multipliers from the N=1,076 C-200 calibration analysis:
- *   entry < 0.20  x1.5  - the only significant positive edge (excess +0.31, z=+4.47)
+ *   entry < 0.20  x2.0  - the only significant positive edge (excess +0.31,
+ *                         z=+4.47; current regime z=+4.82 +$400.83) — v51
+ *                         (2026-09-07 report, approved): reinforced from x1.5
  *   0.20-0.40     x1.0  - positive excess (z=+2.72) but dollar-negative; watch
- *   0.40-0.60     x0.5  - dead zone: 48% of volume, -$271.70 = 99.9% of total
- *                         drag (v42, 2026-09-01 report: deepened from x0.75)
- *   entry >= 0.60 x0.5  - significant premium drag on favorites (z=-2.49/-2.42)
+ *   0.40-0.60     x0.25 - dead zone: 48% of volume, -$271.70 = 99.9% of total
+ *                         drag; current regime z=-3.75 -$205.01 — v51
+ *                         (2026-09-07 report, approved): deepened from x0.5
+ *                         (was x0.75 v42, x1.0 pre-v42)
+ *   entry >= 0.60 x0.5  - significant premium drag on favorites (z=-2.49/-2.42;
+ *                         current-regime fixed — leave alone)
  * Band sizing lives HERE (single source of truth); the v37 rules-layer
  * factors (deadZoneSizeFactor / longshotSizeFactor) are neutralized at 1.0
  * (RuleSet v39) so the bands apply exactly once. Caller clamps the result.
+ * Applies to the LEGACY path + short-TTR lane copies (lane bypasses Kelly);
+ * Kelly-sized main-lane copies bypass this map but get the v51 band rails
+ * (applyKellyBandRails) so the two paths cannot contradict on the dead zone
+ * and the long-shot band.
  */
 export function mapBankroll200Size(standardScaleSize: number, entryPrice: number): number {
   const percent = (standardScaleSize - 0.25) / (20.0 - 0.25);
@@ -35,11 +44,34 @@ export function mapBankroll200Size(standardScaleSize: number, entryPrice: number
   // Only apply band multipliers to sane prices (0..1 markets); non-finite or
   // <=0 entries (bad data) fall through at x1.0.
   if (Number.isFinite(entryPrice) && entryPrice > 0) {
-    if (entryPrice < 0.2) size *= 1.5;
+    if (entryPrice < 0.2) size *= 2.0; // v51: was x1.5
     else if (entryPrice >= 0.6) size *= 0.5;
-    else if (entryPrice >= 0.4) size *= 0.5; // v42: was x0.75
+    else if (entryPrice >= 0.4) size *= 0.25; // v51: was x0.5 (v42: x0.75)
   }
   return size;
+}
+
+/**
+ * v51 (2026-09-07 C-200 daily report changes 1+2, user-approved — explicit
+ * Kelly-window freeze override, effective immediately): band rails on
+ * Kelly-sized admits so the Kelly path cannot contradict the band map on the
+ * two regime-robust findings while λ̂ tables sit between refits:
+ *   dead zone [0.40, 0.60): cap at the legacy-equivalent (x0.25 map) size —
+ *     Kelly must never ride a dead-band copy larger than the legacy path would
+ *   long-shot <0.20: floor at the legacy-equivalent (x2.0 map) size — Kelly
+ *     must never shrink the one proven winner below what legacy would book
+ * Inert today: Kelly already skips the dead zone (lambda +0.03 -> f* <= 0)
+ * and fully funds <0.20 (lambda -0.91) up to kellyMaxSizeUsd, so the rails
+ * only bind if a refit (e.g. Sep 15) moves those band lambdas. Pure function.
+ */
+export function applyKellyBandRails(
+  kellySizeUsd: number,
+  legacyEquivUsd: number,
+  entryPrice: number
+): number {
+  if (entryPrice >= 0.4 && entryPrice < 0.6) return Math.min(kellySizeUsd, legacyEquivUsd);
+  if (entryPrice < 0.2) return Math.max(kellySizeUsd, legacyEquivUsd);
+  return kellySizeUsd;
 }
 
 export async function openPaperTrade(params: {

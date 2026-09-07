@@ -9,10 +9,10 @@ import { getActiveRules } from "../src/lib/rules";
 import { scoreTrade } from "../src/lib/scoring/trade";
 import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
-import { openPaperTrade } from "../src/lib/paper";
+import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/lib/paper";
+import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow } from "../src/lib/hour-policy";
 import { effectiveExposureCap } from "../src/lib/exposure-cap";
-import { assertPaperOnly } from "../src/lib/safety";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -515,7 +515,23 @@ async function main() {
               );
               continue; // C-200 main-lane only — the STANDARD leg is unaffected
             }
-            positionSize = kelly.sizeUsd;
+            // v51 (2026-09-07 report changes 1+2, user-approved — explicit
+            // Kelly-window freeze override): band rails on Kelly admits so the
+            // Kelly path cannot contradict the band map (paper.ts) on the two
+            // regime-robust findings while λ̂ tables sit between refits. Dead
+            // zone [0.40,0.60): cap at the legacy-equivalent (×0.25 map) size;
+            // long-shot <0.20: floor at the legacy-equivalent (×2.0 map) size.
+            // Inert while λ̂ keeps the dead zone at f*≤0 and <0.20 at −0.91.
+            const legacyEquiv = clampPaperSize(mapBankroll200Size(result.simulatedPositionSize, currentPrice));
+            const railedSize = applyKellyBandRails(kelly.sizeUsd, legacyEquiv, currentPrice);
+            if (railedSize !== kelly.sizeUsd) {
+              log(
+                `[KELLY-RAIL] ${t.marketId} band=${bandLabel} p=${currentPrice.toFixed(3)} ` +
+                  `${currentPrice >= 0.4 && currentPrice < 0.6 ? "dead-zone cap" : "long-shot floor"}: ` +
+                  `kelly $${kelly.sizeUsd.toFixed(2)} vs legacy-equiv $${legacyEquiv.toFixed(2)} → $${railedSize.toFixed(2)}`
+              );
+            }
+            positionSize = railedSize;
             kellySized = true;
             // Journal tag retained on Kelly-sized copies (design §6) — the
             // premium λ̂ is the same quantity that drove the sizing.
