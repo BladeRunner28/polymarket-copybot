@@ -1,25 +1,25 @@
 🔭 **Prediction-Market Repo Scout**
-Scanned 6 queries · 83 new candidates · top 5
+Scanned 6 queries · 77 new candidates · top 5
 **Gate:** watch-only (pipeline busy: Phase A2 outcome review; Phase B — Kelly sizing replaces band siz)
 
-**OctagonAI/kalshi-trading-bot-cli** — 378★ · MIT · TypeScript · pushed 9d ago · relevance 12
-> AI-native CLI for trading Kalshi prediction markets. Runs deep fundamental research, generates independent probability estimates, computes edge vs. live order b
-> keywords: ai, kalshi, order book, polymarket, prediction market, prediction-market
+**livetennisapi/polymarket-tennis** — 324★ · MIT · Python · pushed 2d ago · relevance 10
+> Polymarket tennis trading toolkit (Python, MIT, observe-only): discover tennis markets on the Gamma API, match them to live tennis matches, watch market price v
+> keywords: kalshi, polymarket, prediction-market, trading bot
 
-**CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot** — 241★ · MIT · Python · pushed 114d ago · relevance 11
-> Real-time arbitrage bot detecting risk-free opportunities in Bitcoin 1-Hour Price markets between Polymarket and Kalshi
-> keywords: arb, arbitrage, betting, kalshi, polymarket, prediction-market
+**YichengYang-Ethan/oracle3** — 253★ · Apache-2.0 · Python · pushed 122d ago · relevance 10
+> Prediction-market trading engine — Wang Transform pricing on 291K+ contracts; paper-traded across Kalshi · Polymarket · Solana DFlow (Jito bundles) · 633 tests
+> keywords: ai, arb, arbitrage, kalshi, ml, polymarket, prediction-market
 
-**guzus/dr-manhattan** — 197★ · NO-LICENSE · Jupyter Notebook · pushed 44d ago · relevance 11
-> CCXT for prediction markets · #1 Open Source for Market-making, Trading, Data Analysis on Polymarket & Kalshi & Limitless & Opinion & Predictfun & etc
-> keywords: arb, arbitrage, kalshi, polymarket, prediction market, prediction-market
+**aulekator/Polymarket-BTC-15-Minute-Trading-Bot** — 582★ · NO-LICENSE · Python · pushed 191d ago · relevance 10
+> A production-grade algorithmic trading bot for Polymarket's 15-minute BTC price prediction markets. Built with a 7-phase architecture combining multiple signal 
+> keywords: arb, arbitrage, polymarket, prediction market, trading bot
 
-**kuestcom/prediction-market** — 1082★ · NOASSERTION · TypeScript · pushed 0d ago · relevance 11
-> Launch your own web3 decentralized prediction market in minutes (Polymarket like)
-> keywords: crypto, kalshi, polymarket, prediction market, prediction-market
+**komako-workshop/digital-oracle** — 810★ · MIT · Python · pushed 42d ago · relevance 9
+> AI agent skill that answers macro questions — housing, gold, BTC, geopolitics — with probability estimates mined from 13 financial data sources (Polymarket, Kal
+> keywords: ai, kalshi, polymarket, prediction-market
 
-**radioman/polymarket-arbitrage-trading-bot** — 517★ · NOASSERTION · C++ · pushed 73d ago · relevance 11
-> Polymarket arbitrage trading bot tool for BTC and ETH 5-minute prediction markets with automated execution, real-time analytics, and smart wallet copy trading. 
-> keywords: arb, arbitrage, polymarket, prediction market, trading bot, wallet
+**caiovicentino/polymarket-mcp-server** — 668★ · MIT · Python · pushed 38d ago · relevance 9
+> 🤖 AI-Powered MCP Server for Polymarket - Enable Claude to trade prediction markets with 45 tools, real-time monitoring, and enterprise-grade safety features
+> keywords: ai, polymarket, prediction market, prediction-market
 
 Seen list updated. Deep audit only if it maps to an open gap or pipeline has room.
