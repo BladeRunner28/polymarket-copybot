@@ -88,15 +88,24 @@ async function main() {
     },
     _sum: { unrealizedPnl: true }
   });
+  const openUnrealized = openTrades._sum.unrealizedPnl || 0;
 
-  const totalPnl = realizedToday + (openTrades._sum.unrealizedPnl || 0);
-
+  // v52 (tuning review #19 rec 4, user-approved 2026-09-08):
+  //  - "Today's PnL" is REALIZED-only, matching the phase-streak definition
+  //    (the gate counts realized closes; open unrealized is mark-to-market of
+  //    the whole book, most of it older positions — mixing it into "today"
+  //    produced misleading ON TRACK reads like $752.51 with 0/7 days).
+  //  - "Current Bankroll" = cashBalance alone: closes increment cash by
+  //    (size + pnl) at close time, so today's realized is ALREADY in cash —
+  //    adding realizedToday double-counted it (e.g. $581.81 display on a
+  //    cash balance that already held the day's closes).
   console.log(`**C-200 Daily Progress Report**
 - **Goal:** $${goal.target}/day (${goal.name}${goalIdx > 0 ? " — CLEARED" : ""})
-- **Today's PnL:** $${totalPnl.toFixed(2)}
-- **Status:** ${totalPnl >= goal.target ? '[✅ ON TRACK]' : '[❌ BEHIND]'}
+- **Today's realized PnL:** $${realizedToday.toFixed(2)}
+- **Open unrealized (book mark-to-market):** $${openUnrealized.toFixed(2)}
+- **Status:** ${realizedToday >= goal.target ? '[✅ ON TRACK]' : '[❌ BEHIND]'}
 - **Phase stability:** ${streak}/${STABILITY_DAYS} consecutive days at $${goal.target}/day (advance requires ${STABILITY_DAYS} days stable)
-- **Current Bankroll:** $${(bankroll.cashBalance + realizedToday).toFixed(2)}`);
+- **Current Bankroll (cash):** $${bankroll.cashBalance.toFixed(2)}`);
 }
 
 main().finally(() => prisma.$disconnect());

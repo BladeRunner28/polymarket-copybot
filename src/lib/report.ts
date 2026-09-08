@@ -22,7 +22,7 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
   const prevReport = await prisma.dailyReport.findFirst({ orderBy: { createdAt: "desc" } });
   const windowStart = prevReport?.createdAt ?? new Date(Date.now() - 86_400_000);
 
-  const [openTrades, resolvedToday, decisionsToday, ruleChangesToday, allResolved, bankrolls] =
+  const [openTrades, resolvedToday, decisionsToday, ruleChangesToday, allFinished, bankrolls] =
     await Promise.all([
       prisma.paperTrade.findMany({ where: { status: "open" } }),
       prisma.paperTrade.findMany({
@@ -39,7 +39,12 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
         where: { createdAt: { gte: windowStart } },
         include: { newRuleSet: true },
       }),
-      prisma.paperTrade.findMany({ where: { status: "resolved" } }),
+      // v52 (tuning review #19 rec 3, user-approved 2026-09-08): lifetime
+      // totals must include early-exit 'closed' rows — realized PnL books at
+      // closedAt (resolvedAt NULL), so a resolved-only filter overstated C-200
+      // EOD net worth (~$960: its closed-at-a-loss early exits were missing)
+      // and understated STANDARD (~$1,082: its closed winners were missing).
+      prisma.paperTrade.findMany({ where: { status: { in: ["resolved", "closed"] } } }),
       prisma.botBankroll.findMany(),
     ]);
 
@@ -52,23 +57,23 @@ export async function generateDailyReport(): Promise<{ id: string; summary: stri
   const stdResolvedToday = resolvedToday.filter((t) => t.botId === "STANDARD");
   const cmpResolvedToday = resolvedToday.filter((t) => t.botId === "BANKROLL_200");
 
-  const stdAllResolved = allResolved.filter((t) => t.botId === "STANDARD");
-  const cmpAllResolved = allResolved.filter((t) => t.botId === "BANKROLL_200");
+  const stdFinished = allFinished.filter((t) => t.botId === "STANDARD");
+  const cmpFinished = allFinished.filter((t) => t.botId === "BANKROLL_200");
 
   const stdPnlToday = stdResolvedToday.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const stdTotalPnl =
-    stdAllResolved.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
+    stdFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
     standardOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
-  const stdWinRate = stdAllResolved.length
-    ? stdAllResolved.filter((t) => (t.realizedPnl ?? 0) > 0).length / stdAllResolved.length
+  const stdWinRate = stdFinished.length
+    ? stdFinished.filter((t) => (t.realizedPnl ?? 0) > 0).length / stdFinished.length
     : 0;
 
   const cmpPnlToday = cmpResolvedToday.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const cmpTotalPnl =
-    cmpAllResolved.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
+    cmpFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
     compoundOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
-  const cmpWinRate = cmpAllResolved.length
-    ? cmpAllResolved.filter((t) => (t.realizedPnl ?? 0) > 0).length / cmpAllResolved.length
+  const cmpWinRate = cmpFinished.length
+    ? cmpFinished.filter((t) => (t.realizedPnl ?? 0) > 0).length / cmpFinished.length
     : 0;
 
   const cmpBankroll = bankrolls.find((b) => b.botId === "BANKROLL_200");

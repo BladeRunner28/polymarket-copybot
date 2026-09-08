@@ -166,7 +166,38 @@ async function main() {
   // overshoot past maxGrossExposureUsd).
   let c200RunningExposure = c200OpenNotional;
 
+  // v52 (tuning review #19 rec 1, user-approved 2026-09-08 — defect fix, not a
+  // regime change; Kelly window starts today): sweep-fill duplicate coalescing.
+  // One wallet sweeping one market+outcome in seconds is ONE economic intent
+  // (exchange-level order splits) but each fill scored independently as a
+  // full-size copy — bkfibaw 4 fills/1s → 4×$91.49@0.04 → −$361.40 (Sep 8).
+  // Skip observed trades whose (wallet, market, outcome) already has a copy
+  // opened within DUP_WINDOW_MS (one monitor cycle + margin; any status — a
+  // recently opened copy is the anchor whether or not it already resolved).
+  // Seeded once per run and extended in-loop after each successful open, so a
+  // multi-fill sweep inside one batch collapses to a single copy.
+  const DUP_WINDOW_MS = 15 * 60_000;
+  const recentCopyRows = await prisma.paperTrade.findMany({
+    where: { openedAt: { gte: new Date(Date.now() - DUP_WINDOW_MS) } },
+    select: { walletAddress: true, marketId: true, outcome: true },
+  });
+  const recentCopyKeys = new Set(
+    recentCopyRows.map((p) => `${p.walletAddress}|${p.marketId}|${p.outcome}`)
+  );
+  let deduped = 0;
+
   for (const t of unscored) {
+    // v52 sweep-dedup guard: collapse fills of an already-copied (wallet,
+    // market, outcome) — the review's ~30s economic window, enforced with the
+    // 15-min lookback so cross-run sweeps (up to one cycle apart) coalesce too.
+    const dupKey = `${t.walletAddress}|${t.marketId}|${t.outcome}`;
+    if (recentCopyKeys.has(dupKey)) {
+      deduped++;
+      log(
+        `[DEDUPE] ${t.walletAddress.slice(0, 6)}… ${t.marketId} ${t.outcome} — sweep fill coalesced (copy opened ≤15m ago); no duplicate copy`
+      );
+      continue;
+    }
     const wallet = await prisma.walletProfile.findUnique({ where: { address: t.walletAddress } });
     if (!wallet) continue;
     
@@ -637,6 +668,10 @@ async function main() {
             kelly: kellySized ? { maxSizeUsd: rules.kellyMaxSizeUsd } : undefined,
           });
 
+          // v52 sweep-dedup: this copy is now the coalescing anchor — any later
+          // fill of the same (wallet, market, outcome) in this run collapses.
+          recentCopyKeys.add(`${t.walletAddress}|${t.marketId}|${t.outcome}`);
+
           // TR-14 (2026-09-03): count the booked C-200 size against the running
           // exposure total (only on success; the catch below leaves it untouched).
           if (botId === "BANKROLL_200") c200RunningExposure += positionSize || 0.25;
@@ -681,7 +716,7 @@ async function main() {
     else skips++;
   }
 
-  log(`Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips.`);
+  log(`Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips, ${deduped} sweep-duplicates coalesced.`);
 }
 
 main()

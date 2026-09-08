@@ -1,1 +1,5 @@
-{"peak":2680.6599999999994,"updatedAt":"2026-09-07T17:59:23.362Z"}
+{
+  "peak": 1900,
+  "updatedAt": "2026-09-08T00:30:00.000Z",
+  "note": "v52 reset (tuning review #19 rec 2, user-approved 2026-09-08): peak was artifact-contaminated — spiked to $2,680.66 on 2026-09-07T17:59Z by the intraday markup of 4 duplicate bkfibaw sweep-fill copies (4x$91.49@0.04, since resolved at full loss). The tracker is DESIGN-seeded from principal (apply-risk-gates evidence 2026-09-01) and the gate's own NW definition never legitimately exceeded $1,900; reset restores the documented baseline. Honest drawdown from $1,900 at NW ~$1,612 = 15.2% < 20% cap."
+}
