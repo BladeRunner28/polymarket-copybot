@@ -16,6 +16,11 @@ Output: console table + data/calibration-analysis.json (for the dashboard /
 daily report). No new dependencies -- stdlib sqlite3 + math only.
 
 Usage (project root):  python3 scripts/analyze-calibration.py [--bot BANKROLL_200]
+                          [--since YYYY-MM-DD]   # regime filter (ET midnight):
+                                                  # only trades opened >= date.
+                                                  # Writes data/calibration-analysis-since-<date>.json
+                                                  # instead of the canonical file (which the daily
+                                                  # report owns). v52 additive observability tooling.
 """
 import argparse
 import json
@@ -75,19 +80,31 @@ def band_stats(rows):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bot", default="BANKROLL_200")
+    ap.add_argument("--since", default=None, help="regime filter: only trades opened >= YYYY-MM-DD (ET midnight)")
     args = ap.parse_args()
+
+    since_ms = None
+    if args.since:
+        since_ms = int(
+            datetime.fromisoformat(args.since + "T00:00:00")
+            .replace(tzinfo=ZoneInfo("America/New_York"))
+            .timestamp()
+            * 1000
+        )
 
     con = sqlite3.connect(DB)
     # v48 (2026-09-04 daily report, approved): exclude the phantom-priced
     # legacy Kalshi leg until kalshi-reprice-92 lands — its 0.52-stub rows
     # distorted the 23:00 ET hour stats (85% of that "drain" was Kalshi).
-    rows = con.execute(
-        """SELECT entryPrice, realizedPnl, openedAt FROM PaperTrade
-           WHERE botId=? AND status IN ('resolved','closed')
-             AND realizedPnl IS NOT NULL AND isDemo=0
-             AND venue != 'Kalshi'""",
-        (args.bot,),
-    ).fetchall()
+    sql = """SELECT entryPrice, realizedPnl, openedAt FROM PaperTrade
+          WHERE botId=? AND status IN ('resolved','closed')
+            AND realizedPnl IS NOT NULL AND isDemo=0
+            AND venue != 'Kalshi'"""
+    params: list = [args.bot]
+    if since_ms is not None:
+        sql += " AND openedAt >= ?"
+        params.append(since_ms)
+    rows = con.execute(sql, params).fetchall()
     con.close()
 
     et = ZoneInfo("America/New_York")
@@ -141,16 +158,23 @@ def main():
     out = {
         "analyzedAt": datetime.now(timezone.utc).isoformat(),
         "bot": args.bot,
+        "since": args.since,
         "method": "excess return = win_rate - mean entry price; se=sqrt(wr(1-wr)/N); |z|>=2 significant (port of jon-becker/prediction-market-analysis, MIT)",
         "total": total,
         "bands": bands_out,
         "hours": hours_out,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w") as f:
+    write_path = OUT
+    if args.since:
+        write_path = os.path.join(
+            ROOT, "data", f"calibration-analysis-since-{args.since}.json"
+        )
+    with open(write_path, "w") as f:
         json.dump(out, f, indent=2)
 
-    print(f"Calibration analysis ({args.bot}, N={total['n']}) — ** = |z|>=2 significant")
+    label = f"since {args.since}" if args.since else "all-time"
+    print(f"Calibration analysis ({args.bot}, {label}, N={total['n']}) — ** = |z|>=2 significant")
     print("Price bands:")
     print("\n".join(lines))
     print("Returns by hour (ET):")
