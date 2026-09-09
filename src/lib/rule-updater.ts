@@ -20,8 +20,13 @@ interface ResolvedSample {
 const MIN_SAMPLES = 6; // don't change rules on tiny evidence
 
 async function collectSamples(): Promise<ResolvedSample[]> {
+  // v52 (tuning review #20, approved 2026-09-09): include early-exit 'closed'
+  // trades — realized PnL books at closedAt (resolvedAt NULL); a resolved-only
+  // sample understated the auto-tuner's evidence (same bug class as report.ts,
+  // fixed in v52). The v51 auto-tune (drift 0.004→0.003, minLiq 750→1125) ran
+  // on resolved-only evidence; v52 reverted it and widens the sample.
   const trades = await prisma.paperTrade.findMany({
-    where: { status: "resolved", realizedPnl: { not: null } },
+    where: { status: { in: ["resolved", "closed"] }, realizedPnl: { not: null } },
     include: { decision: { include: { observedTrade: true } } },
   });
   const samples: ResolvedSample[] = [];
@@ -129,6 +134,20 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
 
 /** Full self-improvement pass. Returns what changed (or null). */
 export async function runRuleUpdate(): Promise<{ newVersion: number; changes: RuleChangeProposal[] } | null> {
+  // v52 (tuning review #20, user-approved 2026-09-09): Kelly-window
+  // suppression — the pre-registered measurement window (Sep 8–Oct 8) must
+  // measure the v50/v51-approved config untouched. The v51 auto-tune fired
+  // day 1 (22:02 Sep 8, changedBy "hermes") because the 48h manual lockout
+  // below had expired; this absolute gate overrides the auto path for the
+  // whole window (scheduled λ̂ refits Sep 15/Oct 1 are separate, expected).
+  const KELLY_WINDOW_SUPPRESS_UNTIL = Date.UTC(2026, 9, 9, 5, 0, 0); // 2026-10-09T05:00Z = end of Oct 8 CDT
+  if (Date.now() < KELLY_WINDOW_SUPPRESS_UNTIL) {
+    log(
+      `auto rule update SKIPPED: Kelly window (Sep 8–Oct 8) freeze — auto-tune suppressed until Oct 9 (tuning review #20, approved); v51 auto-tune reverted by v52`
+    );
+    return null;
+  }
+
   // v44 (tuning review #13, 2026-09-02, approved): governance lockout — the
   // auto-tune chain must respect a 48h quiet period after any USER-approved
   // rule change (changedBy != "hermes"; manual applies use hermes-* labels)
@@ -159,7 +178,7 @@ export async function runRuleUpdate(): Promise<{ newVersion: number; changes: Ru
   // Downgrade wallets with poor recent paper performance.
   const badWallets = await prisma.paperTrade.groupBy({
     by: ["walletAddress"],
-    where: { status: "resolved" },
+    where: { status: { in: ["resolved", "closed"] } }, // v52: same resolved+closed fix as collectSamples
     _sum: { realizedPnl: true },
     _count: { id: true },
   });
