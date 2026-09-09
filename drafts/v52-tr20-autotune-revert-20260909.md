@@ -29,13 +29,15 @@ realized PnL books at closedAt for early exits, so the auto-tuner's evidence
 (and wallet downgrades) understated closed trades. Now `[resolved, closed]`.
 This also means any post-Oct-8 auto-tune runs on the honest sample.
 
-### Rec 1 (residual sweep leak) — STATUS QUO, decision open
-The 24-min-cadence sweep (0x85f0 on ucl-liv NO, 70 STANDARD opens = $1,260 of
-one economic intent) beats the 15m v52 coalesce. Clarify timed out → per
-workflow, kept the strong state (v52 15m coalesce live, no further change).
-Options still on the table: A) coalesce into the OPEN copy (one position per
-wallet/market/outcome while open — cadence-agnostic), B) widen 15m→2h, C) no
-change. Verify for A/B: 0 same-key opens >1 (baseline 70).
+### Rec 1 (residual sweep leak) — SHIPPED: option A (user pick, 2026-09-09)
+Coalesce into the OPEN copy: the dedupe anchor in `score-trades.ts` changed
+from a 15m recency window to **any OPEN (wallet, market, outcome) position** —
+cadence-agnostic, so the 24-min ucl-liv sweep (0x85f0: 70 STANDARD opens =
+$1,260 of one economic intent) and any longer cadence collapse into one copy.
+Key frees when the copy closes/resolves (a later same-key fill = fresh
+intent). Baseline: 258 same-key keys with >1 open book-wide (pre-existing
+fragmentation decays as positions close; the guard stops new ones). Verify for
+the next review: no same-key key gains a 2nd open post-apply.
 
 ### Rec 3 (watch) — armed
 Kelly main-lane <30 admits by Oct 1 → flow review before the Oct 8 read. No
