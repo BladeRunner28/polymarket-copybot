@@ -1,24 +1,25 @@
 {
-  "analyzedAt": "2026-09-07T18:15:37.387039+00:00",
-  "n": 383,
-  "withLocal": 383,
+  "analyzedAt": "2026-09-08T15:24:58.340867+00:00",
+  "n": 406,
+  "withLocal": 406,
   "coverage": 1.0,
-  "correlation": 0.691,
-  "signAgreement": 0.89,
+  "correlation": 0.687,
+  "signAgreement": 0.889,
+  "currentModel": "qwen2.5:7b-instruct",
   "ruleBullishLocalBearish": 0,
-  "ruleBearishLocalBullish": 37,
-  "sources": {
-    "quiver_congress_trade": {
-      "withLocal": 130,
-      "total": 130
-    },
-    "congress_gov_api": {
-      "withLocal": 145,
-      "total": 145
-    },
-    "govinfo_fr_notice": {
-      "withLocal": 108,
-      "total": 108
+  "ruleBearishLocalBullish": 40,
+  "byModel": {
+    "qwen2.5:7b-instruct": {
+      "n": 406,
+      "rows": 406,
+      "signAgreement": 0.889,
+      "correlation": 0.687
+    }
+  },
+  "uniqueItems": {
+    "qwen2.5:7b-instruct": {
+      "n": 54,
+      "signAgreement": 0.852
     }
   }
 }

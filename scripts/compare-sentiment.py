@@ -63,66 +63,99 @@ def main():
         return
 
     n = len(rows)
-    with_local = [r for r in rows if r.get("local_sentiment") is not None]
-    coverage = len(with_local) / n
 
-    pairs = [(r["rule_sentiment"], r["local_sentiment"]) for r in with_local
-             if r.get("rule_sentiment") is not None and r.get("local_sentiment") is not None]
-    corr = pearson([p[0] for p in pairs], [p[1] for p in pairs]) if pairs else None
+    def model_of(r):
+        return r.get("model") or "qwen2.5:7b-instruct"  # legacy rows pre-2026-09-08
 
-    agree = sum(1 for r, l in pairs if sign(r) == sign(l))
-    agree_rate = agree / len(pairs) if pairs else None
+    def stats_for(rs, dedupe=False):
+        rr = rs
+        if dedupe:  # item-level honesty: the log re-scores the same bills every 6h cycle
+            seen = {}
+            for r in rs:
+                seen[(r.get("source"), r.get("item_id"))] = r
+            rr = list(seen.values())
+        with_local = [r for r in rr if r.get("local_sentiment") is not None]
+        pairs = [(r["rule_sentiment"], r["local_sentiment"]) for r in with_local
+                 if r.get("rule_sentiment") is not None and r.get("local_sentiment") is not None]
+        if not pairs:
+            return None
+        corr = pearson([p[0] for p in pairs], [p[1] for p in pairs])
+        agree = sum(1 for r, l in pairs if sign(r) == sign(l))
+        return {
+            "n": len(rr), "withLocal": len(with_local),
+            "coverage": len(with_local) / len(rr),
+            "correlation": corr, "signAgreement": agree / len(pairs),
+            "agree": agree, "pairs": len(pairs),
+        }
 
-    flips = [r for r in with_local
-             if r.get("rule_sentiment") is not None
+    by_model = {}
+    for r in rows:
+        by_model.setdefault(model_of(r), []).append(r)
+
+    overall = stats_for(rows)
+    per_model = {m: stats_for(rs) for m, rs in sorted(by_model.items())}
+    per_model_unique = {m: stats_for(rs, dedupe=True) for m, rs in sorted(by_model.items())}
+
+    # current lane = model that produced the most recent row
+    current = model_of(rows[-1])
+    cur_rows = by_model.get(current, [])
+
+    flips = [r for r in cur_rows
+             if r.get("rule_sentiment") is not None and r.get("local_sentiment") is not None
              and sign(r["rule_sentiment"]) == 1 and sign(r["local_sentiment"]) == -1]
-    flips2 = [r for r in with_local
-              if r.get("rule_sentiment") is not None
+    flips2 = [r for r in cur_rows
+              if r.get("rule_sentiment") is not None and r.get("local_sentiment") is not None
               and sign(r["rule_sentiment"]) == -1 and sign(r["local_sentiment"]) == 1]
-
     diffs = sorted(
-        with_local,
+        cur_rows,
         key=lambda r: abs((r.get("rule_sentiment") or 0) - (r.get("local_sentiment") or 0)),
         reverse=True,
     )[:5]
 
-    by_source = {}
-    for r in with_local:
-        by_source.setdefault(r.get("source", "?"), [0, 0])
-        by_source[r["source"]][1] += 1
-        if r.get("local_sentiment") is not None:
-            by_source[r["source"]][0] += 1
-
     summary = {
         "analyzedAt": datetime.now(timezone.utc).isoformat(),
         "n": n,
-        "withLocal": len(with_local),
-        "coverage": round(coverage, 3),
-        "correlation": round(corr, 3) if corr is not None else None,
-        "signAgreement": round(agree_rate, 3) if agree_rate is not None else None,
+        "withLocal": overall["withLocal"] if overall else 0,
+        "coverage": round(overall["coverage"], 3) if overall else None,
+        "correlation": round(overall["correlation"], 3) if overall and overall["correlation"] is not None else None,
+        "signAgreement": round(overall["signAgreement"], 3) if overall else None,
+        "currentModel": current,
         "ruleBullishLocalBearish": len(flips),
         "ruleBearishLocalBullish": len(flips2),
-        "sources": {k: {"withLocal": v[0], "total": v[1]} for k, v in by_source.items()},
+        "byModel": {m: {"n": s["n"], "rows": s["pairs"],
+                        "signAgreement": round(s["signAgreement"], 3),
+                        "correlation": round(s["correlation"], 3) if s["correlation"] is not None else None}
+                    for m, s in per_model.items() if s},
+        "uniqueItems": {m: {"n": s["n"], "signAgreement": round(s["signAgreement"], 3)}
+                        for m, s in per_model_unique.items() if s},
     }
 
-    lines = [
-        "🧪 **Sentiment A/B — Rules vs Local LLM (qwen2.5:7b)**",
-        f"Items: {n} · local coverage: {coverage * 100:.0f}% · "
-        f"correlation: {corr:.2f}" if corr is not None else "correlation: n/a",
-        f"Sign agreement: {agree_rate * 100:.0f}% ({agree}/{len(pairs)})"
-        if agree_rate is not None else "sign agreement: n/a",
-        f"Direction flips: rule↔local {len(flips)} bullish→bearish, {len(flips2)} bearish→bullish",
-    ]
+    def fmt(m, s):
+        if not s or not s["pairs"]:
+            return None
+        unique = per_model_unique.get(m)
+        u = f" · {unique['agree']}/{unique['pairs']} unique ({unique['signAgreement'] * 100:.0f}%)" if unique and unique["pairs"] else ""
+        c = f" · corr {s['correlation']:.2f}" if s["correlation"] is not None else ""
+        return f"**{m}**: {s['agree']}/{s['pairs']} rows ({s['signAgreement'] * 100:.0f}%){u}{c}"
+
+    lines = ["🧪 **Sentiment A/B — Rules vs Local LLM (per model)**"]
+    if overall and per_model.get(current):
+        lines.append(f"Current lane {fmt(current, per_model[current])}")
+    for m in sorted(per_model):
+        if m != current:
+            f = fmt(m, per_model[m])
+            if f:
+                lines.append(f"Legacy {f}")
     if flips:
-        lines.append("**Bullish→bearish samples (rule was wrong?):**")
+        lines.append("**Bullish→bearish samples (current lane):**")
         for r in flips[:3]:
             lines.append(f"- [{r['source']}] {r['text'][:70]}… rule {r['rule_sentiment']} vs local {r['local_sentiment']} ({r.get('local_reason', '')})")
     if flips2:
-        lines.append("**Bearish→bullish samples:**")
+        lines.append("**Bearish→bullish samples (current lane):**")
         for r in flips2[:3]:
             lines.append(f"- [{r['source']}] {r['text'][:70]}… rule {r['rule_sentiment']} vs local {r['local_sentiment']} ({r.get('local_reason', '')})")
     if diffs:
-        lines.append("**Largest magnitude disagreements:**")
+        lines.append("**Largest magnitude disagreements (current lane):**")
         for r in diffs[:3]:
             lines.append(f"- [{r['source']}] rule {r['rule_sentiment']} vs local {r['local_sentiment']} — {r['text'][:60]}…")
 

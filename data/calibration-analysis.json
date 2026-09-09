@@ -1,17 +1,17 @@
 {
-  "analyzedAt": "2026-09-09T00:54:05.826537+00:00",
+  "analyzedAt": "2026-09-09T03:02:15.764291+00:00",
   "bot": "BANKROLL_200",
   "since": null,
   "method": "excess return = win_rate - mean entry price; se=sqrt(wr(1-wr)/N); |z|>=2 significant (port of jon-becker/prediction-market-analysis, MIT)",
   "total": {
-    "n": 1273,
-    "winRate": 0.5106,
-    "avgEntry": 0.5136,
-    "excessReturn": -0.003,
-    "z": -0.213,
-    "p": 0.831151,
+    "n": 1277,
+    "winRate": 0.5121,
+    "avgEntry": 0.5142,
+    "excessReturn": -0.002,
+    "z": -0.145,
+    "p": 0.884359,
     "significant": false,
-    "realizedPnl": -209.51
+    "realizedPnl": -200.84
   },
   "bands": [
     {
@@ -48,14 +48,14 @@
       "band": "0.40-0.60"
     },
     {
-      "n": 230,
-      "winRate": 0.6174,
-      "avgEntry": 0.6925,
-      "excessReturn": -0.0751,
-      "z": -2.344,
-      "p": 0.019053,
+      "n": 234,
+      "winRate": 0.6239,
+      "avgEntry": 0.6926,
+      "excessReturn": -0.0687,
+      "z": -2.17,
+      "p": 0.030042,
       "significant": true,
-      "realizedPnl": -32.92,
+      "realizedPnl": -24.25,
       "band": "0.60-0.80"
     },
     {
@@ -72,14 +72,14 @@
   ],
   "hours": [
     {
-      "n": 40,
-      "winRate": 0.575,
-      "avgEntry": 0.4829,
-      "excessReturn": 0.0921,
-      "z": 1.178,
-      "p": 0.238735,
+      "n": 41,
+      "winRate": 0.5854,
+      "avgEntry": 0.487,
+      "excessReturn": 0.0984,
+      "z": 1.279,
+      "p": 0.201028,
       "significant": false,
-      "realizedPnl": -20.89,
+      "realizedPnl": -18.2,
       "hour": 0
     },
     {
@@ -270,14 +270,14 @@
       "hour": 17
     },
     {
-      "n": 60,
-      "winRate": 0.4667,
-      "avgEntry": 0.5063,
-      "excessReturn": -0.0397,
-      "z": -0.616,
-      "p": 0.538057,
+      "n": 61,
+      "winRate": 0.4754,
+      "avgEntry": 0.5091,
+      "excessReturn": -0.0337,
+      "z": -0.527,
+      "p": 0.598374,
       "significant": false,
-      "realizedPnl": -22.73,
+      "realizedPnl": -20.33,
       "hour": 18
     },
     {
@@ -325,14 +325,14 @@
       "hour": 22
     },
     {
-      "n": 29,
-      "winRate": 0.4483,
-      "avgEntry": 0.5394,
-      "excessReturn": -0.0911,
-      "z": -0.987,
-      "p": 0.323701,
+      "n": 31,
+      "winRate": 0.4839,
+      "avgEntry": 0.552,
+      "excessReturn": -0.0682,
+      "z": -0.759,
+      "p": 0.447609,
       "significant": false,
-      "realizedPnl": -59.43,
+      "realizedPnl": -55.85,
       "hour": 23
     }
   ]

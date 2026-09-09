@@ -62,7 +62,7 @@
    "effort": "~2–3 days",
    "dates": "Design Sep 15–30 · build early Oct",
    "gate": "Kalshi circuit breaker must recover (realized ≥ −$50; now −$37.99, clear since kalshi-reprice-92 on 2026-09-05)",
-   "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed — botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs. AUDIT INPUT (2026-09-07, user-approved carding; drafts/oracle3-audit-2026-09-07.md + drafts/polymarket-mcp-server-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md): (1) build the arb detector on oracle3's coinjure/matching staged matcher (Apache-2.0 — category·date·template·text·resolution → HIGH/MED/LOW confidence; template fields reject WIN-vs-TIE + cumulative-date false matches; ~0.5–1d incl. PMA validation, LOW risk, shadow-lane first, flag-revertible); (2) fold the mcp-server confirmation-gate + SELL-reduces-by-min(order,pos)/no-position-SELL-adds-exposure semantics (MIT, concept-only, ~2–4h doc work) into the sidecar risk-gate spec. NOTHING ships before the Kelly window closes Oct 8 (precommit-mid-oct-kelly-gate).",
+   "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed — botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs. AUDIT INPUT (2026-09-07, user-approved carding; drafts/oracle3-audit-2026-09-07.md + drafts/polymarket-mcp-server-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md): (1) build the arb detector on oracle3's coinjure/matching staged matcher (Apache-2.0 — category·date·template·text·resolution → HIGH/MED/LOW confidence; template fields reject WIN-vs-TIE + cumulative-date false matches; ~0.5–1d incl. PMA validation, LOW risk, shadow-lane first, flag-revertible); (2) fold the mcp-server confirmation-gate + SELL-reduces-by-min(order,pos)/no-position-SELL-adds-exposure semantics (MIT, concept-only, ~2–4h doc work) into the sidecar risk-gate spec. NOTHING ships before the Kelly window closes Oct 8 (precommit-mid-oct-kelly-gate). AUDIT INPUT (2026-09-08, user-queued post-Kelly; drafts/ccxt-audit.md): multi-venue quote data backbone = **ccxt** (MIT; Polymarket+Kalshi+Hyperliquid coverage verified 2026-09-08) — adopt for arb quote breadth + perp-funding/OHLCV feature lane; do NOT churn existing bespoke CLOB/data-api/Kalshi read lanes.",
    "tags": [
     "kalshi",
     "arb"
@@ -127,11 +127,11 @@
   },
   {
    "id": "phase-local1",
-   "title": "Phase Local-1 — Local LLM sentiment (qwen2.5:7b, shadow A/B)",
+   "title": "Phase Local-1 — Local LLM sentiment (qwen2.5:7b → qwen3.5:9b, shadow A/B)",
    "column": "In Progress",
-   "dates": "Shipped 2026-08-31 (shadow)",
-   "gate": "A/B review after ~1 week of accumulation (scripts/compare-sentiment.py)",
-   "note": "Research bot scores sentiment with a local 7B via ollama (:11434, launchd) alongside the rules → data/sentiment-ab.jsonl. Live pipeline unchanged until the A/B shows the local model wins.",
+   "dates": "Shipped 2026-08-31 (shadow) · 3.5 lane 2026-09-08",
+   "gate": "A/B review after ~1 week of accumulation (scripts/compare-sentiment.py; AB rows now carry a 'model' field for per-model windows)",
+   "note": "Research bot scores sentiment with a local model via ollama (:11434, launchd) alongside the rules → data/sentiment-ab.jsonl. 2026-09-08: lane flipped to qwen3.5:9b (env LOCAL_SENTIMENT_MODEL in run_research_bot.sh) + prompt hardened (latest-action rubric, unconditional trade mappings, think:false top-level — /v1 endpoint drops options, uses /api/chat now). Backtest on 54 unique items: 2.5=67% rule-sign-agreement vs 3.5=63% (tie); 3.5 fixes became-public-law (HR5301: 0.1→1.0) + referral direction consistency, but exposes RULE incoherence: congress_api.py adjusts only confidence (0.70) on 'committee' actions — sentiment stays title-polarity, so identical referrals score ±0.5-0.9 by title keywords. Referral-stall semantics is a rules-side question, not settled. Live pipeline unchanged until the A/B shows the local model wins.",
    "tags": [
     "local-llm",
     "sentiment",
@@ -334,7 +334,7 @@
    "column": "Scheduled",
    "effort": "note only — no code",
    "dates": "Set 2026-09-05",
-   "note": "Homelab hardware purchases unlock ONLY after production CopyBot proves ≥$500/day (7 consecutive days, C-200 advance rule). HARD DEADLINE: TrueNAS R740xd + 12× recert drives (~$3–4.5k) must be purchased by end of Q3 2027 (2027-09-30) — the program's only dated gate. Derived: production proof should land ≈ Q2 2027 to keep sourcing/ordering float. C-200 tuning should size intermediate targets so the cascade holds: Dec 1 2026 ladder → early-2027 production rollout → Q2 2027 proof. Track A (Mac Studio M5 Ultra 256GB ~$9.5k + RTX PRO 5000 48GB ~$5.2–6.5k + Odin RAM) is post-proof with no hard date. Full detail: ~/homelab/roadmap.md sequencing gate + Track B #4.",
+   "note": "Homelab hardware purchases unlock ONLY after production CopyBot proves \u2265$500/day (7 consecutive days, C-200 advance rule). HARD DEADLINE: TrueNAS R740xd + 12\u00d7 recert drives (~$3\u20134.5k) must be purchased by end of Q3 2027 (2027-09-30) \u2014 the program's only dated gate. Derived: production proof should land \u2248 Q2 2027 to keep sourcing/ordering float. C-200 tuning should size intermediate targets so the cascade holds: Dec 1 2026 ladder \u2192 early-2027 production rollout \u2192 Q2 2027 proof. Track A (Mac Studio M5 Ultra 256GB ~$9.5k + RTX PRO 5000 48GB ~$5.2\u20136.5k + Odin RAM) is post-proof with no hard date. Full detail: ~/homelab/roadmap.md sequencing gate + Track B #4. CAPITAL STRUCTURE (decided 2026-09-08, production Jan 2 2027, $500/day assumed): sweep 50% of NET daily profit (max(0, net); governor pauses sweep if trailing-30d capital < floor; compute daily via query_bankroll, transfer weekly). Inside the swept 50%: ~30% to TAX RESERVE first (HYSA/MMF; quarterly estimates; user chose reserve-in-sweep for safety, 2026-09-08) \u2192 then Sep-2027 gate bucket (T-bill ladder \u22649mo maturing \u2248 2027-09-30) \u2192 personal floor (3\u20136mo expenses) \u2192 then VTI/VXUS growth (NOT PM/crypto \u2014 diversify away from the edge). Tax-rate hedge ~25\u201332% effective, verify with accountant. Paper\u2192live transition costs charged to trading capital, not the sweep. ENTITY (decided 2026-09-08): permanently own money / own book - run as INDIVIDUAL; no LLC; revisit ONLY if accountant confirms the income is SE-taxable AND net > ~$80k (S-corp eval then); outside capital / paid signals permanently off the table (no adviser/CTA exposure).",
    "tags": [
     "infra",
     "forecast",
@@ -382,6 +382,60 @@
     "data",
     "v39"
    ]
+  },
+  {
+   "id": "atlas-v2-layout",
+   "title": "Atlas v2 — polymonitor-style chrome (draft reviewed; promote into generator on approval)",
+   "column": "Backlog",
+   "effort": "~half day in gdelt-atlas/build.py once approved",
+   "dates": "Drafted 2026-09-08 (drafts/atlas-v2-20260908.html + public/atlas-v2-draft.html, live at :8090)",
+   "gate": "User review of the draft layout; then port the v2 template into ~/gdelt-atlas/build.py so the 4×/day rebuild emits it as public/atlas.html (existing filename — no dashboard restart needed). Region chips need the generator to emit an iso3→region field (draft embeds a static UN-M49-derived table for today's 33 iso3s).",
+   "note": "Layout borrows the polymonitor.club grammar: region bar, TIME/SEVERITY/CATEGORY filter chips (multi-select), severity bands from story significance (CRITICAL≥0.62/WARNING≥0.55/WATCH≥0.48), category colors, live UTC clock, wheel-zoom + drag-pan + zoom readout, filter-driven country recolor + hot (CRITICAL) outline, pin panel + feed respect filters. Static snapshot data — zero pipeline changes in the draft. Caveats: severity bands are heuristic (significance 0.44–0.70 range today); time chips are day-granular (GDELT stories carry dates not timestamps); MENA/LATAM region splits are UN-subregion approximations."
+  },
+  {
+   "id": "presidential-socials-lane",
+   "title": "Presidential-socials evidence lane (concept from trump-code audit; shadow-first)",
+   "column": "Backlog",
+   "effort": "~1–2 days concept spike, post-Kelly",
+   "dates": "Carded 2026-09-08 (audit drafts/trump-code-audit.md)",
+   "gate": "Post-Oct-8 (Kelly window); shadow A/B only; C-tier evidence cap (0.3) per A2 tier rules; dataset licensing check before any data reuse",
+   "note": "CONCEPT from the sstklen/trump-code audit (MIT repo, 799★): their research-bot feeds (Congress/GovInfo/GDELT/Quiver) omit presidential socials — Trump/administration posts are real-world events (evidence-eligible under the market-firewall, unlike the price data that repo conflates them with). Build OUR OWN lane: keyless Truth Social RSS + X fetch → event extract → shadow A/B vs rules (data/sentiment-ab.jsonl pattern) → RegulatorySignal webhook → C-tier evidence if it wins. NEVER port the repo's 551 brute-forced rules (backfilled 61.3% is in-sample; forward sample = 2 PENDING rows; z=5.39 fails 31.5M-trial Bonferroni). Secondary testable claim: Truth Social publishes ~6.2h before X (38/39 matched in their archive) — cheap to verify with our own fetcher; if real, an event-timing lead. DESIGNATED 2026-09-08: first local-LLM fine-tune target (see card llm-ft-track) — the lane's shadow data doubles as the FT dataset (silver = rule-agree rows, gold = curated edge cases)."
+  },
+  {
+   "id": "live-execution-reference",
+   "title": "Live-execution layer — Harrier toolkits as MIT reference (fires on production-capital unlock)",
+   "column": "Backlog",
+   "effort": "Reference read ~half day when it fires; build sized then",
+   "dates": "Carded 2026-09-08 (audit drafts/harrier-toolkits-audit.md)",
+   "gate": "Post-Oct-8 (Kelly window) AND C-200 production-proof clears the precommit gate (production-capital sizing unlock); build dry-run-first + flag-revertible",
+   "note": "REFERENCE from the HarrierOnChain audit (MIT, Rust, 3.4k LOC): when live capital unlocks, borrow structure from its execution engine — clob.rs (EIP-712 CTF order signing + L2 HMAC auth + POST /order, 489 LOC), order_executor.rs (FAK/GTD, dry-run path, 310 LOC), risk_guard.rs (circuit breaker + depth guard + per-category caps, 186 LOC), TP/SL midprice→FAK exit monitor. Sidecar (polyhydra-whale-signal) is signal-only today; this is the blueprint for the executor half. Do NOT adopt wholesale: (1) copy-trade ingestion is on-chain OrderFilled (misses off-chain CLOB fills — our data-api orderfilled sidecar source is correct, keep ours); (2) 9 of 10 strategies are 12–70 LOC stubs (README status column was deleted in the latest commit); (3) scaffold ideas (resolution-sniper, market_maker) contradict our favorite-band ≈0-trades findings. Compare their risk-guard semantics vs our RuleSet/exposure-cap engine before porting anything."
+  },
+  {
+   "id": "llm-ft-track",
+   "title": "Local-LLM fine-tune track (qwen3.5:9b QLoRA) — target 1 presidential-socials, target 2 bill→market mapping (queued)",
+   "column": "Backlog",
+   "effort": "FT-1 ~2–3 days (dataset + train + eval); FT-2 queued behind it",
+   "dates": "Carded 2026-09-08 (user decision: start with presidential-socials lane)",
+   "gate": "Post-Oct-8 (Kelly window); FT-1 requires presidential-socials shadow lane showing signal first; every FT must beat base qwen3.5:9b on pre-registered eval (rule-agreement on held-out items + named failure classes) before the adapter goes live; structured outputs (JSON-schema decode) land on the shadow scorer as step 0",
+   "note": "USER DECISION 2026-09-08: first fine-tune target = presidential-socials lane (see card presidential-socials-lane — shadow data doubles as dataset: silver = rule-agree rows, gold = curated edges). Second target QUEUED = bill→market mapping for the research bot (consistency win on existing lane; taxonomy FT: bill subject/action → Polymarket market category/map). Method: QLoRA rank 16–32 on qwen3.5:9b, ~100–300MB adapter, <1k curated items; train on cloud rental (RunPod-class, episodic-FT doctrine) or Odin RTX 5070 if self-hosted; export GGUF → serve via Ollama Modelfile on the 24GB head (JIT load/unload unchanged). Dataset rules: NEVER distill rule_sentiment alone (circular — that's the baseline the A/B must beat); gold set breaks the circle. Mix 10–20% sentiment rows into new-domain sets to prevent catastrophic forgetting. Eval: frozen holdout incl. the 40-flip referral set + became-law + quiver control, measured per-model in compare-sentiment."
+  },
+  {
+   "id": "scout-gitlab",
+   "title": "Repo scout widening — add GitLab source (audit-candidate breadth)",
+   "column": "Backlog",
+   "effort": "~half day (extend scripts/scan-github-repos.py with a GitLab.com project-search source; same metadata + triage + digest shape)",
+   "dates": "Carded 2026-09-08 (user decision: both widenings)",
+   "gate": "Post-Oct-8 (Kelly window); watch-only when the audit pipeline is busy (scout triage gates unchanged); GitLab.com search is rate-limited unauthenticated — weekly cadence fits, no credential needed initially",
+   "note": "Prediction-market bots disproportionately live GitLab-first or self-hosted — GitHub-only scouting misses a real share of audit candidates. Add GitLab.com project search (license, stars, pushed_at, description — same schema as the GitHub source) into scan-github-repos.py; digest to Discord unchanged. Reddit NOT included here (see reddit-intel-digest — human channel, not a scout feed)."
+  },
+  {
+   "id": "reddit-intel-digest",
+   "title": "Human-intel weekly digest — Reddit + HuggingFace + arXiv (ideas channel, NEVER signals)",
+   "column": "Backlog",
+   "effort": "~1 day (Reddit app credential + subreddit pull + HF trending/arXiv feed into one weekly Discord digest; recommendations-only)",
+   "dates": "Carded 2026-09-08 (user decision: both widenings)",
+   "gate": "Post-Oct-8 (Kelly window); digest is human-facing only — no webhook, no evidence tier, no auto-signals (hard guardrail: Reddit sentiment is noise/astroturf-prone and already priced); rate limits fine at weekly cadence",
+   "note": "Feeds the user's 'ideas from other humans' loop (their stated preference over AI-only ideation): weekly digest of r/algotrading + prediction-market subreddit threads worth reading, HF trending models/datasets, arXiv preprints (prediction markets/forecasting). Different pipeline from the research-bot evidence path on purpose — intel for the human + tuning-review loop, not market inputs. Reuse huggingface-hub / arxiv skill patterns for the sources; Discord delivery."
   }
 ]
 }
