@@ -12,6 +12,7 @@ import {
   combinedTodayPnl,
   dayWindow,
   finishedAt,
+  reportDayOffset,
   rowsFinishedIn,
 } from "../src/lib/day-pnl";
 
@@ -99,6 +100,14 @@ describe("local calendar-day windows", () => {
     const { start, end } = dayWindow(-1, new Date(2026, 2, 1, 9, 0, 0)); // Mar 1 local
     expect([start.getMonth(), start.getDate()]).toEqual([1, 28]); // Feb 28
     expect([end.getMonth(), end.getDate()]).toEqual([2, 1]);
+  });
+
+  it("picks the day a report should cover: today after noon, else the day just ended", () => {
+    expect(reportDayOffset(new Date(2026, 8, 11, 22, 0, 0))).toBe(0);   // 22:00 cron
+    expect(reportDayOffset(new Date(2026, 8, 11, 23, 58, 0))).toBe(0);  // 23:5x cron
+    expect(reportDayOffset(new Date(2026, 8, 12, 0, 5, 0))).toBe(-1);   // 00:05 cron -> yesterday
+    expect(reportDayOffset(new Date(2026, 8, 12, 11, 59, 0))).toBe(-1);
+    expect(reportDayOffset(new Date(2026, 8, 12, 12, 0, 0))).toBe(0);
   });
 
   it("prefers closedAt (TR-15 early exit) over resolvedAt", () => {

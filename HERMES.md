@@ -27,7 +27,7 @@ All commands run from the project root with `DATA_MODE=live`.
 | Hourly             | `npm run paper:update-pnl`                       | Refresh PnL, resolve finished markets |
 | Every 6h           | `npm run review:outcomes`                        | Judge past decisions |
 | Daily 21:30        | `npm run update:rules`                           | Self-improvement pass |
-| Daily 22:00        | `npm run report:daily`                           | EOD report → Discord |
+| Daily 22:00        | `npm run report:daily`                           | EOD report → Discord (local calendar day; `--dry-run` to preview) |
 
 ## Hermes cron examples
 

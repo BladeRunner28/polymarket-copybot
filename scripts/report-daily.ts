@@ -8,9 +8,19 @@ import { generateDailyReport } from "../src/lib/report";
 import { log, logError } from "../src/lib/redact";
 
 async function main() {
-  const { summary, sent } = await generateDailyReport();
+  // --dry-run (or REPORT_DRY_RUN=1) prints the report without sending it to
+  // Discord or writing the DailyReport row — safe way to preview a change to the
+  // calendar-day window.
+  const dryRun = process.argv.includes("--dry-run") || process.env.REPORT_DRY_RUN === "1";
+  const { summary, sent } = await generateDailyReport({ dryRun });
   log(summary);
-  log(sent ? "✅ Sent to Discord." : "ℹ️ Stored locally (no Discord webhook configured or send failed).");
+  log(
+    dryRun
+      ? "🧪 Dry run — nothing sent, no DailyReport row written."
+      : sent
+        ? "✅ Sent to Discord."
+        : "ℹ️ Stored locally (no Discord webhook configured or send failed)."
+  );
 }
 
 main()

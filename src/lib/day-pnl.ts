@@ -48,6 +48,16 @@ export type DayPnlSummary = {
   byVenue: TodayVenueSplit[];
 };
 
+/**
+ * Which day an end-of-day report should cover: today once we are past noon,
+ * otherwise the day that just ended. Lets one rule serve both a 22:00 schedule
+ * and a post-midnight 00:0x schedule without a midnight race (a 00:05 run must
+ * still report yesterday, not the two minutes of the new day).
+ */
+export function reportDayOffset(now: Date = new Date()): number {
+  return now.getHours() < 12 ? -1 : 0;
+}
+
 /** Local calendar-day window. offsetDays: 0 = today, -1 = yesterday. */
 export function dayWindow(offsetDays: number, now: Date = new Date()): { start: Date; end: Date } {
   const start = new Date(now);
