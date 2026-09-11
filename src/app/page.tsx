@@ -5,6 +5,7 @@ import { LineChart } from "@/components/chart";
 import { getActiveRules } from "@/lib/rules";
 import { effectiveExposureCap, exposureCapNote } from "@/lib/exposure-cap";
 import { c200HourPolicy, etHourNow } from "@/lib/hour-policy";
+import { summarizeDayPnl, combinedTodayPnl, dayWindow, rowsFinishedIn, finishedAt } from "@/lib/day-pnl";
 import { researchCategoryFor } from "@/lib/research-categories";
 import { readFileSync, readdirSync, statSync } from "fs";
 import path from "path";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function Overview() {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
+  const asOfUtc = new Date().toISOString().slice(11, 16);
 
   const [
     openTrades, 
@@ -27,7 +29,7 @@ export default async function Overview() {
     bankrolls,
     regulatorySignals,
     recentC200Trades,
-    closedTodayC200,
+    closedTodayC200Rows,
     openTradesC200
   ] = await Promise.all([
       prisma.paperTrade.findMany({ where: { status: "open" } }),
@@ -61,7 +63,7 @@ export default async function Overview() {
         orderBy: { openedAt: "desc" },
         take: 100 
       }),
-      prisma.paperTrade.aggregate({
+      prisma.paperTrade.findMany({
         where: {
           botId: 'BANKROLL_200',
           status: { in: ['closed', 'resolved'] },
@@ -69,7 +71,10 @@ export default async function Overview() {
           // closedAt; resolvedAt is NULL for those rows).
           OR: [{ resolvedAt: { gte: startOfDay } }, { closedAt: { gte: startOfDay } }],
         },
-        _sum: { realizedPnl: true, unrealizedPnl: true }
+        // Rows rather than an aggregate: the Today's-PnL card needs today's
+        // win/loss split, best/worst and per-venue realized. Totals are
+        // unchanged — the daily-loss gate still reads sum(realizedPnl).
+        select: { realizedPnl: true, unrealizedPnl: true, venue: true },
       }),
       prisma.paperTrade.aggregate({
         where: { botId: 'BANKROLL_200', status: 'open' },
@@ -99,14 +104,19 @@ export default async function Overview() {
     : 0;
 
   const c200Bankroll = bankrolls.find(b => b.botId === "BANKROLL_200") || { principal: 200, cashBalance: 0, realizedPnl: 0 };
-  const todayC200Pnl = (closedTodayC200._sum.realizedPnl || 0) + (closedTodayC200._sum.unrealizedPnl || 0) + (openTradesC200._sum.unrealizedPnl || 0);
+  // Today's PnL (2026-09-11 card). c200OpenMtm + todayC200.realized are the two
+  // distinct halves; todayC200Pnl keeps the historical Goal-Trajectory formula
+  // (realized + residual unrealized on today's finishes + open book MTM).
+  const c200OpenMtm = openTradesC200._sum.unrealizedPnl ?? 0;
+  const todayC200 = summarizeDayPnl(closedTodayC200Rows);
+  const todayC200Pnl = combinedTodayPnl(todayC200, c200OpenMtm);
 
   // v45 risk-gate live state — mirrors scripts/score-trades.ts gate math so the
   // dashboard shows the same numbers the scorer enforces on the next cycle.
   const riskRules = activeRules.rules;
   const c200OpenNotional = openTradesC200._sum.simulatedPositionSize ?? 0;
   const c200OpenCount = cmpOpen.length;
-  const c200RealizedToday = closedTodayC200._sum.realizedPnl ?? 0;
+  const c200RealizedToday = todayC200.realized;
   const c200NetWorth =
     (c200Bankroll.principal ?? 0) + (c200Bankroll.realizedPnl ?? 0) + (openTradesC200._sum.unrealizedPnl ?? 0);
   let c200Peak = 0;
@@ -269,7 +279,7 @@ export default async function Overview() {
       status: { in: ["closed", "resolved"] },
       OR: [{ closedAt: { gte: c200Since } }, { resolvedAt: { gte: c200Since } }],
     },
-    select: { realizedPnl: true, closedAt: true, resolvedAt: true },
+    select: { realizedPnl: true, unrealizedPnl: true, venue: true, closedAt: true, resolvedAt: true },
   });
   const c200ByDay = new Map<string, number>();
   for (const t of finishedC200) {
@@ -294,6 +304,24 @@ export default async function Overview() {
     if (d >= c200Goal.target) c200Streak++;
     else break;
   }
+
+  // Yesterday's closed day (2026-09-11 card). Same definition as c200Daily[1]:
+  // realized booked on the previous local calendar day, bucketed by
+  // closedAt ?? resolvedAt (TR-15 early exits book at closedAt). Frozen at
+  // midnight — src/lib/paper.ts stamps both timestamps with `new Date()` at run
+  // time, so nothing writes into a past day. Reuses the 7-day ladder rows.
+  const yesterdayWindow = dayWindow(-1);
+  const yesterdayC200Rows = rowsFinishedIn(finishedC200, yesterdayWindow.start, yesterdayWindow.end);
+  const yesterdayC200 = summarizeDayPnl(yesterdayC200Rows);
+  const yesterdayStart = yesterdayWindow.start;
+  const yesterdayLabel = `${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][yesterdayStart.getDay()]} ${yesterdayStart.getFullYear()}-${String(yesterdayStart.getMonth() + 1).padStart(2, "0")}-${String(yesterdayStart.getDate()).padStart(2, "0")}`;
+  const yesterdayLastBooking = yesterdayC200Rows
+    .map((r) => finishedAt(r))
+    .filter((d): d is Date => d != null)
+    .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+  const yesterdayLastBookingLabel = yesterdayLastBooking
+    ? `${String(yesterdayLastBooking.getHours()).padStart(2, "0")}:${String(yesterdayLastBooking.getMinutes()).padStart(2, "0")}`
+    : "—";
 
   // Cumulative PnL over time from database-aggregated snapshots
   const standardSeries = snapshots
@@ -384,7 +412,7 @@ export default async function Overview() {
       <Card title="C-200 Bot Goal Trajectory (Dec 1st target: $5k/day)">
         <div className="space-y-4 mt-2">
           <div className="flex items-center justify-between text-sm">
-            <div className="text-dim">Today's PnL: <span className="text-ink font-mono font-medium">${todayC200Pnl.toFixed(2)}</span></div>
+            <div className="text-dim">Today's PnL (realized + open MTM): <span className="text-ink font-mono font-medium">${todayC200Pnl.toFixed(2)}</span></div>
             <div className="text-dim text-right">Current Goal: <span className="text-ink font-mono font-medium">${c200Goal.target.toLocaleString()}/day ({c200Goal.name})</span></div>
           </div>
           
@@ -426,6 +454,191 @@ export default async function Overview() {
               <div className="text-xs text-dim mb-1">Ultimate</div>
               <div className="font-mono text-sm">$5,000/day</div>
             </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* C-200 Today's PnL — realized vs open mark-to-market (2026-09-11) */}
+      <Card title="C-200 — Today&apos;s PnL">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-[10px] text-dim uppercase tracking-wide">
+                Realized today — finished since 00:00 local (TR-15 early exits included)
+              </div>
+              <div
+                className={`text-3xl font-bold font-mono mt-1 ${
+                  todayC200.realized > 0 ? "text-pos" : todayC200.realized < 0 ? "text-neg" : "text-ink"
+                }`}
+              >
+                {todayC200.realized >= 0 ? "+" : "-"}${Math.abs(todayC200.realized).toFixed(2)}
+              </div>
+              <div className="text-xs text-dim mt-1">
+                {todayC200.closedCount} finished today · {todayC200.wins}W / {todayC200.losses}L
+                {todayC200.scratch > 0 ? ` / ${todayC200.scratch} scratch` : ""} · best{" "}
+                <span className="font-mono text-pos">+${todayC200.best.toFixed(2)}</span> / worst{" "}
+                <span className="font-mono text-neg">-${Math.abs(todayC200.worst).toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="text-right text-xs text-dim">
+              <div>as of <span className="font-mono">{asOfUtc}</span> UTC</div>
+              <Link href="/paper-trades" className="text-accent hover:text-ink transition-colors">
+                trade log →
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">Open MTM (whole book)</div>
+              <div className={`font-mono text-sm mt-1 ${c200OpenMtm > 0 ? "text-pos" : c200OpenMtm < 0 ? "text-neg" : "text-ink"}`}>
+                {c200OpenMtm >= 0 ? "+" : "-"}${Math.abs(c200OpenMtm).toFixed(2)}
+              </div>
+              <div className="text-[10px] text-dim mt-0.5">
+                {c200OpenCount} open · ${c200OpenNotional.toFixed(0)} notional
+              </div>
+            </div>
+
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">Combined now</div>
+              <div className={`font-mono text-sm mt-1 ${todayC200Pnl > 0 ? "text-pos" : todayC200Pnl < 0 ? "text-neg" : "text-ink"}`}>
+                {todayC200Pnl >= 0 ? "+" : "-"}${Math.abs(todayC200Pnl).toFixed(2)}
+              </div>
+              <div className="text-[10px] text-dim mt-0.5">realized + open MTM</div>
+            </div>
+
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">Headroom to halt</div>
+              <div
+                className={`font-mono text-sm mt-1 ${
+                  c200RealizedToday < (riskRules.dailyLossLimitUsd ?? -150) ? "text-neg" : "text-pos"
+                }`}
+              >
+                ${(c200RealizedToday - (riskRules.dailyLossLimitUsd ?? -150)).toFixed(2)}
+              </div>
+              <div className="text-[10px] text-dim mt-0.5">floor -${Math.abs(riskRules.dailyLossLimitUsd ?? -150)}</div>
+            </div>
+
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">By venue today</div>
+              <div className="mt-1 space-y-0.5">
+                {todayC200.byVenue.length === 0 ? (
+                  <div className="font-mono text-xs text-dim">nothing finished</div>
+                ) : (
+                  todayC200.byVenue.map((v) => (
+                    <div key={v.venue} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="text-dim truncate">{v.venue}</span>
+                      <span className={`font-mono ${v.realized > 0 ? "text-pos" : v.realized < 0 ? "text-neg" : "text-dim"}`}>
+                        {v.realized >= 0 ? "+" : "-"}${Math.abs(v.realized).toFixed(2)}
+                        <span className="text-dim"> ({v.count})</span>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[10px] text-dim pt-2 border-t border-edge">
+            Realized = trades finished today; the daily-loss breaker and the phase ladder key off this figure. Open MTM is
+            the whole open book&apos;s mark, not today&apos;s move — the Goal Trajectory card adds it to realized, which is
+            why its heading now says so.
+          </div>
+        </div>
+      </Card>
+
+      {/* C-200 Yesterday's PnL — the previous closed day (2026-09-11) */}
+      <Card title="C-200 — Yesterday&apos;s PnL">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-[10px] text-dim uppercase tracking-wide">
+                Realized on {yesterdayLabel} — booked before 00:00 local (TR-15 early exits included)
+              </div>
+              <div
+                className={`text-3xl font-bold font-mono mt-1 ${
+                  yesterdayC200.realized > 0 ? "text-pos" : yesterdayC200.realized < 0 ? "text-neg" : "text-ink"
+                }`}
+              >
+                {yesterdayC200.realized >= 0 ? "+" : "-"}${Math.abs(yesterdayC200.realized).toFixed(2)}
+              </div>
+              <div className="text-xs text-dim mt-1">
+                {yesterdayC200.closedCount} finished · {yesterdayC200.wins}W / {yesterdayC200.losses}L
+                {yesterdayC200.scratch > 0 ? ` / ${yesterdayC200.scratch} scratch` : ""} · best{" "}
+                <span className="font-mono text-pos">+${yesterdayC200.best.toFixed(2)}</span> / worst{" "}
+                <span className="font-mono text-neg">-${Math.abs(yesterdayC200.worst).toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="text-right text-xs text-dim">
+              <span className="inline-block border border-edge rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                day closed
+              </span>
+              <div className="mt-1">frozen at 00:00 — no writes into a past day</div>
+              <Link href="/paper-trades" className="text-accent hover:text-ink transition-colors">
+                trade log →
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">vs ${c200Goal.target.toLocaleString()}/day target</div>
+              <div
+                className={`font-mono text-sm mt-1 ${
+                  yesterdayC200.realized - c200Goal.target >= 0 ? "text-pos" : "text-neg"
+                }`}
+              >
+                {yesterdayC200.realized - c200Goal.target >= 0 ? "+" : "-"}$
+                {Math.abs(yesterdayC200.realized - c200Goal.target).toFixed(2)}
+              </div>
+              <div className="text-[10px] text-dim mt-0.5">{c200Goal.name} · {c200Goal.target.toLocaleString()}/day</div>
+            </div>
+
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">Streak credit</div>
+              <div
+                className={`font-mono text-sm mt-1 ${
+                  yesterdayC200.realized >= c200Goal.target ? "text-pos" : "text-neg"
+                }`}
+              >
+                {yesterdayC200.realized >= c200Goal.target ? "counted" : "missed"}
+              </div>
+              <div className="text-[10px] text-dim mt-0.5">
+                ladder bucket ${c200Daily[1].toFixed(2)} · needs ${c200Goal.target.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">Booked through</div>
+              <div className="font-mono text-sm mt-1 text-ink">{yesterdayLastBookingLabel}</div>
+              <div className="text-[10px] text-dim mt-0.5">latest finish that day</div>
+            </div>
+
+            <div className="border border-edge rounded-lg p-3 bg-edge/10">
+              <div className="text-[10px] text-dim uppercase tracking-wide">By venue</div>
+              <div className="mt-1 space-y-0.5">
+                {yesterdayC200.byVenue.length === 0 ? (
+                  <div className="font-mono text-xs text-dim">nothing finished</div>
+                ) : (
+                  yesterdayC200.byVenue.map((v) => (
+                    <div key={v.venue} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="text-dim truncate">{v.venue}</span>
+                      <span className={`font-mono ${v.realized > 0 ? "text-pos" : v.realized < 0 ? "text-neg" : "text-dim"}`}>
+                        {v.realized >= 0 ? "+" : "-"}${Math.abs(v.realized).toFixed(2)}
+                        <span className="text-dim"> ({v.count})</span>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[10px] text-dim pt-2 border-t border-edge">
+            Settled figures: the window only advances at 00:00 local, and closedAt/resolvedAt are stamped at run time
+            (src/lib/paper.ts), so a past day cannot change. Two honest caveats — a market that resolved late in the evening
+            but is first picked up by the next hourly update-pnl run books on the following day, and the 22:00 EOD report
+            sums a rolling window since the previous report, so its number can differ from this calendar day.
           </div>
         </div>
       </Card>
