@@ -22,6 +22,27 @@ import { join } from "path";
 const DEAD_SLUG_CACHE_FILE = join(__dirname, "..", "data", "dead-slug-cache.json");
 const MAX_DEAD_SLUGS = 24;
 
+// v53 (tuning review #21 rec 1, user-approved 2026-09-11): DB-fault resilience
+// + honest partial reporting. The Sep 9 08:19 run hit a SQLite connector error
+// ("Error code 1: SQL error or missing database") inside the mark transaction;
+// 738/1,786 open trades were marked (41%) yet the run still logged "complete".
+// SQLite lock/connector errors are transient — retry the DB write, and report
+// coverage explicitly (PARTIAL + non-zero exit so the cron alert fires).
+const DB_RETRY_ATTEMPTS = 3;
+async function withDbRetry<T>(fn: () => Promise<T>, what: string): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const transient = /SQL error|connector|database is locked|timeout|busy|missing database/i.test(msg);
+      if (!transient || attempt >= DB_RETRY_ATTEMPTS) throw e;
+      log(`DB write failed (${what}) attempt ${attempt}/${DB_RETRY_ATTEMPTS} — retrying in ${500 * attempt}ms: ${msg}`);
+      await new Promise((r) => setTimeout(r, 500 * attempt));
+    }
+  }
+}
+
 async function main() {
   const adapter = getAdapter();
   const { rules } = await getActiveRules();
@@ -104,7 +125,7 @@ async function main() {
     if (outcome) {
       for (const t of trades) {
         if (t.status !== "open") continue;
-        await resolvePaperTrade(t.id, outcome === t.outcome);
+        await withDbRetry(() => resolvePaperTrade(t.id, outcome === t.outcome), `resolve ${t.id}`);
         resolved++;
       }
       return;
@@ -112,7 +133,10 @@ async function main() {
     const dayAgo = Date.now() - 86_400_000;
     for (const t of trades) {
       if (t.openedAt.getTime() < dayAgo) {
-        await closePaperTrade(t.id, t.currentPrice, "market 404 (dead slug) >24h — expired; outcome unavailable");
+        await withDbRetry(
+          () => closePaperTrade(t.id, t.currentPrice, "market 404 (dead slug) >24h — expired; outcome unavailable"),
+          `expire ${t.id}`
+        );
         expired++;
       }
     }
@@ -155,7 +179,7 @@ async function main() {
     for (const t of trades) {
       try {
         if (m.resolved && m.winningOutcome) {
-          await resolvePaperTrade(t.id, m.winningOutcome === t.outcome);
+          await withDbRetry(() => resolvePaperTrade(t.id, m.winningOutcome === t.outcome), `resolve ${t.id}`);
           resolved++;
           continue;
         }
@@ -164,7 +188,7 @@ async function main() {
           failures.push(`${marketId}: no price available`);
           continue;
         }
-        await updatePaperTradePrice(t.id, price);
+        await withDbRetry(() => updatePaperTradePrice(t.id, price), `mark ${t.id}`);
         updated++;
 
         // v29/v33 capital recycling: C-200 positions must not park capital.
@@ -189,17 +213,25 @@ async function main() {
               ? (t.entryPrice - price) / t.entryPrice
               : (price - t.entryPrice) / t.entryPrice;
           if (ageHours >= rules.staleExitHardHours) {
-            await closePaperTrade(
-              t.id,
-              price,
-              `stale ${ageHours.toFixed(0)}h ≥ ${rules.staleExitHardHours}h hard max-age — v33 capital recycling`
+            await withDbRetry(
+              () =>
+                closePaperTrade(
+                  t.id,
+                  price,
+                  `stale ${ageHours.toFixed(0)}h ≥ ${rules.staleExitHardHours}h hard max-age — v33 capital recycling`
+                ),
+              `recycle ${t.id}`
             );
             recycled++;
           } else if (ageHours >= rules.staleExitHours && winMove < rules.staleExitMinMove) {
-            await closePaperTrade(
-              t.id,
-              price,
-              `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% < ${(rules.staleExitMinMove * 100).toFixed(0)}% — v29 capital recycling`
+            await withDbRetry(
+              () =>
+                closePaperTrade(
+                  t.id,
+                  price,
+                  `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% < ${(rules.staleExitMinMove * 100).toFixed(0)}% — v29 capital recycling`
+                ),
+              `recycle ${t.id}`
             );
             recycled++;
           }
@@ -220,10 +252,25 @@ async function main() {
       throw new Error("All PnL updates failed — see errors above.");
     }
   }
+  // v53 (tuning review #21 rec 1): coverage accounting — a run that marks only
+  // a fraction of the open book (e.g. a mid-run SQLite connector fault) must
+  // NOT report "complete". PARTIAL + non-zero exit so the cron alert fires;
+  // unmarked trades re-mark on the next hourly run (self-healing).
+  const elapsed = ((Date.now() - startedAt) / 1000).toFixed(0);
+  const covered = updated + resolved + expired + recycled;
+  const coverage = open.length ? covered / open.length : 1;
+  if (coverage < 0.9) {
+    logError(
+      `PnL update PARTIAL: ${covered}/${open.length} open trades covered (${(coverage * 100).toFixed(0)}%), ` +
+        `${failures.length} failure(s), ${byMarket.size} markets in ${elapsed}s — remaining trades re-mark next run`
+    );
+    process.exitCode = 1;
+    return;
+  }
   // Completion line last so `tail -N` log capture always includes it.
   log(
     `PnL update complete: ${updated} updated, ${resolved} resolved, ${expired} expired (dead markets), ${recycled} recycled (v29/v33 stale exit), ` +
-      `${byMarket.size} markets in ${((Date.now() - startedAt) / 1000).toFixed(0)}s.`
+      `${covered}/${open.length} covered (${(coverage * 100).toFixed(0)}%), ${byMarket.size} markets in ${elapsed}s.`
   );
 }
 

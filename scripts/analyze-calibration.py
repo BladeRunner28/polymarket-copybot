@@ -166,10 +166,16 @@ def main():
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     write_path = OUT
-    if args.since:
-        write_path = os.path.join(
-            ROOT, "data", f"calibration-analysis-since-{args.since}.json"
-        )
+    if args.since or args.bot != "BANKROLL_200":
+        # v53 (TR-21 rec 3): include bot + window in the filename — a STANDARD
+        # run must not clobber the C-200 artifact (bot in name only for
+        # non-default bots to keep the canonical C-200 all-time path stable).
+        parts = ["calibration-analysis"]
+        if args.bot != "BANKROLL_200":
+            parts.append(args.bot)
+        if args.since:
+            parts.append(f"since-{args.since}")
+        write_path = os.path.join(ROOT, "data", "-".join(parts) + ".json")
     with open(write_path, "w") as f:
         json.dump(out, f, indent=2)
 

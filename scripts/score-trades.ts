@@ -108,21 +108,44 @@ async function main() {
     (bankrollRow?.principal ?? 0) +
     (bankrollRow?.realizedPnl ?? 0) +
     (openUnrealAgg._sum.unrealizedPnl ?? 0);
-  let peakBankroll: number;
+  // v53 (tuning review #21 rec 2, user-approved 2026-09-11): shadow BOTH
+  // drawdown definitions for the Sep 15 octagon §4 decision — MTM (the current
+  // gate basis: peak ratchets on unrealized marks, the Sep 7/8 freeze
+  // mechanism) vs realized-only (principal + ledger realized). Log-only; the
+  // gate stays on MTM until the refit. State file keeps both peaks + any note.
+  let drawdownState: { peak?: number; realizedPeak?: number; note?: string; updatedAt?: string } = {};
   try {
-    peakBankroll = JSON.parse(fs.readFileSync(DRAW_DOWN_FILE, "utf-8")).peak ?? 0;
+    drawdownState = JSON.parse(fs.readFileSync(DRAW_DOWN_FILE, "utf-8"));
   } catch {
-    peakBankroll = 0;
+    drawdownState = {};
   }
-  if (peakBankroll < (bankrollRow?.principal ?? 0)) peakBankroll = bankrollRow?.principal ?? 0;
+  const principal = bankrollRow?.principal ?? 0;
+  let peakBankroll = drawdownState.peak ?? 0;
+  if (peakBankroll < principal) peakBankroll = principal;
+  const realizedOnlyNW = principal + (bankrollRow?.realizedPnl ?? 0);
+  let realizedPeak = drawdownState.realizedPeak ?? principal;
+  if (realizedPeak < principal) realizedPeak = principal;
+  if (realizedOnlyNW > realizedPeak) realizedPeak = realizedOnlyNW;
+  let ddStateDirty = false;
   if (c200NetWorth > peakBankroll) {
     peakBankroll = c200NetWorth;
+    ddStateDirty = true;
+  }
+  if (drawdownState.realizedPeak !== realizedPeak) ddStateDirty = true;
+  if (ddStateDirty) {
     fs.writeFileSync(
       DRAW_DOWN_FILE,
-      JSON.stringify({ peak: peakBankroll, updatedAt: new Date().toISOString() })
+      JSON.stringify({ ...drawdownState, peak: peakBankroll, realizedPeak, updatedAt: new Date().toISOString() })
     );
   }
   const c200DrawdownPct = peakBankroll > 0 ? Math.max(0, (peakBankroll - c200NetWorth) / peakBankroll) : 0;
+  const realizedOnlyDdPct =
+    realizedPeak > 0 ? Math.max(0, (realizedPeak - realizedOnlyNW) / realizedPeak) : 0;
+  log(
+    `[DRAWDOWN-SHADOW] MTM ${(c200DrawdownPct * 100).toFixed(1)}% (peak $${peakBankroll.toFixed(0)}, NW $${c200NetWorth.toFixed(0)}) ` +
+      `vs realized-only ${(realizedOnlyDdPct * 100).toFixed(1)}% (realized peak $${realizedPeak.toFixed(0)}, realized NW $${realizedOnlyNW.toFixed(0)}) ` +
+      `— gate uses MTM until the Sep 15 refit decision`
+  );
 
   // v46 (2026-09-03, approved): equity-linked gross-exposure cap —
   // $base + 50% × max(0, net worth − principal). Symmetric: shrinks when
