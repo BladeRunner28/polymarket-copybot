@@ -451,6 +451,21 @@
     "measurement",
     "paper-fidelity"
    ]
+  },
+  {
+   "id": "v54-deadzone-admission",
+   "title": "v54 — Dead-zone (0.40–0.60) admission stop (APPROVED, queued for the Oct 8 window close)",
+   "column": "Backlog",
+   "effort": "~1–2h when applied",
+   "dates": "Approved 2026-09-11 (C-200 daily report Change 2) · queued to Oct 8 by default (window-contamination caveat) · shadow evidence available from Sep 22",
+   "gate": "Pre-registered Kelly window (Sep 8–Oct 8) — applying now contaminates the window read; the report's own caveat. Apply on explicit user override ('apply dead-zone gate now') or at the Oct 8 close with the shadow-ladder evidence.",
+   "note": "WHY: 0.40–0.60 consumes 46% of all staked capital ($3,713) at −13.7% lifetime and −30.0% ROI in the last 7d; v51's ×0.25 cut shrank the absolute loss, not the bleed RATE (capital is not stuck — avg open age 17.6h, recycler frees it hourly — the bot re-enters ~18×/day by flow at 99% cap utilization), so every dead-zone admit displaces long-shot stake (~$76/day of stake redirected). FIX (admission-only): band-scoped gate in the admission path — copyScore ≥ 90 within [0.40,0.60) or zero admits; must cover the short-TTR LANE + legacy paths (Kelly main-lane already skips the band via λ̂=+0.03). Candidate implementation: new ruleset field(s) (deadZoneMinCopyScore / deadZoneAdmitEnabled) enforced in score-trades admission for all C-200 paths, fan-out-validated against the lane. VERIFY: 0 C-200 open copies with entry ∈ [0.40,0.60) 7d after apply; long-shot (<0.20) admits/day ≥ pre-apply; C-200 clean-regime ROI unchanged-or-better at the next review.",
+   "tags": [
+    "kelly-window",
+    "size-bands",
+    "admission",
+    "queued"
+   ]
   }
- ]
+]
 }

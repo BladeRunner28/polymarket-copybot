@@ -24,6 +24,7 @@ import {
   loadPremiumCalibration,
 } from "../src/lib/premium";
 import { kellySizeForCopy } from "../src/lib/kelly";
+import { appendShadowRow, SHADOW_MAX_PRICE } from "../src/lib/shadow-longshot";
 
 async function main() {
   assertPaperOnly("score:trades");
@@ -183,6 +184,7 @@ async function main() {
     watches = 0,
     skips = 0;
   let laneCopies = 0; // short-TTR lane copies (scoped to BANKROLL_200)
+  let shadowLogged = 0; // v53: sub-0.20 shadow-ladder candidates logged
   // TR-14 (2026-09-03): running gross-exposure total for the C-200 book.
   // Seeded from the cycle-start snapshot and incremented per booked copy so
   // candidates later in THIS run see earlier acceptances (fixes per-cycle
@@ -320,6 +322,36 @@ async function main() {
       },
       rules
     );
+
+    // v53 (2026-09-11 C-200 daily report Change 1, approved): long-shot shadow
+    // ladder — log EVERY sub-0.20 candidate with its full feature vector; the
+    // would-admit book (drift ≤ 0.01 / spread ≤ 0.08 / conf ≥ 0.50) is marked
+    // to resolution next to the live book by scripts/mark-shadow-longshot.ts.
+    // Live thresholds stay frozen (Oct 8); this only measures. Never fatal.
+    if (currentPrice < SHADOW_MAX_PRICE) {
+      try {
+        appendShadowRow({
+          marketId: t.marketId,
+          outcome: t.outcome,
+          side: t.side,
+          walletAddress: t.walletAddress,
+          entryPrice: currentPrice,
+          walletEntryPrice: t.walletEntryPrice,
+          detectedPrice: t.detectedPrice,
+          spread,
+          liquidity,
+          ttrHours: ttr,
+          confidence: result.confidence,
+          copyScore: result.copyScore,
+          liveDecision: result.decision,
+          longshotFloorScore: rules.longshotMinCopyScore,
+          longshotFloorConf: rules.longshotMinConfidence,
+        });
+        shadowLogged++;
+      } catch (e) {
+        logError(`[SHADOW] append failed for ${t.marketId}: ${e instanceof Error ? e.message : e}`);
+      }
+    }
 
     const decision = await prisma.decisionJournal.create({
       data: {
@@ -741,7 +773,7 @@ async function main() {
     else skips++;
   }
 
-  log(`Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips, ${deduped} sweep-duplicates coalesced.`);
+  log(`Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips, ${deduped} sweep-duplicates coalesced, ${shadowLogged} shadow long-shot candidates logged.`);
 }
 
 main()
