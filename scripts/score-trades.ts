@@ -222,6 +222,29 @@ async function main() {
       log(
         `[DEDUPE] ${t.walletAddress.slice(0, 6)}… ${t.marketId} ${t.outcome} — sweep fill coalesced into the open copy (one position per wallet/market/outcome); no duplicate copy`
       );
+      // v54 (tuning review #22 rec 1, approved): JOURNAL the coalesced fill so
+      // it leaves the unscored queue permanently. Unjournaled skips were
+      // re-processed every run and could re-book once per run — the failure
+      // signature behind the 5 post-guard duplicate pairs (#22).
+      try {
+        await prisma.decisionJournal.create({
+          data: {
+            observedTradeId: t.id,
+            walletAddress: t.walletAddress,
+            marketId: t.marketId,
+            decision: "skip",
+            copyScore: 0,
+            confidence: 0,
+            reasonsJson: "[]",
+            risksJson: JSON.stringify([
+              "coalesced into open copy — same wallet/market/outcome already open (v52 option-A dedupe; v54 journaling)",
+            ]),
+            isDemo: t.isDemo,
+          },
+        });
+      } catch (e) {
+        logError(`[DEDUPE] journal write failed for ${t.id}: ${e instanceof Error ? e.message : e}`);
+      }
       continue;
     }
     const wallet = await prisma.walletProfile.findUnique({ where: { address: t.walletAddress } });
