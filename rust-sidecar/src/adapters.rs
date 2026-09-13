@@ -81,17 +81,36 @@ async fn get_json(client: &Client, url: &str) -> Result<Value, String> {
 /// Bounded walk over open events (8 pages x 200), token-overlap scored,
 /// cached per normalized question. Returns Err when nothing clears the bar.
 async fn resolve_kalshi_event(client: &Client, question: &str) -> Result<String, String> {
+    resolve_kalshi_match(client, question).await.map(|m| m.0)
+}
+
+/// `(event_ticker, event_title, token_score)` for the best-scoring open Kalshi event.
+///
+/// The raw score and title are returned because callers that make a *decision* off
+/// the quote must be able to audit the match: `token_score = overlap / min(tokens)`
+/// means a short question built from generic tokens clears MATCH_THRESHOLD on noise.
+/// Observed live 2026-09-13: "Will Bursaspor win on 2026-09-13?" (tokens: bursaspor,
+/// win, 2026) matched KXANYDEMWINTEXAS-26NOV03 (a Texas election market, ask 99.9¢)
+/// at score 0.67 by sharing only {win, 2026}.
+async fn resolve_kalshi_match(client: &Client, question: &str) -> Result<(String, String, f64), String> {
     let q_words = norm_words(question);
     if q_words.is_empty() {
         return Err("unparseable market question".into());
     }
     let cache_key = q_words.join(" ");
     if let Some(hit) = ticker_cache().lock().ok().and_then(|m| m.get(&cache_key).cloned()) {
-        return Ok(hit);
+        // Cache stores "ticker\ttitle\tscore" so an audited match stays audited.
+        let mut parts = hit.splitn(3, '\t');
+        let ticker = parts.next().unwrap_or("").to_string();
+        let title = parts.next().unwrap_or("").to_string();
+        let score = parts.next().and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
+        if !ticker.is_empty() {
+            return Ok((ticker, title, score));
+        }
     }
 
     let mut cursor: Option<String> = None;
-    let mut best: Option<(String, f64)> = None;
+    let mut best: Option<(String, String, f64)> = None;
     for _ in 0..MAX_EVENT_PAGES {
         let mut url = format!("{KALSHI_BASE}/events?limit=200&status=open");
         if let Some(c) = &cursor {
@@ -103,12 +122,12 @@ async fn resolve_kalshi_event(client: &Client, question: &str) -> Result<String,
             let title = ev["title"].as_str().unwrap_or("");
             let score = token_score(&q_words, &norm_words(title));
             let keep = match &best {
-                Some((_, s)) => score > *s,
+                Some((_, _, s)) => score > *s,
                 None => score >= MATCH_THRESHOLD,
             };
             if keep && score >= MATCH_THRESHOLD {
                 if let Some(t) = ev["event_ticker"].as_str() {
-                    best = Some((t.to_string(), score));
+                    best = Some((t.to_string(), title.to_string(), score));
                 }
             }
         }
@@ -121,16 +140,15 @@ async fn resolve_kalshi_event(client: &Client, question: &str) -> Result<String,
     }
 
     match best {
-        Some((ticker, score)) => {
+        Some((ticker, title, score)) => {
             if let Ok(mut m) = ticker_cache().lock() {
-                m.insert(cache_key, ticker.clone());
+                m.insert(cache_key, format!("{ticker}\t{title}\t{score}"));
             }
-            println!("🎯 [Kalshi Matcher] '{question}' -> event {ticker} (score {score:.2})");
-            Ok(ticker)
+            println!("🎯 [Kalshi Matcher] '{question}' -> event {ticker} \"{title}\" (score {score:.2})");
+            Ok((ticker, title, score))
         }
         None => Err(format!(
-            "no open Kalshi event matched question (scored {:.2} of open events over {MAX_EVENT_PAGES} pages)",
-            best.map(|(_, s)| s).unwrap_or(0.0)
+            "no open Kalshi event matched question (scored 0.00 of open events over {MAX_EVENT_PAGES} pages)"
         )),
     }
 }
@@ -156,6 +174,42 @@ pub async fn fetch_kalshi_depth(
         );
     }
     let event = resolve_kalshi_event(client, market_question).await?;
+    orderbook_price(client, &event, side).await
+}
+
+/// Same resolution + price as `fetch_kalshi_depth`, but ALSO returns the resolved
+/// Kalshi event ticker so read-only callers (the venue-shadow book) can AUDIT the
+/// fuzzy match instead of trusting a bare price.
+///
+/// Why this exists: `token_score` is `overlap / min(tokens)`, so a short question
+/// whose tokens are generic clears the 0.55 bar on noise — observed live,
+/// "Will Bursaspor win on 2026-09-13?" (tokens: bursaspor, win, 2026) matched
+/// `KXANYDEMWINTEXAS-26NOV03` at 0.67 by sharing only {win, 2026}. The ticker is
+/// what lets the caller reject that class of match.
+pub async fn fetch_kalshi_quote(
+    client: &Client,
+    _market_id: &str,
+    market_question: &str,
+    side: &str,
+) -> Result<KalshiQuote, String> {
+    if market_question.trim().is_empty() {
+        return Err("no market_question — cannot resolve venue price".into());
+    }
+    let (ticker, title, score) = resolve_kalshi_match(client, market_question).await?;
+    let price = orderbook_price(client, &ticker, side).await?;
+    Ok(KalshiQuote { ticker, title, score, price })
+}
+
+/// An auditable Kalshi quote: price PLUS what it was matched to and how well.
+pub struct KalshiQuote {
+    pub ticker: String,
+    pub title: String,
+    pub score: f64,
+    pub price: f64,
+}
+
+/// Top-level orderbook price for a resolved Kalshi event ticker.
+async fn orderbook_price(client: &Client, event: &str, side: &str) -> Result<f64, String> {
     let url = format!("{KALSHI_BASE}/markets/{event}/orderbook");
     let json = get_json(client, &url).await?;
 

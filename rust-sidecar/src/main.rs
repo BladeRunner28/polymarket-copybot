@@ -27,6 +27,46 @@ struct ExecutionIntent {
     wallet_address: String,
 }
 
+#[derive(Deserialize, Debug)]
+struct QuoteRequest {
+    market_id: String,
+    #[serde(default)]
+    market_question: String,
+    side: String,
+}
+
+/// READ-ONLY Kalshi quote probe (venue-shadow book, 2026-09-13).
+///
+/// `POST /execute` cannot be used for price discovery: it books a paper trade via
+/// the execution-result webhook. This route runs the SAME adapter path as
+/// /execute (ticker resolution + top-of-book) and returns the price without any
+/// side effect — the single source of truth for the fuzzy matcher stays here.
+///
+/// Kalshi's public orderbook exposes only the top level per side, so this is a
+/// best-price probe, not a depth model.
+async fn handle_quote(Json(req): Json<QuoteRequest>) -> Json<serde_json::Value> {
+    let client = reqwest::Client::new();
+    let market_id = if req.market_id.is_empty() { "0x-venue-shadow".to_string() } else { req.market_id.clone() };
+    match adapters::fetch_kalshi_quote(&client, &market_id, &req.market_question, &req.side).await {
+        Ok(q) => Json(json!({
+            "ok": true,
+            "venue": "Kalshi",
+            "price": q.price,
+            // Match provenance: the caller MUST audit this (token_score clears its
+            // bar on generic tokens — see adapters.rs resolve_kalshi_match).
+            "ticker": q.ticker,
+            "matched_title": q.title,
+            "match_score": q.score,
+            "source": "kalshi-top-of-book",
+        })),
+        Err(e) => Json(json!({
+            "ok": false,
+            "venue": "Kalshi",
+            "error": e,
+        })),
+    }
+}
+
 async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_json::Value> {
     println!("🚀 [Shadow FAK] Received Execution Intent for {}: ${:.2} on {} at {:.1}¢", 
         intent.bot_id, intent.size_usd, intent.outcome, intent.price * 100.0);
@@ -156,10 +196,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawn WebSocket Whale Subscriber in background
     tokio::spawn(start_whale_subscriber());
     
-    // Start Axum Execution Server
-    let app = Router::new().route("/execute", post(handle_execution));
-    let listener = TcpListener::bind("127.0.0.1:3014").await?;
-    println!("🔥 Rust Execution API running on http://127.0.0.1:3014");
+    // Start Axum Execution Server. Port is overridable so a rebuilt binary can be
+    // smoke-tested on a spare port while the live daemon keeps serving SIDECAR_PORT
+    // (default 3014) — see scripts/kalshi-venue-shadow.ts.
+    let app = Router::new()
+        .route("/execute", post(handle_execution))
+        .route("/quote", post(handle_quote));
+    let port = env::var("SIDECAR_PORT").unwrap_or_else(|_| "3014".to_string());
+    let addr = format!("127.0.0.1:{port}");
+    let listener = TcpListener::bind(&addr).await?;
+    println!("🔥 Rust Execution API running on http://{addr}");
     axum::serve(listener, app).await?;
     
     Ok(())

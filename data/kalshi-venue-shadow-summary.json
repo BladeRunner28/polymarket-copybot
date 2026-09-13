@@ -1,0 +1,71 @@
+{
+  "asOf": "2026-09-13T16:01:22.153Z",
+  "kind": "forward-venue-shadow",
+  "windowStart": "2026-09-13T15:16:51.397Z",
+  "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
+  "caveats": [
+    "Kalshi's public orderbook exposes the TOP LEVEL only — no depth, no market impact, no fill probability.",
+    "Kalshi fee modelled at 0.07 (published schedule; the fee audit flags it as needing live confirmation).",
+    "Every quote is verified against the matched Kalshi event TITLE; unverified matches are counted and excluded, never priced. Expect false negatives (abbreviated titles) — dropping a real match is cheaper than fabricating a venue edge.",
+    "win/loss is derived from realizedPnl sign; partial exits and early closes make both legs approximate.",
+    "rows first seen more than 6h after open are excluded as stale (a late quote is not an entry).",
+    "no real Kalshi orders were placed and none will be — paper only."
+  ],
+  "coverage": {
+    "copiesSeen": 401,
+    "inWindow": 6,
+    "withKalshiQuote": 0,
+    "crossListRate": 0,
+    "staleSkips": 395,
+    "quoteFailures": 4,
+    "unverifiedMatches": 2,
+    "rejectionReasons": {
+      "low_match_score_0.67": 2,
+      "pre_guard_quote": 1
+    }
+  },
+  "books": {
+    "pm": {
+      "n": 0,
+      "pnl": 0,
+      "staked": 0,
+      "roiPct": 0
+    },
+    "kalshi": {
+      "n": 0,
+      "pnl": 0,
+      "staked": 0,
+      "roiPct": 0
+    },
+    "delta": {
+      "pnl": 0,
+      "perTrade": 0
+    }
+  },
+  "series": {
+    "dates": [],
+    "pmCum": [],
+    "kalshiCum": []
+  },
+  "matchAudit": [
+    {
+      "question": "Will Bursaspor win on 2026-09-13?",
+      "matchedTitle": "",
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.43,
+      "verified": false,
+      "reason": "pre_guard_quote (no match provenance stored)"
+    },
+    {
+      "question": "Will Bogota FC win on 2026-09-14?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.66,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    }
+  ],
+  "perTrade": []
+}

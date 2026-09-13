@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { hourlyPnlSeries } from "@/lib/pnl-rollup";
 import { Card, Stat, Pnl, Badge, Empty } from "@/components/ui";
 import { LineChart } from "@/components/chart";
+import { KalshiShadowCards } from "@/components/kalshi-shadow";
+import { KalshiVenueShadowCard } from "@/components/kalshi-venue-shadow";
 import { getActiveRules } from "@/lib/rules";
 import { effectiveExposureCap, exposureCapNote } from "@/lib/exposure-cap";
 import { c200HourPolicy, etHourNow } from "@/lib/hour-policy";
@@ -743,6 +745,11 @@ export default async function Overview() {
         <Stat label="Open Positions" value={String(cmpOpen.length)} sub="compounding bot ($0.10 - $45)" />
         <Stat label="Total Capital" value={`$${(c200Bankroll.principal + cmpTotalPnl).toFixed(2)}`} sub={`starting principal: $${c200Bankroll.principal.toFixed(2)}`} tone="neutral" />
       </div>
+
+      {/* Kalshi shadow — attribution + expectancy-score cards (2026-09-13, approved) */}
+      <KalshiShadowCards />
+      {/* Venue shadow — same trades at Kalshi's own prices, forward-only (2026-09-13, approved) */}
+      <KalshiVenueShadowCard />
 
       <Card title="Paper PnL Over Time">
         <LineChart series={chartData} formatY={(v) => `$${v.toFixed(0)}`} />
