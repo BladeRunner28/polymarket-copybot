@@ -540,6 +540,20 @@
         "pnl",
         "risk-gate"
       ]
+    },
+    {
+      "id": "score-copies-overcount",
+      "title": "score:trades over-reports 'paper copies' \u2014 the counter and the lane log fire per DECISION, outside the per-leg loop",
+      "column": "Backlog",
+      "effort": "~30 min (move copies++/laneCopies++ and the lane log inside the leg loop; or count actual opened positions)",
+      "dates": "Found 2026-09-13 while confirming the resolution fix (misread the log first \u2014 it says 'copy' when the leg was skipped)",
+      "note": "scripts/score-trades.ts: copies++ and the '[SHORT-TTR lane] BANKROLL_200 copy: ...' log sit at the END of the per-observation block (lines ~770-777), OUTSIDE the `for (const t of <legs>)` loop that contains openPaperTrade (~732). So a decision whose every leg was blocked still counts as a copy and logs 'copy: <market>'. Measured: lifetime 5,120 'paper copies' logged vs 1,879 actual execution intents (over-count 3,241); the 2026-09-13T06:07 run logged '3 paper copies (3 short-TTR lane)' with 0 dispatches \u2014 all 3 legs were blocked by other gates (cs2 category blacklist, 15/15 per-market-slug cap). REPORTED-NUMBER effect only so far: the same counters feed capRisk (lane cap 10/cycle, main 50/cycle, wallet 40/day) but no cap has ever been hit (0 'cap reached' lines in the whole log). LATENT RISK: a busy cycle could burn the lane budget on blocked candidates and suppress real copies later in the same cycle. Fix changes what the log/report says about copies, hence parked for approval \u2014 note the EOD/daily reports quote the DB (PaperTrade), not this line, so no stored number is wrong.",
+      "tags": [
+        "bug",
+        "scoring",
+        "logging",
+        "needs-approval"
+      ]
     }
   ]
 }
