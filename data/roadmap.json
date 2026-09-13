@@ -524,6 +524,21 @@
         "dashboard",
         "analytics"
       ]
+    },
+    {
+      "id": "resolution-label-bug",
+      "title": "BUG (trading-affecting): non-YES/NO markets always resolve as full-stake losses \u2014 70 confirmed phantom losses, \u2212$1,771 of realized PnL, drawdown gate implicated",
+      "column": "Backlog",
+      "effort": "~half day (resolution fix + backfill + drawdown recompute + before/after re-baseline); dry-run first",
+      "dates": "Found 2026-09-13 (Kelly-review impact check) \u00b7 user decision on backfill + gate recompute",
+      "note": "src/lib/adapters/polymarket.ts derives resolution as `winningOutcome = yesPrice > 0.5 ? \"YES\" : \"NO\"`, but sports/esports/handicap/total markets carry token labels ('Dynasty', 'Under', '9z', 'Team Liquid'). A copy on such a token can NEVER satisfy `winningOutcome === trade.outcome`, so resolvePaperTrade books a full-stake loss no matter what happened. Audited all 189 resolved trades with a non-YES/NO label (scripts/audit-misresolved-trades.py, read-only, CLOB token/winner lookup): 70 are PHANTOM losses (the bought token WAS the winner; booked \u2212$828.38, correct settlement +$942.34 = +$1,770.72 missing), 79 are correct losses, 40 are unresolvable markets (conditionId is an event id, 404 at CLOB \u2014 guaranteed \u2212size by construction). BANKROLL_200 share: 24 phantom trades, booked \u2212$100.78 \u2192 +$123.33 (delta +$224.11); Kelly-window main-lane realized is \u2212$629.77 of which \u2212$56.02 is this class. LIVE CONSEQUENCE: the C-200 drawdown gate is tripped at 20.1% \u2014 net worth $2,069 vs the $2,070.66 threshold, i.e. short by ~$1.66 \u2014 and correcting only BANKROLL_200's phantom losses puts realized at +$48.86 and net worth ~$2,293 (~11%); even if the entire correction had landed before the peak (peak \u2264 $2,812 \u2192 threshold \u2264 $2,250) the gate clears. So the gate halting new copies is plausibly an artifact, not a drawdown. Fix: resolve by token identity (or per-market normalised label) rather than a binary YES/NO guess; backfill the 70; decide policy for the 40 unresolvable; recompute the drawdown high-water mark from the corrected path; re-baseline the Kelly window + benchmark table before/after.",
+      "tags": [
+        "bug",
+        "resolution",
+        "pnl",
+        "risk-gate",
+        "needs-approval"
+      ]
     }
   ]
 }
