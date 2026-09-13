@@ -81,6 +81,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bot", default="BANKROLL_200")
     ap.add_argument("--since", default=None, help="regime filter: only trades opened >= YYYY-MM-DD (ET midnight)")
+    ap.add_argument("--dedupe", action="store_true",
+                    help="decision-level sample: collapse duplicate accumulation rows (same marketId+outcome, "
+                         "keep first entry). Duplicates are pseudo-replication — they inflate N and every z-stat "
+                         "(all-time C-200: 1,473 rows vs 785 decisions). Default OFF so mid-window comparisons "
+                         "stay on the raw sample; writes a -deduped file suffix.")
     args = ap.parse_args()
 
     since_ms = None
@@ -96,7 +101,7 @@ def main():
     # v48 (2026-09-04 daily report, approved): exclude the phantom-priced
     # legacy Kalshi leg until kalshi-reprice-92 lands — its 0.52-stub rows
     # distorted the 23:00 ET hour stats (85% of that "drain" was Kalshi).
-    sql = """SELECT entryPrice, realizedPnl, openedAt FROM PaperTrade
+    sql = """SELECT entryPrice, realizedPnl, openedAt, marketId, outcome FROM PaperTrade
           WHERE botId=? AND status IN ('resolved','closed')
             AND realizedPnl IS NOT NULL AND isDemo=0
             AND venue != 'Kalshi'"""
@@ -107,10 +112,21 @@ def main():
     rows = con.execute(sql, params).fetchall()
     con.close()
 
+    deduped_from = None
+    if args.dedupe:
+        # Duplicate accumulation rows (same market+outcome, pre-guard multi-entry)
+        # are one DECISION repeated: keeping them counts the same bet N times and
+        # inflates the z-stat. Keep the first entry per position.
+        seen: dict = {}
+        for r in sorted(rows, key=lambda x: finish_time_ms(x[2])):
+            seen.setdefault(f"{r[3]}|{r[4]}", r)
+        deduped_from = len(rows)
+        rows = list(seen.values())
+
     et = ZoneInfo("America/New_York")
     by_band = defaultdict(list)
     by_hour = defaultdict(list)
-    for p, pnl, opened in rows:
+    for p, pnl, opened, _mid, _oc in rows:
         won = pnl > 0
         by_band[None].append((p, won, pnl))
         for lo, hi in BANDS:
@@ -159,6 +175,8 @@ def main():
         "analyzedAt": datetime.now(timezone.utc).isoformat(),
         "bot": args.bot,
         "since": args.since,
+        "deduped": bool(args.dedupe),
+        "dedupedFromRows": deduped_from,
         "method": "excess return = win_rate - mean entry price; se=sqrt(wr(1-wr)/N); |z|>=2 significant (port of jon-becker/prediction-market-analysis, MIT)",
         "total": total,
         "bands": bands_out,
@@ -166,20 +184,25 @@ def main():
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     write_path = OUT
-    if args.since or args.bot != "BANKROLL_200":
+    if args.since or args.bot != "BANKROLL_200" or args.dedupe:
         # v53 (TR-21 rec 3): include bot + window in the filename — a STANDARD
         # run must not clobber the C-200 artifact (bot in name only for
         # non-default bots to keep the canonical C-200 all-time path stable).
+        # --dedupe is a DIFFERENT sample, so it never overwrites the raw file.
         parts = ["calibration-analysis"]
         if args.bot != "BANKROLL_200":
             parts.append(args.bot)
         if args.since:
             parts.append(f"since-{args.since}")
+        if args.dedupe:
+            parts.append("deduped")
         write_path = os.path.join(ROOT, "data", "-".join(parts) + ".json")
     with open(write_path, "w") as f:
         json.dump(out, f, indent=2)
 
     label = f"since {args.since}" if args.since else "all-time"
+    if args.dedupe:
+        label += f", decision-level (deduped from {deduped_from} rows)"
     print(f"Calibration analysis ({args.bot}, {label}, N={total['n']}) — ** = |z|>=2 significant")
     print("Price bands:")
     print("\n".join(lines))

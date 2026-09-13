@@ -466,6 +466,37 @@
     "admission",
     "queued"
    ]
+  },
+  {
+   "id": "change2-oct8-gates",
+   "title": "C-200 Change 2 — entry-hour gate (08:00 ET) + premium-band gate (0.60–0.80): APPROVED IN PRINCIPLE, queued to the Oct 8 window close",
+   "column": "Backlog",
+   "effort": "~1h at apply (one const in hour-policy.ts + one band field in score-trades.ts)",
+   "dates": "Approved 2026-09-13 (daily report Change 2) · queued to Oct 8 · evidence accumulates from the next score:trades run",
+   "gate": "Pre-registered trigger, IN-WINDOW sample only, decision-level (deduped): |z| >= 2.0 AND realized PnL < 0 AND N >= 20. Read at the Oct 8 close: python3 scripts/analyze-change2-gates.py. All-time stats are context, never the trigger.",
+   "note": "TWO FINDINGS AT APPROVAL (2026-09-13, both from the recon before applying): (1) 20:00 ET is ALREADY blacked out — src/lib/hour-policy.ts C200_BLACKOUT_HOURS_ET = {20} (v41/v48), so the report's 'blocklist 08+20' reduces to adding 08:00 ET only; 20:00's in-window N is 0 by construction. (2) The report's z-stats were computed on a duplicate-inflated sample: deduped to one row per market+outcome, 08:00 ET all-time falls to z=-1.77 (raw -2.69, no longer significant) and 20:00 ET to z=-1.35 (raw -2.82), while the 0.60–0.80 band survives (all-time z=-2.16, in-window z=-2.23, N=67, PnL -$20.83) and now TRIGGERS the pre-registered rule. 08:00 in-window N=8 — below the N>=20 bar. IMPLEMENTATION AT APPLY: hour gate = add 8 to C200_BLACKOUT_HOURS_ET (code change + tests/hour-policy.test.ts); band gate = per-leg cap in score-trades.ts behind a new ruleset field (v47 c200MaxEntryPrice / v44 standardMaxEntryPrice pattern), NEVER via the symmetric maxEntryPrice (it would kill the <0.15 long-shot edge). VERIFY 7d after apply: 0 C-200 entries in the gated hour/band; long-shot (<0.20) admits/day >= pre-apply; clean-regime ROI unchanged-or-better at the next review.",
+   "tags": [
+    "kelly-window",
+    "hour-policy",
+    "size-bands",
+    "queued",
+    "v53"
+   ]
+  },
+  {
+   "id": "calibration-dedupe-decision",
+   "title": "Decision-level (deduped) stats as the published sample? — switch calibration + daily report off duplicate rows",
+   "column": "Backlog",
+   "effort": "~1h (flag exists; the question is the default + a report re-baseline)",
+   "dates": "Raised 2026-09-13 (v53 recon)",
+   "gate": "User decision, no date gate. Mid-window (to Oct 8) keep raw as the published default so window comparisons stay stable — the deduped view is the DECISION view, not the published one.",
+   "note": "FINDING: PaperTrade carries legacy duplicate accumulation rows (pre-guard multi-entry, same market+outcome). All-time C-200 finished Polymarket-only: raw N=1,473 vs decision-level N=785 (688 duplicate rows). Duplicates are pseudo-replication — they count one bet N times and inflate every z-stat. Direction survives, magnitudes do not: 24–72h exits raw -$1,215.72/1,069 rows vs deduped -$406.10/511 decisions; all-time realized raw -$137.06 vs deduped +$243.66. Significance FLIPS both ways: 08:00 ET z -2.69 -> -1.77 and 20:00 ET -2.82 -> -1.35 (lost), 0.40–0.60 band -2.26 -> -2.87 (gained, strengthens the queued dead-zone stop), 0.20–0.40 realized PnL -$214.45 -> +$132.69 (the 'positive edge yet negative realized' contradiction was a duplicate artifact). TOOLING: scripts/analyze-calibration.py now has opt-in --dedupe (writes calibration-analysis[-since-<date>]-deduped.json; default unchanged); scripts/analyze-change2-gates.py always dedupes. OPEN QUESTION: make dedupe the default for the daily report + calibrate-premium.py (re-baselines published numbers) or keep raw published + deduped as the decision view.",
+   "tags": [
+    "data-integrity",
+    "calibration",
+    "duplicates",
+    "v53"
+   ]
   }
-]
+ ]
 }

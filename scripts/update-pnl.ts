@@ -7,7 +7,13 @@
 import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { getActiveRules } from "../src/lib/rules";
-import { updatePaperTradePrice, resolvePaperTrade, closePaperTrade } from "../src/lib/paper";
+import {
+  updatePaperTradePrice,
+  resolvePaperTrade,
+  closePaperTrade,
+  winMovePct,
+  staleExitDecision,
+} from "../src/lib/paper";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { log, logError } from "../src/lib/redact";
 import { sweepExitRecovery } from "../src/lib/exit-recovery";
@@ -196,8 +202,12 @@ async function main() {
         // closes at last price regardless of move (v29 tier-1 never fires:
         // every position that survives 72h has already drifted ≥5%, so the
         // real drag is stuck winners on markets that never resolve).
-        // Tier 1 (v29): 72h old and hasn't moved ≥ staleExitMinMove toward
-        // the winning outcome (BUY-side model → win direction is price up).
+        // Tier 1 (v29, adverse-only since v53): staleExitHours old and hasn't
+        // moved ≥ staleExitMinMove toward the winning outcome (BUY-side model →
+        // win direction is price up). v53: with staleExitAdverseOnly = 1 this
+        // cut fires ONLY on an adverse move (winMove ≤ staleExitAdverseMove) —
+        // the old flat-cut realized 24h noise as losses (24–72h exits: −17.0%
+        // ROI over 1,069 rows); flat positions now run to the hard max-age.
         // Reuses closePaperTrade (same path as dead-market expiry) so cash
         // and realized PnL book consistently.
         if (t.botId === "BANKROLL_200") {
@@ -208,11 +218,9 @@ async function main() {
           // that's noPrice rising. SELL (future-proof): winning means price
           // falls. The v29 "BUY-side only" report finding was a misread; this
           // makes the intent explicit.
-          const winMove =
-            t.side === "SELL"
-              ? (t.entryPrice - price) / t.entryPrice
-              : (price - t.entryPrice) / t.entryPrice;
-          if (ageHours >= rules.staleExitHardHours) {
+          const winMove = winMovePct(t.side, t.entryPrice, price);
+          const action = staleExitDecision(ageHours, winMove, rules);
+          if (action === "hard_max_age") {
             await withDbRetry(
               () =>
                 closePaperTrade(
@@ -223,16 +231,12 @@ async function main() {
               `recycle ${t.id}`
             );
             recycled++;
-          } else if (ageHours >= rules.staleExitHours && winMove < rules.staleExitMinMove) {
-            await withDbRetry(
-              () =>
-                closePaperTrade(
-                  t.id,
-                  price,
-                  `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% < ${(rules.staleExitMinMove * 100).toFixed(0)}% — v29 capital recycling`
-                ),
-              `recycle ${t.id}`
-            );
+          } else if (action === "tier1") {
+            const why =
+              rules.staleExitAdverseOnly === 1
+                ? `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% ≤ ${(rules.staleExitAdverseMove * 100).toFixed(0)}% adverse — v53 adverse-only exit`
+                : `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% < ${(rules.staleExitMinMove * 100).toFixed(0)}% — v29 capital recycling`;
+            await withDbRetry(() => closePaperTrade(t.id, price, why), `recycle ${t.id}`);
             recycled++;
           }
         }
@@ -269,7 +273,7 @@ async function main() {
   }
   // Completion line last so `tail -N` log capture always includes it.
   log(
-    `PnL update complete: ${updated} updated, ${resolved} resolved, ${expired} expired (dead markets), ${recycled} recycled (v29/v33 stale exit), ` +
+    `PnL update complete: ${updated} updated, ${resolved} resolved, ${expired} expired (dead markets), ${recycled} recycled (stale exit — v53 adverse-only tier-1 + v33 hard max-age), ` +
       `${covered}/${open.length} covered (${(coverage * 100).toFixed(0)}%), ${byMarket.size} markets in ${elapsed}s.`
   );
 }

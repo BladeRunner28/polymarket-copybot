@@ -1,0 +1,216 @@
+{
+  "generatedAt": "2026-09-13T09:37:12.371927+00:00",
+  "bot": "BANKROLL_200",
+  "windows": {
+    "in_window": "2026-09-06",
+    "all_time": "all-time"
+  },
+  "live_policy": {
+    "source": "src/lib/hour-policy.ts",
+    "blackout_hours_et": [
+      20
+    ],
+    "haircut_hour_et": 10
+  },
+  "open_book": {
+    "rows": 58,
+    "stakedUsd": 1073.65
+  },
+  "decision_rule": {
+    "min_abs_z": 2.0,
+    "require_negative_pnl": true,
+    "min_n": 20,
+    "sample": "in-window only (all-time is context, never the trigger)",
+    "set_at": "2026-09-13"
+  },
+  "sample_collapse": {
+    "in_window": {
+      "raw": 280,
+      "deduped": 209,
+      "collapsed": 71
+    },
+    "all_time": {
+      "raw": 1473,
+      "deduped": 785,
+      "collapsed": 688
+    }
+  },
+  "gates": {
+    "in_window": {
+      "label": "since 2026-09-06",
+      "total": {
+        "n": 280,
+        "winRate": 0.4286,
+        "avgEntry": 0.4624,
+        "excessReturn": -0.0338,
+        "z": -1.144,
+        "p": 0.252585,
+        "significant": false,
+        "realizedPnl": -141.26
+      },
+      "collapse": {
+        "raw": 280,
+        "deduped": 209,
+        "collapsed": 71
+      },
+      "gates": {
+        "hour_08_et": {
+          "n": 8,
+          "winRate": 0.25,
+          "avgEntry": 0.5588,
+          "excessReturn": -0.3088,
+          "z": -2.017,
+          "p": 0.043722,
+          "significant": true,
+          "realizedPnl": -7.49,
+          "n_raw": 8,
+          "excess_raw": -0.3088,
+          "z_raw": -2.017,
+          "already_gated": false,
+          "would_trigger": false
+        },
+        "hour_00_et": {
+          "n": 15,
+          "winRate": 0.0667,
+          "avgEntry": 0.4463,
+          "excessReturn": -0.3797,
+          "z": -5.895,
+          "p": 0.0,
+          "significant": true,
+          "realizedPnl": -89.76,
+          "n_raw": 20,
+          "excess_raw": -0.3402,
+          "z_raw": -5.072,
+          "already_gated": false,
+          "would_trigger": false
+        },
+        "hour_01_et": {
+          "n": 10,
+          "winRate": 0.5,
+          "avgEntry": 0.4325,
+          "excessReturn": 0.0675,
+          "z": 0.427,
+          "p": 0.669447,
+          "significant": false,
+          "realizedPnl": -157.89,
+          "n_raw": 15,
+          "excess_raw": 0.0057,
+          "z_raw": 0.047,
+          "already_gated": false,
+          "would_trigger": false
+        },
+        "hour_20_et": {
+          "n": 0
+        },
+        "band_0.60-0.80": {
+          "n": 67,
+          "winRate": 0.5672,
+          "avgEntry": 0.7019,
+          "excessReturn": -0.1347,
+          "z": -2.226,
+          "p": 0.026018,
+          "significant": true,
+          "realizedPnl": -20.83,
+          "n_raw": 81,
+          "excess_raw": -0.1082,
+          "z_raw": -1.981,
+          "would_trigger": true
+        }
+      }
+    },
+    "all_time": {
+      "label": "all-time",
+      "total": {
+        "n": 1473,
+        "winRate": 0.4969,
+        "avgEntry": 0.5105,
+        "excessReturn": -0.0135,
+        "z": -1.038,
+        "p": 0.299165,
+        "significant": false,
+        "realizedPnl": -137.06
+      },
+      "collapse": {
+        "raw": 1473,
+        "deduped": 785,
+        "collapsed": 688
+      },
+      "gates": {
+        "hour_08_et": {
+          "n": 17,
+          "winRate": 0.3529,
+          "avgEntry": 0.5576,
+          "excessReturn": -0.2047,
+          "z": -1.766,
+          "p": 0.077368,
+          "significant": false,
+          "realizedPnl": -12.37,
+          "n_raw": 34,
+          "excess_raw": -0.2106,
+          "z_raw": -2.695,
+          "already_gated": false,
+          "would_trigger": false
+        },
+        "hour_00_et": {
+          "n": 28,
+          "winRate": 0.3214,
+          "avgEntry": 0.4913,
+          "excessReturn": -0.1698,
+          "z": -1.924,
+          "p": 0.054315,
+          "significant": false,
+          "realizedPnl": -89.17,
+          "n_raw": 58,
+          "excess_raw": -0.0505,
+          "z_raw": -0.782,
+          "already_gated": false,
+          "would_trigger": false
+        },
+        "hour_01_et": {
+          "n": 34,
+          "winRate": 0.5,
+          "avgEntry": 0.5236,
+          "excessReturn": -0.0236,
+          "z": -0.275,
+          "p": 0.783252,
+          "significant": false,
+          "realizedPnl": -105.45,
+          "n_raw": 53,
+          "excess_raw": -0.0342,
+          "z_raw": -0.501,
+          "already_gated": false,
+          "would_trigger": false
+        },
+        "hour_20_et": {
+          "n": 14,
+          "winRate": 0.4286,
+          "avgEntry": 0.6074,
+          "excessReturn": -0.1788,
+          "z": -1.352,
+          "p": 0.176447,
+          "significant": false,
+          "realizedPnl": -26.25,
+          "n_raw": 31,
+          "excess_raw": -0.2365,
+          "z_raw": -2.817,
+          "already_gated": true,
+          "would_trigger": false
+        },
+        "band_0.60-0.80": {
+          "n": 188,
+          "winRate": 0.617,
+          "avgEntry": 0.6937,
+          "excessReturn": -0.0766,
+          "z": -2.162,
+          "p": 0.030639,
+          "significant": true,
+          "realizedPnl": -18.72,
+          "n_raw": 297,
+          "excess_raw": -0.091,
+          "z_raw": -3.205,
+          "would_trigger": true
+        }
+      }
+    }
+  }
+}

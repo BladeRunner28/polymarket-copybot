@@ -54,6 +54,19 @@ export interface Rules {
   maxOpenPositions: number;
   staleExitHours: number;
   staleExitMinMove: number;
+  // v53 (2026-09-13 daily report Change 1, user-approved): adverse-only tier-1
+  // stale exit. Pre-v53 the tier-1 cut closed any C-200 position older than
+  // staleExitHours whose winMove < staleExitMinMove — a "flat is bad" rule, not
+  // a loser-cut: it realized 24h noise as losses at scale (24–72h exits: 1,069
+  // rows, −$1,215.72 on $7,152 staked, −17.0% ROI, 44% win; every other hold
+  // window is positive, and excluding those rows Polymarket realized turns
+  // +$817.81). With staleExitAdverseOnly = 1 the tier-1 cut fires only on
+  // ADVERSE moves (winMove ≤ staleExitAdverseMove, negative), so flat positions
+  // run to the staleExitHardHours max-age instead of being cut at 24h.
+  // staleExitHours keeps its meaning as the tier-1 age gate. 0 (default) =
+  // legacy behavior, byte-identical for any ruleset lacking these fields.
+  staleExitAdverseOnly: number; // 1 = adverse-only tier-1 cut, 0 = legacy
+  staleExitAdverseMove: number; // winMove threshold (negative fraction, e.g. -0.15)
   // v33: hard max-age — any BANKROLL_200 position open past this closes at
   // last price regardless of winMove. v29 tier-1 (72h + <5% move) can't fire
   // when every old position has drifted ≥5%; the real drag is winners that
@@ -214,6 +227,11 @@ export const DEFAULT_RULES: Rules = {
   maxOpenPositions: 100,
   staleExitHours: 48,
   staleExitMinMove: 0.05,
+  // v53: adverse-only tier-1 (live values land in the DB ruleset at activation).
+  // Default 0 keeps legacy behavior; the −15% threshold is the value the
+  // 2026-09-13 report measured against (1,069 cut rows, −17.0% ROI in 24–72h).
+  staleExitAdverseOnly: 0,
+  staleExitAdverseMove: -0.15,
   staleExitHardHours: 168,
   // v34: clamp boosted scores into the 70–79 sweet spot (= sweetSpotMaxScore).
   regulatoryScoreCap: 79,

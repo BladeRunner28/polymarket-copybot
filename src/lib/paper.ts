@@ -267,6 +267,52 @@ export async function resolvePaperTrade(tradeId: string, won: boolean) {
   });
 }
 
+/**
+ * v53 (2026-09-13 daily report Change 1, user-approved): tier-1 stale exit
+ * policy, extracted as a pure function so the rule is unit-testable.
+ *
+ * winMove = signed move toward the winning outcome. BUY: rising price wins.
+ * SELL (modeled as buying the opposite outcome; future-proof): falling wins.
+ */
+export function winMovePct(side: string, entryPrice: number, price: number): number {
+  if (entryPrice <= 0) return 0;
+  return side === "SELL" ? (entryPrice - price) / entryPrice : (price - entryPrice) / entryPrice;
+}
+
+export type StaleExitAction = "none" | "tier1" | "hard_max_age";
+
+export interface StaleExitRules {
+  staleExitHours: number;
+  staleExitMinMove: number;
+  staleExitHardHours: number;
+  staleExitAdverseOnly: number;
+  staleExitAdverseMove: number;
+}
+
+/**
+ * Which stale-exit tier (if any) fires for an open C-200 position.
+ *
+ *   hard_max_age — age ≥ staleExitHardHours: unconditional close at last price.
+ *   tier1        — age ≥ staleExitHours AND the move is bad enough:
+ *                  legacy (staleExitAdverseOnly = 0): winMove < staleExitMinMove
+ *                  ("flat is bad" — cut anything not already up ≥5%);
+ *                  v53 (staleExitAdverseOnly = 1): winMove ≤ staleExitAdverseMove
+ *                  (adverse only — flat/slightly-up positions run to max-age).
+ */
+export function staleExitDecision(
+  ageHours: number,
+  winMove: number,
+  rules: StaleExitRules
+): StaleExitAction {
+  if (ageHours >= rules.staleExitHardHours) return "hard_max_age";
+  if (ageHours < rules.staleExitHours) return "none";
+  const tier1Fires =
+    rules.staleExitAdverseOnly === 1
+      ? winMove <= rules.staleExitAdverseMove
+      : winMove < rules.staleExitMinMove;
+  return tier1Fires ? "tier1" : "none";
+}
+
 /** Close a paper trade early at the current market price (rule-driven exit). */
 export async function closePaperTrade(tradeId: string, exitPrice: number, _reason: string) {
   assertPaperOnly("closePaperTrade");
