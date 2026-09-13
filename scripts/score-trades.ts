@@ -752,6 +752,44 @@ async function main() {
           // while it stays open collapses into it.
           openCopyKeys.add(`${t.walletAddress}|${t.marketId}|${t.outcome}`);
 
+          // Counters and the copy alert belong to a SUCCESSFUL open, so they live
+          // inside this per-leg loop. They used to sit after it, once per scored
+          // DECISION, which counted and logged a "paper copy" even when every leg
+          // was blocked by a gate: lifetime 5,120 "paper copies" logged against
+          // 1,879 actual execution intents. The same counters gate `capRisk`
+          // (lane 10/cycle, main 50/cycle), so blocked candidates were also eating
+          // the per-cycle budget — those caps now behave as designed.
+          //
+          // Semantics per bot: STANDARD gets a row written here, so this counts
+          // positions; BANKROLL_200 only DISPATCHES to the Rust sidecar (the row is
+          // written by its webhook callback), so this counts dispatches that passed
+          // every gate — the closest thing to "copies made" this loop can observe.
+          copies++;
+          if (result.lane === "short_ttr") {
+            laneCopies++;
+            log(
+              `[SHORT-TTR lane] BANKROLL_200 copy: ${t.marketId} ` +
+                `(ttr ${ttr !== undefined ? ttr.toFixed(1) + "h" : "?"}, score ${result.copyScore})`
+            );
+          }
+
+          // Discord alert on new paper copies (live signals only, never demo data).
+          if (!t.isDemo) {
+            const isFirstEver =
+              (await prisma.paperTrade.count({ where: { isDemo: false } })) === 1;
+            await sendDiscord(
+              [
+                isFirstEver
+                  ? "🎉 **First real paper copy!** _(paper trading only — no real money)_"
+                  : "📈 **New paper copy** _(paper only)_",
+                `**Market:** ${t.marketQuestion ?? t.marketId}`,
+                `**Position:** ${t.side} ${t.outcome} @ ${currentPrice.toFixed(3)} — simulated $${result.simulatedPositionSize.toFixed(2)}`,
+                `**Following:** \`${t.walletAddress.slice(0, 10)}…\` (wallet score ${wallet.globalScore.toFixed(0)})`,
+                `**Copy score:** ${result.copyScore.toFixed(0)} (rules v${version}) — ${result.reasons[0] ?? ""}`,
+              ].join("\n")
+            );
+          }
+
           // TR-14 (2026-09-03): count the booked C-200 size against the running
           // exposure total (only on success; the catch below leaves it untouched).
           if (botId === "BANKROLL_200") c200RunningExposure += positionSize || 0.25;
@@ -766,31 +804,6 @@ async function main() {
         } catch (e) {
           logError(`[${botId}] Skipped execution: ${e instanceof Error ? e.message : e}`);
         }
-      }
-      copies++;
-      if (result.lane === "short_ttr") {
-        laneCopies++;
-        log(
-          `[SHORT-TTR lane] BANKROLL_200 copy: ${t.marketId} ` +
-            `(ttr ${ttr !== undefined ? ttr.toFixed(1) + "h" : "?"}, score ${result.copyScore})`
-        );
-      }
-
-      // Discord alert on new paper copies (live signals only, never demo data).
-      if (!t.isDemo) {
-        const isFirstEver =
-          (await prisma.paperTrade.count({ where: { isDemo: false } })) === 1;
-        await sendDiscord(
-          [
-            isFirstEver
-              ? "🎉 **First real paper copy!** _(paper trading only — no real money)_"
-              : "📈 **New paper copy** _(paper only)_",
-            `**Market:** ${t.marketQuestion ?? t.marketId}`,
-            `**Position:** ${t.side} ${t.outcome} @ ${currentPrice.toFixed(3)} — simulated $${result.simulatedPositionSize.toFixed(2)}`,
-            `**Following:** \`${t.walletAddress.slice(0, 10)}…\` (wallet score ${wallet.globalScore.toFixed(0)})`,
-            `**Copy score:** ${result.copyScore.toFixed(0)} (rules v${version}) — ${result.reasons[0] ?? ""}`,
-          ].join("\n")
-        );
       }
     } else if (result.decision === "watchlist") watches++;
     else skips++;

@@ -544,15 +544,15 @@
     {
       "id": "score-copies-overcount",
       "title": "score:trades over-reports 'paper copies' \u2014 the counter and the lane log fire per DECISION, outside the per-leg loop",
-      "column": "Backlog",
+      "column": "Done",
       "effort": "~30 min (move copies++/laneCopies++ and the lane log inside the leg loop; or count actual opened positions)",
-      "dates": "Found 2026-09-13 while confirming the resolution fix (misread the log first \u2014 it says 'copy' when the leg was skipped)",
-      "note": "scripts/score-trades.ts: copies++ and the '[SHORT-TTR lane] BANKROLL_200 copy: ...' log sit at the END of the per-observation block (lines ~770-777), OUTSIDE the `for (const t of <legs>)` loop that contains openPaperTrade (~732). So a decision whose every leg was blocked still counts as a copy and logs 'copy: <market>'. Measured: lifetime 5,120 'paper copies' logged vs 1,879 actual execution intents (over-count 3,241); the 2026-09-13T06:07 run logged '3 paper copies (3 short-TTR lane)' with 0 dispatches \u2014 all 3 legs were blocked by other gates (cs2 category blacklist, 15/15 per-market-slug cap). REPORTED-NUMBER effect only so far: the same counters feed capRisk (lane cap 10/cycle, main 50/cycle, wallet 40/day) but no cap has ever been hit (0 'cap reached' lines in the whole log). LATENT RISK: a busy cycle could burn the lane budget on blocked candidates and suppress real copies later in the same cycle. Fix changes what the log/report says about copies, hence parked for approval \u2014 note the EOD/daily reports quote the DB (PaperTrade), not this line, so no stored number is wrong.",
+      "dates": "Found 2026-09-13 \u00b7 FIXED same day (user-approved)",
+      "note": "SHIPPED 2026-09-13. scripts/score-trades.ts: copies++/laneCopies++, the '[SHORT-TTR lane] BANKROLL_200 copy: ...' log and the Discord 'New paper copy' alert were emitted per scored DECISION, outside the per-leg `for` loop. Moved all three inside the loop, immediately after a successful openPaperTrade (verified by brace-depth analysis: copies++ now sits at the same depth as the open call, brace balance 0). Effects: (1) 'Scoring complete: N paper copies' now counts copies that passed every gate \u2014 lifetime it read 5,120 against 1,879 real execution intents; (2) capRisk (lane 10/cycle, main 50/cycle) is now consumed only by real copies, so a busy cycle can reach its designed budget instead of being throttled by blocked candidates (no cap has ever been hit, so no behaviour change expected in practice); (3) the Discord alert no longer fires for phantom copies \u2014 quantified from the DB: 4,021 of 14,435 copy decisions (28%) all-time, 227 of 274 in the 24h to 2026-09-13 have no PaperTrade row, i.e. most of the 'New paper copy' pings were for positions that never existed. Semantics note: for BANKROLL_200 this counts dispatched intents (the Rust sidecar writes the row via webhook); for STANDARD it counts rows written. 147 tests + tsc clean.",
       "tags": [
         "bug",
         "scoring",
         "logging",
-        "needs-approval"
+        "shipped"
       ]
     }
   ]
