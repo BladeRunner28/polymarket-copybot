@@ -64,19 +64,27 @@ async function main() {
     return byBot;
   };
   const rawMap = dailySeries(rawDaily), rollMap = dailySeries(rollDaily);
-  let dayChecks = 0, dayDiffs = 0;
+  const today = new Date().toISOString().slice(0, 10);
+  let dayChecks = 0, dayDiffs = 0, inProgressDiffs = 0;
   for (const bot of ["BANKROLL_200", "STANDARD"]) {
     const a = (rawMap.get(bot) ?? []).map((p) => `${p.day}=${p.cum}`).join(",");
     const b = (rollMap.get(bot) ?? []).map((p) => `${p.day}=${p.cum}`).join(",");
     dayChecks++;
     if (a !== b) {
-      dayDiffs++;
       const av = a.split(","), bv = b.split(",");
       const n = av.findIndex((v, i) => v !== bv[i]);
+      // The in-progress UTC day keeps gaining snapshots between the rollup write
+      // and this raw read, exactly like the in-progress hour — not drift.
+      if (n === av.length - 1 && String(av[n]).startsWith(today)) {
+        inProgressDiffs++;
+        console.log(`  in-progress day (not drift): ${bot} raw=${av[n]} rollup=${bv[n]}`);
+        continue;
+      }
+      dayDiffs++;
       console.log(`  DIFF daily ${bot} at index ${n}: raw=${av[n]} rollup=${bv[n]} (len ${av.length} vs ${bv.length})`);
     }
   }
-  console.log(`daily cumulative series: bots checked=${dayChecks} differing=${dayDiffs}`);
+  console.log(`daily cumulative series: bots checked=${dayChecks} differing=${dayDiffs} in-progress=${inProgressDiffs}`);
   console.log(`\n${rawPaths[0] === rollPaths[0] && rawPaths[1] === rollPaths[1] && dayDiffs === 0 ? "CHART GEOMETRY IDENTICAL" : "CHART GEOMETRY DIFFERS"}`);
   await prisma.$disconnect();
 }

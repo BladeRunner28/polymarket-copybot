@@ -22,6 +22,7 @@ import { join } from "path";
 import { prisma } from "./db";
 import { log, logError } from "./redact";
 import { fetchEventResolution } from "./dead-market-resolution";
+import { didOutcomeWin } from "./resolution";
 
 export const EXIT_RECOVERY_LOG =
   process.env.EXIT_RECOVERY_LOG ??
@@ -142,13 +143,18 @@ export async function sweepExitRecovery(adapter: {
         const want = due.get(t.id);
         if (!want) continue;
         const marks: object[] = [];
-        if (resolution || (m && m.resolved && m.winningOutcome)) {
-          const winner = resolution ?? (m as any).winningOutcome;
+        // Label-aware resolution (src/lib/resolution.ts): a market whose tokens
+        // are named "Vitality"/"Under"/"9z" must not be marked 0 just because the
+        // old YES/NO guess could never match. null ⇒ no final mark; fall through
+        // to the MTM branch instead of writing a wrong price.
+        const winnerLabel = resolution ?? m?.winningLabel ?? m?.winningOutcome;
+        const won = winnerLabel ? didOutcomeWin(t.outcome, { winningLabel: winnerLabel, yesPrice: m?.yesPrice }) : null;
+        if (won !== null) {
           marks.push({
             type: "mark",
             tradeId: t.id,
             bucket: "final",
-            tokenPrice: winner === t.outcome ? 1 : 0,
+            tokenPrice: won ? 1 : 0,
             priceAt: Date.now(),
             resolved: true,
           });

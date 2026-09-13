@@ -15,6 +15,7 @@ import {
   staleExitDecision,
 } from "../src/lib/paper";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
+import { didOutcomeWin } from "../src/lib/resolution";
 import { log, logError } from "../src/lib/redact";
 import { sweepExitRecovery } from "../src/lib/exit-recovery";
 import * as fs from "fs";
@@ -127,11 +128,18 @@ async function main() {
   // only when the outcome is genuinely unavailable close positions older than
   // 24h at the last known mark — carrying them is pure drag.
   const recoverDeadMarket = async (marketId: string, trades: typeof open) => {
-    const outcome = await fetchEventResolution(marketId);
-    if (outcome) {
+    const winningLabel = await fetchEventResolution(marketId);
+    if (winningLabel) {
       for (const t of trades) {
         if (t.status !== "open") continue;
-        await withDbRetry(() => resolvePaperTrade(t.id, outcome === t.outcome), `resolve ${t.id}`);
+        const won = didOutcomeWin(t.outcome, { winningLabel });
+        if (won === null) {
+          logError(
+            `[RESOLVE] unmapped outcome label — trade ${t.id} outcome='${t.outcome}' vs winner='${winningLabel}' (${marketId}): leaving open rather than booking a loss`
+          );
+          continue;
+        }
+        await withDbRetry(() => resolvePaperTrade(t.id, won), `resolve ${t.id}`);
         resolved++;
       }
       return;
@@ -172,7 +180,14 @@ async function main() {
         if (outcome) {
           for (const t of trades) {
             if (t.status !== "open") continue;
-            await resolvePaperTrade(t.id, outcome === t.outcome);
+            const won = didOutcomeWin(t.outcome, { winningLabel: outcome });
+            if (won === null) {
+              logError(
+                `[RESOLVE] unmapped outcome label — trade ${t.id} outcome='${t.outcome}' vs winner='${outcome}' (${marketId}): leaving open rather than booking a loss`
+              );
+              continue;
+            }
+            await resolvePaperTrade(t.id, won);
             resolved++;
           }
         }
@@ -184,8 +199,19 @@ async function main() {
     }
     for (const t of trades) {
       try {
-        if (m.resolved && m.winningOutcome) {
-          await withDbRetry(() => resolvePaperTrade(t.id, m.winningOutcome === t.outcome), `resolve ${t.id}`);
+        const winnerLabel = m.winningLabel ?? m.winningOutcome;
+        if (m.resolved && winnerLabel) {
+          // Compare the winning TOKEN LABEL to the label this copy bought. The
+          // old `winningOutcome === t.outcome` guessed YES/NO and therefore
+          // booked every "Vitality"/"Under"/"9z" market as a full loss.
+          const won = didOutcomeWin(t.outcome, { winningLabel: winnerLabel, yesPrice: m.yesPrice });
+          if (won === null) {
+            logError(
+              `[RESOLVE] unmapped outcome label — trade ${t.id} outcome='${t.outcome}' vs winner='${winnerLabel}' (${marketId}): leaving open rather than booking a loss`
+            );
+            continue;
+          }
+          await withDbRetry(() => resolvePaperTrade(t.id, won), `resolve ${t.id}`);
           resolved++;
           continue;
         }

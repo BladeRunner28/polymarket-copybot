@@ -2,6 +2,11 @@
  * verify:dashboard-parity — proves the dashboard refactor (rollup + narrow
  * decision reads) returns the same numbers as the implementations it replaced.
  *
+ * The reference implementation encodes the CURRENT contract, including the
+ * 2026-09-13 normalised outcome-label comparison (raw === scored every resolved
+ * review as a loss). It catches accidental drift, not deliberate semantics
+ * changes — update both sides together when the contract moves.
+ *
  * Run after any change to: src/lib/pnl-rollup.ts, src/lib/decision-aggregates.ts,
  * src/lib/benchmarks.ts, or the Analytics page's funnel/benchmark sections.
  * It recomputes everything the OLD way (full scans, inline JS) and the NEW way,
@@ -15,6 +20,7 @@ import { computeBenchmarks, type BenchmarkReport } from "../src/lib/benchmarks";
 import { copyDecisions, decisionCounts, reviewedDecisions } from "../src/lib/decision-aggregates";
 import { dailyPnlSeries, hourlyPnlSeries } from "../src/lib/pnl-rollup";
 import { computePnl } from "../src/lib/paper";
+import { normalizeOutcomeLabel } from "../src/lib/resolution";
 
 const HYP = 10;
 const dayKey = (d: Date) => d.toISOString().slice(0, 10);
@@ -41,7 +47,9 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
     const entry = d.observedTrade.detectedPrice;
     let hypoPnl: number | null = null;
     if (review?.finalOutcome) {
-      const won = review.finalOutcome === d.observedTrade.outcome;
+      // normalised (post-2026-09-13 contract): API-cased stored label vs
+      // uppercased stored outcome must still compare equal.
+      const won = normalizeOutcomeLabel(review.finalOutcome) === normalizeOutcomeLabel(d.observedTrade.outcome);
       hypoPnl = computePnl(entry, won ? 1 : 0, HYP);
     }
     blindRows.push({ pnl: hypoPnl });
@@ -99,7 +107,7 @@ async function oldAnalytics() {
     const review = d.outcomeReviews.find((r) => r.finalOutcome !== null);
     let hypo: number | null = null;
     if (review?.finalOutcome && d.observedTrade) {
-      const won = review.finalOutcome === d.observedTrade.outcome;
+      const won = normalizeOutcomeLabel(review.finalOutcome) === normalizeOutcomeLabel(d.observedTrade.outcome);
       const entry = d.observedTrade.detectedPrice;
       hypo = HYP * (won ? 1 - entry : -entry);
     }
@@ -131,7 +139,7 @@ async function newAnalytics() {
   };
   for (const d of reviewed) {
     const day = dayKey(d.createdAt);
-    const won = d.finalOutcome === d.outcome;
+    const won = normalizeOutcomeLabel(d.finalOutcome) === normalizeOutcomeLabel(d.outcome);
     const hypo = HYP * (won ? 1 - d.detectedPrice : -d.detectedPrice);
     pushB("Blind copy", day, hypo);
     if (d.decision === "watchlist") pushB("Watchlist (hypo)", day, hypo);
@@ -159,16 +167,26 @@ async function main() {
   const curHour = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000).toISOString().slice(0, 19).replace("T", " ");
   const keyH = (r: { hour: string; botId: string }) => `${r.hour}|${r.botId}`;
   const mapNew = new Map(newHourly.map((r) => [keyH(r), r.total_pnl]));
-  let worst = 0, missing = 0, settledDiff = 0;
+  let worst = 0, missing = 0, settledDiff = 0, inProgressMissing = 0, inProgressDiff = 0;
   for (const r of rawHourly) {
     const v = mapNew.get(keyH(r));
-    if (v === undefined) { missing++; continue; }
+    if (v === undefined) {
+      // The in-progress hour is added/refreshed by the rollup cron every 10 min;
+      // a row that exists in the raw data but not yet in the rollup for the
+      // current hour is lag, not drift.
+      if (r.hour === curHour) inProgressMissing++;
+      else missing++;
+      continue;
+    }
     const d = Math.abs(v - r.total_pnl);
+    if (r.hour === curHour) { if (d > 1e-6) inProgressDiff++; continue; }
     if (d > worst) worst = d;
-    if (d > 1e-6 && r.hour !== curHour) settledDiff++;
+    if (d > 1e-6) settledDiff++;
   }
   check(`hourly rows covered (raw=${rawHourly.length} rollup=${newHourly.length}, missing=${missing})`, missing === 0);
   check(`hourly settled hours identical (max abs diff=${worst.toExponential(2)}, settled mismatches=${settledDiff})`, settledDiff === 0);
+  if (inProgressMissing || inProgressDiff)
+    console.log(`  info in-progress hour (not drift): new=${inProgressMissing} stale=${inProgressDiff} — rollup cron refreshes it every 10 min`);
 
   const rawDaily = await prisma.$queryRaw<Array<{ day: string; botId: string; total_pnl: number }>>`
     SELECT strftime('%Y-%m-%d', s.collectedAt / 1000, 'unixepoch') as day, t.botId, SUM(s.pnl) as total_pnl

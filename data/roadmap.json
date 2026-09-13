@@ -503,12 +503,13 @@
       "title": "BUG: outcome review compares two different casings \u2014 every resolved review is scored as a LOSS (0/688 matches)",
       "column": "Backlog",
       "effort": "~30 min (one normalised compare) + a backfill decision for the 688 existing rows",
-      "dates": "Found 2026-09-13 during the dashboard performance audit \u00b7 user decision on backfill",
-      "note": "ObservedTrade.outcome is stored UPPERCASE (NO/YES/OVER/UNDER/SPAIN) while OutcomeReview.finalOutcome keeps the API casing (No/Yes/Over/Under/Spain). scripts/review-outcomes.ts:72 does `m.winningOutcome === d.observedTrade.outcome`, so `won` is ALWAYS false: SQL gives 0/688 exact matches but 509/688 case-insensitive matches. Consequences: (a) for watchlist/skip, good = !won is forced TRUE \u2014 all 200 reviewed watch/skip rows are stamped wasDecisionGood=1 with an 'Avoided loser' lesson regardless of what happened; (b) simulatedPnl for every uncopied decision is computePnl(entry, 0) = \u2212$10, which feeds export-training-data.ts; (c) the /performance + /analytics benchmark sections show Blind copy \u2212$6,880 at 0.0% win rate and Missed Winners = 0 structurally. Fix = case-insensitive compare (UPPER()/toUpperCase()) in review-outcomes.ts plus the two consumers; it CHANGES REPORTED NUMBERS, so it needs an explicit before/after re-baseline of the benchmark table rather than a silent patch.",
+      "dates": "Found 2026-09-13 (dashboard perf audit) \u00b7 comparison FIXED 2026-09-13 \u00b7 stored-row backfill awaits a decision",
+      "note": "PARTIALLY FIXED 2026-09-13: the comparison in src/lib/benchmarks.ts and the Analytics page now goes through normalizeOutcomeLabel, so the published benchmark table is truthful \u2014 Blind copy 688 resolved -$6,880.00 @ 0.0% -> +$672.99 @ 74.0%, Skipped -$2,000 -> +$205.98, Missed Winners 0 -> 92. New reviews are also written correctly (review-outcomes.ts uses didOutcomeWin and stores the winning token label). REMAINING (needs a decision): the 688 EXISTING OutcomeReview rows keep the old stored judgements \u2014 all 200 watchlist/skip rows are still stamped wasDecisionGood=1 with an 'Avoided loser' lesson (good = !won was forced true), and simulatedPnl for uncopied decisions is still computePnl(entry,0) = -$10. That still drives /journal's judged-good/bad flags and scripts/export-training-data.ts (the training labels), not the benchmark tables. Options: backfill the stored rows from the now-correct resolution (recompute won per review), or leave them and let new reviews accumulate correctly.",
       "tags": [
         "bug",
         "outcome-review",
         "measurement",
+        "partially-fixed",
         "needs-approval"
       ]
     },
@@ -528,16 +529,16 @@
     {
       "id": "resolution-label-bug",
       "title": "BUG (trading-affecting): non-YES/NO markets always resolve as full-stake losses \u2014 70 confirmed phantom losses, \u2212$1,771 of realized PnL, drawdown gate implicated",
-      "column": "Backlog",
+      "column": "Done",
       "effort": "~half day (resolution fix + backfill + drawdown recompute + before/after re-baseline); dry-run first",
-      "dates": "Found 2026-09-13 (Kelly-review impact check) \u00b7 user decision on backfill + gate recompute",
-      "note": "src/lib/adapters/polymarket.ts derives resolution as `winningOutcome = yesPrice > 0.5 ? \"YES\" : \"NO\"`, but sports/esports/handicap/total markets carry token labels ('Dynasty', 'Under', '9z', 'Team Liquid'). A copy on such a token can NEVER satisfy `winningOutcome === trade.outcome`, so resolvePaperTrade books a full-stake loss no matter what happened. Audited all 189 resolved trades with a non-YES/NO label (scripts/audit-misresolved-trades.py, read-only, CLOB token/winner lookup): 70 are PHANTOM losses (the bought token WAS the winner; booked \u2212$828.38, correct settlement +$942.34 = +$1,770.72 missing), 79 are correct losses, 40 are unresolvable markets (conditionId is an event id, 404 at CLOB \u2014 guaranteed \u2212size by construction). BANKROLL_200 share: 24 phantom trades, booked \u2212$100.78 \u2192 +$123.33 (delta +$224.11); Kelly-window main-lane realized is \u2212$629.77 of which \u2212$56.02 is this class. LIVE CONSEQUENCE: the C-200 drawdown gate is tripped at 20.1% \u2014 net worth $2,069 vs the $2,070.66 threshold, i.e. short by ~$1.66 \u2014 and correcting only BANKROLL_200's phantom losses puts realized at +$48.86 and net worth ~$2,293 (~11%); even if the entire correction had landed before the peak (peak \u2264 $2,812 \u2192 threshold \u2264 $2,250) the gate clears. So the gate halting new copies is plausibly an artifact, not a drawdown. Fix: resolve by token identity (or per-market normalised label) rather than a binary YES/NO guess; backfill the 70; decide policy for the 40 unresolvable; recompute the drawdown high-water mark from the corrected path; re-baseline the Kelly window + benchmark table before/after.",
+      "dates": "Found + fixed 2026-09-13 (user-approved 'write it up and execute it')",
+      "note": "SHIPPED 2026-09-13. Adapter now names the winner from the venue's own token labels (outcomeLabels/winningLabel) instead of guessing YES/NO; src/lib/resolution.ts::didOutcomeWin returns true/false/NULL (null = undeterminable -> callers leave the position alone rather than booking a loss). All 5 call sites routed through it (update-pnl x3, exit-recovery, shadow-longshot marker, review-outcomes, wallet-activity enrichment), plus a third resolution route (fetchWinningLabelViaClob by conditionId) for markets Gamma purged. Backfill applied to 70 phantom losses: -$828.38 -> +$942.34 (BANKROLL_200 +$224.11, STANDARD +$1,546.61); backup at data/backfill-misresolved-2026-09-13.json. Verified: independent Python audit now reports 0 phantom losses, row-level sets identical between the two implementations, bankroll realized == sum of resolved realized ($48.86), 147 tests + tsc clean, dashboard parity + chart geometry pass. Re-baseline: realized -$175.25 -> +$48.86, cash $651.10 -> $875.21, net worth $2,069 -> $2,293, drawdown 20.1% (gate TRIPPED) -> 11.4% (clear; worst case 18.5%). Kelly main-lane band table unchanged, so the Phase-B evidence is intact. 40 unresolvable rows (event-id conditionId) left booked as losses - no market identity exists to resolve; documented as known-unreliable. Full write-up: /drafts/resolution-label-bug-plan.",
       "tags": [
         "bug",
         "resolution",
+        "shipped",
         "pnl",
-        "risk-gate",
-        "needs-approval"
+        "risk-gate"
       ]
     }
   ]

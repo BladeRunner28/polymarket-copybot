@@ -7,6 +7,7 @@
 
 import { computePnl } from "./paper";
 import { copyDecisions, decisionCounts, reviewedDecisions } from "./decision-aggregates";
+import { normalizeOutcomeLabel } from "./resolution";
 
 export interface BenchmarkBucket {
   label: string;
@@ -52,9 +53,14 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   const [counts, reviewed, copies] = await Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]);
 
   // Hypothetical PnL per reviewed decision (same computePnl call as before).
+  // The label comparison goes through normalizeOutcomeLabel: stored
+  // finalOutcome values are API-cased ("No") while stored outcomes are
+  // uppercased ("NO"), so a raw === comparison scored every resolved review as a
+  // loss — 0/688 exact matches vs 509/688 case-insensitive, which is what made
+  // "Blind copy" read −$6,880 at a 0.0% win rate.
   const hypoRows = reviewed.map((d) => ({
     decision: d.decision,
-    pnl: computePnl(d.detectedPrice, d.finalOutcome === d.outcome ? 1 : 0, HYPOTHETICAL_SIZE),
+    pnl: computePnl(d.detectedPrice, normalizeOutcomeLabel(d.finalOutcome) === normalizeOutcomeLabel(d.outcome) ? 1 : 0, HYPOTHETICAL_SIZE),
   }));
 
   const isCopy = (d: { decision: string }) => d.decision === "paper_copy";

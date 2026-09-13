@@ -98,7 +98,9 @@ def main() -> int:
             elif status == "ambiguous":
                 v = "ambiguous"
             elif any(norm(w) and (norm(w) == norm(outcome) or norm(w) in norm(outcome) or norm(outcome) in norm(w)) for w in winners):
-                v = "PHANTOM_LOSS"
+                # The bought token won. Only a PHANTOM loss if it is still booked
+                # as one — after the 2026-09-13 backfill these are settled wins.
+                v = "corrected_win" if (pnl or 0) >= 0 else "PHANTOM_LOSS"
             elif any(norm(l) == norm(outcome) or norm(l) in norm(outcome) or norm(outcome) in norm(l) for l in losers):
                 v = "correct_loss"
             else:

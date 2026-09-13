@@ -7,6 +7,7 @@
 import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { computePnl } from "../src/lib/paper";
+import { didOutcomeWin } from "../src/lib/resolution";
 import { log, logError } from "../src/lib/redact";
 
 const HYPOTHETICAL_SIZE = 10;
@@ -60,16 +61,28 @@ async function main() {
 
   for (const d of pending) {
     try {
-      let m: { resolved?: boolean; winningOutcome?: string } | null = null;
+      let m: { resolved?: boolean; winningOutcome?: string; winningLabel?: string; yesPrice?: number } | null = null;
       try {
         m = await adapter.fetchMarket(d.marketId);
       } catch {
         // Gamma 404s archived slugs — CLOB still serves them by conditionId.
         m = await fetchResolvedViaClob(d.observedTrade.conditionId);
       }
-      if (!m || !m.resolved || !m.winningOutcome) continue; // not resolved yet
+      // The venue's own token label ("Yes", "Under", "Vitality") — comparing it
+      // case-insensitively is what makes these reviews correct: the old
+      // `winningOutcome === outcome` compared an API-cased label ("No") to the
+      // uppercased stored label ("NO"), so `won` was ALWAYS false and every
+      // watchlist/skip review was stamped "avoided loser" regardless of reality.
+      const winnerLabel = m?.winningLabel ?? m?.winningOutcome;
+      if (!m || !m.resolved || !winnerLabel) continue; // not resolved yet
 
-      const won = m.winningOutcome === d.observedTrade.outcome;
+      const won = didOutcomeWin(d.observedTrade.outcome, { winningLabel: winnerLabel, yesPrice: m.yesPrice });
+      if (won === null) {
+        logError(
+          `[REVIEW] unmapped outcome label — decision ${d.id} outcome='${d.observedTrade.outcome}' vs winner='${winnerLabel}': skipping rather than judging`
+        );
+        continue;
+      }
       const pt = d.paperTrades[0];
       const simulatedPnl =
         pt?.realizedPnl ??
@@ -98,7 +111,7 @@ async function main() {
         data: {
           decisionJournalId: d.id,
           paperTradeId: pt?.id,
-          finalOutcome: m.winningOutcome,
+          finalOutcome: winnerLabel,
           simulatedPnl,
           wasDecisionGood: good,
           lessonsJson: JSON.stringify(lessons),

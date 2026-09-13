@@ -13,6 +13,7 @@
 
 import { getAdapter } from "../src/lib/adapters";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
+import { didOutcomeWin } from "../src/lib/resolution";
 import { readShadowRows, summarizeShadow, SHADOW_FILE, SHADOW_SUMMARY_FILE } from "../src/lib/shadow-longshot";
 import { log, logError } from "../src/lib/redact";
 import * as fs from "fs";
@@ -38,14 +39,23 @@ async function main() {
     let value: number | undefined;
     try {
       const m = await adapter.fetchMarket(marketId);
-      if (m.resolved && m.winningOutcome) value = m.winningOutcome === outcome ? 1 : 0;
+      // Label-aware: shadow candidates on labelled tokens ("Vitality"/"Under")
+      // must not be marked 0 by the old YES/NO guess (see src/lib/resolution.ts).
+      const winnerLabel = m.winningLabel ?? m.winningOutcome;
+      if (m.resolved && winnerLabel) {
+        const won = didOutcomeWin(outcome, { winningLabel: winnerLabel, yesPrice: m.yesPrice });
+        if (won !== null) value = won ? 1 : 0;
+      }
     } catch {
       // fall through to the event-resolution path
     }
     if (value === undefined) {
       try {
         const ev = await fetchEventResolution(marketId);
-        if (ev) value = ev === outcome ? 1 : 0;
+        if (ev) {
+          const won = didOutcomeWin(outcome, { winningLabel: ev });
+          if (won !== null) value = won ? 1 : 0;
+        }
       } catch {
         /* leave unresolved */
       }

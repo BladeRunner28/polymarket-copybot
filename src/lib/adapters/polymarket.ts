@@ -16,6 +16,7 @@ import {
   MarketState,
   WalletActivityTrade,
 } from "../types";
+import { didOutcomeWin, normalizeOutcomeLabel } from "../resolution";
 
 const DATA_API = "https://data-api.polymarket.com";
 const GAMMA_API = "https://gamma-api.polymarket.com";
@@ -276,12 +277,23 @@ export class PolymarketAdapter implements DataAdapter {
         t.spread = m.spread;
         // Only infer resolution for trades that don't already carry accurate
         // realized PnL (closed-positions data is authoritative).
-        if (t.resolved === undefined && m.resolved && m.winningOutcome) {
+        if (t.resolved === undefined && m.resolved && (m.winningLabel || m.winningOutcome)) {
+          // A SELL of a token is a bet on the other side: flip to the sibling
+          // label when the venue gave us both, else fall back to YES<->NO.
+          const effectiveOutcome =
+            t.side === "SELL"
+              ? (m.outcomeLabels?.length === 2
+                  ? m.outcomeLabels.find((l) => normalizeOutcomeLabel(l) !== normalizeOutcomeLabel(t.outcome)) ?? t.outcome
+                  : t.outcome === "YES"
+                    ? "NO"
+                    : "YES")
+              : t.outcome;
+          const won = didOutcomeWin(effectiveOutcome, { winningLabel: m.winningLabel ?? m.winningOutcome, yesPrice: m.yesPrice });
+          if (won === null) continue; // undeterminable — leave the trade unresolved rather than book a wrong loss
           t.resolved = true;
-          const effectiveOutcome = t.side === "SELL" ? (t.outcome === "YES" ? "NO" : "YES") : t.outcome;
-          t.won = m.winningOutcome === effectiveOutcome;
+          t.won = won;
           // Realized PnL approximation for a $size position at entry price.
-          t.pnl = t.price > 0 ? (t.won ? t.size * ((1 - t.price) / t.price) : -t.size) : 0;
+          t.pnl = t.price > 0 ? (won ? t.size * ((1 - t.price) / t.price) : -t.size) : 0;
         }
       }
       await sleep(DELAY_MS);
@@ -302,6 +314,21 @@ export class PolymarketAdapter implements DataAdapter {
     const m = data[0];
     let yesPrice: number | undefined;
     let noPrice: number | undefined;
+    // The venue returns the token LABELS next to their prices. Parse both: the
+    // labels are the ground truth for resolution ("Vitality"/"9z"/"Under"), the
+    // prices alone cannot name a winner.
+    let outcomeLabels: string[] | undefined;
+    let outcomePrices: number[] | undefined;
+    try {
+      const labels = JSON.parse(String(m.outcomes ?? "[]")) as unknown[];
+      const prices = JSON.parse(String(m.outcomePrices ?? "[]")) as unknown[];
+      if (Array.isArray(labels) && labels.length > 0) {
+        outcomeLabels = labels.map((l) => String(l));
+        outcomePrices = Array.isArray(prices) ? prices.map((p) => Number(p)) : undefined;
+      }
+    } catch {
+      /* no labels on this payload — the yes/no fallback below still applies */
+    }
     try {
       const prices = JSON.parse(String(m.outcomePrices ?? "[]")) as string[];
       yesPrice = num(prices[0]);
@@ -317,9 +344,19 @@ export class PolymarketAdapter implements DataAdapter {
         ? Math.max(0, (endDate.getTime() - Date.now()) / 3_600_000)
         : undefined;
     const resolved = m.closed === true || m.umaResolutionStatus === "resolved";
-    let winningOutcome: string | undefined;
-    if (resolved && yesPrice !== undefined) {
-      winningOutcome = yesPrice > 0.5 ? "YES" : "NO";
+    // Name the winner from the venue's labels (ground truth). Only when the
+    // payload carries no labels do we fall back to the binary price guess — that
+    // guess is the bug that booked 70 phantom losses on label-named markets.
+    let winningLabel: string | undefined;
+    if (resolved) {
+      if (outcomeLabels && outcomePrices && outcomePrices.length === outcomeLabels.length) {
+        let best = 0;
+        for (let i = 1; i < outcomePrices.length; i++) if (outcomePrices[i] > outcomePrices[best]) best = i;
+        if (outcomePrices[best] > 0.5) winningLabel = outcomeLabels[best];
+      }
+      if (!winningLabel && !outcomeLabels && yesPrice !== undefined) {
+        winningLabel = yesPrice > 0.5 ? "YES" : "NO";
+      }
     }
     return {
       marketId,
@@ -335,7 +372,10 @@ export class PolymarketAdapter implements DataAdapter {
       volume: num(m.volumeNum) ?? num(m.volume),
       timeToResolutionHours: ttrHours,
       resolved,
-      winningOutcome,
+      winningLabel,
+      winningOutcome: winningLabel,
+      outcomeLabels,
+      outcomePrices,
       raw: m,
     };
   }

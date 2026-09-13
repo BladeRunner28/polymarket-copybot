@@ -122,7 +122,8 @@ export class DemoAdapter implements DataAdapter {
       volume: rand() * 1_000_000,
       timeToResolutionHours: resolved ? 0 : 2 + rand() * 500,
       resolved,
-      winningOutcome: resolved ? (yes > 0.5 ? "YES" : "NO") : undefined,
+      winningLabel: resolved ? (yes > 0.5 ? "Yes" : "No") : undefined,
+      winningOutcome: resolved ? (yes > 0.5 ? "Yes" : "No") : undefined,
     };
   }
 }

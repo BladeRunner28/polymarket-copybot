@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { dailyPnlSeries } from "@/lib/pnl-rollup";
 import { copyDecisions, decisionCounts, reviewedDecisions } from "@/lib/decision-aggregates";
+import { normalizeOutcomeLabel } from "@/lib/resolution";
 import { Card, Empty } from "@/components/ui";
 import { LineChart, BarChart, Heatmap, Scatter } from "@/components/chart";
 import { Enlargeable } from "@/components/enlargeable";
@@ -216,7 +217,10 @@ export default async function Analytics() {
   // per-day totals as the old full-scan loop.
   for (const d of decisionStats.reviewed) {
     const day = dayKey(d.createdAt);
-    const won = d.finalOutcome === d.outcome;
+    // Normalised label comparison — stored finalOutcome is API-cased ("No") and
+    // stored outcomes are uppercased ("NO"), so a raw === scored every review as
+    // a loss (see src/lib/resolution.ts).
+    const won = normalizeOutcomeLabel(d.finalOutcome) === normalizeOutcomeLabel(d.outcome);
     const entry = d.detectedPrice;
     const hypo = HYP * (won ? 1 - entry : -entry);
     pushB("Blind copy", day, hypo);

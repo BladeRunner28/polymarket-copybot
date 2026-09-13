@@ -42,7 +42,18 @@ export interface MarketState {
   /** hours until expected resolution; null/undefined if unknown */
   timeToResolutionHours?: number;
   resolved?: boolean;
+  /**
+   * Winning token's label as the venue reports it ("Yes", "Under", "Vitality").
+   * Prefer this over `winningOutcome` + a label comparison: guessing YES/NO is
+   * what booked 70 phantom losses (see src/lib/resolution.ts).
+   */
+  winningLabel?: string;
+  /** Legacy alias — same value as winningLabel (kept for existing call sites). */
   winningOutcome?: string;
+  /** The market's token labels in price order, when the venue provides them. */
+  outcomeLabels?: string[];
+  /** Token prices in the same order as outcomeLabels. */
+  outcomePrices?: number[];
   raw?: unknown;
 }
 
