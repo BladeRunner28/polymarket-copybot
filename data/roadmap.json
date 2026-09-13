@@ -501,16 +501,16 @@
     {
       "id": "outcome-casing-mismatch",
       "title": "BUG: outcome review compares two different casings \u2014 every resolved review is scored as a LOSS (0/688 matches)",
-      "column": "Backlog",
+      "column": "Done",
       "effort": "~30 min (one normalised compare) + a backfill decision for the 688 existing rows",
-      "dates": "Found 2026-09-13 (dashboard perf audit) \u00b7 comparison FIXED 2026-09-13 \u00b7 stored-row backfill awaits a decision",
-      "note": "PARTIALLY FIXED 2026-09-13: the comparison in src/lib/benchmarks.ts and the Analytics page now goes through normalizeOutcomeLabel, so the published benchmark table is truthful \u2014 Blind copy 688 resolved -$6,880.00 @ 0.0% -> +$672.99 @ 74.0%, Skipped -$2,000 -> +$205.98, Missed Winners 0 -> 92. New reviews are also written correctly (review-outcomes.ts uses didOutcomeWin and stores the winning token label). REMAINING (needs a decision): the 688 EXISTING OutcomeReview rows keep the old stored judgements \u2014 all 200 watchlist/skip rows are still stamped wasDecisionGood=1 with an 'Avoided loser' lesson (good = !won was forced true), and simulatedPnl for uncopied decisions is still computePnl(entry,0) = -$10. That still drives /journal's judged-good/bad flags and scripts/export-training-data.ts (the training labels), not the benchmark tables. Options: backfill the stored rows from the now-correct resolution (recompute won per review), or leave them and let new reviews accumulate correctly.",
+      "dates": "Found 2026-09-13 (dashboard perf audit) \u00b7 comparison + stored rows FIXED 2026-09-13 (user-approved)",
+      "note": "SHIPPED 2026-09-13, in two parts. (1) COMPARISON: src/lib/benchmarks.ts + the Analytics page now compare outcome labels through normalizeOutcomeLabel, so the published benchmark table is truthful \u2014 Blind copy 688 resolved -$6,880.00 @ 0.0% -> +$672.99 @ 74.0%, Skipped -$2,000 -> +$205.98, Missed Winners 0 -> 92. (2) STORED ROWS: scripts/backfill-outcome-reviews.ts re-derived all 688 existing OutcomeReview rows from the venue's stored finalOutcome label (no API calls needed \u2014 it is the real winning token label; the adapter's YES/NO guess never appears in the stored data). 92 rows changed, all 'skip' decisions that had actually WON and were stamped wasDecisionGood=1 'Avoided loser' at a forced -$10: now -$10 -> +hypo (judged bad, 'Missed winner'). wasDecisionGood 613 good/75 bad -> 521/167; summed simulatedPnl -$1,582.45 -> +$623.53. The 488 paper_copy rows were unaffected because their judgement came from the trade's realized PnL, not from the broken comparison. Backup: data/backfill-outcome-reviews-2026-09-13.json. Verified: re-run is idempotent (0 changes), 0 invariant violations (skip: good == avoided loss; paper_copy: good == simulatedPnl > 0), lesson text matches every flag, and training_data.csv was re-exported (was_good 613 -> 521). New reviews are written correctly by the fixed review-outcomes.ts.",
       "tags": [
         "bug",
         "outcome-review",
         "measurement",
-        "partially-fixed",
-        "needs-approval"
+        "shipped",
+        "training-data"
       ]
     },
     {

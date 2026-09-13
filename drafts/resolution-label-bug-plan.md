@@ -171,7 +171,13 @@ implied, and "Missed Winners" was structurally zero before, not genuinely zero.
 - Historical `DailyReport`/EOD rows keep their old basis (repo convention); only live tables were corrected.
 - The 40 unresolvable rows stay booked as losses — there is no market identity to resolve, and inventing one
   would be fabricating data. They are called out here and in the audit output as known-unreliable.
-- The 688 existing `OutcomeReview` rows still carry the old stored judgements (`wasDecisionGood`, `simulatedPnl`).
-  The benchmark/analytics numbers no longer depend on them, but `/journal`'s "judged good/bad" flags and
-  `export-training-data.ts` still do — parked as the `outcome-casing-mismatch` card for a separate approval.
+- The 688 existing `OutcomeReview` rows were re-derived the same day (`scripts/backfill-outcome-reviews.ts`):
+  92 changed — all `skip` decisions that had actually **won** and were stamped `wasDecisionGood=1`
+  ("Avoided loser") at a forced −$10. They now read −$10 → `+hypo` and "Missed winner … review which gate
+  blocked it". `wasDecisionGood` 613/75 → 521/167; summed `simulatedPnl` −$1,582.45 → +$623.53. The 488
+  `paper_copy` rows needed no change (their judgement came from the trade's realized PnL, not the broken
+  comparison — confirmed: 0 of the 70 corrected trades are linked to a reviewed decision). Backup:
+  `data/backfill-outcome-reviews-2026-09-13.json`; `training_data.csv` re-exported (`was_good` 613 → 521).
+- The 688 rows' `finalOutcome` casing was deliberately left as the venue reported it: every consumer now
+  compares through `normalizeOutcomeLabel`, so the stored label keeps its fidelity to the source.
 
