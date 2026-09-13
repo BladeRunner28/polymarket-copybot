@@ -1,0 +1,1409 @@
+{
+  "generated_for": "drafts/scoring-fix-methods-20260913.md",
+  "source": "PaperTrade resolved/closed, Polymarket, joined to DecisionJournal",
+  "n": 9642,
+  "base_win_rate": 0.618,
+  "mean_pnl": 0.72,
+  "sd_pnl": 12.89,
+  "n_wallets": 188,
+  "n_markets": 2568,
+  "per_bot": {
+    "BANKROLL_200": 1473,
+    "STANDARD": 8169
+  },
+  "icc_wallet": {
+    "groups": 188,
+    "mean_cluster": 51.29,
+    "icc": 0.2247,
+    "design_effect": 12.3,
+    "effective_n": 783.9
+  },
+  "icc_market": {
+    "groups": 2568,
+    "mean_cluster": 3.75,
+    "icc": 0.9039,
+    "design_effect": 3.49,
+    "effective_n": 2762.8
+  },
+  "mde_table": {
+    "688": {
+      "m_eff": 55.9,
+      "se": 1.72,
+      "mde_80pct": 4.83
+    },
+    "2000": {
+      "m_eff": 162.6,
+      "se": 1.01,
+      "mde_80pct": 2.83
+    },
+    "9642": {
+      "m_eff": 783.9,
+      "se": 0.46,
+      "mde_80pct": 1.29
+    },
+    "25000": {
+      "m_eff": 2032.5,
+      "se": 0.29,
+      "mde_80pct": 0.8
+    }
+  },
+  "models": {
+    "A_stored_copyScore": {
+      "auc": 0.4168,
+      "brier": 0.2769,
+      "calib_slope": NaN,
+      "calib_intercept": NaN,
+      "per_fold_auc": [
+        0.387,
+        0.317,
+        0.489,
+        0.448,
+        0.388
+      ],
+      "per_fold_auc_mean": 0.4058
+    },
+    "B_entry_price": {
+      "auc": 0.7467,
+      "brier": 0.1994,
+      "calib_slope": NaN,
+      "calib_intercept": NaN,
+      "per_fold_auc": [
+        0.755,
+        0.73,
+        0.79,
+        0.711,
+        0.733
+      ],
+      "per_fold_auc_mean": 0.7438
+    },
+    "C_stored_components_ridge": {
+      "auc": 0.623,
+      "brier": 0.2273,
+      "calib_slope": 0.706,
+      "calib_intercept": 0.508,
+      "per_fold_auc": [
+        0.653,
+        0.677,
+        0.665,
+        0.603,
+        0.621
+      ],
+      "per_fold_auc_mean": 0.6438
+    },
+    "D_refit_price_plus_execution": {
+      "auc": 0.7361,
+      "brier": 0.1996,
+      "calib_slope": 0.895,
+      "calib_intercept": 0.666,
+      "per_fold_auc": [
+        0.755,
+        0.714,
+        0.827,
+        0.725,
+        0.721
+      ],
+      "per_fold_auc_mean": 0.7484
+    },
+    "F_price_band_lookup_oof": {
+      "auc": 0.7004,
+      "brier": 0.2064,
+      "calib_slope": 0.84,
+      "calib_intercept": 0.597,
+      "per_fold_auc": [
+        0.746,
+        0.693,
+        0.774,
+        0.698,
+        0.715
+      ],
+      "per_fold_auc_mean": 0.7252
+    }
+  },
+  "ev_gate": {
+    "0.0": {
+      "n": 4212,
+      "share": 0.437,
+      "winRate": 0.4793,
+      "meanEntry": 0.4481,
+      "excess": 0.0313,
+      "realizedPnl": 2014.2,
+      "perTrade": 0.48
+    },
+    "0.01": {
+      "n": 3917,
+      "share": 0.406,
+      "winRate": 0.4728,
+      "meanEntry": 0.4394,
+      "excess": 0.0334,
+      "realizedPnl": 1636.8,
+      "perTrade": 0.42
+    },
+    "0.02": {
+      "n": 3601,
+      "share": 0.373,
+      "winRate": 0.4649,
+      "meanEntry": 0.4313,
+      "excess": 0.0336,
+      "realizedPnl": 1727.0,
+      "perTrade": 0.48
+    },
+    "0.03": {
+      "n": 3312,
+      "share": 0.343,
+      "winRate": 0.4586,
+      "meanEntry": 0.4223,
+      "excess": 0.0364,
+      "realizedPnl": 1710.8,
+      "perTrade": 0.52
+    }
+  },
+  "wallet_blocked_gate": {
+    "per_wallet": [
+      {
+        "wallet": "0x0c787cc2",
+        "n": 18,
+        "selected": 15,
+        "winRate": 1.0,
+        "meanEntry": 0.575,
+        "perTrade": 9.01,
+        "pnl": 135.1
+      },
+      {
+        "wallet": "0x511f9c77",
+        "n": 780,
+        "selected": 97,
+        "winRate": 0.773,
+        "meanEntry": 0.455,
+        "perTrade": 9.94,
+        "pnl": 963.7
+      },
+      {
+        "wallet": "0x23d81ba9",
+        "n": 234,
+        "selected": 79,
+        "winRate": 0.418,
+        "meanEntry": 0.439,
+        "perTrade": -0.88,
+        "pnl": -69.8
+      },
+      {
+        "wallet": "0x1465b79b",
+        "n": 150,
+        "selected": 35,
+        "winRate": 1.0,
+        "meanEntry": 0.52,
+        "perTrade": 0.62,
+        "pnl": 21.7
+      },
+      {
+        "wallet": "0xcf6c5492",
+        "n": 108,
+        "selected": 94,
+        "winRate": 0.989,
+        "meanEntry": 0.577,
+        "perTrade": 6.82,
+        "pnl": 640.7
+      },
+      {
+        "wallet": "0x03805a13",
+        "n": 875,
+        "selected": 120,
+        "winRate": 0.7,
+        "meanEntry": 0.415,
+        "perTrade": 16.75,
+        "pnl": 2010.3
+      },
+      {
+        "wallet": "0x9f208e85",
+        "n": 191,
+        "selected": 50,
+        "winRate": 0.52,
+        "meanEntry": 0.39,
+        "perTrade": 3.91,
+        "pnl": 195.4
+      },
+      {
+        "wallet": "0x2ce8505a",
+        "n": 5,
+        "selected": 5,
+        "winRate": 1.0,
+        "meanEntry": 0.535,
+        "perTrade": 7.81,
+        "pnl": 39.0
+      },
+      {
+        "wallet": "0x21064fd3",
+        "n": 12,
+        "selected": 8,
+        "winRate": 0.5,
+        "meanEntry": 0.186,
+        "perTrade": 8.24,
+        "pnl": 65.9
+      },
+      {
+        "wallet": "0x9b12e006",
+        "n": 7,
+        "selected": 2,
+        "winRate": 1.0,
+        "meanEntry": 0.365,
+        "perTrade": 20.51,
+        "pnl": 41.0
+      },
+      {
+        "wallet": "0xf7429705",
+        "n": 47,
+        "selected": 8,
+        "winRate": 0.625,
+        "meanEntry": 0.527,
+        "perTrade": 1.86,
+        "pnl": 14.9
+      },
+      {
+        "wallet": "0x7dddf196",
+        "n": 54,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.608,
+        "perTrade": 8.38,
+        "pnl": 83.8
+      },
+      {
+        "wallet": "0x6db983ff",
+        "n": 8,
+        "selected": 2,
+        "winRate": 1.0,
+        "meanEntry": 0.327,
+        "perTrade": 57.59,
+        "pnl": 115.2
+      },
+      {
+        "wallet": "0x9cb990f1",
+        "n": 12,
+        "selected": 6,
+        "winRate": 0.333,
+        "meanEntry": 0.473,
+        "perTrade": -4.79,
+        "pnl": -28.7
+      },
+      {
+        "wallet": "0xb3cfe761",
+        "n": 10,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x9ba8d25a",
+        "n": 10,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x3da89a55",
+        "n": 22,
+        "selected": 10,
+        "winRate": 0.0,
+        "meanEntry": 0.404,
+        "perTrade": -10.55,
+        "pnl": -105.5
+      },
+      {
+        "wallet": "0x87da2f16",
+        "n": 98,
+        "selected": 22,
+        "winRate": 0.273,
+        "meanEntry": 0.595,
+        "perTrade": -3.14,
+        "pnl": -69.1
+      },
+      {
+        "wallet": "0xf5198df6",
+        "n": 144,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x090af6fd",
+        "n": 93,
+        "selected": 23,
+        "winRate": 0.348,
+        "meanEntry": 0.417,
+        "perTrade": -2.44,
+        "pnl": -56.0
+      },
+      {
+        "wallet": "0x6139c42e",
+        "n": 7,
+        "selected": 7,
+        "winRate": 0.714,
+        "meanEntry": 0.451,
+        "perTrade": 4.13,
+        "pnl": 28.9
+      },
+      {
+        "wallet": "0xab444cf9",
+        "n": 39,
+        "selected": 36,
+        "winRate": 0.361,
+        "meanEntry": 0.198,
+        "perTrade": 4.06,
+        "pnl": 146.0
+      },
+      {
+        "wallet": "0x10658d37",
+        "n": 5,
+        "selected": 4,
+        "winRate": 0.0,
+        "meanEntry": 0.215,
+        "perTrade": -8.18,
+        "pnl": -32.7
+      },
+      {
+        "wallet": "0x7583d5f8",
+        "n": 10,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.505,
+        "perTrade": 5.96,
+        "pnl": 59.6
+      },
+      {
+        "wallet": "0xe16d3f2a",
+        "n": 17,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x69c5c6f6",
+        "n": 54,
+        "selected": 19,
+        "winRate": 0.211,
+        "meanEntry": 0.35,
+        "perTrade": -5.88,
+        "pnl": -111.6
+      },
+      {
+        "wallet": "0xbd0477e0",
+        "n": 9,
+        "selected": 5,
+        "winRate": 0.0,
+        "meanEntry": 0.182,
+        "perTrade": -8.14,
+        "pnl": -40.7
+      },
+      {
+        "wallet": "0x6d20c35f",
+        "n": 10,
+        "selected": 10,
+        "winRate": 0.0,
+        "meanEntry": 0.305,
+        "perTrade": -8.91,
+        "pnl": -89.1
+      },
+      {
+        "wallet": "0xafe4272b",
+        "n": 49,
+        "selected": 34,
+        "winRate": 0.471,
+        "meanEntry": 0.326,
+        "perTrade": -6.12,
+        "pnl": -208.2
+      },
+      {
+        "wallet": "0x28aa2a30",
+        "n": 9,
+        "selected": 9,
+        "winRate": 1.0,
+        "meanEntry": 0.365,
+        "perTrade": 16.34,
+        "pnl": 147.1
+      },
+      {
+        "wallet": "0x94414739",
+        "n": 23,
+        "selected": 13,
+        "winRate": 0.0,
+        "meanEntry": 0.39,
+        "perTrade": -11.66,
+        "pnl": -151.6
+      },
+      {
+        "wallet": "0xa80e584e",
+        "n": 10,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.365,
+        "perTrade": 15.3,
+        "pnl": 153.0
+      },
+      {
+        "wallet": "0xe8c4d68a",
+        "n": 157,
+        "selected": 59,
+        "winRate": 0.39,
+        "meanEntry": 0.477,
+        "perTrade": 0.07,
+        "pnl": 4.1
+      },
+      {
+        "wallet": "0x684baa57",
+        "n": 290,
+        "selected": 120,
+        "winRate": 0.592,
+        "meanEntry": 0.47,
+        "perTrade": 0.44,
+        "pnl": 52.8
+      },
+      {
+        "wallet": "0x7de3de84",
+        "n": 31,
+        "selected": 28,
+        "winRate": 0.286,
+        "meanEntry": 0.516,
+        "perTrade": -4.58,
+        "pnl": -128.3
+      },
+      {
+        "wallet": "0x04e68406",
+        "n": 5,
+        "selected": 5,
+        "winRate": 1.0,
+        "meanEntry": 0.574,
+        "perTrade": 6.73,
+        "pnl": 33.7
+      },
+      {
+        "wallet": "0x7c1ee865",
+        "n": 30,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.584,
+        "perTrade": 9.65,
+        "pnl": 96.5
+      },
+      {
+        "wallet": "0xb61b2079",
+        "n": 119,
+        "selected": 119,
+        "winRate": 0.916,
+        "meanEntry": 0.55,
+        "perTrade": 8.57,
+        "pnl": 1020.4
+      },
+      {
+        "wallet": "0xbc1b1e93",
+        "n": 10,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0xe548376f",
+        "n": 24,
+        "selected": 19,
+        "winRate": 0.0,
+        "meanEntry": 0.53,
+        "perTrade": -11.5,
+        "pnl": -218.6
+      },
+      {
+        "wallet": "0x3239ef4a",
+        "n": 47,
+        "selected": 42,
+        "winRate": 0.048,
+        "meanEntry": 0.254,
+        "perTrade": -10.55,
+        "pnl": -443.2
+      },
+      {
+        "wallet": "0xec445c8b",
+        "n": 10,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.505,
+        "perTrade": 6.05,
+        "pnl": 60.5
+      },
+      {
+        "wallet": "0x3413c803",
+        "n": 201,
+        "selected": 131,
+        "winRate": 0.275,
+        "meanEntry": 0.4,
+        "perTrade": -3.34,
+        "pnl": -437.6
+      },
+      {
+        "wallet": "0x8a8685a7",
+        "n": 81,
+        "selected": 49,
+        "winRate": 0.122,
+        "meanEntry": 0.318,
+        "perTrade": -6.94,
+        "pnl": -340.1
+      },
+      {
+        "wallet": "0x2cff4163",
+        "n": 50,
+        "selected": 50,
+        "winRate": 0.8,
+        "meanEntry": 0.541,
+        "perTrade": 1.33,
+        "pnl": 66.7
+      },
+      {
+        "wallet": "0x80bac5c1",
+        "n": 10,
+        "selected": 10,
+        "winRate": 0.0,
+        "meanEntry": 0.323,
+        "perTrade": -10.9,
+        "pnl": -109.0
+      },
+      {
+        "wallet": "0xb10bf118",
+        "n": 54,
+        "selected": 44,
+        "winRate": 0.773,
+        "meanEntry": 0.314,
+        "perTrade": 4.65,
+        "pnl": 204.5
+      },
+      {
+        "wallet": "0x59f4a4b1",
+        "n": 18,
+        "selected": 8,
+        "winRate": 1.0,
+        "meanEntry": 0.559,
+        "perTrade": 8.66,
+        "pnl": 69.3
+      },
+      {
+        "wallet": "0xf0318c32",
+        "n": 10,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.576,
+        "perTrade": 9.53,
+        "pnl": 95.3
+      },
+      {
+        "wallet": "0xbb5fbe81",
+        "n": 20,
+        "selected": 10,
+        "winRate": 0.7,
+        "meanEntry": 0.418,
+        "perTrade": 11.72,
+        "pnl": 117.2
+      },
+      {
+        "wallet": "0x5faedf67",
+        "n": 10,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0xb56db521",
+        "n": 9,
+        "selected": 8,
+        "winRate": 0.0,
+        "meanEntry": 0.524,
+        "perTrade": -10.17,
+        "pnl": -81.4
+      },
+      {
+        "wallet": "0xfd557e6d",
+        "n": 58,
+        "selected": 14,
+        "winRate": 0.571,
+        "meanEntry": 0.501,
+        "perTrade": 1.95,
+        "pnl": 27.4
+      },
+      {
+        "wallet": "0x82398835",
+        "n": 9,
+        "selected": 6,
+        "winRate": 0.833,
+        "meanEntry": 0.215,
+        "perTrade": 45.13,
+        "pnl": 270.8
+      },
+      {
+        "wallet": "0x86279a7e",
+        "n": 10,
+        "selected": 7,
+        "winRate": 0.143,
+        "meanEntry": 0.556,
+        "perTrade": -7.11,
+        "pnl": -49.8
+      },
+      {
+        "wallet": "0xc6a63ad5",
+        "n": 8,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x79ae0972",
+        "n": 79,
+        "selected": 37,
+        "winRate": 0.649,
+        "meanEntry": 0.456,
+        "perTrade": 4.07,
+        "pnl": 150.5
+      },
+      {
+        "wallet": "0xfd672b99",
+        "n": 7,
+        "selected": 3,
+        "winRate": 0.333,
+        "meanEntry": 0.482,
+        "perTrade": -3.79,
+        "pnl": -11.4
+      },
+      {
+        "wallet": "0x0a6356d9",
+        "n": 37,
+        "selected": 22,
+        "winRate": 0.364,
+        "meanEntry": 0.415,
+        "perTrade": -3.58,
+        "pnl": -78.8
+      },
+      {
+        "wallet": "0xc5d8d372",
+        "n": 31,
+        "selected": 31,
+        "winRate": 0.0,
+        "meanEntry": 0.54,
+        "perTrade": -10.99,
+        "pnl": -340.7
+      },
+      {
+        "wallet": "0xbb066c71",
+        "n": 24,
+        "selected": 12,
+        "winRate": 0.0,
+        "meanEntry": 0.395,
+        "perTrade": -5.56,
+        "pnl": -66.8
+      },
+      {
+        "wallet": "0xf0b6a8eb",
+        "n": 13,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x09933d42",
+        "n": 23,
+        "selected": 23,
+        "winRate": 0.348,
+        "meanEntry": 0.528,
+        "perTrade": -5.57,
+        "pnl": -128.2
+      },
+      {
+        "wallet": "0xc0c426cf",
+        "n": 19,
+        "selected": 19,
+        "winRate": 0.053,
+        "meanEntry": 0.232,
+        "perTrade": -8.05,
+        "pnl": -153.0
+      },
+      {
+        "wallet": "0xf070207d",
+        "n": 23,
+        "selected": 8,
+        "winRate": 1.0,
+        "meanEntry": 0.525,
+        "perTrade": 8.72,
+        "pnl": 69.8
+      },
+      {
+        "wallet": "0x04d5524a",
+        "n": 30,
+        "selected": 18,
+        "winRate": 1.0,
+        "meanEntry": 0.535,
+        "perTrade": 10.22,
+        "pnl": 183.9
+      },
+      {
+        "wallet": "0x52911b9d",
+        "n": 61,
+        "selected": 20,
+        "winRate": 0.25,
+        "meanEntry": 0.329,
+        "perTrade": -0.41,
+        "pnl": -8.2
+      },
+      {
+        "wallet": "0xca7c00e2",
+        "n": 50,
+        "selected": 36,
+        "winRate": 0.361,
+        "meanEntry": 0.369,
+        "perTrade": -3.12,
+        "pnl": -112.3
+      },
+      {
+        "wallet": "0x04785a97",
+        "n": 62,
+        "selected": 32,
+        "winRate": 0.656,
+        "meanEntry": 0.477,
+        "perTrade": 2.74,
+        "pnl": 87.7
+      },
+      {
+        "wallet": "0x461dd11c",
+        "n": 6,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x08a53049",
+        "n": 6,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x03c580ac",
+        "n": 30,
+        "selected": 10,
+        "winRate": 0.2,
+        "meanEntry": 0.327,
+        "perTrade": -4.56,
+        "pnl": -45.6
+      },
+      {
+        "wallet": "0x4a3f86ed",
+        "n": 266,
+        "selected": 117,
+        "winRate": 0.65,
+        "meanEntry": 0.537,
+        "perTrade": 2.55,
+        "pnl": 298.6
+      },
+      {
+        "wallet": "0x99d686db",
+        "n": 26,
+        "selected": 18,
+        "winRate": 0.056,
+        "meanEntry": 0.508,
+        "perTrade": -8.56,
+        "pnl": -154.1
+      },
+      {
+        "wallet": "0xb4548603",
+        "n": 15,
+        "selected": 12,
+        "winRate": 0.5,
+        "meanEntry": 0.43,
+        "perTrade": 2.44,
+        "pnl": 29.3
+      },
+      {
+        "wallet": "0x3fa22a21",
+        "n": 8,
+        "selected": 3,
+        "winRate": 0.0,
+        "meanEntry": 0.38,
+        "perTrade": -10.15,
+        "pnl": -30.4
+      },
+      {
+        "wallet": "0xe40ecff6",
+        "n": 84,
+        "selected": 22,
+        "winRate": 0.0,
+        "meanEntry": 0.535,
+        "perTrade": -13.75,
+        "pnl": -302.6
+      },
+      {
+        "wallet": "0x09af203b",
+        "n": 58,
+        "selected": 34,
+        "winRate": 0.5,
+        "meanEntry": 0.549,
+        "perTrade": -1.06,
+        "pnl": -36.2
+      },
+      {
+        "wallet": "0xb8d75741",
+        "n": 22,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x01034e71",
+        "n": 7,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0xeaac36f7",
+        "n": 364,
+        "selected": 241,
+        "winRate": 0.415,
+        "meanEntry": 0.453,
+        "perTrade": -0.52,
+        "pnl": -125.5
+      },
+      {
+        "wallet": "0xad421edb",
+        "n": 41,
+        "selected": 14,
+        "winRate": 0.643,
+        "meanEntry": 0.427,
+        "perTrade": 4.58,
+        "pnl": 64.1
+      },
+      {
+        "wallet": "0x1e89b58b",
+        "n": 60,
+        "selected": 20,
+        "winRate": 0.75,
+        "meanEntry": 0.519,
+        "perTrade": 5.74,
+        "pnl": 114.9
+      },
+      {
+        "wallet": "0x2931cf68",
+        "n": 70,
+        "selected": 37,
+        "winRate": 0.432,
+        "meanEntry": 0.427,
+        "perTrade": -0.64,
+        "pnl": -23.9
+      },
+      {
+        "wallet": "0x4873713d",
+        "n": 55,
+        "selected": 46,
+        "winRate": 0.543,
+        "meanEntry": 0.533,
+        "perTrade": 0.39,
+        "pnl": 18.0
+      },
+      {
+        "wallet": "0xbca0b229",
+        "n": 10,
+        "selected": 9,
+        "winRate": 0.0,
+        "meanEntry": 0.255,
+        "perTrade": -9.8,
+        "pnl": -88.2
+      },
+      {
+        "wallet": "0x207346fa",
+        "n": 10,
+        "selected": 4,
+        "winRate": 0.5,
+        "meanEntry": 0.487,
+        "perTrade": -3.48,
+        "pnl": -13.9
+      },
+      {
+        "wallet": "0x64511822",
+        "n": 100,
+        "selected": 26,
+        "winRate": 0.962,
+        "meanEntry": 0.39,
+        "perTrade": 13.99,
+        "pnl": 363.7
+      },
+      {
+        "wallet": "0xd747a46b",
+        "n": 6,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0xb7aba0e4",
+        "n": 11,
+        "selected": 4,
+        "winRate": 0.25,
+        "meanEntry": 0.421,
+        "perTrade": 0.56,
+        "pnl": 2.2
+      },
+      {
+        "wallet": "0xaa81efdc",
+        "n": 22,
+        "selected": 12,
+        "winRate": 0.25,
+        "meanEntry": 0.296,
+        "perTrade": -3.66,
+        "pnl": -43.9
+      },
+      {
+        "wallet": "0xbe0e2cca",
+        "n": 20,
+        "selected": 20,
+        "winRate": 0.25,
+        "meanEntry": 0.06,
+        "perTrade": 1.25,
+        "pnl": 24.9
+      },
+      {
+        "wallet": "0xe0a15754",
+        "n": 16,
+        "selected": 7,
+        "winRate": 0.286,
+        "meanEntry": 0.528,
+        "perTrade": -5.71,
+        "pnl": -39.9
+      },
+      {
+        "wallet": "0x524db836",
+        "n": 25,
+        "selected": 19,
+        "winRate": 0.211,
+        "meanEntry": 0.22,
+        "perTrade": -4.95,
+        "pnl": -94.1
+      },
+      {
+        "wallet": "0x0e03f4d7",
+        "n": 10,
+        "selected": 5,
+        "winRate": 0.8,
+        "meanEntry": 0.517,
+        "perTrade": 8.84,
+        "pnl": 44.2
+      },
+      {
+        "wallet": "0x43cab54b",
+        "n": 25,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x16bb9951",
+        "n": 115,
+        "selected": 72,
+        "winRate": 0.333,
+        "meanEntry": 0.519,
+        "perTrade": -2.4,
+        "pnl": -173.0
+      },
+      {
+        "wallet": "0xb5501e65",
+        "n": 68,
+        "selected": 44,
+        "winRate": 0.5,
+        "meanEntry": 0.426,
+        "perTrade": 2.5,
+        "pnl": 110.1
+      },
+      {
+        "wallet": "0xb496b941",
+        "n": 9,
+        "selected": 4,
+        "winRate": 0.0,
+        "meanEntry": 0.36,
+        "perTrade": -12.38,
+        "pnl": -49.5
+      },
+      {
+        "wallet": "0xe4102cb5",
+        "n": 17,
+        "selected": 5,
+        "winRate": 0.6,
+        "meanEntry": 0.573,
+        "perTrade": 1.61,
+        "pnl": 8.1
+      },
+      {
+        "wallet": "0xbf08be85",
+        "n": 7,
+        "selected": 4,
+        "winRate": 0.5,
+        "meanEntry": 0.526,
+        "perTrade": -3.14,
+        "pnl": -12.6
+      },
+      {
+        "wallet": "0x8a0c70f0",
+        "n": 12,
+        "selected": 12,
+        "winRate": 0.083,
+        "meanEntry": 0.585,
+        "perTrade": -9.72,
+        "pnl": -116.7
+      },
+      {
+        "wallet": "0x57b25849",
+        "n": 212,
+        "selected": 86,
+        "winRate": 0.488,
+        "meanEntry": 0.467,
+        "perTrade": 0.28,
+        "pnl": 23.8
+      },
+      {
+        "wallet": "0x43484041",
+        "n": 5,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x583e7e4d",
+        "n": 5,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0xc34b4901",
+        "n": 124,
+        "selected": 61,
+        "winRate": 0.525,
+        "meanEntry": 0.538,
+        "perTrade": -1.07,
+        "pnl": -65.4
+      },
+      {
+        "wallet": "0x6c760ca9",
+        "n": 35,
+        "selected": 28,
+        "winRate": 0.179,
+        "meanEntry": 0.215,
+        "perTrade": -3.16,
+        "pnl": -88.5
+      },
+      {
+        "wallet": "0xfb07f485",
+        "n": 89,
+        "selected": 40,
+        "winRate": 0.55,
+        "meanEntry": 0.351,
+        "perTrade": 3.64,
+        "pnl": 145.4
+      },
+      {
+        "wallet": "0xf83b52d7",
+        "n": 20,
+        "selected": 16,
+        "winRate": 0.375,
+        "meanEntry": 0.244,
+        "perTrade": 0.91,
+        "pnl": 14.6
+      },
+      {
+        "wallet": "0xde4b34ef",
+        "n": 71,
+        "selected": 40,
+        "winRate": 0.6,
+        "meanEntry": 0.495,
+        "perTrade": 2.04,
+        "pnl": 81.7
+      },
+      {
+        "wallet": "0x038566a7",
+        "n": 86,
+        "selected": 52,
+        "winRate": 0.654,
+        "meanEntry": 0.522,
+        "perTrade": 3.4,
+        "pnl": 176.6
+      },
+      {
+        "wallet": "0x73e3fec4",
+        "n": 91,
+        "selected": 69,
+        "winRate": 0.638,
+        "meanEntry": 0.444,
+        "perTrade": 1.92,
+        "pnl": 132.4
+      },
+      {
+        "wallet": "0xc5187cb6",
+        "n": 301,
+        "selected": 130,
+        "winRate": 0.362,
+        "meanEntry": 0.349,
+        "perTrade": 0.05,
+        "pnl": 6.7
+      },
+      {
+        "wallet": "0x85f031d0",
+        "n": 839,
+        "selected": 82,
+        "winRate": 0.232,
+        "meanEntry": 0.351,
+        "perTrade": -5.48,
+        "pnl": -449.4
+      },
+      {
+        "wallet": "0x764b3056",
+        "n": 255,
+        "selected": 79,
+        "winRate": 0.43,
+        "meanEntry": 0.434,
+        "perTrade": 2.93,
+        "pnl": 231.1
+      },
+      {
+        "wallet": "0xcfff4295",
+        "n": 103,
+        "selected": 46,
+        "winRate": 0.304,
+        "meanEntry": 0.428,
+        "perTrade": -4.71,
+        "pnl": -216.8
+      },
+      {
+        "wallet": "0x8a16eb40",
+        "n": 18,
+        "selected": 18,
+        "winRate": 0.056,
+        "meanEntry": 0.13,
+        "perTrade": -11.92,
+        "pnl": -214.5
+      },
+      {
+        "wallet": "0xcd30f469",
+        "n": 15,
+        "selected": 15,
+        "winRate": 0.0,
+        "meanEntry": 0.62,
+        "perTrade": -19.98,
+        "pnl": -299.7
+      },
+      {
+        "wallet": "0x1d8c256b",
+        "n": 59,
+        "selected": 19,
+        "winRate": 0.211,
+        "meanEntry": 0.246,
+        "perTrade": 10.81,
+        "pnl": 205.4
+      },
+      {
+        "wallet": "0x64c4a743",
+        "n": 64,
+        "selected": 32,
+        "winRate": 0.25,
+        "meanEntry": 0.531,
+        "perTrade": -8.33,
+        "pnl": -266.6
+      },
+      {
+        "wallet": "0xa68c732b",
+        "n": 26,
+        "selected": 12,
+        "winRate": 0.417,
+        "meanEntry": 0.404,
+        "perTrade": 0.09,
+        "pnl": 1.1
+      },
+      {
+        "wallet": "0x671a3260",
+        "n": 17,
+        "selected": 5,
+        "winRate": 0.2,
+        "meanEntry": 0.428,
+        "perTrade": -10.0,
+        "pnl": -50.0
+      },
+      {
+        "wallet": "0xa5142c69",
+        "n": 11,
+        "selected": 1,
+        "winRate": 1.0,
+        "meanEntry": 0.625,
+        "perTrade": 2.75,
+        "pnl": 2.8
+      },
+      {
+        "wallet": "0xa36fcb69",
+        "n": 35,
+        "selected": 4,
+        "winRate": 0.0,
+        "meanEntry": 0.44,
+        "perTrade": -11.32,
+        "pnl": -45.3
+      },
+      {
+        "wallet": "0xc9a24fa2",
+        "n": 25,
+        "selected": 8,
+        "winRate": 1.0,
+        "meanEntry": 0.516,
+        "perTrade": 9.37,
+        "pnl": 75.0
+      },
+      {
+        "wallet": "0xaa4d3884",
+        "n": 38,
+        "selected": 30,
+        "winRate": 0.333,
+        "meanEntry": 0.596,
+        "perTrade": -4.23,
+        "pnl": -126.9
+      },
+      {
+        "wallet": "0x33bcb6e9",
+        "n": 31,
+        "selected": 8,
+        "winRate": 0.0,
+        "meanEntry": 0.325,
+        "perTrade": -18.0,
+        "pnl": -144.0
+      },
+      {
+        "wallet": "0xa0475823",
+        "n": 24,
+        "selected": 13,
+        "winRate": 0.308,
+        "meanEntry": 0.393,
+        "perTrade": -5.76,
+        "pnl": -74.9
+      },
+      {
+        "wallet": "0xb0c85813",
+        "n": 285,
+        "selected": 155,
+        "winRate": 0.503,
+        "meanEntry": 0.447,
+        "perTrade": 2.48,
+        "pnl": 385.0
+      },
+      {
+        "wallet": "0xcd91a549",
+        "n": 25,
+        "selected": 16,
+        "winRate": 0.125,
+        "meanEntry": 0.221,
+        "perTrade": -2.52,
+        "pnl": -40.3
+      },
+      {
+        "wallet": "0xb8ef617f",
+        "n": 14,
+        "selected": 13,
+        "winRate": 0.538,
+        "meanEntry": 0.43,
+        "perTrade": 7.18,
+        "pnl": 93.3
+      },
+      {
+        "wallet": "0x7dcf2357",
+        "n": 7,
+        "selected": 2,
+        "winRate": 1.0,
+        "meanEntry": 0.63,
+        "perTrade": 10.57,
+        "pnl": 21.1
+      },
+      {
+        "wallet": "0x75a27d0c",
+        "n": 20,
+        "selected": 20,
+        "winRate": 0.0,
+        "meanEntry": 0.208,
+        "perTrade": -17.96,
+        "pnl": -359.2
+      },
+      {
+        "wallet": "0x942e7916",
+        "n": 17,
+        "selected": 11,
+        "winRate": 0.091,
+        "meanEntry": 0.284,
+        "perTrade": -8.15,
+        "pnl": -89.7
+      },
+      {
+        "wallet": "0x30d4bc53",
+        "n": 6,
+        "selected": 4,
+        "winRate": 1.0,
+        "meanEntry": 0.392,
+        "perTrade": 14.01,
+        "pnl": 56.0
+      },
+      {
+        "wallet": "0xfbedb045",
+        "n": 8,
+        "selected": 3,
+        "winRate": 0.333,
+        "meanEntry": 0.588,
+        "perTrade": -1.22,
+        "pnl": -3.6
+      },
+      {
+        "wallet": "0xe66f865a",
+        "n": 18,
+        "selected": 3,
+        "winRate": 0.667,
+        "meanEntry": 0.45,
+        "perTrade": -2.15,
+        "pnl": -6.4
+      },
+      {
+        "wallet": "0x954df97e",
+        "n": 10,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.584,
+        "perTrade": 7.57,
+        "pnl": 75.7
+      },
+      {
+        "wallet": "0x83720820",
+        "n": 10,
+        "selected": 10,
+        "winRate": 1.0,
+        "meanEntry": 0.584,
+        "perTrade": 7.42,
+        "pnl": 74.2
+      },
+      {
+        "wallet": "0x9c56304c",
+        "n": 25,
+        "selected": 25,
+        "winRate": 0.0,
+        "meanEntry": 0.505,
+        "perTrade": -10.72,
+        "pnl": -268.0
+      },
+      {
+        "wallet": "0xd570e634",
+        "n": 7,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x4dd24f21",
+        "n": 30,
+        "selected": 14,
+        "winRate": 0.786,
+        "meanEntry": 0.436,
+        "perTrade": 16.35,
+        "pnl": 228.9
+      },
+      {
+        "wallet": "0xfe16a808",
+        "n": 6,
+        "selected": 0,
+        "perTrade": null
+      },
+      {
+        "wallet": "0x9c3ce009",
+        "n": 13,
+        "selected": 1,
+        "winRate": 1.0,
+        "meanEntry": 0.505,
+        "perTrade": 2.43,
+        "pnl": 2.4
+      }
+    ],
+    "wallets_positive": 65,
+    "wallets_negative": 61
+  },
+  "note": "Target = realizedPnl > 0 on resolved copies (no hypothetical rows). Grouped CV by marketId, lambda by inner 3-fold CV on the training part. Read-only."
+}

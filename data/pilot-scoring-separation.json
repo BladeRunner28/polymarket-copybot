@@ -1,0 +1,712 @@
+{
+  "generated_for": "drafts/scoring-fix-methods-20260913.md",
+  "n": 688,
+  "base_win_rate": 0.7398,
+  "n_markets": 178,
+  "n_wallets": 10,
+  "label_agreement": {
+    "agree": 484,
+    "n": 688,
+    "rate": 0.7035
+  },
+  "models": {
+    "A_stored_copyScore": {
+      "auc": 0.5184,
+      "auc_ci95": [
+        0.465,
+        0.5697
+      ],
+      "per_fold_auc": [
+        0.644,
+        0.395,
+        0.343,
+        0.358,
+        0.686
+      ],
+      "per_fold_auc_mean": 0.4853,
+      "brier": null,
+      "calib_slope": null,
+      "calib_intercept": null,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 123,
+          "meanP": 0.574,
+          "winRate": 0.6585,
+          "meanEntry": 0.6939,
+          "excess": -0.0353,
+          "hypoPnl": 250.0
+        },
+        {
+          "bucket": 2,
+          "n": 121,
+          "meanP": 0.6553,
+          "winRate": 0.9256,
+          "meanEntry": 0.7768,
+          "excess": 0.1489,
+          "hypoPnl": 453.6
+        },
+        {
+          "bucket": 3,
+          "n": 168,
+          "meanP": 0.6747,
+          "winRate": 0.6071,
+          "meanEntry": 0.7183,
+          "excess": -0.1112,
+          "hypoPnl": -54.1
+        },
+        {
+          "bucket": 4,
+          "n": 138,
+          "meanP": 0.6943,
+          "winRate": 0.8623,
+          "meanEntry": 0.8831,
+          "excess": -0.0208,
+          "hypoPnl": 54.9
+        },
+        {
+          "bucket": 5,
+          "n": 138,
+          "meanP": 0.7518,
+          "winRate": 0.6884,
+          "meanEntry": 0.6735,
+          "excess": 0.0149,
+          "hypoPnl": -31.7
+        }
+      ]
+    },
+    "B_entry_price_higher_is_win": {
+      "auc": 0.7385,
+      "auc_ci95": [
+        0.703,
+        0.7747
+      ],
+      "per_fold_auc": [
+        0.626,
+        0.484,
+        0.894,
+        0.942,
+        0.817
+      ],
+      "per_fold_auc_mean": 0.7527,
+      "brier": null,
+      "calib_slope": null,
+      "calib_intercept": null,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 116,
+          "meanP": 0.3358,
+          "winRate": 0.5776,
+          "meanEntry": 0.3358,
+          "excess": 0.2418,
+          "hypoPnl": 1060.1
+        },
+        {
+          "bucket": 2,
+          "n": 110,
+          "meanP": 0.5804,
+          "winRate": 0.8273,
+          "meanEntry": 0.5804,
+          "excess": 0.2469,
+          "hypoPnl": 488.6
+        },
+        {
+          "bucket": 3,
+          "n": 181,
+          "meanP": 0.7552,
+          "winRate": 0.4199,
+          "meanEntry": 0.7552,
+          "excess": -0.3353,
+          "hypoPnl": -873.5
+        },
+        {
+          "bucket": 4,
+          "n": 143,
+          "meanP": 0.9653,
+          "winRate": 0.986,
+          "meanEntry": 0.9653,
+          "excess": 0.0207,
+          "hypoPnl": 31.0
+        },
+        {
+          "bucket": 5,
+          "n": 138,
+          "meanP": 0.9949,
+          "winRate": 0.971,
+          "meanEntry": 0.9949,
+          "excess": -0.0239,
+          "hypoPnl": -33.5
+        }
+      ]
+    },
+    "F_price_band_lookup_oof": {
+      "auc": 0.87,
+      "auc_ci95": [
+        0.8387,
+        0.898
+      ],
+      "per_fold_auc": [
+        0.704,
+        0.907,
+        0.822,
+        0.735,
+        0.889
+      ],
+      "per_fold_auc_mean": 0.8114,
+      "brier": 0.1192,
+      "calib_slope": 1.082,
+      "calib_intercept": 1.578,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 134,
+          "meanP": 0.281,
+          "winRate": 0.2761,
+          "meanEntry": 0.6247,
+          "excess": -0.3485,
+          "hypoPnl": -299.5
+        },
+        {
+          "bucket": 2,
+          "n": 129,
+          "meanP": 0.678,
+          "winRate": 0.5581,
+          "meanEntry": 0.4603,
+          "excess": 0.0978,
+          "hypoPnl": 444.3
+        },
+        {
+          "bucket": 3,
+          "n": 142,
+          "meanP": 0.8833,
+          "winRate": 0.8944,
+          "meanEntry": 0.6731,
+          "excess": 0.2213,
+          "hypoPnl": 561.5
+        },
+        {
+          "bucket": 4,
+          "n": 123,
+          "meanP": 0.9419,
+          "winRate": 0.9593,
+          "meanEntry": 0.9563,
+          "excess": 0.003,
+          "hypoPnl": 2.1
+        },
+        {
+          "bucket": 5,
+          "n": 160,
+          "meanP": 0.9633,
+          "winRate": 0.9688,
+          "meanEntry": 0.9908,
+          "excess": -0.0221,
+          "hypoPnl": -35.9
+        }
+      ]
+    },
+    "C_stored_components_ridge": {
+      "auc": 0.6532,
+      "auc_ci95": [
+        0.6039,
+        0.7035
+      ],
+      "per_fold_auc": [
+        0.734,
+        0.252,
+        0.627,
+        0.827,
+        0.913
+      ],
+      "per_fold_auc_mean": 0.6704,
+      "brier": 0.1885,
+      "calib_slope": 0.365,
+      "calib_intercept": 1.125,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 138,
+          "meanP": 0.3607,
+          "winRate": 0.442,
+          "meanEntry": 0.5437,
+          "excess": -0.1016,
+          "hypoPnl": -180.5
+        },
+        {
+          "bucket": 2,
+          "n": 137,
+          "meanP": 0.7241,
+          "winRate": 0.854,
+          "meanEntry": 0.5353,
+          "excess": 0.3187,
+          "hypoPnl": 1273.6
+        },
+        {
+          "bucket": 3,
+          "n": 137,
+          "meanP": 0.8758,
+          "winRate": 0.8248,
+          "meanEntry": 0.8904,
+          "excess": -0.0656,
+          "hypoPnl": -28.8
+        },
+        {
+          "bucket": 4,
+          "n": 137,
+          "meanP": 0.9256,
+          "winRate": 0.781,
+          "meanEntry": 0.862,
+          "excess": -0.081,
+          "hypoPnl": -153.6
+        },
+        {
+          "bucket": 5,
+          "n": 139,
+          "meanP": 0.966,
+          "winRate": 0.7986,
+          "meanEntry": 0.9091,
+          "excess": -0.1106,
+          "hypoPnl": -238.0
+        }
+      ]
+    },
+    "D_refit_price_plus_execution": {
+      "auc": 0.5061,
+      "auc_ci95": [
+        0.4582,
+        0.5521
+      ],
+      "per_fold_auc": [
+        0.793,
+        0.326,
+        0.893,
+        0.927,
+        0.588
+      ],
+      "per_fold_auc_mean": 0.7054,
+      "brier": 0.2524,
+      "calib_slope": -0.007,
+      "calib_intercept": 1.045,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 138,
+          "meanP": 0.3557,
+          "winRate": 0.7464,
+          "meanEntry": 0.3905,
+          "excess": 0.3559,
+          "hypoPnl": 1457.0
+        },
+        {
+          "bucket": 2,
+          "n": 137,
+          "meanP": 0.732,
+          "winRate": 0.7518,
+          "meanEntry": 0.6902,
+          "excess": 0.0617,
+          "hypoPnl": 120.9
+        },
+        {
+          "bucket": 3,
+          "n": 138,
+          "meanP": 0.8563,
+          "winRate": 0.7319,
+          "meanEntry": 0.8412,
+          "excess": -0.1093,
+          "hypoPnl": -207.3
+        },
+        {
+          "bucket": 4,
+          "n": 137,
+          "meanP": 0.9122,
+          "winRate": 0.6204,
+          "meanEntry": 0.8681,
+          "excess": -0.2476,
+          "hypoPnl": -494.7
+        },
+        {
+          "bucket": 5,
+          "n": 138,
+          "meanP": 0.9594,
+          "winRate": 0.8478,
+          "meanEntry": 0.9519,
+          "excess": -0.104,
+          "hypoPnl": -203.4
+        }
+      ]
+    },
+    "E_refit_plus_wallet_prior": {
+      "auc": 0.6721,
+      "auc_ci95": [
+        0.6336,
+        0.7104
+      ],
+      "per_fold_auc": [
+        0.79,
+        0.438,
+        0.855,
+        0.871,
+        0.815
+      ],
+      "per_fold_auc_mean": 0.7537,
+      "brier": 0.2159,
+      "calib_slope": 0.324,
+      "calib_intercept": 1.094,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 138,
+          "meanP": 0.3634,
+          "winRate": 0.7246,
+          "meanEntry": 0.4257,
+          "excess": 0.2989,
+          "hypoPnl": 947.3
+        },
+        {
+          "bucket": 2,
+          "n": 137,
+          "meanP": 0.7225,
+          "winRate": 0.5474,
+          "meanEntry": 0.6828,
+          "excess": -0.1353,
+          "hypoPnl": 125.5
+        },
+        {
+          "bucket": 3,
+          "n": 138,
+          "meanP": 0.8524,
+          "winRate": 0.6594,
+          "meanEntry": 0.7384,
+          "excess": -0.0789,
+          "hypoPnl": -169.4
+        },
+        {
+          "bucket": 4,
+          "n": 137,
+          "meanP": 0.9199,
+          "winRate": 0.7956,
+          "meanEntry": 0.9051,
+          "excess": -0.1095,
+          "hypoPnl": -204.2
+        },
+        {
+          "bucket": 5,
+          "n": 138,
+          "meanP": 0.966,
+          "winRate": 0.971,
+          "meanEntry": 0.9901,
+          "excess": -0.0191,
+          "hypoPnl": -26.7
+        }
+      ]
+    },
+    "E_leave_one_wallet_out": {
+      "auc": 0.646,
+      "auc_ci95": [
+        0.5997,
+        0.6909
+      ],
+      "per_fold_auc": [
+        0.512,
+        0.748,
+        0.787,
+        0.786,
+        0.523
+      ],
+      "per_fold_auc_mean": 0.6712,
+      "brier": 0.2468,
+      "calib_slope": 0.11,
+      "calib_intercept": 1.092,
+      "deciles": [
+        {
+          "bucket": 1,
+          "n": 138,
+          "meanP": 0.2645,
+          "winRate": 0.5652,
+          "meanEntry": 0.5125,
+          "excess": 0.0527,
+          "hypoPnl": 460.9
+        },
+        {
+          "bucket": 2,
+          "n": 137,
+          "meanP": 0.6757,
+          "winRate": 0.9124,
+          "meanEntry": 0.7826,
+          "excess": 0.1299,
+          "hypoPnl": 312.1
+        },
+        {
+          "bucket": 3,
+          "n": 138,
+          "meanP": 0.928,
+          "winRate": 0.4638,
+          "meanEntry": 0.657,
+          "excess": -0.1933,
+          "hypoPnl": -169.8
+        },
+        {
+          "bucket": 4,
+          "n": 137,
+          "meanP": 0.9994,
+          "winRate": 0.8029,
+          "meanEntry": 0.8224,
+          "excess": -0.0195,
+          "hypoPnl": 50.7
+        },
+        {
+          "bucket": 5,
+          "n": 138,
+          "meanP": 0.9998,
+          "winRate": 0.9565,
+          "meanEntry": 0.9677,
+          "excess": -0.0111,
+          "hypoPnl": 18.7
+        }
+      ]
+    }
+  },
+  "supplementary": {
+    "icc_wallet": {
+      "groups": 10,
+      "mean_cluster": 68.8,
+      "icc": 0.4638,
+      "design_effect": 32.44,
+      "effective_n": 21.2
+    },
+    "icc_market": {
+      "groups": 178,
+      "mean_cluster": 3.87,
+      "icc": 0.9034,
+      "design_effect": 3.59,
+      "effective_n": 191.7
+    },
+    "per_decision_pnl_sd": 10.14,
+    "per_decision_pnl_mean": 0.98,
+    "mean_pnl_ci_wallet_cluster": [
+      -3.348,
+      4.144
+    ],
+    "mde_table": {
+      "141": {
+        "se": 4.86,
+        "mde_80pct": 13.61
+      },
+      "300": {
+        "se": 3.33,
+        "mde_80pct": 9.33
+      },
+      "688": {
+        "se": 2.2,
+        "mde_80pct": 6.16
+      },
+      "1500": {
+        "se": 1.49,
+        "mde_80pct": 4.17
+      },
+      "3000": {
+        "se": 1.05,
+        "mde_80pct": 2.95
+      }
+    },
+    "band_model_auc_cluster_ci": [
+      0.785,
+      0.938
+    ],
+    "loo_ev_gate": {
+      "per_wallet": [
+        {
+          "wallet": "0x83720820",
+          "n": 85,
+          "selected": 7,
+          "winRate": 0.0,
+          "meanEntry": 0.541,
+          "excess": -0.541,
+          "copyPnl": -70.0
+        },
+        {
+          "wallet": "0x7c1ee865",
+          "n": 47,
+          "selected": 47,
+          "winRate": 0.979,
+          "meanEntry": 0.537,
+          "excess": 0.442,
+          "copyPnl": 379.9
+        },
+        {
+          "wallet": "0x5b4ec9c0",
+          "n": 68,
+          "selected": 16,
+          "winRate": 0.0,
+          "meanEntry": 0.394,
+          "excess": -0.394,
+          "copyPnl": -160.0
+        },
+        {
+          "wallet": "0x0c787cc2",
+          "n": 8,
+          "selected": 8,
+          "winRate": 1.0,
+          "meanEntry": 0.64,
+          "excess": 0.36,
+          "copyPnl": 48.5
+        },
+        {
+          "wallet": "0x511f9c77",
+          "n": 308,
+          "selected": 43,
+          "winRate": 0.651,
+          "meanEntry": 0.492,
+          "excess": 0.159,
+          "copyPnl": 486.2
+        },
+        {
+          "wallet": "0x23d81ba9",
+          "n": 9,
+          "selected": 9,
+          "winRate": 0.0,
+          "meanEntry": 0.179,
+          "excess": -0.179,
+          "copyPnl": -90.0
+        },
+        {
+          "wallet": "0xdb859a55",
+          "n": 1,
+          "selected": 1,
+          "winRate": 1.0,
+          "meanEntry": 0.365,
+          "excess": 0.635,
+          "copyPnl": 17.4
+        },
+        {
+          "wallet": "0x1465b79b",
+          "n": 11,
+          "selected": 0
+        },
+        {
+          "wallet": "0xcf6c5492",
+          "n": 3,
+          "selected": 3,
+          "winRate": 0.0,
+          "meanEntry": 0.925,
+          "excess": -0.925,
+          "copyPnl": -30.0
+        },
+        {
+          "wallet": "0x03805a13",
+          "n": 148,
+          "selected": 28,
+          "winRate": 0.393,
+          "meanEntry": 0.52,
+          "excess": -0.128,
+          "copyPnl": -112.2
+        }
+      ],
+      "selected": 162,
+      "aggregate": {
+        "winRate": 0.58,
+        "meanEntry": 0.5,
+        "excess": 0.081,
+        "copyPnl": 469.8,
+        "perTrade": 2.9,
+        "wallets_positive": 4,
+        "wallets_negative": 5
+      }
+    },
+    "band_stability_excl_top3_wallets": {
+      "excluded": [
+        "0x511f9c77",
+        "0x03805a13",
+        "0x83720820"
+      ],
+      "bands": [
+        {
+          "band": "0.00-0.05",
+          "all_n": 0,
+          "all_win": null,
+          "excl_win": null,
+          "excl_n": 0
+        },
+        {
+          "band": "0.05-0.10",
+          "all_n": 0,
+          "all_win": null,
+          "excl_win": null,
+          "excl_n": 0
+        },
+        {
+          "band": "0.10-0.20",
+          "all_n": 20,
+          "all_win": 0.45,
+          "excl_win": 0.0,
+          "excl_n": 9
+        },
+        {
+          "band": "0.20-0.30",
+          "all_n": 0,
+          "all_win": null,
+          "excl_win": null,
+          "excl_n": 0
+        },
+        {
+          "band": "0.30-0.40",
+          "all_n": 76,
+          "all_win": 0.632,
+          "excl_win": 0.056,
+          "excl_n": 18
+        },
+        {
+          "band": "0.40-0.50",
+          "all_n": 19,
+          "all_win": 0.474,
+          "excl_win": null,
+          "excl_n": 0
+        },
+        {
+          "band": "0.50-0.60",
+          "all_n": 81,
+          "all_win": 0.914,
+          "excl_win": 1.0,
+          "excl_n": 51
+        },
+        {
+          "band": "0.60-0.70",
+          "all_n": 117,
+          "all_win": 0.171,
+          "excl_win": 0.0,
+          "excl_n": 52
+        },
+        {
+          "band": "0.70-0.80",
+          "all_n": 32,
+          "all_win": 0.969,
+          "excl_win": 1.0,
+          "excl_n": 3
+        },
+        {
+          "band": "0.80-0.90",
+          "all_n": 44,
+          "all_win": 0.636,
+          "excl_win": 1.0,
+          "excl_n": 1
+        },
+        {
+          "band": "0.90-0.97",
+          "all_n": 98,
+          "all_win": 0.959,
+          "excl_win": 0.75,
+          "excl_n": 12
+        },
+        {
+          "band": "0.97-1.01",
+          "all_n": 201,
+          "all_win": 0.975,
+          "excl_win": 1.0,
+          "excl_n": 1
+        }
+      ]
+    },
+    "mean_entry_price": 0.7483
+  },
+  "note": "Grouped CV by marketId (5 folds); lambda chosen by inner 3-fold CV on the training part only. Target = P(copied token wins). Excess = winRate - mean entry. Read-only; no DB writes."
+}
