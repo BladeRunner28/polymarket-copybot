@@ -26,6 +26,9 @@ prisma/dev.db*
 # large runtime data (L2 book history — 700MB+; keep the small research JSONL)
 data/l2/
 
+# large derived datasets — regenerate with scripts/build-decision-dataset.py (read-only DB read)
+data/decision-dataset.csv
+
 # large binaries / regenerable assets
 de421.bsp
 *.bsp

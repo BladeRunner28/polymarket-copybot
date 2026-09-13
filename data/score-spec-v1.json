@@ -1,0 +1,217 @@
+{
+  "spec_version": 1,
+  "created_at": "2026-09-13T14:20:16.071509+00:00",
+  "status": "SHADOW ONLY \u2014 fails its own pre-registered acceptance test (see verdict)",
+  "author": "hermes research pass (drafts/scoring-fix-methods-20260913.md)",
+  "dataset": {
+    "source": "data/decision-dataset.csv",
+    "rows": 3481,
+    "dedupe": "first entry per (bot, wallet, market, outcome)",
+    "excluded_venues": [
+      "Kalshi"
+    ],
+    "first_day": "2026-07-15",
+    "last_day": "2026-09-12",
+    "wallets": 188,
+    "markets": 2569
+  },
+  "model": {
+    "kind": "logit_price",
+    "implementation": "src/lib/scoring/price-edge.ts (pure function; spec constants embedded)",
+    "parameters": {
+      "mean": 0.6672113499908179,
+      "sd": 1.8361025406657638,
+      "a": 0.4991328447815187,
+      "b": 1.234131940373049
+    }
+  },
+  "decision_rule": {
+    "formula": "admit iff P(win) - price - fee_per_share(price) > margin",
+    "fee_per_share": "fee_rate * price * (1 - price)   [Polymarket taker fee formula]",
+    "margin": 0.05,
+    "margin_selection": "median of per-fold choices under wallet-blocked CV (chosen on FIT rows only, >= 10% admitted required)"
+  },
+  "measured": {
+    "wallet_blocked": {
+      "auc": 0.7359,
+      "brier": 0.2027,
+      "calib_slope": 0.963,
+      "calib_intercept": 0.492,
+      "pooled": {
+        "covered_rows": 3481,
+        "selected": 564,
+        "share": 0.162,
+        "per_trade_net": 1.3033,
+        "ungated_net": 0.0745,
+        "improvement": 1.2288,
+        "excess": 0.0741
+      },
+      "per_fold": [
+        {
+          "fold": 0,
+          "margin": 0.05,
+          "n": 281,
+          "selected": 26,
+          "share": 0.0925,
+          "per_trade_net": 4.9168,
+          "ungated_net": -0.2018,
+          "improvement": 5.1186,
+          "excess": 0.1865,
+          "wallets_nonneg": 0.556
+        },
+        {
+          "fold": 1,
+          "margin": 0.05,
+          "n": 630,
+          "selected": 79,
+          "share": 0.1254,
+          "per_trade_net": -0.2513,
+          "ungated_net": -0.0694,
+          "improvement": -0.1819,
+          "excess": 0.0286,
+          "wallets_nonneg": 0.333
+        },
+        {
+          "fold": 2,
+          "margin": 0.05,
+          "n": 881,
+          "selected": 167,
+          "share": 0.1896,
+          "per_trade_net": 0.6295,
+          "ungated_net": 0.359,
+          "improvement": 0.2705,
+          "excess": 0.0848,
+          "wallets_nonneg": 0.333
+        },
+        {
+          "fold": 3,
+          "margin": 0.03,
+          "n": 1141,
+          "selected": 182,
+          "share": 0.1595,
+          "per_trade_net": 3.8835,
+          "ungated_net": 0.2842,
+          "improvement": 3.5994,
+          "excess": 0.1035,
+          "wallets_nonneg": 0.478
+        },
+        {
+          "fold": 4,
+          "margin": 0.05,
+          "n": 548,
+          "selected": 110,
+          "share": 0.2007,
+          "per_trade_net": -1.6804,
+          "ungated_net": -0.512,
+          "improvement": -1.1683,
+          "excess": 0.0154,
+          "wallets_nonneg": 0.25
+        }
+      ]
+    },
+    "walk_forward": {
+      "auc": 0.6961,
+      "brier": 0.2195,
+      "base_rate_brier": 0.2486,
+      "calib_slope": 1.401,
+      "calib_intercept": 0.165,
+      "per_fold": [
+        {
+          "fold": 0,
+          "margin": 0.0,
+          "n": 1960,
+          "selected": 1095,
+          "share": 0.5587,
+          "per_trade_net": 0.1024,
+          "ungated_net": 0.0707,
+          "improvement": 0.0318,
+          "excess": 0.0122,
+          "wallets_nonneg": 0.407
+        },
+        {
+          "fold": 1,
+          "margin": 0.08,
+          "n": 484,
+          "selected": 43,
+          "share": 0.0888,
+          "per_trade_net": -5.7259,
+          "ungated_net": 0.0179,
+          "improvement": -5.7438,
+          "excess": -0.0432,
+          "wallets_nonneg": 0.167
+        }
+      ],
+      "pooled": {
+        "covered_rows": 2444,
+        "selected": 1138,
+        "share": 0.4656,
+        "per_trade_net": -0.1178,
+        "ungated_net": 0.0602,
+        "improvement": -0.178,
+        "excess": 0.0101
+      },
+      "fitted_on_first_fold": {
+        "kind": "logit_price",
+        "mean": 1.7666011043486818,
+        "sd": 2.5012800204122776,
+        "a": 1.0826137851412667,
+        "b": 1.3550701226331936
+      }
+    },
+    "per_bot": {
+      "BANKROLL_200": {
+        "n": 864,
+        "ungated_net": 0.5529,
+        "gated_net": 2.5717,
+        "selected": 172
+      },
+      "STANDARD": {
+        "n": 2617,
+        "ungated_net": -0.0834,
+        "gated_net": 0.7468,
+        "selected": 392
+      }
+    },
+    "baseline": {
+      "ungated_net_per_trade": 0.0745,
+      "base_win_rate": 0.5797,
+      "base_rate_brier": 0.2436
+    }
+  },
+  "acceptance_criteria": {
+    "A1": "gate beats ungated on BOTH fold designs",
+    "A2": "wallet-cluster bootstrap 95% CI of improvement excludes 0",
+    "A3": ">=60% of wallets non-negative on admitted trades",
+    "A4": "calibration slope within [0.8, 1.2]",
+    "result": "FAIL",
+    "detail": {
+      "W_wallet_blocked": {
+        "improvement": 1.2288,
+        "ci95": [
+          -0.5399,
+          2.6224
+        ],
+        "a1_beats_ungated": true,
+        "a2_ci_excludes_zero": false,
+        "wallets_nonneg_mean": 0.39,
+        "a3_wallets_60pct": false,
+        "calib_slope": 0.963,
+        "a4_calibrated": true
+      },
+      "T_walk_forward": {
+        "improvement": -0.178,
+        "ci95": [
+          -1.306,
+          0.5597
+        ],
+        "a1_beats_ungated": false,
+        "a2_ci_excludes_zero": false,
+        "wallets_nonneg_mean": 0.287,
+        "a3_wallets_60pct": false,
+        "calib_slope": 1.401,
+        "a4_calibrated": false
+      }
+    }
+  },
+  "deployment": "Do not gate on this score. Run it in shadow mode (log the score and the counterfactual admission set; gate nothing) until the pre-registered window in drafts/scoring-fix-v1-impl-20260913.md is met."
+}

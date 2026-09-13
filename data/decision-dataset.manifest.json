@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-09-13T14:18:10.600192+00:00",
+  "source": "PaperTrade(resolved|closed, isDemo=0, 0<entryPrice<1) JOIN DecisionJournal JOIN ObservedTrade",
+  "dedupe": "first entry per (bot, wallet, market, outcome)",
+  "rows_raw": 9735,
+  "rows_emitted": 3516,
+  "dropped_as_duplicate": 6219,
+  "win_rate": 0.5785,
+  "pnl_gross": 1067.89,
+  "pnl_net_entry": 297.6,
+  "pnl_net_full": 168.56,
+  "per_trade_gross": 0.304,
+  "per_trade_net_entry": 0.085,
+  "per_trade_net_full": 0.048,
+  "per_bot": {
+    "STANDARD": 2617,
+    "BANKROLL_200": 899
+  },
+  "per_venue": {
+    "Polymarket": 3481,
+    "Kalshi": 35
+  },
+  "wallets": 188,
+  "markets": 2576,
+  "first_day": "2026-07-15",
+  "last_day": "2026-09-12",
+  "distinct_days": 60,
+  "rows_without_prior_snapshot": 1,
+  "rows_with_snapshot": 3515,
+  "targets": {
+    "y_win": "realizedPnl > 0 for the copied leg",
+    "pnl_net_entry": "realizedPnl - entry-leg taker fee (ex-ante knowable)",
+    "pnl_net_full": "realizedPnl - entry fee - exit fee for status='closed' (all-taker upper bound)"
+  },
+  "fee_model": "shares * rate * p * (1-p); entry always, exit only when status='closed'; rate by slug/question keyword (crypto .07, politics/finance .04, else .05)",
+  "csv": "data/decision-dataset.csv"
+}

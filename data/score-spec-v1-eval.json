@@ -1,0 +1,475 @@
+{
+  "W_wallet_blocked__M1_logit_price": {
+    "auc": 0.7359,
+    "brier": 0.2027,
+    "base_rate_brier": 0.2436,
+    "calib_slope": 0.963,
+    "calib_intercept": 0.492,
+    "per_fold": [
+      {
+        "fold": 0,
+        "margin": 0.05,
+        "n": 281,
+        "selected": 26,
+        "share": 0.0925,
+        "per_trade_net": 4.9168,
+        "ungated_net": -0.2018,
+        "improvement": 5.1186,
+        "excess": 0.1865,
+        "wallets_nonneg": 0.556
+      },
+      {
+        "fold": 1,
+        "margin": 0.05,
+        "n": 630,
+        "selected": 79,
+        "share": 0.1254,
+        "per_trade_net": -0.2513,
+        "ungated_net": -0.0694,
+        "improvement": -0.1819,
+        "excess": 0.0286,
+        "wallets_nonneg": 0.333
+      },
+      {
+        "fold": 2,
+        "margin": 0.05,
+        "n": 881,
+        "selected": 167,
+        "share": 0.1896,
+        "per_trade_net": 0.6295,
+        "ungated_net": 0.359,
+        "improvement": 0.2705,
+        "excess": 0.0848,
+        "wallets_nonneg": 0.333
+      },
+      {
+        "fold": 3,
+        "margin": 0.03,
+        "n": 1141,
+        "selected": 182,
+        "share": 0.1595,
+        "per_trade_net": 3.8835,
+        "ungated_net": 0.2842,
+        "improvement": 3.5994,
+        "excess": 0.1035,
+        "wallets_nonneg": 0.478
+      },
+      {
+        "fold": 4,
+        "margin": 0.05,
+        "n": 548,
+        "selected": 110,
+        "share": 0.2007,
+        "per_trade_net": -1.6804,
+        "ungated_net": -0.512,
+        "improvement": -1.1683,
+        "excess": 0.0154,
+        "wallets_nonneg": 0.25
+      }
+    ],
+    "pooled": {
+      "covered_rows": 3481,
+      "selected": 564,
+      "share": 0.162,
+      "per_trade_net": 1.3033,
+      "ungated_net": 0.0745,
+      "improvement": 1.2288,
+      "excess": 0.0741
+    },
+    "fitted_on_first_fold": {
+      "kind": "logit_price",
+      "mean": 0.6672113499908179,
+      "sd": 1.8361025406657638,
+      "a": 0.4991328447815187,
+      "b": 1.234131940373049
+    }
+  },
+  "W_wallet_blocked__M2_band_table": {
+    "auc": 0.7266,
+    "brier": 0.2035,
+    "base_rate_brier": 0.2436,
+    "calib_slope": 1.105,
+    "calib_intercept": 0.449,
+    "per_fold": [
+      {
+        "fold": 0,
+        "margin": 0.03,
+        "n": 281,
+        "selected": 42,
+        "share": 0.1495,
+        "per_trade_net": 1.7882,
+        "ungated_net": -0.2018,
+        "improvement": 1.99,
+        "excess": 0.0504,
+        "wallets_nonneg": 0.545
+      },
+      {
+        "fold": 1,
+        "margin": 0.08,
+        "n": 630,
+        "selected": 79,
+        "share": 0.1254,
+        "per_trade_net": -0.8847,
+        "ungated_net": -0.0694,
+        "improvement": -0.8153,
+        "excess": -0.012,
+        "wallets_nonneg": 0.35
+      },
+      {
+        "fold": 2,
+        "margin": 0.08,
+        "n": 881,
+        "selected": 108,
+        "share": 0.1226,
+        "per_trade_net": -0.9254,
+        "ungated_net": 0.359,
+        "improvement": -1.2844,
+        "excess": 0.0682,
+        "wallets_nonneg": 0.273
+      },
+      {
+        "fold": 3,
+        "margin": 0.02,
+        "n": 1141,
+        "selected": 247,
+        "share": 0.2165,
+        "per_trade_net": 2.8328,
+        "ungated_net": 0.2842,
+        "improvement": 2.5487,
+        "excess": 0.0672,
+        "wallets_nonneg": 0.375
+      },
+      {
+        "fold": 4,
+        "margin": 0.08,
+        "n": 548,
+        "selected": 93,
+        "share": 0.1697,
+        "per_trade_net": -0.4807,
+        "ungated_net": -0.512,
+        "improvement": 0.0313,
+        "excess": 0.0336,
+        "wallets_nonneg": 0.381
+      }
+    ],
+    "pooled": {
+      "covered_rows": 3481,
+      "selected": 569,
+      "share": 0.1635,
+      "per_trade_net": 0.9847,
+      "ungated_net": 0.0745,
+      "improvement": 0.9101,
+      "excess": 0.0497
+    },
+    "fitted_on_first_fold": {
+      "kind": "band_table",
+      "bands": [
+        0.32526041666666666,
+        0.2831980519480519,
+        0.23736007462686567,
+        0.31889285714285714,
+        0.45675975177304967,
+        0.4443155226209048,
+        0.5063863255033557,
+        0.6264715608465609,
+        0.7549107142857143,
+        0.7852109053497942,
+        0.9324107142857143,
+        0.9211096938775509
+      ],
+      "band_prior_n": 10.0
+    }
+  },
+  "W_wallet_blocked__M3_multivar": {
+    "auc": 0.734,
+    "brier": 0.2034,
+    "base_rate_brier": 0.2436,
+    "calib_slope": 0.984,
+    "calib_intercept": 0.486,
+    "per_fold": [
+      {
+        "fold": 0,
+        "margin": 0.05,
+        "n": 281,
+        "selected": 34,
+        "share": 0.121,
+        "per_trade_net": 4.9409,
+        "ungated_net": -0.2018,
+        "improvement": 5.1427,
+        "excess": 0.1726,
+        "wallets_nonneg": 0.7
+      },
+      {
+        "fold": 1,
+        "margin": 0.05,
+        "n": 630,
+        "selected": 102,
+        "share": 0.1619,
+        "per_trade_net": 0.2263,
+        "ungated_net": -0.0694,
+        "improvement": 0.2956,
+        "excess": 0.026,
+        "wallets_nonneg": 0.364
+      },
+      {
+        "fold": 2,
+        "margin": 0.05,
+        "n": 881,
+        "selected": 179,
+        "share": 0.2032,
+        "per_trade_net": 0.9199,
+        "ungated_net": 0.359,
+        "improvement": 0.561,
+        "excess": 0.0975,
+        "wallets_nonneg": 0.36
+      },
+      {
+        "fold": 3,
+        "margin": 0.05,
+        "n": 1141,
+        "selected": 163,
+        "share": 0.1429,
+        "per_trade_net": 5.6468,
+        "ungated_net": 0.2842,
+        "improvement": 5.3626,
+        "excess": 0.1086,
+        "wallets_nonneg": 0.522
+      },
+      {
+        "fold": 4,
+        "margin": 0.05,
+        "n": 548,
+        "selected": 119,
+        "share": 0.2172,
+        "per_trade_net": -1.0361,
+        "ungated_net": -0.512,
+        "improvement": -0.524,
+        "excess": 0.0129,
+        "wallets_nonneg": 0.269
+      }
+    ],
+    "pooled": {
+      "covered_rows": 3481,
+      "selected": 597,
+      "share": 0.1715,
+      "per_trade_net": 1.9311,
+      "ungated_net": 0.0745,
+      "improvement": 1.8566,
+      "excess": 0.0758
+    },
+    "fitted_on_first_fold": {
+      "kind": "logit_price_plus_execution",
+      "lambda_": 10.0,
+      "mean": [
+        0.6672113499908179,
+        2.320497145965063,
+        0.1660453125000026,
+        0.9893944030916674,
+        0.7043999107527336
+      ],
+      "sd": [
+        1.8361025406657605,
+        0.40049873570241645,
+        0.2597797324731784,
+        0.17919813057348774,
+        0.3387623864225311
+      ],
+      "coef": [
+        0.48796345478218406,
+        1.185186075513753,
+        -0.04098077220414539,
+        0.013535563487787738,
+        0.02005721034944918,
+        0.02691384939118993
+      ]
+    }
+  },
+  "T_walk_forward__M1_logit_price": {
+    "auc": 0.6961,
+    "brier": 0.2195,
+    "base_rate_brier": 0.2486,
+    "calib_slope": 1.401,
+    "calib_intercept": 0.165,
+    "per_fold": [
+      {
+        "fold": 0,
+        "margin": 0.0,
+        "n": 1960,
+        "selected": 1095,
+        "share": 0.5587,
+        "per_trade_net": 0.1024,
+        "ungated_net": 0.0707,
+        "improvement": 0.0318,
+        "excess": 0.0122,
+        "wallets_nonneg": 0.407
+      },
+      {
+        "fold": 1,
+        "margin": 0.08,
+        "n": 484,
+        "selected": 43,
+        "share": 0.0888,
+        "per_trade_net": -5.7259,
+        "ungated_net": 0.0179,
+        "improvement": -5.7438,
+        "excess": -0.0432,
+        "wallets_nonneg": 0.167
+      }
+    ],
+    "pooled": {
+      "covered_rows": 2444,
+      "selected": 1138,
+      "share": 0.4656,
+      "per_trade_net": -0.1178,
+      "ungated_net": 0.0602,
+      "improvement": -0.178,
+      "excess": 0.0101
+    },
+    "fitted_on_first_fold": {
+      "kind": "logit_price",
+      "mean": 1.7666011043486818,
+      "sd": 2.5012800204122776,
+      "a": 1.0826137851412667,
+      "b": 1.3550701226331936
+    }
+  },
+  "T_walk_forward__M2_band_table": {
+    "auc": 0.67,
+    "brier": 0.2259,
+    "base_rate_brier": 0.2486,
+    "calib_slope": 0.943,
+    "calib_intercept": 0.184,
+    "per_fold": [
+      {
+        "fold": 0,
+        "margin": 0.0,
+        "n": 1960,
+        "selected": 1002,
+        "share": 0.5112,
+        "per_trade_net": 0.3102,
+        "ungated_net": 0.0707,
+        "improvement": 0.2395,
+        "excess": 0.015,
+        "wallets_nonneg": 0.425
+      },
+      {
+        "fold": 1,
+        "margin": 0.08,
+        "n": 484,
+        "selected": 72,
+        "share": 0.1488,
+        "per_trade_net": -0.5317,
+        "ungated_net": 0.0179,
+        "improvement": -0.5495,
+        "excess": 0.0468,
+        "wallets_nonneg": 0.312
+      }
+    ],
+    "pooled": {
+      "covered_rows": 2444,
+      "selected": 1074,
+      "share": 0.4394,
+      "per_trade_net": 0.2538,
+      "ungated_net": 0.0602,
+      "improvement": 0.1936,
+      "excess": 0.0171
+    },
+    "fitted_on_first_fold": {
+      "kind": "band_table",
+      "bands": [
+        0.37822779384978034,
+        0.7205400192864031,
+        0.28462445087324545,
+        0.41768596998764995,
+        0.46312466149720616,
+        0.43241250212717686,
+        0.5529178362375544,
+        0.7394168571831017,
+        0.7226012536162006,
+        0.7327357172377148,
+        0.9128521307371921,
+        0.9247732213196476
+      ],
+      "band_prior_n": 10.0
+    }
+  },
+  "T_walk_forward__M3_multivar": {
+    "auc": 0.6879,
+    "brier": 0.2217,
+    "base_rate_brier": 0.2486,
+    "calib_slope": 1.319,
+    "calib_intercept": 0.168,
+    "per_fold": [
+      {
+        "fold": 0,
+        "margin": 0.0,
+        "n": 1960,
+        "selected": 996,
+        "share": 0.5082,
+        "per_trade_net": 0.6158,
+        "ungated_net": 0.0707,
+        "improvement": 0.5451,
+        "excess": 0.027,
+        "wallets_nonneg": 0.405
+      },
+      {
+        "fold": 1,
+        "margin": 0.03,
+        "n": 484,
+        "selected": 202,
+        "share": 0.4174,
+        "per_trade_net": 1.3918,
+        "ungated_net": 0.0179,
+        "improvement": 1.3739,
+        "excess": 0.0603,
+        "wallets_nonneg": 0.469
+      }
+    ],
+    "pooled": {
+      "covered_rows": 2444,
+      "selected": 1198,
+      "share": 0.4902,
+      "per_trade_net": 0.7466,
+      "ungated_net": 0.0602,
+      "improvement": 0.6864,
+      "excess": 0.0326
+    },
+    "fitted_on_first_fold": {
+      "kind": "logit_price_plus_execution",
+      "lambda_": 3.0,
+      "mean": [
+        1.7666011043486838,
+        2.3196004594025696,
+        0.12707328833172463,
+        1.0083886485016174,
+        0.7997943110827652
+      ],
+      "sd": [
+        2.5012800204122767,
+        0.18890702040777158,
+        0.13657609813513688,
+        0.17941290740931637,
+        0.401700697476001
+      ],
+      "coef": [
+        1.0662070142095392,
+        1.2320444179387777,
+        -0.07948009572300303,
+        -0.018526758000896835,
+        -0.07722532413796085,
+        0.07744772852045176
+      ]
+    }
+  },
+  "_meta": {
+    "chosen_model": "M1_logit_price",
+    "brier_ranking": {
+      "M1_logit_price": 0.2111,
+      "M2_band_table": 0.2147,
+      "M3_multivar": 0.21255000000000002
+    },
+    "margin_mode": 0.05,
+    "passed": false,
+    "generated_at": "2026-09-13T14:20:16.072583+00:00"
+  }
+}
