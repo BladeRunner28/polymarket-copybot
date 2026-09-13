@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { hourlyPnlSeries } from "@/lib/pnl-rollup";
 import { Card, Stat, Pnl, Badge, Empty } from "@/components/ui";
 import { LineChart } from "@/components/chart";
 import { getActiveRules } from "@/lib/rules";
@@ -47,13 +48,9 @@ export default async function Overview() {
         take: 3,
         include: { newRuleSet: true },
       }),
-      prisma.$queryRaw<Array<{ hour: string; botId: string; total_pnl: number }>>`
-        SELECT strftime('%Y-%m-%d %H:00:00', s.collectedAt / 1000, 'unixepoch') as hour, t.botId, SUM(s.pnl) as total_pnl
-        FROM PnlSnapshot s
-        JOIN PaperTrade t ON s.paperTradeId = t.id
-        GROUP BY hour, t.botId
-        ORDER BY hour ASC
-      `,
+      // Rollup-backed (scripts/rollup-pnl-hourly.ts): was a full PnlSnapshot
+      // GROUP BY scan per request.
+      hourlyPnlSeries(),
       prisma.paperTrade.count({ where: { isDemo: true } }),
       prisma.botBankroll.findMany(),
       prisma.regulatorySignal.findMany({ orderBy: { processedAt: "desc" }, take: 5 }),

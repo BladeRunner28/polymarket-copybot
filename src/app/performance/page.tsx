@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { hourlyPnlSeries } from "@/lib/pnl-rollup";
 import { computeBenchmarks } from "@/lib/benchmarks";
 import { Card, Stat, Empty, Pnl, Addr } from "@/components/ui";
 import { LineChart } from "@/components/chart";
@@ -10,13 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function Performance() {
   const [snapshots, resolved, bench] = await Promise.all([
-    prisma.$queryRaw<Array<{ hour: string; botId: string; total_pnl: number }>>`
-      SELECT strftime('%Y-%m-%d %H:00:00', s.collectedAt / 1000, 'unixepoch') as hour, t.botId, SUM(s.pnl) as total_pnl
-      FROM PnlSnapshot s
-      JOIN PaperTrade t ON s.paperTradeId = t.id
-      GROUP BY hour, t.botId
-      ORDER BY hour ASC
-    `,
+    // Rollup-backed (scripts/rollup-pnl-hourly.ts): was a full PnlSnapshot
+    // GROUP BY scan per request.
+    hourlyPnlSeries(),
     prisma.paperTrade.findMany({ where: { status: "resolved" }, orderBy: { resolvedAt: "asc" } }),
     computeBenchmarks(),
   ]);

@@ -1,8 +1,16 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { Card, Badge, Addr, Empty } from "@/components/ui";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+
+type LatestSnap = {
+  marketId: string;
+  spread: number | null;
+  liquidity: number | null;
+  timeToResolution: number | null;
+};
 
 export default async function Signals() {
   const decisions = await prisma.decisionJournal.findMany({
@@ -11,14 +19,24 @@ export default async function Signals() {
     include: { observedTrade: true },
   });
 
-  // Latest market snapshot per market for spread/liquidity/ttr display
+  // Latest market snapshot per market for spread/liquidity/ttr display.
+  //
+  // Done in SQL: this used to `findMany` EVERY snapshot row for those markets
+  // (138k rows / 42 MB, 0.5-2s) and keep one per market in JS. MarketSnapshot
+  // is the 10.3M-row / 3.1 GB table, so that read was the page's whole cost.
+  // With exactly one MAX() aggregate SQLite takes the bare columns from the
+  // max-collectedAt row (documented behaviour) and answers it from
+  // MarketSnapshot_marketId_idx with no temp B-tree: 0.15s, 60 rows.
   const marketIds = [...new Set(decisions.map((d) => d.marketId))];
-  const snaps = await prisma.marketSnapshot.findMany({
-    where: { marketId: { in: marketIds } },
-    orderBy: { collectedAt: "desc" },
-  });
-  const latestSnap = new Map<string, (typeof snaps)[number]>();
-  for (const s of snaps) if (!latestSnap.has(s.marketId)) latestSnap.set(s.marketId, s);
+  const snaps: LatestSnap[] = marketIds.length
+    ? await prisma.$queryRaw<LatestSnap[]>(Prisma.sql`
+        SELECT marketId, MAX(collectedAt) AS collectedAt, spread, liquidity, timeToResolution
+        FROM MarketSnapshot
+        WHERE marketId IN (${Prisma.join(marketIds)})
+        GROUP BY marketId
+      `)
+    : [];
+  const latestSnap = new Map<string, LatestSnap>(snaps.map((s) => [s.marketId, s]));
 
   return (
     <div className="space-y-4">

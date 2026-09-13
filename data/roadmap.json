@@ -1,502 +1,529 @@
 {
- "columns": [
-  "Backlog",
-  "Scheduled",
-  "In Progress",
-  "In Review",
-  "Done"
- ],
- "cards": [
-  {
-   "id": "phase-a",
-   "title": "Phase A — Wang premium overlay",
-   "column": "Done",
-   "effort": "~half day",
-   "dates": "Shipped 2026-08-31 (v38)",
-   "note": "λ̂ calibration table refit biweekly (1st & 15th) via scripts/calibrate-premium.py. Measurement-first: size factor clamp(1−k·λ̂) on C-200 main-lane copies.",
-   "tags": [
-    "premium",
-    "shipped"
-   ]
-  },
-  {
-   "id": "phase-a2",
-   "title": "Phase A2 — Calibrated sentiment evidence aggregation",
-   "column": "Done",
-   "effort": "~half day",
-   "dates": "Shipped 2026-08-31 (v39)",
-   "note": "Bayesian log-odds aggregation (src/lib/forecasting) replaces the Phase-8 fixed ±boost: delta = posterior − market. Measurement window → Sep 14 outcome review.",
-   "tags": [
-    "sentiment",
-    "shipped",
-    "measuring"
-   ]
-  },
-  {
-   "id": "phase-a2-review",
-   "title": "Phase A2 outcome review",
-   "column": "Scheduled",
-   "dates": "Sep 14 (review only)",
-   "note": "Compare [SENTIMENT]-logged decisions against the legacy boost regime over the 2-week window; syncs with biweekly calibration. PULLED-FORWARD IMPLICATION (2026-09-05): review lands inside the Kelly window (Sep 8–Oct 8) — findings are measurement-only; ANY resulting changes are parked until the window closes Oct 8 (lane touches 0.08% of decisions, so deferral cost ≈ nil).",
-   "tags": [
-    "review"
-   ]
-  },
-  {
-   "id": "phase-b",
-   "title": "Phase B — Kelly sizing replaces band sizing",
-   "column": "Scheduled",
-   "effort": "~1 day",
-   "dates": "Sep 8 (Tue) — Kelly-window start · window reads Oct 8",
-   "gate": "Ships Tue Sep 8 on the Sep 1 λ̂ refit (7 days old — within the biweekly envelope); the scheduled Sep 15 + Oct 1 refits land mid-window as system-under-test refreshes, not ad hoc changes",
-   "note": "Port oracle3 ModelInformedSizer semantics (Apache-2.0): edge = bucket-λ-adjusted premium, Kelly ≤ 0.15×bankroll, confidence-scaled. Replaces heuristic band multipliers; paper caps kept. Input (audited 2026-08-31): drafts/octagon-audit.md — MIT reference impl for executable-quote Kelly (edge vs ask, not midpoint), liquidity haircut, per-category concentration + drawdown gates; calibrate to Polymarket, don't copy Kalshi defaults. Ref (awesome-options audit 2026-09-01): Thorp (2006) 'Kelly Criterion in Blackjack, Sports Betting, and the Stock Market' — canonical binary-bet fractional-Kelly treatment; read before the Kelly ship (2026-09-08). Predicted impact (2026-09-01, calibration-based): +$5–25/day (+3–15% of ~$165/day window) — long-shot <0.20 band up-sized 3–6x (z=4.14 edge), 0.80+ favorite band → ~0 trades (significant −8.7pp), executable-quote edge ~1c/trade. FALSIFIABLE TARGETS: (1) long-shot band share of realized PnL rises 3–6x vs pre-Kelly 48d window; (2) 0.80+ band trades ≈ 0; (3) no increase in max drawdown. PULLED FORWARD 2026-09-05 (approved): ships Tue Sep 8 on the Sep 1 λ̂ refit (in-envelope); Sep 15 + Oct 1 refits land mid-window as scheduled system refreshes. COMPRESSED: build + review + user approval by Sep 8. Pre-Kelly clean baseline = Sep 4–8 (4 trading days) only. CAVEAT: the +$5–25/day predicted impact was scaled off a ~$165/day window that does NOT match realized data (≈ −$10/day pre-fix) — re-pre-register expected impact on the 4 clean baseline days before ship; window-end reads Oct 8.",
-   "tags": [
-    "kelly",
-    "sizing"
-   ]
-  },
-  {
-   "id": "phase-c",
-   "title": "Phase C — Constraint-based cross-venue arb",
-   "column": "Backlog",
-   "effort": "~2–3 days",
-   "dates": "Design Sep 15–30 · build early Oct",
-   "gate": "Kalshi circuit breaker must recover (realized ≥ −$50; now −$37.99, clear since kalshi-reprice-92 on 2026-09-05)",
-   "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum ≠ 1) → trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) — read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed — botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs. AUDIT INPUT (2026-09-07, user-approved carding; drafts/oracle3-audit-2026-09-07.md + drafts/polymarket-mcp-server-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md): (1) build the arb detector on oracle3's coinjure/matching staged matcher (Apache-2.0 — category·date·template·text·resolution → HIGH/MED/LOW confidence; template fields reject WIN-vs-TIE + cumulative-date false matches; ~0.5–1d incl. PMA validation, LOW risk, shadow-lane first, flag-revertible); (2) fold the mcp-server confirmation-gate + SELL-reduces-by-min(order,pos)/no-position-SELL-adds-exposure semantics (MIT, concept-only, ~2–4h doc work) into the sidecar risk-gate spec. NOTHING ships before the Kelly window closes Oct 8 (precommit-mid-oct-kelly-gate). AUDIT INPUT (2026-09-08, user-queued post-Kelly; drafts/ccxt-audit.md): multi-venue quote data backbone = **ccxt** (MIT; Polymarket+Kalshi+Hyperliquid coverage verified 2026-09-08) — adopt for arb quote breadth + perp-funding/OHLCV feature lane; do NOT churn existing bespoke CLOB/data-api/Kalshi read lanes. AUDIT INPUT (2026-09-09, user-approved carding; drafts/poly-maker-audit.md): warproxxx/poly-maker (MIT, Python, 1.5k★, 111/111 tests) is a maker-only MM bot whose core is the INTRA-VENUE half of this card — a YES+NO pair merged back to collateral locks edge 1−p−q. Two borrows for the design window (Sep 15–30): (1) the CTF pair-merge primitive — mergePositions across EOA / Gnosis Safe / V2 DepositWallet via the gasless builder relayer, nonce-serialized, LIVE-VERIFIED on-chain (tx 0x4d2a2064) — gives zero-market-impact exits AND makes the Polymarket-only YES+NO≠1 leg buildable WITHOUT any Kalshi dependency, sidestepping the phase-kalshi1 keyless data wall (our sidecar already reads top-of-book keyless); (2) reward-band quoting (half-spread clamped into rewardsMaxSpread, per-ORDER min qualifying size, both legs bid so both sides score) as the maker counterfactual to our taker entries — see drafts/c200-taker-fee-measurement-2026-09-09.md (fee = C×rate×p(1−p); politics 0.04; maker rebate 25%). Port cost: read ≈½ day, dry-run port ≈ 2–3 days (cost is wallet-type signing + builder-relayer creds, not logic); ship as a manual CLI primitive first, flag-revertible. CAVEAT: the repo's own live session LOST $15.51 — the maker-lane strategy is an unproven hypothesis; the merge primitive is the part worth taking.",
-   "tags": [
-    "kalshi",
-    "arb"
-   ]
-  },
-  {
-   "id": "storage-health",
-   "title": "Storage drive health — /Volumes/Storage",
-   "column": "Done",
-   "dates": "Verified healthy 2026-08-31",
-   "note": "Earlier I/O hang was transient (drive-sleep wake-up). Re-test: small write 0.2ms, 50MB write 1,159 MB/s, checksum OK. Ready for the dataset move.",
-   "tags": [
-    "infra",
-    "done"
-   ]
-  },
-  {
-   "id": "dataset-move",
-   "title": "Move PMA dataset (~130GiB) to /Volumes/Storage",
-   "column": "Done",
-   "dates": "Moved 2026-08-31",
-   "note": "rsync complete: 49,486 files / 50G verified (count + size match, 404.5M trades readable via the /tmp/pma symlink). Source deleted — primary disk freed.",
-   "tags": [
-    "infra",
-    "storage"
-   ]
-  },
-  {
-   "id": "v40-homerun",
-   "title": "v40 — Homerun-audit features: risk gates, circuit breaker, insider scoring, L2 recorder",
-   "column": "Done",
-   "dates": "Shipped 2026-08-31 (v40)",
-   "note": "Daily-loss + gross-exposure gates and per-token flash-crash breaker in score-trades; 11-component insider wallet scoring (WalletInsiderScore, EOD refresh); L2 order-book recorder (data/l2/, cron watchdog) for future fill modeling.",
-   "tags": [
-    "risk",
-    "shipped"
-   ]
-  },
-  {
-   "id": "phase-d-insider-gating",
-   "title": "Phase D — Insider-score copy gating",
-   "column": "Backlog",
-   "effort": "~half day",
-   "gate": "Measurement window first: ≥2 weeks of WalletInsiderScore data before gating copy selection",
-   "note": "Wire the 11-component insider score into copy selection (e.g. boost/penalize wallets above flagged/watch thresholds) behind a rules flag — same measurement-first pattern as Phase A2.",
-   "tags": [
-    "insider",
-    "gating"
-   ]
-  },
-  {
-   "id": "phase-d2-fill-model",
-   "title": "Phase D2 — Cox-PH paper fill model",
-   "column": "Backlog",
-   "effort": "~1–2 days",
-   "gate": "~2 weeks of L2 book history in data/l2/ (≈ mid-Sep)",
-   "note": "Port the homerun fill-simulator concept (AGPL read-only): P(fill within Δt) from book context + time-to-resolution covariate — makes paper fills realistic instead of assumed-at-price. Ref (awesome-options audit 2026-09-01): FlashAlpha flashalpha-fill-simulator (MIT) — stale-quote guards, deterministic tiebreaks, patient-then-cross exit; borrow methodology for P(fill) over data/l2/ books.",
-   "tags": [
-    "fill-model",
-    "l2"
-   ]
-  },
-  {
-   "id": "phase-local1",
-   "title": "Phase Local-1 — Local LLM sentiment (qwen2.5:7b → qwen3.5:9b, shadow A/B)",
-   "column": "In Progress",
-   "dates": "Shipped 2026-08-31 (shadow) · 3.5 lane 2026-09-08",
-   "gate": "A/B review after ~1 week of accumulation (scripts/compare-sentiment.py; AB rows now carry a 'model' field for per-model windows)",
-   "note": "Research bot scores sentiment with a local model via ollama (:11434, launchd) alongside the rules → data/sentiment-ab.jsonl. 2026-09-08: lane flipped to qwen3.5:9b (env LOCAL_SENTIMENT_MODEL in run_research_bot.sh) + prompt hardened (latest-action rubric, unconditional trade mappings, think:false top-level — /v1 endpoint drops options, uses /api/chat now). Backtest on 54 unique items: 2.5=67% rule-sign-agreement vs 3.5=63% (tie); 3.5 fixes became-public-law (HR5301: 0.1→1.0) + referral direction consistency, but exposes RULE incoherence: congress_api.py adjusts only confidence (0.70) on 'committee' actions — sentiment stays title-polarity, so identical referrals score ±0.5-0.9 by title keywords. Referral-stall semantics is a rules-side question, not settled. Live pipeline unchanged until the A/B shows the local model wins.",
-   "tags": [
-    "local-llm",
-    "sentiment",
-    "ab"
-   ]
-  },
-  {
-   "id": "phase-astro1",
-   "title": "Phase Astro-1 — Astrological sentiment shadow feed",
-   "column": "In Progress",
-   "dates": "Shipped 2026-08-31 (shadow, backfilled 61d)",
-   "gate": "First verdict: NO SIGNIFICANT SIGNAL (n=47d, corr −0.168, |t|=1.1) — re-run compare-astro.py monthly; promote only if |t|≥2 + replication, D-tier cap (0.2) only",
-   "note": "Human-recommended astro feed settled empirically: deterministic DE440s ephemeris → D-tier daily score → data/astro-shadow.jsonl; joined against PaperTrade realized PnL. Stayed in shadow per measurement-first standard.",
-   "tags": [
-    "astro",
-    "shadow",
-    "sentiment"
-   ]
-  },
-  {
-   "id": "phase-ml1",
-   "title": "Phase ML-1 — Outcome labeling → train → shadow A/B",
-   "column": "In Progress",
-   "effort": "~2 days (train part, after Phase B)",
-   "dates": "Labeling started 2026-08-31",
-   "gate": "Train + shadow A/B after Phase B ships; promote only if model beats copyScore on held-out labels (measurement-first)",
-   "note": "Labeling pipeline FIXED 2026-08-31: review-outcomes 404'd on archived gamma slugs forever (0 labels in history); CLOB winner-flag fallback by conditionId now labels 200/night via EOD (orderBy decision asc → real-PnL copies first). 529 labels exported (329 paper_copy 84% good +$1.39 avg; 200 skip). npm run export:training → training_data.csv. Next: XGBoost on decision features → wasDecisionGood; shadow-A/B vs live ruleset; the training_data.csv header-only era is over.",
-   "tags": [
-    "ml",
-    "training",
-    "labels"
-   ]
-  },
-  {
-   "id": "phase-ml2",
-   "title": "Phase ML-2 — Independent-entry ML lane (dual-track)",
-   "column": "Backlog",
-   "effort": "~3–5 days",
-   "gate": "Ships after Phase B (Kelly) + ML-1 shadow A/B shows model edge on held-out labels; era-aware training (ruleSetVersion feature)",
-   "note": "The step that makes dual-track real: ML lane generates its OWN entries from market features (MarketSnapshot: price/drift/TTR/liquidity/category + calibration-band edges + sentiment deltas) with NO whale signal. Schema: DecisionJournal.observedTradeId → nullable (or MLEntry table); new MarketSnapshot-driven scanner; ML-1 botId lane with separate bankroll (multi-lane pattern proven by STANDARD/C-200). Shadow → paper, flag-revertible. Caveat: current 529 labels are all v1–v3 era vs live v38 — train era-aware. AUDIT INPUT (2026-09-07, user-approved carding; drafts/btc15min-audit-2026-09-07.md): before committing to a short-TTR BTC lane, tape-test the late-window trend-persistence hypothesis against the PMA tape — P(resolve | mid ≥0.60 at T−60..120s) vs ask, ~1 dev-day, analysis-only, can run as soon as the Kelly window's observability-only constraint allows; the repo is NO-LICENSE (concepts only, copy nothing). Probability-space threshold taxonomy (extreme-fade 0.68/0.32, momentum band 0.35–0.65, imbalance 0.30, no-trade zone) feeds the ML-2 feature registry as ideas.",
-   "tags": [
-    "ml",
-    "dual-track",
-    "market-scan"
-   ]
-  },
-  {
-   "id": "phase-data1",
-   "title": "Phase Data-1 — External dataset wiring (PMA / Manifold / Odds API)",
-   "column": "In Progress",
-   "effort": "~2–3 days",
-   "dates": "Started 2026-09-01",
-   "gate": "Shadow feeds accumulate ≥2 weeks; promote only if gap signals beat baseline (measurement-first)",
-   "note": "PMA (largest public Polymarket+Kalshi tape, 36GiB — source of the 692M-trade calibration baseline) re-fetched + wired for win-rate-by-price + ML-2 tape features; Manifold API keyless gap-detection (cross-platform prob gaps); Odds API sportsbook-vs-Polymarket gaps (free key) for the short-TTR sports lane. All shadow-first. AUDIT INPUT (2026-09-07, user-approved carding; drafts/polymarket-tennis-audit-2026-09-07.md): add a generic sports market→match matcher on the polymarket-tennis pattern (MIT — matching.py: name+date with fold normalization, similarity ladder, both-sides-must-agree via min, ±1-day date bonus, >1-day hard reject, ambiguity margin 0.10 → returns None rather than guess; ~250 LOC pure functions, 94/94 tests upstream, feed-agnostic — needs only {players, scheduled_time, status, winner}) to wire the Odds API feed into the short-TTR sports lane; re-parametrize per sport (upstream esports aliasing unhandled). ~1 dev-day + half-day wiring, LOW risk, flag-revertible, post-Oct-8.",
-   "tags": [
-    "data",
-    "datasets",
-    "shadow"
-   ]
-  },
-  {
-   "id": "phase-gdelt",
-   "title": "Phase GDELT-1 — OSINT news sentiment feed (A2 coverage fix)",
-   "column": "In Progress",
-   "effort": "Collector ~1h; A2 wiring ~half day",
-   "dates": "Carded 2026-09-01; collector built 2026-09-01; cloud feed activated 2026-09-01",
-   "gate": "A2 evidence wiring ships AFTER Phase B (Sep 15); shadow accumulation starts when collector lands",
-   "note": "GDELT (keyless, 15-min updates, tone/Goldstein scores) fixes the measured A2 reach problem (sentiment evidence touches 0.08% of decisions — 148/191k). Collector: api.gdeltproject.org doc API → data/gdelt-shadow.jsonl (same shadow pattern as astro/odds/manifold). Wiring: map events → research-categories → evidence rows feeding src/lib/forecasting. Card now, collect now, integrate post-B. Collector LIVE: political-research-bot/src/gdelt_shadow.py -> data/gdelt-shadow.jsonl (148 rows first run, 6 categories, 6-hourly via research-bot cron). Dual-feed: keyless legacy DOC API (http only; https hangs; 1 req/5s; no per-article tone — uses timelinetone category aggregates) + GDELT Cloud ACTIVE 2026-09-01 (gdeltcloud.com/api/v2, stories w/ significance/geo/entities; GDELT_API_KEY in .env perms 600; NOTE: cloud API flaky on cold calls — 4x retry w/ 10s backoff in collector). First full cloud run: 148 rows/6 categories. A2 wiring still post-Phase B (Sep 15).",
-   "tags": [
-    "osint",
-    "sentiment",
-    "gdelt",
-    "a2"
-   ]
-  },
-  {
-   "id": "phase-gdelt-atlas",
-   "title": "GDELT Atlas viewer — dark-mode world map + news feed",
-   "column": "In Progress",
-   "effort": "Built 2026-09-01 (~1 session)",
-   "dates": "Built 2026-09-01",
-   "gate": "Static snapshot (no CORS on Cloud API). Rebuild with build.py when API is up; refresh script optional.",
-   "note": "~/gdelt-atlas/atlas.html — self-contained dark-mode Monitor surface: 177-country equirectangular SVG map (pre-projected, no map lib), hover tooltip, click-to-pin country panel (stories/avg sig/max sig/top cat), filterable story feed (significance chips, category chips, opens story URL). Data: 148 real GDELT Cloud stories (44 countries covered) embedded as JSON snapshot. NOTE: Atlas GPR/Pulse indices need PAID plan (Academic tier returns 'not included'); map uses coverage intensity + significance + categories instead. Build: gdelt-atlas/build.py --stories <json> --out atlas.html (ne110.geojson included). Weekly rebuild cron: copybot-gdelt-atlas-rebuild (Mon 09:00, Discord, no_agent; fetch_stories.py w/ 3-retry backoff + MIN_STORIES=50 guard → build.py → summary). GDELT Cloud MCP server installed in Hermes (gdelt-cloud, 46 tools, key via MCP_GDELT_CLOUD_API_KEY env ref) 2026-09-01.",
-   "tags": [
-    "gdelt",
-    "atlas",
-    "viz",
-    "dark-mode"
-   ]
-  },
-  {
-   "id": "phase-c200-exec-leak",
-   "title": "C-200 execution-leak investigation (capital question → category fix)",
-   "column": "Done",
-   "effort": "2 audit passes + v45 impl",
-   "dates": "2026-09-02→03",
-   "gate": "n/a — complete",
-   "note": "COMPLETED 2026-09-03: Step1+Step2 findings. Leak = category mix, not capital/venue/drift. v45 LIVE: per-bot blacklists, market-slug cap 15, whale guard.",
-   "tags": [
-    "c200",
-    "execution",
-    "v45"
-   ]
-  },
-  {
-   "id": "tr14-exposure-gate-inloop",
-   "title": "TR-14 — Exposure-cap snapshot overshoot (in-loop increment fix)",
-   "column": "Done",
-   "effort": "~30m",
-   "dates": "Shipped 2026-09-03 (code fix in scripts/score-trades.ts — no ruleset bump; same v45 values)",
-   "note": "FIXED: gate now compares against c200RunningExposure, seeded from the cycle-start snapshot and incremented by the booked C-200 size after each successful openPaperTrade. A single scoring run can no longer overshoot maxGrossExposureUsd. Caveat: pre-bot decision gate still tests base (pre-boost) size — final boosted size can exceed by up to the ×3/premium factor; acceptable, matches daily-loss-gate behavior.",
-   "tags": [
-    "tuning-review",
-    "risk",
-    "shipped"
-   ]
-  },
-  {
-   "id": "v46-equity-exposure-cap",
-   "title": "v46 — Equity-linked gross-exposure cap (approved)",
-   "column": "Done",
-   "effort": "~45m",
-   "dates": "Shipped 2026-09-03 (RuleSet v46)",
-   "note": "User-approved 2026-09-03, two parts: (1) equity-link helper src/lib/exposure-cap.ts — effective cap = stored base + 50% × max(0, net worth − principal), symmetric, enforced in score-trades.ts + shown on dashboard; (2) base raised $250 → $400 via scripts/apply-v46.ts (RuleSet v46, RuleChange audit row) — paper-only faster sampling, phase-streak comparability risk accepted. Effective cap today $400 (net worth $1,724 < principal $1,900 → no kicker).",
-   "tags": [
-    "risk",
-    "shipped",
-    "approved"
-   ]
-  },
-  {
-   "id": "tr15-daily-pnl-early-exit-fix",
-   "title": "TR-15 — Daily-loss gate blind to early-exit PnL (fixed)",
-   "column": "Done",
-   "effort": "~30m",
-   "dates": "Shipped 2026-09-03",
-   "note": "Early-exit trades book realized PnL at closedAt (resolvedAt NULL). Daily-PnL queries filtered resolvedAt-only, so the −$150 daily-loss halt never saw exit-bleed days — 2026-08-31 booked −$239 early exits while the gate read +$53. Fixed with OR[{resolvedAt},{closedAt}] in scripts/score-trades.ts (gate), src/lib/report.ts (EOD report today-PnL, both bots), src/app/page.tsx (dashboard today metric + risk-gate chip). Found while reviewing the v46 cap raise — scaled exposure under a partially blind breaker was the blocker.",
-   "tags": [
-    "tuning-review",
-    "risk",
-    "shipped"
-   ]
-  },
-  {
-   "id": "phase-kalshi1",
-   "title": "Phase Kalshi-1 — Kalshi whale/wallet parity (reviewed: data wall — parked)",
-   "column": "Backlog",
-   "effort": "n/a — not feasible keyless (see drafts/kalshi-whale-review.md)",
-   "dates": "Opened 2026-09-03",
-   "note": "REVIEWED 2026-09-03 (drafts/kalshi-whale-review.md): Kalshi public API has no leaderboard, no wallet-attributed trade feed, no profiles — the Polymarket stack cannot be duplicated keyless. Options: anonymous size-flow (low value), third-party provider shadow-test (unproven), or status quo. Parked pending TR-16 adapter fix + optional provider probe. Third-party probe done (appendix): polywhaler keyless API is Polymarket-only; botforkalshi anonymous flow only; no keyless Kalshi wallet data exists. Phase stays parked.",
-   "tags": [
-    "copy-lane",
-    "kalshi",
-    "reviewed"
-   ]
-  },
-  {
-   "id": "tr16-kalshi-adapter",
-   "title": "TR-16 — Fix Rust sidecar Kalshi adapter (dead host + 0.52 stub)",
-   "column": "Done",
-   "effort": "~1-2h",
-   "dates": "Shipped 2026-09-03",
-   "note": "FIXED (approved 2026-09-03). adapters.rs: external-api host (trading-api deprecated/401), real orderbook_fp parse (yes/no_dollars = top-level bids, dollar strings; BUY=1−no_bid, SELL=yes_bid), NO 0.52/0.58 stubs (Kalshi AND PredictIt) — Err → book at PM reference price with execution note. market_question threaded paper.ts→sidecar; bounded event-walk ticker resolution (25 pages, cache, 429 backoff). Verified: build+tsc clean, live smoke test resolves KXELONMARS-99 book. CAVEAT: the 92 historical Kalshi paper trades were booked at ~$0.50 phantom — re-price before trusting Kalshi leg stats. See drafts/kalshi-whale-review.md appendix.",
-   "tags": [
-    "tuning-review",
-    "kalshi",
-    "risk",
-    "shipped"
-   ]
-  },
-  {
-   "id": "kalshi-reprice-92",
-   "title": "Re-price the 92 historical Kalshi paper trades (phantom $0.50 fills)",
-   "column": "Done",
-   "effort": "~1-2h",
-   "dates": "Opened 2026-09-03 · Done 2026-09-05 (tuning review #16 rec 1, approved)",
-   "note": "DONE 2026-09-05 (scripts/reprice-kalshi-92.ts, audit data/kalshi-reprice-audit.json, drafts/kalshi-reprice-92-20260905.md). 73 stub rows (entry 0.50) re-priced onto the honest PM reference at entry time (ObservedTrade.detectedPrice — same convention the non-stub rows booked at); exits were already real PM marks and were left untouched. kalshiRealized −$50.70 → −$37.99 (breaker floor −$50 cleared → routing gate auto-recovers per v37 design). Ledger adjusted +$12.71 (realized −$269.87, cash $1,236.39; invariant gap 0.0). TR-17 exclusions removed from query_bankroll.js + report.ts — Kalshi re-joins C-200 realized series/phase streak. CAVEAT: simulatedPositionSize was band-sized against the phantom 0.50 (parent scale size not stored) — not re-derived; distortion bounded by the ×2 band factor and documented in the audit.",
-   "tags": [
-    "kalshi",
-    "risk",
-    "data-quality"
-   ]
-  },
-  {
-   "id": "local-32b-baseline",
-   "title": "Baseline: 32B on Mac mini (Monday) — decide RPC split vs Mac-only",
-   "column": "Scheduled",
-   "effort": "~1h",
-   "dates": "Scheduled 2026-09-07 (Mon)",
-   "note": "From the NVIDIA PAIR / 32B-split analysis (drafts/nvidia-pair-setup.md, 2026-09-04): before committing Odin(5070)+Miles(3080) to a llama.cpp RPC 32B split, benchmark the free option we already own. Steps: (1) ollama pull qwen2.5:32b-q4_K_M (or qwen3 equivalent) on the Mac mini; (2) measure decode tok/s + TTFT on a realistic sentiment-shadow prompt; (3) compare vs current 7b lane quality on a small labeled set (data/sentiment-ab.jsonl A/B style); (4) gate: if Mac 32B ≥ ~10 tok/s and quality lifts materially over 7b, adopt Mac-32B as the shadow lane and DROP the RPC split; only build 5070+3080 split if Mac 32B throughput becomes the bottleneck. User has more questions first — card is the parking spot.",
-   "tags": [
-    "local-llm",
-    "benchmark",
-    "phase-local1"
-   ]
-  },
-  {
-   "id": "h2027-funding-schedule",
-   "title": "2027 homelab funding schedule → production forecast inputs",
-   "column": "Scheduled",
-   "effort": "note only — no code",
-   "dates": "Set 2026-09-05",
-   "note": "Homelab hardware purchases unlock ONLY after production CopyBot proves ≥$500/day (7 consecutive days, C-200 advance rule). HARD DEADLINE: TrueNAS R740xd + 12× recert drives (~$3–4.5k) must be purchased by end of Q3 2027 (2027-09-30) — the program's only dated gate. Derived: production proof should land ≈ Q2 2027 to keep sourcing/ordering float. C-200 tuning should size intermediate targets so the cascade holds: Dec 1 2026 ladder → early-2027 production rollout → Q2 2027 proof. Track A (Mac Studio M5 Ultra 256GB ~$9.5k + RTX PRO 5000 48GB ~$5.2–6.5k + Odin RAM) is post-proof with no hard date. Full detail: ~/homelab/roadmap.md sequencing gate + Track B #4. CAPITAL STRUCTURE (decided 2026-09-08, production Jan 2 2027, $500/day assumed): sweep 50% of NET daily profit (max(0, net); governor pauses sweep if trailing-30d capital < floor; compute daily via query_bankroll, transfer weekly). Inside the swept 50%: ~30% to TAX RESERVE first (HYSA/MMF; quarterly estimates; user chose reserve-in-sweep for safety, 2026-09-08) → then Sep-2027 gate bucket (T-bill ladder ≤9mo maturing ≈ 2027-09-30) → personal floor (3–6mo expenses) → then VTI/VXUS growth (NOT PM/crypto — diversify away from the edge). Tax-rate hedge ~25–32% effective, verify with accountant. Paper→live transition costs charged to trading capital, not the sweep. ENTITY (decided 2026-09-08): permanently own money / own book - run as INDIVIDUAL; no LLC; revisit ONLY if accountant confirms the income is SE-taxable AND net > ~$80k (S-corp eval then); outside capital / paid signals permanently off the table (no adviser/CTA exposure).",
-   "tags": [
-    "infra",
-    "forecast",
-    "funding"
-   ]
-  },
-  {
-   "id": "regime-cleanliness-baseline",
-   "title": "Regime-cleanliness baseline — first valid measurement window (clean regime starts 2026-09-04)",
-   "column": "Scheduled",
-   "effort": "note only — no code",
-   "dates": "Opened 2026-09-05",
-   "note": "Attribution (2026-09-05): the Gemini→DeepSeek switch errors (Aug 16–27 outage of daily-report + tuning-review on depleted credits) did NOT cause C-200's losses — that window was the ONLY profitable stretch (+$137.20 / 8d). Real attribution of −$324 realized over 33 trading days (Jul 23–Sep 5): W1 early-regime −$299 (pre-fix era, principal ~$400, category-leak undiagnosed), W3 post-switch −$162 (TR-15 daily-loss-gate blindness — Aug 31 booked −$239 early-exit bleed while gate read +$53, fixed Sep 3), Kalshi phantom stubs (92 rows, opens Aug 11–30, re-priced Sep 5), phantom cash +$1,000 (reconciled Aug 28). Polymarket main lane carries −$286 of it. CLEAN REGIME = Sep 4 onward (post v45 category blacklist / TR-15 / TR-16 / kalshi-reprice / v46). Implications: (1) Kelly window Sep 8–Oct 8 (pulled forward 2026-09-05) is the first measurement on a fixed pipeline — re-base edge/expectancy conclusions there, never on contaminated history; (2) ML-1 gate + production-capital sizing ($500-start evaluation) wait for clean data; (3) h2027-funding-schedule 'proof ≈ Q2 2027' re-baselines after the Kelly window.",
-   "tags": [
-    "data-quality",
-    "forecast",
-    "measurement"
-   ]
-  },
-  {
-   "id": "precommit-mid-oct-kelly-gate",
-   "title": "Pre-commit: Oct 8 Kelly-window gate + concept menu (binding)",
-   "column": "Scheduled",
-   "effort": "decision point only — no code before it",
-   "dates": "Opened 2026-09-05 · reads 2026-10-08 (Kelly window Sep 8–Oct 8, pulled forward)",
-   "note": "BINDING at window close: (1) clean-regime daily expectancy > $0 at current caps; (2) long-shot <0.20 band share of realized PnL 3–6× pre-Kelly share (phase-b falsifiable target); (3) 0.80+ favorite band ≈ 0 trades; (4) no max-drawdown increase vs pre-Kelly clean baseline; (5) 0.40–0.60 mid-band (the −$434 black hole, confirmed 2026-09-05 exit-recovery analysis: entries primary, exits secondary — hold-to-24h still negative) must shrink toward ~0 trades / ~$0 PnL. ALL PASS → unlock the overlay roadmap (ML-1 build, Phase C arb build, GDELT wiring), production-capital sizing, goal-ladder + funding-schedule re-baseline. EXPECTANCY ≤ 0 → stop adding layers; run the concept menu: (a) band-conditional fade-whale test, (b) calibration-only entries, (c) arb-only, (d) ML on market features (NOT whale copies); decide whether the copy lane survives or the bot re-architects around the corrections (premium/timing/category). NO rule/sizing/live-lane changes before the window closes — measurement/observability fixes only (scheduled λ̂ refits Sep 15 + Oct 1 excepted: system-under-test, not changes). Companion: regime-cleanliness-baseline. Observability gap to close pre-window: post-exit token price at +1h/+6h/+24h per early exit (only 211/984 testable today).",
-   "tags": [
-    "kelly",
-    "measurement",
-    "gate",
-    "review"
-   ]
-  },
-  {
-   "id": "phase-evidence-cot",
-   "title": "Phase Evidence-COT — keyless CFTC COT provider + snapshot HTTP test harness (digital-oracle audit)",
-   "column": "Backlog",
-   "effort": "~1–2 days",
-   "dates": "Carded 2026-09-07 (user-approved; audits drafts/digital-oracle-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md)",
-   "gate": "Post-Oct-8 (Kelly window); flag-revertible behind the research-signal webhook (v39 evidence pipeline); COT is weekly → C-tier evidence cap (0.3) per the A2 tier rules",
-   "note": "Two narrow adopts from digital-oracle (MIT, source-verified — the repo's '13-source calibrated answer' is LLM prompt heuristics, NO aggregation math in code; v39 Bayesian log-odds strictly dominates, so breadth transfers, doctrine does not): (1) CFTC Commitments-of-Traders provider — the only genuinely new NON-price evidence class in the audit (keyless, weekly, positioning); wire to the research-bot → RegulatorySignal webhook → src/lib/forecasting as C-tier evidence, NOT as a price-derived prior (market-firewall doctrine: price-derived data is the prior, not evidence). (2) Record/replay snapshot HTTP test harness (why upstream runs 246 tests in 0.22s — fixture replay, no network) → research-bot fetcher CI. NOT-portable: LLM agent layer, dead CME FedWatch (403), Eastmoney/yfinance/DDG providers.",
-   "tags": [
-    "evidence",
-    "research-bot",
-    "data",
-    "v39"
-   ]
-  },
-  {
-   "id": "atlas-v2-layout",
-   "title": "Atlas v2 — polymonitor-style chrome (draft reviewed; promote into generator on approval)",
-   "column": "Backlog",
-   "effort": "~half day in gdelt-atlas/build.py once approved",
-   "dates": "Drafted 2026-09-08 (drafts/atlas-v2-20260908.html + public/atlas-v2-draft.html, live at :8090)",
-   "gate": "User review of the draft layout; then port the v2 template into ~/gdelt-atlas/build.py so the 4×/day rebuild emits it as public/atlas.html (existing filename — no dashboard restart needed). Region chips need the generator to emit an iso3→region field (draft embeds a static UN-M49-derived table for today's 33 iso3s).",
-   "note": "Layout borrows the polymonitor.club grammar: region bar, TIME/SEVERITY/CATEGORY filter chips (multi-select), severity bands from story significance (CRITICAL≥0.62/WARNING≥0.55/WATCH≥0.48), category colors, live UTC clock, wheel-zoom + drag-pan + zoom readout, filter-driven country recolor + hot (CRITICAL) outline, pin panel + feed respect filters. Static snapshot data — zero pipeline changes in the draft. Caveats: severity bands are heuristic (significance 0.44–0.70 range today); time chips are day-granular (GDELT stories carry dates not timestamps); MENA/LATAM region splits are UN-subregion approximations."
-  },
-  {
-   "id": "presidential-socials-lane",
-   "title": "Presidential-socials evidence lane (concept from trump-code audit; shadow-first)",
-   "column": "Backlog",
-   "effort": "~1–2 days concept spike, post-Kelly",
-   "dates": "Carded 2026-09-08 (audit drafts/trump-code-audit.md)",
-   "gate": "Post-Oct-8 (Kelly window); shadow A/B only; C-tier evidence cap (0.3) per A2 tier rules; dataset licensing check before any data reuse",
-   "note": "CONCEPT from the sstklen/trump-code audit (MIT repo, 799★): their research-bot feeds (Congress/GovInfo/GDELT/Quiver) omit presidential socials — Trump/administration posts are real-world events (evidence-eligible under the market-firewall, unlike the price data that repo conflates them with). Build OUR OWN lane: keyless Truth Social RSS + X fetch → event extract → shadow A/B vs rules (data/sentiment-ab.jsonl pattern) → RegulatorySignal webhook → C-tier evidence if it wins. NEVER port the repo's 551 brute-forced rules (backfilled 61.3% is in-sample; forward sample = 2 PENDING rows; z=5.39 fails 31.5M-trial Bonferroni). Secondary testable claim: Truth Social publishes ~6.2h before X (38/39 matched in their archive) — cheap to verify with our own fetcher; if real, an event-timing lead. DESIGNATED 2026-09-08: first local-LLM fine-tune target (see card llm-ft-track) — the lane's shadow data doubles as the FT dataset (silver = rule-agree rows, gold = curated edge cases)."
-  },
-  {
-   "id": "live-execution-reference",
-   "title": "Live-execution layer — Harrier toolkits as MIT reference (fires on production-capital unlock)",
-   "column": "Backlog",
-   "effort": "Reference read ~half day when it fires; build sized then",
-   "dates": "Carded 2026-09-08 (audit drafts/harrier-toolkits-audit.md)",
-   "gate": "Post-Oct-8 (Kelly window) AND C-200 production-proof clears the precommit gate (production-capital sizing unlock); build dry-run-first + flag-revertible",
-   "note": "REFERENCE from the HarrierOnChain audit (MIT, Rust, 3.4k LOC): when live capital unlocks, borrow structure from its execution engine — clob.rs (EIP-712 CTF order signing + L2 HMAC auth + POST /order, 489 LOC), order_executor.rs (FAK/GTD, dry-run path, 310 LOC), risk_guard.rs (circuit breaker + depth guard + per-category caps, 186 LOC), TP/SL midprice→FAK exit monitor. Sidecar (polyhydra-whale-signal) is signal-only today; this is the blueprint for the executor half. Do NOT adopt wholesale: (1) copy-trade ingestion is on-chain OrderFilled (misses off-chain CLOB fills — our data-api orderfilled sidecar source is correct, keep ours); (2) 9 of 10 strategies are 12–70 LOC stubs (README status column was deleted in the latest commit); (3) scaffold ideas (resolution-sniper, market_maker) contradict our favorite-band ≈0-trades findings. Compare their risk-guard semantics vs our RuleSet/exposure-cap engine before porting anything. FURTHER REFERENCE (2026-09-09; drafts/poly-maker-audit.md): warproxxx/poly-maker (MIT, Python) adds two things this card's Harrier read does not: (1) a CTF pair-merge executor — mergePositions via EOA / Gnosis Safe execTransaction / V2 DepositWallet through the gasless builder relayer, nonce-serialized, live-verified (tx 0x4d2a2064) — the zero-market-impact exit primitive; (2) run-tested safety patterns for live maker/quoter operation: chained heartbeat dead-man switch (3 consecutive misses → halt + resync → cancel-all within ~10s of the engine dying), ws-stale halt (10s) AND user-stream-blind halt (15s — pull every quote when you can't see your own fills), rolling order-error-rate breaker (≥20 order attempts, 25% threshold), daily-loss kill switch, 20s REST drift reconciliation, rate budget at 25% of documented limits. Adopt as design at go-live; re-derive constants for our stack."
-  },
-  {
-   "id": "llm-ft-track",
-   "title": "Local-LLM fine-tune track (qwen3.5:9b QLoRA) — target 1 presidential-socials, target 2 bill→market mapping (queued)",
-   "column": "Backlog",
-   "effort": "FT-1 ~2–3 days (dataset + train + eval); FT-2 queued behind it",
-   "dates": "Carded 2026-09-08 (user decision: start with presidential-socials lane)",
-   "gate": "Post-Oct-8 (Kelly window); FT-1 requires presidential-socials shadow lane showing signal first; every FT must beat base qwen3.5:9b on pre-registered eval (rule-agreement on held-out items + named failure classes) before the adapter goes live; structured outputs (JSON-schema decode) land on the shadow scorer as step 0",
-   "note": "USER DECISION 2026-09-08: first fine-tune target = presidential-socials lane (see card presidential-socials-lane — shadow data doubles as dataset: silver = rule-agree rows, gold = curated edges). Second target QUEUED = bill→market mapping for the research bot (consistency win on existing lane; taxonomy FT: bill subject/action → Polymarket market category/map). Method: QLoRA rank 16–32 on qwen3.5:9b, ~100–300MB adapter, <1k curated items; train on cloud rental (RunPod-class, episodic-FT doctrine) or Odin RTX 5070 if self-hosted; export GGUF → serve via Ollama Modelfile on the 24GB head (JIT load/unload unchanged). Dataset rules: NEVER distill rule_sentiment alone (circular — that's the baseline the A/B must beat); gold set breaks the circle. Mix 10–20% sentiment rows into new-domain sets to prevent catastrophic forgetting. Eval: frozen holdout incl. the 40-flip referral set + became-law + quiver control, measured per-model in compare-sentiment."
-  },
-  {
-   "id": "scout-gitlab",
-   "title": "Repo scout widening — add GitLab source (audit-candidate breadth)",
-   "column": "Backlog",
-   "effort": "~half day (extend scripts/scan-github-repos.py with a GitLab.com project-search source; same metadata + triage + digest shape)",
-   "dates": "Carded 2026-09-08 (user decision: both widenings)",
-   "gate": "Post-Oct-8 (Kelly window); watch-only when the audit pipeline is busy (scout triage gates unchanged); GitLab.com search is rate-limited unauthenticated — weekly cadence fits, no credential needed initially",
-   "note": "Prediction-market bots disproportionately live GitLab-first or self-hosted — GitHub-only scouting misses a real share of audit candidates. Add GitLab.com project search (license, stars, pushed_at, description — same schema as the GitHub source) into scan-github-repos.py; digest to Discord unchanged. Reddit NOT included here (see reddit-intel-digest — human channel, not a scout feed)."
-  },
-  {
-   "id": "reddit-intel-digest",
-   "title": "Human-intel weekly digest — Reddit + HuggingFace + arXiv (ideas channel, NEVER signals)",
-   "column": "Backlog",
-   "effort": "~1 day (Reddit app credential + subreddit pull + HF trending/arXiv feed into one weekly Discord digest; recommendations-only)",
-   "dates": "Carded 2026-09-08 (user decision: both widenings)",
-   "gate": "Post-Oct-8 (Kelly window); digest is human-facing only — no webhook, no evidence tier, no auto-signals (hard guardrail: Reddit sentiment is noise/astroturf-prone and already priced); rate limits fine at weekly cadence",
-   "note": "Feeds the user's 'ideas from other humans' loop (their stated preference over AI-only ideation): weekly digest of r/algotrading + prediction-market subreddit threads worth reading, HF trending models/datasets, arXiv preprints (prediction markets/forecasting). Different pipeline from the research-bot evidence path on purpose — intel for the human + tuning-review loop, not market inputs. Reuse huggingface-hub / arxiv skill patterns for the sources; Discord delivery."
-  },
-  {
-   "id": "paper-ledger-fee-fidelity",
-   "title": "Paper-ledger fee fidelity — taker-fee model + maker/taker capture",
-   "column": "Backlog",
-   "effort": "~half day (fee column) + ~1 day (maker/taker capture)",
-   "dates": "Measured 2026-09-09 · impl post-Oct-8 (recommendations-only until approved)",
-   "gate": "Post-Oct-8 (Kelly window). Measurement-only so far — NO lane/rule/PnL change. Any wiring lands behind a rules flag, shadow column first (booked PnL untouched), revertible",
-   "note": "MEASURED 2026-09-09 (drafts/c200-taker-fee-measurement-2026-09-09.md): the paper ledger books fills with NO fee model. Applying Polymarket's official taker fee (C×feeRate×p(1−p); politics 0.04 / sports-other 0.05 / crypto 0.07 / geopolitics 0; maker 0, 25% rebate) to all 9,531 realized trades: gross +$5,397.60 → fee $2,464 → net +$2,934 (flat-0.04: fee $1,978). C-200 (BANKROLL_200) gross −$153.77 → net −$420 to −$481 — loss-making under every coefficient. ENTRY leg = 87% of the fee (we cross to enter). 238 trades (63 in C-200) flip winner→loser. NEXT: (1) emit fee-adjusted PnL as a SHADOW column beside booked PnL; (2) record maker/taker (or order type) on paper fills — without it the estimate is stuck at the all-taker bound; (3) feeds drafts/phase-c-design-notes.md (maker-entry counterfactual) and the Phase D2 realistic-fill work.",
-   "tags": [
-    "execution",
-    "fees",
-    "measurement",
-    "paper-fidelity"
-   ]
-  },
-  {
-   "id": "v54-deadzone-admission",
-   "title": "v54 — Dead-zone (0.40–0.60) admission stop (APPROVED, queued for the Oct 8 window close)",
-   "column": "Backlog",
-   "effort": "~1–2h when applied",
-   "dates": "Approved 2026-09-11 (C-200 daily report Change 2) · queued to Oct 8 by default (window-contamination caveat) · shadow evidence available from Sep 22",
-   "gate": "Pre-registered Kelly window (Sep 8–Oct 8) — applying now contaminates the window read; the report's own caveat. Apply on explicit user override ('apply dead-zone gate now') or at the Oct 8 close with the shadow-ladder evidence.",
-   "note": "WHY: 0.40–0.60 consumes 46% of all staked capital ($3,713) at −13.7% lifetime and −30.0% ROI in the last 7d; v51's ×0.25 cut shrank the absolute loss, not the bleed RATE (capital is not stuck — avg open age 17.6h, recycler frees it hourly — the bot re-enters ~18×/day by flow at 99% cap utilization), so every dead-zone admit displaces long-shot stake (~$76/day of stake redirected). FIX (admission-only): band-scoped gate in the admission path — copyScore ≥ 90 within [0.40,0.60) or zero admits; must cover the short-TTR LANE + legacy paths (Kelly main-lane already skips the band via λ̂=+0.03). Candidate implementation: new ruleset field(s) (deadZoneMinCopyScore / deadZoneAdmitEnabled) enforced in score-trades admission for all C-200 paths, fan-out-validated against the lane. VERIFY: 0 C-200 open copies with entry ∈ [0.40,0.60) 7d after apply; long-shot (<0.20) admits/day ≥ pre-apply; C-200 clean-regime ROI unchanged-or-better at the next review.",
-   "tags": [
-    "kelly-window",
-    "size-bands",
-    "admission",
-    "queued"
-   ]
-  },
-  {
-   "id": "change2-oct8-gates",
-   "title": "C-200 Change 2 — entry-hour gate (08:00 ET) + premium-band gate (0.60–0.80): APPROVED IN PRINCIPLE, queued to the Oct 8 window close",
-   "column": "Backlog",
-   "effort": "~1h at apply (one const in hour-policy.ts + one band field in score-trades.ts)",
-   "dates": "Approved 2026-09-13 (daily report Change 2) · queued to Oct 8 · evidence accumulates from the next score:trades run",
-   "gate": "Pre-registered trigger, IN-WINDOW sample only, decision-level (deduped): |z| >= 2.0 AND realized PnL < 0 AND N >= 20. Read at the Oct 8 close: python3 scripts/analyze-change2-gates.py. All-time stats are context, never the trigger.",
-   "note": "TWO FINDINGS AT APPROVAL (2026-09-13, both from the recon before applying): (1) 20:00 ET is ALREADY blacked out — src/lib/hour-policy.ts C200_BLACKOUT_HOURS_ET = {20} (v41/v48), so the report's 'blocklist 08+20' reduces to adding 08:00 ET only; 20:00's in-window N is 0 by construction. (2) The report's z-stats were computed on a duplicate-inflated sample: deduped to one row per market+outcome, 08:00 ET all-time falls to z=-1.77 (raw -2.69, no longer significant) and 20:00 ET to z=-1.35 (raw -2.82), while the 0.60–0.80 band survives (all-time z=-2.16, in-window z=-2.23, N=67, PnL -$20.83) and now TRIGGERS the pre-registered rule. 08:00 in-window N=8 — below the N>=20 bar. IMPLEMENTATION AT APPLY: hour gate = add 8 to C200_BLACKOUT_HOURS_ET (code change + tests/hour-policy.test.ts); band gate = per-leg cap in score-trades.ts behind a new ruleset field (v47 c200MaxEntryPrice / v44 standardMaxEntryPrice pattern), NEVER via the symmetric maxEntryPrice (it would kill the <0.15 long-shot edge). VERIFY 7d after apply: 0 C-200 entries in the gated hour/band; long-shot (<0.20) admits/day >= pre-apply; clean-regime ROI unchanged-or-better at the next review.",
-   "tags": [
-    "kelly-window",
-    "hour-policy",
-    "size-bands",
-    "queued",
-    "v53"
-   ]
-  },
-  {
-   "id": "calibration-dedupe-decision",
-   "title": "Decision-level (deduped) stats as the published sample? — switch calibration + daily report off duplicate rows",
-   "column": "Backlog",
-   "effort": "~1h (flag exists; the question is the default + a report re-baseline)",
-   "dates": "Raised 2026-09-13 (v53 recon)",
-   "gate": "User decision, no date gate. Mid-window (to Oct 8) keep raw as the published default so window comparisons stay stable — the deduped view is the DECISION view, not the published one.",
-   "note": "FINDING: PaperTrade carries legacy duplicate accumulation rows (pre-guard multi-entry, same market+outcome). All-time C-200 finished Polymarket-only: raw N=1,473 vs decision-level N=785 (688 duplicate rows). Duplicates are pseudo-replication — they count one bet N times and inflate every z-stat. Direction survives, magnitudes do not: 24–72h exits raw -$1,215.72/1,069 rows vs deduped -$406.10/511 decisions; all-time realized raw -$137.06 vs deduped +$243.66. Significance FLIPS both ways: 08:00 ET z -2.69 -> -1.77 and 20:00 ET -2.82 -> -1.35 (lost), 0.40–0.60 band -2.26 -> -2.87 (gained, strengthens the queued dead-zone stop), 0.20–0.40 realized PnL -$214.45 -> +$132.69 (the 'positive edge yet negative realized' contradiction was a duplicate artifact). TOOLING: scripts/analyze-calibration.py now has opt-in --dedupe (writes calibration-analysis[-since-<date>]-deduped.json; default unchanged); scripts/analyze-change2-gates.py always dedupes. OPEN QUESTION: make dedupe the default for the daily report + calibrate-premium.py (re-baselines published numbers) or keep raw published + deduped as the decision view.",
-   "tags": [
-    "data-integrity",
-    "calibration",
-    "duplicates",
-    "v53"
-   ]
-  }
- ]
+  "columns": [
+    "Backlog",
+    "Scheduled",
+    "In Progress",
+    "In Review",
+    "Done"
+  ],
+  "cards": [
+    {
+      "id": "phase-a",
+      "title": "Phase A \u2014 Wang premium overlay",
+      "column": "Done",
+      "effort": "~half day",
+      "dates": "Shipped 2026-08-31 (v38)",
+      "note": "\u03bb\u0302 calibration table refit biweekly (1st & 15th) via scripts/calibrate-premium.py. Measurement-first: size factor clamp(1\u2212k\u00b7\u03bb\u0302) on C-200 main-lane copies.",
+      "tags": [
+        "premium",
+        "shipped"
+      ]
+    },
+    {
+      "id": "phase-a2",
+      "title": "Phase A2 \u2014 Calibrated sentiment evidence aggregation",
+      "column": "Done",
+      "effort": "~half day",
+      "dates": "Shipped 2026-08-31 (v39)",
+      "note": "Bayesian log-odds aggregation (src/lib/forecasting) replaces the Phase-8 fixed \u00b1boost: delta = posterior \u2212 market. Measurement window \u2192 Sep 14 outcome review.",
+      "tags": [
+        "sentiment",
+        "shipped",
+        "measuring"
+      ]
+    },
+    {
+      "id": "phase-a2-review",
+      "title": "Phase A2 outcome review",
+      "column": "Scheduled",
+      "dates": "Sep 14 (review only)",
+      "note": "Compare [SENTIMENT]-logged decisions against the legacy boost regime over the 2-week window; syncs with biweekly calibration. PULLED-FORWARD IMPLICATION (2026-09-05): review lands inside the Kelly window (Sep 8\u2013Oct 8) \u2014 findings are measurement-only; ANY resulting changes are parked until the window closes Oct 8 (lane touches 0.08% of decisions, so deferral cost \u2248 nil).",
+      "tags": [
+        "review"
+      ]
+    },
+    {
+      "id": "phase-b",
+      "title": "Phase B \u2014 Kelly sizing replaces band sizing",
+      "column": "Scheduled",
+      "effort": "~1 day",
+      "dates": "Sep 8 (Tue) \u2014 Kelly-window start \u00b7 window reads Oct 8",
+      "gate": "Ships Tue Sep 8 on the Sep 1 \u03bb\u0302 refit (7 days old \u2014 within the biweekly envelope); the scheduled Sep 15 + Oct 1 refits land mid-window as system-under-test refreshes, not ad hoc changes",
+      "note": "Port oracle3 ModelInformedSizer semantics (Apache-2.0): edge = bucket-\u03bb-adjusted premium, Kelly \u2264 0.15\u00d7bankroll, confidence-scaled. Replaces heuristic band multipliers; paper caps kept. Input (audited 2026-08-31): drafts/octagon-audit.md \u2014 MIT reference impl for executable-quote Kelly (edge vs ask, not midpoint), liquidity haircut, per-category concentration + drawdown gates; calibrate to Polymarket, don't copy Kalshi defaults. Ref (awesome-options audit 2026-09-01): Thorp (2006) 'Kelly Criterion in Blackjack, Sports Betting, and the Stock Market' \u2014 canonical binary-bet fractional-Kelly treatment; read before the Kelly ship (2026-09-08). Predicted impact (2026-09-01, calibration-based): +$5\u201325/day (+3\u201315% of ~$165/day window) \u2014 long-shot <0.20 band up-sized 3\u20136x (z=4.14 edge), 0.80+ favorite band \u2192 ~0 trades (significant \u22128.7pp), executable-quote edge ~1c/trade. FALSIFIABLE TARGETS: (1) long-shot band share of realized PnL rises 3\u20136x vs pre-Kelly 48d window; (2) 0.80+ band trades \u2248 0; (3) no increase in max drawdown. PULLED FORWARD 2026-09-05 (approved): ships Tue Sep 8 on the Sep 1 \u03bb\u0302 refit (in-envelope); Sep 15 + Oct 1 refits land mid-window as scheduled system refreshes. COMPRESSED: build + review + user approval by Sep 8. Pre-Kelly clean baseline = Sep 4\u20138 (4 trading days) only. CAVEAT: the +$5\u201325/day predicted impact was scaled off a ~$165/day window that does NOT match realized data (\u2248 \u2212$10/day pre-fix) \u2014 re-pre-register expected impact on the 4 clean baseline days before ship; window-end reads Oct 8.",
+      "tags": [
+        "kelly",
+        "sizing"
+      ]
+    },
+    {
+      "id": "phase-c",
+      "title": "Phase C \u2014 Constraint-based cross-venue arb",
+      "column": "Backlog",
+      "effort": "~2\u20133 days",
+      "dates": "Design Sep 15\u201330 \u00b7 build early Oct",
+      "gate": "Kalshi circuit breaker must recover (realized \u2265 \u2212$50; now \u2212$37.99, clear since kalshi-reprice-92 on 2026-09-05)",
+      "note": "Port exclusivity / cross-market / implication invariants: same event on Polymarket AND Kalshi (or YES+NO sum \u2260 1) \u2192 trade the violation. Converts the dead Kalshi leg into market-neutral arb. Audit candidate (2026-08-31 scout): CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot (MIT, Python) \u2014 read-only audit before build (drafts/octagon-audit.md pattern). INPUT (2026-09-03, kalshi-whale-review): Kalshi anonymous large-flow feed \u2014 botforkalshi /api/public/whale-tracker (keyless, per-ticker fills/notional/vwap, no wallet identity) as a Phase C flow-context signal alongside price-parity legs. AUDIT INPUT (2026-09-07, user-approved carding; drafts/oracle3-audit-2026-09-07.md + drafts/polymarket-mcp-server-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md): (1) build the arb detector on oracle3's coinjure/matching staged matcher (Apache-2.0 \u2014 category\u00b7date\u00b7template\u00b7text\u00b7resolution \u2192 HIGH/MED/LOW confidence; template fields reject WIN-vs-TIE + cumulative-date false matches; ~0.5\u20131d incl. PMA validation, LOW risk, shadow-lane first, flag-revertible); (2) fold the mcp-server confirmation-gate + SELL-reduces-by-min(order,pos)/no-position-SELL-adds-exposure semantics (MIT, concept-only, ~2\u20134h doc work) into the sidecar risk-gate spec. NOTHING ships before the Kelly window closes Oct 8 (precommit-mid-oct-kelly-gate). AUDIT INPUT (2026-09-08, user-queued post-Kelly; drafts/ccxt-audit.md): multi-venue quote data backbone = **ccxt** (MIT; Polymarket+Kalshi+Hyperliquid coverage verified 2026-09-08) \u2014 adopt for arb quote breadth + perp-funding/OHLCV feature lane; do NOT churn existing bespoke CLOB/data-api/Kalshi read lanes. AUDIT INPUT (2026-09-09, user-approved carding; drafts/poly-maker-audit.md): warproxxx/poly-maker (MIT, Python, 1.5k\u2605, 111/111 tests) is a maker-only MM bot whose core is the INTRA-VENUE half of this card \u2014 a YES+NO pair merged back to collateral locks edge 1\u2212p\u2212q. Two borrows for the design window (Sep 15\u201330): (1) the CTF pair-merge primitive \u2014 mergePositions across EOA / Gnosis Safe / V2 DepositWallet via the gasless builder relayer, nonce-serialized, LIVE-VERIFIED on-chain (tx 0x4d2a2064) \u2014 gives zero-market-impact exits AND makes the Polymarket-only YES+NO\u22601 leg buildable WITHOUT any Kalshi dependency, sidestepping the phase-kalshi1 keyless data wall (our sidecar already reads top-of-book keyless); (2) reward-band quoting (half-spread clamped into rewardsMaxSpread, per-ORDER min qualifying size, both legs bid so both sides score) as the maker counterfactual to our taker entries \u2014 see drafts/c200-taker-fee-measurement-2026-09-09.md (fee = C\u00d7rate\u00d7p(1\u2212p); politics 0.04; maker rebate 25%). Port cost: read \u2248\u00bd day, dry-run port \u2248 2\u20133 days (cost is wallet-type signing + builder-relayer creds, not logic); ship as a manual CLI primitive first, flag-revertible. CAVEAT: the repo's own live session LOST $15.51 \u2014 the maker-lane strategy is an unproven hypothesis; the merge primitive is the part worth taking.",
+      "tags": [
+        "kalshi",
+        "arb"
+      ]
+    },
+    {
+      "id": "storage-health",
+      "title": "Storage drive health \u2014 /Volumes/Storage",
+      "column": "Done",
+      "dates": "Verified healthy 2026-08-31",
+      "note": "Earlier I/O hang was transient (drive-sleep wake-up). Re-test: small write 0.2ms, 50MB write 1,159 MB/s, checksum OK. Ready for the dataset move.",
+      "tags": [
+        "infra",
+        "done"
+      ]
+    },
+    {
+      "id": "dataset-move",
+      "title": "Move PMA dataset (~130GiB) to /Volumes/Storage",
+      "column": "Done",
+      "dates": "Moved 2026-08-31",
+      "note": "rsync complete: 49,486 files / 50G verified (count + size match, 404.5M trades readable via the /tmp/pma symlink). Source deleted \u2014 primary disk freed.",
+      "tags": [
+        "infra",
+        "storage"
+      ]
+    },
+    {
+      "id": "v40-homerun",
+      "title": "v40 \u2014 Homerun-audit features: risk gates, circuit breaker, insider scoring, L2 recorder",
+      "column": "Done",
+      "dates": "Shipped 2026-08-31 (v40)",
+      "note": "Daily-loss + gross-exposure gates and per-token flash-crash breaker in score-trades; 11-component insider wallet scoring (WalletInsiderScore, EOD refresh); L2 order-book recorder (data/l2/, cron watchdog) for future fill modeling.",
+      "tags": [
+        "risk",
+        "shipped"
+      ]
+    },
+    {
+      "id": "phase-d-insider-gating",
+      "title": "Phase D \u2014 Insider-score copy gating",
+      "column": "Backlog",
+      "effort": "~half day",
+      "gate": "Measurement window first: \u22652 weeks of WalletInsiderScore data before gating copy selection",
+      "note": "Wire the 11-component insider score into copy selection (e.g. boost/penalize wallets above flagged/watch thresholds) behind a rules flag \u2014 same measurement-first pattern as Phase A2.",
+      "tags": [
+        "insider",
+        "gating"
+      ]
+    },
+    {
+      "id": "phase-d2-fill-model",
+      "title": "Phase D2 \u2014 Cox-PH paper fill model",
+      "column": "Backlog",
+      "effort": "~1\u20132 days",
+      "gate": "~2 weeks of L2 book history in data/l2/ (\u2248 mid-Sep)",
+      "note": "Port the homerun fill-simulator concept (AGPL read-only): P(fill within \u0394t) from book context + time-to-resolution covariate \u2014 makes paper fills realistic instead of assumed-at-price. Ref (awesome-options audit 2026-09-01): FlashAlpha flashalpha-fill-simulator (MIT) \u2014 stale-quote guards, deterministic tiebreaks, patient-then-cross exit; borrow methodology for P(fill) over data/l2/ books.",
+      "tags": [
+        "fill-model",
+        "l2"
+      ]
+    },
+    {
+      "id": "phase-local1",
+      "title": "Phase Local-1 \u2014 Local LLM sentiment (qwen2.5:7b \u2192 qwen3.5:9b, shadow A/B)",
+      "column": "In Progress",
+      "dates": "Shipped 2026-08-31 (shadow) \u00b7 3.5 lane 2026-09-08",
+      "gate": "A/B review after ~1 week of accumulation (scripts/compare-sentiment.py; AB rows now carry a 'model' field for per-model windows)",
+      "note": "Research bot scores sentiment with a local model via ollama (:11434, launchd) alongside the rules \u2192 data/sentiment-ab.jsonl. 2026-09-08: lane flipped to qwen3.5:9b (env LOCAL_SENTIMENT_MODEL in run_research_bot.sh) + prompt hardened (latest-action rubric, unconditional trade mappings, think:false top-level \u2014 /v1 endpoint drops options, uses /api/chat now). Backtest on 54 unique items: 2.5=67% rule-sign-agreement vs 3.5=63% (tie); 3.5 fixes became-public-law (HR5301: 0.1\u21921.0) + referral direction consistency, but exposes RULE incoherence: congress_api.py adjusts only confidence (0.70) on 'committee' actions \u2014 sentiment stays title-polarity, so identical referrals score \u00b10.5-0.9 by title keywords. Referral-stall semantics is a rules-side question, not settled. Live pipeline unchanged until the A/B shows the local model wins.",
+      "tags": [
+        "local-llm",
+        "sentiment",
+        "ab"
+      ]
+    },
+    {
+      "id": "phase-astro1",
+      "title": "Phase Astro-1 \u2014 Astrological sentiment shadow feed",
+      "column": "In Progress",
+      "dates": "Shipped 2026-08-31 (shadow, backfilled 61d)",
+      "gate": "First verdict: NO SIGNIFICANT SIGNAL (n=47d, corr \u22120.168, |t|=1.1) \u2014 re-run compare-astro.py monthly; promote only if |t|\u22652 + replication, D-tier cap (0.2) only",
+      "note": "Human-recommended astro feed settled empirically: deterministic DE440s ephemeris \u2192 D-tier daily score \u2192 data/astro-shadow.jsonl; joined against PaperTrade realized PnL. Stayed in shadow per measurement-first standard.",
+      "tags": [
+        "astro",
+        "shadow",
+        "sentiment"
+      ]
+    },
+    {
+      "id": "phase-ml1",
+      "title": "Phase ML-1 \u2014 Outcome labeling \u2192 train \u2192 shadow A/B",
+      "column": "In Progress",
+      "effort": "~2 days (train part, after Phase B)",
+      "dates": "Labeling started 2026-08-31",
+      "gate": "Train + shadow A/B after Phase B ships; promote only if model beats copyScore on held-out labels (measurement-first)",
+      "note": "Labeling pipeline FIXED 2026-08-31: review-outcomes 404'd on archived gamma slugs forever (0 labels in history); CLOB winner-flag fallback by conditionId now labels 200/night via EOD (orderBy decision asc \u2192 real-PnL copies first). 529 labels exported (329 paper_copy 84% good +$1.39 avg; 200 skip). npm run export:training \u2192 training_data.csv. Next: XGBoost on decision features \u2192 wasDecisionGood; shadow-A/B vs live ruleset; the training_data.csv header-only era is over.",
+      "tags": [
+        "ml",
+        "training",
+        "labels"
+      ]
+    },
+    {
+      "id": "phase-ml2",
+      "title": "Phase ML-2 \u2014 Independent-entry ML lane (dual-track)",
+      "column": "Backlog",
+      "effort": "~3\u20135 days",
+      "gate": "Ships after Phase B (Kelly) + ML-1 shadow A/B shows model edge on held-out labels; era-aware training (ruleSetVersion feature)",
+      "note": "The step that makes dual-track real: ML lane generates its OWN entries from market features (MarketSnapshot: price/drift/TTR/liquidity/category + calibration-band edges + sentiment deltas) with NO whale signal. Schema: DecisionJournal.observedTradeId \u2192 nullable (or MLEntry table); new MarketSnapshot-driven scanner; ML-1 botId lane with separate bankroll (multi-lane pattern proven by STANDARD/C-200). Shadow \u2192 paper, flag-revertible. Caveat: current 529 labels are all v1\u2013v3 era vs live v38 \u2014 train era-aware. AUDIT INPUT (2026-09-07, user-approved carding; drafts/btc15min-audit-2026-09-07.md): before committing to a short-TTR BTC lane, tape-test the late-window trend-persistence hypothesis against the PMA tape \u2014 P(resolve | mid \u22650.60 at T\u221260..120s) vs ask, ~1 dev-day, analysis-only, can run as soon as the Kelly window's observability-only constraint allows; the repo is NO-LICENSE (concepts only, copy nothing). Probability-space threshold taxonomy (extreme-fade 0.68/0.32, momentum band 0.35\u20130.65, imbalance 0.30, no-trade zone) feeds the ML-2 feature registry as ideas.",
+      "tags": [
+        "ml",
+        "dual-track",
+        "market-scan"
+      ]
+    },
+    {
+      "id": "phase-data1",
+      "title": "Phase Data-1 \u2014 External dataset wiring (PMA / Manifold / Odds API)",
+      "column": "In Progress",
+      "effort": "~2\u20133 days",
+      "dates": "Started 2026-09-01",
+      "gate": "Shadow feeds accumulate \u22652 weeks; promote only if gap signals beat baseline (measurement-first)",
+      "note": "PMA (largest public Polymarket+Kalshi tape, 36GiB \u2014 source of the 692M-trade calibration baseline) re-fetched + wired for win-rate-by-price + ML-2 tape features; Manifold API keyless gap-detection (cross-platform prob gaps); Odds API sportsbook-vs-Polymarket gaps (free key) for the short-TTR sports lane. All shadow-first. AUDIT INPUT (2026-09-07, user-approved carding; drafts/polymarket-tennis-audit-2026-09-07.md): add a generic sports market\u2192match matcher on the polymarket-tennis pattern (MIT \u2014 matching.py: name+date with fold normalization, similarity ladder, both-sides-must-agree via min, \u00b11-day date bonus, >1-day hard reject, ambiguity margin 0.10 \u2192 returns None rather than guess; ~250 LOC pure functions, 94/94 tests upstream, feed-agnostic \u2014 needs only {players, scheduled_time, status, winner}) to wire the Odds API feed into the short-TTR sports lane; re-parametrize per sport (upstream esports aliasing unhandled). ~1 dev-day + half-day wiring, LOW risk, flag-revertible, post-Oct-8.",
+      "tags": [
+        "data",
+        "datasets",
+        "shadow"
+      ]
+    },
+    {
+      "id": "phase-gdelt",
+      "title": "Phase GDELT-1 \u2014 OSINT news sentiment feed (A2 coverage fix)",
+      "column": "In Progress",
+      "effort": "Collector ~1h; A2 wiring ~half day",
+      "dates": "Carded 2026-09-01; collector built 2026-09-01; cloud feed activated 2026-09-01",
+      "gate": "A2 evidence wiring ships AFTER Phase B (Sep 15); shadow accumulation starts when collector lands",
+      "note": "GDELT (keyless, 15-min updates, tone/Goldstein scores) fixes the measured A2 reach problem (sentiment evidence touches 0.08% of decisions \u2014 148/191k). Collector: api.gdeltproject.org doc API \u2192 data/gdelt-shadow.jsonl (same shadow pattern as astro/odds/manifold). Wiring: map events \u2192 research-categories \u2192 evidence rows feeding src/lib/forecasting. Card now, collect now, integrate post-B. Collector LIVE: political-research-bot/src/gdelt_shadow.py -> data/gdelt-shadow.jsonl (148 rows first run, 6 categories, 6-hourly via research-bot cron). Dual-feed: keyless legacy DOC API (http only; https hangs; 1 req/5s; no per-article tone \u2014 uses timelinetone category aggregates) + GDELT Cloud ACTIVE 2026-09-01 (gdeltcloud.com/api/v2, stories w/ significance/geo/entities; GDELT_API_KEY in .env perms 600; NOTE: cloud API flaky on cold calls \u2014 4x retry w/ 10s backoff in collector). First full cloud run: 148 rows/6 categories. A2 wiring still post-Phase B (Sep 15).",
+      "tags": [
+        "osint",
+        "sentiment",
+        "gdelt",
+        "a2"
+      ]
+    },
+    {
+      "id": "phase-gdelt-atlas",
+      "title": "GDELT Atlas viewer \u2014 dark-mode world map + news feed",
+      "column": "In Progress",
+      "effort": "Built 2026-09-01 (~1 session)",
+      "dates": "Built 2026-09-01",
+      "gate": "Static snapshot (no CORS on Cloud API). Rebuild with build.py when API is up; refresh script optional.",
+      "note": "~/gdelt-atlas/atlas.html \u2014 self-contained dark-mode Monitor surface: 177-country equirectangular SVG map (pre-projected, no map lib), hover tooltip, click-to-pin country panel (stories/avg sig/max sig/top cat), filterable story feed (significance chips, category chips, opens story URL). Data: 148 real GDELT Cloud stories (44 countries covered) embedded as JSON snapshot. NOTE: Atlas GPR/Pulse indices need PAID plan (Academic tier returns 'not included'); map uses coverage intensity + significance + categories instead. Build: gdelt-atlas/build.py --stories <json> --out atlas.html (ne110.geojson included). Weekly rebuild cron: copybot-gdelt-atlas-rebuild (Mon 09:00, Discord, no_agent; fetch_stories.py w/ 3-retry backoff + MIN_STORIES=50 guard \u2192 build.py \u2192 summary). GDELT Cloud MCP server installed in Hermes (gdelt-cloud, 46 tools, key via MCP_GDELT_CLOUD_API_KEY env ref) 2026-09-01.",
+      "tags": [
+        "gdelt",
+        "atlas",
+        "viz",
+        "dark-mode"
+      ]
+    },
+    {
+      "id": "phase-c200-exec-leak",
+      "title": "C-200 execution-leak investigation (capital question \u2192 category fix)",
+      "column": "Done",
+      "effort": "2 audit passes + v45 impl",
+      "dates": "2026-09-02\u219203",
+      "gate": "n/a \u2014 complete",
+      "note": "COMPLETED 2026-09-03: Step1+Step2 findings. Leak = category mix, not capital/venue/drift. v45 LIVE: per-bot blacklists, market-slug cap 15, whale guard.",
+      "tags": [
+        "c200",
+        "execution",
+        "v45"
+      ]
+    },
+    {
+      "id": "tr14-exposure-gate-inloop",
+      "title": "TR-14 \u2014 Exposure-cap snapshot overshoot (in-loop increment fix)",
+      "column": "Done",
+      "effort": "~30m",
+      "dates": "Shipped 2026-09-03 (code fix in scripts/score-trades.ts \u2014 no ruleset bump; same v45 values)",
+      "note": "FIXED: gate now compares against c200RunningExposure, seeded from the cycle-start snapshot and incremented by the booked C-200 size after each successful openPaperTrade. A single scoring run can no longer overshoot maxGrossExposureUsd. Caveat: pre-bot decision gate still tests base (pre-boost) size \u2014 final boosted size can exceed by up to the \u00d73/premium factor; acceptable, matches daily-loss-gate behavior.",
+      "tags": [
+        "tuning-review",
+        "risk",
+        "shipped"
+      ]
+    },
+    {
+      "id": "v46-equity-exposure-cap",
+      "title": "v46 \u2014 Equity-linked gross-exposure cap (approved)",
+      "column": "Done",
+      "effort": "~45m",
+      "dates": "Shipped 2026-09-03 (RuleSet v46)",
+      "note": "User-approved 2026-09-03, two parts: (1) equity-link helper src/lib/exposure-cap.ts \u2014 effective cap = stored base + 50% \u00d7 max(0, net worth \u2212 principal), symmetric, enforced in score-trades.ts + shown on dashboard; (2) base raised $250 \u2192 $400 via scripts/apply-v46.ts (RuleSet v46, RuleChange audit row) \u2014 paper-only faster sampling, phase-streak comparability risk accepted. Effective cap today $400 (net worth $1,724 < principal $1,900 \u2192 no kicker).",
+      "tags": [
+        "risk",
+        "shipped",
+        "approved"
+      ]
+    },
+    {
+      "id": "tr15-daily-pnl-early-exit-fix",
+      "title": "TR-15 \u2014 Daily-loss gate blind to early-exit PnL (fixed)",
+      "column": "Done",
+      "effort": "~30m",
+      "dates": "Shipped 2026-09-03",
+      "note": "Early-exit trades book realized PnL at closedAt (resolvedAt NULL). Daily-PnL queries filtered resolvedAt-only, so the \u2212$150 daily-loss halt never saw exit-bleed days \u2014 2026-08-31 booked \u2212$239 early exits while the gate read +$53. Fixed with OR[{resolvedAt},{closedAt}] in scripts/score-trades.ts (gate), src/lib/report.ts (EOD report today-PnL, both bots), src/app/page.tsx (dashboard today metric + risk-gate chip). Found while reviewing the v46 cap raise \u2014 scaled exposure under a partially blind breaker was the blocker.",
+      "tags": [
+        "tuning-review",
+        "risk",
+        "shipped"
+      ]
+    },
+    {
+      "id": "phase-kalshi1",
+      "title": "Phase Kalshi-1 \u2014 Kalshi whale/wallet parity (reviewed: data wall \u2014 parked)",
+      "column": "Backlog",
+      "effort": "n/a \u2014 not feasible keyless (see drafts/kalshi-whale-review.md)",
+      "dates": "Opened 2026-09-03",
+      "note": "REVIEWED 2026-09-03 (drafts/kalshi-whale-review.md): Kalshi public API has no leaderboard, no wallet-attributed trade feed, no profiles \u2014 the Polymarket stack cannot be duplicated keyless. Options: anonymous size-flow (low value), third-party provider shadow-test (unproven), or status quo. Parked pending TR-16 adapter fix + optional provider probe. Third-party probe done (appendix): polywhaler keyless API is Polymarket-only; botforkalshi anonymous flow only; no keyless Kalshi wallet data exists. Phase stays parked.",
+      "tags": [
+        "copy-lane",
+        "kalshi",
+        "reviewed"
+      ]
+    },
+    {
+      "id": "tr16-kalshi-adapter",
+      "title": "TR-16 \u2014 Fix Rust sidecar Kalshi adapter (dead host + 0.52 stub)",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Shipped 2026-09-03",
+      "note": "FIXED (approved 2026-09-03). adapters.rs: external-api host (trading-api deprecated/401), real orderbook_fp parse (yes/no_dollars = top-level bids, dollar strings; BUY=1\u2212no_bid, SELL=yes_bid), NO 0.52/0.58 stubs (Kalshi AND PredictIt) \u2014 Err \u2192 book at PM reference price with execution note. market_question threaded paper.ts\u2192sidecar; bounded event-walk ticker resolution (25 pages, cache, 429 backoff). Verified: build+tsc clean, live smoke test resolves KXELONMARS-99 book. CAVEAT: the 92 historical Kalshi paper trades were booked at ~$0.50 phantom \u2014 re-price before trusting Kalshi leg stats. See drafts/kalshi-whale-review.md appendix.",
+      "tags": [
+        "tuning-review",
+        "kalshi",
+        "risk",
+        "shipped"
+      ]
+    },
+    {
+      "id": "kalshi-reprice-92",
+      "title": "Re-price the 92 historical Kalshi paper trades (phantom $0.50 fills)",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Opened 2026-09-03 \u00b7 Done 2026-09-05 (tuning review #16 rec 1, approved)",
+      "note": "DONE 2026-09-05 (scripts/reprice-kalshi-92.ts, audit data/kalshi-reprice-audit.json, drafts/kalshi-reprice-92-20260905.md). 73 stub rows (entry 0.50) re-priced onto the honest PM reference at entry time (ObservedTrade.detectedPrice \u2014 same convention the non-stub rows booked at); exits were already real PM marks and were left untouched. kalshiRealized \u2212$50.70 \u2192 \u2212$37.99 (breaker floor \u2212$50 cleared \u2192 routing gate auto-recovers per v37 design). Ledger adjusted +$12.71 (realized \u2212$269.87, cash $1,236.39; invariant gap 0.0). TR-17 exclusions removed from query_bankroll.js + report.ts \u2014 Kalshi re-joins C-200 realized series/phase streak. CAVEAT: simulatedPositionSize was band-sized against the phantom 0.50 (parent scale size not stored) \u2014 not re-derived; distortion bounded by the \u00d72 band factor and documented in the audit.",
+      "tags": [
+        "kalshi",
+        "risk",
+        "data-quality"
+      ]
+    },
+    {
+      "id": "local-32b-baseline",
+      "title": "Baseline: 32B on Mac mini (Monday) \u2014 decide RPC split vs Mac-only",
+      "column": "Scheduled",
+      "effort": "~1h",
+      "dates": "Scheduled 2026-09-07 (Mon)",
+      "note": "From the NVIDIA PAIR / 32B-split analysis (drafts/nvidia-pair-setup.md, 2026-09-04): before committing Odin(5070)+Miles(3080) to a llama.cpp RPC 32B split, benchmark the free option we already own. Steps: (1) ollama pull qwen2.5:32b-q4_K_M (or qwen3 equivalent) on the Mac mini; (2) measure decode tok/s + TTFT on a realistic sentiment-shadow prompt; (3) compare vs current 7b lane quality on a small labeled set (data/sentiment-ab.jsonl A/B style); (4) gate: if Mac 32B \u2265 ~10 tok/s and quality lifts materially over 7b, adopt Mac-32B as the shadow lane and DROP the RPC split; only build 5070+3080 split if Mac 32B throughput becomes the bottleneck. User has more questions first \u2014 card is the parking spot.",
+      "tags": [
+        "local-llm",
+        "benchmark",
+        "phase-local1"
+      ]
+    },
+    {
+      "id": "h2027-funding-schedule",
+      "title": "2027 homelab funding schedule \u2192 production forecast inputs",
+      "column": "Scheduled",
+      "effort": "note only \u2014 no code",
+      "dates": "Set 2026-09-05",
+      "note": "Homelab hardware purchases unlock ONLY after production CopyBot proves \u2265$500/day (7 consecutive days, C-200 advance rule). HARD DEADLINE: TrueNAS R740xd + 12\u00d7 recert drives (~$3\u20134.5k) must be purchased by end of Q3 2027 (2027-09-30) \u2014 the program's only dated gate. Derived: production proof should land \u2248 Q2 2027 to keep sourcing/ordering float. C-200 tuning should size intermediate targets so the cascade holds: Dec 1 2026 ladder \u2192 early-2027 production rollout \u2192 Q2 2027 proof. Track A (Mac Studio M5 Ultra 256GB ~$9.5k + RTX PRO 5000 48GB ~$5.2\u20136.5k + Odin RAM) is post-proof with no hard date. Full detail: ~/homelab/roadmap.md sequencing gate + Track B #4. CAPITAL STRUCTURE (decided 2026-09-08, production Jan 2 2027, $500/day assumed): sweep 50% of NET daily profit (max(0, net); governor pauses sweep if trailing-30d capital < floor; compute daily via query_bankroll, transfer weekly). Inside the swept 50%: ~30% to TAX RESERVE first (HYSA/MMF; quarterly estimates; user chose reserve-in-sweep for safety, 2026-09-08) \u2192 then Sep-2027 gate bucket (T-bill ladder \u22649mo maturing \u2248 2027-09-30) \u2192 personal floor (3\u20136mo expenses) \u2192 then VTI/VXUS growth (NOT PM/crypto \u2014 diversify away from the edge). Tax-rate hedge ~25\u201332% effective, verify with accountant. Paper\u2192live transition costs charged to trading capital, not the sweep. ENTITY (decided 2026-09-08): permanently own money / own book - run as INDIVIDUAL; no LLC; revisit ONLY if accountant confirms the income is SE-taxable AND net > ~$80k (S-corp eval then); outside capital / paid signals permanently off the table (no adviser/CTA exposure).",
+      "tags": [
+        "infra",
+        "forecast",
+        "funding"
+      ]
+    },
+    {
+      "id": "regime-cleanliness-baseline",
+      "title": "Regime-cleanliness baseline \u2014 first valid measurement window (clean regime starts 2026-09-04)",
+      "column": "Scheduled",
+      "effort": "note only \u2014 no code",
+      "dates": "Opened 2026-09-05",
+      "note": "Attribution (2026-09-05): the Gemini\u2192DeepSeek switch errors (Aug 16\u201327 outage of daily-report + tuning-review on depleted credits) did NOT cause C-200's losses \u2014 that window was the ONLY profitable stretch (+$137.20 / 8d). Real attribution of \u2212$324 realized over 33 trading days (Jul 23\u2013Sep 5): W1 early-regime \u2212$299 (pre-fix era, principal ~$400, category-leak undiagnosed), W3 post-switch \u2212$162 (TR-15 daily-loss-gate blindness \u2014 Aug 31 booked \u2212$239 early-exit bleed while gate read +$53, fixed Sep 3), Kalshi phantom stubs (92 rows, opens Aug 11\u201330, re-priced Sep 5), phantom cash +$1,000 (reconciled Aug 28). Polymarket main lane carries \u2212$286 of it. CLEAN REGIME = Sep 4 onward (post v45 category blacklist / TR-15 / TR-16 / kalshi-reprice / v46). Implications: (1) Kelly window Sep 8\u2013Oct 8 (pulled forward 2026-09-05) is the first measurement on a fixed pipeline \u2014 re-base edge/expectancy conclusions there, never on contaminated history; (2) ML-1 gate + production-capital sizing ($500-start evaluation) wait for clean data; (3) h2027-funding-schedule 'proof \u2248 Q2 2027' re-baselines after the Kelly window.",
+      "tags": [
+        "data-quality",
+        "forecast",
+        "measurement"
+      ]
+    },
+    {
+      "id": "precommit-mid-oct-kelly-gate",
+      "title": "Pre-commit: Oct 8 Kelly-window gate + concept menu (binding)",
+      "column": "Scheduled",
+      "effort": "decision point only \u2014 no code before it",
+      "dates": "Opened 2026-09-05 \u00b7 reads 2026-10-08 (Kelly window Sep 8\u2013Oct 8, pulled forward)",
+      "note": "BINDING at window close: (1) clean-regime daily expectancy > $0 at current caps; (2) long-shot <0.20 band share of realized PnL 3\u20136\u00d7 pre-Kelly share (phase-b falsifiable target); (3) 0.80+ favorite band \u2248 0 trades; (4) no max-drawdown increase vs pre-Kelly clean baseline; (5) 0.40\u20130.60 mid-band (the \u2212$434 black hole, confirmed 2026-09-05 exit-recovery analysis: entries primary, exits secondary \u2014 hold-to-24h still negative) must shrink toward ~0 trades / ~$0 PnL. ALL PASS \u2192 unlock the overlay roadmap (ML-1 build, Phase C arb build, GDELT wiring), production-capital sizing, goal-ladder + funding-schedule re-baseline. EXPECTANCY \u2264 0 \u2192 stop adding layers; run the concept menu: (a) band-conditional fade-whale test, (b) calibration-only entries, (c) arb-only, (d) ML on market features (NOT whale copies); decide whether the copy lane survives or the bot re-architects around the corrections (premium/timing/category). NO rule/sizing/live-lane changes before the window closes \u2014 measurement/observability fixes only (scheduled \u03bb\u0302 refits Sep 15 + Oct 1 excepted: system-under-test, not changes). Companion: regime-cleanliness-baseline. Observability gap to close pre-window: post-exit token price at +1h/+6h/+24h per early exit (only 211/984 testable today).",
+      "tags": [
+        "kelly",
+        "measurement",
+        "gate",
+        "review"
+      ]
+    },
+    {
+      "id": "phase-evidence-cot",
+      "title": "Phase Evidence-COT \u2014 keyless CFTC COT provider + snapshot HTTP test harness (digital-oracle audit)",
+      "column": "Backlog",
+      "effort": "~1\u20132 days",
+      "dates": "Carded 2026-09-07 (user-approved; audits drafts/digital-oracle-audit-2026-09-07.md + combined drafts/audit-top5-recommendations-20260907.md)",
+      "gate": "Post-Oct-8 (Kelly window); flag-revertible behind the research-signal webhook (v39 evidence pipeline); COT is weekly \u2192 C-tier evidence cap (0.3) per the A2 tier rules",
+      "note": "Two narrow adopts from digital-oracle (MIT, source-verified \u2014 the repo's '13-source calibrated answer' is LLM prompt heuristics, NO aggregation math in code; v39 Bayesian log-odds strictly dominates, so breadth transfers, doctrine does not): (1) CFTC Commitments-of-Traders provider \u2014 the only genuinely new NON-price evidence class in the audit (keyless, weekly, positioning); wire to the research-bot \u2192 RegulatorySignal webhook \u2192 src/lib/forecasting as C-tier evidence, NOT as a price-derived prior (market-firewall doctrine: price-derived data is the prior, not evidence). (2) Record/replay snapshot HTTP test harness (why upstream runs 246 tests in 0.22s \u2014 fixture replay, no network) \u2192 research-bot fetcher CI. NOT-portable: LLM agent layer, dead CME FedWatch (403), Eastmoney/yfinance/DDG providers.",
+      "tags": [
+        "evidence",
+        "research-bot",
+        "data",
+        "v39"
+      ]
+    },
+    {
+      "id": "atlas-v2-layout",
+      "title": "Atlas v2 \u2014 polymonitor-style chrome (draft reviewed; promote into generator on approval)",
+      "column": "Backlog",
+      "effort": "~half day in gdelt-atlas/build.py once approved",
+      "dates": "Drafted 2026-09-08 (drafts/atlas-v2-20260908.html + public/atlas-v2-draft.html, live at :8090)",
+      "gate": "User review of the draft layout; then port the v2 template into ~/gdelt-atlas/build.py so the 4\u00d7/day rebuild emits it as public/atlas.html (existing filename \u2014 no dashboard restart needed). Region chips need the generator to emit an iso3\u2192region field (draft embeds a static UN-M49-derived table for today's 33 iso3s).",
+      "note": "Layout borrows the polymonitor.club grammar: region bar, TIME/SEVERITY/CATEGORY filter chips (multi-select), severity bands from story significance (CRITICAL\u22650.62/WARNING\u22650.55/WATCH\u22650.48), category colors, live UTC clock, wheel-zoom + drag-pan + zoom readout, filter-driven country recolor + hot (CRITICAL) outline, pin panel + feed respect filters. Static snapshot data \u2014 zero pipeline changes in the draft. Caveats: severity bands are heuristic (significance 0.44\u20130.70 range today); time chips are day-granular (GDELT stories carry dates not timestamps); MENA/LATAM region splits are UN-subregion approximations."
+    },
+    {
+      "id": "presidential-socials-lane",
+      "title": "Presidential-socials evidence lane (concept from trump-code audit; shadow-first)",
+      "column": "Backlog",
+      "effort": "~1\u20132 days concept spike, post-Kelly",
+      "dates": "Carded 2026-09-08 (audit drafts/trump-code-audit.md)",
+      "gate": "Post-Oct-8 (Kelly window); shadow A/B only; C-tier evidence cap (0.3) per A2 tier rules; dataset licensing check before any data reuse",
+      "note": "CONCEPT from the sstklen/trump-code audit (MIT repo, 799\u2605): their research-bot feeds (Congress/GovInfo/GDELT/Quiver) omit presidential socials \u2014 Trump/administration posts are real-world events (evidence-eligible under the market-firewall, unlike the price data that repo conflates them with). Build OUR OWN lane: keyless Truth Social RSS + X fetch \u2192 event extract \u2192 shadow A/B vs rules (data/sentiment-ab.jsonl pattern) \u2192 RegulatorySignal webhook \u2192 C-tier evidence if it wins. NEVER port the repo's 551 brute-forced rules (backfilled 61.3% is in-sample; forward sample = 2 PENDING rows; z=5.39 fails 31.5M-trial Bonferroni). Secondary testable claim: Truth Social publishes ~6.2h before X (38/39 matched in their archive) \u2014 cheap to verify with our own fetcher; if real, an event-timing lead. DESIGNATED 2026-09-08: first local-LLM fine-tune target (see card llm-ft-track) \u2014 the lane's shadow data doubles as the FT dataset (silver = rule-agree rows, gold = curated edge cases)."
+    },
+    {
+      "id": "live-execution-reference",
+      "title": "Live-execution layer \u2014 Harrier toolkits as MIT reference (fires on production-capital unlock)",
+      "column": "Backlog",
+      "effort": "Reference read ~half day when it fires; build sized then",
+      "dates": "Carded 2026-09-08 (audit drafts/harrier-toolkits-audit.md)",
+      "gate": "Post-Oct-8 (Kelly window) AND C-200 production-proof clears the precommit gate (production-capital sizing unlock); build dry-run-first + flag-revertible",
+      "note": "REFERENCE from the HarrierOnChain audit (MIT, Rust, 3.4k LOC): when live capital unlocks, borrow structure from its execution engine \u2014 clob.rs (EIP-712 CTF order signing + L2 HMAC auth + POST /order, 489 LOC), order_executor.rs (FAK/GTD, dry-run path, 310 LOC), risk_guard.rs (circuit breaker + depth guard + per-category caps, 186 LOC), TP/SL midprice\u2192FAK exit monitor. Sidecar (polyhydra-whale-signal) is signal-only today; this is the blueprint for the executor half. Do NOT adopt wholesale: (1) copy-trade ingestion is on-chain OrderFilled (misses off-chain CLOB fills \u2014 our data-api orderfilled sidecar source is correct, keep ours); (2) 9 of 10 strategies are 12\u201370 LOC stubs (README status column was deleted in the latest commit); (3) scaffold ideas (resolution-sniper, market_maker) contradict our favorite-band \u22480-trades findings. Compare their risk-guard semantics vs our RuleSet/exposure-cap engine before porting anything. FURTHER REFERENCE (2026-09-09; drafts/poly-maker-audit.md): warproxxx/poly-maker (MIT, Python) adds two things this card's Harrier read does not: (1) a CTF pair-merge executor \u2014 mergePositions via EOA / Gnosis Safe execTransaction / V2 DepositWallet through the gasless builder relayer, nonce-serialized, live-verified (tx 0x4d2a2064) \u2014 the zero-market-impact exit primitive; (2) run-tested safety patterns for live maker/quoter operation: chained heartbeat dead-man switch (3 consecutive misses \u2192 halt + resync \u2192 cancel-all within ~10s of the engine dying), ws-stale halt (10s) AND user-stream-blind halt (15s \u2014 pull every quote when you can't see your own fills), rolling order-error-rate breaker (\u226520 order attempts, 25% threshold), daily-loss kill switch, 20s REST drift reconciliation, rate budget at 25% of documented limits. Adopt as design at go-live; re-derive constants for our stack."
+    },
+    {
+      "id": "llm-ft-track",
+      "title": "Local-LLM fine-tune track (qwen3.5:9b QLoRA) \u2014 target 1 presidential-socials, target 2 bill\u2192market mapping (queued)",
+      "column": "Backlog",
+      "effort": "FT-1 ~2\u20133 days (dataset + train + eval); FT-2 queued behind it",
+      "dates": "Carded 2026-09-08 (user decision: start with presidential-socials lane)",
+      "gate": "Post-Oct-8 (Kelly window); FT-1 requires presidential-socials shadow lane showing signal first; every FT must beat base qwen3.5:9b on pre-registered eval (rule-agreement on held-out items + named failure classes) before the adapter goes live; structured outputs (JSON-schema decode) land on the shadow scorer as step 0",
+      "note": "USER DECISION 2026-09-08: first fine-tune target = presidential-socials lane (see card presidential-socials-lane \u2014 shadow data doubles as dataset: silver = rule-agree rows, gold = curated edges). Second target QUEUED = bill\u2192market mapping for the research bot (consistency win on existing lane; taxonomy FT: bill subject/action \u2192 Polymarket market category/map). Method: QLoRA rank 16\u201332 on qwen3.5:9b, ~100\u2013300MB adapter, <1k curated items; train on cloud rental (RunPod-class, episodic-FT doctrine) or Odin RTX 5070 if self-hosted; export GGUF \u2192 serve via Ollama Modelfile on the 24GB head (JIT load/unload unchanged). Dataset rules: NEVER distill rule_sentiment alone (circular \u2014 that's the baseline the A/B must beat); gold set breaks the circle. Mix 10\u201320% sentiment rows into new-domain sets to prevent catastrophic forgetting. Eval: frozen holdout incl. the 40-flip referral set + became-law + quiver control, measured per-model in compare-sentiment."
+    },
+    {
+      "id": "scout-gitlab",
+      "title": "Repo scout widening \u2014 add GitLab source (audit-candidate breadth)",
+      "column": "Backlog",
+      "effort": "~half day (extend scripts/scan-github-repos.py with a GitLab.com project-search source; same metadata + triage + digest shape)",
+      "dates": "Carded 2026-09-08 (user decision: both widenings)",
+      "gate": "Post-Oct-8 (Kelly window); watch-only when the audit pipeline is busy (scout triage gates unchanged); GitLab.com search is rate-limited unauthenticated \u2014 weekly cadence fits, no credential needed initially",
+      "note": "Prediction-market bots disproportionately live GitLab-first or self-hosted \u2014 GitHub-only scouting misses a real share of audit candidates. Add GitLab.com project search (license, stars, pushed_at, description \u2014 same schema as the GitHub source) into scan-github-repos.py; digest to Discord unchanged. Reddit NOT included here (see reddit-intel-digest \u2014 human channel, not a scout feed)."
+    },
+    {
+      "id": "reddit-intel-digest",
+      "title": "Human-intel weekly digest \u2014 Reddit + HuggingFace + arXiv (ideas channel, NEVER signals)",
+      "column": "Backlog",
+      "effort": "~1 day (Reddit app credential + subreddit pull + HF trending/arXiv feed into one weekly Discord digest; recommendations-only)",
+      "dates": "Carded 2026-09-08 (user decision: both widenings)",
+      "gate": "Post-Oct-8 (Kelly window); digest is human-facing only \u2014 no webhook, no evidence tier, no auto-signals (hard guardrail: Reddit sentiment is noise/astroturf-prone and already priced); rate limits fine at weekly cadence",
+      "note": "Feeds the user's 'ideas from other humans' loop (their stated preference over AI-only ideation): weekly digest of r/algotrading + prediction-market subreddit threads worth reading, HF trending models/datasets, arXiv preprints (prediction markets/forecasting). Different pipeline from the research-bot evidence path on purpose \u2014 intel for the human + tuning-review loop, not market inputs. Reuse huggingface-hub / arxiv skill patterns for the sources; Discord delivery."
+    },
+    {
+      "id": "paper-ledger-fee-fidelity",
+      "title": "Paper-ledger fee fidelity \u2014 taker-fee model + maker/taker capture",
+      "column": "Backlog",
+      "effort": "~half day (fee column) + ~1 day (maker/taker capture)",
+      "dates": "Measured 2026-09-09 \u00b7 impl post-Oct-8 (recommendations-only until approved)",
+      "gate": "Post-Oct-8 (Kelly window). Measurement-only so far \u2014 NO lane/rule/PnL change. Any wiring lands behind a rules flag, shadow column first (booked PnL untouched), revertible",
+      "note": "MEASURED 2026-09-09 (drafts/c200-taker-fee-measurement-2026-09-09.md): the paper ledger books fills with NO fee model. Applying Polymarket's official taker fee (C\u00d7feeRate\u00d7p(1\u2212p); politics 0.04 / sports-other 0.05 / crypto 0.07 / geopolitics 0; maker 0, 25% rebate) to all 9,531 realized trades: gross +$5,397.60 \u2192 fee $2,464 \u2192 net +$2,934 (flat-0.04: fee $1,978). C-200 (BANKROLL_200) gross \u2212$153.77 \u2192 net \u2212$420 to \u2212$481 \u2014 loss-making under every coefficient. ENTRY leg = 87% of the fee (we cross to enter). 238 trades (63 in C-200) flip winner\u2192loser. NEXT: (1) emit fee-adjusted PnL as a SHADOW column beside booked PnL; (2) record maker/taker (or order type) on paper fills \u2014 without it the estimate is stuck at the all-taker bound; (3) feeds drafts/phase-c-design-notes.md (maker-entry counterfactual) and the Phase D2 realistic-fill work.",
+      "tags": [
+        "execution",
+        "fees",
+        "measurement",
+        "paper-fidelity"
+      ]
+    },
+    {
+      "id": "v54-deadzone-admission",
+      "title": "v54 \u2014 Dead-zone (0.40\u20130.60) admission stop (APPROVED, queued for the Oct 8 window close)",
+      "column": "Backlog",
+      "effort": "~1\u20132h when applied",
+      "dates": "Approved 2026-09-11 (C-200 daily report Change 2) \u00b7 queued to Oct 8 by default (window-contamination caveat) \u00b7 shadow evidence available from Sep 22",
+      "gate": "Pre-registered Kelly window (Sep 8\u2013Oct 8) \u2014 applying now contaminates the window read; the report's own caveat. Apply on explicit user override ('apply dead-zone gate now') or at the Oct 8 close with the shadow-ladder evidence.",
+      "note": "WHY: 0.40\u20130.60 consumes 46% of all staked capital ($3,713) at \u221213.7% lifetime and \u221230.0% ROI in the last 7d; v51's \u00d70.25 cut shrank the absolute loss, not the bleed RATE (capital is not stuck \u2014 avg open age 17.6h, recycler frees it hourly \u2014 the bot re-enters ~18\u00d7/day by flow at 99% cap utilization), so every dead-zone admit displaces long-shot stake (~$76/day of stake redirected). FIX (admission-only): band-scoped gate in the admission path \u2014 copyScore \u2265 90 within [0.40,0.60) or zero admits; must cover the short-TTR LANE + legacy paths (Kelly main-lane already skips the band via \u03bb\u0302=+0.03). Candidate implementation: new ruleset field(s) (deadZoneMinCopyScore / deadZoneAdmitEnabled) enforced in score-trades admission for all C-200 paths, fan-out-validated against the lane. VERIFY: 0 C-200 open copies with entry \u2208 [0.40,0.60) 7d after apply; long-shot (<0.20) admits/day \u2265 pre-apply; C-200 clean-regime ROI unchanged-or-better at the next review.",
+      "tags": [
+        "kelly-window",
+        "size-bands",
+        "admission",
+        "queued"
+      ]
+    },
+    {
+      "id": "change2-oct8-gates",
+      "title": "C-200 Change 2 \u2014 entry-hour gate (08:00 ET) + premium-band gate (0.60\u20130.80): APPROVED IN PRINCIPLE, queued to the Oct 8 window close",
+      "column": "Backlog",
+      "effort": "~1h at apply (one const in hour-policy.ts + one band field in score-trades.ts)",
+      "dates": "Approved 2026-09-13 (daily report Change 2) \u00b7 queued to Oct 8 \u00b7 evidence accumulates from the next score:trades run",
+      "gate": "Pre-registered trigger, IN-WINDOW sample only, decision-level (deduped): |z| >= 2.0 AND realized PnL < 0 AND N >= 20. Read at the Oct 8 close: python3 scripts/analyze-change2-gates.py. All-time stats are context, never the trigger.",
+      "note": "TWO FINDINGS AT APPROVAL (2026-09-13, both from the recon before applying): (1) 20:00 ET is ALREADY blacked out \u2014 src/lib/hour-policy.ts C200_BLACKOUT_HOURS_ET = {20} (v41/v48), so the report's 'blocklist 08+20' reduces to adding 08:00 ET only; 20:00's in-window N is 0 by construction. (2) The report's z-stats were computed on a duplicate-inflated sample: deduped to one row per market+outcome, 08:00 ET all-time falls to z=-1.77 (raw -2.69, no longer significant) and 20:00 ET to z=-1.35 (raw -2.82), while the 0.60\u20130.80 band survives (all-time z=-2.16, in-window z=-2.23, N=67, PnL -$20.83) and now TRIGGERS the pre-registered rule. 08:00 in-window N=8 \u2014 below the N>=20 bar. IMPLEMENTATION AT APPLY: hour gate = add 8 to C200_BLACKOUT_HOURS_ET (code change + tests/hour-policy.test.ts); band gate = per-leg cap in score-trades.ts behind a new ruleset field (v47 c200MaxEntryPrice / v44 standardMaxEntryPrice pattern), NEVER via the symmetric maxEntryPrice (it would kill the <0.15 long-shot edge). VERIFY 7d after apply: 0 C-200 entries in the gated hour/band; long-shot (<0.20) admits/day >= pre-apply; clean-regime ROI unchanged-or-better at the next review.",
+      "tags": [
+        "kelly-window",
+        "hour-policy",
+        "size-bands",
+        "queued",
+        "v53"
+      ]
+    },
+    {
+      "id": "calibration-dedupe-decision",
+      "title": "Decision-level (deduped) stats as the published sample? \u2014 switch calibration + daily report off duplicate rows",
+      "column": "Backlog",
+      "effort": "~1h (flag exists; the question is the default + a report re-baseline)",
+      "dates": "Raised 2026-09-13 (v53 recon)",
+      "gate": "User decision, no date gate. Mid-window (to Oct 8) keep raw as the published default so window comparisons stay stable \u2014 the deduped view is the DECISION view, not the published one.",
+      "note": "FINDING: PaperTrade carries legacy duplicate accumulation rows (pre-guard multi-entry, same market+outcome). All-time C-200 finished Polymarket-only: raw N=1,473 vs decision-level N=785 (688 duplicate rows). Duplicates are pseudo-replication \u2014 they count one bet N times and inflate every z-stat. Direction survives, magnitudes do not: 24\u201372h exits raw -$1,215.72/1,069 rows vs deduped -$406.10/511 decisions; all-time realized raw -$137.06 vs deduped +$243.66. Significance FLIPS both ways: 08:00 ET z -2.69 -> -1.77 and 20:00 ET -2.82 -> -1.35 (lost), 0.40\u20130.60 band -2.26 -> -2.87 (gained, strengthens the queued dead-zone stop), 0.20\u20130.40 realized PnL -$214.45 -> +$132.69 (the 'positive edge yet negative realized' contradiction was a duplicate artifact). TOOLING: scripts/analyze-calibration.py now has opt-in --dedupe (writes calibration-analysis[-since-<date>]-deduped.json; default unchanged); scripts/analyze-change2-gates.py always dedupes. OPEN QUESTION: make dedupe the default for the daily report + calibrate-premium.py (re-baselines published numbers) or keep raw published + deduped as the decision view.",
+      "tags": [
+        "data-integrity",
+        "calibration",
+        "duplicates",
+        "v53"
+      ]
+    },
+    {
+      "id": "outcome-casing-mismatch",
+      "title": "BUG: outcome review compares two different casings \u2014 every resolved review is scored as a LOSS (0/688 matches)",
+      "column": "Backlog",
+      "effort": "~30 min (one normalised compare) + a backfill decision for the 688 existing rows",
+      "dates": "Found 2026-09-13 during the dashboard performance audit \u00b7 user decision on backfill",
+      "note": "ObservedTrade.outcome is stored UPPERCASE (NO/YES/OVER/UNDER/SPAIN) while OutcomeReview.finalOutcome keeps the API casing (No/Yes/Over/Under/Spain). scripts/review-outcomes.ts:72 does `m.winningOutcome === d.observedTrade.outcome`, so `won` is ALWAYS false: SQL gives 0/688 exact matches but 509/688 case-insensitive matches. Consequences: (a) for watchlist/skip, good = !won is forced TRUE \u2014 all 200 reviewed watch/skip rows are stamped wasDecisionGood=1 with an 'Avoided loser' lesson regardless of what happened; (b) simulatedPnl for every uncopied decision is computePnl(entry, 0) = \u2212$10, which feeds export-training-data.ts; (c) the /performance + /analytics benchmark sections show Blind copy \u2212$6,880 at 0.0% win rate and Missed Winners = 0 structurally. Fix = case-insensitive compare (UPPER()/toUpperCase()) in review-outcomes.ts plus the two consumers; it CHANGES REPORTED NUMBERS, so it needs an explicit before/after re-baseline of the benchmark table rather than a silent patch.",
+      "tags": [
+        "bug",
+        "outcome-review",
+        "measurement",
+        "needs-approval"
+      ]
+    },
+    {
+      "id": "analytics-heatmap-cost",
+      "title": "/analytics is now the slowest page (3.4s): 9.7k-row heatmap fetch + per-row ICU bucketing",
+      "column": "Backlog",
+      "effort": "~1h (pre-aggregate hour\u00d7weekday buckets, or bucket without ICU)",
+      "dates": "Raised 2026-09-13 (after the rollup/narrow-reads refactor took it 68s \u2192 3.4s)",
+      "note": "Remaining cost after the refactor: allResolved findMany (9.7k rows with nested decision+observedTrade, ~430ms), 9,732 Intl.formatToParts calls for the ET hour\u00d7weekday heatmap (formatter is now hoisted \u2014 it was ~1-2s of server CPU when constructed per row), and SSR of ~9.7k points across 4 charts. Options: a heatmap rollup table refreshed by the existing hourly cron, or an ET bucketing helper that maps timestamps arithmetically (DST-aware) to drop ICU entirely. Page is low-traffic, so this is opportunistic.",
+      "tags": [
+        "performance",
+        "dashboard",
+        "analytics"
+      ]
+    }
+  ]
 }

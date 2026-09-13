@@ -5,8 +5,8 @@
  * position have done?
  */
 
-import { prisma } from "./db";
 import { computePnl } from "./paper";
+import { copyDecisions, decisionCounts, reviewedDecisions } from "./decision-aggregates";
 
 export interface BenchmarkBucket {
   label: string;
@@ -30,13 +30,13 @@ export interface BenchmarkReport {
 
 const HYPOTHETICAL_SIZE = 10;
 
-function bucket(label: string, rows: { pnl: number | null }[]): BenchmarkBucket {
+function bucket(label: string, rows: { pnl: number | null }[], totalCount: number): BenchmarkBucket {
   const resolved = rows.filter((r) => r.pnl !== null) as { pnl: number }[];
   const total = resolved.reduce((a, r) => a + r.pnl, 0);
   const wins = resolved.filter((r) => r.pnl > 0).length;
   return {
     label,
-    count: rows.length,
+    count: totalCount,
     resolvedCount: resolved.length,
     totalPnl: Math.round(total * 100) / 100,
     winRate: resolved.length ? Math.round((wins / resolved.length) * 1000) / 1000 : 0,
@@ -45,61 +45,52 @@ function bucket(label: string, rows: { pnl: number | null }[]): BenchmarkBucket 
 }
 
 export async function computeBenchmarks(): Promise<BenchmarkReport> {
-  const decisions = await prisma.decisionJournal.findMany({
-    include: {
-      observedTrade: true,
-      paperTrades: true,
-      outcomeReviews: true,
-    },
-  });
+  // Narrow reads (see src/lib/decision-aggregates.ts): counts come from a SQL
+  // GROUP BY, hypothetical PnL only exists for the ~688 decisions with a
+  // resolved review, and the bot's own bucket only needs paper_copy rows.
+  // Previously this pulled all 253k rows with three nested includes (~10s).
+  const [counts, reviewed, copies] = await Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]);
 
-  const copyRows: { pnl: number | null }[] = [];
-  const watchRows: { pnl: number | null }[] = [];
-  const skipRows: { pnl: number | null }[] = [];
-  const blindRows: { pnl: number | null }[] = [];
+  // Hypothetical PnL per reviewed decision (same computePnl call as before).
+  const hypoRows = reviewed.map((d) => ({
+    decision: d.decision,
+    pnl: computePnl(d.detectedPrice, d.finalOutcome === d.outcome ? 1 : 0, HYPOTHETICAL_SIZE),
+  }));
+
+  const isCopy = (d: { decision: string }) => d.decision === "paper_copy";
+  const isWatch = (d: { decision: string }) => d.decision === "watchlist";
+
+  const copyRows: { pnl: number | null }[] = copies.map((c) => ({ pnl: c.realizedPnl }));
+  // Blind copy = every observed signal, no filtering: the reviewed rows carry
+  // the only non-null values, everything else is a null row for the count.
+  const blindRows: { pnl: number | null }[] = hypoRows.map((h) => ({ pnl: h.pnl }));
+  const watchRows: { pnl: number | null }[] = hypoRows.filter(isWatch).map((h) => ({ pnl: h.pnl }));
+  const skipRows: { pnl: number | null }[] = hypoRows
+    .filter((h) => !isCopy(h) && !isWatch(h))
+    .map((h) => ({ pnl: h.pnl }));
 
   let missedWinners = 0;
   let avoidedLosers = 0;
   let badCopies = 0;
   let goodSkips = 0;
 
-  for (const d of decisions) {
-    // Hypothetical PnL for uncopied decisions comes from OutcomeReview.finalOutcome.
-    const review = d.outcomeReviews.find((r) => r.finalOutcome !== null);
-    const entry = d.observedTrade.detectedPrice;
-    let hypoPnl: number | null = null;
-    if (review?.finalOutcome) {
-      const won = review.finalOutcome === d.observedTrade.outcome;
-      hypoPnl = computePnl(entry, won ? 1 : 0, HYPOTHETICAL_SIZE);
-    }
-
-    // Blind copy = every observed signal from a leaderboard wallet, no filtering.
-    blindRows.push({ pnl: hypoPnl });
-
-    if (d.decision === "paper_copy") {
-      const pt = d.paperTrades[0];
-      const pnl = pt?.realizedPnl ?? null;
-      copyRows.push({ pnl });
-      if (pnl !== null && pnl < 0) badCopies++;
-    } else if (d.decision === "watchlist") {
-      watchRows.push({ pnl: hypoPnl });
-      if (hypoPnl !== null && hypoPnl > 0) missedWinners++;
-      if (hypoPnl !== null && hypoPnl < 0) avoidedLosers++;
-    } else {
-      skipRows.push({ pnl: hypoPnl });
-      if (hypoPnl !== null && hypoPnl > 0) missedWinners++;
-      if (hypoPnl !== null && hypoPnl < 0) {
-        avoidedLosers++;
-        goodSkips++;
-      }
+  for (const c of copies) {
+    if (c.realizedPnl !== null && c.realizedPnl < 0) badCopies++;
+  }
+  for (const h of hypoRows) {
+    if (isCopy(h)) continue;
+    if (h.pnl > 0) missedWinners++;
+    if (h.pnl < 0) {
+      avoidedLosers++;
+      if (!isWatch(h)) goodSkips++;
     }
   }
 
   return {
-    botFiltered: bucket("Bot-filtered paper trades", copyRows),
-    blindCopy: bucket("Blind leaderboard copy", blindRows),
-    watchlist: bucket("Watchlist (not copied)", watchRows),
-    skipped: bucket("Skipped", skipRows),
+    botFiltered: bucket("Bot-filtered paper trades", copyRows, counts.paperCopy),
+    blindCopy: bucket("Blind leaderboard copy", blindRows, counts.total),
+    watchlist: bucket("Watchlist (not copied)", watchRows, counts.watchlist),
+    skipped: bucket("Skipped", skipRows, counts.skipped),
     missedWinners,
     avoidedLosers,
     badCopies,

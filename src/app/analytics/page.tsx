@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { dailyPnlSeries } from "@/lib/pnl-rollup";
+import { copyDecisions, decisionCounts, reviewedDecisions } from "@/lib/decision-aggregates";
 import { Card, Empty } from "@/components/ui";
 import { LineChart, BarChart, Heatmap, Scatter } from "@/components/chart";
 import { Enlargeable } from "@/components/enlargeable";
@@ -12,21 +14,26 @@ const dayKey = (d: Date) => d.toISOString().slice(0, 10);
 const fmt$ = (v: number) => `${v >= 0 ? "+" : ""}$${v.toFixed(0)}`;
 const ET = "America/New_York";
 
+// Hoisted formatter (same pattern as src/lib/hour-policy.ts): constructing an
+// Intl.DateTimeFormat per row cost ~1-2s of server CPU here — the heatmap calls
+// etParts() once per resolved trade (9.7k rows) and each construction clones an
+// ICU date format. Output is unchanged (verified row-for-row).
+const ET_FMT = new Intl.DateTimeFormat("en-US", {
+  timeZone: ET,
+  hour: "numeric",
+  weekday: "short",
+  hour12: false,
+});
+const WD_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
 function etParts(ms: number): { hour: number; weekday: number } {
   // Server-side timezone conversion via Intl (no tz lib needed).
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: ET,
-    hour: "numeric",
-    weekday: "short",
-    hour12: false,
-  });
-  const parts = fmt.formatToParts(new Date(ms));
+  const parts = ET_FMT.formatToParts(new Date(ms));
   let hour = 0;
   let weekday = 0;
-  const wdMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   for (const p of parts) {
     if (p.type === "hour") hour = parseInt(p.value, 10) % 24;
-    if (p.type === "weekday") weekday = wdMap[p.value] ?? 0;
+    if (p.type === "weekday") weekday = WD_MAP[p.value] ?? 0;
   }
   return { hour, weekday };
 }
@@ -65,7 +72,7 @@ export default async function Analytics() {
   const [
     c200Resolved,
     snapshots,
-    decisions,
+    decisionStats,
     allResolved,
     trackedWallets,
     insiderScores,
@@ -76,15 +83,19 @@ export default async function Analytics() {
       where: { botId: "BANKROLL_200", status: { in: ["closed", "resolved"] }, realizedPnl: { not: null } },
       select: { realizedPnl: true, resolvedAt: true, openedAt: true },
     }),
-    prisma.$queryRaw<Array<{ day: string; botId: string; total_pnl: number }>>`
-      SELECT strftime('%Y-%m-%d', s.collectedAt / 1000, 'unixepoch') as day, t.botId, SUM(s.pnl) as total_pnl
-      FROM PnlSnapshot s JOIN PaperTrade t ON s.paperTradeId = t.id
-      GROUP BY day, t.botId ORDER BY day ASC
-    `,
-    prisma.decisionJournal.findMany({
-      include: { observedTrade: true, paperTrades: true, outcomeReviews: true },
-      orderBy: { createdAt: "asc" },
-    }),
+    // Rollup-backed (scripts/rollup-pnl-hourly.ts): was a full PnlSnapshot
+    // GROUP BY scan per request.
+    dailyPnlSeries(),
+    // Narrow decision reads (src/lib/decision-aggregates.ts). This used to be
+    // `decisionJournal.findMany({ include: { observedTrade, paperTrades,
+    // outcomeReviews } })` over all 253k rows — ~10s per page load. Counts come
+    // from a SQL GROUP BY; hypothetical PnL only exists for the ~688 decisions
+    // with a resolved review; the bot series only needs paper_copy rows.
+    Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]).then(([counts, reviewed, copies]) => ({
+      counts,
+      reviewed,
+      copies,
+    })),
     prisma.paperTrade.findMany({
       where: { status: { in: ["closed", "resolved"] }, realizedPnl: { not: null } },
       include: { decision: { include: { observedTrade: true } } },
@@ -185,11 +196,12 @@ export default async function Analytics() {
   });
 
   // ---------- 5. Decision funnel ----------
-  const funnel = new Map<string, number>();
-  for (const d of decisions) funnel.set(d.decision, (funnel.get(d.decision) ?? 0) + 1);
-  const funnelMax = Math.max(...[...funnel.values(), 1]);
-  const funnelOrder = ["paper_copy", "watchlist", "skip"];
-  const funnelRows = funnelOrder.map((k) => ({ key: k, count: funnel.get(k) ?? 0 }));
+  // Counts come from a SQL GROUP BY (was: iterate all 253k fetched rows).
+  const funnelRows = ["paper_copy", "watchlist", "skip"].map((k) => ({
+    key: k,
+    count: decisionStats.counts.byType[k] ?? 0,
+  }));
+  const funnelMax = Math.max(...funnelRows.map((r) => r.count), 1);
 
   // ---------- 6. Benchmark cumulative curves ----------
   const HYP = 10;
@@ -199,24 +211,20 @@ export default async function Analytics() {
     arr.push({ day, pnl });
     benchSeries.set(label, arr);
   };
-  for (const d of decisions) {
+  // Rebuilt from the narrow reads: reviewed decisions carry the only non-null
+  // hypotheticals, copies carry the bot's actuals. Same formulas and same
+  // per-day totals as the old full-scan loop.
+  for (const d of decisionStats.reviewed) {
     const day = dayKey(d.createdAt);
-    const review = d.outcomeReviews.find((r) => r.finalOutcome !== null);
-    let hypo: number | null = null;
-    if (review?.finalOutcome && d.observedTrade) {
-      const won = review.finalOutcome === d.observedTrade.outcome;
-      const entry = d.observedTrade.detectedPrice;
-      hypo = HYP * (won ? 1 - entry : -entry);
-    }
-    if (hypo !== null) pushB("Blind copy", day, hypo);
-    if (d.decision === "paper_copy") {
-      const pnl = d.paperTrades[0]?.realizedPnl ?? null;
-      if (pnl !== null) pushB("Bot (actual)", day, pnl);
-    } else if (d.decision === "watchlist" && hypo !== null) {
-      pushB("Watchlist (hypo)", day, hypo);
-    } else if (d.decision === "skip" && hypo !== null) {
-      pushB("Skipped (hypo)", day, hypo);
-    }
+    const won = d.finalOutcome === d.outcome;
+    const entry = d.detectedPrice;
+    const hypo = HYP * (won ? 1 - entry : -entry);
+    pushB("Blind copy", day, hypo);
+    if (d.decision === "watchlist") pushB("Watchlist (hypo)", day, hypo);
+    else if (d.decision === "skip") pushB("Skipped (hypo)", day, hypo);
+  }
+  for (const c of decisionStats.copies) {
+    if (c.realizedPnl !== null) pushB("Bot (actual)", dayKey(c.createdAt), c.realizedPnl);
   }
   const benchLines = [...benchSeries.entries()].map(([label, rows]) => {
     const sorted = rows.sort((a, b) => a.day.localeCompare(b.day));
@@ -393,7 +401,7 @@ export default async function Analytics() {
             </div>
           ))}
           <p className="text-xs text-dim mt-2">
-            Total decisions: {decisions.length} · observed signals feed the scorer, copies are the green slice.
+            Total decisions: {decisionStats.counts.total} · observed signals feed the scorer, copies are the green slice.
           </p>
         </Card>
         <Card title="Benchmark Cumulative PnL (per $10 decision)">

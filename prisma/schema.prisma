@@ -168,6 +168,29 @@ model PnlSnapshot {
   paperTrade PaperTrade @relation(fields: [paperTradeId], references: [id])
 
   @@index([paperTradeId])
+  // Hourly rollup maintenance (scripts/rollup-pnl-hourly.ts) reads only rows
+  // newer than a watermark; this covering index keeps that read index-only
+  // instead of scanning the 159 MB table on every cron run.
+  @@index([collectedAt, paperTradeId, pnl])
+}
+
+// Per-hour PnL aggregate, maintained by scripts/rollup-pnl-hourly.ts (wired
+// into the hourly update-pnl cron). Pre-aggregates
+//   SELECT strftime('%Y-%m-%d %H:00:00', collectedAt/1000, 'unixepoch'), botId,
+//          SUM(pnl) FROM PnlSnapshot JOIN PaperTrade
+// so dashboard pages read ~2.5k rows instead of scanning all 2M snapshots
+// (previously 159 MB + 147 MB of indexes per page view, on 3 pages, per request).
+// `hour` is the UTC hour in the exact strftime format the pages used to build
+// inline, so page rendering is identical to the old inline query.
+model PnlHourlyRollup {
+  hour          String   // 'YYYY-MM-DD HH:00:00' UTC
+  botId         String
+  totalPnl      Float
+  snapshotCount Int
+  updatedAt     DateTime @updatedAt
+
+  @@id([hour, botId])
+  @@index([botId, hour])
 }
 
 model OutcomeReview {
