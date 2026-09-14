@@ -28,13 +28,21 @@ export const EXIT_RECOVERY_LOG =
   process.env.EXIT_RECOVERY_LOG ??
   join(__dirname, "..", "..", "data", "exit-recovery.jsonl");
 
-const TRACK_HOURS = 26;
-// [bucket, min elapsed hours since close] — hourly cadence makes these
-// ±1h approximations, which is all the recovery question needs.
+const TRACK_HOURS = 192; // 8 days — must cover the longest bucket (168h) plus slack
+// [bucket, min elapsed hours since close] — hourly cadence makes these ±1h
+// approximations, which is all the recovery question needs.
+// 2026-09-13 (Change 2 measurement): added 72h/168h so the <0.20 band-exemption
+// counterfactual ("does a cut position recover inside the horizon we'd actually
+// hold?") is measured from post-cut marks rather than waiting on settlement —
+// most long-dated <0.20 markets do not resolve for months, so settlement is not
+// an answer we can have, and holding them that long is the capital-lock risk
+// itself. Window extended 26h → 192h to reach those buckets.
 const BUCKETS: Array<[string, number]> = [
   ["1h", 0.9],
   ["6h", 5.9],
   ["24h", 23.9],
+  ["72h", 71.9],
+  ["168h", 167.9],
 ];
 
 type TradeLite = {
@@ -43,6 +51,7 @@ type TradeLite = {
   outcome: string;
   currentPrice: number;
   closedAt: Date;
+  entryPrice: number;
 };
 
 function readDone(): Map<string, Set<string>> {
@@ -94,12 +103,14 @@ export async function sweepExitRecovery(adapter: {
         outcome: true,
         currentPrice: true,
         closedAt: true,
+        entryPrice: true,
       },
     });
     const withClose = closed.filter((t): t is TradeLite => t.closedAt !== null);
     const eligible = withClose.filter((t) => {
       const have = done.get(t.id);
-      return !(have?.has("24h") || have?.has("final"));
+      // Done only once the longest bucket (or a settlement mark) exists.
+      return !(have?.has("168h") || have?.has("final"));
     });
     if (eligible.length === 0) return;
 
@@ -157,6 +168,8 @@ export async function sweepExitRecovery(adapter: {
             tokenPrice: won ? 1 : 0,
             priceAt: Date.now(),
             resolved: true,
+            entryPrice: t.entryPrice,
+            band: t.entryPrice < 0.2 ? "longshot" : t.entryPrice < 0.6 ? "mid" : "premium",
           });
         } else if (m) {
           const price = t.outcome === "NO" ? m.noPrice : m.yesPrice;
@@ -169,6 +182,8 @@ export async function sweepExitRecovery(adapter: {
               tokenPrice: price,
               priceAt: Date.now(),
               resolved: false,
+              entryPrice: t.entryPrice,
+              band: t.entryPrice < 0.2 ? "longshot" : t.entryPrice < 0.6 ? "mid" : "premium",
             });
           }
         }

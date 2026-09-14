@@ -23,6 +23,14 @@ const ET_FORMATTER = new Intl.DateTimeFormat("en-US", {
 });
 
 export const C200_BLACKOUT_HOURS_ET: ReadonlySet<number> = new Set([20]); // v48: 23:00 un-gated (phantom-Kalshi artifact)
+// C-200-ONLY blackouts (2026-09-13 daily report Change 1, user-approved). The
+// shared set above applies to BOTH books; this one must NOT — 08:00 ET is
+// C-200-negative but STANDARD-positive (all-time Polymarket-only: C-200 34 rows
+// −$71.12; STANDARD 250 rows +$1,048.17), so gating it for STANDARD would remove
+// a winning hour. Same reasoning is why the shared 20:00 gate is C-200-only in
+// spirit (STANDARD 20:00 = 252 rows +$887.61, blocked since v44 — flagged, not
+// changed here).
+export const C200_ONLY_BLACKOUT_HOURS_ET: ReadonlySet<number> = new Set([8]);
 export const C200_HAIRCUT_HOUR_ET = 10;
 export const C200_HAIRCUT_FACTOR = 0.5;
 
@@ -33,12 +41,21 @@ export function etHourNow(d: Date = new Date()): number {
 
 export interface C200HourPolicy {
   blackout: boolean;
+  /** Blackout that applies to the C-200 book only (not STANDARD). */
+  c200OnlyBlackout: boolean;
   sizeFactor: number; // 1 = no change
+}
+
+/** Hours blocked for a given book: the shared set + C-200-only extras. */
+export function isHourBlackedOut(botId: string, etHour: number): boolean {
+  if (C200_BLACKOUT_HOURS_ET.has(etHour)) return true;
+  return botId === "BANKROLL_200" && C200_ONLY_BLACKOUT_HOURS_ET.has(etHour);
 }
 
 export function c200HourPolicy(etHour: number): C200HourPolicy {
   return {
     blackout: C200_BLACKOUT_HOURS_ET.has(etHour),
+    c200OnlyBlackout: C200_ONLY_BLACKOUT_HOURS_ET.has(etHour),
     sizeFactor: etHour === C200_HAIRCUT_HOUR_ET ? C200_HAIRCUT_FACTOR : 1,
   };
 }

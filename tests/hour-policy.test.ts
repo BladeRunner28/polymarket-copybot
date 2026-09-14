@@ -8,7 +8,9 @@ import { describe, it, expect } from "vitest";
 import {
   c200HourPolicy,
   etHourNow,
+  isHourBlackedOut,
   C200_BLACKOUT_HOURS_ET,
+  C200_ONLY_BLACKOUT_HOURS_ET,
 } from "../src/lib/hour-policy";
 
 describe("v41 C-200 hour policy", () => {
@@ -40,5 +42,35 @@ describe("v41 C-200 hour policy", () => {
     expect(etHourNow(new Date("2026-03-08T06:59:00Z"))).toBe(1);
     // 2026-03-08 07:00Z = 03:00 EDT — the switch itself
     expect(etHourNow(new Date("2026-03-08T07:00:00Z"))).toBe(3);
+  });
+});
+
+describe("2026-09-13 Change 1: C-200-only hour blackout (08:00 ET)", () => {
+  it("blackouts 08:00 ET for C-200 ONLY", () => {
+    expect([...C200_ONLY_BLACKOUT_HOURS_ET].sort()).toEqual([8]);
+    expect(isHourBlackedOut("BANKROLL_200", 8)).toBe(true);
+    // STANDARD 08:00 ET all-time is +$1,048.17 (250 rows) — must stay open.
+    expect(isHourBlackedOut("STANDARD", 8)).toBe(false);
+  });
+
+  it("keeps the shared 20:00 ET blackout on both books (v44 behavior unchanged)", () => {
+    expect(isHourBlackedOut("BANKROLL_200", 20)).toBe(true);
+    expect(isHourBlackedOut("STANDARD", 20)).toBe(true);
+  });
+
+  it("every other hour stays open for both books", () => {
+    for (let h = 0; h < 24; h++) {
+      if (h === 8 || h === 20) continue;
+      expect(isHourBlackedOut("BANKROLL_200", h)).toBe(false);
+      expect(isHourBlackedOut("STANDARD", h)).toBe(false);
+    }
+  });
+
+  it("exposes the C-200-only flag on the policy object", () => {
+    expect(c200HourPolicy(8).c200OnlyBlackout).toBe(true);
+    expect(c200HourPolicy(8).blackout).toBe(false); // not shared-book
+    expect(c200HourPolicy(20).blackout).toBe(true);
+    expect(c200HourPolicy(20).c200OnlyBlackout).toBe(false);
+    expect(c200HourPolicy(9).c200OnlyBlackout).toBe(false);
   });
 });

@@ -287,7 +287,10 @@ async function main() {
   // NOT report "complete". PARTIAL + non-zero exit so the cron alert fires;
   // unmarked trades re-mark on the next hourly run (self-healing).
   const elapsed = ((Date.now() - startedAt) / 1000).toFixed(0);
-  const covered = updated + resolved + expired + recycled;
+  // `recycled` rows are ALSO marked (updatePaperTradePrice runs before the exit
+  // decision), so adding them double-counts and can print >100% coverage
+  // (observed 1733/1732 on 2026-09-14).
+  const covered = updated + resolved + expired;
   const coverage = open.length ? covered / open.length : 1;
   if (coverage < 0.9) {
     logError(

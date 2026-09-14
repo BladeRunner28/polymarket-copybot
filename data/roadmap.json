@@ -502,13 +502,57 @@
       ]
     },
     {
+      "id": "change1-c200-0800-blackout",
+      "title": "C-200 08:00 ET entry blackout (2026-09-13 Change 1) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~30 min (code + tests)",
+      "dates": "Applied 2026-09-13 (daily report Change 1, user-approved)",
+      "gate": "Verify 7d: C-200 entries stamped 08:00 ET = 0 while STANDARD 08:00 entries stay > 0 (the gate is C-200-only by construction). Revert = remove 8 from C200_ONLY_BLACKOUT_HOURS_ET restart-free (tsx picks it up on the next score run).",
+      "note": "WHY: 08:00 ET is the C-200 drain hour (all-time PM-only: 34 rows \u2212$71.12; raw z=\u22122.26, \u2212$71.12 PnL). SCOPE CORRECTION (recon at apply): the hour blackout in score-trades.ts applied to BOTH books since v44, and 08:00 is STANDARD-POSITIVE (250 rows +$1,048.17) \u2014 a blanket gate would have removed a winning hour from STANDARD. Implemented as a separate C-200-only set: src/lib/hour-policy.ts C200_ONLY_BLACKOUT_HOURS_ET = {8} + isHourBlackedOut(botId, etHour) called from score-trades.ts (shared 20:00 behavior unchanged). Tests: tests/hour-policy.test.ts (8 tests, incl. 'STANDARD 08:00 stays open'). CAVEAT ON THE EVIDENCE: 08:00 C-200 loses significance on the decision-level (deduped) sample \u2014 all-time z \u22122.26 \u2192 \u22121.77, in-window N=8 \u2014 so this is an accepted-risk small gate, not a proven one: 14d volume is 8 entries / $25 staked, i.e. near-zero blast radius either way. Verify: grep 'hour blackout 8:00 ET' logs/cron/copybot-monitor-score.log \u2192 C-200 lines only, 0 STANDARD lines.",
+      "tags": [
+        "hour-policy",
+        "change1",
+        "applied"
+      ]
+    },
+    {
+      "id": "change2-longshot-exit-exemption",
+      "title": "Change 2 \u2014 <0.20 band exit-exemption counterfactual (measure-first, 7-day clock from 2026-09-13)",
+      "column": "In Progress",
+      "effort": "instrumented (no behavior change); decision ~1h when the window closes",
+      "dates": "Clock started 2026-09-13 \u00b7 read at 2026-09-20 or later",
+      "gate": "Read only buckets with >= 20 priced tickets AND >= 7 days of accumulation. Decide on the PRIMARY metric (hold-to-horizon from post-cut marks), never on the closed-vs-resolved gap alone. Exemption ships only if hold-24h/72h beats realized on that base, and must name its horizon.",
+      "note": "WHAT WAS INSTRUMENTED (observability only, zero behavior change): data/exit-recovery.jsonl now carries 72h + 168h post-cut buckets (was 1h/6h/24h/final), a tracking window of 26h \u2192 192h, and entryPrice/band tags on every mark \u2014 so a cut ticket's recovery is measurable inside the horizon we would actually hold. Reader: scripts/analyze-band-exit-exemption.ts (decision-level n; hold-to-horizon vs realized vs hold-to-settlement \u2192 data/band-exit-exemption.json). WHY NOT SETTLEMENT: 43 of the 71 all-time decision-level <0.20 tickets are unpriced by settlement \u2014 they are long-dated markets (LPL season, MLS cup, UCL winner, WNBA) that do not resolve for months, which is exactly the capital-lock risk an exemption would create (median <0.20 life 25.4h; 86% of open cost sits in the band). HISTORICAL READ (not decisive): tier1_cut n=43, realized \u2212$179.63, only 13 priced to settlement; the report's +3.2% closed vs +119.5% resolved gap is 91 vs 17 tickets and partly SURVIVORSHIP (the rule cuts what is not working) \u2014 the instrument exists to settle it forward, not to relitigate it backward.",
+      "tags": [
+        "change2",
+        "exit-policy",
+        "measurement",
+        "longshot"
+      ]
+    },
+    {
+      "id": "standord-2000-shared-blackout-finding",
+      "title": "Finding \u2014 the shared 20:00 ET blackout blocks a STANDARD-POSITIVE hour (+$887.61 / 252 rows)",
+      "column": "Backlog",
+      "effort": "~30 min if actioned (split the shared set the way 08:00 now is)",
+      "dates": "Surfaced 2026-09-13 while scoping Change 1",
+      "gate": "Findings-only until the Oct 8 window close (window purity). Post-close: gate if STANDARD 20:00 stays positive on a post-v52 slice with n >= 40.",
+      "note": "The v44 decision applied the 20:00 ET blackout to BOTH books on the claim that the hour 'cost STANDARD too (window-opened \u2212$622 worst on record)'. All-time Polymarket-only at 20:00 ET: C-200 31 rows \u2212$80.43 (correctly gated) but STANDARD 252 rows +$887.61. Same for 08:00 (STANDARD +$1,048.17), which is why Change 1 shipped C-200-only. The STANDARD figure includes pre-v44 and pre-v52 mechanics, so this is a re-test item, not a revert: slice it post-v52 before touching the gate. Verify: sqlite3 prisma/dev.db \"SELECT botId, COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade WHERE status IN ('resolved','closed') AND realizedPnl IS NOT NULL AND isDemo=0 AND venue!='Kalshi' AND CAST(strftime('%H',openedAt/1000,'unixepoch','-4 hours') AS INT)=20 AND openedAt >= strftime('%s','2026-09-06')*1000 GROUP BY botId;\"",
+      "tags": [
+        "hour-policy",
+        "finding",
+        "standard",
+        "queued"
+      ]
+    },
+    {
       "id": "change2-oct8-gates",
-      "title": "C-200 Change 2 \u2014 entry-hour gate (08:00 ET) + premium-band gate (0.60\u20130.80): APPROVED IN PRINCIPLE, queued to the Oct 8 window close",
+      "title": "C-200 premium-band gate (0.60\u20130.80) \u2014 APPROVED IN PRINCIPLE, queued to the Oct 8 window close (hour half now APPLIED)",
       "column": "Backlog",
       "effort": "~1h at apply (one const in hour-policy.ts + one band field in score-trades.ts)",
       "dates": "Approved 2026-09-13 (daily report Change 2) \u00b7 queued to Oct 8 \u00b7 evidence accumulates from the next score:trades run",
       "gate": "Pre-registered trigger, IN-WINDOW sample only, decision-level (deduped): |z| >= 2.0 AND realized PnL < 0 AND N >= 20. Read at the Oct 8 close: python3 scripts/analyze-change2-gates.py. All-time stats are context, never the trigger.",
-      "note": "TWO FINDINGS AT APPROVAL (2026-09-13, both from the recon before applying): (1) 20:00 ET is ALREADY blacked out \u2014 src/lib/hour-policy.ts C200_BLACKOUT_HOURS_ET = {20} (v41/v48), so the report's 'blocklist 08+20' reduces to adding 08:00 ET only; 20:00's in-window N is 0 by construction. (2) The report's z-stats were computed on a duplicate-inflated sample: deduped to one row per market+outcome, 08:00 ET all-time falls to z=-1.77 (raw -2.69, no longer significant) and 20:00 ET to z=-1.35 (raw -2.82), while the 0.60\u20130.80 band survives (all-time z=-2.16, in-window z=-2.23, N=67, PnL -$20.83) and now TRIGGERS the pre-registered rule. 08:00 in-window N=8 \u2014 below the N>=20 bar. IMPLEMENTATION AT APPLY: hour gate = add 8 to C200_BLACKOUT_HOURS_ET (code change + tests/hour-policy.test.ts); band gate = per-leg cap in score-trades.ts behind a new ruleset field (v47 c200MaxEntryPrice / v44 standardMaxEntryPrice pattern), NEVER via the symmetric maxEntryPrice (it would kill the <0.15 long-shot edge). VERIFY 7d after apply: 0 C-200 entries in the gated hour/band; long-shot (<0.20) admits/day >= pre-apply; clean-regime ROI unchanged-or-better at the next review.",
+      "note": "HOUR HALF APPLIED 2026-09-13 as C-200 08:00 ET blackout (card change1-c200-0800-blackout; C-200-only because 08:00 is STANDARD-positive). 20:00 ET was already blacked out since v41/v48 \u2014 that half was a no-op. REMAINING: the 0.60\u20130.80 band gate. TWO FINDINGS AT APPROVAL (2026-09-13, both from the recon before applying): (1) 20:00 ET is ALREADY blacked out \u2014 src/lib/hour-policy.ts C200_BLACKOUT_HOURS_ET = {20} (v41/v48), so the report's 'blocklist 08+20' reduces to adding 08:00 ET only; 20:00's in-window N is 0 by construction. (2) The report's z-stats were computed on a duplicate-inflated sample: deduped to one row per market+outcome, 08:00 ET all-time falls to z=-1.77 (raw -2.69, no longer significant) and 20:00 ET to z=-1.35 (raw -2.82), while the 0.60\u20130.80 band survives (all-time z=-2.16, in-window z=-2.23, N=67, PnL -$20.83) and now TRIGGERS the pre-registered rule. 08:00 in-window N=8 \u2014 below the N>=20 bar. IMPLEMENTATION AT APPLY: hour gate = add 8 to C200_BLACKOUT_HOURS_ET (code change + tests/hour-policy.test.ts); band gate = per-leg cap in score-trades.ts behind a new ruleset field (v47 c200MaxEntryPrice / v44 standardMaxEntryPrice pattern), NEVER via the symmetric maxEntryPrice (it would kill the <0.15 long-shot edge). VERIFY 7d after apply: 0 C-200 entries in the gated hour/band; long-shot (<0.20) admits/day >= pre-apply; clean-regime ROI unchanged-or-better at the next review.",
       "tags": [
         "kelly-window",
         "hour-policy",

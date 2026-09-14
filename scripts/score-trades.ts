@@ -11,7 +11,7 @@ import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
-import { c200HourPolicy, etHourNow } from "../src/lib/hour-policy";
+import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
 import { effectiveExposureCap } from "../src/lib/exposure-cap";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
@@ -512,7 +512,9 @@ async function main() {
         // books — 20:00/23:00 ET drains (z=−2.99/−2.42) cost STANDARD too
         // (window-opened −$622 worst on record); C-200-only gating left
         // STANDARD exposed. The 10:00 ET haircut stays C-200-only.
-        if (hourPolicy.blackout) {
+        // 2026-09-13 Change 1: plus C-200-ONLY blackout hours (08:00 ET —
+        // C-200-negative, STANDARD-positive; isHourBlackedOut scopes it).
+        if (isHourBlackedOut(botId, etHour)) {
           log(`[${botId}] hour blackout ${etHour}:00 ET (significant drain) — skipping copy ${t.marketId}`);
           continue;
         }
