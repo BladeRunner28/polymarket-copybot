@@ -1,0 +1,138 @@
+SOURCE: https://news.polymarket.com/p/copycat
+
+COPYCAT - by Polymarket, Will Ward, and Stand.Trade
+
+Subscribe
+Sign in
+COPYCAT
+Here are the 10 most copied Polymarket wallets 
+Polymarket
+, 
+Will Ward
+, and 
+Stand.Trade
+Apr 24, 2026
+51
+10
+3
+Share
+Polymarket’s defi exchange makes it possible to track the trades of every wallet on the platform.
+This has created an evolving game of cat and mouse as sharp traders try to hide their tracks from the coattail-riders, assisted by a growing number of apps that help users find signal in the noise.
+In February, the prediction market trading terminal 
+Stand
+ (and 
+on Substack
+) launched a Polymarket copy (& counter) trading feature, allowing users to automate custom copy strategies, and it has since tracked over 1,500 Polymarket wallets and 5,000 strategies in two months.
+The Oracle 
+spoke with 
+Ridgely
+, co-founder of Stand, to get an update on how the copy-trading meta is evolving. And we managed to get him to cough up some of Stand’s internal data on the 10 most copied wallets on Polymarket.
+This interview has been edited for length. All answers are his own.
+Subscribe
+Copy trading is controversial. Many are saying it’s an easy way for traders to get rekt. Presumably you disagree, but what are some of the pitfalls of copy trading?
+The most obvious problem is that a lot of the sharpest traders know they’re being watched. We’ve interviewed several of them, and they’ve told us directly that they run secondary or tertiary accounts. So the public account you’re following might not be their full book. You can become exit liquidity for them if you are not getting a full picture of their activity across wallets. Then there are also things we notice, like iceberging, merging, and bots.
+Iceberging?
+Take Domer. He knows people are watching him closely. So rather than placing one large buy that triggers copy-trading alerts, he could accumulate in small piecemeal orders over time, like the tip of the iceberg. If you’ve set a minimum volume threshold before your copy triggers, you may never catch him entering. He can afford to be patient because his portfolio is large enough that he can take his time filling a position.
+What about merging? How does this frustrate copy traders exactly?
+Merging is when a trader holds both YES and NO shares in a market and converts them into USDC instead of selling. It’s a way to quietly exit a position without it looking like a sale in the activity feed. Some copy-trading apps don’t flag this as a distinct action, so you can miss the exit signal entirely. We’re working on capturing it.
+Share The Oracle by Polymarket
+And why are bots hard to deal with?
+Bots are the trickiest to copy trade because of the speed and frequency. They’re placing orders in the mempool and getting fills at specific price points faster than any human could react. If you’re copy-trading a bot, you’re almost always going to get a worse price, and in high-frequency markets like the
+ five-minute crypto contracts
+, a few cents of slippage kills the strategy. 55% of traders on the five-minute markets are bots, according to a recent Dune Analytics report. It’s going to be difficult to out-speed them.
+Okay, let’s get to the wallets. Did anything surprise you in the data?
+We pulled every wallet address being followed on Stand. Of the top ten most-copied wallets, all but two were in the top 200 lifetime P&L on Polymarket. I was surprised by the category breakdown: six crypto, two sports, one weather, and only one politics.
+I did not expect crypto to be number one. I genuinely thought it would be politics and elections at the top. But these are retail traders who see an account going straight up with no drawdowns and think, I need to be in that.
+Several of the crypto ones are either bots that have gone quiet or just not that interesting to dig into. Several went dark in March right around when Polymarket changed the fee structure on crypto markets. So rather than go through all ten, let’s focus on the ones that are actually worth talking about.
+#1 0xdxD: Crypto Bot (Inactive since March)
+Our most followed wallet
+ ran an automated strategy on the up/down crypto dailies before moving to five-minute markets. You see that the wallet ran a super clean upward profit from December through late March.
+The likely explanation is the new Polymarket fee structure on crypto markets decayed the edge, or they simply changed wallets after getting too big. Still, for retail traders looking to understand how crypto bots operate, this is the one. It’s a lesson that copy-trading is far from passive. By the time you’re copy-trading someone, the edge may already be closing.
+#2 RN1: The Sports Quant
+This is a crazy one
+. Number seven all-time in P&L on Polymarket, over $7 million lifetime, close to a million in the account right now. The equity curve is just absurd. There was no meaningful dip over the entire period. For a sports trader, that’s almost unheard of.
+It’s almost exclusively soccer. I’ve never met this person, never had any contact. But when you look at how they trade, you just assume there’s a model running somewhere - it’s too consistent to be vibes.
+The thing that really stood out is that over 53% of their trades are priced under 50 cents. This is not someone hammering favorites. They’re finding value on the other side consistently, across 
+EPL, Liga, and Copa del Rey
+. I’ll be watching this wallet very closely when the World Cup comes around.
+#3 Sharky6999: The Crypto Bonder
+Still active, crypto only. 
+Sharky6999
+ has almost a million in lifetime P&L, a couple of notable dips along the way, and a trading pattern that is almost certainly automated because 95% of their trades are priced above 80 cents. They are doing a pure bonding strategy, buying high-probability outcomes and holding to completion.
+The dips suggest there are some triggers stopping them from taking too much loss at once, so it’s not completely brainless, but the core approach is simple.
+#4: Crypto Price Bot (Inactive)
+This 
+likely bot 
+went dark in March when Polymarket changed the fee structure on crypto markets. Probably did the math and moved on. Nothing actionable here.
+Share
+#5 Domer: The Geopolitics Goat
+The only politics account in the top ten. 
+Domer’s record on politics
+ and geopolitical markets needs no introduction. He’s probably one of the most visible traders on Polymarket after his 60 Minutes appearance.
+I have often wondered why he continues to trade so heavily in his public wallet, and he actually addressed this in a conference recently, saying something like: while there’s probably less alpha available as the markets get more efficient, the opportunities that do exist are bigger. More money in the ecosystem means that when you do find edge, you can make more dollars from it.
+If you’re copy-trading Domer, know that you are very likely not seeing his full book. Follow him in geopolitics and elections only. His worst categories on Polymarket are Ethereum and crypto, which are nowhere near his top half.
+#6 ColdMath: The Weather Trader
+ColdMath is a genuinely weird one
+. A weather trader, barely in the top 1,000 by P&L overall, made it into the top ten most-followed wallets. Their strategy is daily temperature markets in Buenos Aires, Cape Town, Dallas, Atlanta, and a handful of other cities. Worst categories are politics, Venezuela, and crypto, which makes sense. This is a pure niche play.
+The volume of copy-traders following this wallet suggests people are correctly identifying that domain specificity equals edge. This trader isn’t trying to be good at everything. They have, presumably, some information or model advantage on temperatures in a small number of cities, and they grind that edge every day. 
+#7, 8, 10: Assorted Crypto Bots
+0x1979
+, 
+0x1d003
+, and 
+0xd1eb
+ are an assortment of bot crypto wallets. One had 1.29 share buys in a consistent pattern across many markets, almost certainly bot-driven. Nothing actionable for non-crypto traders.
+#9 Swiss Tony: The Soccer Whale
+Swiss Tony 
+is the most active trader in this list by raw volume. He is on the whale feed constantly, placing large positions across EPL, Liga, Serie A, UCL, EFL Championship, you name it. His worst categories are very specific: Copa del Rey, UCL knockout stages, EFL Championship. So even within soccer he has sub-domains where the edge degrades.
+Like RN1, over 60% of Swiss Tony’s entries are priced below 50 cents. Two of the top most-followed sports wallets in prediction markets are both underdog pickers. That is probably not a coincidence.
+Any final words of wisdom for someone dipping into the copy trading game?
+Start with a small percentage of the position rather than a fixed dollar amount. A percentage tracks the trader’s conviction level: if they’re putting 20% of their portfolio on something, that tells you more than if they’re putting in $100.
+Set category filters so you’re only following someone into their area of expertise. Domer in geopolitics and elections, yes. Domer in Ethereum price markets, probably not. And set tight budget controls. Don’t blind copy anyone across the board.
+Leave a comment
+Disclaimer
+Nothing in 
+The Oracle 
+is financial, investment, legal or any other type of professional advice. Anything provided in any newsletter is for informational purposes only and is not meant to be an endorsement of any type of activity or any particular market or product. Terms of Service on polymarket.com prohibit US persons and persons from certain other jurisdictions from using Polymarket to trade, although data and information is viewable globally.
+51
+10
+3
+Share
+Previous
+Next
+Discussion about this post
+Comments
+Restacks
+Intueri Research
+Apr 24
+Liked by Stand.Trade, Polymarket
+Great read...
+I'm big on the idea that individual pattern recognition from proven profitable accounts helps make better traders
+Reply
+Share
+EventWaves
+Apr 24
+Liked by Polymarket
+Nice article, I was hoping someone would write a 'most copy traded' list.
+On the Iceberging thing though, wouldn't lots of small orders make them easier to copy? I thought the whales tried to execute pretty quickly
+Reply
+Share
+1 reply
+8 more comments...
+Top
+Latest
+Discussions
+No posts
+Ready for more?
+Subscribe
+© 2026 Polymarket
+ · 
+Privacy
+ ∙ 
+Terms
+ ∙ 
+Collection notice
+ Start your Substack
+Get the app
+Substack
+ is the home for great culture

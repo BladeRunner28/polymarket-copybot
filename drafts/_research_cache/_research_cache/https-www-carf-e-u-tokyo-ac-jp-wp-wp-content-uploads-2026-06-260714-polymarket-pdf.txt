@@ -1,0 +1,4032 @@
+SOURCE: https://www.carf.e.u-tokyo.ac.jp/wp/wp-content/uploads/2026/06/260714_polymarket.pdf
+
+
+=== PAGE 1 ===
+Who Wins and Who Loses in Prediction Markets?
+Evidence from Polymarket∗
+Pat Akey1, Vincent Grégoire2, Nicolas Harvie3, Charles Martineau3
+1ESSEC Business School, CEPR, ECGI
+2HEC Montréal
+3University of Toronto
+June 21, 2026
+We study trading gains and losses on Polymarket, the largest prediction market by
+trading volume. Using $67 billion in trade volume, we show that the gains are highly
+concentrated: the top 1% of users with positive PnL capture 76.5% of profits. Successful
+traders provide liquidity using limit orders that resolve favorably relative to realized
+outcomes while unsuccessful traders take liquidity using market orders.
+Monthly
+performance is modestly persistent, though this may reflect selection rather than skill.
+Analysis of the trading behavior of the most successful accounts suggests that “insider”
+trading is unlikely to explain the performance of the largest winners.
+JEL Classification: G12, G14, G15, D47, D82.
+Keywords: price efficiency, Polymarket, prediction markets, profit concentration, market
+microstructure.
+∗We thank Tony Cookson, Andreas Park, Anthony Sanford and Antoinette Schoar for helpful comments and
+suggestions and seminar participants at the Federal Reserve Board, FEN Universidad de Chile, Pontificia Universidad
+Catolica de Chile, Aarhus University, HEC Paris, University of Alberta, Wolfe Research 3rd Annual Canadian
+Quantitative and Macro Investment Conference, and UTSC AI Management Talks. This research was undertaken, in
+part, thanks to funding from the Canada Research Chairs Program and from the Social Sciences and Humanities
+Research Council, Rotman FinHub, and the Ontario Securities Commission. The data for this study is available
+at https://huggingface.co/datasets/vgregoire/polymarket-users. Akey: ESSEC Business School, 3 avenue
+Bernard Hirsch, 95021 Cergy-Pontoise France (akey@essec.edu). Grégoire: HEC Montréal, 3000, chemin de la Côte-
+Sainte-Catherine, Montréal QC, Canada H3T 2A7 (vincent.gregoire@hec.ca). Harvie: Rotman School of Management,
+University of Toronto, 105 St-George, Toronto ON, Canada, M5S 3E6 (nicolas.harvie@rotman.utoronto.ca). Martineau:
+Rotman School of Management and UTSC Management, University of Toronto, 105 St-George, Toronto ON, Canada,
+M5S 3E6 (charles.martineau@rotman.utoronto.ca).
+1
+
+=== PAGE 2 ===
+1. Introduction
+Prediction markets have exploded in popularity, with platforms like Polymarket and Kalshi allowing
+users to trade on the outcomes of real-world events spanning politics, economics, sports, and
+entertainment. These platforms are now routinely featured in major news outlets and have struck
+partnerships with media organizations that cite their contract prices alongside polls and analyst
+forecasts when covering political, economic, and sporting events.1 While prediction markets are not
+new, innovations in fintech and blockchain technologies have allowed them to scale rapidly, with
+trading volume reaching $67 billion USD on Polymarket and $53 billion on Kalshi2 in the last four
+years. Their rapid growth has prompted media commentators and policy makers to raise questions
+about the gamification of trading and the role of prediction markets as an entry point into financial
+markets. These same groups have also raised concerns about insider trading.3
+Prediction-market contracts are binary contingent claims that pay out on the resolution of an
+underlying event, and trading is zero-sum: every dollar gained by one trader is lost by another.
+Unlike equity markets, there is no equity premium, no dividends, and no passive investment options.
+Their short maturities naturally encourage short-horizon trading, which is precisely what the
+behavioral finance literature has suggested is most destructive to wealth accumulation (Odean, 1999;
+Barber and Odean, 2000). Given the rapid growth of these platforms and their role as a potential
+entry point for young investors, understanding who bears the losses has direct implications for
+investor welfare and market regulation. This raises a fundamental question: who wins and who
+loses in prediction markets? We address this question using the complete transaction history of
+1See, for example, https://www.businessinsider.com/kalshi-cnbc-deal-cnn-data-integration-partnership-
+2025-12
+2Statistics for Kalshi are retrieved from https://www.kalshidata.com/. Polymarket statistics are retrieved from our
+analysis.
+3See,
+for
+example,
+https://www.cnbc.com/2025/09/23/young-people-crypto-meme-stocks-options-risk-
+financial-nihilism.html and https://www.reuters.com/legal/government/us-will-punish-fraud-insider-
+trading-derivatives-regulator-tells-congress-2026-04-16/.
+2
+
+=== PAGE 3 ===
+Polymarket from November 11, 2022 through March 29, 2026, covering over 2.4 million users and
+$67 billion in trading volume. Our main findings are fivefold.
+First, profits are highly concentrated while the majority of users lose money: the top 0.1% of
+users with positive PnL capture 51.2% of all gains and the top 1% capture 76.5%, yet roughly 69%
+of all users end the sample with a loss.
+Second, although Polymarket prices are well-calibrated on aggregate (a contract priced at p
+resolves in its favor approximately p percent of the time), per-trade forecasting accuracy varies
+sharply across the cross-section. The excess hit rate, defined as the average of realized outcomes
+minus trade prices, rises from roughly −15 to −18 percentage points across the loss tail to about +20
+percentage points for the most profitable users, suggesting that profitability is associated with some
+skill in identifying mispriced contracts. We caution against a strong skill interpretation, however,
+since we lack the tools typically used to assess performance in financial markets (a benchmark
+model of expected returns and a long time series), and a finite-mixture decomposition of per-trade
+accuracy classifies only about 29% of traders as skilled.
+Third, the strongest cross-sectional predictor of performance is liquidity provision: a one-standard-
+deviation increase in a user’s maker volume share is associated with a 9.0 percentage-point higher
+probability of positive performance, the largest behavioral effect we estimate, and the top 0.1%
+of earners supply 47.3% of their volume as makers against 17.1% for the bottom 95%. Consistent
+with this, a decomposition of the bid-ask spread shows that winning traders are net earners of
+the spread while losing traders pay it: removing even the minimum-tick spread cost would move
+18.5% of losers, about one in five, into non-negative PnL, though it cannot explain the losses of
+the worst performers, which reflect systematic forecasting errors rather than transaction costs.
+This maker-taker asymmetry mirrors the findings of Barber, Lee, Liu, and Odean (2009, 2014) in
+Taiwanese equity markets and suggests that investor sophistication is an important predictor of the
+3
+
+=== PAGE 4 ===
+cross-sectional distribution of winners and losers on Polymarket.
+Fourth, month-to-month performance is only modestly persistent, and what persistence there
+is in positive performance is concentrated among users who trade primarily through limit orders.
+Even this apparent persistence could in part reflect selection in who continues to trade rather than
+durable skill: a large share of users, including many of the best performers, stop trading within a
+few months, so the active population is continually reshaped by entry and exit.
+Fifth, we examine the trading behavior of the 100 most successful users in our sample (representing
+27.7 percent of aggregate winners’ profits on Polymarket) to understand whether the gains are
+generally consistent with informed trading and, in particular, with insider trading.4 We find that
+a meaningful fraction earn the bulk of their profit from liquidity provision: posting many limit
+orders and capturing the spread at high volume. Still, a significant minority (42 of the top 100)
+concentrate their gains in a small number of markets rather than spreading them across a broad
+portfolio. Looking more closely at these concentrated traders, we find that they traded frequently
+in sports markets, often for different high-profile teams (81% of the gains), and markets related to
+the 2024 US election (representing 15% of the gains). Given the nature of these trades, it seems
+unlikely that the most successful traders were benefiting from insider information, as opposed to
+forecasting skill—whether through quantitative modeling or deep event-specific expertise—or skilled
+liquidity provision.
+Our results are robust to various alternative specifications and subsample analyses. We show that
+our main findings are not likely to be driven by wash trading, which is a concern in this setting
+given the ease of creating multiple accounts and trading between them. We further replicate our
+concentration results on the subset of fully resolved markets, where PnL reflects realized payoffs
+4Throughout the paper, we use insider trading to refer to trading on non-public material information about a resolving
+event, as distinct from informed trading, which we use more broadly to describe any trade in which a participant holds
+superior information about an outcome, whether from a quantitative forecasting model, domain or event-specific
+expertise, or other legitimate sources.
+4
+
+=== PAGE 5 ===
+only rather than mark-to-market valuations, and on the subset of no-fee markets, where differences
+in platform transaction costs cannot confound the cross-section of performance. Both subsamples
+yield similar findings. We also show that our persistence results are robust to risk adjustment.
+Specifically, we conduct performance analysis using a modified measure of the Sharpe and Sortino
+ratios and find similar evidence of modest month-to-month persistence. A further caveat is that we
+do not observe off-platform trading, which may be relevant for some users, especially sophisticated
+traders who may be engaging in arbitrage across platforms or hedging external risk exposures.
+These findings carry implications for both researchers and policymakers. For researchers, prediction
+markets offer a unique laboratory: the full population of trades, prices, and outcomes is publicly
+observable, making them a powerful setting for testing theories of market efficiency (see Thaler
+and Ziemba, 1988; Gómez-Cram, Guo, Jensen, and Kung, 2025), skill persistence, and behavioral
+bias at scale. Do prediction markets function primarily as information-aggregation mechanisms
+or as speculative financial instruments? Our findings suggest both: price efficiency and extreme
+distributional inequality coexist on Polymarket. Prices closely track realized probabilities, yet a
+small group of sophisticated traders captures the vast majority of gains. In order to facilitate further
+study of these novel and increasingly important markets, we have made the full data used in this
+paper publicly available for all researchers.5
+For policymakers, our research has direct consequences for whether prediction markets warrant
+consumer-protection oversight. The extreme concentration of gains alongside the losses borne
+by most traders mirrors ongoing debates about retail options trading (Bryzgalova, Pavlova, and
+Sikorskaya, 2023) and sports betting (Baker, Balthrop, Johnson, Kotter, and Pisciotta, 2024).
+Prediction markets share key features with these activities: they are easily accessible, continuously
+available, and offer contracts that resolve quickly at binary payoffs. A growing body of evidence
+5The data is available at https://huggingface.co/datasets/vgregoire/polymarket-users.
+5
+
+=== PAGE 6 ===
+documents the household-level harms of such products. Access to gambling displaces household
+saving and investment (e.g., Kumar, 2009; Dorn, Dorn, and Sengmueller, 2015; Cookson, 2018),
+and the legalization of sports betting causes a persistent deterioration in the financial stability
+of vulnerable households, raising overdraft rates, missed bill payments, and debt delinquency
+(Baker, Balthrop, Johnson, Kotter, and Pisciotta, 2024).6 Beyond these aggregate harms, Packin
+and Rabinovitz (2026) argue that prediction-market platforms constitute a public-health threat,
+employing design elements and nudges similar to online gambling platforms that exploit cognitive
+biases and encourage further gambling (Newall, 2025).
+Prediction markets have long been studied as mechanisms for aggregating dispersed information
+into prices. Hayek (1945) first argued that prices coordinate decentralized knowledge more efficiently
+than any central planner, and prediction markets represent a direct institutional embodiment of this
+idea. Forsythe, Nelson, Neumann, and Wright (1992) provided early empirical validation using the
+Iowa Electronic Markets (IEM), showing that real-money prediction markets outperformed polls
+in forecasting US election outcomes. Wolfers and Zitzewitz (2004) offer the canonical survey of
+the field, documenting the conditions under which prediction market prices can be interpreted as
+physical probabilities and reviewing evidence on their forecasting accuracy across political, economic,
+and sporting events. Manski (2006) raises an important cautionary note, showing that the mapping
+from prices to probabilities depends on assumptions about trader risk preferences that are rarely
+tested, a limitation that applies to our setting as well.
+A central finding in the prediction market literature is that market accuracy does not require
+individual rationality. Forsythe, Nelson, Neumann, and Wright (1992) introduced the marginal
+trader hypothesis: a small group of active, well-informed traders who set limit orders drive prices
+to efficiency even when average participants exhibit partisan bias and wishful thinking. Oliven
+6Yeola, Allen, Desai, Poliak, Yang, Smith, and Ayers (2025) document a 23% rise in gambling-addiction help-seeking
+following sports-betting legalization.
+6
+
+=== PAGE 7 ===
+and Rietz (2004) examine IEM trader-level data and show that while 37.7% of price-taker orders
+violated no-arbitrage conditions, market makers violated them only 5.4% of the time. The closest
+paper to ours is Barber, Lee, Liu, and Odean (2009), who use brokerage data to show that a small
+number of sophisticated traders systematically profit at the expense of retail participants. Similar
+heterogeneity in trader profits has been documented in options markets (Hu, Kirilova, Park, and
+Ryu, 2024) and in commodity futures markets (Dewally, Ederington, and Fernando, 2013).
+A second strand of literature documents behavioral anomalies and efficiency failures in prediction
+markets. Snowberg, Wolfers, and Zitzewitz (2013) document the favorite-longshot bias: the tendency
+for low-probability outcomes to be overpriced and high-probability outcomes to be underpriced.
+Snowberg and Wolfers (2010) provide evidence that this bias is driven by probability misperceptions
+consistent with prospect theory’s weighting function. This bias is directly relevant to our setting, as
+users on Polymarket disproportionately trade contracts at extreme prices. More broadly, Barber
+and Odean (2000) show that individual stock investors lose money through excessive trading, a
+pattern that resonates with our findings on losses concentrated among heavy traders of longshot
+contracts.
+Polymarket’s on-chain transparency has recently enabled a new wave of prediction market research.
+Tsang and Yang (2026) provide a comprehensive transaction-level analysis of Polymarket’s 2024 U.S.
+election market, documenting key liquidity episodes and showing that Kyle’s λ declined as market
+liquidity matured. Ng, Peng, Tao, and Zhou (2026) compare Polymarket, Kalshi, PredictIt, and
+Robinhood during the 2024 election and find that more liquid prediction markets outperform polls,
+that Polymarket leads Kalshi in price discovery, and that net order imbalance from large trades
+predicts subsequent returns. Becker (2025), analyzing over 72 million trades on Kalshi, documents
+persistent wealth transfer from takers to makers and a pronounced asymmetry in which takers
+disproportionately favored affirmative bets at longshot prices. Sirolly, Ma, Kanoria, and Sethi (2025)
+7
+
+=== PAGE 8 ===
+develop network-based wash trading detection methods and estimate that approximately 25% of
+historical Polymarket volume may be artificial, peaking at 60% during December 2024. Gómez-Cram,
+Guo, Jensen, and Kung (2025) construct a high-frequency measure of earnings expectations from
+Polymarket prices, showing that market-implied expectations are more accurate, less biased, and
+lead in price discovery relative to analyst forecasts, providing direct evidence that prediction markets
+aggregate fundamental information efficiently in financial contexts.7 Another strand of research finds
+that prediction market prices provide information comparable to that of professional forecasters
+(Chernov, Elenev, and Song, 2026; Diercks, Katz, and Wright, 2026), yet the traders and the trading
+behavior that generate these prices remain poorly understood.
+Our contribution is distinct from and complementary to these contemporaneous studies. Becker
+(2025) documents maker-taker wealth transfer in aggregate on a centralized exchange (Kalshi),
+whereas we provide the first wallet-level accounting of user trading profits and losses on a decentralized
+platform with full transaction transparency. Reichenbach and Walther (2025) study skill persistence
+and forecasting accuracy. Della Vedova (2026) classifies users as human or bot using an ad-hoc
+approach, decomposes profitability into directional and execution components, and finds that
+execution timing rather than forecasting ability is the dominant driver of dollar profits. In contrast,
+we document the distributional consequences: the concentration of gains among a small group of
+traders, the losses borne by the majority of traders, and the role of maker-taker dynamics in driving
+this redistribution. We also relate a richer set of user-level behavioral characteristics, including
+activity scale, longshot exposure, and category breadth, to the probability of positive performance.
+To our knowledge, no study documents the full distribution of profits and losses across participant
+types in any prediction market.
+Finally, in a closely related paper Gómez-Cram, Guo, Jensen, and Kung (2026) study whether
+7Cookson, Niessner, and Schiller (2026) provide evidence that social media can inform corporate decisions; an open
+question is whether prediction markets can play a similar role for corporate decision and investor behavior.
+8
+
+=== PAGE 9 ===
+the efficiency of prices in Polymarket are driven by “wisdom of the crowds” or “insider” trading
+and conclude that a minority of traders are skilled, although not systematically in possession of
+inside information. Our analysis similarly finds that a small group of traders overperforms naïve
+benchmarks and that the most successful traders are unlikely to be trading on inside information. In
+contrast, our paper highlights the role that liquidity provision plays in the profitability of the highest
+performing traders and finds that it is substantial. Furthermore, we show that there is substantial
+selection into which traders continue to trade and those that do not. For example, 44 percent of
+traders stop trading after a month (up to 66 percent after six months including 55 percent of the
+best performing traders). Finally, we find modest evidence that successful (unsuccessful) traders
+exhibit substantial persistence across time (conditional on continuing to trade). We encourage
+readers to interpret results about trader skill, informed trading, and the role of market making in
+both studies with these limitations in mind.
+2. Institutional Background
+Polymarket is a decentralized prediction market platform, while Kalshi is a CFTC-regulated
+centralized event-contract exchange. Both let users trade binary contracts on real-world outcomes.
+Our analysis focuses on Polymarket, which was launched in 2020 and has grown into the largest
+prediction market by volume. Unlike traditional financial exchanges, it operates without a central
+intermediary: trades are executed and settled automatically via smart contracts on the Polygon
+blockchain. In January 2022, the CFTC charged Polymarket’s operator (Blockratize, Inc.) with
+offering unregistered binary options to the public and imposed a $1.4 million civil monetary penalty,
+after which the platform restricted US nationals from participating.
+Every Polymarket event is structured as a set of at least one market (binary contracts), one for
+9
+
+=== PAGE 10 ===
+each possible outcome.8 For example, an event such as “2026 NHL Stanley Cup Champion” would
+have separate markets for each team. One such market would be “Montreal Canadiens”, with two
+possible outcomes, Yes and No, that each trade as a distinct token. Contracts are denominated in
+US dollar coin (USDC), a dollar-pegged stablecoin. Every pair of complementary tokens is created
+by exchanging 1 USDC, so every pair of complementary tokens is fully collateralized. Users can
+trade these tokens at any time before expiration or exchange a pair of complementary tokens for
+1 USDC. If a user wanting to buy a Yes token for $0.35 is matched to a user wanting to buy a
+No token (at the converse price of $0.65), Polymarket’s smart contract automatically pools their 1
+USDC to create the two complementary tokens, which are then distributed to the respective buyers.
+This removes counterparty risk and ensures complete settlement transparency.
+Holding a Yes token entitles the owner to $1 if the outcome occurs and $0 otherwise; holding a No
+token entitles the owner to the complement.9 Settlement is automatic: when a contract resolves (see
+below for more details on contract resolution), the blockchain smart contract attributes the value of
+$1 to winning positions and $0 to losing ones. Users are then required to claim the winning positions
+for USDC. Polymarket uses a hybrid architecture combining a central limit order book (CLOB)
+matching engine with on-chain settlement of conditional tokens.10 Users can either post limit orders
+(makers) or trade against existing liquidity (takers). Trades are executed on the Polygon blockchain,
+a low-cost Ethereum-compatible network. Each user is identified by a unique wallet address rather
+than a name or account number. Every transaction is permanently and publicly recorded on-chain,
+giving participants and researchers an unedited view of all trading activity since the platform began
+8The actual smart contract structure allows for markets with more than two outcome tokens. In practice, only 39 of
+the 729,133 markets in our dataset have more than two outcomes. We include these markets in our profitability
+analysis but exclude them from our analysis of calibration and accuracy.
+9Not all binary markets are structured as Yes/No pairs. For example, a market on the winner of a sporting event
+with two opposing teams might have a pair of tokens, one for each team. These are just labels, and the underlying
+economics are the same as a Yes/No pair.
+10The Polymarket exchange smart contracts seamlessly aggregate liquidity across all outcomes of a given market,
+allowing users to easily trade without needing to worry about the underlying order book structure. For example,
+the bid side of the book for the Yes token is a mirror image of the offer side for the No token, and vice versa.
+10
+
+=== PAGE 11 ===
+settling transactions on Polygon in late 2022. We use this record of trades to calculate user-level
+profits and losses.
+Prices in prediction markets are often referred to as “probabilities”. Under the assumption of
+risk neutrality and ignoring time-value of money, the contract price at any moment reflects the
+market’s implied probability of the event occurring. A contract trading at $0.35 means the market
+assigns a 35% probability to the outcome. Contracts that users can bet on span a wide range of
+categories: politics, sports, economics, and geopolitical events, with expiration dates ranging from
+days to months or upon realization of the event.
+Polymarket did not charge trading fees on most markets during our sample period. Therefore,
+users who post limit orders (makers) earn the bid-ask spread as compensation for providing liquidity,
+while users who trade against existing liquidity (takers) pay the spread as a transaction cost. The
+minimum tick size is $0.01, except for markets with a price below $0.04 or above $0.96, which
+have a tick size of $0.001.11 However, certain markets have taker fees to fund the Maker Rebates
+Program and to incentivize deeper liquidity and tighter spreads.12 We remove these markets from
+our analysis in robustness checks and find that our main results are unchanged.
+Contract resolution on Polymarket is determined by an oracle, a decentralized mechanism that
+reports real-world outcomes to the blockchain.13 Once a contract expires, the outcome is proposed
+by a designated proposer and enters a challenge window during which any participant can dispute
+the resolution. To initiate a dispute, the challenger must post a bond in UMA tokens (currently
+equivalent to several hundred to a few thousand US dollars depending on the contract) to deter
+11Note that this is not defined as a unique pricing grid with fixed tick sizes as common in equity markets. Instead,
+once the price of a contract crosses the $0.04 or $0.96 threshold, the market switches to a finer grid until resolution,
+so we can observe prices at sub-$0.01 increments inside the $0.04–$0.96 range. This also means that it is not possible
+to post limit order at sub-$0.01 increments, even for extreme prices, until the market has switched to the finer grid.
+12The following market types have fees enabled: All crypto markets (1 hour, 4 hours, daily, and weekly starting March
+6, 2026, for new markets), National Collegiate Athletic Association (NCAA) basketball games (starting February 18,
+2026, for new markets), Serie A (football) markets (starting February 18, 2026, for new markets).
+13Polymarket uses the Universal Market Access (UMA) Protocol as its resolution oracle.
+11
+
+=== PAGE 12 ===
+against frivolous challenges, ensuring that disputes are only initiated when the challenger has genuine
+conviction that the proposed resolution is incorrect. The dispute is then adjudicated by UMA token
+holders who vote on the correct outcome, with the losing side forfeiting their bond to the winning
+side.14
+3. Data
+Polymarket operates on the Polygon blockchain, where order settlements are recorded on-chain.
+We collect the complete transaction history by combining two complementary data sources. The
+events and markets metadata is from Polymarket’s Gamma and CLOB APIs. Trade information is
+obtained from the Polymarket SubGraph by Goldsky, a GraphQL API that allows for direct access
+to Polygon’s on-chain order fill events. These events provide a record of all transactions, including
+maker and taker wallet addresses for each settlement. We link these two sources to construct a
+unified dataset that associates every trade with its price, quantity, direction, counterparty identities,
+and contract outcome, yielding the complete population of trades on the platform.15 Our sample
+spans November 11, 2022 through March 29, 2026. We end on that date because Polymarket
+introduced trading fees on all markets on March 30, 2026, which materially changes the economics
+of trading on the platform. For each trade, we observe the wallet addresses of the maker and taker,
+the contract identifier, timestamp, direction (buy/sell), quantity, price, and the contract resolution
+outcome for markets that have resolved. The full list of data sources, the procedure that reconciles
+raw on-chain events into clean trade records, and the construction of our main dataset are described
+in Section A of the Internet Appendix.
+14For example, contested resolutions may arise in contracts with ambiguously worded conditions, such as those tied to
+qualitative political or geopolitical events where the resolution criteria leave room for interpretation.
+15Polymarket’s Gamma API also allows downloading trades, but this approach yields an incomplete sample of trades
+because it limits the number of trades per market that can be retrieved. Direct querying of the Polygon blockchain
+is necessary to obtain a complete sample.
+12
+
+=== PAGE 13 ===
+3.1. Trade data construction
+The raw trade data is first standardized into a single dataset which contains the recorded information
+for each trade across all Polymarket markets, including the traded token, price (in USDC per share),
+quantity (in shares), maker and taker addresses, and outcome metadata. Almost all the markets
+in our sample are binary markets, i.e., those with exactly two mutually exclusive outcomes (e.g.,
+Yes/No, or Team A vs. Team B). For those, we normalize all trades to express prices from the
+perspective of a single reference outcome, so that a price of p always represents the market-implied
+probability of that outcome. For Yes/No markets we normalize to the “Yes” token: trades on the
+“No” token are converted by replacing the token identifier with its “Yes” counterpart and inverting
+the price to 1 −p. For other two-outcome markets (such as head-to-head matchups), we normalize
+to the first outcome by index, which lets us include these markets in the accuracy analysis without
+imposing a Yes/No restriction. We describe the procedure that we use to identify the winning
+outcome for each market in Section A.2 of the Internet Appendix.
+3.2. Constructing user accounts and PnL
+Our analysis focuses on wallet-level trading activity and profitability. We construct user accounts
+by aggregating all trades associated with the same wallet address. For simplicity, we refer to each
+wallet address as a “user”, though we acknowledge that some traders may operate multiple wallets,
+which would cause us to undercount their activity and overstate the number of distinct users. We
+also observe only Polymarket activity, so for sophisticated users who trade simultaneously on other
+prediction-market platforms such as Kalshi or PredictIt, our PnL captures only the Polymarket leg
+of any cross-platform arbitrage strategies they may pursue.
+At each daily snapshot at midnight UTC time, each user’s token holdings are marked to market
+by joining their positions to the most recent available price or the resolution price, if it is known at
+13
+
+=== PAGE 14 ===
+that time. The portfolio value is then the sum of position × price across all token holdings, and
+PnL = portfolio value + net USDC balance, meaning the USDC balance tracks realized gains and
+losses while the portfolio value tracks unrealized ones.16 Note that we do not observe users’ USDC
+balances. Instead, we infer their net balances from their transactions. For example, a user that
+buys 100 Yes tokens for $0.63 each will have a net USDC balance of -$63 and a positive position in
+the token.17 Our PnL construction follows Polymarket’s own settlement-based approach: it reflects
+positions and proceeds that flow through Polymarket’s settlement smart contracts. One limitation
+is that we do not observe direct user-to-user (wallet-to-wallet) token transfers conducted on the
+Polygon blockchain outside those contracts, so any positions moved between wallets through such
+direct transfers are not captured in our position and PnL series. Positions are forward-filled from
+a user’s first trade through March 29, 2026, so every user has a daily snapshot for their entire
+active life. The full construction of the position and PnL panel, including the treatment of market
+resolution, the marking-to-market logic, and the validation of our PnL against the Polymarket Data
+API, is described in Section A.3 of the Internet Appendix.
+3.3. Descriptive statistics
+Figure 1 illustrates Polymarket’s growth over our sample period. From the platform’s launch through
+early 2024, user adoption was modest, with roughly 1,000 new users joining per month and monthly
+trading volume hovering around $1 million. The platform’s growth then accelerated sharply in the
+lead-up to the 2024 U.S. presidential election: by November 2024, monthly new user registrations
+reached approximately 100,000 and monthly trading volume surged to around $1 billion. At the
+16Our PnL definition does not net out Polygon gas costs. Polymarket sponsors gas fees for users trading through the
+official website, so these costs are zero for the typical participant. Sophisticated traders who interact directly with
+the smart contracts on the Polygon blockchain do incur per-transaction gas fees, but these are small in absolute
+terms.
+17The net USDC balance we report is therefore a trading-only quantity: external on-chain USDC deposits and
+withdrawals are not netted into the construction. The PnL we compute equals the user’s portfolio profit from
+trading on Polymarket and is independent of any external cash flows.
+14
+
+=== PAGE 15 ===
+end of our sample, the monthly trading volume exceeded $10 billion.
+Panel (c) of Figure 1 shows the monthly count of new events and markets launched on Polymarket.
+The platform’s early period was characterized by a steady stream of new markets, averaging around
+a little more than 100 markets per month. However, from mid-2024, there was a dramatic surge in
+market creation, peaking at over 100,000 new markets in 2026.
+Table 1 summarizes key trading characteristics across all users in our sample. Trading activity is
+highly skewed: the median user executes 28 trades across 10 distinct markets, while the mean is
+substantially higher (474 trades, 54 markets), reflecting a long right tail of highly active participants.
+Notional volume is similarly dispersed: the median user trades $2,343, the mean is $54,143, and the
+95th percentile reaches $97,793. A large share of trading occurs at extreme prices below 10¢ or above
+90¢: the mean fraction is 54.9% and the median is 58.3%, with substantial cross-sectional variation
+(standard deviation of 39.7%). Most users trade exclusively as takers—the median fraction of maker
+volume is 0%, and the 75th percentile reaches only 39.5%—though the mean of 17.9% indicates a
+nontrivial minority that supplies liquidity. PnL is also highly dispersed: the median user loses $2
+and the mean is $0, consistent with the aggregate zero-sum nature of prediction markets net of fees,
+but individual outcomes range from losses of over $10 million to gains exceeding $22 million. Yet, the
+95th percentile for PnL of $251 suggests that the vast majority of users experience modest outcomes,
+with extreme profits and losses concentrated among a small fraction of participants. The final row of
+Table 1 reports the annualized PnL-to-volatility ratio, a reward-to-risk measure we construct as an
+analog to the Sharpe ratio but computed on dollar PnL rather than percentage returns: for each user
+we take the monthly changes in mark-to-market PnL, divide their mean by their standard deviation,
+and annualize by
+√
+12, i.e.,
+√
+12 × ∆PnL/σ(∆PnL).18 Consistent with the platform being close to
+18We avoid the label “Sharpe ratio” because the standard definition requires percentage returns, and constructing
+returns on Polymarket is not straightforward: traders deposit and withdraw freely and there is no natural notional
+capital base. A user-month enters the panel if the user either traded that month or carried a non-zero, non-USDC
+position into it from the prior month, following the monthly aggregation convention used in Section 6.1; the ratio is
+reported only for users with at least three monthly observations and a monthly standard deviation above one USDC.
+15
+
+=== PAGE 16 ===
+zero-sum net of fees, the typical user earns a negative risk-adjusted return: the median ratio is −1.03
+and the 25th percentile is −1.80. Only a minority achieve positive risk-adjusted performance—the
+75th percentile is 0.56 and the 95th percentile reaches 2.08—foreshadowing the concentration of
+profitability we document in Section 5. Panels B and C restrict the sample to progressively more
+active users, those with more than 100 and more than 1,000 trades, respectively, and show that
+as activity rises traders concentrate less of their volume at extreme prices (the median fraction of
+extreme-price trades falls from 58.3% in Panel A to 39.7% and 20.6%) and supply more liquidity
+(the mean maker-volume share rises from 17.9% to 24.2% and 31.9%). Their PnL distribution also
+fans out, with mean PnL turning positive and growing (from $0 to $181 and $2,632) and the 95th
+percentile climbing from $251 to $1,183 and $12,631, even as the median user stays in the red (-$2,
+-$14, and -$141), confirming that gains remain concentrated in a thin upper tail even among the
+most active traders.
+Table 2 breaks down the distribution of events and markets and additional statistics by category.
+We assign each market to one of seven categories: Sports, Crypto, Finance, Politics, Tech, Culture,
+and Weather.19 Table 2 reports summary statistics by category. Sports dominates by number of
+markets (321,231; 52% of all markets) and user reach (1.57 million users have participated at least
+once in this category, or 63% of users), and accounts for 37.9% of total volume. Crypto has the
+highest trade count (394 million trades, 67% of all trades) driven by a large number of markets
+(206,491), but its per-market average volume ($61,804) is far lower than Politics ($705,553), which
+generates 31.5% of total volume from only 29,926 markets. Culture, Finance, Tech, and Weather
+together account for less than 12% of total volume.
+We use this same measure, together with a downside-risk (Sortino) analog, when comparing performance across PnL
+groups in Section 5.
+19This classification relies primarily on Polymarket’s platform-assigned event tags, with fallback rules for events and
+orphan markets that the tag-based procedure does not classify. Section A.4 of the Internet Appendix details the full
+assignment procedure. The category user counts sum to 2,480,080, slightly below the 2,480,104 users in Tables 1;
+the 24-user difference reflects users whose trading activity falls entirely in markets not assigned to any of the seven
+categories.
+16
+
+=== PAGE 17 ===
+3.4. How efficient is Polymarket?
+A fundamental question is whether Polymarket prices accurately reflect the true probabilities of
+outcomes, i.e., whether they are well-calibrated. Figure 2 addresses this directly. If markets are
+efficient and there is no risk premium, contracts trading at price p should resolve in favor of the
+relevant outcome approximately p percent of the time, tracing out the 45-degree line. Panel A plots
+the realized frequency of winning outcomes against price bins at horizons of one month, two weeks,
+one week, and one day before resolution; for each horizon the sample is all resolved markets with
+a valid reconstructed price at that horizon, so the sample grows as the horizon shrinks. Across
+the full price range, Polymarket prices closely track the benchmark: contracts in the 10–20¢ range
+resolve in favor of the outcome roughly 10–20% of the time, contracts near 50¢ resolve at close to
+a coin flip, and high-priced contracts near 80–90¢ resolve favorably at correspondingly high rates.
+Calibration is already close to the 45-degree line a month before resolution and tightens further as
+the resolution date approaches.20
+Panel B of Figure 2 plots a kernel-density estimate of market lifetimes (the time between a
+market’s open and its resolution) over all resolved markets on a log scale, with vertical lines marking
+the calibration horizons. The distribution is heavily right-skewed: most markets resolve within days
+of opening, while a long tail stays open for months. Because a market enters a given calibration
+horizon only if it opened at least that long before close, the shorter horizons in Panel A draw on
+substantially larger samples than the one-month horizon; the stability of calibration across horizons
+indicates that this composition effect does not drive the aggregate efficiency result.
+20This aggregate efficiency masks heterogeneity across market categories. Section B.2 of the Internet Appendix breaks
+down calibration by category and shows that it is tightest in high-volume, high-attention categories such as Sports
+and Politics, while the Tech, Culture, and Weather categories deviate from the 45-degree line even at the one-day
+horizon, suggesting that these markets may contain more mispricings.
+17
+
+=== PAGE 18 ===
+4. The Cross-Section of Profits
+In this section, we examine how trading gains and losses are distributed across Polymarket users
+and how that distribution lines up with a per-trade measure of forecasting accuracy.
+4.1. Concentration of gains and losses
+We focus on dollar profits and losses, rather than on returns, which lets us characterize the distribution
+of winners and losers more accurately. For example, a contract trading at $0.01 that resolves to zero
+gives a −100% return; one trading at $0.99 that resolves to 100% gives a return of approximately
+1%. Hence, returns cannot be aggregated in a meaningful way to measure profitability. Additionally,
+Cziraki and Gider (2021) show that the correlation between dollar profits and percentage returns is
+modest amongst trades by corporate executives in their own stocks because returns are negatively
+correlated with trade size.
+Panel (a) of Figure 3 shows the distribution of trading gains and losses across Polymarket users.
+The x-axis ranks users with positive PnL in green and with negative PnL in red, by their percentile
+within that group, while the y-axis shows the cumulative share of total gains and losses they account
+for. Across our sample of 764,424 users with positive PnL, the aggregate net gain of winners totals
+$1.05 billion.
+These gains are strikingly concentrated among a small number of individuals. The top 0.1% of
+users with positive PnL alone captured 51.2% of all gains, while the top 1% captured 76.5%, the
+top 5% captured 91.4%, and the top 25% accounted for 99.2%. The vast majority of winning users,
+therefore, earned only a negligible share of total profits. This extreme concentration is consistent
+with a tiny fraction of traders accounting for nearly all of the net surplus, with the much larger
+pool of losing participants on the other side. Figure 3 also shows that losses are concentrated but to
+a lesser extent: the top 0.1% of losers account for 43.7% of total losses, the top 1% for 68.1%, the
+18
+
+=== PAGE 19 ===
+top 5% for 86.1%, and the top 25% for 98.3%.
+Panel (b) of Figure 3 tracks this concentration over time. Prior to the 2024 U.S. presidential
+election, the top 1% of winners captured approximately 40–50% of total gains. In the lead-up to
+the election, an event that spurred the growth of users participating in prediction markets, the
+concentration of gains among the top 1% rose to approximately 80%. A similar pattern holds for
+losses. This elevated concentration has remained relatively stable through the end of our sample
+period even as the total volume grew fourfold. Table 3 shows that the concentration of gains and
+losses is similarly extreme across all market categories, with the largest dollar gains for the top 0.1%
+concentrated in the Sports, Politics, and Crypto categories.
+4.2. Do profitable traders have better forecasting skill?
+We next examine the relationship between user profitability and forecasting skill. We first define a
+measure of skill, the value-weighted excess hit rate (EHR), which we compute for each user i as:
+EHRi =
+X
+k
+qk(ok −pk)/
+X
+k
+qk,
+(1)
+where qk is the traded quantity in shares for trade k for user i. Every trade is recast to the buy-side
+perspective so that ok ∈{0, 1} equals 1 if and only if the contract purchased in trade k resolves
+in-the-money, and pk is the buy-side normalized trade price.21 Weighting by volume ensures that
+large trades impact the EHR more. A positive EHR indicates that a user’s trades resolve more
+favorably than their prices suggested; a negative EHR indicates the opposite.22
+21Buy-side normalization recasts every trade as a purchase: a sell of outcome X at price p is treated as a buy of
+the complementary contract at 1 −p. This gives every user position a single sign convention and lets us interpret
+ok −pk uniformly across both sides of the market. Note that Polymarket maintains a consolidated order book for
+each market, so a buy limit order for a Yes contract at price p also appears as a sell limit order for the No contract
+at price 1 −p in the order book, and vice versa; Polymarket seamlessly matches buy and sell orders across the two
+sides of the market.
+22Under the matched-notional convention (each share traded represents $1 of volume in USDC, since a Yes-buyer and
+a No-buyer together pay $1 per share), share-weighting and USDC-weighting coincide; we use “volume-weighted”
+and “share-weighted” interchangeably for EHR.
+19
+
+=== PAGE 20 ===
+Figure 4 plots the volume-weighted excess hit rate EHR across the full PnL distribution. We rank
+users by PnL in ascending order and assign them to 200 half-percentile bins, with percentile 0 (least
+profitable) on the left and percentile 100 (most profitable) on the right. For each bin we plot the
+mean (solid line, with 95% confidence band) and the median (dashed line) of EHR. The horizontal
+dashed line marks the sample mean across all users. Vertical dotted lines mark the bins containing
+the PnL thresholds of −$100, $0, and $100, which fall near percentiles 15, 70, and 92, respectively,
+and together with the figure make clear that roughly the top 8% of users earn more than $100 in
+profit, a further 22% earn between $0 and $100, and the rest lose money, with about 15% of users
+losing more than $100.
+The figure shows that mean EHR is strongly negative across the loss tail, falling to roughly −0.15
+to −0.18 for percentiles below the $0 threshold (percentile 70), before increasing to zero in the
+breakeven region and increasing more sharply near the right edge of the distribution, reaching about
++0.20 for the most profitable users. The loss tail is noisier than the gain tail because the number of
+resolved trades per user shrinks, but the mean remains consistently below zero across every loser bin.
+The median (dashed line) tracks the mean’s sign but is smaller in magnitude across the distribution,
+reflecting the long-tailed cross-section of per-user EHR: a minority of traders in each bin drive the
+extremes of the mean.
+Overall, these results indicate a strong positive relationship between profitability and forecasting
+skill: the most profitable traders consistently buy contracts that resolve more favorably than their
+prices implied, while the least profitable traders consistently buy contracts that resolve less favorably.
+However, we urge caution in interpreting this finding as representing skill (or information) since
+we lack the tools typically used to assess performance in financial markets: a benchmark model of
+expected returns and a time series of the length typically used to assess performance, for example
+the performance of mutual fund managers. Section C in the Internet Appendix implements the
+20
+
+=== PAGE 21 ===
+finite mixture model of Crane and Crotty (2020), which decomposes the cross-section of excess
+hit rates into a skilled and an unskilled component while accounting for per-user sampling noise.
+The model estimates that 29.3% of users have some skill, although it is difficult to understand the
+amount of skill from this type of estimation.
+5. Who Wins and Who Loses?
+To identify determinants of positive trading outcomes, Table 4 estimates probit regressions where the
+dependent variable is an indicator equal to one if a user’s mark-to-market PnL is positive. Reported
+values are marginal effects at the sample mean, so each cell gives the change in the probability of
+positive performance produced by a one-unit change in the regressor, evaluated at the mean of
+the covariates; standard errors are robust. We select a set of variables motivated by the market
+microstructure and behavioral finance literatures. Frac Extreme Price measures the share of a user’s
+trades executed at prices below 10¢ or above 90¢, targeting contracts near the boundary of certainty
+whose payoffs are highly nonlinear. Frac Maker Volume is the fraction of a user’s total volume
+supplied as a passive limit order, distinguishing liquidity providers from takers; Log N Trades and
+Log Total Volume are natural logarithms of the number of executed trades and total USDC volume,
+respectively, controlling for activity scale; Category HHI is the Herfindahl-Hirschman Index of a
+user’s volume concentration across market categories, where higher values indicate specialization
+in fewer categories; and Counterparty HHI is the analogous index across counterparties, which
+indicates whether a user trades with a wide variety of counterparties or concentrates their activity
+with a few.23 Column (4) adds category binary indicators, one for each of the categories, equal to
+23The intended interpretation of this counterparty concentration variable is that users who trade with few counterparties
+are trading with “frequent” traders, most likely market makers or other sophisticated traders. Another possibility
+is that users with high counterparty concentration are engaging in wash trading. Wash trading is the practice of
+executing trades primarily to move the price of an asset, rather than to gain a profit, by trading with oneself or a
+related entity. Throughout the main paper we include all users in every test, which would include potential wash
+traders. To assess their potential impact, we implement a simple wash-trading detection procedure. Appendix D
+in the Internet Appendix describes our HHI-based identification procedure, reports summary statistics on flagged
+21
+
+=== PAGE 22 ===
+one if the user has any trading volume in that category, with Sports omitted as the reference. We
+deliberately exclude any performance-based measures, such as prediction accuracy or hit ratios, to
+isolate behavioral rather than outcome predictors of performance. Table 4 reports the results for all
+users (columns 1–4), for users with more than 100 trades (columns 5–6), and for users with more
+than 1,000 trades (columns 7–8).
+Frac Maker Volume has the largest economic effect. In the full specification for all users (column
+4), a one-unit increase in the volume-weighted maker share is associated with a 33.1 percentage-point
+increase in the probability of positive performance. Because few users are near either extreme of
+this share, we express its economic impact in standard-deviation units: a one-standard-deviation
+increase in Frac Maker Volume raises the probability of positive performance by 9.0 percentage
+points in column (4), 9.2 pp in column (3), and 9.0 pp in column (6). This magnitude is the largest
+in the cross-section compared to other behavioral predictors. The magnitude shrinks to 4.5 pp per
+1 SD in the > 1,000-trade subsample (column 8), where the activity filter already absorbs much of
+the cross-sectional variation in maker share. As in our previous performance tests, we caution that
+this cross-sectional association does not establish a causal role for market-making.
+The marginal effect of Frac Extreme Price is small in magnitude and varies across specifications.
+In the simplest specification for all users (column 1), the marginal effect is +0.6 pp. Adding activity-
+scale controls and category fixed effects shrinks it to essentially zero (−0.1 pp, and statistically
+insignificant) in the fully specified column (4). Conditioning on more active users turns the marginal
+effect modestly negative in columns (5)–(6) (−0.6 pp and −1.2 pp), and then sharply positive
+in the > 1,000-trade subsample (columns (7)–(8), +12.8 pp and +12.6 pp), consistent with a
+selection story: extreme-price exposure switches from a roughly neutral-to-negative predictor in the
+broader population of casual traders to a positive predictor among users who persistently transact
+wallets and their volume, and replicates our main analysis with flagged wallets excluded. None of the paper’s main
+findings are materially affected.
+22
+
+=== PAGE 23 ===
+thousands of times, where those who concentrate on the long-shot segment are positively selected.
+The substantive takeaway is that, once we control for how much and how often a user trades,
+extreme-price exposure has only a second-order direct association with the probability of positive
+performance in the all-user specification, even though losers trade at extreme prices roughly twice
+as often as the top earners (Table 5).
+Log N Trades has a small positive marginal effect in column (2) (+0.6 pp) and column (3) (+0.2 pp)
+but turns negative once we control for categories, reaching −1.2 pp in column (4). Among users
+with more than 100 trades the effect grows to −2.6 pp and −2.9 pp in columns (5)–(6), consistent
+with excess trading reflecting overconfidence (Barber and Odean, 2000). Log Total Volume has
+a small negative effect in the full sample (column (4): −2.3 pp) but turns positive among users
+with more than 100 or 1,000 trades (+2.0 to +4.4 pp per log unit in columns 5–8), suggesting that
+conditional on trade count, users who commit larger amounts per trade are somewhat more likely to
+be profitable.24 The Log N Trades marginal effect flips sign in the > 1,000-trade subsample (+0.4
+and +0.6 pp in columns 7–8 versus −2.9 to +0.6 pp across columns (2)–(6)), consistent with a
+similar selection story: once we condition on users who have already executed more than a thousand
+trades, additional trading activity switches from the negative predictor it is among more moderately
+active users to a mildly positive one.
+The Category HHI coefficient is informative about users’ market category specialization. In
+column (3), without category indicators, greater concentration in fewer categories is associated with
+an 8.6 pp lower probability of positive performance, a pattern consistent with casual traders who
+restrict their volume to a single topic without any informational advantage. Once category indicators
+enter (column 4), however, the marginal effect flips to +5.5 pp: conditional on which categories a
+user actually trades in, higher within-category concentration instead predicts a higher probability of
+24The two variables are moderately correlated (0.65) and together control for the scale of trading activity.
+23
+
+=== PAGE 24 ===
+positive performance, consistent with users focusing on markets they know well. We find the same
+effect among users with more trading, where higher concentration predicts higher probabilities of
+positive performance throughout (columns 5–8) and the addition of category indicators in column
+(6) increases the magnitude from +1.0 to +7.2 pp.
+The category indicators in column (4) are themselves informative. Relative to users who trade
+only in Sports, users with any exposure to Crypto, Politics, Tech, Weather, or Finance have a 3.3 to
+7.9 percentage-point higher probability of positive performance in the full sample (each coefficient is
+highly significant), while having any exposure to Culture is close to zero (−0.3 pp). Most of these
+coefficients shrink toward zero in the > 100-trade subsample (column 6), and in the > 1,000-trade
+subsample (column 8) exposure to Crypto (−5.7 pp) or Politics (−4.1 pp) flips to predicting a lower
+probability of positive performance. This reversal is consistent with the most committed segment of
+the user base differing systematically across categories: among users with thousands of trades, the
+Sports-only cohort appears to contain a relatively higher share of profitable traders than comparably
+active users who also bet on Crypto or Politics.
+The Counterparty HHI estimate suggests that trading with the same set of users decreases
+the likelihood of positive performance. In the full sample the marginal effect changes sign across
+specifications (+0.9 pp in column (3) and −3.3 pp in column (4) once category indicators enter) and
+becomes increasingly negative among more active traders, approximately −23.1 pp for users with
+more than 100 trades (column 6) and −50.0 pp for those with more than 1,000 trades (column 8).
+Taken together, the results show that positive performance is driven primarily by acting as a
+liquidity provider, and, to a lesser extent, by avoiding a large number of small trades and by avoiding
+the concentration of volume on a small set of counterparties.25 Once category indicators are included,
+25Counterparty identities on Polymarket are only observable ex post, after a trade settles on-chain. The Polymarket
+order book displays the total quantity available at each price level but does not reveal individual resting limit orders
+or the wallet IDs behind them, so concentration on a small set of counterparties is not the result of users deliberately
+routing their orders to a known wallet.
+24
+
+=== PAGE 25 ===
+within-category specialization is associated with higher probabilities of positive performance, and
+users whose trade volume is predominantly in Sports are not distinctive performers in the full
+sample but fare relatively better among the most active traders. This said, one broader takeaway
+from these results is that pooled regressions mask substantial subgroup heterogeneity. For example,
+the fraction of trades at extreme price, the number of trades, the total trading volume, and category
+HHI all flip signs when the sample is restricted to traders with at least 1,000 trades. This fact
+suggests that selection into and out of trading is an important factor to consider when studying
+trading behavior in this platform. We study selection more directly in Section 6.26
+Panel A of Table 5 provides a descriptive complement to the probit results by directly comparing
+the trading characteristics of the most profitable users against the bottom 95%. The top 0.1%
+of earners supply 47.3% of their volume as makers, more than two and a half times the 17.1%
+maker-volume share of the bottom 95%, a gap of 30.3 percentage points that is highly significant.
+Their exposure to extreme-price contracts is almost half that of losing traders: 28.2% versus 56.4%, a
+difference of −28.2 percentage points. The Category HHI gap is smaller in magnitude (3.6 percentage
+points for top 0.1% vs. bottom 95%) but statistically significant and positive, echoing the positive
+marginal effect of Category HHI in the full-specification probit: top traders are more concentrated
+by category, not less, once we condition on which categories they trade. The activity gap is the
+largest dimension of all: the top 0.1% execute on average 150,623 trades each, against just 223 for
+the bottom 95%, consistent with a small group of high-frequency professional traders coexisting
+with a much larger population of casual users. Together, our results suggest that winning traders
+are sophisticated liquidity providers, while losing traders are liquidity takers who repeatedly overpay
+for low-probability outcomes.
+26We further report in the Internet Appendix, Sections E and F, that these results are robust to restricting the
+sample to only resolved markets or only markets with zero transaction fees, respectively. The estimates are very
+close to the main sample; the most visible difference is that Frac Extreme Price carries a small positive marginal
+effect throughout the resolved-sample specifications rather than the mildly negative effect seen in the fully-specified
+all-users and > 100-trade columns of the main sample.
+25
+
+=== PAGE 26 ===
+Panel B of Table 5 reports performance metrics computed at the user level from each user’s
+monthly mark-to-market PnL series, following the monthly aggregation convention used in Section 6.1.
+Alongside the annualized PnL-to-volatility ratio introduced in Section 3.3—a Sharpe analog defined
+as
+√
+12 × ∆PnL/σ(∆PnL) on dollar PnL rather than percentage returns—we report its downside-
+risk counterpart, the annualized PnL-to-downside-volatility ratio, defined analogously with the
+denominator replaced by the root-mean-square of negative monthly PnL changes (a Sortino analog).
+As with the PnL-to-volatility ratio, it is not exactly a “Sortino ratio” because the standard definitions
+require returns, and constructing returns on Polymarket is not straightforward: traders can deposit
+and withdraw freely and there is no natural notional capital base.27 The top 0.1% of earners attain
+a median annualized PnL-to-volatility ratio of 1.73, the next 0.9% reach 1.47, and the next 4% reach
+1.46, while the bottom 95% have a negative median ratio of −1.15. The PnL-to-downside-volatility
+ratios are similarly higher for all three top groups than for the bottom 95%. A PnL-to-volatility
+ratio near 1.7 for the top 0.1% is, on a Sharpe-like scale, in the range that characterizes skilled
+discretionary trading rather than the level one would expect from concentrated, uncompensated
+bets on long-shot binary outcomes, and the top group’s mean monthly PnL of $54,586 compares to
+a maximum dollar drawdown of $35,216—less than one month of expected profit—further indicating
+that their cumulative gains compound smoothly across their tenure rather than arising from a
+small number of realized tail outcomes. The bottom row of Panel B reports the cross-sectional
+mean of each user’s excess hit rate, which captures forecasting accuracy at the per-trade level: top
+traders exhibit substantially higher excess hit rates (0.097 for the top 0.1% against −0.027 for the
+bottom 95%), reinforcing that the risk-adjusted profitability gap above is paired with a measurable
+27A user-month is included if the user either traded in the month or carried a non-zero, non-USDC position into it
+from the prior month: months with no platform exposure have no economically meaningful PnL change. The two
+ratios are reported as cross-sectional medians within each group because per-user ratios have a heavy upper tail,
+i.e., a few highly profitable users with small downside semi-deviations produce extreme PnL-to-downside-volatility
+values, so the cross-sectional mean is dominated by those users while the median describes the typical user. Per-user
+ratios are computed only for users with at least three monthly observations and the relevant standard deviation
+above one dollar; the level rows (mean PnL, SD, max drawdown) are user-mean averages within each group.
+26
+
+=== PAGE 27 ===
+difference in the ability to identify mispriced contracts.
+6. Forecasting Skill and Liquidity Provision
+6.1. Is performance persistent?
+We next examine whether monthly performance is persistent. Having established that cumulative
+PnL is concentrated and that a small proportion of traders have positive EHR while most have
+negative EHR, we ask a different question: is individual performance consistently positive or negative
+across time? To answer this question, we classify traders into eleven groups based on the PnL they
+realized during a given month,28 using the dollar breakpoints −50k, −10k, −1k, −100, −10, 10,
+100, 1k, 10k, and 50k. We then examine which group each user falls into 1 and 3 months later.29
+The bucket-to-bucket cells report transition frequencies conditional on trading (raw probability
+divided by one minus the No Trade rate); the “> 0” column reports the conditional probability
+that the trader’s target-month PnL change is strictly positive, with significance from a two-sided
+exact-binomial test of the null hypothesis that the probability of profit equals 0.5; and the “No
+Trade” column reports the unconditional share of users who did not trade in the target month.30
+Panel A of Table 6 presents results of this analysis at the one-month horizon. Looking first at the
+“No Trade” column—which records the share of users in each starting bucket who did not trade in
+the target month—the five loss buckets show one-month no-trade rates clustered between 34% and
+45% (36.5% for <−50k, 34.1% for [−50k, −10k), 41.9% for [−10k, −1k), 45.3% for [−1k, −100), and
+42.7% for [−100, −10)), while the best performers (the >50k group) sit out only 16.8% of the time,
+28Monthly mark-to-market PnL is the change in their PnL from the prior month’s end. If a user did not trade in a
+given month, there is no user-month observation. Users that trade over many months will appear multiple times.
+29Note these calculations examine the performance in individual months relative to the reference month, not cumulative
+performance over the time horizon. For example, for a user-month observation in January, the 3-month performance
+looks at the PnL in April, not the cumulative PnL from February to April. Internet Appendix Section G reports
+the corresponding 6-month transitions.
+30A user who carries an open position into the target month but does not trade in it is also counted as “No Trade,”
+since we define monthly activity by trading.
+27
+
+=== PAGE 28 ===
+with non-participation declining from the small-gain buckets toward the extreme winners. We do not
+observe deposits, withdrawals, or account closures, so we cannot tell whether these users have left the
+platform or simply paused; what we can say is that lower performance positively predicts subsequent
+non-participation, though even the most profitable traders take no positions in a non-trivial share of
+the following months. Conditional on continuing to trade, the two extreme tails are highly volatile
+rather than persistent: in the worst-loss group (<−50k), only 18.3% remain in the same bucket
+while 18.8% jump all the way to >50k and 13.3% to (10k,50k]; in the highest-gain group (>50k),
+only 33.4% stay in the same bucket while 18.2% fall to <−50k and 12.0% to [−50k, −10k). The “>
+0” column corroborates this asymmetry: all five loss buckets (<−50k through [−100, −10)) record
+39–45% chances of a positive PnL change next month, every one significantly below 50% at the 1%
+level, while on the gain side every bucket except (100, 1k]—which lands almost exactly at a coin flip
+(50.0%, p = 0.98)—lies significantly above 50%, with the two highest gain buckets reaching 60.2%
+and 61.3%. The “breakeven” traders (those with PnL change in [−10,10]) exhibit a strong likelihood
+of remaining in the same group: conditional on trading, they have an 89.3% likelihood of having
+the same level of profits one period later, and they record a 57.4% probability of a positive PnL
+change. At the three-month horizon the pattern is qualitatively similar and, if anything, sharper:
+every starting bucket now reads significantly different from 50%.
+Table 7 re-runs this exercise after replacing the dollar-PnL bucketing of Table 6 with an annualized
+risk-adjusted ratio: a Sharpe analog computed at the daily frequency. For each user-month with at
+least 10 active days, we compute the mean and standard deviation of daily PnL changes, take their
+ratio, annualize by
+√
+365 (since Polymarket trades seven days a week), and bucket user-months into
+nine groups with cutoffs at ±10, ±5, ±3, and ±1, leaving a single merged middle bucket [−1, 1]
+that absorbs the small-magnitude ratios around the risk-adjusted breakeven point.31 Conditional on
+31User-months whose daily-PnL standard deviation is at or below $0.10 are dropped, since the resulting ratio is
+dominated by floating-point noise on near-flat panels. As with the user-level Sharpe and Sortino analogs reported in
+28
+
+=== PAGE 29 ===
+continuing to trade, the bucket-to-bucket transitions show the same qualitative pattern as Table 6:
+the two extreme tails are highly volatile rather than persistent, and the conditional probability of
+a strictly positive next-month ratio is well below 50% across the loss buckets and well above 50%
+across the gain buckets but does not jump to values that would indicate strong individual-level
+persistence. Risk-adjusting away the dollar-magnitude scale, in other words, does not reveal hidden
+month-to-month persistence: the modest-persistence finding of Table 6 is not an artifact of the
+dollar-PnL bucket boundaries. The Sortino-analog version (which replaces the volatility denominator
+with the downside semi-deviation) and the corresponding 6-month long-horizon variant are reported
+in Internet Appendix Section G and tell the same story.
+The transition matrices summarize where each performance group lands next, but they do not
+condition on how a trader behaved in the baseline month. We therefore complement them with panel
+regressions that ask which baseline-month characteristics predict a trader’s subsequent behavior,
+estimated separately for each performance bucket rather than only the extremes. We begin directly
+studying selection out of trading. Panel A of Table 8 presents a probit for the probability of
+dropping out (no trade in t+3). The explanatory variables are those of the cross-sectional probit
+of Table 4, augmented with the trader’s log committed capital (the average end-of-day absolute
+marked-to-market value of their token positions over the month) and their maker profit share (the
+share of absolute monthly PnL earned on the liquidity-providing side). Every regression absorbs
+base year-month time fixed effects and category dummies for the categories the trader was active in
+that month, with the same specification applied to every bucket. Two activity measures dominate
+the dropout margin, and they load almost identically on the winning and losing sides. More frequent
+trading predicts lower dropout in every bucket away from breakeven (a Log N Trades marginal effect
+of −0.094 for the worst-loss group and −0.055 for the best-gain group), whereas higher notional
+Table 5, the ratio is computed on dollar PnL rather than percentage returns and is therefore not a strict Sharpe
+ratio.
+29
+
+=== PAGE 30 ===
+volume predicts higher dropout, with nearly equal effects at the two extremes (+0.085 for <−50k
+and +0.088 for >50k): holding trade count fixed, the traders who churn the most dollars are the
+likeliest to step away, while frequent small-stakes traders are the stickiest. Greater committed
+capital lowers dropout in all eleven buckets. The notable feature is the symmetry: the sign of each
+marginal effect, and at the extremes its magnitude, is essentially the same for large winners and
+large losers, so given the same activity profile a trader who just won big and one who just lost big
+are predicted to exit at similar rates. What governs continued participation is how a trader traded,
+not whether they won.
+We next look at changes in committed capital. Panel B of Table 8 presents an OLS for committed-
+capital growth (the change in the log of the trader’s committed capital).32 Committed-capital growth
+is negative in every bucket—on average traders wind down their token positions over the following
+quarter—but the contraction is milder for large winners than for large losers (the bucket-mean
+change in log committed capital, which we report here but do not tabulate in Table 8, is about
+−0.9 for the >50k group versus about −1.3 for the <−50k group), so large winners retain more
+committed capital than large losers, paralleling their much lower dropout rates in Panel A. Beyond
+this level difference, the slope coefficients again behave similarly across the two sides. The dominant
+and most consistent predictor is baseline committed capital itself, which enters negatively through
+the interior buckets (roughly −0.15 to −0.33 on either side of breakeven and −0.50 at breakeven):
+traders mean-revert from whatever capital they had committed, irrespective of the sign of their
+PnL. The remaining loadings are noisier and the two extreme buckets are mostly insignificant, so
+the panel reveals no systematically different capital-allocation rule for big winners versus big losers.
+The one clear exception is the maker profit share, whose effect flips from positive among losers and
+32Committed capital is a wallet-level proxy: it is the average over all calendar days of the month of the trader’s
+end-of-day P
+tokens |position| × price, excluding USDC, with days holding no position counted as zero. It measures
+capital committed to outcome tokens rather than on-chain collateral, which we cannot reconstruct from order data
+alone.
+30
+
+=== PAGE 31 ===
+small winners to negative among the larger-gain buckets, hinting that established liquidity providers
+scale back their committed capital after large wins. The risk-adjusted grouping and the one- and
+six-month horizons are reported in Internet Appendix Section H.
+6.2. Spread decomposition and liquidity provision
+We now examine the role of liquidity provision and spreads on trader profitability. We identify
+trades that provide liquidity as those that are made via limit order and those that take liquidity
+as those that are made by market order. We begin by estimating a net-of-transaction-fee PnL by
+adjusting each observed transaction to improve the price for the liquidity taker by the minimum
+possible effective spread. For example, if a user buys a contract at 40¢ via market order, we compute
+a counterfactual PnL as if they had bought at 39.5¢ instead, which is the minimum possible effective
+half-spread in the standard tick regime. The counterfactual PnL for the liquidity provider will also
+use this adjusted price so that aggregate PnL still sums up to zero.33
+Table 9 shows how much of the observed losses can be attributed purely to transaction costs.
+Because we remove only the tick-size floor rather than the actual effective spread, the resulting
+Frac. Spread is a lower bound on the share of realized gains or losses attributable to the spread
+since the actual spread may be much wider in illiquid or extreme. Among losers, the spread is a
+substantial driver of losses only for the smallest losers: for the bottom 0–20 percentile, even this
+lower-bound adjustment accounts for 195.8% of realized losses, meaning that these users would
+have been slightly profitable in the absence of spread costs. The fraction falls sharply as losses grow
+larger, to 59.8% at the 40–60 percentile and just 0.9% at the top 0.1% of losers, showing that the
+most severe losses are overwhelmingly driven by bad forecasting rather than transaction costs. At
+33The effective spread is the difference between the price at which a trade executes and the mid-price of the best
+bid and ask quotes at the time of the trade. The minimum possible effective half-spread is the smallest amount by
+which a liquidity taker could have improved their price by instead providing liquidity. In a standard tick regime,
+where the minimum price increment is 1¢, this minimum effective half-spread is 0.5¢. In a small tick regime, where
+the minimum price increment is 0.1¢, it is 0.05¢.
+31
+
+=== PAGE 32 ===
+the user level, removing this lower-bound spread cost flips 18.5% of users with negative PnL into
+positive territory—roughly one in five losers would have ended the sample with non-negative PnL
+had they avoided paying the minimum-tick spread.
+The pattern reverses at the top of the winner distribution: the spread increases the top winners’
+realized gains, as reflected by negative values of Frac. Spread for the top percentiles. The top 0.1%
+of winners earn 3.2% more than they would absent spread costs—they are net spread earners, not
+net payers. This is consistent with their high maker share documented in Section 5.
+Taken together, the decomposition shows that the bid-ask spread is a meaningful cost on small
+traders but cannot explain the losses of the worst performers, whose outcomes reflect systematic
+errors in picking contracts rather than a purely mechanical cost disadvantage.34
+6.3. Maker-heavy versus taker-heavy transitions
+The spread decomposition shows that liquidity provision is associated with better realized outcomes;
+we now ask whether it is also associated with more persistent performance. We split every starting
+user-month into two groups by which side of the order book the user traded more that month:
+maker-heavy if their USDC trade volume as maker exceeded their volume as taker, taker-heavy if
+the inequality runs the other way. We then re-estimate the transition matrix of Table 6 within each
+group. Table 10 reports the cell-by-cell maker-heavy minus taker-heavy difference; a cell is shaded
+and italicized only where a two-sided pooled two-proportion test rejects equality of the two groups
+at the 10% level, so the highlighted cells isolate the differences that are statistically different from
+34Section I of the Internet Appendix replicates this decomposition separately for each category. The spread plays its
+largest role in Politics, where the fraction of losses attributable to transaction costs is 169.2% for the smallest losers
+(0–20 percentile) and remains above 100% even at the 40–60 percentile (104.1%), implying that many Politics traders
+would have broken even or profited in the absence of the spread. Culture exhibits a similar pattern, with Frac.
+Spread reaching 118.9% for the bottom 20% of losers and 59.9% at the 20–40 percentile. Sports, which dominates
+the platform by user count, has a lower Frac. Spread at the 0–20 percentile (97.9%) than the aggregate (195.8%),
+consistent with the aggregate figure being pulled up by categories with wider effective spreads such as Politics and
+Culture. By contrast, Crypto and Tech show markedly lower spread fractions even among the smallest losers—39.1%
+and 52.3%, respectively.
+32
+
+=== PAGE 33 ===
+zero at the ten-percent level. The sample contains 1,185,170 maker-heavy and 6,326,148 taker-heavy
+user-months, so the vast majority of cells are precisely estimated.
+The clearest difference is in the “∆Pr(> 0)” column: conditional on trading again, maker-heavy
+users are substantially more likely to post a strictly positive PnL change next month than taker-heavy
+users starting from the same bucket. The gap is generally positive and frequently statistically
+significant. Maker-heavy users are also less likely to be followed by non-participation: the “∆No
+Trade” difference is negative in most buckets (for example, −9.7 points for [−50k, −10k) and −8.6
+points for >50k). Replacing the dollar-PnL bucketing with the Sharpe-analog ratio (Table 11) tells
+the same story: the gap in the probability of a positive next-month ratio is positive and significant
+in every bucket, between roughly +6.6 and +11 points. At the same time, the bucket-to-bucket cells
+differ only modestly along the diagonal and move in both directions, so neither group exhibits the
+strong month-to-month persistence that a skill interpretation would require—the modest-persistence
+conclusion of Section 6.1 holds within each group, not merely in the pool. What differs is the level
+of next-month performance: liquidity providers are more likely to stay active and to be profitable
+again. The 6-month long-horizon differences and the Sortino-analog version are reported in Internet
+Appendix Section J.
+Taken together, these patterns (price efficiency alongside extreme profit concentration, a steep
+EHR gradient across the PnL distribution, and a maker-taker performance gap) raise the question
+of whether they require specific behavioral and informational channels or could instead arise
+mechanically in a market with unbiased prices. In Section K of the Internet Appendix we probe
+this with a simulation benchmark: a parsimonious repeated binary-market economy in which
+traders differ in initial wealth, signal precision, overconfidence, and propensity to provide liquidity,
+and in which unbiased prices carry only small residual mispricings. Some winner concentration
+is mechanical, since dispersion in initial wealth and idiosyncratic luck alone push the top of the
+33
+
+=== PAGE 34 ===
+gain distribution into a heavy-tailed regime; but matching the empirical magnitudes requires the
+skill, maker-specialization, and overconfidence channels acting jointly, which together reproduce
+the winner-side concentration, the sign and steepening of the EHR gradient, and the maker-share
+profile. The benchmark does not reproduce the extreme loss-side concentration, and we view it as
+illustrative rather than structural.
+7. Trading Behavior for the Most Profitable Users
+Finally, we conduct a descriptive analysis of the trading behavior of the 100 most successful users
+in our sample, who together account for 27.7 percent of aggregate winners’ profits in our sample.
+There has been recent commentary in the media, by practitioners, and among academics speculating
+as to the role of insider information in trading profits. Such evidence frequently reports a suspicious
+pattern of trading that is defined ex post and comments on the magnitude of profits without
+contextualizing the magnitudes in light of the total size and scope of Polymarket.35 Our results
+on user EHRs, performance persistence, and market making suggest that there are potentially a
+number of different drivers of the profits of the most profitable traders. Our analysis so far has
+not examined the role of insider information specifically. While we do not think it is possible to
+conclusively prove or disprove the extent of such behavior, we are interested in seeing whether the
+trading patterns among the most profitable users could plausibly be coming from trading in markets
+where insider information would be valuable.
+In Section L of the Internet Appendix, we list the top 100 winners and losers along with the
+markets in which they gained or lost the most. Two patterns within the top 100 deserve emphasis,
+and both bear on the question of what drives their profits. First, a meaningful fraction of the top
+100 are pure liquidity providers: they trade extensively, post limit orders across many markets, and
+35See for example, https://www.nytimes.com/2026/05/13/technology/polymarket-insider-trading.html.
+34
+
+=== PAGE 35 ===
+earn a small amount on each trade rather than placing a few large directional bets, showing that
+liquidity provision can itself be very profitable. Second, individual top earners are not all broadly
+diversified across markets. Of the top 100, 42 traded in fewer than 100 markets or have their top
+5 positive-PnL markets account for more than 70% of their gross positive PnL. Looking closely
+at those users, we find that the largest source of profits is sports betting, accounting for 81% of
+total gains, spread across a variety of sports and teams with no single one dominating. The second
+source of profits comes from the political category, with the largest bets on “Will Donald Trump
+win the 2024 US Presidential Election?,” “Will Donald Trump win the popular vote in the 2024
+Presidential Election?,” and “Kamala Harris wins the popular vote?” accounting for 15% of total
+gains. The remaining 4% of gains are distributed across a variety of other categories. In order for
+“insider” trading to explain the performance of the non-market-making accounts an insider source
+would have to span dozens of sports leagues and have material non-public knowledge of the voting
+intentions of tens of millions of Americans for it to explain the bulk of the observed gains.
+A complementary perspective comes from the handful of Polymarket traders who have actually
+been charged with trading on material non-public information. The two largest such cases to date
+involve a Google employee36 and a U.S. soldier,37 whose wallets rank 115th and 307th, respectively,
+among the 2.48 million users in our sample, with terminal PnL of approximately $0.93 million
+and $0.41 million. Both therefore fall outside the top 100 winners, and together they account for
+roughly 0.13% of aggregate winners’ profits. Even the two largest prosecuted insiders thus capture
+a negligible share of total platform gains, reinforcing our conclusion that insider trading is unlikely
+to be the dominant source of profits, even among the most successful accounts.
+36CFTC v. Spagnuolo,
+No. 1:26-cv-04419 (S.D.N.Y. filed May 27,
+2026),
+https://www.cftc.gov/media/
+14046/ENF_SpagnuoloComplaint052726/download;
+see also https://www.justice.gov/usao-sdny/pr/google-
+employee-charged-insider-trading.
+37CFTC v. Van Dyke,
+No. 1:26-cv-03369 (S.D.N.Y. filed Apr. 23,
+2026),
+https://www.cftc.gov/media/
+13761/EnfGannonKenVanDykeComplaint042326/download; see also https://www.justice.gov/usao-sdny/pr/us-
+soldier-charged-using-classified-information-profit-prediction-market-bets.
+35
+
+=== PAGE 36 ===
+While we do not claim that there is no insider trading on Polymarket, the most successful traders
+do not seem to have traded in ways that, at a high level, are consistent with a large degree of insider
+trading. Rather, to the extent that such traders have some form of skill, our previous results suggest
+that it is more likely to be a combination of successful liquidity provision and better forecasting
+or processing of publicly available information. Naturally, it is not possible to say with certainty
+that none of the traders in this sample possessed insider information, but we urge caution when
+concluding that insider trading is pervasive on this platform, at least from the perspective of the
+aggregate volume of profits.
+8. Conclusion and Implications for Future Research
+Our analysis of over 2.4 million Polymarket users reveals five findings. First, profits are highly
+concentrated in a small fraction of users, while the majority lose money. Second, although prices
+are relatively efficient and informative on aggregate, per-trade forecasting accuracy varies sharply
+across the PnL distribution: the most profitable users buy contracts that resolve far more favorably
+than their prices implied, while the least profitable do the opposite. We caution, however, that
+this gap cannot be firmly attributed to skill, and a finite-mixture decomposition classifies only a
+minority of traders as skilled. Third, liquidity provision is the strongest cross-sectional predictor of
+avoiding losses: winning traders are net earners of the bid-ask spread while losing traders pay it,
+and the spread alone accounts for much of the losses of small traders but little of those of the worst
+performers. Fourth, month-to-month performance is only modestly persistent, and what persistence
+there is concentrates among users who trade primarily through limit orders; given the heavy turnover
+in who continues to trade, this apparent persistence could reflect selection rather than durable
+skill. Fifth, a descriptive analysis of the 100 most successful users shows that a significant minority
+concentrate their gains in a small number of markets, spanning many sports leagues and a handful
+36
+
+=== PAGE 37 ===
+of 2024 US election markets, with a meaningful share earned from liquidity provision; the breadth of
+these patterns argues against insider trading as the dominant source of their profits. For investors,
+prediction markets should be treated as other highly competitive financial markets: prices are on
+average fair, market-level PnL is zero-sum, and the probability of loss is higher for liquidity takers.
+Several questions remain open. Our results have highlighted that there is substantial selection
+into and out of trading on Polymarket. If heavy turnover users means the persistent performers we
+observe are a surviving subset rather than a consistently skilled group, then the question of who
+is skilled and why is harder to answer. Future research would need to either (a) track users over
+longer windows to separate survivors from dropouts, or (b) develop identification strategies that
+distinguish genuine skill from selection. As more data becomes available we look forward to new
+research studying the skill and/or luck of different traders on Polymarket. Moreover, as prediction
+markets grow in scale and visibility, we feel that understanding their interaction with traditional
+financial markets also becomes important: Polymarket prices on macroeconomic and political
+events are now widely cited by equity analysts and news media, raising questions about whether
+they independently move asset prices or merely reflect information already embedded in them.
+Finally, we believe that the behavioral mechanisms underlying low market-making activity, such
+as overconfidence, probability misperception, or a preference for lottery-like payoffs, deserve more
+empirical investigation using trade-level data. We urge researchers studying behavioral phenomenon
+in prediction markets to use trade-level data rather than aggregated pricing data (such as the data
+available for Kalshi) because of its richness and utility in showing how traders actually trade We
+provide the data used in this paper to facilitate future research.
+37
+
+=== PAGE 38 ===
+References
+Baker, Scott R., Justin Balthrop, Mark J. Johnson, Jason D. Kotter, and Kevin Pisciotta, 2024,
+Gambling away stability: Sports betting’s impact on vulnerable households, Working paper.
+Barber, Brad M., Yi-Tsung Lee, Yu-Jane Liu, and Terrance Odean, 2009, Just how much do
+individual investors lose by trading?, Review of Financial Studies 22, 609–632.
+Barber, Brad M, Yi-Tsung Lee, Yu-Jane Liu, and Terrance Odean, 2014, The cross-section of
+speculator skill: Evidence from day trading, Journal of Financial Markets 18, 1–24.
+Barber, Brad M., and Terrance Odean, 2000, Trading is hazardous to your wealth: The common
+stock investment performance of individual investors, Journal of Finance 55, 773–806.
+Becker, Jonah, 2025, The microstructure of wealth transfer in prediction markets,
+https://www.jbecker.dev/research/prediction-market-microstructure Accessed:
+2026-03-15.
+Blume, Lawrence, and David Easley, 1992, Evolution and market behavior, Journal of Economic
+theory 58, 9–40.
+Bryzgalova, Svetlana, Anna Pavlova, and Taisiya Sikorskaya, 2023, Retail trading in options and
+the rise of the big three wholesalers, Journal of Finance 78, 3465–3514.
+Chernov, Mikhail, Vadim Elenev, and Dongho Song, 2026, The comovement of voter preferences:
+Insights from us presidential election prediction markets beyond polls, Journal of Econometrics p.
+106192.
+Cookson, J. Anthony, 2018, When saving is gambling, Journal of Financial Economics 129, 24–45.
+, Marina Niessner, and Christoph Schiller, 2026, Can social media inform corporate
+decisions? Evidence from merger withdrawals, Journal of Finance 81, 91–142.
+Crane, Alan, and Kevin Crotty, 2020, How skilled are security analysts?, The Journal of Finance
+75, 1629–1675.
+Cziraki, Peter, and Jasmin Gider, 2021, The dollar profits to insider trading, Review of Finance 25,
+1547–1580.
+38
+
+=== PAGE 39 ===
+Della Vedova, Joshua, 2026, Who profits from prediction markets? Execution, not information,
+Working paper.
+Dewally, Michaël, Louis H. Ederington, and Chitru S. Fernando, 2013, Determinants of trader
+profits in commodity futures markets, Review of Financial Studies 26, 2648–2683.
+Diercks, Anthony M., Jared Dean Katz, and Jonathan H. Wright, 2026, Kalshi and the rise of
+macro markets, Working paper.
+Dorn, Anne Jones, Daniel Dorn, and Paul Sengmueller, 2015, Trading as gambling, Management
+Science 61, 2376–2393.
+Forsythe, Robert, Forrest Nelson, George R. Neumann, and Jack Wright, 1992, Anatomy of an
+experimental political stock market, American Economic Review 82, 1142–1161.
+Gómez-Cram, Roberto, Yunhan Guo, Theis Ingerslev Jensen, and Howard Kung, 2025, Financial
+prediction markets: A new measure of earnings expectations, Working paper.
+, 2026, Prediction market accuracy: Crowd wisdom or informed minority?, Working paper.
+Grossman, Sanford J, and Joseph E Stiglitz, 1980, On the impossibility of informationally efficient
+markets, The American economic review 70, 393–408.
+Hayek, Friedrich A., 1945, The use of knowledge in society, American Economic Review 35, 519–530.
+Hu, Jianfeng, Antonia Kirilova, Seongkyu (Gilbert) Park, and Doojin Ryu, 2024, Who profits from
+trading options?, Management Science 70, 4742–4761.
+Kelly, John L, 1956, A new interpretation of information rate, the bell system technical journal 35,
+917–926.
+Kumar, Alok, 2009, Who gambles in the stock market?, Journal of Finance 64, 1889–1933.
+Manski, Charles F., 2006, Interpreting the predictions of prediction markets, Economics Letters 91,
+425–429.
+Newall, Philip, 2025, Sludge, dark patterns and dark nudges: A taxonomy of online gambling
+platforms’ deceptive design features, Addiction 120, 1916–1923.
+Ng, Hunter, Lin Peng, Yubo Tao, and Dexin Zhou, 2026, Price discovery and trading in modern
+prediction markets, Working paper.
+39
+
+=== PAGE 40 ===
+Odean, Terrance, 1998, Volume, volatility, price, and profit when all traders are above average,
+Journal of Finance 53, 1887–1934.
+, 1999, Do investors trade too much?, American Economic Review 89, 1279–1298.
+Oliven, Kenneth, and Thomas A. Rietz, 2004, Suckers are born but markets are made: Individual
+rationality, arbitrage, and market efficiency on an electronic futures market, Management Science
+50, 336–351.
+Packin, Nizan Geslevich, and Sharon Rabinovitz, 2026, Prediction markets as a public health
+threat, Science 392, 257–260.
+Reichenbach, Felix, and Martin Walther, 2025, Exploring decentralized prediction markets:
+Accuracy, skill, and bias on Polymarket, Working paper.
+Sclove, Stanley L, 1987, Application of model-selection criteria to some problems in multivariate
+analysis, Psychometrika 52, 333–343.
+Self, Steven G, and Kung-Yee Liang, 1987, Asymptotic properties of maximum likelihood
+estimators and likelihood ratio tests under nonstandard conditions, Journal of the American
+Statistical Association 82, 605–610.
+Sirolly, Allen, Hongyao Ma, Yash Kanoria, and Rajiv Sethi, 2025, Network-based detection of wash
+trading, Working paper.
+Snowberg, Erik, and Justin Wolfers, 2010, Explaining the favorite–long shot bias: Is it risk-love or
+misperceptions?, Journal of Political Economy 118, 723–746.
+, and Eric Zitzewitz, 2013, Prediction markets for economic forecasting, in Graham Elliott,
+and Allan Timmermann, ed.: Handbook of Economic Forecastingvol. 2 . pp. 657–687 (Elsevier).
+Thaler, Richard H., and William T. Ziemba, 1988, Anomalies: Parimutuel betting markets:
+Racetracks and lotteries, Journal of Economic Perspectives 2, 161–174.
+Tsang, Kwok Ping, and Zichao Yang, 2026, The anatomy of Polymarket: Evidence from the 2024
+presidential election, Working paper.
+Wolfers, Justin, and Eric Zitzewitz, 2004, Prediction markets, Journal of Economic Perspectives 18,
+107–126.
+40
+
+=== PAGE 41 ===
+Yeola, Atharva, Matthew R. Allen, Nimit Desai, Adam Poliak, Kevin H. Yang, Davey M. Smith,
+and John W. Ayers, 2025, Growing health concern regarding gambling addiction in the age of
+sportsbooks, JAMA Internal Medicine 185, 382–389.
+41
+
+=== PAGE 42 ===
+Figure 1: Polymarket Growth: Users, Volume, and New Markets
+This figure summarizes Polymarket’s platform growth. Panel (a) plots monthly new users (bars)
+with cumulative users (solid line). Panel (b) plots monthly trading volume in USDC, stacked
+by category, with cumulative volume (solid line). Panel (c) plots the number of new events and
+markets created each month on a log scale. Panels (a) and (b) cover the trade sample, which runs
+from November 11, 2022 to March 29, 2026. Panel (c) covers all markets opened on the platform
+from Polymarket’s launch in mid-2020 through March 29, 2026.
+2021
+2022
+2023
+2024
+2025
+2026
+0
+50K
+100K
+150K
+200K
+250K
+New Users per Month
+(a) User Growth
+New Users
+Cumulative Users
+2021
+2022
+2023
+2024
+2025
+2026
+2.0B
+4.0B
+6.0B
+8.0B
+10.0B
+Monthly Volume (USDC)
+(b) Volume by Category
+Politics
+Finance
+Crypto
+Sports
+Tech
+Culture
+Weather
+Cumulative Volume
+2021
+2022
+2023
+2024
+2025
+2026
+100
+1,000
+10,000
+100,000
+Number of New Markets / Events
+(c) New Markets and Events
+Markets
+Events
+0
+500K
+1.0M
+1.5M
+2.0M
+2.5M
+Cumulative Users
+0B
+20B
+40B
+60B
+Cumulative Volume (USDC)
+42
+
+=== PAGE 43 ===
+Figure 2: Calibration at Longer Horizons and Distribution of Market Lifetimes
+Panel (a) plots the calibration of Polymarket binary market prices at horizons of one month, two
+weeks, one week, and one day before resolution. Market prices are binned into ten equal-width bins
+(0–10¢, 10–20¢, . . . , 90¢–$1); for each bin the x-axis (Expected) shows the bin midpoint and the
+y-axis (Actual) shows the observed “Yes” frequency. The dashed 45-degree line represents perfect
+calibration. Shaded bands are 95% bootstrap confidence intervals for the observed frequency (1,000
+replications). For each horizon h the sample includes all resolved markets that were opened at least
+h before close and have a valid reconstructed price at time close −h, so the sample grows as the
+horizon shrinks (it is not fixed across horizons). Panel (b) plots a kernel-density estimate of market
+lifetimes (close minus open) over all resolved markets, on a log x-axis, with vertical dashed black
+lines marking six lifetime landmarks. The sample period is from November 11, 2022 to March 29,
+2026.
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Expected
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Actual
+(A) Calibration by Horizon
+Perfect calibration
+30 days
+14 days
+7 days
+1 day
+10−1
+100
+101
+102
+Market Lifetime (days)
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+1.2
+Density
+8 hours
+1 day
+7 days
+14 days
+30 days
+182 days
+(B) Distribution of Market Lifetimes (Resolved)
+43
+
+=== PAGE 44 ===
+Figure 3: Concentration of Gains and Losses Across Polymarket Users
+This figure summarizes the concentration of trading gains and losses among Polymarket users.
+Panel (a) plots the cumulative concentration as a snapshot at the end of the sample: for each
+percentile threshold (Top 0.1%, 1%, 5%, 10%, 25%, 50%), the green bar reports the share of total
+gains captured by users in that top group, and the red bar reports the share of total losses borne
+by users in the corresponding bottom group. Panel (b) plots the shares over time at a monthly
+frequency, with one line per percentile bucket (0.1%, 1%, 5%) for gains and losses. Panel (c) plots
+the fraction of users with positive PnL at each month-end. The sample period is from November 11,
+2022 to March 29, 2026.
+Top 0.1%
+Top 1%
+Top 5%
+Top 10%
+Top 25%
+Top 50%
+Percentile Group
+0
+20
+40
+60
+80
+100
+% of Total Gains / Losses
+51.2%
+76.5%
+91.4%
+96.2%
+99.2%
+99.9%
+43.7%
+68.1%
+86.1%
+93.3%
+98.3%
+99.7%
+N winners = 766,188, gains = $1.1B
+N losers = 1,705,524, losses = $1.1B
+(a) Concentration of Gains and Losses (Full Sample)
+Gains
+Losses
+2023−01
+2023−07
+2024−01
+2024−07
+2025−01
+2025−07
+2026−01
+0
+20
+40
+60
+80
+100
+% of Total Gains / Losses
+(b) Concentration Over Time
+Gains Top 0.1%
+Gains Top 1%
+Gains Top 5%
+Losses Top 0.1%
+Losses Top 1%
+Losses Top 5%
+2023−01
+2023−07
+2024−01
+2024−07
+2025−01
+2025−07
+2026−01
+0
+25
+50
+75
+100
+% Winners
+(c) Fraction of Users with Positive PnL
+44
+
+=== PAGE 45 ===
+Figure 4: Prediction Accuracy of Winners and Losers
+This figure plots the volume-weighted excess hit rate EHRi = P
+k qk(ok −pk)/ P
+k qk by PnL percentile. Users are sorted in ascending
+PnL order and assigned to 200 half-percentile bins. Within each bin we plot the mean (solid blue, with a 95% confidence band) and the
+median (dot-dashed black). The horizontal dashed line is the sample-mean EHR across all users with at least one resolved trade. Vertical
+dotted lines mark the bins that contain the PnL thresholds of −$100, $0, and $100. A positive value indicates that traded contracts
+resolve more favorably than their prices implied; a negative value indicates the opposite. EHR is defined only over resolved trades, so
+users with no resolved trades during the sample period are excluded from the figure; the PnL ranking on the x-axis remains over all users.
+The sample period is from November 11, 2022 to March 29, 2026.
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+PnL Percentile
+−0.20
+−0.15
+−0.10
+−0.05
+0.00
+0.05
+0.10
+0.15
+0.20
+Excess Hit Rate
+PnL=$100
+PnL=$0
+PnL=$-100
+Mean = -0.021
+Mean
+Median
+45
+
+=== PAGE 46 ===
+Table 1: Distribution of Trading Activity Across Polymarket Users
+This table reports user-level summary statistics for Polymarket users in our sample. Trades per User is the total number of executed
+trades. Markets per User is the number of distinct binary markets traded. Volume per User (USDC) is total notional volume, using the
+matched-notional convention in which one share traded counts as one USDC. Fraction Extreme Price is the share of a user’s trades at
+prices below 10¢ or above 90¢. PnL per User (USDC) is final mark-to-market profit and loss. Fraction Maker Volume is the share of
+a user’s volume supplied as a passive limit order (maker). Ann. PnL-to-Volatility is the annualized ratio
+√
+12 × ∆PnL/σ(∆PnL) of
+a user’s monthly PnL changes, a Sharpe analog on dollar PnL. All monetary values are in USDC. Reported statistics are the mean,
+standard deviation, minimum, 5th, 25th, 50th, 75th, and 95th percentiles, and maximum. Panels A, B, and C cover all users, users
+with more than 100 trades, and users with more than 1,000 trades, respectively. The sample period is November 11, 2022 to March 29, 2026.
+Metric
+Mean
+Std. Dev.
+Min
+5th Pct.
+25th Pct.
+Median
+75th Pct.
+95th Pct.
+Max
+Panel A: All users (N = 2, 480, 104)
+Trades per User
+474
+21,450
+1
+1
+9
+28
+74
+546
+13,587,640
+Markets per User
+54
+495
+1
+1
+3
+10
+26
+127
+130,387
+Volume per User (USDC)
+54,143
+1,699,528
+0
+20
+474
+2,343
+11,619
+97,793
+604,671,119
+Fraction Extreme Price
+54.9%
+39.7%
+0.0%
+0.0%
+14.0%
+58.3%
+100.0%
+100.0%
+100.0%
+PnL per User (USDC)
+0
+32,373
+-10,022,403
+-920
+-32
+-2
+1
+251
+22,029,973
+Fraction Maker Volume
+17.9%
+27.2%
+0.0%
+0.0%
+0.0%
+0.0%
+39.5%
+75.4%
+100.0%
+Ann. PnL-to-Volatility
+-0.67
+1.62
+-27.82
+-2.97
+-1.80
+-1.03
+0.56
+2.08
+7.53
+Panel B: Users with more than 100 trades (N = 478, 096)
+Trades per User
+2,349
+48,809
+101
+107
+137
+221
+576
+4,552
+13,587,640
+Markets per User
+231
+1,110
+1
+9
+31
+61
+132
+800
+130,387
+Volume per User (USDC)
+234,116
+3,863,332
+13
+1,129
+4,557
+15,411
+50,156
+447,591
+604,671,119
+Fraction Extreme Price
+48.7%
+35.2%
+0.0%
+1.7%
+17.1%
+39.7%
+87.3%
+100.0%
+100.0%
+PnL per User (USDC)
+181
+73,603
+-10,022,403
+-2,688
+-147
+-14
+5
+1,183
+22,029,973
+Fraction Maker Volume
+24.2%
+27.9%
+0.0%
+0.0%
+0.1%
+9.3%
+47.3%
+81.0%
+100.0%
+Ann. PnL-to-Volatility
+-0.69
+1.65
+-11.76
+-3.21
+-1.84
+-0.96
+0.50
+2.09
+6.96
+Panel C: Users with more than 1,000 trades (N = 78, 366)
+Trades per User
+12,957
+119,998
+1,001
+1,070
+1,473
+2,509
+5,673
+29,905
+13,587,640
+Markets per User
+1,023
+2,594
+1
+45
+189
+433
+971
+3,583
+130,387
+Volume per User (USDC)
+1,150,361
+9,464,494
+152
+6,920
+24,393
+78,459
+329,973
+3,111,043
+604,671,119
+Fraction Extreme Price
+31.5%
+29.1%
+0.0%
+1.3%
+9.5%
+20.6%
+45.7%
+96.7%
+100.0%
+PnL per User (USDC)
+2,632
+179,101
+-10,022,403
+-11,852
+-916
+-141
+122
+12,631
+22,029,973
+Fraction Maker Volume
+31.9%
+31.2%
+0.0%
+0.0%
+1.6%
+23.5%
+55.4%
+91.9%
+100.0%
+Ann. PnL-to-Volatility
+-0.76
+1.93
+-8.79
+-3.64
+-2.14
+-1.12
+0.71
+2.60
+6.22
+46
+
+=== PAGE 47 ===
+Table 2: Summary Statistics by Category
+This table reports trading activity broken down by market category. Events and Markets are the number of distinct events and markets.
+Trades is in millions, Volume is in millions of USDC, and both are also reported as a percentage of the total. Users is the number of
+unique wallet addresses appearing with at least one trade in that category; percentages are relative to the total number of unique users
+across all categories. Trades/Markets and Volume/Markets are per-market averages, reported in raw counts and USDC respectively. The
+event and market counts reported here are restricted to the universe that enters the trade-level analyses, i.e., those with at least one
+reconciled trade in the sample. The sample period is from November 11, 2022 to March 29, 2026.
+Category
+Events
+Markets
+Trades (M)
+Trades (%)
+Volume (M USDC)
+Volume (%)
+Users
+Users (%)
+Trades/Markets
+Volume/Markets
+Sports
+64,205
+321,231
+95.4
+16.2
+25,477.0
+37.9
+1,573,302
+63.4
+296.9
+79,311
+Politics
+7,248
+29,926
+55.3
+9.4
+21,114.4
+31.5
+1,568,028
+63.2
+1,847.6
+705,553
+Crypto
+172,313
+206,491
+394.7
+67.1
+12,762.0
+19.0
+1,373,525
+55.4
+1,911.4
+61,804
+Culture
+2,530
+15,806
+19.5
+3.3
+3,473.9
+5.2
+732,477
+29.5
+1,235.0
+219,781
+Finance
+5,539
+17,159
+9.2
+1.6
+3,107.5
+4.6
+720,184
+29.0
+534.7
+181,100
+Tech
+1,016
+4,308
+5.9
+1.0
+806.9
+1.2
+469,579
+18.9
+1,363.6
+187,303
+Weather
+2,576
+19,962
+8.3
+1.4
+393.7
+0.6
+199,565
+8.0
+417.7
+19,725
+Total
+255,427
+614,883
+588.3
+100.0
+67,135.4
+100.0
+2,480,080
+100.0
+956.7
+109,184
+47
+
+=== PAGE 48 ===
+Table 3: PnL Concentration by Category
+This table reports descriptive statistics and the distribution of mean PnL across percentile
+buckets, broken down by market category.
+The top panel reports the number of markets,
+events, users, trades, and total volume for each category, as well as the fraction of users
+with positive PnL. The middle and bottom panels report mean PnL by percentile bucket
+for losers (PnL < 0) and winners (PnL > 0), respectively. Percentile buckets are constructed
+within each category independently. The sample period is from November 11, 2022 to March 29, 2026.
+All
+Sports
+Politics
+Crypto
+Culture
+Finance
+Tech
+Weather
+Descriptive Statistics
+N Markets
+614,883
+321,231
+29,926
+206,491
+15,806
+17,159
+4,308
+19,962
+N Events
+255,427
+64,205
+7,248
+172,313
+2,530
+5,539
+1,016
+2,576
+N Users (000s)
+2,480.1
+1,573.3
+1,568.0
+1,373.5
+732.5
+720.2
+469.6
+199.6
+N Trades (M)
+588.3
+95.4
+55.3
+394.7
+19.5
+9.2
+5.9
+8.3
+Volume (M USDC)
+67,135.4
+25,477.0
+21,114.4
+12,762.0
+3,473.9
+3,107.5
+806.9
+393.7
+Frac. Winners
+30.8%
+31.3%
+35.3%
+42.4%
+38.4%
+46.4%
+50.1%
+52.5%
+Mean PnL by Percentile – Losers (PnL < 0)
+0–20
+-0.38
+-0.22
+-0.23
+-1.09
+-0.08
+-0.11
+-0.09
+-0.42
+20–40
+-3.25
+-1.91
+-2.13
+-10
+-0.88
+-1.10
+-1.11
+-3.59
+40–60
+-14
+-11
+-9.41
+-41
+-5.35
+-6.73
+-6.70
+-14
+60–80
+-61
+-56
+-53
+-184
+-30
+-33
+-31
+-48
+80–90
+-257
+-252
+-277
+-759
+-133
+-148
+-119
+-154
+90–95
+-893
+-866
+-1,035
+-2,033
+-483
+-534
+-388
+-430
+95–99
+-2,763
+-3,142
+-4,905
+-6,184
+-2,363
+-2,481
+-1,673
+-1,624
+99–99.9
+-16,682
+-20,193
+-37,200
+-27,875
+-19,286
+-18,946
+-10,711
+-8,168
+99.9–100
+-269,192
+-328,420
+-442,567
+-176,141
+-264,698
+-199,901
+-99,020
+-53,277
+Mean PnL by Percentile – Winners (PnL > 0)
+0–20
+0.19
+0.09
+0.08
+0.10
+0.03
+0.03
+0.02
+0.01
+20–40
+2.17
+2.40
+0.91
+1.17
+0.44
+0.25
+0.25
+0.17
+40–60
+13
+13
+5.04
+7.12
+3.05
+1.93
+1.55
+1.30
+60–80
+73
+62
+27
+34
+15
+12
+9.18
+9.51
+80–90
+346
+297
+122
+166
+55
+51
+34
+34
+90–95
+1,308
+1,116
+449
+686
+164
+164
+98
+98
+95–99
+5,111
+4,067
+2,469
+4,145
+889
+887
+502
+583
+99–99.9
+38,634
+30,777
+23,892
+23,926
+8,479
+7,542
+5,044
+4,043
+99.9–100
+703,060
+597,533
+632,805
+217,854
+165,827
+172,044
+57,066
+50,548
+48
+
+=== PAGE 49 ===
+Table 4: Probit Regression: Determinants of Positive Performance.
+This table reports probit regressions where the dependent variable is an indicator equal to one if the user’s PnL is positive. Reported
+values are marginal effects at the sample mean, computed from the fitted probit as ϕ(¯x′ ˆβ)ˆβk. The independent variables include the
+fraction of trades at extreme prices (below 10¢ or above 90¢), the fraction of maker volume, log number of trades, log total volume, the
+category HHI (Herfindahl-Hirschman Index of volume concentration across market categories) and counterparty HHI as a proxy for wash
+trading. Column (4) further adds a set of category indicators, one for each of the seven market categories equal to one if the user has any
+trading volume in that category, with Sports omitted as the reference. Robust standard errors are reported in parentheses. The table
+reports the results for all users (columns 1–4), for users with more than 100 trades (columns 5–6), and for users with more than 1,000
+trades (columns 7–8). Significance levels: ∗∗∗p < 0.01, ∗∗p < 0.05, ∗p < 0.10.
+All Users
+Users With More Than 100 Trades
+Users With More Than 1,000 Trades
+(1)
+(2)
+(3)
+(4)
+(5)
+(6)
+(7)
+(8)
+Frac Extreme Price
+0.006∗∗∗
+0.013∗∗∗
+0.003∗∗∗
+−0.001
+−0.006∗∗∗
+−0.012∗∗∗
+0.128∗∗∗
+0.126∗∗∗
+(0.001)
+(0.001)
+(0.001)
+(0.001)
+(0.002)
+(0.002)
+(0.006)
+(0.006)
+Frac Maker Volume
+0.342∗∗∗
+0.337∗∗∗
+0.331∗∗∗
+0.327∗∗∗
+0.324∗∗∗
+0.148∗∗∗
+0.143∗∗∗
+(0.001)
+(0.001)
+(0.001)
+(0.002)
+(0.002)
+(0.006)
+(0.006)
+Log N Trades
+0.006∗∗∗
+0.002∗∗∗
+−0.012∗∗∗
+−0.026∗∗∗
+−0.029∗∗∗
+0.004∗
+0.006∗∗∗
+(0.000)
+(0.000)
+(0.000)
+(0.001)
+(0.001)
+(0.002)
+(0.002)
+Log Total Volume
+−0.023∗∗∗
+−0.021∗∗∗
+−0.023∗∗∗
+0.020∗∗∗
+0.020∗∗∗
+0.044∗∗∗
+0.041∗∗∗
+(0.000)
+(0.000)
+(0.000)
+(0.000)
+(0.001)
+(0.001)
+(0.001)
+Category HHI
+−0.086∗∗∗
+0.055∗∗∗
+0.010∗∗∗
+0.072∗∗∗
+0.130∗∗∗
+0.142∗∗∗
+(0.001)
+(0.002)
+(0.003)
+(0.004)
+(0.007)
+(0.010)
+Counterparty HHI
+0.009∗∗∗
+−0.033∗∗∗
+−0.202∗∗∗
+−0.231∗∗∗
+−0.506∗∗∗
+−0.500∗∗∗
+(0.002)
+(0.002)
+(0.007)
+(0.007)
+(0.050)
+(0.049)
+Traded Crypto
+0.079∗∗∗
+0.017∗∗∗
+−0.057∗∗∗
+(0.001)
+(0.002)
+(0.006)
+Traded Finance
+0.035∗∗∗
+0.021∗∗∗
+0.010∗
+(0.001)
+(0.002)
+(0.005)
+Traded Politics
+0.059∗∗∗
+−0.002
+−0.041∗∗∗
+(0.001)
+(0.002)
+(0.005)
+Traded Tech
+0.033∗∗∗
+0.023∗∗∗
+0.027∗∗∗
+(0.001)
+(0.002)
+(0.005)
+Traded Culture
+−0.003∗∗∗
+0.006∗∗∗
+0.024∗∗∗
+(0.001)
+(0.002)
+(0.005)
+Traded Weather
+0.036∗∗∗
+0.023∗∗∗
+0.008∗
+(0.001)
+(0.002)
+(0.005)
+Observations
+2,480,104
+2,480,104
+2,480,104
+2,480,104
+478,096
+478,096
+78,366
+78,366
+Pseudo R2
+0.000
+0.033
+0.035
+0.043
+0.041
+0.043
+0.054
+0.056
+49
+
+=== PAGE 50 ===
+Table 5: PnL Group Characteristics
+This table reports trading characteristics for users sorted into four non-overlapping PnL groups:
+top 0.1%, next 0.9%, next
+4%, and bottom 95%.
+Panel A reports cross-sectional means of behavioral characteristics; Panel B reports performance metrics
+computed at the user level from the monthly PnL series, followed by the cross-sectional mean of each user’s excess hit rate.
+Columns (5)–(7) report the difference between each top group’s statistic and the bottom 95% statistic.
+Significance stars in
+the difference columns (5)–(7) are computed from Welch’s two-sample t-test for all rows except the two median rows in Panel B,
+which use the Mann-Whitney U test: ∗∗∗p < 0.01, ∗∗p < 0.05, ∗p < 0.10. The sample period is from November 11, 2022 to March 29, 2026.
+PnL Group Mean
+Difference
+Top 0.1%
+Next 0.9%
+Next 4%
+Bot. 95%
+0.1%–95%
+0.9%–95%
+4%–95%
+(1)
+(2)
+(3)
+(4)
+(5)
+(6)
+(7)
+Panel A: Behavioral Characteristics
+Frac Maker Volume
+0.4731
+0.4145
+0.3237
+0.1705
+0.3026***
+0.2439***
+0.1532***
+Frac Extreme Price
+0.2823
+0.2864
+0.3114
+0.5642
+-0.2818***
+-0.2778***
+-0.2528***
+Category HHI
+0.8032
+0.8166
+0.7949
+0.7670
+0.0363***
+0.0496***
+0.0279***
+Avg N Trades
+150,623
+8,389
+1,165
+223
+150,401***
+8,166***
+943***
+Panel B: Performance
+Mean Monthly PnL (USDC)
+54,586.11
+2,468.02
+310.52
+-104.53
+54,690.64***
+2,572.55***
+415.04***
+SD Monthly PnL (USDC)
+104,020.18
+5,097.63
+638.99
+220.13
+103,800.05***
+4,877.50***
+418.86***
+Max Drawdown (USDC)
+35,215.77
+1,898.77
+228.37
+365.99
+34,849.78***
+1,532.78***
+-137.62***
+Median Ann. PnL-to-Volatility
+1.732
+1.468
+1.459
+-1.150
+2.882***
+2.618***
+2.609***
+Median Ann. PnL-to-Downside-Volatility
+12.079
+20.407
+12.135
+-1.361
+13.440***
+21.768***
+13.496***
+Excess Hit Rate
+0.0977
+0.1319
+0.1028
+-0.0265
+0.1241***
+0.1584***
+0.1293***
+50
+
+=== PAGE 51 ===
+Table 6: Transition Matrix of PnL Groups
+This table reports transition probabilities across monthly-performance groups over 1-month and 3-month horizons. In each month, users
+who traded are sorted into eleven groups based on the change in their mark-to-market profit and loss (PnL) during that month, i.e., the
+PnL accrued or realized over the month, using the breakpoints −50k, −10k, −1k, −100, −10, 10, 100, 1k, 10k, and 50k (in dollars). The
+eleven bucket columns report transition frequencies conditional on trading (each row’s bucket-to-bucket cells sum to 100% and are shaded
+in blue). The “> 0” column reports the conditional probability that the trader’s target-month PnL change is strictly positive. Significance
+stars come from a two-sided exact-binomial test against the null hypothesis that the probability of profit equals 0.5: ∗p < 0.10, ∗∗p < 0.05,
+∗∗∗p < 0.01. Cells are shaded only when the test rejects the null at the 10% level. The “No Trade” column reports the share of users in
+each starting group who did not trade in the target month, shaded in blue. The sample period is from November 11, 2022 to March 29, 2026.
+Panel A: 1-Month Horizon
+Starting Group
+N
+< -50k
+[-50k, -10k)
+[-10k, -1k)
+[-1k, -100)
+[-100, -10)
+[-10, 10]
+(10, 100]
+(100, 1k]
+(1k, 10k]
+(10k, 50k]
+> 50k
+> 0
+No Trade
+< -50k
+1,924
+18.3%
+18.8%
+13.3%
+3.8%
+0.6%
+0.5%
+0.5%
+2.5%
+9.7%
+13.3%
+18.8%
+45.0%∗∗∗
+36.5%
+[-50k, -10k)
+8,426
+3.8%
+17.2%
+26.7%
+8.6%
+2.1%
+5.2%
+1.6%
+5.7%
+14.4%
+11.0%
+4.0%
+39.8%∗∗∗
+34.1%
+[-10k, -1k)
+67,616
+0.3%
+3.5%
+22.9%
+20.1%
+9.0%
+12.2%
+5.2%
+10.8%
+13.3%
+2.5%
+0.3%
+39.4%∗∗∗
+41.9%
+[-1k, -100)
+197,683
+0.0%
+0.3%
+6.4%
+25.8%
+19.7%
+17.8%
+11.3%
+13.8%
+4.5%
+0.4%
+0.0%
+39.5%∗∗∗
+45.3%
+[-100, -10)
+437,650
+0.0%
+0.0%
+0.9%
+7.1%
+24.5%
+46.9%
+15.4%
+4.5%
+0.7%
+0.1%
+0.0%
+44.2%∗∗∗
+42.7%
+[-10, 10]
+3,258,652
+0.0%
+0.0%
+0.2%
+0.8%
+5.1%
+89.3%
+3.8%
+0.6%
+0.1%
+0.0%
+0.0%
+57.4%∗∗∗
+36.3%
+(10, 100]
+307,017
+0.0%
+0.0%
+1.2%
+8.3%
+23.0%
+38.9%
+21.7%
+6.0%
+0.8%
+0.1%
+0.0%
+51.9%∗∗∗
+31.0%
+(100, 1k]
+132,354
+0.0%
+0.4%
+7.1%
+23.4%
+12.9%
+15.4%
+12.4%
+21.0%
+6.8%
+0.5%
+0.0%
+50.0%
+31.2%
+(1k, 10k]
+49,767
+0.4%
+3.6%
+20.8%
+12.9%
+4.1%
+10.6%
+4.0%
+12.7%
+25.3%
+5.2%
+0.4%
+54.3%∗∗∗
+23.8%
+(10k, 50k]
+9,201
+3.6%
+14.0%
+15.2%
+4.0%
+1.8%
+4.1%
+1.7%
+4.0%
+20.6%
+24.6%
+6.3%
+60.2%∗∗∗
+20.5%
+> 50k
+2,344
+18.2%
+12.0%
+6.7%
+1.4%
+0.3%
+0.4%
+0.3%
+1.2%
+7.6%
+18.5%
+33.4%
+61.3%∗∗∗
+16.8%
+Panel B: 3-Month Horizon
+Starting Group
+N
+< -50k
+[-50k, -10k)
+[-10k, -1k)
+[-1k, -100)
+[-100, -10)
+[-10, 10]
+(10, 100]
+(100, 1k]
+(1k, 10k]
+(10k, 50k]
+> 50k
+> 0
+No Trade
+< -50k
+1,478
+15.8%
+13.9%
+17.6%
+4.5%
+1.7%
+1.7%
+0.6%
+4.5%
+12.5%
+13.4%
+13.7%
+46.0%∗∗
+55.1%
+[-50k, -10k)
+6,365
+3.9%
+13.6%
+23.0%
+10.4%
+3.0%
+4.5%
+2.1%
+8.4%
+16.9%
+9.9%
+4.3%
+44.4%∗∗∗
+52.2%
+[-10k, -1k)
+45,076
+0.5%
+3.2%
+19.2%
+18.4%
+8.7%
+15.9%
+7.0%
+11.5%
+12.4%
+2.8%
+0.5%
+44.3%∗∗∗
+52.5%
+[-1k, -100)
+134,578
+0.1%
+0.5%
+6.2%
+20.7%
+17.6%
+24.5%
+12.5%
+12.4%
+4.8%
+0.6%
+0.1%
+44.7%∗∗∗
+58.2%
+[-100, -10)
+314,316
+0.0%
+0.1%
+1.2%
+6.6%
+20.0%
+53.0%
+13.6%
+4.4%
+1.0%
+0.1%
+0.0%
+47.6%∗∗∗
+57.7%
+[-10, 10]
+2,766,421
+0.0%
+0.0%
+0.4%
+1.0%
+4.8%
+88.9%
+3.8%
+0.8%
+0.3%
+0.0%
+0.0%
+60.2%∗∗∗
+52.6%
+(10, 100]
+230,988
+0.0%
+0.1%
+1.2%
+6.7%
+17.1%
+51.0%
+17.5%
+5.4%
+1.1%
+0.1%
+0.0%
+54.1%∗∗∗
+49.3%
+(100, 1k]
+94,674
+0.1%
+0.6%
+6.5%
+17.1%
+13.7%
+23.4%
+12.7%
+17.7%
+7.4%
+0.8%
+0.1%
+52.9%∗∗∗
+47.7%
+(1k, 10k]
+36,798
+0.4%
+3.4%
+15.7%
+14.0%
+6.5%
+11.8%
+5.4%
+13.7%
+22.6%
+5.6%
+0.8%
+55.6%∗∗∗
+38.7%
+(10k, 50k]
+6,598
+3.5%
+11.3%
+15.8%
+6.9%
+2.1%
+4.5%
+1.7%
+5.9%
+19.8%
+21.0%
+7.5%
+59.3%∗∗∗
+33.7%
+> 50k
+1,763
+11.6%
+10.7%
+8.8%
+3.4%
+0.6%
+0.4%
+0.9%
+2.4%
+12.0%
+19.6%
+29.4%
+64.7%∗∗∗
+34.1%
+51
+
+=== PAGE 52 ===
+Table 7: Risk-Adjusted PnL Transition Matrix — Sharpe Analog
+This table replicates Table 6 after replacing the dollar-PnL bucketing with an annualized risk-adjusted ratio (a Sharpe analog computed
+at the daily frequency).
+In each month, users with at least 10 active days are sorted into nine groups based on the annualized
+√
+365·∆PnLd/σ(∆PnLd) ratio of their daily mark-to-market PnL changes during the month, with cutoffs at ±10, ±5, ±3, and ±1. Bucket
+cells report the percentage of users in each starting group whose ratio falls into each group at the specified horizon, conditional on a valid
+target-month observation. The “> 0” column reports the conditional probability of a strictly positive target-month ratio, with stars from a
+two-sided exact-binomial test against H0 : p = 0.5 (∗p < 0.10, ∗∗p < 0.05, ∗∗∗p < 0.01). The No Trade column reports the rate of users with
+no qualifying target-month observation (no trades or insufficient activity). The sample period is from November 11, 2022 to March 29, 2026.
+Panel A: 1-Month Horizon
+Starting Group
+N
+< -10
+[-10, -5)
+[-5, -3)
+[-3, -1)
+[-1, 1]
+(1, 3]
+(3, 5]
+(5, 10]
+> 10
+> 0
+No Trade
+< -10
+51,081
+5.7%
+19.5%
+17.7%
+18.3%
+20.4%
+9.1%
+5.6%
+3.2%
+0.5%
+28.0%∗∗∗
+45.6%
+[-10, -5)
+503,854
+1.1%
+12.7%
+18.6%
+19.7%
+24.6%
+11.3%
+7.6%
+4.0%
+0.5%
+34.9%∗∗∗
+44.6%
+[-5, -3)
+749,270
+0.5%
+9.3%
+18.1%
+17.9%
+27.4%
+12.1%
+9.8%
+4.4%
+0.4%
+39.9%∗∗∗
+41.5%
+[-3, -1)
+754,878
+0.4%
+7.2%
+13.0%
+17.6%
+35.2%
+14.4%
+7.8%
+4.1%
+0.3%
+45.0%∗∗∗
+24.8%
+[-1, 1]
+1,447,993
+0.2%
+4.0%
+7.9%
+13.6%
+54.9%
+11.2%
+5.3%
+2.9%
+0.2%
+45.8%∗∗∗
+25.4%
+(1, 3]
+576,790
+0.3%
+6.2%
+12.7%
+18.4%
+29.9%
+14.6%
+10.8%
+6.5%
+0.6%
+45.7%∗∗∗
+25.5%
+(3, 5]
+436,108
+0.3%
+6.5%
+15.8%
+14.2%
+22.0%
+15.7%
+15.3%
+9.2%
+1.0%
+52.4%∗∗∗
+33.4%
+(5, 10]
+295,852
+0.4%
+6.5%
+12.7%
+12.6%
+17.1%
+16.1%
+16.3%
+15.3%
+2.9%
+59.9%∗∗∗
+36.2%
+> 10
+43,737
+0.6%
+7.5%
+11.5%
+10.2%
+9.9%
+9.3%
+10.8%
+22.9%
+17.2%
+65.3%∗∗∗
+33.1%
+Panel B: 3-Month Horizon
+Starting Group
+N
+< -10
+[-10, -5)
+[-5, -3)
+[-3, -1)
+[-1, 1]
+(1, 3]
+(3, 5]
+(5, 10]
+> 10
+> 0
+No Trade
+< -10
+35,570
+1.8%
+10.3%
+17.1%
+18.6%
+31.6%
+9.1%
+7.1%
+3.9%
+0.4%
+35.1%∗∗∗
+60.3%
+[-10, -5)
+392,401
+0.7%
+9.4%
+16.8%
+17.5%
+29.5%
+11.8%
+8.8%
+5.0%
+0.5%
+39.7%∗∗∗
+62.4%
+[-5, -3)
+605,011
+0.3%
+7.9%
+16.1%
+16.7%
+31.1%
+12.4%
+10.1%
+4.9%
+0.5%
+42.6%∗∗∗
+60.3%
+[-3, -1)
+624,556
+0.3%
+6.0%
+13.1%
+17.3%
+38.1%
+12.5%
+8.2%
+4.2%
+0.3%
+42.9%∗∗∗
+49.8%
+[-1, 1]
+1,217,754
+0.2%
+3.8%
+8.7%
+13.7%
+51.6%
+12.1%
+6.3%
+3.3%
+0.3%
+47.0%∗∗∗
+53.5%
+(1, 3]
+476,227
+0.3%
+5.4%
+11.5%
+14.3%
+35.4%
+15.4%
+10.7%
+6.3%
+0.7%
+51.0%∗∗∗
+49.0%
+(3, 5]
+351,788
+0.3%
+6.2%
+13.9%
+14.2%
+25.6%
+15.6%
+14.1%
+8.9%
+1.3%
+52.9%∗∗∗
+51.9%
+(5, 10]
+237,151
+0.3%
+5.9%
+11.9%
+13.1%
+21.4%
+16.0%
+14.3%
+14.3%
+2.8%
+58.4%∗∗∗
+53.2%
+> 10
+29,329
+0.5%
+5.9%
+10.9%
+10.9%
+15.9%
+13.7%
+13.4%
+18.8%
+9.9%
+63.9%∗∗∗
+49.4%
+52
+
+=== PAGE 53 ===
+Table 8: Performance-Persistence Regressions
+This table relates a trader’s baseline-month characteristics to two forward-looking outcomes, estimated separately for each dollar-PnL
+performance bucket (one regression per column). Panel A reports marginal effects at the mean of a probit for the probability of dropping
+out (taking no positions in month t+3). Panel B reports an OLS regression of committed-capital growth, log(capitalt+3) −log(capitalt),
+where committed capital is the average end-of-day absolute marked-to-market token value over the month and the sample is restricted to
+traders with positive committed capital in both months. Explanatory variables are measured in the baseline month t: log number of
+trades, log total volume, log committed capital and the maker profit share (absolute maker PnL divided by the sum of absolute maker
+and taker PnL). We also include as controls the fraction of trades at extreme prices, the fraction of maker volume, the category HHI
+and counterparty HHI. Every regression includes base year-month time fixed effects and category dummies indicating the categories
+the user traded in the baseline month (a user may trade several), with the same specification in every column. Standard errors,
+clustered by user, are in parentheses (∗p < 0.10, ∗∗p < 0.05, ∗∗∗p < 0.01). The sample period is from November 11, 2022 to March 29, 2026.
+Variable
+< -50k
+[-50k, -10k)
+[-10k, -1k)
+[-1k, -100)
+[-100, -10)
+[-10, 10]
+(10, 100]
+(100, 1k]
+(1k, 10k]
+(10k, 50k]
+> 50k
+Panel A: Dropout (Pr no trade in t+h)
+Log N Trades
+−0.0940∗∗∗
+−0.0547∗∗∗
+−0.0609∗∗∗
+−0.0473∗∗∗
+0.0064∗∗∗
+0.0690∗∗∗
+−0.0024
+−0.0593∗∗∗
+−0.0553∗∗∗
+−0.0450∗∗∗
+−0.0546∗∗∗
+(0.0177)
+(0.0081)
+(0.0030)
+(0.0019)
+(0.0015)
+(0.0008)
+(0.0018)
+(0.0023)
+(0.0033)
+(0.0065)
+(0.0130)
+Log Total Volume
+0.0849∗∗∗
+0.0512∗∗∗
+0.0293∗∗∗
+0.0325∗∗∗
+0.0092∗∗∗
+−0.0199∗∗∗
+0.0191∗∗∗
+0.0399∗∗∗
+0.0217∗∗∗
+0.0430∗∗∗
+0.0875∗∗∗
+(0.0173)
+(0.0063)
+(0.0022)
+(0.0013)
+(0.0007)
+(0.0002)
+(0.0009)
+(0.0016)
+(0.0024)
+(0.0062)
+(0.0160)
+Log Committed Capital
+−0.0504∗∗∗
+−0.0664∗∗∗
+−0.0159∗∗∗
+−0.0138∗∗∗
+−0.0075∗∗∗
+−0.0107∗∗∗
+−0.0080∗∗∗
+−0.0153∗∗∗
+−0.0179∗∗∗
+−0.0573∗∗∗
+−0.0290∗∗
+(0.0132)
+(0.0055)
+(0.0016)
+(0.0008)
+(0.0005)
+(0.0001)
+(0.0005)
+(0.0009)
+(0.0016)
+(0.0048)
+(0.0121)
+Maker Profit Share
+−0.0614
+−0.0630∗∗
+−0.0945∗∗∗
+−0.0883∗∗∗
+−0.0212∗∗∗
+0.0819∗∗∗
+−0.0570∗∗∗
+−0.0179∗∗∗
+−0.0683∗∗∗
+−0.0144
+0.0258
+(0.0594)
+(0.0268)
+(0.0098)
+(0.0060)
+(0.0045)
+(0.0020)
+(0.0047)
+(0.0069)
+(0.0102)
+(0.0227)
+(0.0505)
+Controls
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Time FE
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Category Dummies
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Observations
+1,477
+6,340
+44,687
+133,006
+311,317
+2,665,325
+227,968
+93,512
+36,580
+6,572
+1,759
+Panel B: Committed Capital Growth
+Log N Trades
+0.2505∗∗∗
+−0.0139
+0.1898∗∗∗
+0.0612∗∗∗
+−0.1547∗∗∗
+−0.0068
+−0.2374∗∗∗
+0.1059∗∗∗
+0.1687∗∗∗
+0.2209∗∗∗
+0.1566∗∗
+(0.0954)
+(0.0510)
+(0.0228)
+(0.0142)
+(0.0128)
+(0.0068)
+(0.0156)
+(0.0157)
+(0.0212)
+(0.0434)
+(0.0767)
+Log Total Volume
+−0.1379
+−0.0405
+−0.0245
+0.1235∗∗∗
+0.2258∗∗∗
+0.1364∗∗∗
+0.3714∗∗∗
+0.1520∗∗∗
+0.0693∗∗∗
+−0.1113∗∗
+−0.0569
+(0.1127)
+(0.0466)
+(0.0183)
+(0.0110)
+(0.0062)
+(0.0021)
+(0.0082)
+(0.0128)
+(0.0183)
+(0.0519)
+(0.1025)
+Log Committed Capital
+0.0142
+0.1318∗∗∗
+−0.1812∗∗∗
+−0.1506∗∗∗
+−0.2466∗∗∗
+−0.5018∗∗∗
+−0.3324∗∗∗
+−0.2341∗∗∗
+−0.1900∗∗∗
+0.1078∗∗∗
+−0.1361
+(0.0728)
+(0.0361)
+(0.0132)
+(0.0084)
+(0.0050)
+(0.0012)
+(0.0053)
+(0.0094)
+(0.0142)
+(0.0352)
+(0.0853)
+Maker Profit Share
+−0.4384
+0.2660∗
+0.4125∗∗∗
+0.4114∗∗∗
+0.6144∗∗∗
+1.3623∗∗∗
+0.2522∗∗∗
+−0.1675∗∗∗
+−0.2203∗∗∗
+−0.3717∗∗
+−0.2256
+(0.3065)
+(0.1600)
+(0.0720)
+(0.0447)
+(0.0370)
+(0.0149)
+(0.0351)
+(0.0463)
+(0.0698)
+(0.1553)
+(0.2620)
+Controls
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Time FE
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Category Dummies
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Observations
+955
+4,454
+30,785
+88,400
+219,403
+2,012,187
+167,744
+68,260
+28,440
+5,331
+1,445
+53
+
+=== PAGE 54 ===
+Table 9: PnL Spread Decomposition Statistics
+This table reports mean profit and loss (PnL) including and excluding a lower-bound estimate of
+spread costs, by percentile bucket, separately for users with negative PnL (Panel A: Losers) and
+positive PnL (Panel B: Winners). Users with PnL = 0 are absent from both panels by construction.
+Users within each group are ranked by the magnitude of their PnL and assigned to percentile
+buckets: 0–20, 20–40, 40–60, 60–80, 80–90, 90–95, 95–99, 99–99.9, and 99.9–100. Mean Trades
+is the average number of executed trades per user within the bucket. Mean PnL (incl.) is the
+average mark-to-market PnL including spread costs. Mean PnL (excl.) is the counterfactual
+PnL after removing the minimum possible effective half-spread on each taker trade. Difference
+is the gap between the two, tested for statistical significance using a t-test. Frac. Spread is the
+fraction of the average gain or loss attributable to the spread, computed at the bucket level as
+(PnLexcl. −PnLincl.)/|PnLincl.| from the bucket-mean PnL columns. Positive values indicate that
+the spread reduced the bucket’s PnL; negative values indicate that the bucket is a net spread earner.
+Maker % is the average fraction of volume supplied using limit orders (maker) within each bucket.
+Significance levels: ∗∗∗p < 0.01, ∗∗p < 0.05, ∗p < 0.10. The sample period is from November 11,
+2022 to March 29, 2026.
+Percentile
+N Users
+Mean Trades
+Mean PnL (incl.)
+Mean PnL (excl.)
+Difference
+Frac. Spread
+Maker %
+Panel A: Losers (PnL < 0)
+0–20
+340,794
+30
+-0.38
+0.34
+−0.72∗∗∗
+190.9%
+12.9%
+20–40
+340,794
+53
+-3.25
+0.38
+−3.63∗∗∗
+111.7%
+11.0%
+40–60
+340,794
+85
+-13.62
+-5.51
+−8.11∗∗∗
+59.6%
+10.1%
+60–80
+340,794
+160
+-61.01
+-50.78
+−10.23∗∗∗
+16.8%
+14.0%
+80–90
+170,397
+437
+-256.94
+-236.27
+−20.67∗∗∗
+8.0%
+17.9%
+90–95
+85,198
+788
+-893.47
+-860.78
+−32.70∗∗∗
+3.7%
+28.6%
+95–99
+68,159
+1,468
+-2,762.57
+-2,692.55
+−70.02∗∗∗
+2.5%
+35.4%
+99–99.9
+15,336
+4,444
+-16,682.47
+-16,360.21
+−322.26∗∗∗
+1.9%
+29.2%
+99.9–100
+1,703
+13,753
+-269,192.06
+-266,781.77
+−2, 410.29
+0.9%
+37.2%
+Panel B: Winners (PnL > 0)
+0–20
+152,885
+29
+0.19
+0.49
+−0.31∗∗∗
+163.2%
+24.1%
+20–40
+152,885
+54
+2.17
+3.15
+−0.97∗∗∗
+44.9%
+23.2%
+40–60
+152,885
+97
+13.36
+15.24
+−1.88∗∗∗
+14.1%
+20.5%
+60–80
+152,885
+191
+72.58
+75.30
+−2.72∗∗∗
+3.8%
+24.9%
+80–90
+76,442
+600
+345.54
+353.68
+−8.14∗∗∗
+2.4%
+26.3%
+90–95
+38,221
+1,292
+1,308.31
+1,304.11
+4.21
+-0.3%
+35.1%
+95–99
+30,577
+4,145
+5,111.42
+5,047.34
+64.07∗∗∗
+-1.3%
+40.6%
+99–99.9
+6,880
+37,322
+38,633.66
+37,179.87
+1, 453.79∗∗∗
+-3.8%
+44.9%
+99.9–100
+764
+255,975
+703,059.84
+680,242.46
+22, 817.38∗∗∗
+-3.2%
+49.3%
+54
+
+=== PAGE 55 ===
+Table 10: PnL Transition Matrix — Maker-Heavy minus Taker-Heavy Difference
+This table reports the cell-by-cell difference between the dollar-PnL transition matrices of maker-heavy and taker-heavy user-months
+(maker-heavy minus taker-heavy) over the 1-month and 3-month horizons. A user-month is maker-heavy if the user’s USDC trade volume
+as maker exceeded their volume as taker that month, and taker-heavy if the inequality runs the other way; only user-months in which the
+maker and taker volumes are exactly equal are excluded from both groups. Within each group, construction follows Table 6, and each cell
+reports the maker-heavy value minus the taker-heavy value in percentage points. A cell is shaded in green where maker-heavy exceeds
+taker-heavy, in red where taker-heavy exceeds maker-heavy, and its value italicized only when a two-sided pooled two-proportion z-test
+rejects equality of the two groups’ underlying proportion at the 10% level; non-significant differences are printed in plain type with no
+shading. The sample contains 1,185,170 maker-heavy and 6,326,148 taker-heavy user-months. The sample period is from November 11,
+2022 to March 29, 2026.
+Panel A: 1-Month Horizon
+Starting Group
+< -50k
+[-50k, -10k)
+[-10k, -1k)
+[-1k, -100)
+[-100, -10)
+[-10, 10]
+(10, 100]
+(100, 1k]
+(1k, 10k]
+(10k, 50k]
+> 50k
+∆Pr(> 0)
+∆No Trade
+< -50k
+-5.6
+-6.8
+-4.9
++0.2
+-1.1
+-0.3
+-0.6
++1.3
++2.3
++6.9
++8.6
++18.3
+-8.3
+[-50k, -10k)
++1.2
+-2.6
+-7.8
+-1.9
+-0.5
++1.3
+-0.3
++0.8
++2.0
++4.3
++3.5
++11.4
+-9.7
+[-10k, -1k)
++0.1
+-0.2
+-6.0
+-6.5
++1.4
++8.2
++1.2
+-0.3
++0.8
++1.1
++0.2
++8.5
++2.2
+[-1k, -100)
++0.0
++0.1
++1.3
+-4.8
+-5.1
++3.2
++1.2
++1.4
++2.4
++0.3
++0.0
++7.5
+-1.0
+[-100, -10)
+-0.0
++0.0
++1.1
++0.5
+-7.5
++3.2
++0.8
++1.3
++0.6
++0.1
++0.0
++9.6
+-4.8
+[-10, 10]
++0.0
+-0.0
++0.4
++0.8
++0.8
+-4.5
++2.2
++0.2
++0.1
++0.0
+-0.0
++0.8
+-2.0
+(10, 100]
++0.0
++0.0
++1.1
+-0.0
+-8.2
++3.9
++1.7
++0.9
++0.5
++0.1
++0.0
++9.5
+-4.4
+(100, 1k]
++0.0
++0.1
+-0.4
+-5.0
+-3.8
+-0.1
++0.3
++5.3
++3.3
++0.2
++0.0
++9.6
+-0.2
+(1k, 10k]
++0.1
+-0.4
+-7.9
+-4.8
+-0.5
++2.0
+-0.1
++1.1
++8.0
++2.2
++0.2
++13.2
+-2.5
+(10k, 50k]
+-0.7
+-5.0
+-6.4
+-0.9
+-0.2
+-0.7
+-0.2
+-0.8
++3.4
++9.1
++2.5
++13.4
+-4.7
+> 50k
+-1.7
+-1.4
+-3.5
+-0.2
++0.2
+-0.3
+-0.6
+-1.0
++0.9
++4.2
++3.5
++6.9
+-8.7
+Panel B: 3-Month Horizon
+Starting Group
+< -50k
+[-50k, -10k)
+[-10k, -1k)
+[-1k, -100)
+[-100, -10)
+[-10, 10]
+(10, 100]
+(100, 1k]
+(1k, 10k]
+(10k, 50k]
+> 50k
+∆Pr(> 0)
+∆No Trade
+< -50k
++2.8
+-4.7
+-2.7
+-1.4
+-0.4
+-1.0
+-0.0
++1.1
+-3.1
++2.9
++6.5
++6.0
+-10.5
+[-50k, -10k)
++1.6
++0.2
+-6.1
+-2.7
+-0.7
++0.4
+-0.4
+-0.6
++1.6
++3.5
++3.2
++8.0
+-9.3
+[-10k, -1k)
++0.2
+-0.2
+-5.1
+-5.7
++0.7
++9.5
++1.3
+-2.5
++0.7
++1.0
++0.2
++7.8
+-10.2
+[-1k, -100)
++0.0
++0.2
+-0.3
+-5.1
+-4.4
++4.4
++2.7
++0.3
++1.9
++0.2
++0.2
++8.2
+-7.7
+[-100, -10)
+-0.0
+-0.0
++0.5
+-0.5
+-6.5
++4.7
+-0.5
++1.5
++0.7
++0.0
++0.0
++5.1
+-1.9
+[-10, 10]
+-0.0
+-0.0
++0.0
+-0.1
++1.9
+-5.9
++4.0
++0.1
++0.0
+-0.0
++0.0
+-2.5
++3.1
+(10, 100]
+-0.0
+-0.0
++0.0
+-0.4
+-5.4
++3.1
++1.4
++0.9
++0.3
++0.0
++0.0
++6.3
+-5.5
+(100, 1k]
++0.0
++0.1
+-0.3
+-4.8
+-4.1
++1.2
++0.0
++3.5
++3.8
++0.5
++0.0
++8.8
+-8.0
+(1k, 10k]
++0.1
+-0.1
+-4.3
+-4.4
+-0.8
++0.5
++0.1
+-0.4
++6.3
++2.9
++0.2
++9.8
+-10.0
+(10k, 50k]
+-0.3
+-1.5
+-6.7
+-2.4
+-0.1
+-2.2
++0.1
+-0.9
++2.5
++7.6
++3.9
++11.4
+-10.0
+> 50k
+-3.7
+-2.9
+-2.1
+-2.2
+-0.2
+-0.1
++0.3
+-0.0
+-2.7
++1.2
++12.3
++11.2
+-13.0
+55
+
+=== PAGE 56 ===
+Table 11: Risk-Adjusted (Sharpe-Analog) Transition Matrix — Maker-Heavy minus Taker-Heavy Difference
+This table reports the cell-by-cell difference between the risk-adjusted transition matrices of maker-heavy and taker-heavy user-
+months (maker-heavy minus taker-heavy) over the 1-month and 3-month horizons, replacing the dollar-PnL bucketing of Table 10
+with the annualized Sharpe-analog ratio of Table 7 (nine ratio buckets with cutoffs at ±10, ±5, ±3, and ±1).
+A user-month
+is maker-heavy if the user’s USDC trade volume as maker exceeded their volume as taker that month, and taker-heavy if the
+inequality runs the other way; only user-months in which the maker and taker volumes are exactly equal are excluded from both
+groups.
+Within each group, construction follows Table 7, and each cell reports the maker-heavy value minus the taker-heavy
+value in percentage points.
+A cell is shaded in green where maker-heavy exceeds taker-heavy, in red where taker-heavy exceeds
+maker-heavy, and its value italicized only when a two-sided pooled two-proportion z-test rejects equality of the two groups’ underlying
+proportion at the 10% level; non-significant differences are printed in plain type with no shading. The Sortino-analog difference and the
+6-month long-horizon variants are reported in Internet Appendix Section J. The sample period is from November 11, 2022 to March 29, 2026.
+Panel A: 1-Month Horizon
+Starting Group
+< -10
+[-10, -5)
+[-5, -3)
+[-3, -1)
+[-1, 1]
+(1, 3]
+(3, 5]
+(5, 10]
+> 10
+∆Pr(> 0)
+∆No Trade
+< -10
++1.0
+-0.8
+-5.0
+-4.1
+-3.0
++2.8
++1.6
++5.1
++2.2
++11.0
++6.1
+[-10, -5)
++0.2
+-0.7
+-2.6
+-2.6
+-3.5
++2.6
++2.5
++2.8
++1.3
++7.8
+-3.1
+[-5, -3)
+-0.1
+-2.3
+-2.1
+-2.4
++0.1
++2.6
++1.8
++1.5
++0.8
++7.6
+-1.8
+[-3, -1)
+-0.0
+-2.3
+-2.0
+-2.5
++0.7
++2.5
++2.6
++0.7
++0.4
++8.1
++0.9
+[-1, 1]
++0.1
+-2.7
+-3.1
+-2.3
++3.7
++2.4
++1.5
++0.3
++0.1
++8.3
++0.3
+(1, 3]
+-0.0
+-3.5
+-4.6
+-2.5
++6.4
++3.0
++0.2
++0.8
++0.3
++7.5
++1.2
+(3, 5]
+-0.1
+-2.9
+-3.3
+-1.5
++3.9
++1.3
++0.1
++2.0
++0.5
++6.6
++0.8
+(5, 10]
+-0.1
+-2.9
+-5.0
+-2.4
++2.2
++1.9
++1.3
++3.2
++1.8
++10.1
+-5.4
+> 10
+-0.5
+-5.4
+-1.6
+-2.0
+-0.9
++1.4
++0.3
++1.6
++7.1
++10.2
+-12.9
+Panel B: 3-Month Horizon
+Starting Group
+< -10
+[-10, -5)
+[-5, -3)
+[-3, -1)
+[-1, 1]
+(1, 3]
+(3, 5]
+(5, 10]
+> 10
+∆Pr(> 0)
+∆No Trade
+< -10
++2.3
+-1.4
+-5.0
+-4.4
+-0.5
++2.6
++3.6
++2.0
++0.7
++14.2
++6.1
+[-10, -5)
+-0.3
+-0.9
+-2.6
+-3.2
+-2.7
++2.0
++1.4
++5.6
++0.6
++9.7
+-3.9
+[-5, -3)
+-0.0
+-1.6
+-1.8
+-2.6
+-0.5
++1.7
++2.6
++1.4
++0.8
++6.9
+-6.0
+[-3, -1)
+-0.1
+-2.0
+-3.0
+-2.4
++3.9
++1.6
++0.7
++1.1
++0.2
++6.5
+-2.1
+[-1, 1]
++0.2
+-2.0
+-4.0
+-2.6
++6.1
++1.2
++0.2
++0.5
++0.3
++6.0
+-3.8
+(1, 3]
++0.2
+-2.7
+-4.9
+-2.6
++8.5
++1.3
+-0.3
++0.1
++0.4
++6.8
+-1.3
+(3, 5]
+-0.0
+-2.4
+-3.7
+-1.8
++3.0
++1.6
++1.9
++0.3
++1.2
++7.7
+-2.0
+(5, 10]
+-0.1
+-2.2
+-3.2
+-2.5
++1.5
++1.1
++1.5
++2.6
++1.3
++7.4
+-7.7
+> 10
+-0.2
+-3.1
+-0.4
+-0.5
++4.9
++1.1
++1.3
+-2.2
+-0.9
++1.2
+-15.4
+56

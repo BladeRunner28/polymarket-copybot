@@ -1,0 +1,25 @@
+finished copies with size + realized PnL: 9734
+
+== ALL: n=9734  total PnL $+7008.73  ROI +6.9% ==
+   OOS rank IC (predicted edge vs realized edge): -0.005   n_oos=6270/9734
+   policy comparison (keep top 30% of the 6270 OOS rows):
+     reference: keep ALL of those rows  PnL $-3846.89  ROI -5.6%
+   incumbent copyScore          keep 1881/6270  kept PnL $ -4813.30  ROI   -18.0%  (rejected $  +966.41)  wr 44%
+   incumbent raw_composite      keep 1881/6270  kept PnL $ -1782.99  ROI    -7.5%  (rejected $ -2063.90)  wr 48%
+   model predicted edge (OOS)   keep 1881/6270  kept PnL $ -1340.72  ROI    -6.5%  (rejected $ -2506.17)  wr 41%
+
+== C-200: n=1565  total PnL $+48.86  ROI +0.5% ==
+   OOS rank IC (predicted edge vs realized edge): +0.093   n_oos=1062/1565
+   policy comparison (keep top 30% of the 1062 OOS rows):
+     reference: keep ALL of those rows  PnL $+420.46  ROI +5.7%
+   incumbent copyScore          keep  318/1062  kept PnL $   -99.34  ROI    -3.1%  (rejected $  +519.80)  wr 51%
+   incumbent raw_composite      keep  318/1062  kept PnL $  +327.33  ROI   +16.3%  (rejected $   +93.13)  wr 55%
+   model predicted edge (OOS)   keep  318/1062  kept PnL $  +482.19  ROI   +29.2%  (rejected $   -61.73)  wr 59%
+
+== C-200 main-lane: n=1081  total PnL $-454.71  ROI -6.0% ==
+   OOS rank IC (predicted edge vs realized edge): +0.209   n_oos=578/1081
+   policy comparison (keep top 30% of the 578 OOS rows):
+     reference: keep ALL of those rows  PnL $-83.11  ROI -1.8%
+   incumbent copyScore          keep  173/ 578  kept PnL $  -237.78  ROI   -10.4%  (rejected $  +154.67)  wr 41%
+   incumbent raw_composite      keep  173/ 578  kept PnL $   +50.06  ROI    +4.3%  (rejected $  -133.17)  wr 56%
+   model predicted edge (OOS)   keep  173/ 578  kept PnL $  +226.59  ROI   +25.6%  (rejected $  -309.70)  wr 64%

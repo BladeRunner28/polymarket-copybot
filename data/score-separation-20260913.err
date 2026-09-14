@@ -1,0 +1,24 @@
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:196: RuntimeWarning: divide by zero encountered in matmul
+  z = np.clip(Xb @ beta, -30.0, 30.0)
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:196: RuntimeWarning: overflow encountered in matmul
+  z = np.clip(Xb @ beta, -30.0, 30.0)
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:196: RuntimeWarning: invalid value encountered in matmul
+  z = np.clip(Xb @ beta, -30.0, 30.0)
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:199: RuntimeWarning: divide by zero encountered in matmul
+  H = Xb.T @ (Xb * W[:, None]) + pen
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:199: RuntimeWarning: overflow encountered in matmul
+  H = Xb.T @ (Xb * W[:, None]) + pen
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:199: RuntimeWarning: invalid value encountered in matmul
+  H = Xb.T @ (Xb * W[:, None]) + pen
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:200: RuntimeWarning: divide by zero encountered in matmul
+  g = Xb.T @ (y - mu) - pen @ beta
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:200: RuntimeWarning: overflow encountered in matmul
+  g = Xb.T @ (y - mu) - pen @ beta
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:200: RuntimeWarning: invalid value encountered in matmul
+  g = Xb.T @ (y - mu) - pen @ beta
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:214: RuntimeWarning: divide by zero encountered in matmul
+  return 1.0 / (1.0 + np.exp(-np.clip(Xb @ beta, -30.0, 30.0)))
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:214: RuntimeWarning: overflow encountered in matmul
+  return 1.0 / (1.0 + np.exp(-np.clip(Xb @ beta, -30.0, 30.0)))
+/Users/xsnyde2/polymarket-copybot/scripts/analyze-score-separation.py:214: RuntimeWarning: invalid value encountered in matmul
+  return 1.0 / (1.0 + np.exp(-np.clip(Xb @ beta, -30.0, 30.0)))

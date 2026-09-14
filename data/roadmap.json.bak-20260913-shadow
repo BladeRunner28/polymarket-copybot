@@ -72,24 +72,6 @@
       ]
     },
     {
-      "id": "kalshi-shadow-score-and-ledger",
-      "title": "Kalshi shadow ledger + shadow expectancy score (measurement lane, live in the dashboard)",
-      "column": "In Progress",
-      "effort": "shipped 2026-09-13 (~half day): scripts/shadow-expectancy-model.py --fit, scripts/kalshi-shadow.py, src/components/kalshi-shadow.tsx, cron copybot-kalshi-shadow (15m) + copybot-kalshi-shadow-report (daily 18:30)",
-      "dates": "Shipped 2026-09-13 \u00b7 OOS clock started 2026-09-13 \u00b7 switchover decision at the Oct 8 Kelly read",
-      "gate": "Kelly window frozen through 2026-10-08: this lane is OBSERVABILITY ONLY (no effect on admission, sizing, routing or venue). Any live switchover is a post-Oct-8 decision needing explicit approval.",
-      "note": "WHY: the venue gate is structurally unsatisfiable and the live score is inverted \u2014 measured 2026-09-13 on 9,734 finished copies: winners have LOWER copyScore (75.0 vs 77.6, t=-12.8), lower walletQuality (-16.3), lower categoryFit (-19.8), lower thesis (-18.6); in the C-200 lane the top score bin (82+) wins 35% for -$1.79/trade while the bottom bin (35.5-62.7) wins 56% for +$1.81/trade. The score optimises WIN RATE in a favourite-longshot market, where win rate and expectancy decouple (0.82-1.0 band: 87% win, -4.9% ROI). WHAT SHIPPED: (1) a shadow expectancy model trained on realized PnL per dollar staked with decision-time features only (WalletProfile columns excluded \u2014 not point-in-time) and PURGED walk-forward (a training row is eligible only once its outcome settled); purged OOS rank IC +0.093 on C-200, and in the purged main-lane slice the top-30% policy returns +$227 (+25.6% ROI) vs -$238 (-10.4%) for the incumbent copyScore / +$50 for the raw composite, on 578 OOS rows. (2) an idempotent Kalshi shadow ledger (data/kalshi-shadow.jsonl + data/kalshi-shadow-summary.json) attributing the all-Polymarket C-200 book across four candidate venue rules \u2014 gate as written (n=105, +$89, +9.5%), pre-v37 semantics (n=133, -$599, -31.6%), repaired raw bar (n=36, +$83, +26.8%), shadow model (n=795, +$990, +21.3%). (3) dashboard cards next to the live PnL tiles (Live PM / Kalshi shadow slice / PM-only remainder + a three-line cumulative path) and a model card. (4) a daily Discord report (copybot-kalshi-shadow-report) with recommendations. HONESTY RULE: the shadow-model split is IN-SAMPLE (fitted on the rows it scores). The only forward evidence is the OOS clock (shadowScoreSplit.oosSinceFit) which starts at 0 and fills as new copies settle \u2014 do not quote the +21.3% as a forward result. NEXT (post-Oct-8): if the OOS clock holds positive with n>=100, wire the score as the admission/sizing input and switch the venue rule to the repaired single-variable bar; if it does not, retire the model and keep the ledger as an attribution view. Verify: `python3 scripts/kalshi-shadow.py --quiet && python3 -c \"import json;s=json.load(open('data/kalshi-shadow-summary.json'));print(s['shadowScoreSplit']['oosSinceFit'])\"` \u2014 OOS n grows and PnL sign tracks the model's claim.",
-      "tags": [
-        "kalshi",
-        "shadow",
-        "scoring",
-        "measurement",
-        "post-oct-8",
-        "dashboard",
-        "shipped"
-      ]
-    },
-    {
       "id": "phase-c",
       "title": "Phase C \u2014 Constraint-based cross-venue arb",
       "column": "Backlog",

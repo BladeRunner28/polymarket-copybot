@@ -1,0 +1,236 @@
+SOURCE: https://raw.githubusercontent.com/TiernanGeary/polymarketbets/main/docs/backtest-methodology.md
+
+# Backtest Methodology — Near-Certain Favorite Strategy on Polymarket
+
+**Status:** design spec (locked methodology; implementation tracked in `tasks/todo.md`)
+**Last updated:** 2026-06-03
+
+This document defines *how* we test the hypothesis and *which* statistical methods we use,
+with plain-language explanations so the methods can be reviewed and understood, not just run.
+
+---
+
+## 1. The hypothesis (what we're actually betting)
+
+**Strategy:** systematically buy near-certain favorites on Polymarket (shares priced high,
+e.g. 0.90–0.99) and hold to resolution, harvesting the small `(1 − price)` premium.
+
+**The economic claim underneath it:** that high-probability favorites are *underpriced* —
+i.e. a share priced at 0.97 resolves YES *more* than 97% of the time. This is the
+**favorite-longshot bias**. If true, the strategy is positive expected value (+EV). If the
+market is efficient (0.97 wins exactly 97%), gross edge is ~0 and costs make it −EV.
+
+**Payoff shape (why this is delicate):** buy at price `q`, hold to resolution.
+- Win → receive $1 → profit `(1 − q)/q` (≈ +3.1% at q = 0.97)
+- Lose → −100% of stake
+- **Negatively skewed:** many small wins, rare catastrophic losses. At 0.97, **one loss
+ wipes ~32 wins.** A tiny error in the true win-rate flips the whole strategy.
+
+> The entire project is a measurement of whether realized win-rate exceeds price, by enough
+> to survive costs, in some reachable region of (price, time-to-resolution).
+
+---
+
+## 2. Core reframe: estimate an *edge surface*, not a fixed band
+
+We do **not** pre-commit to "95–99%." That band is a *hypothesis about where* the edge lives.
+Instead we estimate edge as a function and let the data locate it.
+
+### 2a. Edge is two-dimensional: `edge(price, τ)`
+
+A "90% favorite 24h before resolution" and a "90% favorite 1h before resolution" are **not the
+same bet** — the first has far more time to swing. So **time-to-resolution `τ` is a first-class
+axis**, never pooled away. The deliverable is a 2-D surface:
+
+```
+ price band →
+ τ ↓ 0.90 0.93 0.95 0.97 0.99
+ 24h · · · · · ← more time to swing (higher variance)
+ 6h · · · · ·
+ 1h · · · · · ← nearly converged (lower variance)
+ 10m · · · · ·
+ each cell = realized win-rate, net EV, Wilson CI, sample size, capacity
+```
+
+### 2b. The martingale insight (why stratifying by τ *is* the edge hunt)
+
+If Polymarket were perfectly efficient, price would be a **martingale**: today's price already
+equals the expected terminal outcome, so a 0.90 share resolves YES 90% of the time *regardless
+of horizon*. Under efficiency, τ wouldn't matter.
+
+**Therefore any horizon-dependence in the realized win-rate at a given price is, by definition,
+a deviation from efficiency — i.e. the mispricing we're hunting.** Expected pattern:
+- **Late, near-certain (small τ, p≈0.99):** mostly converged → efficient → little edge, little risk.
+- **Earlier favorites (large τ, p≈0.93–0.97):** more likely to carry the bias → real edge, but
+ much higher variance (more time for the favorite to blow up) and capital tied up longer.
+
+The surface prices the trade-off: how much edge you're paid for how much horizon risk.
+
+### 2c. Entry definition: fixed-lead-time *snapshot*, not path-trigger
+
+- **Snapshot (use this):** record each market's executable **ask** at fixed offsets before
+ resolution (T−10m, T−1h, T−6h, T−24h). One clean observation per market per horizon.
+ No path-selection bias, and it mirrors the live decision exactly: *"it's 1h out, this
+ favorite is at 0.97 — buy or not?"*
+- **Band-crossing trigger (avoid for calibration):** "buy the first time it touches 0.97" is
+ path-dependent and selection-biased (a market that spikes to 0.97 then collapses ≠ one that
+ drifts up). Keep this only as an *execution* model later, not for measuring calibration.
+
+---
+
+## 3. Statistical & analysis methods (the primer)
+
+Each method below: **what it is → why we use it → what to read.**
+
+### 3.1 Calibration curve
+- **What:** plot market price (x) vs. realized win-rate (y), binned or smoothed.
+ The 45° diagonal = perfect calibration.
+- **Why:** it *is* the edge map. Above the diagonal at the high end = favorites underpriced
+ (+EV). On the diagonal = efficient (no edge). Below = overpriced (−EV).
+- **Read:** "reliability diagram"; Brier score decomposition (calibration + refinement).
+
+### 3.2 Wilson score confidence interval (for the win-rate in each cell)
+- **What:** a confidence interval for a binomial proportion (our win-rate is "wins out of n").
+- **Why this one:** the normal/Wald interval (`p̂ ± z·√(p̂(1−p̂)/n)`) is badly wrong near 0 and
+ 1 and with small n — **exactly our regime** (p≈0.97, few samples per tail cell). The Wilson
+ interval stays inside [0,1] and is accurate in the tail. This is the honest "is this cell's
+ edge real or noise?" test.
+- **Rule we adopt:** a cell only counts as +EV if the **lower Wilson bound of net EV clears
+ zero** — not just the point estimate.
+- **Read:** Wilson (1927); compare Wald vs Wilson vs Clopper-Pearson (Clopper-Pearson =
+ conservative exact alternative).
+
+### 3.3 Isotonic regression (smoothed, monotonic calibration)
+- **What:** fits realized-rate as a **non-decreasing** function of price (higher price ⇒ ≥ win-rate).
+- **Why:** hard bins waste data and are noisy in the thin tail. Isotonic pools strength across
+ neighboring prices and enforces the sensible monotonicity constraint, giving a cleaner edge
+ estimate everywhere. It's also the standard way to *recalibrate* a probability source.
+- **Read:** "isotonic regression / pool-adjacent-violators algorithm (PAVA)";
+ `sklearn.isotonic.IsotonicRegression`.
+
+### 3.4 Logistic regression / GLM (model edge as a smooth function of covariates)
+- **What:** regress the binary outcome on `price`, `τ`, category, depth, etc.
+- **Why:** lets us estimate `edge(price, τ, …)` as a smooth surface instead of independent noisy
+ cells, and to test whether τ, category, or liquidity *significantly* shift the edge while
+ controlling for price. Coefficients quantify each effect.
+- **Read:** logistic GLM; include a `price` term and interaction `price × τ`; check with
+ out-of-sample log-loss, not in-sample fit.
+
+### 3.5 Net expected value (the bankability test)
+- **Formula (per $1 staked):** `net_EV = p_realized · (1/q) − 1 − cost(q)`
+ where `q` = executable entry ask, `p_realized` = win-rate in that (price, τ) cell,
+ `cost(q)` = fees + slippage (see §4).
+- **Why:** gross calibration edge is necessary but not sufficient; only *net* EV after the full
+ cost model is bankable. Report gross and net side by side so we can see how much cost eats.
+
+### 3.6 Overfitting / multiple-comparison controls (so we don't fool ourselves)
+- **The risk:** scanning many (price × τ × category) cells guarantees some look +EV by chance.
+- **Defenses (all three):**
+ 1. **Temporal holdout** — discover the operating region on an early window (e.g. Feb–Apr),
+ *validate* it on a later untouched window (May). Temporal (not random) split because
+ markets are non-stationary (liquidity/behavior drift over 2023–2025).
+ 2. **Economic prior** — the favorite-longshot bias predicts the high end, so edge found there
+ is more credible than a random mid-band blip. Pre-register this expectation.
+ 3. **Margin rule** — require net-EV's lower confidence bound to clear cost *by a margin*, not
+ barely. (Optionally Benjamini-Hochberg FDR control if we report many cells.)
+- **Read:** train/validation/test discipline; multiple-testing / false-discovery rate (FDR);
+ "data dredging / p-hacking."
+
+### 3.7 Survivorship-bias control
+- **Rule:** include **every** market that reached the band — winners *and* losers. Pull the
+ universe from resolved-market metadata (Gamma), not from "markets that did well." A backtest
+ that only sees survivors will massively overstate the win-rate.
+- **Read:** survivorship bias; selection bias.
+
+### 3.8 Sizing & risk: Kelly, variance, drawdown
+- **What:** given a measured per-cell edge, compute the **Kelly fraction** (optimal bet size to
+ maximize long-run growth) and simulate equity paths for **variance and max drawdown**.
+- **Why:** the negatively-skewed payoff means even a *true* +EV strategy can have brutal
+ drawdowns. Full Kelly on a thin edge is wildly over-levered here; we'll report fractional
+ Kelly (e.g. ¼-Kelly) and the drawdown distribution. Capacity (how much $ the ask ladder can
+ absorb per market) caps real-world size below the Kelly ideal.
+- **Read:** Kelly criterion; fractional Kelly; Monte Carlo drawdown simulation; "risk of ruin."
+
+### 3.9 Statistical power in the tail (a hard constraint)
+- **The problem:** to distinguish "wins 97%" from "wins 98%" (a 1-point edge) you need *many*
+ resolved markets — far more than to resolve a 50/50. The tail is data-starved by nature.
+- **Implication:** we compute the n required for a given edge/CI up front, report n per cell,
+ and refuse to claim an edge in under-powered cells. This is why §3.3/§3.4 (pooling) matter.
+- **Read:** binomial power analysis; sample-size-for-proportion.
+
+---
+
+## 4. Cost model (the "vig")
+
+Net EV is only meaningful with a faithful cost model. Components:
+
+1. **Explicit trading fee — Polymarket US (QCX):** per official `docs.polymarket.us/fees.md`,
+ a **symmetric, uncertainty-scaled** fee (⚠️ verify in-app before locking):
+
+ ```
+ Fee = Θ · C · p · (1 − p) Θ_taker = 0.05, Θ_maker = −0.0125 (rebate)
+ ```
+
+ Because `p·(1−p) → 0` as `p → 1`, the fee is **tiny at the favorite end**. Clean result:
+ since gross edge = `(1 − p)` and fee = `Θ·p·(1−p)`, the taker fee skims only **`Θ·p` ≈ ~5%
+ of gross edge**, roughly constant across the band; a maker *earns* ~1.2% of gross back.
+ ➜ Explicit fees are survivable; **slippage is the dominant cost.**
+
+2. **Slippage:** to "buy at 0.97" you lift the **ask ladder** (top-of-book is shallow; real
+ fills are worse). Must be modeled from the **full L2 asks**, not best-ask, for a given order
+ size. This is the make-or-break cost.
+
+3. **Spread / bid-ask:** the gap you cross on entry.
+
+4. **Gas:** likely ~0 on PM-US (regulated off-book matching) vs. Polygon gas on PM.com — verify.
+
+> ⚠️ **Data vs. venue caveat:** backtest data is from **Polymarket.com** (full tick archive),
+> but we trade **Polymarket US** (separate, thinner liquidity, different fee/tick). Costs and
+> capacity must be re-derived for .us; .com is a *proxy*. See `tasks/todo.md` transfer notes.
+
+---
+
+## 5. Deliverables (what the analysis must output)
+
+1. **The `(price × τ)` net-EV surface** — heatmap with realized win-rate, gross EV, net EV,
+ Wilson CI, sample size, and capacity per cell. *This is the core artifact.*
+2. **Calibration curve(s)** at each fixed horizon (binned + isotonic-smoothed), with the
+ diagonal overlaid.
+3. **Discovered operating region** — the (price, τ, category) cells that are net-+EV on the
+ training window, then their **out-of-sample performance on the holdout window**.
+4. **Sizing & risk** — fractional-Kelly size, capacity-capped, with simulated drawdown
+ distribution for the chosen region.
+5. **Transfer notes to PM-US** — fee/tick/liquidity differences + forward-validation design.
+
+---
+
+## 6. Pitfalls checklist (review before trusting any number)
+
+- [ ] Did we include **losers** (every market that hit the band), not just survivors? (§3.7)
+- [ ] Is τ stratified, never pooled across horizons? (§2a)
+- [ ] Is entry the **executable ask after slippage**, not best-ask or mid? (§4.2)
+- [ ] Are win-rate claims backed by **Wilson CIs** and adequate **n**? (§3.2, §3.9)
+- [ ] Was the operating region chosen on **train** and validated on a **temporal holdout**? (§3.6)
+- [ ] Is the +EV claim **net of the full cost model**, with margin over the CI? (§3.5, §3.6)
+- [ ] Are .com→.us **transfer caveats** (liquidity, fees, tick) explicit? (§4)
+
+---
+
+## 7. Glossary (quick reference)
+
+| Term | One-line meaning |
+|---|---|
+| Favorite / longshot | High-priced likely outcome / low-priced unlikely outcome |
+| Favorite-longshot bias | Favorites underpriced & longshots overpriced (the edge we test for) |
+| +EV / −EV | Bet makes / loses money on average over many repetitions |
+| Vig | The house's cut — here: fees + spread + slippage + gas |
+| Calibration | Does a stated probability match the realized frequency? |
+| Tail | The extreme-probability region (our 0.95–0.99 favorites) |
+| Tail efficiency | Whether prices are *correct* specifically in that extreme region |
+| Martingale | Efficient price = expected terminal value at all times (⇒ τ shouldn't matter) |
+| τ (lead time) | Time-to-resolution at entry |
+| Slippage | Extra cost from lifting deeper, worse-priced levels of the ask ladder |
+| Wilson interval | Accurate confidence interval for a proportion near 0/1 and small n |
+| Isotonic regression | Monotonic smoothed calibration fit; pools strength across prices |
+| Kelly criterion | Bet size that maximizes long-run growth given the edge |
+| Survivorship bias | Overstating results by only looking at winners |

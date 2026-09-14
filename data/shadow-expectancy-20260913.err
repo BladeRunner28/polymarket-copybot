@@ -1,0 +1,12 @@
+/Users/xsnyde2/polymarket-copybot/scripts/shadow-expectancy-model.py:89: RuntimeWarning: divide by zero encountered in matmul
+  A = np.nan_to_num(Xb.T @ Xb, nan=0.0, posinf=0.0, neginf=0.0) + pen
+/Users/xsnyde2/polymarket-copybot/scripts/shadow-expectancy-model.py:89: RuntimeWarning: overflow encountered in matmul
+  A = np.nan_to_num(Xb.T @ Xb, nan=0.0, posinf=0.0, neginf=0.0) + pen
+/Users/xsnyde2/polymarket-copybot/scripts/shadow-expectancy-model.py:89: RuntimeWarning: invalid value encountered in matmul
+  A = np.nan_to_num(Xb.T @ Xb, nan=0.0, posinf=0.0, neginf=0.0) + pen
+/Users/xsnyde2/polymarket-copybot/scripts/shadow-expectancy-model.py:90: RuntimeWarning: divide by zero encountered in matmul
+  b = np.nan_to_num(Xb.T @ y, nan=0.0, posinf=0.0, neginf=0.0)
+/Users/xsnyde2/polymarket-copybot/scripts/shadow-expectancy-model.py:90: RuntimeWarning: overflow encountered in matmul
+  b = np.nan_to_num(Xb.T @ y, nan=0.0, posinf=0.0, neginf=0.0)
+/Users/xsnyde2/polymarket-copybot/scripts/shadow-expectancy-model.py:90: RuntimeWarning: invalid value encountered in matmul
+  b = np.nan_to_num(Xb.T @ y, nan=0.0, posinf=0.0, neginf=0.0)

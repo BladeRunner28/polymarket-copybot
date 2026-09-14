@@ -1,0 +1,660 @@
+{
+ "AntoineROYERB__polymarketpricer": {
+  "code_files": 225,
+  "loc": 19290,
+  "scoring_files": [
+   "alembic/versions/001_initial.py",
+   "alembic/versions/005_smart_money_alerts.py",
+   "alembic/versions/009_add_sync_indexes.py",
+   "alembic/versions/015_increase_wallet_analytics_precision.py",
+   "alembic/versions/002_category_analytics.py",
+   "alembic/versions/010_add_wallet_tier.py",
+   "alembic/versions/017_add_edge_scoring.py",
+   "alembic/versions/013_fix_min_score_default.py",
+   "alembic/versions/016_increase_ranking_snapshots_precision.py",
+   "scripts/make-sample-seed.sh",
+   "scripts/run-all-pipelines.sh",
+   "magic/default_repo/data_exporters/notify_pipeline_completion.py",
+   "magic/default_repo/data_exporters/trigger_smart_money.py",
+   "magic/default_repo/data_exporters/export_analytics.py",
+   "magic/default_repo/data_exporters/materialize_rankings.py",
+   "magic/default_repo/data_exporters/export_edge_snapshots.py",
+   "magic/default_repo/data_exporters/export_alerts.py",
+   "magic/default_repo/data_loaders/load_wallet_scores.py"
+  ]
+ },
+ "Cachaza__polymarket-scanner": {
+  "code_files": 65,
+  "loc": 10286,
+  "scoring_files": [
+   "sql/schema.sql",
+   "tests/test_recommendations.py",
+   "tests/test_api.py",
+   "web/lib/mock-data.ts",
+   "web/lib/api.ts",
+   "web/components/trade-aftermath-panel.tsx",
+   "web/components/live-market-activity.tsx",
+   "web/components/system-actions-panel.tsx",
+   "web/app/watchlist/page.tsx",
+   "web/app/page.tsx",
+   "web/app/markets/[conditionId]/page.tsx",
+   "web/app/alerts/page.tsx",
+   "web/app/recommendations/page.tsx",
+   "app/backtest.py",
+   "app/main.py",
+   "app/jobs/snapshot.py",
+   "app/jobs/refresh_leaderboard.py",
+   "app/jobs/score_alerts.py"
+  ]
+ },
+ "DavidSMazur__gnosicular": {
+  "code_files": 417,
+  "loc": 143612,
+  "scoring_files": [
+   "prediction-market-agent/run_live_manager.py",
+   "scripts/compare_competitor_vs_optimized.py",
+   "prediction-market-agent/run_informed_trader.py",
+   "analysis/deep_attack_analysis.py",
+   "prediction-market-agent/notebooks/agent_benchmarks/test_logprobs_in_prophet.ipynb",
+   "prediction-market-agent/prediction_market_agent/development_tools/test_all_prophet_agents.py",
+   "prediction-market-agent/scripts/search_profitable_strategy.py",
+   "analysis/attack_recon.py",
+   "prediction-market-agent/prediction_market_agent/development_tools/prophet_agent_tester.py",
+   "scripts/profile_buy_no_path.py",
+   "prediction-market-agent/scripts/continue_informed_search.py",
+   "scripts/parse_latency_logs.py",
+   "scripts/aggregate_speed_benchmarks.py",
+   "scripts/benchmark_rpc_endpoints.py",
+   "prediction-market-agent/notebooks/agent_benchmarks/test_kelly_bet_difference-05.ipynb",
+   "prediction-market-agent/scripts/_test_kalshi.py",
+   "scripts/shadow_mode_observer.py",
+   "prediction-market-agent/scripts/two_hour_strategy_research.py"
+  ]
+ },
+ "Gurdiel07__polymarket-bot": {
+  "code_files": 111,
+  "loc": 36843,
+  "scoring_files": [
+   "src/polymarket_bot/analytics/signal_scoring.py",
+   "src/polymarket_bot/analytics/copy_trading_backtest.py",
+   "src/polymarket_bot/analytics/forward_test.py",
+   "src/polymarket_bot/analytics/wallet_scoreboard.py",
+   "src/polymarket_bot/analytics/paper_trading.py",
+   "src/polymarket_bot/execution/__init__.py",
+   "tests/test_executor_telegram_notifier.py",
+   "src/polymarket_bot/ingestion/markets_ingest.py",
+   "src/polymarket_bot/execution/config.py",
+   "src/polymarket_bot/execution/paper_executor.py",
+   "src/polymarket_bot/storage/schema.py",
+   "src/polymarket_bot/execution/signal_router.py",
+   "src/polymarket_bot/analytics/wallet_scoring.py",
+   "src/polymarket_bot/execution/position_tracker.py",
+   "src/polymarket_bot/execution/risk.py",
+   "src/polymarket_bot/ingestion/price_snapshots.py",
+   "src/polymarket_bot/execution/clob_client.py",
+   "scripts/run_paper_executor.py"
+  ]
+ },
+ "JamesFletty__maths": {
+  "code_files": 94,
+  "loc": 2618,
+  "scoring_files": [
+   "src/polymarket_bot/risk/pnl.py",
+   "src/polymarket_bot/wallets/validation/dataset.py",
+   "src/polymarket_bot/wallets/validation/recorded_dataset.py",
+   "src/polymarket_bot/wallets/validation/leakage.py",
+   "src/polymarket_bot/wallets/validation/policy.py",
+   "src/polymarket_bot/wallets/validation/models.py",
+   "src/polymarket_bot/wallets/validation/harness.py",
+   "src/polymarket_bot/wallets/validation/baselines.py",
+   "src/polymarket_bot/wallets/validation/metrics.py",
+   "src/polymarket_bot/wallets/scoring.py",
+   "src/polymarket_bot/wallets/signals.py",
+   "src/polymarket_bot/app.py",
+   "src/polymarket_bot/governance/gate.py",
+   "src/polymarket_bot/governance/models.py",
+   "src/polymarket_bot/adapters/polymarket.py",
+   "src/polymarket_bot/signals/universe.py",
+   "src/polymarket_bot/signals/edge.py",
+   "src/polymarket_bot/core/models.py"
+  ]
+ },
+ "Ksmith18skc__SignalForge": {
+  "code_files": 52,
+  "loc": 10883,
+  "scoring_files": [
+   "tests/test_alert_channels.py",
+   "tests/test_ingestion_tz.py",
+   "app/utils/dashboard_format.py",
+   "app/config.py",
+   "app/providers/mock.py",
+   "app/providers/base.py",
+   "app/providers/falcon_agents.py",
+   "app/providers/polymarket.py",
+   "app/providers/falcon.py",
+   "app/providers/kalshi.py",
+   "app/services/wallet_market_resolver.py",
+   "tests/test_card_date_live_filters.py",
+   "tests/test_ingestion_resilience.py",
+   "tests/test_signal_engine.py",
+   "tests/test_scoring.py",
+   "app/services/alerts.py",
+   "app/services/pipeline_diagnostics.py",
+   "app/services/scoring.py"
+  ]
+ },
+ "Marzel7__flex": {
+  "code_files": 1381,
+  "loc": 449853,
+  "scoring_files": [
+   "migration_speed_conditional_audit.py",
+   "src/trading/simulation.py",
+   "src/discovery/mint_linked_evidence.py",
+   "src/extractors/realtime_creator_funding_extractor.py",
+   "src/discovery/infrastructure_reconstruction.py",
+   "src/discovery/generic_wallet_walkback.py",
+   "src/discovery/local_operation_discovery_projection.py",
+   "src/discovery/generic_walkback_pilot_runner.py",
+   "src/extractors/funder_helius_extractor.py",
+   "src/extractors/funder_incoming_extractor.py",
+   "UNKNOWN_CLUSTER_ALPHA_CLUSTERING_SUMMARY.txt",
+   "config/supervisor/supervisord.conf",
+   "utils/buy_token.py",
+   "database/migrations/add_monitored_upstream_hubs.sql",
+   "http_instrumentation/rpc_metrics_funder_helpers.py",
+   "http_instrumentation/http_instrumentation.py",
+   "database/migrations/add_second_hop_phase1.sql",
+   "http_instrumentation/rpc_metrics_enhanced.py"
+  ]
+ },
+ "NickNaskida__polymarket-insider-bot": {
+  "code_files": 12,
+  "loc": 1241,
+  "scoring_files": [
+   "src/tracker.py",
+   "src/polymarket_api.py",
+   "src/anomaly_detector.py"
+  ]
+ },
+ "Timaroc13__polymarket-engine": {
+  "code_files": 36,
+  "loc": 8524,
+  "scoring_files": [
+   "src/crypto_news_parser/main.py",
+   "src/crypto_news_parser/scheduler.py",
+   "src/crypto_news_parser/paper.py",
+   "tests/test_dashboard.py",
+   "tests/test_wallet_flow.py",
+   "scripts/reset_flow_data.py",
+   "src/crypto_news_parser/models.py",
+   "src/crypto_news_parser/storage.py",
+   "src/crypto_news_parser/dashboard.py",
+   "tests/test_scheduler.py",
+   "src/crypto_news_parser/wallet_flow.py",
+   "tests/test_category.py",
+   "tests/test_paper.py",
+   "tests/test_poll_resolutions.py"
+  ]
+ },
+ "abhinandan202004__Vantage": {
+  "code_files": 53,
+  "loc": 3058,
+  "scoring_files": [
+   "backend/app/services/score_inputs.py",
+   "backend/app/services/stock_summary.py",
+   "backend/app/schemas.py",
+   "backend/app/chat/agent.py",
+   "backend/app/data_ingestion/nse_client.py",
+   "backend/app/rag/ingest_methodology.py",
+   "backend/app/scoring/smart_money_score.py",
+   "backend/app/scoring/shareholding_trends.py",
+   "backend/app/routers/stock.py",
+   "backend/app/chat/tools.py",
+   "backend/app/models/tables.py"
+  ]
+ },
+ "al1enjesus__polymarket-whales": {
+  "code_files": 2,
+  "loc": 609,
+  "scoring_files": []
+ },
+ "chainstacklabs__polymarket-alpha-bot": {
+  "code_files": 112,
+  "loc": 26333,
+  "scoring_files": [
+   "backend/server/routers/trading.py",
+   "backend/server/clob_websocket.py",
+   "backend/server/routers/position_actions.py",
+   "frontend/config/tier-config.ts",
+   "frontend/app/positions/page.tsx",
+   "backend/tests/test_clob.py",
+   "frontend/components/PortfolioModal.tsx",
+   "frontend/components/positions/PositionExpandedDetails.tsx",
+   "frontend/components/positions/PositionActionsDropdown.tsx",
+   "backend/core/steps/expand.py",
+   "experiments/05a_expand_to_markets.py",
+   "frontend/components/OrderSettings.tsx",
+   "experiments/07_websocket_prices.py",
+   "backend/core/http_retry.py",
+   "experiments/trading/02_wrap_to_pusd.py",
+   "experiments/trading/02_unwrap_to_usdc_e.py",
+   "backend/core/positions/manager.py",
+   "backend/core/trading/clob.py"
+  ]
+ },
+ "childersjac-max__Line-Tracker-Model": {
+  "code_files": 32,
+  "loc": 5736,
+  "scoring_files": [
+   "data/splits.py",
+   "data/sources/base.py",
+   "data/sources/oddsjam.py",
+   "data/sources/the_odds_api.py",
+   "data/sources/__init__.py",
+   "data/injuries.py",
+   "data/labeler.py",
+   "data/pattern_engine.py",
+   "data/historical.py",
+   "data/paper_log.py",
+   "data/line_tracker.py",
+   "configs/config.py",
+   "pipeline.py",
+   "backtest/backtest.py",
+   "models/scorer.py",
+   "models/model.py",
+   "utils/odds_math.py",
+   "utils/scoring.py"
+  ]
+ },
+ "devfchen__joker": {
+  "code_files": 2,
+  "loc": 1466,
+  "scoring_files": [
+   "polymarket_insider_tracker.py",
+   "copy_trader.py"
+  ]
+ },
+ "dexoryn-china__polymarket-copy-trading-bot": {
+  "code_files": 59,
+  "loc": 9247,
+  "scoring_files": [
+   "src/utils/create_clob_client.py",
+   "src/scripts/position/manual_sell.py",
+   "src/utils/post_order.py"
+  ]
+ },
+ "feecrookz-bit__basement-archive": {
+  "code_files": 94,
+  "loc": 8924,
+  "scoring_files": [
+   "scripts/test_wallet_quality.py",
+   "sentinel/scripts/seed_demo.py",
+   "sentinel/sentinel/data/market.py",
+   "sentinel/sentinel/data/ingest.py",
+   "sentinel/sentinel/modules/executor.py",
+   "sentinel/sentinel/modules/scout.py",
+   "sentinel/sentinel/modules/conviction.py",
+   "sentinel/config.yaml",
+   "sentinel/sentinel/modules/analyst/range_play.py",
+   "sentinel/schema.sql",
+   "sentinel/tests/test_ict_pipeline.py",
+   "sentinel/sentinel/backtest.py",
+   "app/config.py",
+   "app/main.py",
+   "app/wallet_quality.py",
+   "app/moonshot.py",
+   "app/db.py",
+   "app/signals.py"
+  ]
+ },
+ "humanplane__terminal": {
+  "code_files": 29,
+  "loc": 7863,
+  "scoring_files": [
+   "backend/src/main.rs",
+   "frontend/src/lib/format.ts",
+   "frontend/src/lib/stream.ts",
+   "frontend/src/App.tsx",
+   "frontend/src/components/MarketDetail.tsx",
+   "frontend/src/lib/api.ts",
+   "frontend/src/components/TradePanel.tsx",
+   "frontend/src/components/OrderBook.tsx"
+  ]
+ },
+ "jt8530-beep__weather": {
+  "code_files": 63,
+  "loc": 14227,
+  "scoring_files": [
+   "polymarket_public_client.py",
+   "weather_range_scanner_local.py",
+   "alternative_data_ocr.py",
+   "alternative_data_ocr_ascii.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/scanners.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/gamma.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/main.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/near_miss.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/clob.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/orderbook.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/types.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/ws_market.py",
+   "pm_weather_arb_mvp/src/pm_weather_arb/paper_executor.py",
+   "pm_weather_arb_mvp/tests/test_scanners.py",
+   "pm_weather_arb_mvp/tests/test_paper_and_ws.py",
+   "pm_weather_arb_mvp/tests/test_near_miss.py",
+   "pm_weather_arb_mvp/tests/test_temperature_buckets.py",
+   "pm_weather_arb_mvp/wallet_alpha_radar/wallet_category_profiler.py"
+  ]
+ },
+ "kachence__prediction-almanac": {
+  "code_files": 3,
+  "loc": 953,
+  "scoring_files": [
+   "data/sources/hf-kalshi-trades.yaml",
+   "data/sources/betfair-exchange-api.yaml",
+   "data/sources/hf-polymarket-l2-depth.yaml",
+   "data/tools/prediction-market-news.yaml",
+   "data/tools/kalshi-parlay-bias.yaml",
+   "data/tools/probalytics.yaml",
+   "data/tools/polymarket-orderbook-microstructure.yaml",
+   "data/tools/marketlens.yaml",
+   "data/tools/prediction-market-calibration-decomposition.yaml",
+   "data/tools/overround.yaml",
+   "data/tools/poly-maker.yaml",
+   "data/tools/kalshi-makers-and-takers.yaml",
+   "data/platforms/limitless.yaml",
+   "data/platforms/omen.yaml",
+   "data/platforms/betfair.yaml",
+   "data/platforms/metaculus.yaml",
+   "data/platforms/predict-fun.yaml",
+   "data/platforms/ibkr.yaml"
+  ]
+ },
+ "lbsm2017__polyMDash": {
+  "code_files": 42,
+  "loc": 12711,
+  "scoring_files": [
+   "validation/test_scoring_validation.py",
+   "validation/practical_scenarios.py",
+   "validation/rigorous_testing.py",
+   "app.py",
+   "clients/api_pool.py",
+   "algorithms/conviction_scorer.py",
+   "algorithms/__init__.py",
+   "tests/test_conviction_scorer.py",
+   "tests/test_practical_validation.py",
+   "tests/test_momentum_hunter.py",
+   "TEST_RESULTS.txt"
+  ]
+ },
+ "leoaguiarguedes__CopyTraderPolymarket": {
+  "code_files": 136,
+  "loc": 15976,
+  "scoring_files": [
+   ".env.example",
+   "workers/signal_worker.py",
+   "workers/execution_worker.py",
+   "workers/collector_worker.py",
+   "Makefile",
+   "scripts/discover_wallets.py",
+   "tests/unit/test_models.py",
+   "tests/unit/test_strategies.py",
+   "tests/unit/test_signal_worker.py",
+   "config/strategies.yaml",
+   "tests/unit/test_risk_manager.py",
+   "tests/unit/test_confidence.py",
+   "tests/unit/test_scoring.py",
+   "app/risk/risk_manager.py",
+   "tests/unit/test_subgraph_client.py",
+   "tests/unit/test_paper_executor.py",
+   "tests/unit/test_signal_engine.py",
+   "tests/unit/test_polymarket_rest.py"
+  ]
+ },
+ "manifoldmarkets__market-maker": {
+  "code_files": 3,
+  "loc": 409,
+  "scoring_files": [
+   "src/market-maker.ts"
+  ]
+ },
+ "mateogon__hermes-polymarket-clob2-agent": {
+  "code_files": 235,
+  "loc": 27481,
+  "scoring_files": [
+   "src/hermes_polymarket/risk/risk_manager.py",
+   "src/hermes_polymarket/data_sources/base.py",
+   "src/hermes_polymarket/data_sources/source_health.py",
+   "src/hermes_polymarket/forward_paper/campaign_summary.py",
+   "src/hermes_polymarket/forward_paper/calibration.py",
+   "src/hermes_polymarket/forward_paper/evidence_dashboard.py",
+   "src/hermes_polymarket/forward_paper/loss_attribution.py",
+   "src/hermes_polymarket/forward_paper/lifecycle.py",
+   "src/hermes_polymarket/forward_paper/strategy_arena.py",
+   "src/hermes_polymarket/forward_paper/diagnostics.py",
+   "src/hermes_polymarket/forward_paper/models.py",
+   "src/hermes_polymarket/forward_paper/strike_calibration.py",
+   "src/hermes_polymarket/execution/paper_engine.py",
+   "src/hermes_polymarket/execution/dry_run_executor.py",
+   "src/hermes_polymarket/execution/order_validator.py",
+   "src/hermes_polymarket/cli.py",
+   "src/hermes_polymarket/backtest/wallet_replay_local_l2.py",
+   "src/hermes_polymarket/backtest/wallet_replay.py"
+  ]
+ },
+ "meta-xucong__POLY_SMARTMONEY": {
+  "code_files": 66,
+  "loc": 47631,
+  "scoring_files": [
+   "copytrade_v3_muti/ct_data.py",
+   "copytrade_v3_muti/ct_resolver.py",
+   "copytrade_v3_muti/copytrade_run.py",
+   "copytrade_v3_muti/ct_exec.py",
+   "copytrade_v3_muti/test_sell_path_fixes.py",
+   "copytrade_v3_muti/test_market_status_resolver.py",
+   "copytrade_v1/ct_data.py",
+   "copytrade_v1/ct_resolver.py",
+   "copytrade_v1/copytrade_run.py",
+   "copytrade_v1/ct_exec.py",
+   "copytrade_v4_muti/windows/status_copytrade_live_supervised.ps1",
+   "copytrade_v4_muti/windows/start_copytrade_live_supervised.ps1",
+   "copytrade_v4_muti/windows/stop_copytrade_live_supervised.ps1",
+   "copytrade_v4_muti/ct_data.py",
+   "copytrade_v4_muti/ct_resolver.py",
+   "copytrade_v4_muti/copytrade_run.py",
+   "copytrade_v4_muti/ct_exec.py",
+   "copytrade_v4_muti/tests/test_must_exit_recovery.py"
+  ]
+ },
+ "microprediction__manifoldbot": {
+  "code_files": 42,
+  "loc": 6391,
+  "scoring_files": [
+   "manifoldbot/manifold/lmsr.py",
+   "tests/manifold/test_reader.py",
+   "manifoldbot/manifold/reader.py"
+  ]
+ },
+ "nexiumito__polycopy": {
+  "code_files": 281,
+  "loc": 56518,
+  "scoring_files": [
+   "src/polycopy/strategy/clob_ws_client.py",
+   "src/polycopy/strategy/orchestrator.py",
+   "src/polycopy/strategy/pipeline.py",
+   "src/polycopy/strategy/__init__.py",
+   "src/polycopy/strategy/clob_read_client.py",
+   "src/polycopy/strategy/dtos.py",
+   "alembic/versions/0005_m11_latency_samples.py",
+   "alembic/versions/0003_m5_discovery_schema.py",
+   "src/polycopy/storage/repositories.py",
+   "src/polycopy/storage/latency_purge_scheduler.py",
+   "src/polycopy/watcher/wallet_poller.py",
+   "alembic/versions/0006_m12_trader_daily_pnl.py",
+   "src/polycopy/storage/dtos.py",
+   "alembic/versions/0001_baseline_m3_schema.py",
+   "scripts/validate_ma_hypotheses.py",
+   "scripts/seed_demo_db.py",
+   "src/polycopy/watcher/orchestrator.py",
+   "scripts/backtest_scoring_v2.py"
+  ]
+ },
+ "pselamy__polymarket-insider-tracker": {
+  "code_files": 119,
+  "loc": 44778,
+  "scoring_files": [
+   "src/polymarket_insider_tracker/__main__.py",
+   "src/polymarket_insider_tracker/profiler/chain.py",
+   "src/polymarket_insider_tracker/profiler/models.py",
+   "pyproject.toml",
+   "typings/py_clob_client/clob_types.pyi",
+   "typings/py_clob_client/client.pyi",
+   "src/polymarket_insider_tracker/storage/models.py",
+   "src/polymarket_insider_tracker/storage/repos.py",
+   "src/polymarket_insider_tracker/detector/scorer.py",
+   "src/polymarket_insider_tracker/detector/fresh_wallet.py",
+   "src/polymarket_insider_tracker/detector/size_anomaly.py",
+   "src/polymarket_insider_tracker/detector/sniper.py",
+   "src/polymarket_insider_tracker/detector/models.py",
+   "tests/ingestor/test_health.py",
+   "tests/profiler/test_chain.py",
+   "tests/ingestor/test_models.py",
+   "tests/ingestor/test_clob_client.py",
+   "tests/integration/test_end_to_end.py"
+  ]
+ },
+ "realfishsam__Polymarket-Copy-Trader": {
+  "code_files": 4,
+  "loc": 252,
+  "scoring_files": []
+ },
+ "samuraifrenchienft__Prediction-Agent": {
+  "code_files": 66,
+  "loc": 28839,
+  "scoring_files": [
+   "run_edge_bot.py",
+   "run_discord_bot.py",
+   "tests/test_edge_engine.py",
+   "tests/test_edge_service.py",
+   "tests/test_edge_scanner.py",
+   "tests/test_ai_integration.py",
+   "vet_wallets.py",
+   "edge_agent/adapters.py",
+   "edge_agent/insider_alerts.py",
+   "edge_agent/nodes.py",
+   "edge_agent/win_probability.py",
+   "edge_agent/ml/__init__.py",
+   "edge_agent/ml/trader_features.py",
+   "edge_agent/ml/signal_scorer.py",
+   "edge_agent/ml/ml_store.py",
+   "edge_agent/scanners/econ_scanner.py",
+   "edge_agent/ml/confidence_calibrator.py",
+   "edge_agent/models.py"
+  ]
+ },
+ "seer-pm__demo": {
+  "code_files": 630,
+  "loc": 84988,
+  "scoring_files": [
+   "skills/seer-sites/examples/SwapWidget.tsx",
+   "packages/seer-pm-react/src/hooks/useQuoteTrade.ts",
+   "packages/seer-pm-sdk/src/token-price.ts",
+   "packages/seer-pm-sdk/src/psm3-composite-quote.ts",
+   "packages/seer-pm-sdk/src/subgraph/app-subgraph.ts",
+   "packages/seer-pm-sdk/src/psm3.ts",
+   "packages/seer-pm-sdk/src/psm3-composite-trade.ts",
+   "packages/seer-pm-sdk/src/quote.ts",
+   "packages/seer-pm-sdk/src/index.ts",
+   "packages/seer-pm-sdk/src/amm-trade.ts",
+   "docs/developers/api.mdx",
+   "docs/whitepaper/seer-solution/the-chicken-and-the-egg-problem.mdx",
+   "docs/developers/guides/trading.mdx",
+   "docs/whitepaper/seer-solution/liquidity-management.mdx",
+   "packages/seer-pm-sdk/src/complete-set-quote.ts",
+   "docs/app/buy-sell-outcome-tokens.mdx",
+   "docs/app/leaderboard.mdx",
+   "web/src/index.scss"
+  ]
+ },
+ "shmlkv__polymarket-copy-trading-bot": {
+  "code_files": 105,
+  "loc": 22340,
+  "scoring_files": [
+   "src/test/test.ts",
+   "src/services/autoResolver.ts",
+   "src/scripts/manualSell.ts",
+   "src/utils/postOrder.ts",
+   "src/scripts/sellLargePositions.ts",
+   "src/scripts/closeResolvedPositions.ts",
+   "src/scripts/scanTradersFromMarkets.ts",
+   "src/scripts/closeStalePositions.ts"
+  ]
+ },
+ "tmk11__PolymarketWalletScan": {
+  "code_files": 12,
+  "loc": 5867,
+  "scoring_files": [
+   "polymarket_wallet_analyzer/token_resolver.py",
+   "polymarket_wallet_analyzer/cli.py",
+   "polymarket_wallet_analyzer/skill_score.py",
+   "polymarket_wallet_analyzer/analyzer.py",
+   "tests/test_skill_score.py"
+  ]
+ },
+ "tshore2004__polymarket-trader": {
+  "code_files": 41,
+  "loc": 12172,
+  "scoring_files": [
+   "repomix-output.xml",
+   "calibrate_weights.py",
+   "server.py",
+   "utils/models.py",
+   "config.py",
+   "tests/test_models.py",
+   "utils/display.py",
+   "tests/test_copy_strategy.py",
+   "tests/test_config.py",
+   "core/api_client.py",
+   "tests/test_arb_audit.py",
+   "tests/test_kalshi_prices.py",
+   "diagnose.py",
+   "tests/test_leaderboard.py",
+   "core/pinnacle.py",
+   "core/full_arb_scanner.py",
+   "core/fair_value.py",
+   "core/kalshi_scanner.py"
+  ]
+ },
+ "vluzko__manifoldpy": {
+  "code_files": 9,
+  "loc": 1481,
+  "scoring_files": [
+   "docs/manifoldpy.rst",
+   "docs/modules.rst",
+   "docs/index.rst"
+  ]
+ },
+ "winder87-stack__-polymarket-copy-bot": {
+  "code_files": 229,
+  "loc": 124761,
+  "scoring_files": [
+   "market_maker_dashboard/market_maker_dashboard.txt",
+   "integration_test.py",
+   "trading/gas_optimizer.py",
+   "main.py",
+   "monitoring/performance_benchmark.py",
+   "monitoring/alert_health_checker.py",
+   "setup_environment.sh",
+   "wallet_quality_ranking.py",
+   "system_validation.py",
+   "monitoring/copy_trading_dashboard.py",
+   "test_batch_performance.py",
+   "test_trade_validation.py",
+   "run_market_maker_detection.py",
+   "simple_mm_dashboard.py",
+   "wallet_quality_analysis/quality_ranking_report.txt",
+   "create_mm_dashboard.py",
+   "core/websocket_manager.py",
+   "tests/test_mcp_risk_integration.py"
+  ]
+ }
+}

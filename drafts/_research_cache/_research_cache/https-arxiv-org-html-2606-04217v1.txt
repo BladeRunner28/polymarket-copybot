@@ -1,0 +1,3788 @@
+SOURCE: https://arxiv.org/html/2606.04217v1
+
+Polymarket-v1 Database
+
+Report GitHub Issue
+
+×
+
+Title:
+
+Content selection saved. Describe the issue below:
+
+Description:
+
+arXiv is now an independent nonprofit!
+
+Learn more
+
+×
+
+Back to arXiv
+
+ License: CC BY-SA 4.0
+ 
+
+arXiv:2606.04217v1 [cs.CE] 02 Jun 2026
+
+Polymarket-v1 Database
+
+Boka Qin
+*
+
+  
+
+Rui Yang
+†
+
+June 2026
+
+1
+1
+footnotetext: 
+Corresponding author. Washington University in St. Louis. 
+bokaqin@wustl.edu
+.
+2
+2
+footnotetext: 
+Southwest University of Political Science and Law.
+
+quant@t17.capital
+.
+†
+†
+footnotetext: 
+Both authors are associated with Time Seventeen. The dataset is available at
+
+https://huggingface.co/datasets/TimeSeventeen/Polymarket-v1
+.
+
+We introduce the Polymarket-v1 Database: the complete on-chain trade archive of Polymarket’s first-generation CTF Exchange on Polygon, spanning 2022-11-21 to 2026-04-28 and covering the full contract lifecycle from first settlement to natural termination. The dataset comprises 1.20 billion trade records across 1.30 million markets with $61 billion in nominal volume. Its defining feature is all ground-truth aggressor direction derived from the blockchain settlement layer, a property unavailable in existing prediction market archives, which rely on heuristic inference.
+We use this truth-aligned archive to benchmark standard microstructure tools and document three findings. First, the tick rule and bulk volume classification achieve near-random 
+aggregate
+ accuracy (49.83% and 50.51%), but this masks a systematic, correctable price-level gradient driven by positive trade direction autocorrelation and concentrated market-making – two structural features of prediction markets that violate the mean-reversion assumption embedded in classical classifiers. Second, these classification errors propagate into downstream metrics: inferred VPIN diverges substantially from ground-truth VPIN, and OFI estimates are directionally biased, with material consequences for Transaction Cost Analysis. Third, ground-truth microstructure quality predicts forecasting performance in ways that classification-based proxies cannot recover: True VPIN positively predicts Brier scores, while Gibbs spread negatively predicts them – a selection effect reflecting that high-spread niche markets attract informed specialists rather than noise traders. Replacing ground-truth metrics with classified proxies attenuates both relationships, illustrating that measurement accuracy at the transaction level is a prerequisite for reliable inference about prediction market design and probability calibration. The dataset is publicly available.
+
+Introduction
+
+Prediction markets have emerged as foundational infrastructure for real-time probability estimation across politics, sports, and finance. Classic surveys document their forecasting accuracy and information aggregation properties 
+(
+Wolfers and Zitzewitz 2004
+; 
+Berg et al. 2008
+)
+. However, their microstructure—how prices form, how liquidity evolves over time, how informed trading is identified, and how institutional changes impact market quality—has lacked systematic empirical evidence spanning a complete platform lifecycle. The root cause is a structural data gap: off-chain matching engines do not preserve permanent records, samples are often truncated, trade directions can only be inferred, and crucially, researchers never observe the true value. This makes the core assumption of informed trading theories impossible to test directly 
+(
+Kyle 1985
+; 
+Glosten and Milgrom 1985
+; 
+O’Hara 1995
+)
+.
+
+To fill this empirical gap, we introduce and release the 
+Polymarket-v1 Database
+, the complete on-chain trade archive of Polymarket’s first-generation CTF Exchange from its first trade on 2022-11-21 to its last settlement on 2026-04-28. The dataset covers 1.2 billion trades, 1.3 million markets, and $61 billion in nominal volume. Crucially, each trade carries a ground-truth buyer/seller direction derived from the blockchain settlement layer, making it the first publicly available archive of its scale with a verified trade-direction benchmark. Existing Polymarket analyses typically focus on short windows or single-event slices and, by necessity, rely on heuristics to infer trade directions 
+(
+Dubach 2026
+; 
+Yang and Tsang 2026
+; 
+Akey et al. 2026
+)
+, leaving the full lifecycle and ground-truth microstructural properties unexplored.
+
+To demonstrate the unique value of this dataset as an empirical laboratory, we document three primary findings that challenge standard market microstructure assumptions. First, we validate standard trade classification algorithms (such as the tick rule and bulk volume classification) against our truth-aligned dataset and document a systematic failure: standard classifiers achieve near-random 
+overall
+ accuracy (49.83% for the tick rule and 50.51% for bulk volume classification), but this aggregate conceals two opposing systematic biases that cancel in the mean—classifiers over-predict buys in low-price regions and under-predict them in high-price regions, forming a correctable price-level gradient. We show that this failure is driven by positive trade direction autocorrelation—a momentum-like behavior that violates the mean-reversion assumption inherent in traditional trade classification models.
+
+Second, we show that this systematic classification error propagates into standard execution quality metrics, causing severe distortions in inferred liquidity measures (such as VPIN) and estimates of informed trading. This demonstrates that traditional Transaction Cost Analysis (TCA) reports and sell-side quality assessments, which rely on inferred trade directions, are structurally biased.
+
+Third, we demonstrate that microstructure quality is a strong predictor of macro-level forecasting performance. Markets with higher toxic order flow (True VPIN) exhibit systematically higher forecasting errors (Brier scores). Counterintuitively, markets with wider spreads exhibit 
+lower
+ forecast errors—a selection effect reflecting that high-spread niche markets attract informed specialists rather than retail noise traders, leaving pricing to those with genuine informational advantage. Importantly, we show that using flawed, classification-based metrics (such as Roll spread and BVC VPIN) instead of ground-truth measures (Gibbs spread and True VPIN) severely attenuates these predictive relationships. This highlights the economic stakes of transaction-level measurement error and underscores that a truth-aligned database is essential for reliable prediction market design and financial calibration.
+
+This paper provides the empirical foundation missing from the existing prediction market microstructure literature and connects trade-level quality to market forecasting accuracy across a full platform lifecycle.
+
+Institutional Background
+
+Hybrid architecture.
+
+Polymarket operates on a hybrid architecture: off-chain Central Limit Order Book (CLOB) matching combined with on-chain CTF Exchange settlement on Polygon 
+(
+Rahman, Al-Chami, and Clark 2025
+)
+. In this paper, we exclusively use the on-chain settlement layer (the trade tape), deliberately dropping off-chain quote flows to obtain unbiased ground-truth trade directions and permanent reproducibility.
+
+Binary complementarity.
+
+Binary markets utilize a complementary CTF mechanism where a YES token at $0.60 is equivalent to a NO token at $0.40. This allows users to mint and merge complementary token pairs and underpins the volume decomposition in Section 
+7
+.
+
+Fee reform timeline.
+
+The 2026 fee reform involved staggered activations across categories: Crypto in January 2026, Sports in February 2026, and other categories in March 2026. This staggered rollout provides the identification strategy for the causal analysis in Section 
+5
+.
+
+Complete lifecycle.
+
+The dataset captures the complete version lifecycle of the v1 contract, offering an enclosed institutional experiment without confounding from subsequent v2 architecture rollouts.
+
+The Polymarket-v1 Dataset
+
+Coverage and sources
+
+The dataset spans 41 months from 2022-11-21 to 2026-04-28. The trade tape derives from Polygon CTF Exchange 
+OrderFilled
+ events. We enrich trades with a frozen metadata snapshot, joining 
+asset_id
+ to market-level identifiers and category labels. The join succeeds for 99.8% of trades.
+Recent work builds a full-lifecycle Polymarket database that integrates off-chain market metadata, on-chain 
+OrderFilled
+ logs, and oracle-resolution events with continuous synchronization and cross-source identifier resolution 
+(
+Jia et al. 2026
+)
+. Our archive instead freezes a v1-only trade tape and a single metadata snapshot for reproducible microstructure measurement with ground-truth direction, and does not attempt continuous updates or oracle alignment.
+
+table
+ 1
+: 
+Dataset summary statistics
+
+Time coverage
+
+2022-11-21 to 2026-04-28 (41 months)
+
+Monthly files
+
+42 parquet partitions
+
+Total trades (incl. relayer)
+
+1.2016 billion
+
+Nominal volume
+
+$60.9 billion
+
+Economic volume (de-relayer)
+
+$28.6 billion
+
+Markets (condition-level)
+
+1,295,860
+
+Metadata match rate
+
+99.8%
+
+Ground-truth direction coverage
+
+100%
+
+table
+ 2
+: 
+Polymarket-v1 versus existing Polymarket analyses.
+GT Dir. = ground-truth aggressor direction from on-chain settlement (not inferred).
+Open = publicly accessible archive. Lifecycle = complete platform version lifecycle.
+
+Dataset
+
+Trades
+
+Volume
+
+Period
+
+Focus
+
+GT Dir.
+
+Open
+
+Polymarket-v1 (ours)
+
+1.20B
+
+$61B
+
+2022–2026 (41 mo)
+
+Full lifecycle
+
+√
+\surd
+
+√
+\surd
+
+Akey et al. (2026)
+
+∼
+\sim
+588M
+
+∼
+\sim
+$67B
+
+2021–2024
+
+Forecasting accuracy
+
+—
+
+—
+
+Yang and Tsang (2026)
+
+∼
+\sim
+150M
+
+—
+
+2023–2024
+
+Price discovery
+
+—
+
+—
+
+Dubach (2026)
+
+∼
+\sim
+1M
+
+—
+
+2026 Feb–Apr
+
+Liquidity provision
+
+—
+
+—
+
+Jia et al. (2026)
+
+full
+
+—
+
+ongoing
+
+Cross-layer alignment
+
+—
+
+partial
+
+Trade-tape granularity
+
+Every record represents one on-chain execution with block timestamp, transaction hash, market identifier, token identifier, execution price, trade volume, maker and taker addresses, and a ground-truth taker direction.
+
+Market hierarchy
+
+Polymarket organizes prediction markets in a four-level hierarchy. Figure 
+1
+ illustrates the structure with a concrete example.
+
+Series
+ “2024 U.S. Elections”
+
+   
+↪
+\hookrightarrow
+
+Event
+ “U.S. Presidential Popular Vote”
+
+    
+↪
+\hookrightarrow
+
+Market
+ “Will Trump win the popular vote?” 
+condition_id
+: 
+0x4a3b…
+  [
+neg_risk=f
+]
+
+     
+↪
+\hookrightarrow
+
+Token YES
+ 
+outcome_seq=1
+,  
+asset_id
+: 
+0x111a…
+
+     
+↪
+\hookrightarrow
+
+Token NO
+   
+outcome_seq=2
+,  
+asset_id
+: 
+0x222b…
+
+   
+↪
+\hookrightarrow
+
+Event
+ “U.S. Presidential Election Winner”
+
+    
+↪
+\hookrightarrow
+
+Market
+ “Kamala Harris” 
+condition_id
+: 
+0x5c4d…
+  [
+neg_risk=t
+]
+
+     
+↪
+\hookrightarrow
+
+Token YES
+ 
+outcome_seq=1
+,  
+asset_id
+: 
+0x333c…
+
+     
+↪
+\hookrightarrow
+
+Token NO
+   
+outcome_seq=2
+,  
+asset_id
+: 
+0x444d…
+
+figure
+ 1
+: 
+Polymarket four-level hierarchy: Series 
+→
+\to
+ Event 
+→
+\to
+ Market 
+→
+\to
+ Token. The on-chain settlement layer exposes Market (
+condition_id
+) and Token (
+asset_id / outcome_token_id
+) directly; Series and Event labels derive from off-chain metadata. 
+neg_risk=t
+ markets share collateral across legs and require separate normalization.
+
+Trade record structure
+
+Each 
+OrderFilled
+ on-chain event records one maker–taker match. A single taker transaction filling against multiple resting orders generates multiple records sharing the same 
+tx_hash
+ but distinct 
+log_index
+ values. Figure 
+2
+ illustrates this with a concrete example and identifies the relayer exclusion criterion.
+
+Alice places a market buy order for $100 USDC of YES tokens (single 
+tx_hash
+: 
+0x7f8a…
+), filled against two resting sell orders:
+
+log_index
+
+taker
+
+taker_direction
+
+maker
+
+usdc_amount
+
+12
+
+0x1a2b…
+ (Alice)
+
+BUY
+
+0x3c4d…
+ (Bob)
+
+$60.00
+
+13
+
+0x1a2b…
+ (Alice)
+
+BUY
+
+0x5e6f…
+ (Carol)
+
+$40.00
+
+Primary key:
+ (
+tx_hash
+, 
+log_index
+) uniquely identifies each record.
+
+Taker identity:
+ constant across all rows sharing a 
+tx_hash
+; represents the sole aggressor.
+
+Relayer filter:
+ two platform-router addresses (
+0x4bfb…
+, 
+0xc5d5…
+) appear in the 
+taker
+ field for broker-routed flows; we exclude these records, removing 
+≈
+\approx
+53% of nominal trades from the tape.
+
+figure
+ 2
+: 
+Semantic structure of a multi-fill transaction. One taker execution can fan out to multiple 
+log_index
+ records; the relayer filter removes platform-routing artifacts from the aggressor side.
+
+Ground-truth direction normalization
+
+We normalize all binary trades into a single event-probability axis, resolving the fact that buying NO is equivalent to selling YES. For each trade, we define
+
+(1)
+
+p
+e
+​
+v
+​
+e
+​
+n
+​
+t
+=
+{
+p
+if outcome_seq = 1
+1
+−
+p
+if outcome_seq = 2
+D
+=
+sign
+​
+(
+taker_direction
+)
+⋅
+{
+1
+if outcome_seq = 1
+−
+1
+if outcome_seq = 2
+p_{event}=\begin{cases}p&\text{if outcome\_seq = 1}\\
+1-p&\text{if outcome\_seq = 2}\end{cases}\quad D=\text{sign}(\text{taker\_direction})\cdot\begin{cases}1&\text{if outcome\_seq = 1}\\
+-1&\text{if outcome\_seq = 2}\end{cases}
+
+so that 
+D
+∈
+{
++
+1
+,
+−
+1
+}
+D\in\{+1,-1\}
+ always points toward an increase in the event probability. We note that this cross-axis sign flip could in principle interact with tick-rule price-change signs to produce an apparent price-level accuracy gradient. We verify that the gradient in classifier accuracy documented in Section 
+6
+ is robust to alternative sign-convention specifications and reflects a genuine market-structure phenomenon rather than a normalization artifact: the gradient persists when we evaluate the tick rule separately for outcome_seq=1 trades (where no flip is applied) and is consistent in direction with the positive direction autocorrelation documented in Figure 
+10
+.
+
+Stylized Facts: The Cross-Section
+
+Platform lifecycle overview
+
+Figure 
+3
+ shows normalized daily activity across the full v1 lifecycle. All three series—transactions, active wallets, and traded markets—peak around the 2024 U.S. election and decay in 2025–2026 as the v2 migration drew liquidity away. The fee reform in January 2026 marks a secondary structural change visible in transaction counts.
+
+figure
+ 3
+: 
+Normalized daily activity on Polymarket v1 (7-day smoothed, normalized to 95th-percentile peak): transactions (
+OrderFilled
+ events), active wallets (unique taker addresses), and traded markets (unique 
+condition_id
+s).
+
+Figure 
+4
+ documents TVL proxy, fee revenue, and trading volume over the lifecycle. The TVL proxy—30-day rolling USDC volume in markets unresolved at trade time—peaked at over $5 billion per month around the 2024 election. Fee revenue was zero before January 2026 and jumped sharply upon the staggered reform activation, providing the identifying variation for the DiD in Section 
+5
+.
+
+figure
+ 4
+: 
+TVL proxy (top), 30-day rolling fee revenue (middle), and 30-day rolling trading volume (bottom) for Polymarket v1 (2022–2026). Dashed red lines mark fee activation dates; dotted purple marks the 2024 U.S. election.
+
+Cross-sectional facts
+
+We document baseline stylized facts using trade-tape estimators only: longshot pricing biases, category activity concentrations, and participant concentration (top 1% share, Gini). These facts connect to longshot bias evidence in betting markets 
+(
+Snowberg and Wolfers 2010
+)
+ and recent Polymarket calibration results 
+(
+Reichenbach and Walther 2026
+)
+. Figure 
+5
+ and Table 
+3
+ summarize the price-return pattern across deciles. Importantly, the observed pattern is a 
+reversal
+ of the classic longshot bias documented in betting markets 
+(
+Snowberg and Wolfers 2010
+)
+: in horse-racing, low-probability outcomes (longshots) are underpriced (positive expected return) while high-probability outcomes are overpriced (negative return). In Polymarket the sign is flipped—low-probability tokens exhibit negative realized returns (overpriced) and high-probability tokens exhibit positive returns (underpriced)—suggesting retail participants systematically overestimate tail outcomes. We term this a “favorite-longshot reversal” rather than a classic longshot bias. Figure 
+6
+ shows intraday rhythm and Figure 
+7
+ presents the trade size distribution. Table 
+4
+ and Figure 
+8
+ compare microstructure quality across event categories (restricted to Standard Binary markets—
+neg_risk = false
+ markets with both legs trading; formally defined in Section 
+6
+). This filter reduces the sample from 1,295,860 total markets (Table 
+1
+) to approximately 1,011,095 markets; the excluded 
+≈
+\approx
+285,000 markets are either Neg-Risk (split-collateral) or single-sided (only one token trading on-chain). Figure 
+10
+ documents direction autocorrelation by price bin. Table 
+5
+ reports participant concentration: the top 1% of maker addresses control 84.1% of maker-side volume (Gini = 0.970), indicating a highly concentrated market-making ecosystem 
+(
+Akey et al. 2026
+)
+.
+
+Crucially, these cross-sectional facts are not merely descriptive; they form the mechanical foundation for why standard trade classification algorithms fail. As documented in Figure 
+10
+, trade direction autocorrelation 
+ρ
+=
+Corr
+​
+(
+D
+t
+,
+D
+t
+−
+1
+)
+\rho=\text{Corr}(D_{t},D_{t-1})
+ is strongly positive at mid-market prices (0.2–0.8), with mean run lengths extending significantly. Standard trade classification rules, such as the tick rule, rely on price 
+changes
+ between consecutive trades to infer direction: an uptick signals a buy, a downtick signals a sell, and a zero-tick repeats the last non-zero inference. This design performs well in traditional equity markets where prices oscillate around a bid-ask midpoint. In prediction markets, however, concentrated market-making produces long runs of same-price trades (zero-ticks) at round levels such as 0.50, forcing the tick rule to fall back on a stale last-change direction. When positive direction autocorrelation causes many consecutive same-direction trades all at the same price, the stale last-change is frequently wrong, generating systematic misclassification runs.
+
+Furthermore, the extreme participant concentration documented in Table 
+5
+—where a tiny elite of market makers controls the vast majority of liquidity provision—reinforces this momentum dynamic. In a highly concentrated market-making ecosystem, retail takers execute against institutional makers who adjust prices slowly and strategically, leading to persistent, single-direction trade runs. This interaction between positive direction autocorrelation, maker concentration, and classifier breakdown is explored systematically in Section 
+6
+.
+
+figure
+ 5
+: 
+Realized return by price decile. Low-probability tokens (price 
+≤
+0.30
+\leq 0.30
+) exhibit 
+negative
+ realized returns (systematic overpricing), while high-probability tokens (price 
+≥
+0.40
+\geq 0.40
+) exhibit positive returns (underpricing). This is the 
+reverse
+ of the classic longshot bias in betting markets; see Table 
+3
+ for exact values.
+
+table
+ 3
+: 
+Longshot bias by price decile. Mean return = payout 
+−
+-
+ price, where
+payout 
+=
+1
+=1
+ if token leg is the winning outcome, else 0. Positive return indicates
+systematic underpricing; negative indicates overpricing. Only resolved markets with
+known winning outcome included.
+
+Price decile
+
+Avg. price
+
+Mean return
+
+N
+N
+ trades
+
+0.00–0.10
+
+0.052
+
+-0.0023
+
+34,902,814
+
+0.10–0.20
+
+0.152
+
+-0.0019
+
+17,719,269
+
+0.20–0.30
+
+0.253
+
+-0.0032
+
+19,487,289
+
+0.30–0.40
+
+0.353
+
+-0.0005
+
+24,408,699
+
+0.40–0.50
+
+0.451
+
++0.0026
+
+35,386,989
+
+0.50–0.60
+
+0.552
+
++0.0015
+
+27,822,260
+
+0.60–0.70
+
+0.653
+
++0.0047
+
+19,870,673
+
+0.70–0.80
+
+0.753
+
++0.0076
+
+17,183,126
+
+0.80–0.90
+
+0.852
+
++0.0098
+
+14,429,537
+
+0.90–1.00
+
+0.952
+
++0.0056
+
+27,179,635
+
+figure
+ 6
+: 
+Intraday trading rhythm (UTC).
+
+figure
+ 7
+: 
+Evolution of trade size distribution (log scale): 8-panel display combining two non-contiguous windows—the 2024 U.S. election months (2024-10 and 2024-11) and the final 6 months of v1 operation (2025-11 to 2026-04). The intervening 12-month window (2024-12 to 2025-10) is not shown; comparisons across the two sub-windows should account for this temporal gap.
+
+figure
+ 8
+: 
+Cross-category market quality heatmap. Each cell shows the median value for Standard Binary markets in that category; color indicates relative quality (green = better, red = worse) normalized within each metric column. Spread and illiquidity metrics: lower is better. Variance ratio: closer to 1 is better (martingale). VPIN/PIN: higher indicates more informed trading. Note: the figure labels Order Flow Imbalance as “OFI” and uses “PIN” to denote True VPIN (not a structural PIN estimate); see Table 
+4
+ for exact column names and full numerical values.
+
+figure
+ 9
+: 
+Radar quality profile for the five largest categories by market count (rank-normalized: 1 = best). Crypto-related categories dominate the inner (better) region on spread metrics; Esports and Tennis occupy the outer (worse) region. Supplementary to Figure 
+8
+.
+
+table
+ 4
+: 
+Cross-category microstructure quality (median values per market-month, Standard Binary
+sub-sample, 
+neg_risk=f
+). “—” indicates the metric is undefined for that category
+(insufficient data after sample restrictions). 
+N
+N
+ Mkts = total unique markets.
+
+Category
+
+Gibbs 
+c
+c
+
+Kyle 
+λ
+\lambda
+
+Amihud
+
+True VPIN
+
+Wash Share
+
+N
+N
+ Mkts
+
+Sports
+
+0.0160
+
+0.0005
+
+0.0028
+
+—
+
+0.0000
+
+483,663
+
+Price Action
+
+0.0093
+
+0.0013
+
+0.0003
+
+0.7876
+
+0.0000
+
+301,304
+
+Crypto
+
+0.0069
+
+0.0008
+
+0.0002
+
+0.9670
+
+0.0000
+
+160,926
+
+Politics
+
+0.0152
+
+0.0009
+
+0.0003
+
+0.9958
+
+0.0000
+
+21,700
+
+Finance
+
+0.0138
+
+0.0008
+
+0.0006
+
+—
+
+0.0000
+
+18,443
+
+Other
+
+0.0155
+
+0.0005
+
+0.0005
+
+—
+
+0.0000
+
+17,284
+
+Sci-Tech
+
+0.0124
+
+0.0006
+
+0.0003
+
+—
+
+0.0000
+
+3,969
+
+Culture
+
+0.0146
+
+0.0008
+
+0.0004
+
+—
+
+0.0000
+
+3,806
+
+figure
+ 10
+: 
+Trade direction autocorrelation 
+ρ
+=
+Corr
+​
+(
+D
+t
+,
+D
+t
+−
+1
+)
+\rho=\text{Corr}(D_{t},D_{t-1})
+ by price bin, with mean run length. Positive autocorrelation at mid-market prices (0.2–0.8) explains the systematic tick-rule accuracy gradient: accuracy exceeds 50% at low prices (0–0.33) and falls below 50% at high prices (0.67–1.0).
+
+table
+ 5
+: 
+Participant concentration across the full v1 lifecycle.
+Gini and top-1% share computed on lifetime USDC volume per address.
+Top 1% of maker addresses control 84.1% of maker-side volume;
+top 1% of taker addresses control 69.7% of taker-side volume.
+
+Role
+
+Gini
+
+Top-1% Share
+
+N
+N
+ Wallets
+
+Maker
+
+0.9698
+
+84.1%
+
+1,235,881
+
+Taker
+
+0.9426
+
+69.7%
+
+2,612,688
+
+The Longitudinal Dimension: Market Quality, 2022–2026
+
+Market quality metrics
+
+We compute implied spreads following Roll 
+(
+Roll 1984
+)
+, Corwin-Schultz 
+(
+Corwin and Schultz 2012
+)
+, and Abdi-Ranaldo 
+(
+Abdi and Ranaldo 2017
+)
+—the Abdi-Ranaldo estimates produce near-identical point estimates to Roll in this setting and are not reproduced in the main tables—true effective spreads using Gibbs sampling 
+(
+Hasbrouck 2009
+)
+, Amihud illiquidity 
+(
+Amihud 2002
+)
+, and Kyle’s 
+λ
+\lambda
+ 
+(
+Kyle 1985
+)
+. Efficiency is summarized with variance ratios 
+(
+Lo and MacKinlay 1988
+)
+. For example, Roll (1984) is
+
+(2)
+
+c
+R
+​
+o
+​
+l
+​
+l
+=
+2
+​
+−
+Cov
+​
+(
+Δ
+​
+p
+t
+,
+Δ
+​
+p
+t
+−
+1
+)
+if 
+Cov
+<
+0
+.
+c_{Roll}=2\sqrt{-\text{Cov}(\Delta p_{t},\Delta p_{t-1})}\quad\text{if }\text{Cov}<0.
+
+The Gibbs estimator uses the regression
+
+(3)
+
+Δ
+​
+p
+t
+=
+c
+​
+Δ
+​
+D
+t
++
+u
+t
+,
+\Delta p_{t}=c\,\Delta D_{t}+u_{t},
+
+with conjugate Normal-Inverse-Gamma sampling to estimate 
+c
+c
+ even in sparse markets.
+
+Negative Kyle’s 
+λ
+\lambda
+.
+
+Time-series estimates of Kyle’s 
+λ
+\lambda
+ are predominantly 
+negative
+ throughout the 2022–2026 window (visible in Figure 
+11
+), apparently contradicting the standard interpretation where positive order flow should push prices up. This likely reflects a resolution-pressure mechanism specific to binary prediction markets: as a contract approaches expiry and the consensus probability converges to 0 or 1, market makers absorb order flow at increasingly unfavorable prices in anticipation of settlement, inverting the empirical price-flow relationship. The DiD coefficient on Kyle’s 
+λ
+\lambda
+ (+0.00116 in the Main group, Table 
+8
+) should therefore be interpreted as a 
+reduction in the magnitude
+ of this negative price impact rather than a literal increase. The positive median values reported in Table 
+4
+ reflect the use of absolute values in cross-sectional aggregation; the signed time-series in Figure 
+11
+ provides the directional evidence.
+
+Evolution and structural breaks
+
+Figure 
+11
+ reports the four-year evolution of Gibbs spread, Kyle’s 
+λ
+\lambda
+, and variance ratio, with structural break markers identified via Bai-Perron tests 
+(
+Bai and Perron 1998
+; 
+Bai and Perron 2003
+)
+.
+
+table
+ 6
+: 
+Annual microstructure panel: median Gibbs effective spread, Roll spread,
+Kyle 
+λ
+\lambda
+, and Amihud illiquidity across Standard Binary markets.
+Computed from the market-month panel (condition
+×
+\times
+year-month observations,
+
+≥
+\geq
+30 trades). Lower values indicate tighter spreads and higher liquidity.
+
+Year
+
+Gibbs 
+c
+c
+
+Roll
+
+Kyle 
+λ
+\lambda
+
+Amihud
+
+2022
+
+0.01488
+
+0.02877
+
+0.00045
+
+0.00001
+
+2023
+
+0.01322
+
+0.01951
+
+0.00057
+
+0.00001
+
+2024
+
+0.00719
+
+0.01155
+
+0.00036
+
+0.00004
+
+2025
+
+0.00673
+
+0.01107
+
+0.00032
+
+0.00006
+
+2026
+
+0.00783
+
+0.01414
+
+0.00052
+
+0.00022
+
+Fee reform natural experiment
+
+We exploit staggered fee activation dates across categories using a staggered DiD design. Table 
+7
+ summarizes activation timing. The baseline event-study specification uses a two-way fixed-effects (TWFE) estimator with market and month fixed effects. We situate this design within the recent staggered DiD literature 
+(
+Goodman-Bacon 2021
+; 
+Callaway and Sant’Anna 2021
+; 
+de Chaisemartin and
+D’Haultfœuille 2020
+)
+ and acknowledge that TWFE can produce biased estimates under heterogeneous treatment effects; the caveats noted in the pre-trends discussion below apply accordingly.
+
+table
+ 7
+: 
+Fee activation schedule by category
+
+Category
+
+Activation month
+
+Crypto
+
+2026-01
+
+Sports (selected leagues)
+
+2026-02
+
+Politics, News, Entertainment, others
+
+2026-03
+
+We estimate
+
+(4)
+
+Y
+m
+,
+t
+=
+β
+f
+​
+e
+​
+e
+⋅
+F
+​
+e
+​
+e
+​
+A
+​
+c
+​
+t
+​
+i
+​
+v
+​
+e
+m
+,
+t
++
+α
+m
++
+δ
+t
++
+ε
+m
+,
+t
+,
+Y_{m,t}=\beta_{fee}\cdot FeeActive_{m,t}+\alpha_{m}+\delta_{t}+\varepsilon_{m,t},
+
+where 
+F
+​
+e
+​
+e
+​
+A
+​
+c
+​
+t
+​
+i
+​
+v
+​
+e
+m
+,
+t
+FeeActive_{m,t}
+ is a dummy variable indicating fee reform activation for market 
+m
+m
+ in month 
+t
+t
+, 
+α
+m
+\alpha_{m}
+ is market fixed effects, and 
+δ
+t
+\delta_{t}
+ is month fixed effects. 
+Y
+m
+,
+t
+Y_{m,t}
+ represents Gibbs spread (
+c
+G
+​
+i
+​
+b
+​
+b
+​
+s
+c_{Gibbs}
+), Kyle’s 
+λ
+\lambda
+, True VPIN, and other market quality metrics. Table 
+8
+ summarizes the staggered DiD estimates across the three event groups. Figure 
+12
+ plots the event-study coefficients for the Main sample.
+
+figure
+ 11
+: 
+Market quality evolution with structural breaks.
+
+We acknowledge that while the event-study pre-trends are highly stable for the Gibbs effective spread, VPIN and Amihud illiquidity exhibit non-trivial pre-activation trends that limit a strictly causal interpretation for those metrics. This non-stationarity is a common empirical challenge in long-panel prediction market studies, typically driven by platform-wide volume growth, shifting media attention, and the gradual migration of liquidity to the Polymarket v2 contracts toward the end of the sample. We therefore interpret DiD coefficients for VPIN and Amihud as indicating the direction and approximate order of magnitude of the fee reform effect rather than as precisely causal estimates; robustness to heterogeneous-treatment estimators 
+(
+Callaway and Sant’Anna 2021
+; 
+de Chaisemartin and
+D’Haultfœuille 2020
+)
+ is reserved for future work.
+
+The DiD estimates are consistent with a substantial impact of the fee reform on market quality; we dissect the direction and magnitude through two distinct economic mechanisms. First, we examine the 
+Noise Trader Flight Hypothesis
+. Under standard microstructure theory, imposing a taker fee acts as a direct tax on active demand, reducing trading volume. If noise traders (retail participants) are highly fee-sensitive compared to informed traders (who expect large private payoffs), the fee reform should disproportionately drive noise traders out of the market.
+
+Our empirical results are consistent with this noise-trader flight dynamic, though we reiterate that VPIN and Amihud results are subject to the pre-trend violations acknowledged above and should be interpreted descriptively. In the Main group, the TWFE estimate associates the fee reform with an increase in 
+True VPIN
+ (flow toxicity) of 
+0.015941
+0.015941
+ (
+t
+=
+15.43
+t=15.43
+, 
+p
+<
+0.001
+p<0.001
+), with similar increases in the Sports (
++
+0.042238
++0.042238
+) and UpDown (
++
+0.094803
++0.094803
+) groups. As retail noise traders withdraw, the remaining taker flow becomes more toxic, dominated by informed arbitrageurs. In response, market makers widen spreads and increase price impact: the Gibbs spread (
+c
+G
+​
+i
+​
+b
+​
+b
+​
+s
+c_{Gibbs}
+) increases by 
+0.008050
+0.008050
+ and Kyle’s 
+λ
+\lambda
+ increases by 
+0.001157
+0.001157
+ in the Main group. This micro-level transmission path is consistent with a tax on takers leading to a worse liquidity environment for remaining participants. 
+Note:
+ the t-statistics reported for several metrics (e.g., 
+t
+>
+100
+t>100
+) are implausibly large for economic DiD estimates and likely reflect under-estimated standard errors from clustering; these coefficients should be interpreted as evidence of the fee reform’s direction and approximate magnitude, not as precisely calibrated causal quantities.
+
+Second, results are consistent with the fee reform curtailing manipulative trading. The coefficient on 
+wash trading share
+ (
+w
+​
+a
+​
+s
+​
+h
+​
+_
+​
+s
+​
+h
+​
+a
+​
+r
+​
+e
+wash\_share
+) decreases significantly by 
+−
+0.000362
+-0.000362
+ (
+t
+=
+−
+9.91
+t=-9.91
+)
+ in the Main group. This metric has stable pre-activation trends, making the causal attribution more defensible than for VPIN or Amihud: imposing a non-zero taker fee makes high-frequency self-trading and wash-ring networks economically costly, consistent with disincentivizing artificial volume creation and improving the integrity of the transaction tape.
+
+The sample sizes in Table 
+8
+ vary substantially across outcome variables (from 416,798 for Kyle’s 
+λ
+\lambda
+ to 1,304,656 for Amihud), because spread estimators require a positive covariance condition (Roll) or sufficient bid-ask price sequences (Gibbs) that sparser markets do not satisfy. The 
+≈
+\approx
+3
+×
+\times
+ smaller sample for spread outcomes relative to illiquidity and flow measures reflects differing data requirements and may introduce mild selection bias in cross-outcome comparisons.
+
+figure
+ 12
+: 
+Event-study estimates for the fee reform.
+
+table
+ 8
+: 
+Staggered DiD estimates: effect of taker fee activation on market quality (Main sample,
+
+neg_risk=f
+, excluding Up-or-Down). Standard errors in parentheses.
+
+Y
+m
+,
+t
+=
+β
+⋅
+TakerFee
+m
+,
+t
++
+θ
+m
++
+γ
+t
++
+ε
+Y_{m,t}=\beta\cdot\text{TakerFee}_{m,t}+\theta_{m}+\gamma_{t}+\varepsilon
+.
+*** 
+p
+<
+0.001
+p<0.001
+, ** 
+p
+<
+0.01
+p<0.01
+, * 
+p
+<
+0.05
+p<0.05
+.
+
+Outcome
+
+β
+^
+\hat{\beta}
+
+(SE)
+
+t
+t
+-stat
+
+N
+N
+
+Roll Spread
+
+0.00701
+0.00701
+***
+
+(
+0.00010
+)
+(0.00010)
+
+69.74
+
+790,821
+
+Gibbs Eff. Spread
+
+0.00805
+0.00805
+***
+
+(
+0.00005
+)
+(0.00005)
+
+176.47
+
+585,921
+
+Kyle’s 
+λ
+\lambda
+
+0.00116
+0.00116
+***
+
+(
+0.00001
+)
+(0.00001)
+
+106.35
+
+416,798
+
+Amihud Illiq.
+
+0.02286
+0.02286
+
+(
+0.01449
+)
+(0.01449)
+
+1.58
+
+1,304,656
+
+OFI
+
+−
+0.03639
+-0.03639
+***
+
+(
+0.00066
+)
+(0.00066)
+
+-55.11
+
+1,304,656
+
+True VPIN
+
+0.01594
+0.01594
+***
+
+(
+0.00103
+)
+(0.00103)
+
+15.43
+
+610,793
+
+Wash Share
+
+−
+0.00036
+-0.00036
+***
+
+(
+0.00004
+)
+(0.00004)
+
+-9.91
+
+1,304,656
+
+Measuring Informed Trading with Ground Truth
+
+Throughout this section we restrict estimation to 
+Standard Binary markets
+: markets with 
+neg_risk = false
+, both a YES and a NO token trading on-chain, and at least 30 executed trades after relayer filtering. This criterion excludes Neg-Risk (split-collateral) markets, which require a separate normalization, and Up-Down (high-frequency price-interval) markets, which have fundamentally different settlement mechanics. The Standard Binary subset covers the large majority of economic volume and the broadest cross-section of forecasting topics.
+
+Using ground-truth direction, we compute exact Order Flow Imbalance (OFI) and VPIN without classification error 
+(
+Easley et al. 1996
+; 
+Easley, López de Prado, and O’Hara 2012
+)
+. OFI is
+
+(5)
+
+OFI
+=
+∑
+t
+D
+t
+​
+V
+t
+∑
+t
+V
+t
+.
+\text{OFI}=\frac{\sum_{t}D_{t}V_{t}}{\sum_{t}V_{t}}.
+
+To isolate the informational content of trades from transitory liquidity effects, we estimate a structural vector autoregression (SVAR) model on transaction-level price changes and signed trade sizes in the spirit of 
+Hasbrouck (1991)
+:
+
+(6)
+
+y
+t
+=
+[
+x
+t
+,
+Δ
+​
+p
+t
+]
+T
+y_{t}=[x_{t},\Delta p_{t}]^{T}
+
+where 
+x
+t
+=
+D
+t
+​
+V
+t
+x_{t}=D_{t}\sqrt{V_{t}}
+ is the signed trade volume (based on ground-truth direction 
+D
+t
+D_{t}
+ and USDC amount 
+V
+t
+V_{t}
+) and 
+Δ
+​
+p
+t
+\Delta p_{t}
+ is the price change. We identify structural shocks via a Cholesky decomposition where trade direction shocks are allowed to contemporaneously impact price changes, but contemporaneous price changes do not feed back into the active trade decision. The long-run cumulative response of price to order flow shocks defines the permanent price impact (
+η
+i
+​
+n
+​
+f
+​
+o
+\eta_{info}
+), representing information content, while the difference between the contemporaneous impact and permanent impact measures the transitory price impact (
+η
+l
+​
+i
+​
+q
+\eta_{liq}
+).
+
+Table 
+9
+ summarizes the distribution of these price impact parameters across 6,223 Standard Binary markets (markets with at least 30 trades and a minimum of 10 unique price observations, required for stable VAR estimation). The cross-market distribution of estimated impacts is highly right-skewed: the mean permanent impact exceeds the median by a factor of roughly 45, driven by divergent VAR fits in the thinnest markets at the long tail. We therefore report medians as primary statistics. The median absolute permanent price impact is 
+0.00152
+0.00152
+ (price units), meaning a typical order flow shock permanently shifts the contract price by approximately 0.15 percentage points. The median absolute transitory price impact is 
+0.00177
+0.00177
+, representing execution-pressure effects. The median Permanent-to-Total Impact Ratio (
+P
+​
+I
+​
+R
+PIR
+) is 
+0.45497
+0.45497
+, indicating that approximately 
+45.5
+%
+45.5\%
+ of the price movement following a trade is permanent (informational) in nature, with the remaining 
+54.5
+%
+54.5\%
+ representing temporary liquidity frictions.
+
+table
+ 9
+: 
+Hasbrouck VAR price impact decomposition: distribution of permanent (informational)
+price impact, transitory (liquidity) price impact, and the permanent-to-total impact ratio (
+P
+​
+I
+​
+R
+PIR
+)
+across 6,223 Standard Binary markets. Metrics are estimated using a trade-level structural VAR(5) model.
+Absolute permanent and transitory impacts are expressed in price units (0–1).
+
+ Highlighted row shows the permanent-to-total impact ratio.
+
+Metric
+
+Mean
+
+Std. Dev.
+
+25th pct.
+
+Median
+
+75th pct.
+
+Absolute Permanent Impact (
+|
+η
+i
+​
+n
+​
+f
+​
+o
+|
+|\eta_{info}|
+)
+
+0.06955
+
+3.12526
+
+0.00051
+
+0.00152
+
+0.00384
+
+Absolute Transitory Impact (
+|
+η
+l
+​
+i
+​
+q
+|
+|\eta_{liq}|
+)
+
+0.06913
+
+3.12500
+
+0.00072
+
+0.00177
+
+0.00327
+
+Permanent-to-Total Ratio (
+P
+​
+I
+​
+R
+PIR
+)
+
+0.47022
+
+0.27047
+
+0.24538
+
+0.45497
+
+0.68690
+
+Table 
+10
+ summarizes VECM price discovery across 426 Standard Binary markets (the subset of the 6,223 VAR markets in which the YES and NO legs co-trade with sufficient overlapping activity to identify a cointegrating vector; this stricter filter is required by VECM’s cointegration assumption). The 426 cointegration-passing markets represent 6.9% of the 6,223 VAR markets; whether they are representative of the broader cross-section in terms of liquidity, category distribution, and information content is not formally tested. The median Gonzalo–Granger weight for the seq1 (YES) leg is 0.50, indicating near-symmetric price discovery for this selected subset, though generalization to the full 1.3 million market universe requires caution.
+
+table
+ 10
+: 
+VECM price discovery: distribution of Hasbrouck Information Shares (IS) and
+Gonzalo–Granger (GG) weights across 426 Standard Binary markets.
+IS_seq1 / IS_seq2_inv are upper-bound IS estimates for each leg (scaled to 0–100);
+GG_seq1 
+∈
+[
+0
+,
+1
+]
+\in[0,1]
+ is the relative price-discovery weight of the seq1 (YES) leg.
+Median GG close to 0.5 confirms near-symmetric price discovery across legs.
+
+Statistic
+
+IS seq1 (upper)
+
+IS seq2 (upper)
+
+GG seq1
+
+Markets (
+N
+N
+)
+
+426
+
+426
+
+426
+
+Mean
+
+3.2295
+
+3.4037
+
+0.5001
+
+Std. Dev.
+
+6.6691
+
+6.7774
+
+0.0697
+
+25th pct.
+
+1.4025
+
+1.5661
+
+0.4800
+
+Median
+
+1.9842
+
+2.0326
+
+0.5013
+
+75th pct.
+
+2.8146
+
+2.8840
+
+0.5228
+
+Quantifying classification bias
+
+The classification evaluation uses 202 million Standard Binary trades (out of the 1.2 billion total records, after excluding relayer-routed records, Neg-Risk markets, Up-Down markets, and unmatched metadata). This is distinct from the VAR sample (6,223 markets with sufficient price variation) and the Brier panel (1,019 resolved Standard Binary markets with balanced monthly observations), which are further filtered for their respective estimation requirements.
+
+Overall, standard classifiers (the tick rule and bulk volume classification) achieve near-random overall accuracy of 49.83% and 50.51% across these 202 million Standard Binary trades. This aggregate, however, masks a systematic price-level gradient: the tick rule over-predicts buys in low-price bins (accuracy 
+>
+50
+%
+>50\%
+) and under-predicts them in high-price bins (accuracy 
+<
+50
+%
+<50\%
+), two opposing biases that cancel in the aggregate mean. The appropriate conclusion is therefore that classifiers exhibit correctable direction-dependent biases rather than pure noise. We note that while preliminary studies or early drafts of this manuscript reported a higher tick-rule accuracy of approximately 69.3% when evaluating a highly liquid subsample (e.g., March 2024), this apparent performance is a selection artifact driven by compositional differences between the liquid subsample and the full cross-section. Once the entire, unselected longitudinal panel of 202 million trades is evaluated, overall accuracy degrades to 49.83% (TR) and 50.51% (BVC). Accuracy falls most severely in high-price bins (above 0.67), where it drops well below 50%; in low-price bins it remains marginally above 50%. Overall accuracy is materially below the quote-based Lee-Ready benchmark used in traditional equities 
+(
+Lee and Ready 1991
+)
+. Table 
+11
+ summarizes these price bins, showing the failure of standard classification algorithms across the probability spectrum, and Figure 
+13
+ shows the resulting divergence between true-VPIN and BVC-VPIN curves.
+
+figure
+ 13
+: 
+True-VPIN vs BVC-VPIN divergence.
+
+table
+ 11
+: 
+Tick-rule (TR) and BVC classification accuracy by price bin (0.01 width).
+Accuracy = fraction of trades where inferred direction matches ground-truth 
+D
+D
+.
+Standard Binary markets, 
+neg_risk=f
+. Three columns cover the full [0,1] range.
+
+0.00–0.33
+
+0.33–0.67
+
+0.67–1.00
+
+Bin
+
+TR
+
+BVC
+
+Bin
+
+TR
+
+BVC
+
+Bin
+
+TR
+
+BVC
+
+0.00-0.01
+
+0.5253
+
+0.5806
+
+0.34-0.35
+
+0.5040
+
+0.5037
+
+0.67-0.68
+
+0.4951
+
+0.4959
+
+0.01-0.02
+
+0.5303
+
+0.5332
+
+0.35-0.36
+
+0.5008
+
+0.5002
+
+0.68-0.69
+
+0.4942
+
+0.4950
+
+0.02-0.03
+
+0.5394
+
+0.5392
+
+0.36-0.37
+
+0.5028
+
+0.5012
+
+0.69-0.70
+
+0.4934
+
+0.4949
+
+0.03-0.04
+
+0.5446
+
+0.5378
+
+0.37-0.38
+
+0.5010
+
+0.5005
+
+0.70-0.71
+
+0.4934
+
+0.4951
+
+0.04-0.05
+
+0.5283
+
+0.5295
+
+0.38-0.39
+
+0.5012
+
+0.5010
+
+0.71-0.72
+
+0.4914
+
+0.4928
+
+0.05-0.06
+
+0.5366
+
+0.5370
+
+0.39-0.40
+
+0.5023
+
+0.5046
+
+0.72-0.73
+
+0.4898
+
+0.4920
+
+0.06-0.07
+
+0.5217
+
+0.5221
+
+0.40-0.41
+
+0.5004
+
+0.5002
+
+0.73-0.74
+
+0.4891
+
+0.4916
+
+0.07-0.08
+
+0.5242
+
+0.5193
+
+0.41-0.42
+
+0.4991
+
+0.4983
+
+0.74-0.75
+
+0.4901
+
+0.4908
+
+0.08-0.09
+
+0.5254
+
+0.5211
+
+0.42-0.43
+
+0.4999
+
+0.4984
+
+0.75-0.76
+
+0.4880
+
+0.4906
+
+0.09-0.10
+
+0.5140
+
+0.5147
+
+0.43-0.44
+
+0.5015
+
+0.4999
+
+0.76-0.77
+
+0.4905
+
+0.4909
+
+0.10-0.11
+
+0.5236
+
+0.5199
+
+0.44-0.45
+
+0.4986
+
+0.4985
+
+0.77-0.78
+
+0.4898
+
+0.4888
+
+0.11-0.12
+
+0.5134
+
+0.5126
+
+0.45-0.46
+
+0.4968
+
+0.4980
+
+0.78-0.79
+
+0.4868
+
+0.4895
+
+0.12-0.13
+
+0.5170
+
+0.5158
+
+0.46-0.47
+
+0.4965
+
+0.4990
+
+0.79-0.80
+
+0.4856
+
+0.4889
+
+0.13-0.14
+
+0.5119
+
+0.5110
+
+0.47-0.48
+
+0.4963
+
+0.4961
+
+0.80-0.81
+
+0.4843
+
+0.4848
+
+0.14-0.15
+
+0.5181
+
+0.5167
+
+0.48-0.49
+
+0.4909
+
+0.4934
+
+0.81-0.82
+
+0.4817
+
+0.4853
+
+0.15-0.16
+
+0.5155
+
+0.5112
+
+0.49-0.50
+
+0.4652
+
+0.5161
+
+0.82-0.83
+
+0.4800
+
+0.4819
+
+0.16-0.17
+
+0.5132
+
+0.5127
+
+0.50-0.51
+
+0.5007
+
+0.5036
+
+0.83-0.84
+
+0.4786
+
+0.4805
+
+0.17-0.18
+
+0.5126
+
+0.5107
+
+0.51-0.52
+
+0.4972
+
+0.5052
+
+0.84-0.85
+
+0.4818
+
+0.4863
+
+0.18-0.19
+
+0.5120
+
+0.5098
+
+0.52-0.53
+
+0.5024
+
+0.5076
+
+0.85-0.86
+
+0.4758
+
+0.4805
+
+0.19-0.20
+
+0.5085
+
+0.5071
+
+0.53-0.54
+
+0.5000
+
+0.5047
+
+0.86-0.87
+
+0.4797
+
+0.4799
+
+0.20-0.21
+
+0.5177
+
+0.5157
+
+0.54-0.55
+
+0.4999
+
+0.5046
+
+0.87-0.88
+
+0.4718
+
+0.4749
+
+0.21-0.22
+
+0.5089
+
+0.5083
+
+0.55-0.56
+
+0.4977
+
+0.5031
+
+0.88-0.89
+
+0.4774
+
+0.4807
+
+0.22-0.23
+
+0.5079
+
+0.5083
+
+0.56-0.57
+
+0.5011
+
+0.5030
+
+0.89-0.90
+
+0.4761
+
+0.4751
+
+0.23-0.24
+
+0.5081
+
+0.5077
+
+0.57-0.58
+
+0.4978
+
+0.5014
+
+0.90-0.91
+
+0.4708
+
+0.4735
+
+0.24-0.25
+
+0.5106
+
+0.5077
+
+0.58-0.59
+
+0.4994
+
+0.4986
+
+0.91-0.92
+
+0.4753
+
+0.4719
+
+0.25-0.26
+
+0.5097
+
+0.5086
+
+0.59-0.60
+
+0.4975
+
+0.4998
+
+0.92-0.93
+
+0.4676
+
+0.4705
+
+0.26-0.27
+
+0.5068
+
+0.5069
+
+0.60-0.61
+
+0.4967
+
+0.5008
+
+0.93-0.94
+
+0.4614
+
+0.4663
+
+0.27-0.28
+
+0.5052
+
+0.5055
+
+0.61-0.62
+
+0.4960
+
+0.4989
+
+0.94-0.95
+
+0.4655
+
+0.4698
+
+0.28-0.29
+
+0.5043
+
+0.5023
+
+0.62-0.63
+
+0.4978
+
+0.5000
+
+0.95-0.96
+
+0.4573
+
+0.4644
+
+0.29-0.30
+
+0.5071
+
+0.5054
+
+0.63-0.64
+
+0.4949
+
+0.4977
+
+0.96-0.97
+
+0.4451
+
+0.4572
+
+0.30-0.31
+
+0.5069
+
+0.5049
+
+0.64-0.65
+
+0.4976
+
+0.4997
+
+0.97-0.98
+
+0.4435
+
+0.4571
+
+0.31-0.32
+
+0.5067
+
+0.5051
+
+0.65-0.66
+
+0.4955
+
+0.4965
+
+0.98-0.99
+
+0.4618
+
+0.4843
+
+0.32-0.33
+
+0.5053
+
+0.5054
+
+0.66-0.67
+
+0.4950
+
+0.4969
+
+0.99-1.00
+
+0.4738
+
+0.5009
+
+0.33-0.34
+
+0.5011
+
+0.5003
+
+table
+ 12
+: 
+OFI classifier bias (
+N
+=
+178,643
+N=178,643
+ market-months, 
+≥
+\geq
+30 trades).
+Bias = (inferred OFI 
+−
+-
+ true OFI) / 
+|
+|
+true OFI
+|
+|
+.
+Direction error = inferred 
+D
+D
+ sign 
+−
+-
+ true 
+D
+D
+ sign.
+Means are outlier-dominated; medians reported.
+
+Tick-rule
+
+BVC
+
+Median OFI bias
+
+0.1815
+
+-1.3636
+
+Median direction error
+
+0.0376
+
+-0.2997
+
+The mechanism underlying tick-rule failure is the interaction of two prediction-market-specific features (Figure 
+10
+, introduced in Section 
+4
+): the prevalence of same-price (zero-tick) trades at concentrated maker quotes, and positive direction autocorrelation. Zero-tick trades force the tick rule to rely on the last non-zero price change, which becomes stale precisely when a directional run of many same-price buys or sells occurs. Positive autocorrelation amplifies this by extending such runs, compounding the number of zero-tick events that are systematically misclassified together.
+
+Informed trading efficacy
+
+Ground truth allows direct validation of the core assumption underlying information-trading models 
+(
+Kyle 1985
+; 
+Grossman and Stiglitz 1980
+)
+: that informed traders actually possess accurate forward-looking knowledge. We classify trades as informationally motivated using two criteria: (1) first-to-market large trades ($100+ USDC, above the within-market 90th percentile); and (2) sustained directional runs of three or more large consecutive same-direction trades 
+(
+Easley and O’Hara 1987
+; 
+Barclay and Warner 1993
+)
+. Table 
+13
+ reports the realized hit rate—the fraction of informed-classified trades that correctly anticipated the resolution outcome. Large first-mover trades (P1) achieve a 52.3% hit rate versus a 50.2% baseline (
+p
+<
+10
+−
+30
+p<10^{-30}
+), confirming statistically significant but modest informed trading efficacy for the first-mover size criterion. We note a potential survivorship bias: this analysis is restricted to resolved markets, and large trades may systematically cluster in markets that resolve with higher certainty (lower entropy), inflating the baseline rate and compressing the measured lift. The P2 criterion (directional runs of three or more large consecutive same-direction trades) achieves a hit rate of 0.5018 with Lift 
+=
+1.0036
+=1.0036
+ (Table 
+13
+)—essentially indistinguishable from the baseline—indicating that directional run persistence adds no economically meaningful predictive advantage beyond first-mover size alone. The high statistical significance reported for P2 (
+p
+<
+10
+−
+15
+p<10^{-15}
+) reflects N 
+=
+=
+ 4.87M and should not be interpreted as evidence of informed-trading efficacy. Figure 
+14
+ plots these hit rates stratified by days to resolution.
+
+figure
+ 14
+: 
+Realized hit rate of informed-classified trades by days to resolution.
+
+table
+ 13
+: 
+Informed trading efficacy: realized hit rate of direction-classified trades against resolution outcomes.
+
+N
+N
+ = number of trades in criterion. Binomial 
+p
+p
+: one-sided test of Hit Rate 
+>
+0.5
+>0.5
+.
+
+ Deeper orange = primary P1 result (large first-mover trades).
+Significance: *** 
+p
+<
+0.001
+p<0.001
+, ** 
+p
+<
+0.01
+p<0.01
+, * 
+p
+<
+0.05
+p<0.05
+.
+
+Criterion
+
+N
+N
+
+Hit Rate
+
+Lift
+
+Binom. 
+p
+p
+
+Baseline (all resolved trades)
+
+95,881,515
+
+0.5018***
+
+1.0037
+
+4.44
+​
+e
+−
+280
+4.44e-280
+
+P1: first large (
+≥
+\geq
+$100, p90)
+
+63,076
+
+0.5229***
+
+1.0458
+
+5.67
+​
+e
+−
+31
+5.67e-31
+
+P1: first large (
+≥
+\geq
+$500, p90)
+
+33,566
+
+0.5164***
+
+1.0328
+
+9.92
+​
+e
+−
+10
+9.92e-10
+
+P2: directional run 
+≥
+\geq
+3 (above p50)
+
+4,868,147
+
+0.5018***
+
+1.0036
+
+1.62
+​
+e
+−
+15
+1.62e-15
+
+P2: directional run 
+≥
+\geq
+5 (above p50)
+
+2,736,234
+
+0.5027***
+
+1.0054
+
+2.57
+​
+e
+−
+19
+2.57e-19
+
+Volume Decomposition and Wash Trading
+
+Table 
+14
+ decomposes annual nominal vs. economic volume: the relayer filter removes approximately 50–55% of nominal records (see Section 
+3
+ for the filtering assumption). The platform grew from $0.07B economic volume in 2023 to $15.0B in 2026 (partial year).
+
+table
+ 14
+: 
+Annual volume decomposition: nominal (incl. relayer) vs. economic (de-relayer) USDC
+volume and trade counts. Economic ratio = economic volume / nominal volume.
+Relayer addresses (
+0x4bfb…
+, 
+0xc5d5…
+) are excluded from economic volume.
+
+Year
+
+Nominal Vol.
+
+Economic Vol.
+
+Econ. Ratio
+
+Nominal Trades
+
+Trade Ratio
+
+2022
+
+$0.00B
+
+$0.00B
+
+46.8%
+
+3,161
+
+55.0%
+
+2023
+
+$0.07B
+
+$0.04B
+
+51.2%
+
+328,176
+
+59.0%
+
+2024
+
+$8.80B
+
+$3.91B
+
+44.5%
+
+57,578,938
+
+54.2%
+
+2025
+
+$20.97B
+
+$9.69B
+
+46.2%
+
+241,199,640
+
+59.1%
+
+2026
+
+$31.11B
+
+$14.96B
+
+48.1%
+
+902,471,075
+
+63.4%
+
+Total
+
+$60.9B
+
+$28.6B
+
+46.9%
+
+1,201,580,990
+
+—
+
+We decompose nominal volume into secondary trades versus mint/burn share creation 
+(
+Slivkoff 2025
+; 
+Yang and Tsang 2026
+)
+. The current pipeline covers 
+OrderFilled
+ events only; a complete mint/burn decomposition requires indexing 
+PositionSplit
+ and 
+PositionMerge
+ from the ConditionalTokens contract. We also map multi-graph connections between maker and taker addresses to identify loop patterns and proxy the share of wash trading 
+(
+Sirolly et al. 2025
+)
+. Specifically, we flag transactions that participate in directed trading cycles (maker-taker sequences forming closed loops in the bipartite address graph) within a market-month window, using a cycle-length threshold of up to five hops. We caution that the precision and recall of this proxy have not been independently validated against confirmed wash-trading patterns. The Wash Share reported as 0.0000 in Table 
+4
+ for all categories reflects near-complete suppression of this behavior in the cross-sectional period; meaningful variation exists in the time series (Figure 
+15
+), which drives the DiD estimate in Table 
+8
+.
+
+figure
+ 15
+: 
+Wash trading share over time.
+
+Figure 
+16
+ documents maker concentration over time. The introduction of maker rebates in February 2026 coincides with a rise in maker Gini concentration, consistent with professional market-maker entry attracted by the new rebate incentive.
+
+figure
+ 16
+: 
+Maker concentration (Gini) over time with rebate activation marker.
+
+Microstructure and Calibration
+
+We evaluate whether transaction-level microstructure quality predicts the macro-level forecasting performance of prediction markets. Ultimately, prediction markets are designed to aggregate information and provide calibrated probability forecasts. We test whether poor liquidity and toxic order flow predict higher forecast errors, measured by the per-market Brier score 
+B
+​
+r
+​
+i
+​
+e
+​
+r
+m
+=
+1
+T
+​
+∑
+t
+(
+p
+e
+​
+v
+​
+e
+​
+n
+​
+t
+,
+t
+−
+y
+m
+)
+2
+Brier_{m}=\frac{1}{T}\sum_{t}(p_{event,t}-y_{m})^{2}
+, where 
+y
+m
+∈
+{
+0
+,
+1
+}
+y_{m}\in\{0,1\}
+ is the realized event resolution.
+
+Crucially, we evaluate how the choice of trade classification methodology alters these empirical findings. If standard classifiers (like the tick rule and BVC) introduce systematic measurement errors in spreads and VPIN, these errors should propagate into the macro regressions, causing attenuation biases and distorting Transaction Cost Analysis (TCA) inference.
+
+Table 
+15
+ reports cross-sectional OLS regressions of market-level Brier scores on microstructure metrics for a balanced panel of 1,019 resolved Standard Binary markets. Model (1) utilizes ground-truth quality metrics derived from Polygon transaction records (Gibbs spread 
+c
+G
+​
+i
+​
+b
+​
+b
+​
+s
+c_{Gibbs}
+ and True VPIN). Model (2) replicates this specification using standard classification-based heuristics (Roll spread 
+c
+R
+​
+o
+​
+l
+​
+l
+c_{Roll}
+ and BVC VPIN). All models control for mean price level, trade activity (number of trades), and category fixed effects (omitted for brevity).
+
+The comparison between Model (1) and Model (2) reveals three critical insights. First, toxic order flow is a strong predictor of forecasting degradation. In Model (1), the coefficient on True VPIN is positive and highly significant (
+0.1979
+0.1979
+, 
+t
+=
+5.344
+t=5.344
+, 
+p
+<
+0.001
+p<0.001
+), demonstrating that markets with higher adverse selection exhibit systematically higher forecasting errors (worse calibration). In Model (2), when BVC VPIN is used, the coefficient is attenuated to 
+0.1828
+0.1828
+ and statistical significance drops (
+t
+=
+3.291
+t=3.291
+, 
+p
+<
+0.01
+p<0.01
+). This reduction is consistent with classical measurement-error attenuation from direction misclassification. We note that True VPIN values tend to cluster near the upper range of 
+[
+0
+,
+1
+]
+[0,1]
+ in sparse prediction markets where individual trade buckets are frequently single-sided; this reflects the dominance of one-way order flow in illiquid markets rather than a pathological construction. However, Table 
+4
+ shows True VPIN is defined for only 3 of 8 categories (Price Action, Crypto, Politics), all with values near 0.8–1.0, meaning the regressor is effectively unavailable for five categories. The statistically significant coefficient (
+t
+=
+5.344
+t=5.344
+) is therefore identified from limited variation within the non-missing categories and should be treated as indicative rather than precisely calibrated.
+
+Second, the choice of spread estimator severely distorts the estimated impact of transaction costs. In Model (1), the Gibbs spread has a coefficient of 
+−
+4.1280
+-4.1280
+ (
+t
+=
+−
+5.336
+t=-5.336
+, 
+p
+<
+0.001
+p<0.001
+). In Model (2), the Roll spread yields a coefficient of 
+−
+1.3040
+-1.3040
+ (
+t
+=
+−
+4.249
+t=-4.249
+, 
+p
+<
+0.001
+p<0.001
+). A direct comparison of raw coefficients must account for scale: Roll spread values are approximately twice the magnitude of Gibbs estimates on average (Table 
+4
+), so a naive ratio would already predict a roughly two-fold shrinkage from units alone. After adjusting for this scale difference, the Roll coefficient remains substantially smaller in absolute terms, broadly consistent with classical measurement-error attenuation bias. However, Models (1) and (2) simultaneously substitute both the spread estimator (Gibbs for Roll) and the VPIN estimator (True for BVC), so the coefficient gap is confounded by model specification differences and potential omitted-variable bias (Roll spread captures a different construct than Gibbs in thin markets). A split-variable specification or Hausman-style attenuation test would be needed to cleanly isolate the attenuation component; we leave this for future work. This indicates that traditional TCA reports relying on classified spreads will systematically underestimate the relationship between trading friction and market forecasting performance.
+
+This negative relationship between spreads and forecast error is counter-intuitive under standard market quality frameworks, where tighter spreads typically represent a superior trading environment. However, in the context of prediction markets, this finding reflects a powerful selection effect rather than a beneficial impact of trading friction. Markets with wider spreads are systematically smaller, more specialized, and characterized by high fundamental uncertainty. These niche markets attract long-horizon, highly informed specialists while deterring retail noise traders who are highly sensitive to transaction costs. Conversely, highly active markets with extremely tight spreads (such as major political general elections) attract a massive influx of retail noise traders and speculative, sentiment-driven order flows, which can temporarily distort prices away from fundamental values and increase Brier scores before eventual resolution. Thus, the negative spread coefficient does not suggest that transaction costs improve price discovery; instead, it indicates that wider spreads act as a natural barrier to noise trader entry, leaving the pricing of specialized markets to informed specialists. This highlights the importance of controlling for participant composition and market type in cross-sectional prediction calibration.
+
+Third, control variables and other microstructure measures (such as Kyle’s 
+λ
+\lambda
+ and Amihud illiquidity) remain statistically insignificant in both models, indicating that spreads and flow toxicity (VPIN) are the primary channels through which microstructure quality transmits to forecasting accuracy.
+
+Additionally, Figure 
+17
+ shows that resolved markets across all categories converge to the true binary outcome, with convergence speed and residual bias varying systematically by category. This convergence is influenced by microstructure quality: markets with lower toxic flow (lower VPIN) exhibit more stable late-stage convergence. The spread dimension, consistent with the cross-sectional selection effect documented above, reflects participant composition rather than a simple liquidity-convergence mapping—high-spread niche markets may converge precisely because informed specialists dominate their order flow.
+
+figure
+ 17
+: 
+Pre-resolution price convergence speed by event category.
+
+table
+ 15
+: 
+Brier Score Regression on Microstructure Quality: Ground-Truth vs. Classified Metrics
+
+Variable
+
+Model (1): Ground-Truth
+
+Model (2): Classified
+
+Gibbs Spread (
+c
+G
+​
+i
+​
+b
+​
+b
+​
+s
+c_{Gibbs}
+) / Roll Spread (
+c
+R
+​
+o
+​
+l
+​
+l
+c_{Roll}
+)
+
+−
+4.1280
+∗
+∗
+∗
+-4.1280***
+
+−
+1.3040
+∗
+∗
+∗
+-1.3040***
+
+(
+0.7736
+)
+(0.7736)
+
+(
+0.3069
+)
+(0.3069)
+
+True VPIN / BVC VPIN
+
+0.1979
+∗
+∗
+∗
+0.1979***
+
+0.1828
+∗
+∗
+0.1828**
+
+(
+0.0370
+)
+(0.0370)
+
+(
+0.0555
+)
+(0.0555)
+
+Kyle’s 
+λ
+\lambda
+
+9.8172
+9.8172
+
+−
+3.0992
+-3.0992
+
+(
+6.8357
+)
+(6.8357)
+
+(
+5.4121
+)
+(5.4121)
+
+Amihud Illiquidity
+
+0.0391
+0.0391
+
+0.0599
+0.0599
+
+(
+0.1057
+)
+(0.1057)
+
+(
+0.1072
+)
+(0.1072)
+
+Mean Price
+
+0.0072
+0.0072
+
+0.0039
+0.0039
+
+(
+0.0119
+)
+(0.0119)
+
+(
+0.0122
+)
+(0.0122)
+
+Number of Trades
+
+0.0000
+0.0000
+
+−
+0.0000
+-0.0000
+
+(
+0.0000
+)
+(0.0000)
+
+(
+0.0000
+)
+(0.0000)
+
+Intercept
+
+0.2383
+∗
+0.2383*
+
+0.3929
+∗
+∗
+∗
+0.3929***
+
+(
+0.1007
+)
+(0.1007)
+
+(
+0.0945
+)
+(0.0945)
+
+Category FE
+
+Yes
+
+Yes
+
+Observations
+
+1,019
+
+1,019
+
+Note
+: This table reports cross-sectional regressions of market-level Brier scores on microstructure metrics for a balanced panel of 1,019 markets. Model (1) utilizes ground-truth quality metrics derived from Polygon transaction records (Gibbs spread and True VPIN). Model (2) replicates the regression using standard classification-based heuristics (Roll spread and BVC VPIN). All models control for mean price level, trade activity, and category fixed effects (omitted for brevity). Standard errors are reported in parentheses. *** 
+p
+<
+0.001
+p<0.001
+, ** 
+p
+<
+0.01
+p<0.01
+, * 
+p
+<
+0.05
+p<0.05
+.
+
+Discussion and Limitations
+
+We emphasize nine limitations: (1) only on-chain settlement, no order book snapshots; (2) offshore Polymarket v1 only; (3) version external validity to v2 is uncertain; (4) a small subset of markets lacks winning outcome labels; (5) Standard Binary, Up-Down, and Neg-Risk markets are structurally distinct and should not be pooled; (6) the archive does not include oracle-resolution events or continuous cross-layer alignment; (7) the Sports category (the largest by market count) is excluded from the cross-sectional microstructure quality analysis in Table 
+4
+ because Sports markets disproportionately fall into the Neg-Risk structure and the Up-Down subsegment, neither of which satisfies the Standard Binary criterion, limiting the generalizability of quality comparisons across categories; (8) DiD estimates for True VPIN and Amihud illiquidity are limited by pre-activation trend violations (Section 
+5
+) and should be treated as descriptive associations rather than causal estimates; and (9) the wash-trading proxy relies on directed cycle detection in the transaction graph and has not been validated for precision or recall against independently confirmed wash-trading cases. The efficiency discussion is framed against classic benchmarks in market efficiency 
+(
+Fama 1970
+)
+.
+
+Conclusion
+
+The release of the 
+Polymarket-v1 Database
+ provides a complete, version-frozen, and truth-aligned transaction tape spanning the entire lifecycle of a major prediction platform. Beyond its value as a historical archive, this database acts as a critical methodology check on traditional market microstructure tools. By using Polygon’s chain-level settlement layer to verify the ground-truth direction of 1.2 billion trades, we show that standard classification heuristics (the tick rule and BVC) fail systematically, achieving near-random overall accuracy (
+≈
+\approx
+50%) while concealing a systematic price-level gradient—over-predicting in low-price regions and under-predicting in high-price regions—driven by positive direction autocorrelation.
+
+Crucially, our analysis demonstrates that these microstructural measurement errors propagate upward, distorting estimates of informed trading and transaction costs, and attenuating the measurable relationship between microstructure quality and macro-level probability calibration. We find that True VPIN positively predicts Brier scores (higher toxic flow → worse calibration), while Gibbs spread negatively predicts Brier scores—reflecting a selection effect in which high-spread, niche markets are dominated by informed specialists and achieve lower forecast errors despite high transaction costs. Standard classified metrics (Roll spread, BVC VPIN) attenuate both of these relationships, obscuring the differential channels through which liquidity and information quality affect forecasting accuracy. Correctly identifying these channels requires a truth-aligned database of the kind we release here. By providing a truth-aligned empirical laboratory, Polymarket-v1 offers a rigorous foundation for evaluating information aggregation, participant behavior, and liquidity dynamics in decentralized financial environments.
+
+Category Mapping Reference
+
+table
+ 16: 
+Consolidated category mapping: Harmonization of Polymarket metadata.
+
+Refined Category
+
+Included Subcategories (Keywords and Slugs)
+
+Crypto
+
+Bitcoin, Ethereum, Solana, XRP, DeFi, L2s, Stablecoins, NFTs, Tokens, DEXs
+
+Sports
+
+Soccer (EPL, FIFA), Basketball (NBA, NCAA), Football (NFL), Tennis (WTA, ATP), Esports (Dota, LoL, CS), UFC, Racing (F1), Chess
+
+Politics
+
+U.S. Elections, Global Elections, Primaries, Geopolitics, Diplomacy, Cabinet, Conflict, Supreme Court, Policy
+
+Finance
+
+Equities (Big Tech, Tickers), Macro (CPI, GDP, Fed), Commodities, Yields, Earnings, Banking, Recession
+
+Culture
+
+Movies, Awards (Oscars, Grammys), Music, Reality TV, Celebrities, YouTube, Netflix, Influencers, Viral Events
+
+Sci-Tech
+
+Weather (Temperature, Hurricanes), AI (LLMs, ChatGPT), Science, Space (NASA, SpaceX), Health, Medicine, Robotics
+
+Price Action
+
+Up or Down
+ (1M, 5M, 1H, Daily/Weekly), High-frequency price interval markets
+
+Other
+
+Recurring, Hype, Mentions, and remaining uncategorized markets
+
+References
+
+Abdi and Ranaldo (2017)
+
+Abdi, F. and A. Ranaldo. 2017.
+
+“A Simple Estimation of Bid-Ask Spreads from Daily Close,
+High, and Low Prices.”
+
+The Review of Financial Studies
+ 30 (12): 4437–4480.
+
+Akey et al. (2026)
+
+Akey, P., V. Grégoire, N. Harvie, and C. Martineau. 2026.
+
+“Who Wins and Who Loses in Prediction Markets? Evidence from
+Polymarket.”
+
+SSRN 6443103.
+
+https://ssrn.com/abstract=6443103
+.
+
+Amihud (2002)
+
+Amihud, Y. 2002.
+
+“Illiquidity and Stock Returns: Cross-Section and Time-Series
+Effects.”
+
+Journal of Financial Markets
+ 5 (1): 31–56.
+
+Bai and Perron (1998)
+
+Bai, J. and P. Perron. 1998.
+
+“Estimating and Testing Linear Models with Multiple
+Structural Changes.”
+
+Econometrica
+ 66 (1): 47–78.
+
+Bai and Perron (2003)
+
+Bai, J. and P. Perron. 2003.
+
+“Computation and Analysis of Multiple Structural Change
+Models.”
+
+Journal of Applied Econometrics
+ 18 (1): 1–22.
+
+Barclay and Warner (1993)
+
+Barclay, M. J. and J. B. Warner. 1993.
+
+“Stealth Trading and Volatility: Which Trades Move Prices?”
+
+Journal of Financial Economics
+ 34 (3): 281–305.
+
+Berg et al. (2008)
+
+Berg, J., R. Forsythe, F. Nelson, and T. Rietz. 2008.
+
+“Results from a Dozen Years of Election Futures Markets
+Research.”
+
+In 
+Handbook of Experimental Economics Results
+, vol. 1, edited
+by C. Plott and V. Smith, pp. 742–751. Elsevier.
+
+Callaway and Sant’Anna (2021)
+
+Callaway, B. and P. H. C. Sant’Anna. 2021.
+
+“Difference-in-Differences with Multiple Time Periods.”
+
+Journal of Econometrics
+ 225 (2): 200–230.
+
+Corwin and Schultz (2012)
+
+Corwin, S. A. and P. Schultz. 2012.
+
+“A Simple Way to Estimate Bid-Ask Spreads from Daily High and
+Low Prices.”
+
+The Journal of Finance
+ 67 (2): 719–760.
+
+de Chaisemartin and
+D’Haultfœuille (2020)
+
+de Chaisemartin, C. and X. D’Haultfœuille. 2020.
+
+“Two-Way Fixed Effects Estimators with Heterogeneous
+Treatment Effects.”
+
+American Economic Review
+ 110 (9): 2964–2996.
+
+Dubach (2026)
+
+Dubach, P. D. 2026.
+
+“The Anatomy of a Decentralized Prediction Market:
+Microstructure Evidence from the Polymarket Order Book.”
+
+arXiv preprint arXiv:2604.24366.
+
+https://arxiv.org/abs/2604.24366
+.
+
+Easley et al. (1996)
+
+Easley, D., N. M. Kiefer, M. O’Hara, and J. B. Paperman. 1996.
+
+“Liquidity, Information, and Infrequently Traded Stocks.”
+
+The Journal of Finance
+ 51 (4): 1405–1436.
+
+Easley, López de Prado, and O’Hara (2012)
+
+Easley, D., M. M. López de Prado, and M. O’Hara. 2012.
+
+“Flow Toxicity and Liquidity in a High Frequency World.”
+
+Review of Financial Studies
+ 25 (5): 1457–1493.
+
+Easley and O’Hara (1987)
+
+Easley, D. and M. O’Hara. 1987.
+
+“Price, Trade Size, and Information in Securities Markets.”
+
+Journal of Financial Economics
+ 19 (1): 69–90.
+
+Fama (1970)
+
+Fama, E. F. 1970.
+
+“Efficient Capital Markets: A Review of Empirical Work.”
+
+The Journal of Finance
+ 25 (2): 383–417.
+
+Glosten and Milgrom (1985)
+
+Glosten, L. R. and P. R. Milgrom. 1985.
+
+“Bid, Ask, and Transaction Prices in a Specialist Market with
+Heterogeneously Informed Traders.”
+
+Journal of Financial Economics
+ 14 (1): 71–100.
+
+Goodman-Bacon (2021)
+
+Goodman-Bacon, A. 2021.
+
+“Difference-in-Differences with Variation in Treatment
+Timing.”
+
+Journal of Econometrics
+ 225 (2): 254–277.
+
+Grossman and Stiglitz (1980)
+
+Grossman, S. J. and J. E. Stiglitz. 1980.
+
+“On the Impossibility of Informationally Efficient Markets.”
+
+American Economic Review
+ 70 (3): 393–408.
+
+Hasbrouck (1991)
+
+Hasbrouck, J. 1991.
+
+“Measuring the Information Content of Stock Trades.”
+
+The Journal of Finance
+ 46 (1): 179–207.
+
+Hasbrouck (2009)
+
+Hasbrouck, J. 2009.
+
+“Trading Costs and Returns for U.S. Equities: Estimating
+Effective Costs from Daily Data.”
+
+The Journal of Finance
+ 64 (3): 1445–1477.
+
+Jia et al. (2026)
+
+Jia, H., L. Zhou, W. Zhang, L. W. Cong, S. Li, and S. Sun. 2026.
+
+“Unlocking the Forecasting Economy: A Suite of Datasets for
+the Full Lifecycle of Prediction Market: Experiments & Analysis.”
+
+arXiv preprint arXiv:2604.20421.
+
+https://arxiv.org/abs/2604.20421
+.
+
+Kyle (1985)
+
+Kyle, A. S. 1985.
+
+“Continuous Auctions and Insider Trading.”
+
+Econometrica
+ 53 (6): 1315–1335.
+
+Lee and Ready (1991)
+
+Lee, C. M. C. and M. J. Ready. 1991.
+
+“Inferring Trade Direction from Intraday Data.”
+
+The Journal of Finance
+ 46 (2): 733–746.
+
+Lo and MacKinlay (1988)
+
+Lo, A. W. and A. C. MacKinlay. 1988.
+
+“Stock Market Prices Do Not Follow Random Walks: Evidence
+from a Simple Specification Test.”
+
+The Review of Financial Studies
+ 1 (1): 41–66.
+
+O’Hara (1995)
+
+O’Hara, M. 1995.
+
+Market Microstructure Theory
+.
+
+Cambridge, MA: Blackwell Publishers.
+
+Rahman, Al-Chami, and Clark (2025)
+
+Rahman, N., J. Al-Chami, and J. Clark. 2025.
+
+“SoK: Market Microstructure for Decentralized Prediction
+Markets (DePMs).”
+
+arXiv preprint arXiv:2510.15612.
+
+https://arxiv.org/abs/2510.15612
+.
+
+Reichenbach and Walther (2026)
+
+Reichenbach, F. and M. Walther. 2026.
+
+“Exploring Decentralized Prediction Markets: Accuracy, Skill,
+and Bias on Polymarket.”
+
+SSRN 5910522.
+
+https://ssrn.com/abstract=5910522
+.
+
+Roll (1984)
+
+Roll, R. 1984.
+
+“A Simple Implicit Measure of the Effective Bid-Ask Spread in
+an Efficient Market.”
+
+The Journal of Finance
+ 39 (4): 1127–1139.
+
+Sirolly et al. (2025)
+
+Sirolly, A., H. Ma, Y. Kanoria, and R. Sethi. 2025.
+
+“Network-Based Detection of Wash Trading.”
+
+SSRN 5714122.
+
+https://ssrn.com/abstract=5714122
+.
+
+Slivkoff (2025)
+
+Slivkoff, N. 2025.
+
+“Polymarket Volume Is Being Double-Counted.”
+
+Paradigm Research Note.
+
+Snowberg and Wolfers (2010)
+
+Snowberg, E. and J. Wolfers. 2010.
+
+“Explaining the Favorite–Longshot Bias: Is It Risk-Love or
+Misperceptions?”
+
+Journal of Political Economy
+ 118 (4): 723–746.
+
+Wolfers and Zitzewitz (2004)
+
+Wolfers, J. and E. Zitzewitz. 2004.
+
+“Prediction Markets.”
+
+Journal of Economic Perspectives
+ 18 (2): 107–126.
+
+Yang and Tsang (2026)
+
+Yang, Z. and K. P. Tsang. 2026.
+
+“The Anatomy of a Blockchain Prediction Market: Polymarket in
+the 2024 U.S. Presidential Election.”
+
+arXiv preprint arXiv:2603.03136.
+
+https://arxiv.org/abs/2603.03136
+.
+
+SSRN 6336679.

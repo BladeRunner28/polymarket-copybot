@@ -1,0 +1,333 @@
+SOURCE: https://www.polysyncer.com/blog/polymarket-prediction-accuracy
+
+How Accurate Are Polymarket Predictions? A Study — Poly Syncer
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Skip to content
+ 
+ 
+ 
+ 
+ 
+Poly 
+Syncer
+ 
+ 
+ 
+ 
+Dashboard
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Home
+ 
+›
+ 
+ 
+ 
+ 
+ 
+ 
+How it works
+ 
+›
+ 
+ 
+ 
+ 
+ 
+ 
+Top wallets
+ 
+›
+ 
+ 
+ 
+ 
+ 
+ 
+Features
+ 
+›
+ 
+ 
+ 
+ 
+ 
+ 
+Pricing
+ 
+›
+ 
+ 
+ 
+ 
+ 
+ 
+FAQ
+ 
+›
+ 
+ 
+Dashboard
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Data 
+ 
+ How Accurate Are Polymarket Predictions? A Study 
+ 
+Polymarket has resolved enough markets to measure how well its prices predict outcomes. The headline is well-calibrated overall, with specific category-level biases specialists routinely exploit.
+ 
+ Last reviewed 
+May 17, 2026
+ · Maria Ostrowski, Poly Syncer 
+ 
+ 
+ 
+ 
+ 
+ 
+11-minute read
+ · By 
+Maria Ostrowski
+ · Updated 
+May 17, 2026
+ 
+ 
+Across 28,407 Polymarket markets that resolved between January 2024 and May 2026, market prices were well-calibrated as a probability estimator: an event priced at 40 cents resolved YES 41 percent of the time, an event priced at 70 cents resolved YES 72 percent of the time, and the mean absolute calibration error across all probability buckets was 2.1 percentage points. By comparison, public sportsbook lines on equivalent events show a 6.4 percent calibration error, and self-reported polling averages show 8.9 percent. Polymarket is the most accurate publicly observable forecast on most categories we tested.
+ But the headline hides important category-level biases. Politics is well-calibrated; sports is slightly overconfident in favourites; crypto-price binaries are systematically underconfident at extreme probabilities. This study measures the calibration curves, names the patterns, and explains why specialists exploit each bias differently.
+ 
+What “accurate” means for a prediction market
+ 
+The right standard for a prediction market is not whether it gets individual predictions right (no forecast does, and no single trade tells you anything about the forecaster). The right standard is 
+calibration
+: across many predictions made at the same confidence level, does the realised outcome rate match the stated probability? A market that prices events at 70 cents and sees those events resolve YES 70 percent of the time is well-calibrated, even if any individual 70-cent bet went the other way. A market that prices at 70 cents but sees those events resolve YES 55 percent of the time is overconfident; the prices need to come down.
+ 
+Calibration is the cleanest test of whether a market is doing its job as a probability estimator, and it is the standard academic literature uses to evaluate forecasters. We applied it to Polymarket using the full set of resolved markets between January 2024 and May 2026 — 28,407 markets total, spanning politics, sports, crypto, earnings, geopolitics, tech, and culture. For each market we recorded the YES price at three checkpoints (24 hours after creation, 24 hours before resolution, and immediately before resolution), bucketed those prices into 10 probability bins (0–10 percent, 10–20 percent, etc.), and computed the actual YES rate within each bucket.
+ 
+The headline calibration curve
+ 
+The result is the figure below. The diagonal dashed line is perfect calibration — prices that exactly match realised outcomes. The cyan curve is what Polymarket actually delivered across all 28,407 markets, sampled 24 hours before resolution.
+ 
+ 
+Polymarket calibration curve (all 28,407 resolved markets)
+ 
+ 
+ 
+ 
+ 
+Polymarket prices, sampled 24 hours before resolution, plotted against realised outcome frequency across 28,407 resolved markets. The cyan curve hugs the perfect-calibration diagonal closely; mean absolute calibration error is 2.1 percentage points. The largest deviations are a small underconfidence at the extremes (markets priced at 0.05 resolve YES at 0.045; markets priced at 0.95 resolve YES at 0.93) which is a known and well-understood pattern in prediction-market literature.
+ 
+ 
+Three observations from the figure. First, the curve sits visually on top of the diagonal across most of the range, which is the visual definition of a well-calibrated forecaster. Second, there is a slight bow inward at the extremes — bets priced at 5 cents resolve YES slightly less than 5 percent of the time, and bets priced at 95 cents resolve YES slightly less than 95 percent of the time. This is the “long-shot bias” pattern that appears in almost every betting and prediction market in history. Third, the bias is small (1 to 2 percentage points) compared to the same bias in sportsbooks (typically 4 to 8 points) and to polling-based forecasts (5 to 10 points). Polymarket is more accurate than the public alternatives by a meaningful margin.
+ 
+Calibration by category
+ 
+The headline curve aggregates across all categories. Splitting by category reveals which markets carry their weight and which have systematic biases.
+ 
+ 
+ 
+ 
+Category
+ 
+Mean abs. calibration error
+ 
+Bias direction
+ 
+n markets
+ 
+ 
+ 
+ 
+Politics — horse race
+1.2 pp
+Essentially unbiased
+4,184
+ 
+NBA (resolved)
+1.8 pp
+Slight favourite-bias (overprices)
+3,422
+ 
+Soccer (resolved)
+2.4 pp
+Slight favourite-bias
+2,914
+ 
+Crypto price binaries
+3.1 pp
+Underconfident at extremes (0.05/0.95 too generous)
+1,847
+ 
+Earnings beat-vs-miss
+1.9 pp
+Essentially unbiased
+1,124
+ 
+Geopolitics
+4.8 pp
+Variable; overconfident on long-dated
+612
+ 
+Tech / product launches
+3.4 pp
+Underconfident (over-discounts probability of success)
+988
+ 
+Culture / awards
+2.6 pp
+Slight favourite-bias
+388
+ 
+Climate / weather
+3.8 pp
+Underconfident on rare events
+442
+ 
+Misc / long-tail
+5.2 pp
+Variable, often thin-book noise
+2,068
+ 
+ 
+ 
+Politics is the cleanest category — calibration error under 1.5 percentage points and no systematic directional bias. This is consistent with the academic literature on political prediction markets, which has documented their calibration quality since the 1990s Iowa Electronic Markets era. Sports markets show a small favourite-bias: heavy favourites are slightly overpriced, heavy underdogs slightly underpriced. The bias is small but real and is what allows sports specialists to extract systematic edge by betting selective underdogs. Crypto price binaries show the largest bias at the extremes; events priced at 5 percent resolve YES closer to 3 percent, and events priced at 95 percent resolve YES closer to 92 percent. This is consistent with retail flow being slightly more risk-loving than rational pricing would suggest.
+ 
+Why the extremes are noisier
+ 
+The 5-cent and 95-cent ends of the calibration curve are inherently harder to evaluate because we have fewer markets at those probability levels (most markets sit in the 25 to 75 cent range), and the absolute error required to flag bias is much smaller (a 2-percentage-point error is meaningful at 5 cents but invisible at 50 cents). The patterns we observe at the extremes should be read as “directionally suggestive, not statistically conclusive” in many cases. The exception is crypto-price binaries where the sample size is large enough (1,800+ markets) and the bias systematic enough that the underconfidence is real.
+ 
+The longshot bias pattern is structural across betting markets going back to horse racing in the 19th century. The same explanation applies on Polymarket: bettors prefer the asymmetric upside of long-shot wagers and accept slightly worse-than-fair pricing to get it. Sportsbooks know this and bake it into their lines. Prediction markets with peer-to-peer matching cannot bake it in directly, but the marginal trader at the long-shot end is more likely to be a recreational bettor than a quant operator, and the equilibrium price reflects that imbalance.
+ 
+Why this matters for traders
+ 
+Calibration knowledge is directly tradeable. If you know that NBA favourites are 2 percentage points overpriced on average, you can systematically take the underdog side at fair-or-better odds and grind out a small per-trade edge across many fills. If you know that crypto-price binaries at 5 cents resolve YES at 3 percent rather than 5 percent, you can systematically sell those 5-cent positions to make the 2-percentage-point delta. The biases are small but mechanical, and they compound across hundreds of trades per year.
+ 
+The catch is that everyone reading academic prediction-market papers knows this. The biases are also small enough that fees and slippage consume most of the edge unless you are running at scale. The wallets we see at the top of our composite-score leaderboard who specialise in these arbitrages are running with tight execution discipline, sub-second latency, and selectively positioning only where the bias is large enough to overcome friction. Mirroring those wallets is a more practical route for retail than trying to systematise the calibration-trade yourself, and we cover the framework in the 
+whale tracker guide
+.
+ 
+Comparison to other public forecasts
+ 
+The other reasonable benchmark for accuracy is what else is publicly available on the same events. Polling averages, sportsbook lines, expert pundits, and aggregated forecast services all make predictions on the same questions Polymarket prices. How does Polymarket compare?
+ 
+ 
+Polymarket overall:
+ 2.1 percentage points mean absolute calibration error
+ 
+Sportsbook lines
+ on equivalent sports markets: 4.4 pp (vig-adjusted)
+ 
+Polling averages
+ on US politics, 30 days before election: 8.9 pp historical
+ 
+Pundit consensus
+ (expert aggregations): 12.4 pp historical
+ 
+Single-expert forecast
+ (individual analysts): 14–25 pp typical
+ 
+ 
+The order is consistent with what economists call the “wisdom of crowds” effect amplified by skin-in-the-game incentives. Polymarket combines the aggregation property of prediction markets (many independent forecasters) with the discipline of real money at stake, which produces more accurate forecasts than either polling (no skin in game) or sportsbooks (vig-distorted) alone.
+ 
+The most defensible empirical claim about Polymarket is not that it is always right. It is that across the categories we measure, the prices are the most accurate publicly available forecast of the future. That is the real product underneath the trading interface.
+ 
+What this study cannot tell you
+ 
+Three honest limitations. First, the calibration analysis says nothing about whether the markets are predicting causally; correlation between price and outcome is consistent with both genuine forecasting skill and lucky variance in a particular window. Two-plus years of data and 28,000+ markets is enough sample to reduce that worry materially but not eliminate it. Second, the analysis weights all markets equally; if you re-weight by volume, the calibration improves slightly because high-volume markets are better priced than long-tail ones. Third, the analysis treats each market independently; we did not test whether the same wallets that move prices on one market also move them on related ones (which would be a separate study on price-information transmission).
+ 
+How this connects to copy trading
+ 
+For a copy-trade subscriber the calibration result is mostly reassuring background context. The prices you mirror are derived from a process that, on average, predicts the future better than every public alternative. The category-level biases tell you which sectors to overweight (politics, earnings) and which to be careful in (geopolitics long-dated, long-tail markets). The data is also why the leaderboard composite score includes edge-adjusted hit rate as a heavy weight; a wallet that beats implied probability by 5 to 11 percentage points is statistically meaningful precisely because the implied probability itself is well-calibrated. If the market were noisy and biased, beating it would be easier and less informative. Because the market is good, beating it consistently is a strong signal.
+ 
+Frequently asked questions
+ 
+How accurate are Polymarket predictions?
+ 
+Across 28,407 resolved markets between January 2024 and May 2026, Polymarket prices were well-calibrated: mean absolute calibration error of 2.1 percentage points across all probability buckets. By comparison, sportsbook lines on equivalent events show 4.4 pp error, polling averages show 8.9 pp, and pundit consensus shows 12.4 pp. Polymarket is the most accurate publicly observable forecast on most categories.
+ 
+Is Polymarket more accurate than polls?
+ 
+Yes, by a meaningful margin. Polling averages on US politics 30 days before election show roughly 8.9 percentage points of mean absolute calibration error against eventual outcomes; Polymarket prices on the same events show 1.2 percentage points. The combination of aggregation and real-money skin-in-the-game produces materially better forecasts than polling-alone approaches.
+ 
+Why are crypto-price predictions less accurate on Polymarket?
+ 
+Crypto-price binaries show 3.1 percentage points of calibration error, the highest of the major categories. The bias is concentrated at the extremes (5-cent and 95-cent markets), where prices are slightly more generous than reality. The pattern is consistent with retail flow being slightly more risk-loving than rational pricing, which is the same longshot bias documented in horse racing and sportsbooks.
+ 
+Can traders exploit Polymarket calibration biases?
+ 
+Yes, systematically. The biases are small (1 to 4 percentage points per trade) but mechanical, and they compound across many trades. The catch is that fees and slippage consume most of the per-trade edge; only operators with tight execution and substantial scale extract meaningful profit. Specialists who appear on the leaderboard with sustained edge-adjusted hit rates above 0.05 are typically running calibration-arbitrage strategies in specific categories.
+ 
+Which Polymarket category is most accurate?
+ 
+Politics — horse race markets — with mean absolute calibration error of 1.2 percentage points and no systematic directional bias. Earnings markets are second at 1.9 pp. The least accurate categories are long-tail miscellaneous markets (5.2 pp) and geopolitics on long-dated questions (4.8 pp), both reflecting thin liquidity and harder-to-forecast underlying events.
+ 
+ 
+ 
+More from the blog
+ 
+ 
+How Polymarket edge decays
+ 
+Polymarket arbitrage patterns
+ 
+Wallet scoring methodology
+ 
+Polymarket order books explained
+ 
+All posts

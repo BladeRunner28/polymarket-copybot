@@ -1,0 +1,152 @@
+finished copies with realized PnL: 9734 (C-200 1565 / STANDARD 8169)
+
+===== ALL: n=9734 base win rate 61.6% mean PnL $0.72 =====
+  top separators (|z| of any bin's win rate vs base, then bin-PnL spread):
+   whale_entry        |z|max=24.7  binPnL spread   -1.57
+       0.001: n=1946 wr=34% pnl=+1.15 tot=+2237 roi=+10.3% | 0.41: n=1946 wr=44% pnl=-1.45 tot=-2824 roi=-13.1% | 0.52: n=1946 wr=74% pnl=+3.63 tot=+7062 roi=+32.0% | 0.581: n=1946 wr=68% pnl=+0.69 tot=+1348 roi=+6.7% | 0.82: n=1950 wr=87% pnl=-0.42 tot=-814 roi=-4.8%
+   entryPrice         |z|max=23.4  binPnL spread   -2.08
+       0.0005: n=1946 wr=36% pnl=+1.65 tot=+3217 roi=+15.0% | 0.408: n=1946 wr=41% pnl=-1.79 tot=-3493 roi=-16.1% | 0.515: n=1946 wr=74% pnl=+3.40 tot=+6612 roi=+30.0% | 0.585: n=1946 wr=70% pnl=+0.78 tot=+1510 roi=+7.5% | 0.82: n=1950 wr=87% pnl=-0.43 tot=-838 roi=-4.9%
+   detected_price     |z|max=23.3  binPnL spread   -1.88
+       0.0005: n=1946 wr=36% pnl=+1.45 tot=+2820 roi=+13.1% | 0.415: n=1946 wr=42% pnl=-1.83 tot=-3559 roi=-16.3% | 0.515: n=1946 wr=74% pnl=+3.42 tot=+6647 roi=+30.3% | 0.585: n=1946 wr=69% pnl=+1.00 tot=+1938 roi=+9.7% | 0.82: n=1950 wr=87% pnl=-0.43 tot=-838 roi=-4.9%
+   spreadScore        |z|max=22.6  binPnL spread   +4.68
+       30: n=1946 wr=55% pnl=-0.20 tot=-383 roi=-1.9% | 86: n=1946 wr=57% pnl=-0.13 tot=-251 roi=-1.2% | 93: n=1946 wr=49% pnl=-0.51 tot=-984 roi=-4.7% | 93: n=1946 wr=61% pnl=-0.06 tot=-122 roi=-0.6% | 97.9: n=1950 wr=87% pnl=+4.49 tot=+8747 roi=+43.1%
+   drift              |z|max=20.4  binPnL spread   -4.14
+       0: n=1946 wr=84% pnl=+3.76 tot=+7314 roi=+34.1% | 0.0015: n=1946 wr=62% pnl=-0.17 tot=-337 roi=-1.7% | 0.005: n=1946 wr=56% pnl=-0.08 tot=-158 roi=-0.8% | 0.005: n=1946 wr=57% pnl=+0.48 tot=+942 roi=+4.5% | 0.0156: n=1950 wr=50% pnl=-0.39 tot=-753 roi=-3.8%
+   categoryFitScore   |z|max=19.6  binPnL spread   -5.55
+       0: n=1946 wr=83% pnl=+3.57 tot=+6950 roi=+36.1% | 0: n=1946 wr=65% pnl=+0.78 tot=+1523 roi=+9.1% | 11: n=1946 wr=55% pnl=+0.09 tot=+185 roi=+0.9% | 40.1: n=1946 wr=58% pnl=+1.14 tot=+2216 roi=+10.2% | 50: n=1950 wr=47% pnl=-1.98 tot=-3865 roi=-15.8%
+   wallet_winrate30d  |z|max=18.7  binPnL spread   +0.19
+       0.5: n=1946 wr=82% pnl=+1.77 tot=+3450 roi=+20.5% | 0.5: n=1946 wr=58% pnl=+0.32 tot=+619 roi=+3.3% | 0.5: n=1946 wr=51% pnl=-0.58 tot=-1120 roi=-5.3% | 0.73: n=1946 wr=54% pnl=+0.12 tot=+241 roi=+1.1% | 0.944: n=1950 wr=62% pnl=+1.96 tot=+3819 roi=+16.4%
+   liquidityScore     |z|max=18.2  binPnL spread   -4.07
+       20.1: n=1946 wr=78% pnl=+2.82 tot=+5497 roi=+29.2% | 100: n=1946 wr=82% pnl=+3.00 tot=+5831 roi=+30.6% | 100: n=1946 wr=46% pnl=-1.06 tot=-2065 roi=-9.6% | 100: n=1946 wr=53% pnl=+0.09 tot=+171 roi=+0.9% | 100: n=1950 wr=50% pnl=-1.24 tot=-2425 roi=-10.4%
+  wins vs losses (Welch t):
+   copyScore          win   74.990  loss   77.617   t=-12.77
+   confidence         win    0.591  loss    0.602   t=-2.80
+   raw_composite      win   73.899  loss   74.578   t=-3.81
+   entryPrice         win    0.659  loss    0.464   t=+44.67
+   size               win   10.179  loss   11.023   t=-8.46
+   whale_entry        win    0.660  loss    0.467   t=+44.43
+   detected_price     win    0.660  loss    0.467   t=+44.21
+   drift              win    0.014  loss    0.021   t=-9.49
+   trade_size         win  515.878  loss  693.188   t=-1.76
+   wallet_global      win   65.997  loss   67.577   t=-5.18
+   wallet_winrate30d  win    0.671  loss    0.698   t=-6.42
+   wallet_roi30d      win    0.476  loss    0.622   t=-6.32
+   wallet_consistency win   64.142  loss   68.562   t=-11.22
+   wallet_copyability win   53.831  loss   48.709   t=+8.23
+   wallet_trades30d   win  180.891  loss  170.248   t=+11.29
+   wallet_avgsize     win 20761.428  loss 13779.200   t=+11.30
+   hour_et            win   11.980  loss   10.975   t=+7.82
+   is_lane            win    0.042  loss    0.063   t=-4.43
+   is_swarm           win    0.053  loss    0.124   t=-11.75
+   is_sentiment       win    0.004  loss    0.004   t=-0.08
+   walletQualityScore win   80.121  loss   83.660   t=-16.33
+   categoryFitScore   win   26.035  loss   37.665   t=-19.77
+   entryTimingScore   win   78.367  loss   64.426   t=+20.07
+   spreadScore        win   92.050  loss   89.255   t=+15.01
+   liquidityScore     win   96.747  loss   96.933   t=-0.72
+   thesisScore        win   65.674  loss   74.799   t=-18.59
+
+===== C-200: n=1565 base win rate 50.6% mean PnL $0.03 =====
+  top separators (|z| of any bin's win rate vs base, then bin-PnL spread):
+   detected_price     |z|max= 7.6  binPnL spread   -1.46
+       0.045: n=313 wr=35% pnl=+1.29 tot=+405 roi=+12.4% | 0.345: n=313 wr=44% pnl=-0.36 tot=-112 roi=-5.7% | 0.465: n=313 wr=46% pnl=-0.74 tot=-231 roi=-14.0% | 0.545: n=313 wr=56% pnl=+0.13 tot=+39 roi=+2.3% | 0.705: n=313 wr=72% pnl=-0.17 tot=-52 roi=-3.3%
+   entryPrice         |z|max= 7.1  binPnL spread   -1.44
+       0.0335: n=313 wr=35% pnl=+1.15 tot=+359 roi=+10.8% | 0.335: n=313 wr=40% pnl=-0.68 tot=-213 roi=-11.4% | 0.455: n=313 wr=45% pnl=-0.54 tot=-168 roi=-10.0% | 0.545: n=313 wr=62% pnl=+0.51 tot=+161 roi=+9.2% | 0.695: n=313 wr=71% pnl=-0.29 tot=-90 roi=-5.7%
+   whale_entry        |z|max= 6.9  binPnL spread   -1.60
+       0.022: n=313 wr=35% pnl=+1.24 tot=+388 roi=+11.8% | 0.34: n=313 wr=40% pnl=-0.73 tot=-229 roi=-12.1% | 0.48: n=313 wr=50% pnl=-0.20 tot=-62 roi=-3.7% | 0.54: n=313 wr=58% pnl=+0.20 tot=+64 roi=+3.8% | 0.71: n=313 wr=70% pnl=-0.36 tot=-113 roi=-7.0%
+   copyScore          |z|max= 5.4  binPnL spread   -3.60
+       35.5: n=313 wr=56% pnl=+1.81 tot=+566 roi=+32.2% | 62.7: n=313 wr=52% pnl=-0.67 tot=-208 roi=-14.2% | 70.4: n=313 wr=54% pnl=+0.60 tot=+187 roi=+10.0% | 75.4: n=313 wr=56% pnl=+0.20 tot=+64 roi=+3.4% | 82: n=313 wr=35% pnl=-1.79 tot=-560 roi=-17.3%
+   size               |z|max= 4.0  binPnL spread   +0.70
+       1.24: n=313 wr=56% pnl=-0.05 tot=-16 roi=-1.4% | 4.59: n=313 wr=58% pnl=+0.77 tot=+240 roi=+15.7% | 4.99: n=313 wr=52% pnl=-0.20 tot=-63 roi=-3.9% | 5.59: n=313 wr=48% pnl=-1.01 tot=-316 roi=-16.6% | 6.79: n=313 wr=39% pnl=+0.65 tot=+203 roi=+5.0%
+   entryTimingScore   |z|max= 3.9  binPnL spread   -2.88
+       0: n=313 wr=47% pnl=+0.80 tot=+251 roi=+11.5% | 0: n=313 wr=47% pnl=+0.57 tot=+179 roi=+8.4% | 33.3: n=313 wr=62% pnl=+0.97 tot=+302 roi=+16.7% | 62.3: n=313 wr=50% pnl=-0.11 tot=-35 roi=-2.0% | 78.7: n=313 wr=47% pnl=-2.07 tot=-649 roi=-27.7%
+   is_swarm           |z|max= 3.3  binPnL spread   -1.21
+       0: n=1433 wr=52% pnl=+0.13 tot=+191 roi=+2.3% | 1: n=132 wr=36% pnl=-1.08 tot=-142 roi=-7.2%
+   wallet_global      |z|max= 3.2  binPnL spread   +0.57
+       37.1: n=313 wr=45% pnl=-0.75 tot=-236 roi=-12.1% | 63.7: n=313 wr=50% pnl=-0.14 tot=-43 roi=-2.6% | 67.4: n=313 wr=50% pnl=-0.02 tot=-5 roi=-0.3% | 79.8: n=313 wr=60% pnl=+1.25 tot=+390 roi=+16.7% | 91: n=313 wr=48% pnl=-0.18 tot=-57 roi=-2.4%
+  wins vs losses (Welch t):
+   copyScore          win   71.091  loss   73.280   t=-3.53
+   confidence         win    0.433  loss    0.451   t=-1.13
+   raw_composite      win   70.142  loss   70.632   t=-0.94
+   entryPrice         win    0.566  loss    0.451   t=+11.32
+   size               win    5.627  loss    7.419   t=-4.94
+   whale_entry        win    0.574  loss    0.461   t=+11.08
+   detected_price     win    0.574  loss    0.461   t=+11.12
+   drift              win    0.012  loss    0.014   t=-1.20
+   trade_size         win  610.861  loss  471.242   t=+1.09
+   wallet_global      win   74.657  loss   73.933   t=+1.06
+   wallet_winrate30d  win    0.724  loss    0.727   t=-0.25
+   wallet_roi30d      win    0.585  loss    0.595   t=-0.91
+   wallet_consistency win   73.488  loss   73.110   t=+0.44
+   wallet_copyability win   60.079  loss   57.892   t=+1.45
+   wallet_trades30d   win  172.842  loss  170.542   t=+1.09
+   wallet_avgsize     win 9104.207  loss 8298.254   t=+0.81
+   hour_et            win   12.184  loss   12.058   t=+0.40
+   is_lane            win    0.316  loss    0.303   t=+0.55
+   is_swarm           win    0.061  loss    0.109   t=-3.42
+   is_sentiment       win    0.032  loss    0.016   t=+2.10
+   walletQualityScore win   87.982  loss   87.658   t=+1.32
+   categoryFitScore   win   34.063  loss   36.482   t=-1.62
+   entryTimingScore   win   44.328  loss   42.871   t=+0.80
+   spreadScore        win   86.946  loss   86.654   t=+0.48
+   liquidityScore     win   92.837  loss   93.570   t=-0.78
+   thesisScore        win   71.523  loss   75.868   t=-4.12
+
+===== C-200 main-lane: n=1081 base win rate 50.1% mean PnL $-0.42 =====
+  top separators (|z| of any bin's win rate vs base, then bin-PnL spread):
+   liquidityScore     |z|max= 6.3  binPnL spread   +1.05
+       25.5: n=216 wr=29% pnl=-2.68 tot=-579 roi=-44.0% | 100: n=216 wr=65% pnl=+1.45 tot=+313 roi=+25.2% | 100: n=216 wr=57% pnl=-0.18 tot=-39 roi=-3.5% | 100: n=216 wr=59% pnl=+0.94 tot=+203 roi=+18.9% | 100: n=217 wr=41% pnl=-1.62 tot=-352 roi=-12.7%
+   whale_entry        |z|max= 5.3  binPnL spread   +0.07
+       0.022: n=216 wr=37% pnl=-0.53 tot=-114 roi=-4.8% | 0.33: n=216 wr=39% pnl=-0.96 tot=-208 roi=-15.0% | 0.45: n=216 wr=41% pnl=-1.06 tot=-229 roi=-17.6% | 0.53: n=216 wr=65% pnl=+0.91 tot=+197 roi=+15.4% | 0.68: n=217 wr=68% pnl=-0.46 tot=-101 roi=-8.5%
+   entryPrice         |z|max= 4.8  binPnL spread   -0.15
+       0.0335: n=216 wr=38% pnl=-0.45 tot=-98 roi=-4.1% | 0.33: n=216 wr=38% pnl=-1.11 tot=-240 roi=-17.4% | 0.445: n=216 wr=44% pnl=-0.76 tot=-163 roi=-12.6% | 0.525: n=216 wr=64% pnl=+0.82 tot=+178 roi=+13.8% | 0.655: n=217 wr=66% pnl=-0.60 tot=-131 roi=-11.1%
+   detected_price     |z|max= 4.6  binPnL spread   -0.31
+       0.055: n=216 wr=38% pnl=-0.31 tot=-67 roi=-2.9% | 0.33: n=216 wr=43% pnl=-0.58 tot=-126 roi=-9.2% | 0.455: n=216 wr=39% pnl=-1.54 tot=-333 roi=-24.8% | 0.535: n=216 wr=66% pnl=+0.96 tot=+208 roi=+16.1% | 0.665: n=217 wr=66% pnl=-0.63 tot=-136 roi=-11.5%
+   walletQualityScore |z|max= 4.0  binPnL spread   +0.85
+       72.2: n=216 wr=37% pnl=-1.97 tot=-425 roi=-33.4% | 84.2: n=216 wr=62% pnl=+0.04 tot=+9 roi=+0.6% | 85.3: n=216 wr=44% pnl=-1.16 tot=-251 roi=-20.2% | 88.2: n=216 wr=64% pnl=+2.10 tot=+454 roi=+32.0% | 90.8: n=217 wr=44% pnl=-1.11 tot=-242 roi=-11.5%
+   entryTimingScore   |z|max= 3.8  binPnL spread   -3.02
+       0: n=216 wr=39% pnl=-0.44 tot=-94 roi=-4.5% | 33.3: n=216 wr=62% pnl=+1.13 tot=+245 roi=+19.1% | 50: n=216 wr=58% pnl=+0.26 tot=+55 roi=+4.7% | 71.6: n=216 wr=54% pnl=+0.41 tot=+89 roi=+7.1% | 91.5: n=217 wr=37% pnl=-3.45 tot=-749 roi=-42.9%
+   is_swarm           |z|max= 3.6  binPnL spread   -2.27
+       0: n=969 wr=52% pnl=-0.19 tot=-180 roi=-3.2% | 1: n=112 wr=33% pnl=-2.46 tot=-275 roi=-14.8%
+   size               |z|max= 3.6  binPnL spread   -0.58
+       3.98: n=216 wr=57% pnl=-0.18 tot=-38 roi=-4.2% | 4.59: n=216 wr=57% pnl=+0.73 tot=+158 roi=+15.0% | 5.19: n=216 wr=54% pnl=-0.19 tot=-41 roi=-3.4% | 5.89: n=216 wr=38% pnl=-1.71 tot=-370 roi=-27.0% | 6.89: n=217 wr=44% pnl=-0.75 tot=-164 roi=-5.5%
+  wins vs losses (Welch t):
+   copyScore          win   76.521  loss   78.745   t=-3.96
+   confidence         win    0.633  loss    0.647   t=-1.72
+   raw_composite      win   74.946  loss   75.078   t=-0.29
+   entryPrice         win    0.550  loss    0.445   t=+8.63
+   size               win    5.870  loss    8.042   t=-4.32
+   whale_entry        win    0.553  loss    0.451   t=+8.42
+   detected_price     win    0.552  loss    0.450   t=+8.47
+   drift              win    0.011  loss    0.013   t=-1.16
+   trade_size         win  627.632  loss  525.650   t=+0.70
+   wallet_global      win   70.927  loss   69.651   t=+1.73
+   wallet_winrate30d  win    0.686  loss    0.687   t=-0.11
+   wallet_roi30d      win    0.581  loss    0.593   t=-0.77
+   wallet_consistency win   70.981  loss   70.328   t=+0.68
+   wallet_copyability win   52.107  loss   48.450   t=+2.07
+   wallet_trades30d   win  178.994  loss  174.759   t=+1.64
+   wallet_avgsize     win 11002.569  loss 8745.041   t=+1.72
+   hour_et            win   11.897  loss   12.067   t=-0.47
+   is_swarm           win    0.068  loss    0.139   t=-3.84
+   is_sentiment       win    0.006  loss    0.002   t=+1.00
+   walletQualityScore win   87.423  loss   86.853   t=+2.01
+   categoryFitScore   win   34.673  loss   37.706   t=-1.75
+   entryTimingScore   win   61.722  loss   59.580   t=+1.23
+   spreadScore        win   91.426  loss   90.286   t=+2.74
+   liquidityScore     win   98.379  loss   98.457   t=-0.15
+   thesisScore        win   72.743  loss   76.525   t=-2.99
+
+===== time-ordered check: incumbent score vs ridge logistic =====
+  C-200 (all copies): train n=1095 test n=470  (test base wr 47.2%)
+   incumbent raw_composite   AUC=0.538  logloss=0.7600
+   incumbent copyScore       AUC=0.581
+   ridge logistic            AUC=0.629  logloss=0.6737 (train AUC=0.698, train logloss=0.6319)
+   largest |coef|: raw_composite +1.00, wallet_consistency +0.87, wallet_winrate30d -0.60, entryTimingScore -0.59, entryPrice +0.54, categoryFitScore -0.46, wallet_copyability +0.46, thesisScore -0.40
+   NOTE: wallet_* columns are WalletProfile CURRENT values (not point-in-time) -> optimistic.
+  C-200 main-lane: train n=757 test n=324  (test base wr 49.1%)
+   incumbent raw_composite   AUC=0.408  logloss=0.7930
+   incumbent copyScore       AUC=0.606
+   ridge logistic            AUC=0.434  logloss=1.3065 (train AUC=0.708, train logloss=0.6335)
+   largest |coef|: entryTimingScore -0.99, categoryFitScore -0.97, copyScore +0.71, raw_composite +0.61, wallet_copyability +0.52, entryPrice +0.46, thesisScore -0.39, wallet_consistency +0.33
+   NOTE: wallet_* columns are WalletProfile CURRENT values (not point-in-time) -> optimistic.

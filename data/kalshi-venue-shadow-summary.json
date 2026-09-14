@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-13T16:01:22.153Z",
+  "asOf": "2026-09-14T03:24:24.309Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,17 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 401,
-    "inWindow": 6,
+    "copiesSeen": 421,
+    "inWindow": 26,
     "withKalshiQuote": 0,
     "crossListRate": 0,
     "staleSkips": 395,
-    "quoteFailures": 4,
-    "unverifiedMatches": 2,
+    "quoteFailures": 23,
+    "unverifiedMatches": 3,
     "rejectionReasons": {
-      "low_match_score_0.67": 2,
-      "pre_guard_quote": 1
+      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 2,
+      "pre_guard_quote": 1,
+      "low_match_score_0.67": 2
     }
   },
   "books": {
@@ -63,6 +64,16 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.66,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will FC Midtjylland win on 2026-09-14?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.455,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
