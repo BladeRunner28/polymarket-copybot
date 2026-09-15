@@ -39,23 +39,50 @@ async function fetchResolvedViaClob(conditionId: string | null) {
 
 async function main() {
   const adapter = getAdapter();
-  const pending = await prisma.decisionJournal.findMany({
-    where: {
-      outcomeReviews: { none: { finalOutcome: { not: null } } },
-      ...(adapter.isDemo ? {} : { isDemo: false }),
-    },
+  // 2026-09-15 tuning review #26 rec 3 (user-approved): SELECTION FIX.
+  //
+  // The old selection (orderBy decision asc, take 200) returned the SAME 200
+  // oldest pending copy decisions every night — all created 2026-07-15
+  // (long-dated markets such as will-…-ballon-dor…), of which only 34/200 had a
+  // resolved leg. The loop then found nothing new to judge, so labels froze
+  // (688 for four days, 3 consecutive EOD runs at "0 judged") while 8,475 copy
+  // decisions WITH a settled leg sat unreviewed behind that head-of-line block.
+  //
+  // A decision with a settled leg is provably reviewable, so page those first by
+  // recency; fall back to the broad pending set (also by recency) so
+  // watchlist/skip rows still accrue hypothetical labels.
+  const REVIEW_TAKE = Number(process.env.REVIEW_TAKE ?? 300);
+  const settledLegWhere = {
+    outcomeReviews: { none: { finalOutcome: { not: null } } },
+    ...(adapter.isDemo ? {} : { isDemo: false }),
+    paperTrades: { some: { status: { in: ["resolved", "closed"] } } },
+  };
+  let pending = await prisma.decisionJournal.findMany({
+    where: settledLegWhere,
     include: { observedTrade: true, paperTrades: true },
-    // paper_copy < skip < watchlist alphabetically — real-PnL labels first,
-    // so the ML training set fills with actual outcomes before hypotheticals.
-    orderBy: { decision: "asc" },
-    take: 200,
+    orderBy: { createdAt: "desc" },
+    take: REVIEW_TAKE,
   });
+  const settledCandidates = await prisma.decisionJournal.count({ where: settledLegWhere });
   if (pending.length === 0) {
-    log("No decisions awaiting outcome review.");
-    return;
+    const fallback = await prisma.decisionJournal.findMany({
+      where: {
+        outcomeReviews: { none: { finalOutcome: { not: null } } },
+        ...(adapter.isDemo ? {} : { isDemo: false }),
+      },
+      include: { observedTrade: true, paperTrades: true },
+      orderBy: { createdAt: "desc" },
+      take: REVIEW_TAKE,
+    });
+    if (fallback.length === 0) {
+      log("No decisions awaiting outcome review.");
+      return;
+    }
+    log(`No settled-leg candidates — falling back to the most recent ${fallback.length} pending decisions.`);
+    for (const f of fallback) pending.push(f);
   }
+  log(`Reviewing ${pending.length} decisions (${settledCandidates} pending rows have a settled leg).`);
 
-  log(`Reviewing ${pending.length} decisions…`);
   let reviewed = 0;
   const failures: string[] = [];
 

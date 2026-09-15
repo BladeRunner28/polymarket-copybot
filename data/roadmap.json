@@ -632,6 +632,71 @@
         "logging",
         "shipped"
       ]
+    },
+    {
+      "id": "tr26-rec1-copy-label",
+      "title": "Rec 1 \u2014 label a copy decision by OUTCOME (copy-score axis, 3rd delivery) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Applied 2026-09-15 (tuning review #26, user-approved)",
+      "gate": "VERIFIED at apply: post-fix window 6 copy decisions / 0 childless legs (pre-fix window 16:50-17:09Z: 4 copies / 4 childless). 7d re-check: DecisionJournal copy rows with no child PaperTrade = 0, and the EOD copy figure tracks new PaperTrade rows within \u00b15.",
+      "note": "score-trades.ts now collects legBlocks + legsOpened across the per-bot leg loop; after the loop, a decision with zero legs opened is rewritten decision='skip' (+ simulatedPositionSize null, blocking gates appended to risksJson) and counted as a skip; a decision with >=1 leg keeps the copy label and records the blocks as context. Fixes the stored-side over-count (539 copy rows / 466 childless; EOD printed 'copy 422' vs 79 real opens).",
+      "tags": [
+        "tuning-review",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr26-rec2-drawdown-basis",
+      "title": "Rec 2 \u2014 declare AND implement the drawdown/exposure basis (exposure-cap axis, 3rd delivery) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Applied 2026-09-15 (tuning review #26, user-approved)",
+      "gate": "VERIFIED: state file has basis+peakRule+basisDeclaredAt; newest [DRAWDOWN-SHADOW] line starts 'basis=mtm'; Y in the [RISK-GATE] gross-exposure line = 1000 + 0.5*(NW_mtm-1900) \u00b1$1.",
+      "note": "data/c200-drawdown.json now carries basis (mtm|realized|min), peakRule, basisDeclaredAt, note. score-trades derives the peak ratchet, the equity-linked exposure cap and the drawdown gate from that single value; [DRAWDOWN-SHADOW] leads with basis=<x>, [RISK-GATE] names the basis. Legacy files without basis keep MTM. DECLARED: basis=mtm = today's behaviour made explicit. OPEN for the user: switching to realized/min is one field but the same $1,300 book is 88.0% of cap ($1,477.97) on MTM vs 130.0% ($1,000) on realized-only \u2014 i.e. ~$300 of forced deleverage mid-window. Deliberately not taken unilaterally.",
+      "tags": [
+        "tuning-review",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr26-rec3-ml1-selection",
+      "title": "Rec 3 \u2014 break the ML-1 head-of-line block in review-outcomes.ts (measurement, 2nd delivery) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Applied 2026-09-15 (tuning review #26, user-approved)",
+      "gate": "7d verify: OutcomeReview count > 1,188 with MAX(createdAt) inside the last 24h; 'Outcome review complete: N judged' with N>0 on >=5 of 7 nights; training_data.csv grows in step (baseline 688).",
+      "note": "Selection was orderBy decision asc + take 200 = the same 200 oldest pending copy decisions nightly (all 2026-07-15, 34/200 with a resolved leg) while 8,475 decisions with a settled leg sat unreviewed (labels frozen 4 days, 3 EOD runs at '0 judged'). Now: settled-leg candidates first (paperTrades some status in resolved/closed), orderBy createdAt desc, take REVIEW_TAKE (env, default 300); recency-ordered fallback over the broad pending set when that is empty so watchlist/skip labels keep accruing.",
+      "tags": [
+        "tuning-review",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr26-rec4-slugcap-journal",
+      "title": "Rec 4 \u2014 journal the v45 market-slug-cap blocks (category/slug axis, NEW) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Applied 2026-09-15 (tuning review #26, user-approved)",
+      "gate": "VERIFIED at apply: 29 skip rows + 3 copy rows tagged with 'slug cap' in the first post-fix window. 7d verify: DecisionJournal rows with risksJson LIKE '%slug cap%' > 0 on >=5/7 days and within \u00b15% of the 'market-slug cap' log-line count.",
+      "note": "The slug cap was one of the largest block classes (338/24h) and wrote zero journal rows, so the skip histogram and the refit decision sample could not see that the temperature-ladder book is limited by a 15-per-slug cap. It is now a legBlocks reason ('v45 market-slug cap (...)'), landing on the row whenever any leg of that decision was capped.",
+      "tags": [
+        "tuning-review",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr26-rec5-standard-net-of-stacks",
+      "title": "Rec 5 \u2014 STANDARD PnL net of legacy duplicate stacks (measurement, 2nd delivery) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1-2h",
+      "dates": "Applied 2026-09-15 (tuning review #26, user-approved)",
+      "gate": "VERIFIED exact: printed 'Net of legacy duplicate stacks: -$36.49 (day -$52.49 - -$16.00 from 2 stacked rows)' and the independent SQL for 2026-09-15 gives day -52.49 | stacked -16.00 | net -36.49 \u2014 difference $0.00.",
+      "note": "src/lib/report.ts prints the EOD day net of legacy duplicate stacks, plus the largest single stack when it exceeds 50% of the day. A day row counts as stacked when its (wallet,market,outcome) key holds >1 row in the STANDARD book (open or finished; 1,233 of 1,681 open rows / 69.1% of open cost are legacy July accumulation).",
+      "tags": [
+        "tuning-review",
+        "applied"
+      ]
     }
   ]
 }

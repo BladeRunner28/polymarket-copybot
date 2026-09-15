@@ -132,6 +132,34 @@ export async function generateDailyReport(
   const watched = decisionsToday.filter((d) => d.decision === "watchlist").length;
   const skipped = decisionsToday.filter((d) => d.decision === "skip").length;
 
+  // 2026-09-15 tuning review #26 rec 5 (user-approved): STANDARD's book is 73.3%
+  // of open rows / 69.1% of open cost in legacy duplicate stacks — a
+  // (wallet, market, outcome) group can hold a dozen rows from the July
+  // accumulation era, so one stack can look like edge. Report the day both ways
+  // and name the biggest stack when it dominates. A day row counts as "stacked"
+  // when its key holds more than one row in the STANDARD book (open or finished)
+  // — the group, not an "open twin", is what makes it a stack; the review's
+  // verify line reconciles against whichever figure is printed (day − stacked).
+  const stackKey = (t: { walletAddress: string; marketId: string; outcome: string }) =>
+    `${t.walletAddress}|${t.marketId}|${t.outcome}`;
+  const bookKeyCounts = new Map<string, number>();
+  for (const t of [...standardOpen, ...stdFinished]) {
+    const k = stackKey(t);
+    bookKeyCounts.set(k, (bookKeyCounts.get(k) ?? 0) + 1);
+  }
+  const isStack = (t: { walletAddress: string; marketId: string; outcome: string }) =>
+    (bookKeyCounts.get(stackKey(t)) ?? 0) > 1;
+  const stackedDayRows = stdResolvedToday.filter(isStack);
+  const stackedDayPnl = stackedDayRows.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
+  const stdNetOfStacks = stdPnlToday - stackedDayPnl;
+  const byStackKey = new Map<string, number>();
+  for (const t of stdResolvedToday.filter(isStack)) {
+    const k = stackKey(t);
+    byStackKey.set(k, (byStackKey.get(k) ?? 0) + (t.realizedPnl ?? 0));
+  }
+  const largestStack = [...byStackKey.entries()].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
+  const largestStackShare = largestStack && stdPnlToday !== 0 ? Math.abs(largestStack[1] / stdPnlToday) : 0;
+
   const best = [...stdResolvedToday].sort((a, b) => (b.realizedPnl ?? 0) - (a.realizedPnl ?? 0))[0];
   const worst = [...stdResolvedToday].sort((a, b) => (a.realizedPnl ?? 0) - (b.realizedPnl ?? 0))[0];
 
@@ -165,6 +193,10 @@ export async function generateDailyReport(
     `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)}`,
     `• Win Rate: ${(stdWinRate * 100).toFixed(1)}% | Open Positions: ${standardOpen.length}`,
     `• Sizing Range: $0.25 - $20.00`,
+    `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmt(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
+    largestStack && largestStackShare > 0.5
+      ? `• ⚠️ Largest single stack ${fmt(largestStack[1])} = ${(largestStackShare * 100).toFixed(0)}% of the day's STANDARD PnL (${largestStack[0].split("|")[1]}) — do not read it as edge`
+      : undefined,
     ``,
     `**⚖️ BANKROLL_200 Bot (Compounding Pool):**`,
     `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)}`,

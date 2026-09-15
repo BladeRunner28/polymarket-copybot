@@ -114,13 +114,32 @@ async function main() {
   // gate basis: peak ratchets on unrealized marks, the Sep 7/8 freeze
   // mechanism) vs realized-only (principal + ledger realized). Log-only; the
   // gate stays on MTM until the refit. State file keeps both peaks + any note.
-  let drawdownState: { peak?: number; realizedPeak?: number; note?: string; updatedAt?: string } = {};
+  // 2026-09-15 tuning review #26 rec 2 (user-approved): the basis is DECLARED in
+  // data/c200-drawdown.json (`basis` + `peakRule`) instead of implied, and every
+  // consumer — the drawdown gate, the equity-linked exposure cap, and both log
+  // lines — derives from that one value. Before this, the gate and the cap both
+  // silently used MTM while the state file said nothing, so the same book read
+  // 88.0% of cap on MTM vs 130.0% on realized-only with no way to tell which one
+  // was in force. Legacy files with no `basis` keep the historical MTM behavior.
+  type DdBasis = "mtm" | "realized" | "min";
+  let drawdownState: {
+    peak?: number;
+    realizedPeak?: number;
+    note?: string;
+    updatedAt?: string;
+    basis?: DdBasis;
+    peakRule?: string;
+    basisDeclaredAt?: string;
+  } = {};
   try {
     drawdownState = JSON.parse(fs.readFileSync(DRAW_DOWN_FILE, "utf-8"));
   } catch {
     drawdownState = {};
   }
   const principal = bankrollRow?.principal ?? 0;
+  // Declared basis (2026-09-15, rec 2): read before anything derives from it —
+  // the peak ratchet, the expose cap and the gate all key off this one value.
+  const ddBasis: DdBasis = drawdownState.basis ?? "mtm";
   let peakBankroll = drawdownState.peak ?? 0;
   if (peakBankroll < principal) peakBankroll = principal;
   const realizedOnlyNW = principal + (bankrollRow?.realizedPnl ?? 0);
@@ -133,26 +152,42 @@ async function main() {
     ddStateDirty = true;
   }
   if (drawdownState.realizedPeak !== realizedPeak) ddStateDirty = true;
-  if (ddStateDirty) {
+  if (ddStateDirty || !drawdownState.basis) {
     fs.writeFileSync(
       DRAW_DOWN_FILE,
-      JSON.stringify({ ...drawdownState, peak: peakBankroll, realizedPeak, updatedAt: new Date().toISOString() })
+      JSON.stringify({
+        ...drawdownState,
+        peak: peakBankroll,
+        realizedPeak,
+        basis: ddBasis,
+        peakRule:
+          drawdownState.peakRule ??
+          "peak ratchets on the declared basis only; a reset is a deliberate act — record note + basisDeclaredAt with it",
+        basisDeclaredAt: drawdownState.basisDeclaredAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
     );
   }
   const c200DrawdownPct = peakBankroll > 0 ? Math.max(0, (peakBankroll - c200NetWorth) / peakBankroll) : 0;
   const realizedOnlyDdPct =
     realizedPeak > 0 ? Math.max(0, (realizedPeak - realizedOnlyNW) / realizedPeak) : 0;
+
+  const basisNetWorth =
+    ddBasis === "mtm" ? c200NetWorth : ddBasis === "realized" ? realizedOnlyNW : Math.min(c200NetWorth, realizedOnlyNW);
+  const basisPeak =
+    ddBasis === "mtm" ? peakBankroll : ddBasis === "realized" ? realizedPeak : Math.min(peakBankroll, realizedPeak);
+  const basisDrawdownPct = basisPeak > 0 ? Math.max(0, (basisPeak - basisNetWorth) / basisPeak) : 0;
   log(
-    `[DRAWDOWN-SHADOW] MTM ${(c200DrawdownPct * 100).toFixed(1)}% (peak $${peakBankroll.toFixed(0)}, NW $${c200NetWorth.toFixed(0)}) ` +
-      `vs realized-only ${(realizedOnlyDdPct * 100).toFixed(1)}% (realized peak $${realizedPeak.toFixed(0)}, realized NW $${realizedOnlyNW.toFixed(0)}) ` +
-      `— gate uses MTM until the Sep 15 refit decision`
+    `[DRAWDOWN-SHADOW] basis=${ddBasis} ${(basisDrawdownPct * 100).toFixed(1)}% (peak $${basisPeak.toFixed(0)}, NW $${basisNetWorth.toFixed(0)}) | ` +
+      `MTM ${(c200DrawdownPct * 100).toFixed(1)}% (peak $${peakBankroll.toFixed(0)}, NW $${c200NetWorth.toFixed(0)}) ` +
+      `vs realized-only ${(realizedOnlyDdPct * 100).toFixed(1)}% (realized peak $${realizedPeak.toFixed(0)}, realized NW $${realizedOnlyNW.toFixed(0)})`
   );
 
   // v46 (2026-09-03, approved): equity-linked gross-exposure cap —
   // $base + 50% × max(0, net worth − principal). Symmetric: shrinks when
   // equity falls back. Stays at the base while the book is below principal.
   const c200Principal = bankrollRow?.principal ?? 0;
-  const c200ExposureCap = effectiveExposureCap(rules.maxGrossExposureUsd, c200NetWorth, c200Principal);
+  const c200ExposureCap = effectiveExposureCap(rules.maxGrossExposureUsd, basisNetWorth, c200Principal);
 
   const c200OpenRows = await prisma.paperTrade.findMany({
     where: { botId: "BANKROLL_200", status: "open" },
@@ -476,9 +511,9 @@ async function main() {
       }
       // v41: portfolio drawdown gate — halt new copies when the C-200 book is
       // more than maxDrawdownPct off its peak (octagon-audit §4).
-      if (rules.maxDrawdownPct > 0 && c200DrawdownPct > rules.maxDrawdownPct) {
+      if (rules.maxDrawdownPct > 0 && basisDrawdownPct > rules.maxDrawdownPct) {
         riskGates.push(
-          `drawdown gate (net worth $${c200NetWorth.toFixed(0)} vs peak $${peakBankroll.toFixed(0)} = ${(c200DrawdownPct * 100).toFixed(1)}% > ${(rules.maxDrawdownPct * 100).toFixed(0)}%)`
+          `drawdown gate [${ddBasis}] (net worth $${basisNetWorth.toFixed(0)} vs peak $${basisPeak.toFixed(0)} = ${(basisDrawdownPct * 100).toFixed(1)}% > ${(rules.maxDrawdownPct * 100).toFixed(0)}%)`
         );
       }
       // v41: per-category concentration gate — max open positions per
@@ -506,6 +541,15 @@ async function main() {
         continue;
       }
 
+      // 2026-09-15 tuning review #26 recs 1+4 (user-approved): collect the gates
+      // that blocked each leg. The journal row above was written with
+      // decision=result.decision BEFORE any gate ran, so a fully-blocked copy
+      // stayed decision='paper_copy' (539 stored copy rows, 466 with no
+      // PaperTrade, and the EOD line printed 422 against 79 real opens) — and
+      // gates that only `continue` (v45 slug cap: 338 blocks/24h) wrote nothing
+      // at all, hiding them from the skip histogram and the refit sample.
+      const legBlocks: string[] = [];
+      let legsOpened = 0;
       const executionVenues: Set<string> = new Set();
       for (const botId of ["STANDARD", "BANKROLL_200"]) {
         // v44 (tuning review #13, approved): hour blackout now covers BOTH
@@ -516,6 +560,7 @@ async function main() {
         // C-200-negative, STANDARD-positive; isHourBlackedOut scopes it).
         if (isHourBlackedOut(botId, etHour)) {
           log(`[${botId}] hour blackout ${etHour}:00 ET (significant drain) — skipping copy ${t.marketId}`);
+          legBlocks.push(`${botId}: hour blackout ${etHour}:00 ET`);
           continue;
         }
         // Short-TTR lane is scoped to the compounding bot (C-200) — STANDARD
@@ -530,6 +575,7 @@ async function main() {
           });
           if (openCount >= rules.maxOpenPositions) {
             log(`[BANKROLL_200] open-position cap (${rules.maxOpenPositions}) reached — skipping copy ${t.marketId}`);
+            legBlocks.push(`BANKROLL_200: open-position cap (${openCount}/${rules.maxOpenPositions})`);
             continue;
           }
         }
@@ -545,6 +591,7 @@ async function main() {
           botId === "BANKROLL_200" ? (rules.c200Blacklist ?? []) : (rules.standardBlacklist ?? []);
         if (t.marketCategory && botBlacklist.includes(t.marketCategory)) {
           log(`[${botId}] v45 blacklist category "${t.marketCategory}" — skipping copy ${t.marketId}`);
+          legBlocks.push(`${botId}: v45 blacklist category "${t.marketCategory}"`);
           continue;
         }
 
@@ -557,6 +604,9 @@ async function main() {
           if (slugOpen > rules.maxMarketSlugPositions) {
             log(
               `[BANKROLL_200] v45 market-slug cap (${t.marketCategory} would be ${slugOpen}/${rules.maxMarketSlugPositions}) — skipping copy ${t.marketId}`
+            );
+            legBlocks.push(
+              `BANKROLL_200: v45 market-slug cap (${t.marketCategory} would be ${slugOpen}/${rules.maxMarketSlugPositions})`
             );
             continue;
           }
@@ -625,6 +675,7 @@ async function main() {
               log(
                 `[KELLY] ${t.marketId} band=${bandLabel} λ̂=${lam.toFixed(3)} q=— p=${currentPrice.toFixed(3)} f*=0 avail=$${c200AvailableBankroll.toFixed(0)} size=$0 SKIP ${kelly.reason}`
               );
+              legBlocks.push(`BANKROLL_200: kelly no-edge (${kelly.reason})`);
               continue; // C-200 main-lane only — the STANDARD leg is unaffected
             }
             // v51 (2026-09-07 report changes 1+2, user-approved — explicit
@@ -718,6 +769,7 @@ async function main() {
           // edge). C-200 de-risks ≥0.60 via band sizing instead.
           if (botId === "STANDARD" && rules.standardMaxEntryPrice > 0 && currentPrice > rules.standardMaxEntryPrice) {
             log(`[STANDARD] high-entry cap (${currentPrice.toFixed(3)} > ${rules.standardMaxEntryPrice.toFixed(2)}) — skipping copy ${t.marketId}`);
+            legBlocks.push(`STANDARD: high-entry cap (${currentPrice.toFixed(3)} > ${rules.standardMaxEntryPrice.toFixed(2)})`);
             continue;
           }
 
@@ -728,6 +780,7 @@ async function main() {
           // <0.20 long-shot edge (z=+4.05). Applies to main + short-TTR lane.
           if (botId === "BANKROLL_200" && rules.c200MaxEntryPrice > 0 && currentPrice > rules.c200MaxEntryPrice) {
             log(`[BANKROLL_200] high-entry cap (${currentPrice.toFixed(3)} > ${rules.c200MaxEntryPrice.toFixed(2)}) — skipping copy ${t.marketId}`);
+            legBlocks.push(`BANKROLL_200: high-entry cap (${currentPrice.toFixed(3)} > ${rules.c200MaxEntryPrice.toFixed(2)})`);
             continue;
           }
 
@@ -753,6 +806,7 @@ async function main() {
           // anchor — any later fill of the same (wallet, market, outcome)
           // while it stays open collapses into it.
           openCopyKeys.add(`${t.walletAddress}|${t.marketId}|${t.outcome}`);
+          legsOpened++;
 
           // Counters and the copy alert belong to a SUCCESSFUL open, so they live
           // inside this per-leg loop. They used to sit after it, once per scored
@@ -806,6 +860,23 @@ async function main() {
         } catch (e) {
           logError(`[${botId}] Skipped execution: ${e instanceof Error ? e.message : e}`);
         }
+      }
+
+      // Rec 1: label a copy by OUTCOME. If no leg opened for this decision, it
+      // was never a copy — relabel it `skip` and keep the blocking gates on the
+      // row (Rec 4: slug-cap and friends are now visible to the histogram and
+      // the refit sample). If at least one leg opened, the copy label stands and
+      // the blocks are recorded as context only.
+      if (legBlocks.length > 0) {
+        const relabel = result.decision === "paper_copy" && legsOpened === 0;
+        await prisma.decisionJournal.update({
+          where: { id: decision.id },
+          data: {
+            risksJson: JSON.stringify([...result.risks, ...legBlocks]),
+            ...(relabel ? { decision: "skip", simulatedPositionSize: null } : {}),
+          },
+        });
+        if (relabel) skips++;
       }
     } else if (result.decision === "watchlist") watches++;
     else skips++;
