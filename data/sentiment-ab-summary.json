@@ -1,25 +1,35 @@
 {
-  "analyzedAt": "2026-09-08T15:24:58.340867+00:00",
-  "n": 406,
-  "withLocal": 406,
+  "analyzedAt": "2026-09-14T18:15:41.462464+00:00",
+  "n": 606,
+  "withLocal": 606,
   "coverage": 1.0,
-  "correlation": 0.687,
-  "signAgreement": 0.889,
-  "currentModel": "qwen2.5:7b-instruct",
-  "ruleBullishLocalBearish": 0,
-  "ruleBearishLocalBullish": 40,
+  "correlation": 0.528,
+  "signAgreement": 0.761,
+  "currentModel": "qwen3.5:9b",
+  "ruleBullishLocalBearish": 97,
+  "ruleBearishLocalBullish": 3,
   "byModel": {
     "qwen2.5:7b-instruct": {
       "n": 406,
       "rows": 406,
       "signAgreement": 0.889,
       "correlation": 0.687
+    },
+    "qwen3.5:9b": {
+      "n": 200,
+      "rows": 200,
+      "signAgreement": 0.5,
+      "correlation": -0.352
     }
   },
   "uniqueItems": {
     "qwen2.5:7b-instruct": {
       "n": 54,
       "signAgreement": 0.852
+    },
+    "qwen3.5:9b": {
+      "n": 28,
+      "signAgreement": 0.357
     }
   }
 }
