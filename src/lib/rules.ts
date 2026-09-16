@@ -93,6 +93,18 @@ export interface Rules {
   deadZoneSizeFactor: number;
   longshotMaxPrice: number;
   longshotSizeFactor: number;
+  // v54 (2026-09-15 C-200 daily report Rec 1, user-approved): the C-200 band
+  // multipliers that live in paper.ts mapBankroll200Size, exposed as rule fields
+  // so a band reallocation is a VERSIONED, journal-taggable change instead of a
+  // bare code edit. Defaults equal the shipped constants (longshot 2.0, dead
+  // zone 0.25) — a ruleset lacking the fields behaves byte-identically.
+  // NOTE: C-200-ONLY on purpose. The v37 rules-layer factors above
+  // (deadZoneSizeFactor / longshotSizeFactor) are read by the SHARED scorer
+  // (src/lib/scoring/trade.ts) for every bot — flipping those would also resize
+  // STANDARD and would double-apply on the C-200 legacy path (the v41
+  // neutralization exists to stop exactly that).
+  c200LongshotBandFactor: number; // <0.20 entries (default 2.0)
+  c200DeadZoneBandFactor: number; // 0.40–0.60 entries (default 0.25)
   // v38 (Phase A, 2026-08-31): Wang-Transform premium overlay — measurement-
   // first. The calibrated λ̂ table (data/premium-calibration.json, refit
   // biweekly on the 1st & 15th) quantifies the systematic risk premium at entry per price band.
@@ -248,6 +260,9 @@ export const DEFAULT_RULES: Rules = {
   deadZoneSizeFactor: 1.0,
   longshotMaxPrice: 0.2,
   longshotSizeFactor: 1.0,
+  // v54: the live C-200 band map (paper.ts mapBankroll200Size owns the tilt).
+  c200LongshotBandFactor: 2.0,
+  c200DeadZoneBandFactor: 0.25,
   // v38 Phase-A overlay defaults (live values land in the DB ruleset).
   premiumOverlayEnabled: 1,
   premiumOverlayK: 0.5,

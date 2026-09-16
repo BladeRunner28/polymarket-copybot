@@ -38,15 +38,26 @@ export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: nu
  * (applyKellyBandRails) so the two paths cannot contradict on the dead zone
  * and the long-shot band.
  */
-export function mapBankroll200Size(standardScaleSize: number, entryPrice: number): number {
+/** Shipped band constants — the defaults when no ruleset factors are passed. */
+export const C200_BAND_DEFAULTS = { longshot: 2.0, deadZone: 0.25, premium: 0.5 } as const;
+
+export function mapBankroll200Size(
+  standardScaleSize: number,
+  entryPrice: number,
+  // v54 (2026-09-15 Rec 1, user-approved): band multipliers are rule fields.
+  // Omitted → the shipped constants, byte-identical to pre-v54 behavior.
+  factors: { longshot?: number; deadZone?: number } = {}
+): number {
+  const longshot = factors.longshot ?? C200_BAND_DEFAULTS.longshot;
+  const deadZone = factors.deadZone ?? C200_BAND_DEFAULTS.deadZone;
   const percent = (standardScaleSize - 0.25) / (20.0 - 0.25);
   let size = 0.2 + percent * (20.0 - 0.2);
   // Only apply band multipliers to sane prices (0..1 markets); non-finite or
   // <=0 entries (bad data) fall through at x1.0.
   if (Number.isFinite(entryPrice) && entryPrice > 0) {
-    if (entryPrice < 0.2) size *= 2.0; // v51: was x1.5
-    else if (entryPrice >= 0.6) size *= 0.5;
-    else if (entryPrice >= 0.4) size *= 0.25; // v51: was x0.5 (v42: x0.75)
+    if (entryPrice < 0.2) size *= longshot; // v51 x1.5 → v54 rule field
+    else if (entryPrice >= 0.6) size *= C200_BAND_DEFAULTS.premium;
+    else if (entryPrice >= 0.4) size *= deadZone; // v51 x0.5 → v54 rule field
   }
   return size;
 }
@@ -91,6 +102,8 @@ export async function openPaperTrade(params: {
   // applying both would double-size) and clamps at kellyMaxSizeUsd instead of
   // the legacy BOT_LIMITS $20 cap. Omitted → legacy path, byte-identical.
   kelly?: { maxSizeUsd: number };
+  // v54: C-200 band multipliers from the active ruleset (see rules.ts).
+  bandFactors?: { longshot?: number; deadZone?: number };
 }) {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";
@@ -103,7 +116,7 @@ export async function openPaperTrade(params: {
   if (botId === "BANKROLL_200" && !params.kelly) {
     // v41: calibration-band mapping + overall cap raise ($10 -> $20). Bypassed
     // for Kelly-sized copies (v49) — no double sizing with the sizer.
-    size = mapBankroll200Size(size, params.entryPrice);
+    size = mapBankroll200Size(size, params.entryPrice, params.bandFactors);
   }
 
   // Ensure absolute bounds enforcement. Kelly-sized copies clamp at the

@@ -487,18 +487,18 @@
       ]
     },
     {
-      "id": "v54-deadzone-admission",
-      "title": "v54 \u2014 Dead-zone (0.40\u20130.60) admission stop (APPROVED, queued for the Oct 8 window close)",
+      "id": "midprice-confidence-gate-oct8",
+      "title": "Mid-price admission gate, redesigned as PRICE + CONFIDENCE (APPROVED, queued to the Oct 8 window close)",
       "column": "Backlog",
       "effort": "~1\u20132h when applied",
-      "dates": "Approved 2026-09-11 (C-200 daily report Change 2) \u00b7 queued to Oct 8 by default (window-contamination caveat) \u00b7 shadow evidence available from Sep 22",
-      "gate": "Pre-registered Kelly window (Sep 8\u2013Oct 8) \u2014 applying now contaminates the window read; the report's own caveat. Apply on explicit user override ('apply dead-zone gate now') or at the Oct 8 close with the shadow-ladder evidence.",
-      "note": "WHY: 0.40\u20130.60 consumes 46% of all staked capital ($3,713) at \u221213.7% lifetime and \u221230.0% ROI in the last 7d; v51's \u00d70.25 cut shrank the absolute loss, not the bleed RATE (capital is not stuck \u2014 avg open age 17.6h, recycler frees it hourly \u2014 the bot re-enters ~18\u00d7/day by flow at 99% cap utilization), so every dead-zone admit displaces long-shot stake (~$76/day of stake redirected). FIX (admission-only): band-scoped gate in the admission path \u2014 copyScore \u2265 90 within [0.40,0.60) or zero admits; must cover the short-TTR LANE + legacy paths (Kelly main-lane already skips the band via \u03bb\u0302=+0.03). Candidate implementation: new ruleset field(s) (deadZoneMinCopyScore / deadZoneAdmitEnabled) enforced in score-trades admission for all C-200 paths, fan-out-validated against the lane. VERIFY: 0 C-200 open copies with entry \u2208 [0.40,0.60) 7d after apply; long-shot (<0.20) admits/day \u2265 pre-apply; C-200 clean-regime ROI unchanged-or-better at the next review.",
+      "dates": "Design approved 2026-09-15 (daily report Rec 2 + tuning #26 evidence) \u00b7 queued to Oct 8 \u00b7 version number v54 is now taken by the band reallocation",
+      "gate": "PRE-REGISTERED DESIGN: block new C-200 entries with entry price in [0.20, 0.60) UNLESS confidence >= 0.80. Apply on explicit override ('apply the mid-price gate now') or at the Oct 8 close. Replaces the earlier blunt draft ('0.40-0.60 blocked unless copyScore >= 90'), which would have blocked a positive slice.",
+      "note": "EVIDENCE (C-200, Polymarket-only, finished, row-level; reproduced independently 2026-09-15): the structural cluster is the INTERSECTION, not a band \u2014 entry 0.20-0.60 x confidence 0.70-0.80 = 159 rows, $1,030 staked, -$442.71 (-43.0%), split as 0.70-0.75 (96 rows, -$286.16, -47.3%) and 0.75-0.80 (63 rows, -$156.55, -36.8%). Confidence is non-monotonic there: >=0.85 +83.3% ROI, 0.80-0.85 +46.2%, 0.75-0.80 -36.8%, 0.70-0.75 -47.3%. The carve-out is what makes the gate safe: 0.40-0.60 x confidence >=0.80 is 28 rows, $201 staked, +$129.54 (+64.6%) \u2014 the best cell in the book \u2014 so a blunt dead-zone block would have deleted it. In 0.20-0.40 the carve-out rescues nothing (3 rows, -$0.51, flat) while <0.80 confidence is 296 rows, -$215.45 (-9.4%). Decision-level (deduped) sample agrees in direction: 0.70-0.75 -17.3%, 0.75-0.80 -19.1%, >=0.80 +19.6%. IMPLEMENTATION AT APPLY: admission-path gate in score-trades.ts behind a new ruleset field (price band + confidence floor), covering the short-TTR lane and the legacy path; the Kelly main lane already skips 0.40-0.60 via lambda +0.03 but NOT 0.20-0.40, so the gate must be in the shared admission path, not in Kelly. VERIFY 7d after apply: 0 new C-200 rows with entry in [0.20,0.60) and confidence <0.80; C-200 rows in 0.40-0.60 with confidence >=0.80 still > 0 (the carve-out is live, not a blanket stop); long-shot (<0.20) admits/day unchanged-or-better.",
       "tags": [
-        "kelly-window",
-        "size-bands",
         "admission",
-        "queued"
+        "confidence",
+        "queued",
+        "kelly-window"
       ]
     },
     {
@@ -696,6 +696,21 @@
       "tags": [
         "tuning-review",
         "applied"
+      ]
+    },
+    {
+      "id": "v54-c200-band-reallocation",
+      "title": "v54 \u2014 C-200 band reallocation: size out of the dead zone into the long-shot band (APPLIED 2026-09-15)",
+      "column": "Done",
+      "effort": "~2h (rule fields + code + tests)",
+      "dates": "Applied 2026-09-15 (C-200 daily report Rec 1, user-approved)",
+      "gate": "VERIFIED at apply: long-shot x1.250 / dead zone x0.500 / mid + premium bands x1.000 (loaded from the live ruleset); shared v37 factors still 1.0 so STANDARD sizing is untouched. 7d: C-200 <0.20 admits' mean $ size up ~25% at equal flow, 0.40-0.60 mean size down ~50%, and gross exposure stays under the cap (the change is capital-neutral by design).",
+      "note": "WHY: <=0.20 is the only positive-ROI band all-time (+$100 on $2,370 = +4.23%) and the only band significant-positive in BOTH sample cuts (row z=+4.56, decision z=+2.99); 0.40-0.60 is the largest loss bucket (-$325 on $3,884 = -8.36% all-time, -11.5% last 14d). HOW: two NEW ruleset fields (c200LongshotBandFactor 2.0->2.5, c200DeadZoneBandFactor 0.25->0.125) consumed by paper.ts mapBankroll200Size; defaults reproduce pre-v54 sizing exactly, so revert is one field each. SCOPE: deliberately NOT the v37 rules-layer factors (deadZoneSizeFactor/longshotSizeFactor) \u2014 those are read by the shared scorer (src/lib/scoring/trade.ts) for every bot, so flipping them would resize STANDARD and double-apply on the C-200 legacy path (the v41 neutralization exists to stop that). Kelly rails compare against the same factors, so both C-200 paths move together. WINDOW: lands mid-Kelly-window; every journal row now carries ruleSetVersion v54 for windowed attribution.",
+      "tags": [
+        "size-bands",
+        "applied",
+        "kelly-window",
+        "v54"
       ]
     }
   ]

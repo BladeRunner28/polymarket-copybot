@@ -68,3 +68,38 @@ describe("applyKellyBandRails (v51 — Kelly path can't contradict the band map)
     expect(applyKellyBandRails(25, 0.01, 0.2)).toBe(25); // 0.20 boundary: not long-shot
   });
 });
+
+describe("v54 C-200 band factors (2026-09-15 Rec 1: reallocate size to the long-shot band)", () => {
+  const V54 = { longshot: 2.5, deadZone: 0.125 };
+
+  it("defaults stay byte-identical to the shipped constants when omitted", () => {
+    for (const [size, price] of [[8, 0.15], [8, 0.5], [8, 0.3], [8, 0.7]] as const) {
+      expect(mapBankroll200Size(size, price, {})).toBeCloseTo(mapBankroll200Size(size, price), 10);
+    }
+  });
+
+  it("+25% on the long-shot band, −50% in the dead zone", () => {
+    const base = mapBankroll200Size(8, 0.15); // ×2.0
+    expect(mapBankroll200Size(8, 0.15, V54)).toBeCloseTo(base * 1.25, 5);
+    const dz = mapBankroll200Size(8, 0.5); // ×0.25
+    expect(mapBankroll200Size(8, 0.5, V54)).toBeCloseTo(dz * 0.5, 5);
+  });
+
+  it("leaves the untouched bands alone (0.20–0.40 and ≥0.60)", () => {
+    for (const price of [0.2, 0.3, 0.399, 0.6, 0.75, 0.9]) {
+      expect(mapBankroll200Size(8, price, V54)).toBeCloseTo(mapBankroll200Size(8, price), 10);
+    }
+  });
+
+  it("moves both Kelly-rail comparisons together (same factors feed legacyEquiv)", () => {
+    // long-shot floor: a bigger legacy-equivalent raises the Kelly floor.
+    const legacyV53 = mapBankroll200Size(8, 0.15);
+    const legacyV54 = mapBankroll200Size(8, 0.15, V54);
+    expect(applyKellyBandRails(10, legacyV53, 0.15)).toBeCloseTo(legacyV53, 10);
+    expect(applyKellyBandRails(10, legacyV54, 0.15)).toBeCloseTo(legacyV54, 10);
+    // dead-zone cap: a smaller legacy-equivalent binds harder.
+    expect(applyKellyBandRails(10, mapBankroll200Size(8, 0.5, V54), 0.5)).toBeLessThan(
+      applyKellyBandRails(10, mapBankroll200Size(8, 0.5), 0.5)
+    );
+  });
+});

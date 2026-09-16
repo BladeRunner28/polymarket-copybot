@@ -685,7 +685,14 @@ async function main() {
             // zone [0.40,0.60): cap at the legacy-equivalent (×0.25 map) size;
             // long-shot <0.20: floor at the legacy-equivalent (×2.0 map) size.
             // Inert while λ̂ keeps the dead zone at f*≤0 and <0.20 at −0.91.
-            const legacyEquiv = clampPaperSize(mapBankroll200Size(result.simulatedPositionSize, currentPrice));
+            // v54: the Kelly rails compare against the SAME band factors the
+            // legacy path books with, so a reallocation moves both paths together.
+            const legacyEquiv = clampPaperSize(
+              mapBankroll200Size(result.simulatedPositionSize, currentPrice, {
+                longshot: rules.c200LongshotBandFactor,
+                deadZone: rules.c200DeadZoneBandFactor,
+              })
+            );
             const railedSize = applyKellyBandRails(kelly.sizeUsd, legacyEquiv, currentPrice);
             if (railedSize !== kelly.sizeUsd) {
               log(
@@ -800,6 +807,13 @@ async function main() {
             // clamp at kellyMaxSizeUsd (executor cap override) — legacy path
             // (kellyEnabled=0) passes undefined and stays byte-identical.
             kelly: kellySized ? { maxSizeUsd: rules.kellyMaxSizeUsd } : undefined,
+            // v54: band multipliers come from the active ruleset (the C-200
+            // legacy path applies them inside openPaperTrade; the Kelly path
+            // already used them for its rails below this call).
+            bandFactors: {
+              longshot: rules.c200LongshotBandFactor,
+              deadZone: rules.c200DeadZoneBandFactor,
+            },
           });
 
           // v52 sweep-dedup (option A): this open copy is now the coalescing
