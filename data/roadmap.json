@@ -712,6 +712,110 @@
         "kelly-window",
         "v54"
       ]
+    },
+    {
+      "id": "ml1a-skip-set-labeling-probe",
+      "title": "ML-1a \u2014 skip-set labeling probe: 77k counterfactual labels; skipped signals are ~fair-priced overall, slightly +EV in the live regime",
+      "column": "Done",
+      "effort": "~2h (analysis-only, no live-path change)",
+      "dates": "Probe run 2026-09-16 (user-requested: 'run a')",
+      "gate": "VERIFIED reproducible in one command: ./venv-calib/bin/python scripts/skip-edge-probe.py --db 'file:prisma/dev.db?immutable=1' -> data/skip-edge-probe-20260916.json. Resolution proxy validated first: terminal-price inference agrees with ground truth on 190/190 binary legs from settled status='resolved' trades, 0 disagreements.",
+      "note": "The 222k skipped decisions had no label; this labels them counterfactually from MarketSnapshot (entry price = last snapshot at/before the decision; winner = last snapshot yesPrice >=0.98 / <=0.02). Coverage: 207,966 skips with a price, 154,740 binary legs, 123,170 decisively resolved, 77,353 usable (45,822 = 37% were already-decided at entry: mean price 0.867, edge +0.0008). RESULTS (exit-blind, held to resolution; market-clustered bootstrap): whole skip set edge/sh -0.0093 CI [-0.0313,+0.0110] ($-0.09 per $10) -> the gates are NOT leaking money on average. Pre-live v1-v48: -0.0205 CI [-0.0481,+0.0091]. LIVE v49+: +0.0159 CI [+0.0026,+0.0308] ($+0.16 per $10) -> in the running regime the skipped set is slightly positive-EV, CI excludes 0. Best pocket: v49+ AND 0.50<=price<0.65 -> +0.1199/sh CI [+0.0362,+0.2085] ($+1.20 per $10, n=1,886, 646 markets, top-3 markets only 14% of rows); win rate 69.6% vs mean price 56.4% (+13pp). Near-certainty 0.95-1.00 is a tight small positive: +0.0087 CI [+0.0061,+0.0110] (n=36,082). 0.65-0.80 is the worst band: -0.1008 CI [-0.2624,+0.0567]. RANKERS within the skips (AUC vs won, n=77k): copyScore 0.408, thesis 0.268, copyability 0.423, roi 0.475, liquidity 0.476, timing 0.479, confidence 0.500, category fit 0.509, spread 0.534, wallet quality 0.543, consistency 0.599 (best component), entry price 0.932. => the 77k labels are a strong TEST set but the stored feature vector carries almost no ranking information beyond price; a model on these features mostly relearns the market. Live-regime wallet pockets (>=150 labelled skips, no CI, discovery window): 0x85f031d069de3000 +0.212/sh n=294; 0xe0e637b08c971c2f +0.127 n=215; 0xc5187cb669690150 +0.032 n=5,592; 0xb0c85813a7a4428f +0.007 n=13,755 (carries most of the volume at ~zero). CAVEAT: skip side is exit-blind (hold to resolution); live copies also face the exit rules, and status='closed' early exits are excluded from the copy comparison (resolved-only is winner-enriched) - the two sides are not directly comparable. Named-token legs (25.6% of skip rows) are NOT labelled: the snapshot proxy cannot map non-YES/NO labels without the venue's token names.",
+      "tags": [
+        "ml",
+        "labels",
+        "measurement",
+        "skip-set",
+        "applied"
+      ]
+    },
+    {
+      "id": "ml1b-band-readmission-test",
+      "title": "ML-1b \u2014 pre-registered shadow test: re-admit skipped signals in the live 0.50-0.65 band",
+      "column": "Backlog",
+      "effort": "~1-2 days (shadow lane + forward measurement)",
+      "dates": "Proposed 2026-09-16 (follows ML-1a probe)",
+      "gate": "SHADOW ONLY (no live sizing). Admit the decisions the current gate skips at 0.50<=price<0.65 in the live regime; pass ONLY if the forward, market-clustered 95% CI of net-of-fee edge excludes 0 on a window NOT used to find the band, AND per-wallet accounting keeps >=60% of wallets non-negative, AND the improvement holds net of the exit rules (the probe is exit-blind).",
+      "note": "ML-1a found +0.1199/share CI [+0.0362,+0.2085] ($+1.20 per $10 hypothetical) in this band inside the live regime, on 1,886 rows / 646 markets with the top 3 markets holding only 14% of rows - so it is not a few-market artifact, but it IS in-sample on the discovery window and therefore not yet evidence. Reference: win rate 69.6% vs mean price 56.4%. If it survives a forward window, this is the cheapest available lever on the copy lane (no new data, no new features).",
+      "tags": [
+        "ml",
+        "measurement",
+        "gates",
+        "shadow"
+      ]
+    },
+    {
+      "id": "ml1-target-net-pnl-and-price-baseline",
+      "title": "ML-1 target fix \u2014 train on net-of-fee PnL, and beat the price-only baseline (not copyScore)",
+      "column": "Backlog",
+      "effort": "~0.5 day (export change + gate restatement)",
+      "dates": "Proposed 2026-09-16 (follows the model-data audit)",
+      "gate": "training_data.csv carries pnl_net_entry as the target (not the binary wasDecisionGood) plus the horizon features; ML-1's promotion gate is restated as 'beats price-only (AUC 0.747 / Brier 0.199 vs base rate 0.236) on a time-ordered holdout' - beating copyScore proves nothing.",
+      "note": "scripts/export-training-data.ts emits 8 columns, 3 of which are policy scores (confidence is 0 by construction on skips), against the binary label wasDecisionGood = PnL>0. The copy lane is negatively skewed (avg winner +5.28 vs avg loser -11.28), so a win-rate target rewards exactly the wrong thing: 62.8% 'good' with -0.98 average PnL. The richer dataset already exists (data/decision-dataset.csv, 3,516 deduped rows x 40 cols with fee-aware targets: gross +$1,067.89 -> net-entry +$297.60 -> net-full +$168.56) and is not what the ML export uses. Comparator: the composite measures AUC 0.417-0.418 (below chance) with CIs excluding 0.5, while entry price measures 0.743-0.747 and within price quintiles the composite falls to 0.42-0.52 (no information).",
+      "tags": [
+        "ml",
+        "training",
+        "targets",
+        "measurement"
+      ]
+    },
+    {
+      "id": "data2-per-decision-provenance",
+      "title": "Data-2 \u2014 persist per-decision provenance: numeric sentiment delta, horizon prices, already-decided flag",
+      "column": "Backlog",
+      "effort": "~1 day (1 migration + 2-3 write sites)",
+      "dates": "Proposed 2026-09-16 (follows the model-data audit)",
+      "gate": "DecisionJournal gains a numeric sentimentDelta (and the price at decision time); OutcomeReview.priceAfter1h/6h/24h are populated for at least paper_copy rows (currently 100% NULL - only a binary label exists, so nothing can learn timing); a probe query joins sentiment per decision. Any row written where the market was already decided at entry (price >=0.995) is flagged so it stays out of training.",
+      "note": "RegulatorySignal carries only (source, marketCategory, sentimentScore, confidence, processedAt) - NO marketId/conditionId - so the research bot's sentiment is structurally unjoinable to a decision: it survives only as prose inside reasonsJson (502 rows, e.g. 'Sentiment evidence edge +21.1pp'). The LLM/sentiment work (sentiment-ab.jsonl, 676 rows) is therefore invisible to any feature matrix. Also worth recording at write time: 45,822 of 123,170 decisively-resolved skips (37%) were already-decided at entry (mean price 0.867, edge ~0.0008) - those rows add nothing to a model and dilute a gate test.",
+      "tags": [
+        "data",
+        "provenance",
+        "sentiment",
+        "schema"
+      ]
+    },
+    {
+      "id": "ml-doctrine-time-and-era-splits",
+      "title": "ML doctrine \u2014 time-ordered + ruleSetVersion era-aware splits, never random row folds",
+      "column": "Backlog",
+      "effort": "~2h (shared split helper + short doc)",
+      "dates": "Proposed 2026-09-16 (follows the model-data audit)",
+      "gate": "One shared split utility (time-ordered holdout + ruleSetVersion era handling) used by every fit/eval script in scripts/; any report whose folds are random rows is rejected. Precedent to reuse: the fold designs already pre-registered in scripts/fit-price-edge.py (wallet-blocked + walk-forward).",
+      "note": "The current label set spans ruleSetVersion 1-53 with 63% of rows from v1-v3 (v2 alone = 488) while the live policy is v54; the feature vector contains policy outputs, so era mixing teaches the average of ~50 policies. The skip probe adds 77k more rows ACROSS eras, so the problem gets worse, not better (in the probe: pre-live skips -0.0199/sh vs live-regime skips +0.0159/sh - a sign flip by era that a pooled model would average away).",
+      "tags": [
+        "ml",
+        "doctrine",
+        "evaluation",
+        "eras"
+      ]
+    },
+    {
+      "id": "tr27-rec1-cap-shadow",
+      "title": "Rec 1 \u2014 [CAP-SHADOW] declared vs realized-only exposure cap (exposure-caps axis) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~30 min",
+      "dates": "Applied 2026-09-16 (tuning review #27, user-approved)",
+      "gate": "VERIFIED live on the first post-apply scorer run: '[CAP-SHADOW] declared(mtm) cap $1367 vs realized-only cap $1000 (base $1000 + 50% above principal $1900) | NW mtm $2634 / realized-only $1695 | gap $367'. 7d: line present on >=95% of score:trades runs.",
+      "note": "The equity-linked cap derives from the DECLARED basis (rec 2 of #26), and the declared basis is MTM \u2014 so the book's ~$1.2k of unrealized marks inflate its own ceiling. If those marks revert while the cap is deleted, the same book lands far above the realized-only cap and the gate freezes entries with no warning: today the gap is $367 ($1,367 vs $1,000) and the reviewer's snapshot had the book at 91.5% of the MTM cap. The shadow line makes that gap visible every run, next to [DRAWDOWN-SHADOW], before it binds. Measurement only \u2014 no behaviour change.",
+      "tags": [
+        "exposure-caps",
+        "measurement",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr27-rec2-copy-label-backfill",
+      "title": "Rec 2 \u2014 backfill-relabel pre-fix childless copy rows (data quality) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1h (script + run)",
+      "dates": "Applied 2026-09-16 (tuning review #27, user-approved)",
+      "gate": "VERIFIED: DecisionJournal rows with decision='paper_copy' and no child PaperTrade went 4,998 -> 0; 4,998 rows carry the 'backfilled 2026-09-16' risk tag. Post-backfill copy-vs-opens reconciles (Sep 15: 103 stored copy decisions vs 108 opened legs; the residual is one decision opening two legs, and stored copies must stay <= opens).",
+      "note": "Rows written before the Rec 1 fix (2026-09-15 17:09Z) were stamped paper_copy before any gate ran, so the stored book claimed ~5x the copies it made (Sep 15 EOD printed 'copy 381' against 108 real opens). scripts/backfill-copy-labels.ts relabels them to skip and tags each with its CAUSE, which mattered: 686 of the 4,998 have a same (wallet, market, outcome) position within +/-2h \u2014 those are v52 sweep-dedupe COALESCED fills (the position exists, the decision created no new leg), not plain skips; the other 4,312 never opened at all (gate-blocked or sidecar dispatch failed). Only rows older than 2h are touched so a lagging sidecar webhook cannot be mislabelled. Reversal is exact: every tagged row was 'paper_copy' by construction (that was the selection filter).",
+      "tags": [
+        "data-quality",
+        "journal",
+        "applied"
+      ]
     }
   ]
 }

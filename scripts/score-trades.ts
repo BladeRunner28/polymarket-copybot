@@ -188,6 +188,19 @@ async function main() {
   // equity falls back. Stays at the base while the book is below principal.
   const c200Principal = bankrollRow?.principal ?? 0;
   const c200ExposureCap = effectiveExposureCap(rules.maxGrossExposureUsd, basisNetWorth, c200Principal);
+  // 2026-09-16 tuning review #27 rec 1 (user-approved): shadow the cap under the
+  // OTHER basis. The cap is MTM-linked, so the +$1.2k of unrealized marks on the
+  // book inflate it; if those marks revert, the same book sits far above the
+  // realized-only cap and the gate freezes entries with no warning. Log both
+  // every run so the gap is visible before it binds.
+  const realizedOnlyExposureCap = effectiveExposureCap(rules.maxGrossExposureUsd, realizedOnlyNW, c200Principal);
+  // Cap shadow (rec 1) — unconditional, logged next to the drawdown shadow.
+  log(
+    `[CAP-SHADOW] declared(${ddBasis}) cap $${c200ExposureCap.toFixed(0)} vs realized-only cap $${realizedOnlyExposureCap.toFixed(0)} ` +
+      `(base $${rules.maxGrossExposureUsd} + 50% above principal $${c200Principal.toFixed(0)}) | ` +
+      `NW ${ddBasis} $${basisNetWorth.toFixed(0)} / realized-only $${realizedOnlyNW.toFixed(0)} | ` +
+      `gap $${(c200ExposureCap - realizedOnlyExposureCap).toFixed(0)}`
+  );
 
   const c200OpenRows = await prisma.paperTrade.findMany({
     where: { botId: "BANKROLL_200", status: "open" },
