@@ -42,7 +42,17 @@ async function withDbRetry<T>(fn: () => Promise<T>, what: string): Promise<T> {
       return await fn();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      const transient = /SQL error|connector|database is locked|timeout|busy|missing database/i.test(msg);
+      // 2026-09-17 tuning review #28 rec 2 (user-approved): Prisma's client-side
+      // serialization failure ("Failed to convert JavaScript value 'Undefined'
+      // into rust type 'String'") arrives under DB contention (both observed
+      // aborts landed within 8 min of a monitor ruleSet.findFirst() timeout) and
+      // did not match this regex, so no retry fired and the whole hourly mark
+      // aborted. Bounded retries; the paper.ts input guards below convert a
+      // genuinely bad input into a per-trade skip instead of a run abort.
+      const transient =
+        /SQL error|connector|database is locked|timeout|busy|missing database|into rust type|Failed to convert JavaScript value|timed out/i.test(
+          msg
+        );
       if (!transient || attempt >= DB_RETRY_ATTEMPTS) throw e;
       log(`DB write failed (${what}) attempt ${attempt}/${DB_RETRY_ATTEMPTS} — retrying in ${500 * attempt}ms: ${msg}`);
       await new Promise((r) => setTimeout(r, 500 * attempt));

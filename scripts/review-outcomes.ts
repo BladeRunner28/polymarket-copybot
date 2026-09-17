@@ -64,6 +64,34 @@ async function main() {
     take: REVIEW_TAKE,
   });
   const settledCandidates = await prisma.decisionJournal.count({ where: settledLegWhere });
+
+  // 2026-09-17 tuning review #28 rec 1 (user-approved): price the GATE's cost.
+  // `watchlist` decisions never open a leg (the risk gates fire before booking),
+  // so the settled-leg selection above can never see them — the drawdown gate
+  // alone blocked 459 of them in #28 and its cost was therefore unmeasurable
+  // (0 watchlist labels ever). They are judged on the MARKET outcome instead
+  // (the loop already does this for non-copy decisions).
+  //
+  // Starvation guard: oldest-first, but floored at 30 days. Oldest-first is
+  // self-clearing (an older market is likelier to have settled, and the frontier
+  // advances as they do); the 30-day floor is what stops the July-era long-dated
+  // rows from rebuilding the head-of-line block that #26 rec 3 fixed.
+  const WATCH_TAKE = Number(process.env.WATCH_TAKE ?? 100);
+  const watchFloor = new Date(Date.now() - 30 * 86_400_000);
+  const watchCeil = new Date(Date.now() - 2 * 3_600_000);
+  const watchWhere = {
+    outcomeReviews: { none: { finalOutcome: { not: null } } },
+    ...(adapter.isDemo ? {} : { isDemo: false }),
+    decision: "watchlist",
+    createdAt: { gte: watchFloor, lte: watchCeil },
+  };
+  const watchCandidates = await prisma.decisionJournal.count({ where: watchWhere });
+  const watchPool = await prisma.decisionJournal.findMany({
+    where: watchWhere,
+    include: { observedTrade: true, paperTrades: true },
+    orderBy: { createdAt: "asc" },
+    take: WATCH_TAKE,
+  });
   if (pending.length === 0) {
     const fallback = await prisma.decisionJournal.findMany({
       where: {
@@ -81,7 +109,11 @@ async function main() {
     log(`No settled-leg candidates — falling back to the most recent ${fallback.length} pending decisions.`);
     for (const f of fallback) pending.push(f);
   }
-  log(`Reviewing ${pending.length} decisions (${settledCandidates} pending rows have a settled leg).`);
+  for (const w of watchPool) pending.push(w);
+  log(
+    `Reviewing ${pending.length} decisions (${settledCandidates} pending rows have a settled leg; ` +
+      `${watchCandidates} watchlist rows in the 2h–30d window, taking the ${watchPool.length} oldest).`
+  );
 
   let reviewed = 0;
   const failures: string[] = [];

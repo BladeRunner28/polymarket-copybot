@@ -230,9 +230,26 @@ export async function recordExecutionResult(body: {
   });
 }
 
+/**
+ * 2026-09-17 (#28 rec 2): refuse a write whose inputs are missing BEFORE it
+ * reaches Prisma, where an undefined String surfaces as the opaque
+ * "Failed to convert JavaScript value 'Undefined' into rust type 'String'" and
+ * aborts the whole hourly mark. Throwing here keeps it a per-trade failure that
+ * update-pnl records and steps over — with the field named in the log.
+ */
+function assertWritableInputs(fn: string, tradeId: unknown, price?: unknown) {
+  if (typeof tradeId !== "string" || tradeId.length === 0) {
+    throw new Error(`${fn}: tradeId is ${String(tradeId)} — refusing the write`);
+  }
+  if (price !== undefined && (typeof price !== "number" || !Number.isFinite(price))) {
+    throw new Error(`${fn}: price is ${String(price)} for trade ${tradeId} — refusing the write`);
+  }
+}
+
 /** Update an open paper trade with the latest price; snapshot PnL. */
 export async function updatePaperTradePrice(tradeId: string, currentOutcomePrice: number) {
   assertPaperOnly("updatePaperTradePrice");
+  assertWritableInputs("updatePaperTradePrice", tradeId, currentOutcomePrice);
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status !== "open") return trade;
   const pnl = computePnl(trade.entryPrice, currentOutcomePrice, trade.simulatedPositionSize);
@@ -250,6 +267,8 @@ export async function updatePaperTradePrice(tradeId: string, currentOutcomePrice
 
 /** Resolve a paper trade when the underlying market resolves. */
 export async function resolvePaperTrade(tradeId: string, won: boolean) {
+  assertWritableInputs("resolvePaperTrade", tradeId);
+  if (typeof won !== "boolean") throw new Error(`resolvePaperTrade: won is ${String(won)} for trade ${tradeId} — refusing the write`);
   assertPaperOnly("resolvePaperTrade");
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status === "resolved") return trade;
@@ -329,6 +348,7 @@ export function staleExitDecision(
 /** Close a paper trade early at the current market price (rule-driven exit). */
 export async function closePaperTrade(tradeId: string, exitPrice: number, _reason: string) {
   assertPaperOnly("closePaperTrade");
+  assertWritableInputs("closePaperTrade", tradeId, exitPrice);
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status !== "open") return trade;
   const pnl = computePnl(trade.entryPrice, exitPrice, trade.simulatedPositionSize);

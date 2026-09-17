@@ -859,6 +859,48 @@
         "dedupe",
         "queued"
       ]
+    },
+    {
+      "id": "tr28-rec1-watchlist-labels",
+      "title": "Rec 1 \u2014 price the gate's cost: OutcomeReview now samples `watchlist` decisions (measurement) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1h",
+      "dates": "Applied 2026-09-17 (tuning review #28, user-approved)",
+      "gate": "VERIFY: OutcomeReview rows joined to watchlist decisions > 0 (baseline: 0 labels ever, while the drawdown gate alone blocked 459 decisions in #28). Selection health: the run logs the watchlist pool size and how many it took; the 30-day floor must keep the oldest unresolved rows from blocking the frontier.",
+      "note": "WHY: `watchlist` decisions never open a leg (the risk gates fire before booking), so the settled-leg selection can never see them \u2014 the gate's cost was literally unpriced (0 watchlist labels, ever). The judge already handles non-copy decisions correctly (good = the market went against the wallet), it simply never had them in the pool. HOW: a second candidate pool \u2014 decision='watchlist', createdAt between 2h and 30 days old, oldest-first, take WATCH_TAKE (env, default 100) \u2014 unioned with the settled-leg pool. Oldest-first is self-clearing (older markets are likelier settled and the frontier advances); the 30-day floor is what stops July-era long-dated rows from rebuilding the head-of-line block that #26 rec 3 fixed.",
+      "tags": [
+        "measurement",
+        "outcome-review",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr28-rec2-connector-retry",
+      "title": "Rec 2 \u2014 connector-fault signature added to withDbRetry + write-input guards (cadence fault) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~30 min",
+      "dates": "Applied 2026-09-17 (tuning review #28, user-approved)",
+      "gate": "VERIFY: no update-pnl run aborts with 'Failed to convert JavaScript value' / 'database is locked'; a fault is retried up to DB_RETRY_ATTEMPTS and, if it persists, recorded as a per-trade failure with the field named instead of killing the hourly mark.",
+      "note": "Two update-pnl runs aborted (Sep 16 14:36, Sep 17 02:48) on 'Failed to convert JavaScript value \\'Undefined\\' into rust type \\'String\\'' at paper.ts \u2014 each within 8 min of a monitor ruleSet.findFirst() timeout \u2014 and withDbRetry's transient regex did not match it, so no retry fired. FIX: (1) the regex now covers 'into rust type' / 'Failed to convert JavaScript value' and 'timed out' (connection-pool exhaustion was ALSO unmatched \u2014 'Timed out fetching a new connection' contains no substring 'timeout'); verified against sample strings, with 'Insufficient capital' and 'unmapped outcome label' still rethrown so genuine logic errors are not masked. (2) paper.ts guards its three writers (updatePaperTradePrice / resolvePaperTrade / closePaperTrade): an undefined id or non-finite price now throws a message naming the field, which update-pnl records as a per-trade failure and steps over \u2014 one bad row can no longer abort the whole hourly mark.",
+      "tags": [
+        "reliability",
+        "db-retry",
+        "applied"
+      ]
+    },
+    {
+      "id": "v56-drawdown-basis-decision",
+      "title": "DECISION NEEDED \u2014 the MTM drawdown gate has both lanes frozen (2nd occurrence); pick the basis",
+      "column": "Backlog",
+      "effort": "one flag, already scripted (scripts/apply-v56-drawdown-basis.ts)",
+      "dates": "Open since 2026-09-17 (cycle #28) \u00b7 freeze began 13:40 with 459 blocked decisions",
+      "gate": "USER PICK REQUIRED (sizing/live-lane change \u2014 no default action in the script by design). Options: --basis realized | --basis min | --reseed-peak (alone or combined).",
+      "note": "STATE (recompute before acting, it moves): realized NW $2,414.32 (realized DD 1.1%) vs MTM NW $2,548.01 (MTM DD 25.3% on a peak set 09-12 on marks and since given back) \u2192 BOTH lanes halted ~17h, no opens since 13:30, 459 decisions blocked; clearing on MTM needs ~$180 of mark recovery, obtainable only from PnL out of the frozen lane = the Sep 7/8 deadlock again. OPTIONS: (a) --basis realized clears immediately (1.1%), costs only -$66.84 of cap ($1,257.16 vs $1,324.00 against a $471.45 book), and removes the deadlock MECHANISM rather than resetting it; (b) --basis min behaves the same here (min peak $2,441.69 / min NW $2,414.32 = 1.1%); (c) --reseed-peak keeps MTM and clears now, but the freeze returns on the next mark spike (2nd occurrence of exactly that). Recommendation: (a) \u2014 the book is being halted at its best-ever REALIZED equity by marks that were given back.",
+      "tags": [
+        "drawdown",
+        "decision-needed",
+        "freeze"
+      ]
     }
   ]
 }
