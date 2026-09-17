@@ -170,6 +170,14 @@ export interface Rules {
   // markets each. Empty array = disabled.
   c200Blacklist: string[];
   standardBlacklist: string[];
+  // v55 (2026-09-16 C-200 daily report Change 1, user-approved): PER-MARKET
+  // concentration ceiling. maxMarketSlugPositions counts the research CATEGORY
+  // (a slug wraps many markets), so nothing capped legs in one marketId — and
+  // v54's 2.5x long-shot factor lifted the <0.20 band's average clip to ~$33, so
+  // accumulation can now put $250+ into a single binary (the 7-day loss was 76%
+  // two markets). Two independent limits, whichever binds first; 0 = disabled.
+  maxMarketNotionalPctOfCap: number; // ceiling = pct × effective exposure cap
+  maxMarketLegsPerMarketId: number; // max open legs in one marketId
   // v45: per-market-slug open-position cap for C-200. The v41 research-category
   // gate maps esports to "Other" (uncapped), letting lol/cs2 pile up without a
   // gate; this caps open positions per raw marketCategory slug. 0 = disabled.
@@ -291,6 +299,10 @@ export const DEFAULT_RULES: Rules = {
   // the global 80/0.7 bars admitted 3 of 64 signals.
   longshotMinCopyScore: 70,
   longshotMinConfidence: 0.55,
+  // v55: per-market ceiling disabled by default (legacy semantics; activation
+  // is an explicit ruleset change).
+  maxMarketNotionalPctOfCap: 0,
+  maxMarketLegsPerMarketId: 0,
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],
   standardBlacklist: [],

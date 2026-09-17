@@ -34,3 +34,40 @@ export function exposureCapNote(baseUsd: number, netWorth: number, principal: nu
   if (eff <= baseUsd) return `$${eff.toFixed(0)} (base $${baseUsd} — net worth below principal)`;
   return `$${eff.toFixed(0)} = $${baseUsd} + 50% × $${Math.max(0, netWorth - principal).toFixed(0)} above principal`;
 }
+
+/**
+ * v55 (2026-09-16 C-200 daily report Change 1, user-approved): per-market
+ * concentration ceiling. `maxMarketSlugPositions` counts the research CATEGORY
+ * (a slug wraps many markets), so nothing capped legs in a single marketId; with
+ * v54's 2.5x long-shot factor the band's average clip is ~$33, so one binary can
+ * absorb $250+. Two limits, whichever binds first; 0 disables either.
+ *
+ * Pure — the caller owns the maps and applies the increments.
+ */
+export interface MarketCapInput {
+  legsAlready: number;
+  notionalAlready: number;
+  sizeUsd: number;
+  maxLegs: number;
+  notionalCapUsd: number;
+}
+
+export interface MarketCapDecision {
+  blocked: boolean;
+  why?: string;
+}
+
+export function marketCapDecision(i: MarketCapInput): MarketCapDecision {
+  const legs = i.legsAlready + 1;
+  const projected = i.notionalAlready + i.sizeUsd;
+  if (i.maxLegs > 0 && legs > i.maxLegs) {
+    return { blocked: true, why: `legs ${legs} > max ${i.maxLegs}` };
+  }
+  if (i.notionalCapUsd > 0 && projected > i.notionalCapUsd) {
+    return {
+      blocked: true,
+      why: `notional $${projected.toFixed(2)} > cap $${i.notionalCapUsd.toFixed(2)}`,
+    };
+  }
+  return { blocked: false };
+}

@@ -12,7 +12,7 @@ import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment"
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
-import { effectiveExposureCap } from "../src/lib/exposure-cap";
+import { effectiveExposureCap, marketCapDecision } from "../src/lib/exposure-cap";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -25,6 +25,7 @@ import {
 } from "../src/lib/premium";
 import { kellySizeForCopy } from "../src/lib/kelly";
 import { appendShadowRow, SHADOW_MAX_PRICE } from "../src/lib/shadow-longshot";
+import { appendDriftShadow } from "../src/lib/shadow-drift";
 
 async function main() {
   assertPaperOnly("score:trades");
@@ -205,9 +206,23 @@ async function main() {
   const c200OpenRows = await prisma.paperTrade.findMany({
     where: { botId: "BANKROLL_200", status: "open" },
     select: {
+      marketId: true,
+      simulatedPositionSize: true,
       decision: { select: { observedTrade: { select: { marketQuestion: true, marketCategory: true } } } },
     },
   });
+  // v55 per-market ceiling: current legs + notional per marketId.
+  const c200MarketLegs = new Map<string, number>();
+  const c200MarketNotional = new Map<string, number>();
+  for (const row of c200OpenRows) {
+    c200MarketLegs.set(row.marketId, (c200MarketLegs.get(row.marketId) ?? 0) + 1);
+    c200MarketNotional.set(
+      row.marketId,
+      (c200MarketNotional.get(row.marketId) ?? 0) + (row.simulatedPositionSize ?? 0)
+    );
+  }
+  const c200MarketNotionalCap =
+    rules.maxMarketNotionalPctOfCap > 0 ? rules.maxMarketNotionalPctOfCap * c200ExposureCap : 0;
   const c200CategoryCounts = new Map<string, number>();
   const c200SlugCounts = new Map<string, number>(); // v45: raw marketCategory slug counts
   for (const row of c200OpenRows) {
@@ -233,6 +248,7 @@ async function main() {
     skips = 0;
   let laneCopies = 0; // short-TTR lane copies (scoped to BANKROLL_200)
   let shadowLogged = 0; // v53: sub-0.20 shadow-ladder candidates logged
+  let driftShadowLogged = 0; // 2026-09-16 Change 2: late-drift gate counterfactuals logged
   // TR-14 (2026-09-03): running gross-exposure total for the C-200 book.
   // Seeded from the cycle-start snapshot and incremented per booked copy so
   // candidates later in THIS run see earlier acceptances (fixes per-cycle
@@ -804,6 +820,29 @@ async function main() {
             continue;
           }
 
+          // v55 (daily report Change 1, user-approved): per-market concentration
+          // ceiling, checked on the FINAL size (Kelly/band sizing all applied
+          // above) so it cannot be gamed by a late resize. Whichever binds first.
+          if (botId === "BANKROLL_200" && (c200MarketNotionalCap > 0 || rules.maxMarketLegsPerMarketId > 0)) {
+            const legsHere = c200MarketLegs.get(t.marketId) ?? 0;
+            const notionalHere = c200MarketNotional.get(t.marketId) ?? 0;
+            const sizeHere = positionSize || 0.25;
+            const verdict = marketCapDecision({
+              legsAlready: legsHere,
+              notionalAlready: notionalHere,
+              sizeUsd: sizeHere,
+              maxLegs: rules.maxMarketLegsPerMarketId,
+              notionalCapUsd: c200MarketNotionalCap,
+            });
+            if (verdict.blocked) {
+              log(`[BANKROLL_200] v55 per-market cap (${verdict.why}) — skipping copy ${t.marketId}`);
+              legBlocks.push(`BANKROLL_200: v55 per-market cap (${verdict.why})`);
+              continue;
+            }
+            c200MarketLegs.set(t.marketId, legsHere + 1);
+            c200MarketNotional.set(t.marketId, notionalHere + sizeHere);
+          }
+
           await openPaperTrade({
             botId,
             venue: executionVenue,
@@ -906,10 +945,47 @@ async function main() {
         if (relabel) skips++;
       }
     } else if (result.decision === "watchlist") watches++;
-    else skips++;
+    else {
+      skips++;
+      // 2026-09-16 C-200 daily report Change 2 (user-approved): WRITE-ONLY
+      // counterfactual for the late-drift gate — the largest volume blocker in
+      // the book (~2,000 skips/24h, 905 of them at copyScore >= 80) with no
+      // measured outcome. Records the would-have entry so the gate can be judged
+      // on data at the Oct 9 close; `maxPriceDrift` itself must NOT move before
+      // then (the Oct 8 read is benchmarked at drift 0.004).
+      const driftRisk = (result.risks ?? []).find((r) => /price drifted/i.test(r));
+      if (driftRisk) {
+        try {
+          appendDriftShadow({
+            marketId: t.marketId,
+            outcome: t.outcome,
+            side: t.side,
+            walletAddress: t.walletAddress,
+            currentPrice,
+            walletEntryPrice: t.walletEntryPrice,
+            detectedPrice: t.detectedPrice,
+            drift: Math.abs(currentPrice - t.walletEntryPrice),
+            maxDrift: rules.maxPriceDrift,
+            copyScore: result.copyScore,
+            confidence: result.confidence,
+            ttrHours: ttr,
+            spread,
+            liquidity,
+            reason: driftRisk,
+          });
+          driftShadowLogged++;
+        } catch (e) {
+          logError(`[DRIFT-SHADOW] append failed for ${t.marketId}: ${e instanceof Error ? e.message : e}`);
+        }
+      }
+    }
   }
 
-  log(`Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips, ${deduped} sweep-duplicates coalesced, ${shadowLogged} shadow long-shot candidates logged.`);
+  log(
+    `Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips, ` +
+      `${deduped} sweep-duplicates coalesced, ${shadowLogged} shadow long-shot candidates logged, ` +
+      `${driftShadowLogged} drift-gate counterfactuals logged.`
+  );
 }
 
 main()

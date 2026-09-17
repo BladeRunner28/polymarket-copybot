@@ -816,6 +816,49 @@
         "journal",
         "applied"
       ]
+    },
+    {
+      "id": "v55-per-market-ceiling",
+      "title": "v55 \u2014 per-market concentration ceiling (legs \u2264 2, notional \u2264 10% of cap) \u2014 APPLIED 2026-09-16",
+      "column": "Done",
+      "effort": "~2h (fields + gate + replay script + tests)",
+      "dates": "Applied 2026-09-16 (C-200 daily report Change 1, user-approved)",
+      "gate": "VERIFIED: ruleset v55 active (maxMarketLegsPerMarketId 2, maxMarketNotionalPctOfCap 0.10), 6 new tests in tests/market-cap.test.ts, 177/177 suite. 7d: >=1 [BANKROLL_200] v55 per-market cap line, and no C-200 marketId holds >2 open legs or >10% of the effective cap in notional.",
+      "note": "WHY: maxMarketSlugPositions counts the research CATEGORY (a slug wraps many markets), so nothing bounded legs inside one marketId \u2014 and v54's 2.5x long-shot factor lifted the <0.20 average clip to ~$33, letting one binary absorb $250+. The last 7 days' loss was 76% two markets (fed-increase-25bps -$92.18, ucl-nap-ars-spread -$126.01), each ~5 legs. EVIDENCE (scripts/replay-market-cap.ts --days 7, run BEFORE applying): 298 legs booked \u2192 ceiling blocks 13 legs across 7 markets; blocked notional $283.12, blocked PnL -$144.01; actual window PnL -$441.53 \u2192 counterfactual -$297.52 (delta +$144.01). Every worst blocked leg is a leg-3+ accumulation: Fed -$50.04 and -$10.46, elon-musk-of-tweets -$22.22/-$19.95, dtf-stpt-emmys -$18.32. SCOPE: C-200 only; checked on the FINAL size (after Kelly/band sizing) so a late resize cannot slip past it. Notional expressed as a PCT of the effective cap so it scales with equity instead of silently loosening. REVERT: both fields 0.",
+      "tags": [
+        "concentration",
+        "risk-gate",
+        "applied",
+        "v55"
+      ]
+    },
+    {
+      "id": "drift-gate-counterfactual",
+      "title": "Late-drift gate counterfactual \u2014 write-only instrumentation (decision at the Oct 9 window close)",
+      "column": "In Progress",
+      "effort": "~1h (feed + marker pass; decision later)",
+      "dates": "Instrumented 2026-09-16/17 \u00b7 read at the Oct 9 window close",
+      "gate": "DECISION GATE: maxPriceDrift must NOT move before Oct 9 \u2014 the Oct 8 Kelly-window read is benchmarked against the pre-Kelly baseline measured AT drift 0.004, so moving it now contaminates the comparison. Read data/drift-shadow-summary.json at the close; act only if the settled would-have PnL is materially positive on a >=100-settled sample.",
+      "note": "The `price drifted X > max 0.004 (too late)` gate is the largest volume blocker (\u22482,000 skips/24h; 905 of a day's skips carried copyScore >= 80) and its counterfactual had never been measured. Instrumentation is WRITE-ONLY: every blocked would-have entry is written to data/drift-shadow.jsonl with its would-have price, drift, score/confidence and market state; scripts/mark-shadow-longshot.ts (hourly cron) now marks that feed to settlement alongside the long-shot ladder and publishes data/drift-shadow-summary.json. First run: 44 candidates logged, 0 settled. Behaviour unchanged.",
+      "tags": [
+        "measurement",
+        "drift-gate",
+        "kelly-window"
+      ]
+    },
+    {
+      "id": "dedupe-leak-1-open",
+      "title": "duplicate-open cleanup: 1 post-guard leak remains (+224 legacy STANDARD stacks) \u2014 needs approval to write",
+      "column": "Backlog",
+      "effort": "~15 min (--clean-leaks) pending approval",
+      "dates": "Dry run 2026-09-16 (read-only)",
+      "gate": "Any write needs explicit approval (the script closes positions). Read-only report: DATABASE_URL=\"file:./dev.db\" npx tsx scripts/dedupe-open-copies.ts --report",
+      "note": "Read-only run: 225 duplicate OPEN keys = 1 post-guard leak (openedAt >= 2026-09-09 09:00Z) + 224 legacy pre-v52 accumulations. The legacy set is STANDARD-heavy (\u00d763 Barcelona, \u00d758 Bolsonaro, \u00d739 ETH-1500 \u2026) and pre-dates the v52 guard; the script deliberately leaves it alone because closing them is portfolio surgery, not cleanup. The 1 leak is the actionable item \u2014 `--clean-leaks` closes post-guard duplicates keeping the oldest leg. The partial unique index still cannot be created while any duplicate open key exists.",
+      "tags": [
+        "data-quality",
+        "dedupe",
+        "queued"
+      ]
     }
   ]
 }

@@ -15,6 +15,12 @@ import { getAdapter } from "../src/lib/adapters";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { didOutcomeWin } from "../src/lib/resolution";
 import { readShadowRows, summarizeShadow, SHADOW_FILE, SHADOW_SUMMARY_FILE } from "../src/lib/shadow-longshot";
+import {
+  readDriftRows,
+  summarizeDrift,
+  DRIFT_SHADOW_FILE,
+  DRIFT_SHADOW_SUMMARY_FILE,
+} from "../src/lib/shadow-drift";
 import { log, logError } from "../src/lib/redact";
 import * as fs from "fs";
 
@@ -67,6 +73,60 @@ async function main() {
     );
     resolvedNow++;
   }
+
+  // ---- Late-drift gate shadow (2026-09-16 Change 2) -------------------------
+  // Same marking machinery, different feed: every would-have-copied entry the
+  // drift gate blocked, marked to settlement so the gate's counterfactual stops
+  // being an assumption.
+  const dRows = readDriftRows();
+  const dCandidates = dRows.filter((r) => r.type === "candidate");
+  const dAlready = new Set(dRows.filter((r) => r.type === "resolve").map((r) => `${r.marketId}|${r.outcome}`));
+  const dPending = new Map<string, { marketId: string; outcome: string }>();
+  for (const c of dCandidates) {
+    const key = `${c.marketId}|${c.outcome}`;
+    if (!dAlready.has(key)) dPending.set(key, { marketId: String(c.marketId), outcome: String(c.outcome) });
+  }
+  let dResolved = 0;
+  for (const { marketId, outcome } of dPending.values()) {
+    let value: number | undefined;
+    try {
+      const m = await adapter.fetchMarket(marketId);
+      const winnerLabel = m.winningLabel ?? m.winningOutcome;
+      if (m.resolved && winnerLabel) {
+        const won = didOutcomeWin(outcome, { winningLabel: winnerLabel, yesPrice: m.yesPrice });
+        if (won !== null) value = won ? 1 : 0;
+      }
+    } catch {
+      /* fall through to the event-resolution path */
+    }
+    if (value === undefined) {
+      try {
+        const ev = await fetchEventResolution(marketId);
+        if (ev) {
+          const won = didOutcomeWin(outcome, { winningLabel: ev });
+          if (won !== null) value = won ? 1 : 0;
+        }
+      } catch {
+        /* leave unresolved */
+      }
+    }
+    if (value === undefined) continue;
+    fs.appendFileSync(
+      DRIFT_SHADOW_FILE,
+      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
+    );
+    dResolved++;
+  }
+  const dSummary = summarizeDrift(readDriftRows());
+  fs.writeFileSync(DRIFT_SHADOW_SUMMARY_FILE, JSON.stringify(dSummary, null, 2));
+  log(
+    `shadow-drift: +${dResolved} marked this run. Gate counterfactual: ${dSummary.candidates} would-have entries, ` +
+      `${dSummary.marked} settled (${dSummary.wins} wins, ` +
+      `${dSummary.winRate === null ? "—" : (dSummary.winRate * 100).toFixed(1) + "%"}), ` +
+      `$${dSummary.wouldHavePnl.toFixed(2)} @ $${dSummary.stakeUsd}/trade (` +
+      `${dSummary.avgPnlPerTrade === null ? "—" : "$" + dSummary.avgPnlPerTrade.toFixed(2)}/trade). ` +
+      `Summary: ${DRIFT_SHADOW_SUMMARY_FILE}`
+  );
 
   const summary = summarizeShadow(readShadowRows());
   fs.writeFileSync(SHADOW_SUMMARY_FILE, JSON.stringify(summary, null, 2));
