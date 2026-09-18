@@ -178,6 +178,12 @@ export interface Rules {
   // two markets). Two independent limits, whichever binds first; 0 = disabled.
   maxMarketNotionalPctOfCap: number; // ceiling = pct × effective exposure cap
   maxMarketLegsPerMarketId: number; // max open legs in one marketId
+  // v56 (2026-09-19 tuning review #29 rec 3, user-approved): the drawdown /
+  // exposure BASIS as a first-class rule field, so "which basis is in force" is
+  // a versioned fact in the RuleSet rather than only a line in a state file.
+  // "mtm" | "realized" | "min". Empty string = not set → fall back to
+  // data/c200-drawdown.json, then to "mtm" (legacy behavior).
+  ddBasis: string;
   // v45: per-market-slug open-position cap for C-200. The v41 research-category
   // gate maps esports to "Other" (uncapped), letting lol/cs2 pile up without a
   // gate; this caps open positions per raw marketCategory slug. 0 = disabled.
@@ -303,6 +309,7 @@ export const DEFAULT_RULES: Rules = {
   // is an explicit ruleset change).
   maxMarketNotionalPctOfCap: 0,
   maxMarketLegsPerMarketId: 0,
+  ddBasis: "mtm",
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],
   standardBlacklist: [],
@@ -334,7 +341,7 @@ export async function getActiveRules(): Promise<{ rules: Rules; version: number;
 
 export interface RuleChangeProposal {
   field: keyof Rules;
-  newValue: number | string[];
+  newValue: number | string | string[];
   reason: string;
   evidence: string;
 }
@@ -350,12 +357,12 @@ export async function applyRuleChanges(
 ): Promise<{ newVersion: number } | null> {
   if (proposals.length === 0) return null;
   const { rules, version, id: oldId } = await getActiveRules();
-  const before: Record<string, number | string[]> = {};
-  const after: Record<string, number | string[]> = {};
+  const before: Record<string, number | string | string[]> = {};
+  const after: Record<string, number | string | string[]> = {};
   const newRules: Rules = { ...rules };
   for (const p of proposals) {
-    before[p.field] = rules[p.field] as number | string[];
-    (newRules as unknown as Record<string, number | string[]>)[p.field] = p.newValue;
+    before[p.field] = rules[p.field] as number | string | string[];
+    (newRules as unknown as Record<string, number | string | string[]>)[p.field] = p.newValue;
     after[p.field] = p.newValue;
   }
   const newVersion = version + 1;

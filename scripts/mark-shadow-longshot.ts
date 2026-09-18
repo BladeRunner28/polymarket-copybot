@@ -24,6 +24,19 @@ import {
 import { log, logError } from "../src/lib/redact";
 import * as fs from "fs";
 
+/**
+ * Bound the work per run. The drift feed grows ~2k candidates/day (the gate is
+ * the book's largest volume blocker) and the marker was spending its whole hourly
+ * slot walking the backlog — 4,176 awaiting on 2026-09-18. Oldest-first, capped,
+ * so each run finishes and the backlog drains steadily.
+ */
+const MARK_LIMIT = Number(process.env.MARK_LIMIT ?? 300);
+
+function capPending<T>(m: Map<string, T>, limit = MARK_LIMIT): Map<string, T> {
+  if (m.size <= limit) return m;
+  return new Map([...m].slice(0, limit));
+}
+
 async function main() {
   const adapter = getAdapter();
   const rows = readShadowRows();
@@ -41,7 +54,7 @@ async function main() {
   log(`shadow-longshot: ${candidates.length} admits, ${already.size} resolved, ${pending.size} pending.`);
   let resolvedNow = 0;
 
-  for (const { marketId, outcome } of pending.values()) {
+  for (const { marketId, outcome } of capPending(pending).values()) {
     let value: number | undefined;
     try {
       const m = await adapter.fetchMarket(marketId);
@@ -87,7 +100,7 @@ async function main() {
     if (!dAlready.has(key)) dPending.set(key, { marketId: String(c.marketId), outcome: String(c.outcome) });
   }
   let dResolved = 0;
-  for (const { marketId, outcome } of dPending.values()) {
+  for (const { marketId, outcome } of capPending(dPending).values()) {
     let value: number | undefined;
     try {
       const m = await adapter.fetchMarket(marketId);
@@ -120,11 +133,14 @@ async function main() {
   const dSummary = summarizeDrift(readDriftRows());
   fs.writeFileSync(DRIFT_SHADOW_SUMMARY_FILE, JSON.stringify(dSummary, null, 2));
   log(
-    `shadow-drift: +${dResolved} marked this run. Gate counterfactual: ${dSummary.candidates} would-have entries, ` +
+    `shadow-drift: +${dResolved} marked this run (cap ${MARK_LIMIT}/run, backlog ${dPending.size}). ` +
+      `Gate counterfactual: ${dSummary.candidates} would-have entries, ` +
       `${dSummary.marked} settled (${dSummary.wins} wins, ` +
       `${dSummary.winRate === null ? "—" : (dSummary.winRate * 100).toFixed(1) + "%"}), ` +
       `$${dSummary.wouldHavePnl.toFixed(2)} @ $${dSummary.stakeUsd}/trade (` +
-      `${dSummary.avgPnlPerTrade === null ? "—" : "$" + dSummary.avgPnlPerTrade.toFixed(2)}/trade). ` +
+      `${dSummary.avgPnlPerTrade === null ? "—" : "$" + dSummary.avgPnlPerTrade.toFixed(2)}/trade, ` +
+      `${dSummary.avgPnlPerTradeExDust === null ? "—" : "$" + dSummary.avgPnlPerTradeExDust.toFixed(2)}/trade ex-dust ` +
+      `[${dSummary.dustExcluded} rows below $${dSummary.dustMinEntryPrice}]). ` +
       `Summary: ${DRIFT_SHADOW_SUMMARY_FILE}`
   );
 

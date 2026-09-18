@@ -12,7 +12,7 @@ import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment"
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
-import { effectiveExposureCap, marketCapDecision } from "../src/lib/exposure-cap";
+import { effectiveExposureCap, marketCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -138,9 +138,10 @@ async function main() {
     drawdownState = {};
   }
   const principal = bankrollRow?.principal ?? 0;
-  // Declared basis (2026-09-15, rec 2): read before anything derives from it —
-  // the peak ratchet, the expose cap and the gate all key off this one value.
-  const ddBasis: DdBasis = drawdownState.basis ?? "mtm";
+  // Declared basis: the RULESET is the source of truth (v56, #29 rec 3) and the
+  // state file is the fallback for rulesets that predate the field, then "mtm"
+  // (legacy). Written back to the file below so the two never disagree.
+  const ddBasis: DdBasis = ((rules.ddBasis || undefined) as DdBasis) ?? drawdownState.basis ?? "mtm";
   let peakBankroll = drawdownState.peak ?? 0;
   if (peakBankroll < principal) peakBankroll = principal;
   const realizedOnlyNW = principal + (bankrollRow?.realizedPnl ?? 0);
@@ -249,6 +250,11 @@ async function main() {
   let laneCopies = 0; // short-TTR lane copies (scoped to BANKROLL_200)
   let shadowLogged = 0; // v53: sub-0.20 shadow-ladder candidates logged
   let driftShadowLogged = 0; // 2026-09-16 Change 2: late-drift gate counterfactuals logged
+  // #29 rec 2 (2026-09-19, approved): count candidates blocked by a PORTFOLIO gate
+  // (drawdown / gross exposure). These fire BEFORE the per-bot leg loop, so when
+  // they block everything the run produces no copies, no leg blocks and no signal
+  // that anything is wrong — the Sep 16-18 freeze ran 39.7h before a human noticed.
+  let portfolioGateBlocks = 0;
   // TR-14 (2026-09-03): running gross-exposure total for the C-200 book.
   // Seeded from the cycle-start snapshot and incremented per booked copy so
   // candidates later in THIS run see earlier acceptances (fixes per-cycle
@@ -556,6 +562,7 @@ async function main() {
           c200CategoryCounts.set(tradeCat, projected);
         }
       }
+      if (riskGates.some(isPortfolioGate)) portfolioGateBlocks++;
       if (riskGates.length > 0) {
         await prisma.decisionJournal.update({
           where: { id: decision.id },
@@ -978,6 +985,41 @@ async function main() {
           logError(`[DRIFT-SHADOW] append failed for ${t.marketId}: ${e instanceof Error ? e.message : e}`);
         }
       }
+    }
+  }
+
+  // Pre-loop halt report (#29 rec 2). Logged on EVERY halted cycle so a freeze is
+  // visible in the log (and greppable) within one 10-minute tick; the Discord
+  // alert is rate-limited to once per 6h so a multi-day freeze cannot spam.
+  if (copies === 0 && portfolioGateBlocks > 0) {
+    log(
+      `[PRE-LOOP HALT] 0 copies this cycle — ${portfolioGateBlocks} candidate(s) vetoed by a PORTFOLIO gate ` +
+        `(drawdown/exposure) before any leg loop ran. Entries are HALTED, not quiet. ` +
+        `declared basis=${ddBasis}, DD ${(basisDrawdownPct * 100).toFixed(1)}%, gross $${c200RunningExposure.toFixed(2)} vs cap $${c200ExposureCap.toFixed(2)}`
+    );
+    try {
+      const HALT_FILE = join(__dirname, "..", "data", "pre-loop-halt.json");
+      let lastMs = 0;
+      try {
+        lastMs = (JSON.parse(fs.readFileSync(HALT_FILE, "utf-8")) as { lastAlertAtMs?: number }).lastAlertAtMs ?? 0;
+      } catch {
+        lastMs = 0;
+      }
+      const ALERT_EVERY_MS = 6 * 3_600_000;
+      if (Date.now() - lastMs > ALERT_EVERY_MS) {
+        await sendDiscord(
+          [
+            "🚨 **C-200 entries are HALTED (portfolio gate)** _(paper only)_",
+            `**Blocked this cycle:** ${portfolioGateBlocks} candidates, 0 copies`,
+            `**Basis:** ${ddBasis} — drawdown ${(basisDrawdownPct * 100).toFixed(1)}% (peak $${basisPeak.toFixed(0)}, NW $${basisNetWorth.toFixed(0)})`,
+            `**Exposure:** $${c200RunningExposure.toFixed(2)} vs cap $${c200ExposureCap.toFixed(2)}`,
+            `_No entries can open while this holds. Check the MTM/realized basis if the drawdown reads high._`,
+          ].join("\n")
+        );
+        fs.writeFileSync(HALT_FILE, JSON.stringify({ lastAlertAtMs: Date.now(), portfolioGateBlocks, ddBasis }, null, 2));
+      }
+    } catch (e) {
+      logError(`[PRE-LOOP HALT] alert failed: ${e instanceof Error ? e.message : e}`);
     }
   }
 

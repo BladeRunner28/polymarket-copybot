@@ -71,3 +71,15 @@ export function marketCapDecision(i: MarketCapInput): MarketCapDecision {
   }
   return { blocked: false };
 }
+
+/**
+ * #29 rec 2 (2026-09-19, user-approved): is this veto reason a PORTFOLIO gate?
+ *
+ * Portfolio gates fire BEFORE the per-bot leg loop, so when they block everything
+ * the cycle produces no copies, no leg-block reasons and no other signal — the
+ * Sep 16-18 freeze ran 39.7h undetected. These two reasons are the ones that can
+ * halt the whole book; per-market/per-token gates are scoped and cannot.
+ */
+export function isPortfolioGate(reason: string): boolean {
+  return /drawdown gate|gross exposure cap/.test(reason);
+}

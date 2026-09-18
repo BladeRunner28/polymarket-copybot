@@ -930,6 +930,63 @@
         "decision-needed",
         "measurement"
       ]
+    },
+    {
+      "id": "tr29-rec1-drift-dust-floor",
+      "title": "Rec 1 \u2014 dust floor on the drift counterfactual (measurement integrity) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~30 min",
+      "dates": "Applied 2026-09-19 (tuning review #29, user-approved)",
+      "gate": "VERIFIED: data/drift-shadow-summary.json reads avgPnlPerTradeExDust = $1.17 (target <= $1.50) against a dust-inclusive headline of $21.31 \u2014 548 of 1,754 settled rows excluded below the $0.10 floor. Recheck before the Oct 9 read: jq . data/drift-shadow-summary.json.",
+      "note": "A $0.0005 entry settling at 1.0 returns 2000x, so two such marks made the gate's headline read $23.03/trade when the rest of the sample averaged $1.29 \u2014 roughly the bot's own +$0.94. The horizon read would have been decided by two unexecutable rows. summarizeDrift now computes avgPnlPerTradeExDust excluding entries below DRIFT_DUST_MIN_ENTRY (default $0.10, env-overridable) and reports dustExcluded + the floor alongside; the raw figure is kept for continuity but must never be the headline. Also bounded the hourly marker: the feed reached 5,930 candidates / 4,176 awaiting in 24h and the marker was spending its whole slot walking the backlog \u2014 MARK_LIMIT (default 300/run, oldest-first) now drains it steadily.",
+      "tags": [
+        "measurement",
+        "drift-gate",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr29-rec2-pre-loop-halt",
+      "title": "Rec 2 \u2014 pre-loop halt detection + rate-limited alert (2nd silent freeze) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~1h",
+      "dates": "Applied 2026-09-19 (tuning review #29, user-approved)",
+      "gate": "VERIFY: grep -c 'PRE-LOOP HALT' logs/cron/copybot-monitor-score.log -> 0 when healthy (current), >= 1 per halted cycle (roughly 90+ over a 39.7h freeze) plus one Discord alert per 6h while halted. Classifier pinned by tests/pre-loop-halt.test.ts against the real gate strings.",
+      "note": "Portfolio gates (drawdown, gross exposure) fire BEFORE the per-bot leg loop, so a total freeze produced no copies, no leg-block reasons and no log signal \u2014 the Sep 16-18 halt ran 39.7h before anyone noticed. score-trades now counts candidates vetoed by isPortfolioGate() and, when a cycle ends with 0 copies and any portfolio veto, logs '[PRE-LOOP HALT] 0 copies this cycle \u2014 N candidate(s) vetoed by a PORTFOLIO gate ... basis/DD/gross-vs-cap' and sends one Discord alert per 6h (data/pre-loop-halt.json is the throttle). The classifier is a pure exported function so scoped gates (category, token breaker, per-market, slug cap, hour blackout, wallet cap, drift) can never be mistaken for a halt.",
+      "tags": [
+        "reliability",
+        "alerts",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr29-rec3-ddbasis-ruleset",
+      "title": "Rec 3 \u2014 drawdown basis recorded in the RuleSet (v56) \u2014 APPLIED",
+      "column": "Done",
+      "effort": "~45 min",
+      "dates": "Applied 2026-09-19 (tuning review #29, user-approved)",
+      "gate": "VERIFIED exactly: sqlite3 prisma/dev.db \"SELECT version, json_extract(rulesJson,'$.ddBasis') FROM RuleSet ORDER BY version DESC LIMIT 1;\" -> 56|realized. Audit row changedBy=hermes-v56-tr29-rec3-approved.",
+      "note": "The 09-18 basis switch wrote only data/c200-drawdown.json, so 'v56' was a narrative version: the DB could not tell a reader (or the Oct 8 window audit) why the drawdown gate stopped firing. ddBasis is now a first-class RuleSet field with precedence RuleSet -> state file -> 'mtm' (legacy); score-trades resolves it once and writes it back to the state file so the two cannot disagree. This also required string-valued rule fields, which applyRuleChanges now supports alongside numbers and string[]. Not a threshold change \u2014 it makes the 09-18 decision auditable, versioned, and revertible in the same place as every other rule.",
+      "tags": [
+        "rules",
+        "auditability",
+        "applied",
+        "v56"
+      ]
+    },
+    {
+      "id": "v55-ceiling-vs-kelly-decision",
+      "title": "DECISION \u2014 the v55 per-market ceiling vetoes Kelly-sized admits (11 of 12); raise it or scope it",
+      "column": "Backlog",
+      "effort": "one field (maxMarketNotionalPctOfCap)",
+      "dates": "Surfaced 2026-09-19 (tuning review #29) \u00b7 first exposed after the freeze thawed",
+      "gate": "USER PICK. Options: (a) raise maxMarketNotionalPctOfCap 0.10 -> 0.20 (= $250 on the current $1,251 cap, which exactly covers maxMarketLegsPerMarketId x kellyMaxSizeUsd = 2 x $100); (b) exempt the <0.20 band (the only positive-edge band) from the per-market ceiling while keeping legs <= 2; (c) leave it and accept that Kelly cannot size two legs into one market.",
+      "note": "v55's ceiling is doing its job on accumulation, but its interaction with v49 Kelly is wrong: the review's first look after the thaw shows it vetoed 11 of 12 Kelly admits ($200 notional vs a $125.12 cap). Kelly sizes the long-shot band at up to kellyMaxSizeUsd $100, so TWO legs in one market legally exceed 10% of the cap \u2014 the rule makes the 2-leg allowance unusable at Kelly size, i.e. the ceiling binds hardest on the lane the book's only |z|>=2 positive edge runs through. RECOMMENDATION: (a) 0.20 \u2014 it keeps the concentration intent (a market can never take more than a fifth of the book) while making the leg allowance coherent with the sizing cap it was written to permit.",
+      "tags": [
+        "concentration",
+        "kelly",
+        "decision-needed"
+      ]
     }
   ]
 }
