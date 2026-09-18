@@ -901,6 +901,35 @@
         "decision-needed",
         "freeze"
       ]
+    },
+    {
+      "id": "v56-drawdown-basis-realized",
+      "title": "v56 \u2014 drawdown/exposure basis switched mtm \u2192 realized (APPLIED 2026-09-18, user-approved)",
+      "column": "Done",
+      "effort": "one flag (scripts/apply-v56-drawdown-basis.ts)",
+      "dates": "Applied 2026-09-18 05:05 CDT; effective on the next scorer cycle",
+      "gate": "VERIFIED: latest scorer run reads '[DRAWDOWN-SHADOW] basis=realized 1.6% (peak $2442, NW $2402)' and '[CAP-SHADOW] declared(realized) cap $1251 \u2026 gap $0' \u2014 the gate no longer fires and the basis/cap mismatch is gone. 7d: 0 drawdown-gate veto rows, C-200 entries resume.",
+      "note": "The MTM gate froze BOTH lanes twice in 10 days (Sep 7/8, and Sep 17: ~28h with zero entries, 459+ decisions vetoed at 26.5% MTM DD) while the realized ledger never breached ~3%. The latched peak ($3,409.47) was set 09-12 by a 367-leg/$3,112 book and could not unwind while the book stayed small \u2014 pro-cyclical by construction. Declared basis is now realized (peak $2,441.69 ratchets on the ledger only); cap $1,251.18 vs a $471 book, nothing binds. `note` + `basisDeclaredAt` recorded in data/c200-drawdown.json per #26 rec 2. Revert: --basis mtm, or --reseed-peak to keep MTM and reset the mark peak.",
+      "tags": [
+        "drawdown",
+        "applied",
+        "window"
+      ]
+    },
+    {
+      "id": "kalshi-lane-ontology-not-coverage",
+      "title": "Kalshi cross-venue lane: 0% is a CONTRACT-ONTOLOGY problem, not matcher coverage \u2014 park or fund semantics (decision)",
+      "column": "Backlog",
+      "effort": "probe + index built; a semantic matcher is a substantial build",
+      "dates": "Measured 2026-09-18 (after the user approved reviving the lane)",
+      "gate": "DECISION: park the lane as an execution path (shadow stays free), or fund an LLM-assisted semantic + strike-level matcher. Acceptance test must be VERIFIED CONTRACT-EQUIVALENT pairs, not coverage % \u2014 token-overlap coverage is 62.9% of stake and almost all of it is wrong.",
+      "note": "MEASURED (scripts/kalshi-coverage-probe.py + scripts/kalshi-slug-matcher.py, complete event index): Kalshi has 14,766 open events (cursor exhausted over 74 pages). The sidecar walks MAX_EVENT_PAGES=25 x 200 = 5,000 (34% of inventory) at MATCH_THRESHOLD 0.55 \u2014 so depth IS a real defect \u2014 but fixing it buys nothing usable: against the COMPLETE index, 144 of our 202 in-window markets clear 0.25 (62.9% of stake) and ZERO clear 0.60. Every 0.40-0.59 candidate sampled is a DIFFERENT market: 'highest temperature in Moscow/Shanghai/Guangzhou' all match KXHIGHTTTN (Trenton); MLB 'Atlanta Braves vs Chicago Cubs' matches a WNBA Chicago-vs-Atlanta game; KHL Traktor-Lokomotiv matches Barys-Lokomotiv. Where genuine counterparts exist they are DIFFERENT CONTRACTS: Kalshi KXFED-26OCT/DEC are rate-LEVEL markets vs our 25bp-MOVE question (scores 0.25); Kalshi's Bolsonaro market is vote-PERCENTAGE vs our win question (0.50); Kalshi's Emmy markets are Daytime vs our primetime series (0.14); Kalshi's Valorant markets are tournament-winner vs our head-to-head match (0.07). RECOMMENDATION: park. Reviving needs semantic mapping PLUS strike-level contract parsing, judged on precision over verified pairs.",
+      "tags": [
+        "venue-routing",
+        "kalshi",
+        "decision-needed",
+        "measurement"
+      ]
     }
   ]
 }
