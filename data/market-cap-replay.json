@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-09-17T05:02:26.930Z",
+  "window": {
+    "days": 7,
+    "since": "2026-09-10T05:02:26.921Z"
+  },
+  "thresholds": {
+    "maxMarketLegsPerMarketId": 2,
+    "maxMarketNotionalPctOfCap": 0.1,
+    "notionalCapUsd": 135.54,
+    "effectiveCapUsd": 1355.39,
+    "netWorth": 2610.78,
+    "capOverride": null
+  },
+  "legs": 298,
+  "blockedLegs": 13,
+  "blockedNotionalUsd": 283.12,
+  "blockedPnlUsd": -144.01,
+  "bookedPnlUsd": -297.52,
+  "actualWindowPnlUsd": -441.53,
+  "deltaUsd": 144.01,
+  "marketsWithMultipleLegs": 31,
+  "worstMarketsUnderCap": [
+    {
+      "marketId": "will-dtf-stpt-louis-win-emmys-2026-outstanding-limited-or-anthology-series-20260710152711975",
+      "legs": 2,
+      "notional": 96.55936708860759,
+      "pnl": -88.17
+    },
+    {
+      "marketId": "highest-temperature-in-wellington-on-september-14-2026-16c",
+      "legs": 2,
+      "notional": 77.61367088607595,
+      "pnl": -77.1
+    },
+    {
+      "marketId": "elon-musk-of-tweets-september-4-september-11-2026-160-179",
+      "legs": 2,
+      "notional": 61.104683544303796,
+      "pnl": -60.94
+    },
+    {
+      "marketId": "will-the-price-of-xrp-be-between-1pt30-1pt40-on-september-12-2026",
+      "legs": 1,
+      "notional": 39.88,
+      "pnl": -39.44
+    },
+    {
+      "marketId": "will-jean-smart-hacks-win-emmys-2026-outstanding-lead-actress-in-a-comedy-series-20260709174230568",
+      "legs": 2,
+      "notional": 39.89873417721518,
+      "pnl": -39.43
+    }
+  ],
+  "blockedSample": [
+    {
+      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
+      "outcome": "NO",
+      "entryPrice": 0.095,
+      "size": 50.3,
+      "pnl": -50.04,
+      "status": "closed",
+      "why": "leg 3 > 2"
+    },
+    {
+      "marketId": "elon-musk-of-tweets-september-14-september-16-2026-40-64",
+      "outcome": "NO",
+      "entryPrice": 0.325,
+      "size": 22.22,
+      "pnl": -22.22,
+      "status": "resolved",
+      "why": "leg 3 > 2"
+    },
+    {
+      "marketId": "elon-musk-of-tweets-september-10-september-12-2026-40-64",
+      "outcome": "NO",
+      "entryPrice": 0.065,
+      "size": 19.94936708860759,
+      "pnl": -19.95,
+      "status": "resolved",
+      "why": "leg 3 > 2"
+    },
+    {
+      "marketId": "will-dtf-stpt-louis-win-emmys-2026-outstanding-limited-or-anthology-series-20260710152711975",
+      "outcome": "NO",
+      "entryPrice": 0.05499999999999999,
+      "size": 19.94936708860759,
+      "pnl": -18.32,
+      "status": "closed",
+      "why": "leg 3 > 2"
+    },
+    {
+      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
+      "outcome": "NO",
+      "entryPrice": 0.125,
+      "size": 65.4,
+      "pnl": -10.46,
+      "status": "closed",
+      "why": "leg 3 > 2"
+    }
+  ]
+}
