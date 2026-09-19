@@ -60,12 +60,20 @@ describe("applyKellyBandRails (v51 — Kelly path can't contradict the band map)
     expect(applyKellyBandRails(5, 16, 0.199)).toBe(16); // just under 0.20
   });
 
-  it("passes other bands through unchanged (0.20–0.40 and ≥ 0.60)", () => {
-    expect(applyKellyBandRails(25, 999, 0.3)).toBe(25);
-    expect(applyKellyBandRails(25, 0.01, 0.3)).toBe(25);
+  it("caps 0.20–0.40 (v57 change B) and passes ≥0.60 through unchanged", () => {
+    // v57 (2026-09-18 daily report change B, user-approved) EXTENDED this rail:
+    // 0.20–0.40 used to pass through, and Kelly could ride it to the $100 ceiling;
+    // the band's clip-size split (≤$15 +$149 / $15-30 −$116 / ≥$30 −$331) is why
+    // it is now capped at the legacy-equivalent like the dead zone.
+    expect(applyKellyBandRails(25, 999, 0.3)).toBe(25); // cap above Kelly → untouched
+    expect(applyKellyBandRails(25, 0.01, 0.3)).toBe(0.01); // cap below Kelly → clipped
+    expect(applyKellyBandRails(25, 0.01, 0.7)).toBe(25); // ≥0.60 still passes through
     expect(applyKellyBandRails(25, 999, 0.6)).toBe(25); // favorite band: no rail
     expect(applyKellyBandRails(25, 0.01, 0.8)).toBe(25);
-    expect(applyKellyBandRails(25, 0.01, 0.2)).toBe(25); // 0.20 boundary: not long-shot
+    // 0.20 is now the cap band's LOWER boundary (v57) — it used to be "not long-shot,
+    // pass through"; the long-shot floor still starts strictly below 0.20.
+    expect(applyKellyBandRails(25, 0.01, 0.2)).toBe(0.01);
+    expect(applyKellyBandRails(25, 999, 0.1999)).toBe(999); // <0.20 → floor, not cap
   });
 });
 
@@ -101,5 +109,26 @@ describe("v54 C-200 band factors (2026-09-15 Rec 1: reallocate size to the long-
     expect(applyKellyBandRails(10, mapBankroll200Size(8, 0.5, V54), 0.5)).toBeLessThan(
       applyKellyBandRails(10, mapBankroll200Size(8, 0.5), 0.5)
     );
+  });
+});
+
+describe("v57 change B: Kelly rail extended to [0.20, 0.40)", () => {
+  it("caps the 0.20-0.40 band at the legacy-equivalent size", () => {
+    // The band's map is x1.0, so a Kelly admit used to ride to the $100 ceiling.
+    const legacyEquiv = mapBankroll200Size(8, 0.3); // ~$7.97
+    expect(applyKellyBandRails(100, legacyEquiv, 0.3)).toBeCloseTo(legacyEquiv, 10);
+    expect(applyKellyBandRails(5, legacyEquiv, 0.3)).toBeCloseTo(5, 10); // smaller Kelly untouched
+  });
+
+  it("keeps the dead-zone cap and the long-shot floor unchanged", () => {
+    const dz = mapBankroll200Size(8, 0.5);
+    expect(applyKellyBandRails(100, dz, 0.5)).toBeCloseTo(dz, 10); // [0.40,0.60)
+    const ls = mapBankroll200Size(8, 0.15);
+    expect(applyKellyBandRails(1, ls, 0.15)).toBeCloseTo(ls, 10); // <0.20 floors
+  });
+
+  it("leaves >=0.60 alone", () => {
+    expect(applyKellyBandRails(100, 3.98, 0.7)).toBe(100);
+    expect(applyKellyBandRails(100, 3.98, 0.2)).toBeLessThan(100); // boundary belongs to the cap
   });
 });

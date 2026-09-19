@@ -11,6 +11,14 @@ export interface Rules {
   maxSpread: number; // skip if spread wider than this
   minLiquidity: number; // skip if market liquidity below this (USD)
   maxPriceDrift: number; // skip if price moved more than this since wallet entry
+  // v57 (2026-09-18 daily report change A, user-approved): a FLAT 0.4¢ tolerance
+  // is 0.7% of price at 0.60 but 2–8% of price at 0.05–0.20, so the widest-edge
+  // band (excess +22.5pp, z=+5.79) was the most drift-starved: 5 long-shot entries
+  // in 24h vs 11 in the losing 0.20–0.40 band. When > 0, entries below
+  // longshotMaxPrice use max(maxPriceDrift, pct × price) capped at
+  // longshotDriftCap. 0 = legacy flat tolerance (default).
+  longshotDriftPct: number; // e.g. 0.08 = 8% of the entry price
+  longshotDriftCap: number; // absolute ceiling for the band (e.g. 0.02)
   minTimeToResolutionHours: number; // skip if resolving too soon to copy
   minCopyScore: number; // paper_copy threshold (0..100)
   watchlistScore: number; // watchlist threshold (0..100)
@@ -218,6 +226,8 @@ export const DEFAULT_RULES: Rules = {
   maxSpread: 0.05,
   minLiquidity: 5000,
   maxPriceDrift: 0.08,
+  longshotDriftPct: 0,
+  longshotDriftCap: 0.02,
   minTimeToResolutionHours: 12,
   minCopyScore: 65,
   watchlistScore: 45,
@@ -385,4 +395,23 @@ export async function applyRuleChanges(
     return ns;
   });
   return { newVersion: created.version };
+}
+
+/**
+ * v57 change A (2026-09-18 daily report, user-approved): effective price-drift
+ * tolerance for one entry.
+ *
+ * A flat 0.4c tolerance is 0.7% of price at 0.60 but 2-8% of price at 0.05-0.20,
+ * so the band carrying the widest measured edge (excess +22.5pp, z=+5.79) was the
+ * one most often blocked as "too late". With longshotDriftPct > 0, entries below
+ * longshotMaxPrice get max(maxPriceDrift, pct x price), capped at longshotDriftCap.
+ * longshotDriftPct = 0 keeps the legacy flat tolerance for every band.
+ */
+export function effectiveDriftTolerance(
+  rules: Pick<Rules, "maxPriceDrift" | "longshotMaxPrice" | "longshotDriftPct" | "longshotDriftCap">,
+  entryPrice: number
+): number {
+  if (!(rules.longshotDriftPct > 0) || !(entryPrice < rules.longshotMaxPrice)) return rules.maxPriceDrift;
+  const cap = rules.longshotDriftCap > 0 ? rules.longshotDriftCap : rules.maxPriceDrift;
+  return Math.min(cap, Math.max(rules.maxPriceDrift, rules.longshotDriftPct * entryPrice));
 }

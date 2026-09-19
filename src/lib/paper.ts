@@ -80,7 +80,14 @@ export function applyKellyBandRails(
   legacyEquivUsd: number,
   entryPrice: number
 ): number {
-  if (entryPrice >= 0.4 && entryPrice < 0.6) return Math.min(kellySizeUsd, legacyEquivUsd);
+  // v57 (2026-09-18 daily report change B, user-approved): the cap now covers
+  // [0.20, 0.60) — the 0.20–0.40 band has a SIGNIFICANT POSITIVE entry edge
+  // (+6.4pp, z=+2.37) yet −$429.77 realized all-time, and the 14d clip-size split
+  // is the explanation: ≤$15 → +$149 on 84 trades · $15–30 → −$116 on 17 ·
+  // ≥$30 → −$331 on 8. Its band map is ×1.0, so it fell through this rail to raw
+  // kellySizeUsd and could ride to the $100 ceiling. Caps at the legacy-equivalent
+  // size, exactly like the dead zone.
+  if (entryPrice >= 0.2 && entryPrice < 0.6) return Math.min(kellySizeUsd, legacyEquivUsd);
   if (entryPrice < 0.2) return Math.max(kellySizeUsd, legacyEquivUsd);
   return kellySizeUsd;
 }

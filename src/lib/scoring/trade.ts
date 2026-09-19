@@ -5,7 +5,7 @@
  */
 
 import { MarketState } from "../types";
-import { Rules } from "../rules";
+import { Rules, effectiveDriftTolerance } from "../rules";
 import { clampPaperSize } from "../safety";
 
 export interface TradeScoreInput {
@@ -84,8 +84,13 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     hardSkips.push(`spread ${spread.toFixed(3)} > max ${rules.maxSpread}`);
   if (liquidity < rules.minLiquidity)
     hardSkips.push(`liquidity $${liquidity.toFixed(0)} < min $${rules.minLiquidity}`);
-  if (drift > rules.maxPriceDrift)
-    hardSkips.push(`price drifted ${drift.toFixed(3)} since entry > max ${rules.maxPriceDrift} (too late)`);
+  // v57 change A: the tolerance is price-RELATIVE in the long-shot band, where a
+  // flat 0.4¢ is 2–8% of price instead of 0.7%. longshotDriftPct 0 = legacy.
+  const driftTolerance = effectiveDriftTolerance(rules, input.currentPrice);
+  if (drift > driftTolerance)
+    hardSkips.push(
+      `price drifted ${drift.toFixed(3)} since entry > max ${driftTolerance.toFixed(4)} (too late)`
+    );
   if (ttr !== undefined && ttr < rules.minTimeToResolutionHours)
     hardSkips.push(`resolves in ${ttr.toFixed(1)}h < min ${rules.minTimeToResolutionHours}h`);
   if (input.currentPrice > rules.maxEntryPrice || input.currentPrice < 1 - rules.maxEntryPrice)
