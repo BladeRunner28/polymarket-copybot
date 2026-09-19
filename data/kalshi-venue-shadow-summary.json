@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-18T03:20:02.876Z",
+  "asOf": "2026-09-19T03:26:06.765Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 549,
-    "inWindow": 154,
+    "copiesSeen": 606,
+    "inWindow": 211,
     "withKalshiQuote": 0,
     "crossListRate": 0,
     "staleSkips": 395,
-    "quoteFailures": 145,
-    "unverifiedMatches": 9,
+    "quoteFailures": 199,
+    "unverifiedMatches": 12,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 8
+      "low_match_score_0.67": 11
     }
   },
   "books": {
@@ -133,6 +133,36 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.455,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Liverpool FC win on 2026-09-20?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.535,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Elche CF win on 2026-09-18?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.185,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will US Cremonese win on 2026-09-19?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.535,
       "verified": false,
       "reason": "low_match_score_0.67"
     }

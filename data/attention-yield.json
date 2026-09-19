@@ -1,0 +1,24 @@
+{
+  "generated_from": "data/gdelt-shadow.jsonl",
+  "stories": 1702,
+  "days_covered": 10,
+  "events_matched": 4,
+  "events_per_day": 0.4,
+  "distinct_markets": 4,
+  "distinct_entities": 11,
+  "gate_events_per_day_15": false,
+  "gate_precision": "see data/attention-audit-sample.jsonl (hand-labelled)",
+  "drop_reasons": {
+    "entity_only_overlap": 367818,
+    "no_market_token_overlap": 286,
+    "ambiguous_entity": 284,
+    "not_live_at_event": 115,
+    "no_entity": 90,
+    "price_at_bound": 2
+  },
+  "events_per_day_series": {
+    "2026-09-02": 1,
+    "2026-09-05": 2,
+    "2026-09-16": 1
+  }
+}

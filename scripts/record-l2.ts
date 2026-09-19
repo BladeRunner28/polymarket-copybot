@@ -22,6 +22,12 @@ import { prisma } from "../src/lib/db";
 const WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 const GAMMA = "https://gamma-api.polymarket.com/markets"; // NOTE: no trailing slash — /markets?slug= 404s with one
 const L2_DIR = join(__dirname, "..", "data", "l2");
+// assetId -> marketId map. The L2 corpus is one file per CLOB asset id, and the DB does NOT
+// carry token ids (ObservedTrade.rawTradeJson is empty for all 283k rows), so without this map
+// every analysis has to re-resolve each file through Gamma (~300ms each). Append-only, one line
+// per market, written when the token list is first resolved. Takes effect on the next recorder
+// restart (the watchdog only restarts on death, so the running process keeps the old code).
+const ASSET_MAP = join(__dirname, "..", "data", "l2-asset-map.jsonl");
 const SNAPSHOT_MS = 5_000;
 const UNIVERSE_REFRESH_MS = 10 * 60_000;
 const MAX_MARKETS = 25;
@@ -47,6 +53,15 @@ function append(assetId: string, line: unknown) {
     appendFileSync(join(L2_DIR, `${assetId}.jsonl`), JSON.stringify(line) + "\n");
   } catch (e) {
     console.error(`[l2] append failed ${assetId}: ${e instanceof Error ? e.message : e}`);
+  }
+}
+
+/** Record which market a L2 asset file belongs to (see ASSET_MAP note above). */
+function appendAssetMap(marketId: string, assetIds: string[]) {
+  try {
+    appendFileSync(ASSET_MAP, JSON.stringify({ ts: Date.now(), marketId, assetIds }) + "\n");
+  } catch (e) {
+    console.error(`[l2] asset-map append failed ${marketId}: ${e instanceof Error ? e.message : e}`);
   }
 }
 
@@ -114,7 +129,10 @@ async function gammaTokenIds(marketId: string): Promise<string[] | null> {
     if (!res.ok) return null;
     const j = (await res.json()) as Array<{ clobTokenIds?: unknown }>;
     const ids = parseTokenIds(j?.[0]?.clobTokenIds);
-    if (ids.length > 0) tokenCache.set(marketId, ids);
+    if (ids.length > 0) {
+      tokenCache.set(marketId, ids);
+      appendAssetMap(marketId, ids);
+    }
     await new Promise((r) => setTimeout(r, 300)); // gamma rate-limit courtesy
     return ids.length > 0 ? ids : null;
   } catch {
