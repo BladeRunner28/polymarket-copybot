@@ -12,7 +12,7 @@ import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment"
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
-import { effectiveExposureCap, marketCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
+import { effectiveExposureCap, marketCapDecision, walletCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -208,6 +208,7 @@ async function main() {
     where: { botId: "BANKROLL_200", status: "open" },
     select: {
       marketId: true,
+      walletAddress: true, // v58: per-wallet ceiling input
       simulatedPositionSize: true,
       decision: { select: { observedTrade: { select: { marketQuestion: true, marketCategory: true } } } },
     },
@@ -224,6 +225,20 @@ async function main() {
   }
   const c200MarketNotionalCap =
     rules.maxMarketNotionalPctOfCap > 0 ? rules.maxMarketNotionalPctOfCap * c200ExposureCap : 0;
+  // v58 (tuning review #30 rec 1, user-approved): per-WALLET notional on the
+  // C-200 book, and the ceiling it is measured against. Same fraction-of-cap
+  // form as v55 so the rail scales with the equity-linked cap instead of
+  // becoming non-binding the moment the book grows (the way v55's fixed
+  // $125.12 ceiling did).
+  const c200WalletNotional = new Map<string, number>();
+  for (const row of c200OpenRows) {
+    c200WalletNotional.set(
+      row.walletAddress,
+      (c200WalletNotional.get(row.walletAddress) ?? 0) + (row.simulatedPositionSize ?? 0)
+    );
+  }
+  const c200WalletNotionalCap =
+    rules.maxWalletNotionalPctOfCap > 0 ? rules.maxWalletNotionalPctOfCap * c200ExposureCap : 0;
   const c200CategoryCounts = new Map<string, number>();
   const c200SlugCounts = new Map<string, number>(); // v45: raw marketCategory slug counts
   for (const row of c200OpenRows) {
@@ -733,7 +748,10 @@ async function main() {
             if (railedSize !== kelly.sizeUsd) {
               log(
                 `[KELLY-RAIL] ${t.marketId} band=${bandLabel} p=${currentPrice.toFixed(3)} ` +
-                  `${currentPrice >= 0.4 && currentPrice < 0.6 ? "dead-zone cap" : "long-shot floor"}: ` +
+                  // v57 change B widened the cap to [0.20, 0.60) — the old two-way
+                  // label printed "long-shot floor" for a 0.20–0.40 CAP, which
+                  // misreads the rail's own production evidence (observability only).
+                  `${currentPrice >= 0.4 ? "dead-zone cap" : currentPrice >= 0.2 ? "mid-band cap (v57-B)" : "long-shot floor"}: ` +
                   `kelly $${kelly.sizeUsd.toFixed(2)} vs legacy-equiv $${legacyEquiv.toFixed(2)} → $${railedSize.toFixed(2)}`
               );
             }
@@ -848,6 +866,28 @@ async function main() {
             }
             c200MarketLegs.set(t.marketId, legsHere + 1);
             c200MarketNotional.set(t.marketId, notionalHere + sizeHere);
+          }
+
+          // v58 (tuning review #30 rec 1, user-approved): per-WALLET
+          // concentration ceiling — the mirror of the v55 rail above, on the
+          // final size, so a late resize cannot game it. The wallet map is
+          // read only here, so the increment lives inside the pass branch and
+          // later candidates in THIS run already see earlier acceptances
+          // (the same per-cycle fix TR-14 applied to gross exposure).
+          if (botId === "BANKROLL_200" && c200WalletNotionalCap > 0) {
+            const walletHere = c200WalletNotional.get(t.walletAddress) ?? 0;
+            const walletSize = positionSize || 0.25;
+            const walletVerdict = walletCapDecision({
+              notionalAlready: walletHere,
+              sizeUsd: walletSize,
+              notionalCapUsd: c200WalletNotionalCap,
+            });
+            if (walletVerdict.blocked) {
+              log(`[BANKROLL_200] v58 per-wallet cap (${walletVerdict.why}) — skipping copy ${t.marketId}`);
+              legBlocks.push(`BANKROLL_200: v58 per-wallet cap (${walletVerdict.why})`);
+              continue;
+            }
+            c200WalletNotional.set(t.walletAddress, walletHere + walletSize);
           }
 
           await openPaperTrade({

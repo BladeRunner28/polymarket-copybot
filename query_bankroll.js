@@ -1,4 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
+const fs = require('fs');
+const path = require('path');
 const prisma = new PrismaClient();
 
 // C-200 phase goals — each phase requires STABILITY_DAYS consecutive days at
@@ -11,8 +13,39 @@ const PHASES = [
 ];
 const STABILITY_DAYS = 7;
 
+// Tuning review #30 rec 2 (2026-09-19, user-approved): the phase streak is a
+// measurement instrument and it was not reproducible across reviews. Sep 17 read
+// +$12.36 (31 legs) in #29 and +$714.75 (38) in #30 — the SAME DAY, two answers,
+// because a day's bucket keeps growing for a few days after it ends (positions
+// that closed on that date keep being booked as their exits/resolutions are
+// discovered). A day that clears the $500 bar was therefore banked as a MISS on
+// the day it happened, and no review could reproduce another review's streak.
+//
+// Convention now stated in the output itself:
+//   T+0        = bucket by closedAt ?? resolvedAt as the rows stand RIGHT NOW.
+//                Today's bucket is PROVISIONAL by construction.
+//   settled    = the same buckets, restricted to days that have had SETTLE_DAYS
+//                to finish booking (T-1 … T-SETTLE_DAYS excluded). This is the
+//                basis a phase ADVANCE is judged on; the T+0 streak is reported
+//                alongside it because it is what a same-day report prints.
+// Measurement only — no gate, threshold or trading behavior lives here.
+const SETTLE_DAYS = 3;
+
+// As-recorded history: the one thing the DB cannot reconstruct. Each run stores
+// TODAY's T+0 read for today's date; a later run (≥SETTLE_DAYS on) can then diff
+// "what the day read at T+0" against "what it settled at".
+const HISTORY_FILE = path.join(__dirname, 'data', 'phase-streak-history.json');
+
 function dayKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function readHistory() {
+  try {
+    return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+  } catch {
+    return {};
+  }
 }
 
 async function main() {
@@ -30,57 +63,76 @@ async function main() {
 
   // All closed/resolved C-200 trades in the last 14 days. Use the actual close
   // timestamp (closedAt for early exits, resolvedAt for resolved; Unix-ms
-  // ints) so daily PnL history and the stability streak are accurate.
+  // ints) so daily PnL history and the stability streak are accurate. NOTE: the
+  // Kalshi re-price rows re-join this series (kalshi-reprice-92, 2026-09-05) —
+  // the TR-17 venue exclusion is lifted.
   const since14 = new Date(startOfDay.getTime() - 13 * 86400000);
   const finished = await prisma.paperTrade.findMany({
     where: {
       botId: 'BANKROLL_200',
       status: { in: ['closed', 'resolved'] },
-      // kalshi-reprice-92 (2026-09-05, approved): the 92 legacy Kalshi rows
-      // were re-priced off the phantom 0.52 stub onto honest PM-reference
-      // entries (kalshiRealized −$50.70 → −$37.99, breaker floor −$50
-      // cleared) — the TR-17 venue exclusion is lifted, Kalshi re-joins the
-      // realized series / phase streak.
       OR: [{ closedAt: { gte: since14 } }, { resolvedAt: { gte: since14 } }],
     },
     select: { realizedPnl: true, closedAt: true, resolvedAt: true },
   });
 
+  // Per-day bucket, carrying both the money and the LEG COUNT: the leg count is
+  // what makes a "the day moved" claim checkable (`38 legs` not just `+$714.75`),
+  // and the closed/resolved split names which convention contributed what.
   const byDay = new Map();
   for (const t of finished) {
     const ts = t.closedAt ?? t.resolvedAt;
     if (!ts) continue;
     const k = dayKey(new Date(ts));
-    byDay.set(k, (byDay.get(k) ?? 0) + (t.realizedPnl ?? 0));
+    const e = byDay.get(k) ?? { pnl: 0, legs: 0, closedLegs: 0, resolvedLegs: 0 };
+    e.pnl += t.realizedPnl ?? 0;
+    e.legs += 1;
+    if (t.closedAt) e.closedLegs += 1;
+    else e.resolvedLegs += 1;
+    byDay.set(k, e);
   }
 
-  // Last 14 days of realized PnL, most recent first (days with no closes = $0).
-  const dailyPnl = [];
+  // Last 14 days, most recent first (days with no closes = $0 / 0 legs).
+  const EMPTY = { pnl: 0, legs: 0, closedLegs: 0, resolvedLegs: 0 };
+  const series = [];
   for (let i = 0; i < 14; i++) {
     const d = new Date(startOfDay.getTime() - i * 86400000);
-    dailyPnl.push(byDay.get(dayKey(d)) ?? 0);
+    series.push({ day: dayKey(d), ...(byDay.get(dayKey(d)) ?? EMPTY) });
   }
+  const dailyPnl = series.map((s) => s.pnl);
 
   // Current goal: a phase is CLEARED only after its target held for
-  // STABILITY_DAYS consecutive days; the goal advances accordingly.
-  let goalIdx = 0;
-  const last7 = dailyPnl.slice(0, STABILITY_DAYS);
-  for (let i = 0; i < PHASES.length; i++) {
-    if (last7.length === STABILITY_DAYS && last7.every((d) => d >= PHASES[i].target)) goalIdx = i + 1;
-    else break;
-  }
-  goalIdx = Math.min(goalIdx, PHASES.length - 1);
+  // STABILITY_DAYS consecutive days; the goal advances accordingly. Judged on the
+  // SETTLED window (the 7 days ending SETTLE_DAYS back) — the T+0 window is
+  // reported when the two disagree.
+  const goalFrom = (arr) => {
+    let idx = 0;
+    for (let i = 0; i < PHASES.length; i++) {
+      if (arr.length === STABILITY_DAYS && arr.every((d) => d >= PHASES[i].target)) idx = i + 1;
+      else break;
+    }
+    return Math.min(idx, PHASES.length - 1);
+  };
+  const settledStart = SETTLE_DAYS; // index of the youngest settled day
+  const settledWindow = dailyPnl.slice(settledStart, settledStart + STABILITY_DAYS);
+  const goalIdx = goalFrom(settledWindow);
+  const goalIdxT0 = goalFrom(dailyPnl.slice(0, STABILITY_DAYS));
   const goal = PHASES[goalIdx];
 
-  // Stability streak: consecutive days (from today back) meeting the CURRENT
-  // goal's target.
-  let streak = 0;
-  for (const d of dailyPnl) {
-    if (d >= goal.target) streak++;
-    else break;
-  }
+  // Streaks. T+0 starts at today (index 0); settled starts at the youngest
+  // settled day (index SETTLE_DAYS) and can only be as long as the settled data.
+  const streakFrom = (start) => {
+    let s = 0;
+    for (let i = start; i < dailyPnl.length; i++) {
+      if (dailyPnl[i] >= goal.target) s++;
+      else break;
+    }
+    return s;
+  };
+  const streakT0 = streakFrom(0);
+  const streakSettled = streakFrom(settledStart);
 
-  const realizedToday = byDay.get(dayKey(startOfDay)) ?? 0;
+  const realizedToday = byDay.get(dayKey(startOfDay)) ?? EMPTY;
   const openTrades = await prisma.paperTrade.aggregate({
     where: {
       botId: 'BANKROLL_200',
@@ -89,6 +141,35 @@ async function main() {
     _sum: { unrealizedPnl: true }
   });
   const openUnrealized = openTrades._sum.unrealizedPnl || 0;
+
+  // As-recorded snapshot of TODAY (overwritten on every run, so the file holds
+  // the last read of the current day; past days are frozen once the date rolls).
+  const history = readHistory();
+  const today = dayKey(startOfDay);
+  history[today] = {
+    asRecordedPnl: Number(realizedToday.pnl.toFixed(2)),
+    legs: realizedToday.legs,
+    streakT0,
+    recordedAt: new Date().toISOString(),
+    convention: 'closedAt ?? resolvedAt, as recorded at this timestamp',
+  };
+  let historyNote = '';
+  try {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 1));
+    historyNote = ` · as-recorded history: data/phase-streak-history.json (${Object.keys(history).length} days)`;
+  } catch (e) {
+    historyNote = ` · as-recorded history write FAILED (${e.message})`;
+  }
+
+  // Days where the T+0 snapshot (recorded then) differs from today's settled
+  // read — the settlement drift the settled streak exists to absorb.
+  const drift = [];
+  for (const s of series.slice(SETTLE_DAYS)) {
+    const h = history[s.day];
+    if (!h || typeof h.asRecordedPnl !== 'number') continue;
+    const d = s.pnl - h.asRecordedPnl;
+    if (Math.abs(d) >= 0.01) drift.push(`${s.day} ${h.asRecordedPnl.toFixed(2)} → ${s.pnl.toFixed(2)} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+  }
 
   // v52 (tuning review #19 rec 4, user-approved 2026-09-08):
   //  - "Today's PnL" is REALIZED-only, matching the phase-streak definition
@@ -99,13 +180,26 @@ async function main() {
   //    (size + pnl) at close time, so today's realized is ALREADY in cash —
   //    adding realizedToday double-counted it (e.g. $581.81 display on a
   //    cash balance that already held the day's closes).
+  // Reproduction line: the buckets above are LOCAL calendar days (the same
+  // boundary the ladder, the Overview cards and the EOD report use), so the SQL
+  // must carry this machine's UTC offset — a bare `date(ts/1000,'unixepoch')`
+  // reproduces the UTC-day numbers instead and silently disagrees (the documented
+  // "day boundaries differ by query" trap).
+  const offSec = -new Date().getTimezoneOffset() * 60; // CDT = -18000
+  const offsetExpr = offSec === 0 ? '' : `${offSec > 0 ? '+' : '-'}${Math.abs(offSec)}`;
+  const reproduce = `sqlite3 prisma/dev.db "SELECT date((COALESCE(closedAt,resolvedAt)/1000)${offsetExpr},'unixepoch') d, COUNT(*) legs, ROUND(SUM(realizedPnl),2) pnl FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0 AND status IN ('closed','resolved') GROUP BY d ORDER BY d DESC LIMIT 14;"`;
+
   console.log(`**C-200 Daily Progress Report**
-- **Goal:** $${goal.target}/day (${goal.name}${goalIdx > 0 ? " — CLEARED" : ""})
-- **Today's realized PnL:** $${realizedToday.toFixed(2)}
+- **Goal:** $${goal.target}/day (${goal.name}${goalIdx > 0 ? " — CLEARED" : ""})${goalIdx !== goalIdxT0 ? ` — ⚠️ T+0 window would read ${PHASES[goalIdxT0].name}` : ""}
+- **Today's realized PnL:** $${realizedToday.pnl.toFixed(2)} (${realizedToday.legs} legs, PROVISIONAL — settles over ~${SETTLE_DAYS} days)
 - **Open unrealized (book mark-to-market):** $${openUnrealized.toFixed(2)}
-- **Status:** ${realizedToday >= goal.target ? '[✅ ON TRACK]' : '[❌ BEHIND]'}
-- **Phase stability:** ${streak}/${STABILITY_DAYS} consecutive days at $${goal.target}/day (advance requires ${STABILITY_DAYS} days stable)
-- **Current Bankroll (cash):** $${bankroll.cashBalance.toFixed(2)}`);
+- **Status:** ${realizedToday.pnl >= goal.target ? '[✅ ON TRACK]' : '[❌ BEHIND]'}
+- **Phase stability (T+0):** ${streakT0}/${STABILITY_DAYS} consecutive days at $${goal.target}/day — convention: closedAt ?? resolvedAt, read NOW, today provisional
+- **Phase stability (settled, T+3):** ${streakSettled}/${STABILITY_DAYS} consecutive days at $${goal.target}/day from ${series[settledStart].day} back — last ${SETTLE_DAYS} days excluded while they settle; THIS is the basis a phase advance is judged on
+- **Daily realized (T+0 read, most recent first):** ${series.map((s) => `${s.day.slice(5)} ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs})`).join(" · ")}${drift.length ? `
+- **Settlement drift (recorded T+0 → settled now):** ${drift.join(" · ")}` : ''}${historyNote}
+- **Current Bankroll (cash):** $${bankroll.cashBalance.toFixed(2)}
+- **Reproduce:** \`${reproduce}\``);
 }
 
 main().finally(() => prisma.$disconnect());

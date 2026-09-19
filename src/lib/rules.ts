@@ -186,6 +186,14 @@ export interface Rules {
   // two markets). Two independent limits, whichever binds first; 0 = disabled.
   maxMarketNotionalPctOfCap: number; // ceiling = pct × effective exposure cap
   maxMarketLegsPerMarketId: number; // max open legs in one marketId
+  // v58 (2026-09-19 tuning review #30 rec 1, user-approved): PER-WALLET
+  // concentration ceiling — the mirror of the v55 per-market rail, and the
+  // half that did not exist. One wallet reached 84.6% of the C-200 book
+  // (top-3 94.1%) on a book that tripled to $1,179.45 while the per-market
+  // analogue was measured non-binding, so the two rails no longer confound
+  // each other. Expressed as a fraction of the effective exposure cap, so the
+  // ceiling scales with the equity-linked cap. 0 = disabled.
+  maxWalletNotionalPctOfCap: number; // ceiling = pct × effective exposure cap
   // v56 (2026-09-19 tuning review #29 rec 3, user-approved): the drawdown /
   // exposure BASIS as a first-class rule field, so "which basis is in force" is
   // a versioned fact in the RuleSet rather than only a line in a state file.
@@ -319,6 +327,8 @@ export const DEFAULT_RULES: Rules = {
   // is an explicit ruleset change).
   maxMarketNotionalPctOfCap: 0,
   maxMarketLegsPerMarketId: 0,
+  // v58: per-wallet ceiling disabled by default, same convention.
+  maxWalletNotionalPctOfCap: 0,
   ddBasis: "mtm",
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],

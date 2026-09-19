@@ -73,6 +73,44 @@ export function marketCapDecision(i: MarketCapInput): MarketCapDecision {
 }
 
 /**
+ * v58 (2026-09-19 tuning review #30 rec 1, user-approved): per-WALLET
+ * concentration ceiling — the mirror of `marketCapDecision`, applied to the
+ * copying WALLET instead of the marketId.
+ *
+ * Why the wallet axis: at the v55 activation the two rails confounded each
+ * other (a per-wallet limit could also have cut per-market accumulation), so
+ * #29 deliberately held the wallet rail back until the market rail was
+ * MEASURED. It now is — 10 blocks, all 2026-09-18 08:36-08:52 at the pre-growth
+ * $125.12 ceiling, 0 since the cap rose to $1,734.50, max 2 legs/market — i.e.
+ * non-binding, while one wallet carries 84.6% of the book. No leg limit here:
+ * `maxMarketLegsPerMarketId` already bounds legs per market, and a wallet
+ * ceiling on legs would be a different rule than the one approved.
+ *
+ * Pure — the caller owns the map and applies the increment.
+ */
+export interface WalletCapInput {
+  notionalAlready: number;
+  sizeUsd: number;
+  notionalCapUsd: number;
+}
+
+export interface WalletCapDecision {
+  blocked: boolean;
+  why?: string;
+}
+
+export function walletCapDecision(i: WalletCapInput): WalletCapDecision {
+  const projected = i.notionalAlready + i.sizeUsd;
+  if (i.notionalCapUsd > 0 && projected > i.notionalCapUsd) {
+    return {
+      blocked: true,
+      why: `notional $${projected.toFixed(2)} > cap $${i.notionalCapUsd.toFixed(2)}`,
+    };
+  }
+  return { blocked: false };
+}
+
+/**
  * #29 rec 2 (2026-09-19, user-approved): is this veto reason a PORTFOLIO gate?
  *
  * Portfolio gates fire BEFORE the per-bot leg loop, so when they block everything
