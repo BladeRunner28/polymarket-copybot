@@ -111,6 +111,14 @@ export interface DriftSummary {
   /** How many settled candidates the dust floor removed. */
   dustExcluded: number;
   dustMinEntryPrice: number;
+  /**
+   * Trailing-window read (2026-09-20, tuning #31 rec 2 support): the same
+   * ex-dust mean restricted to candidates DECIDED in the last 7 days. The
+   * cumulative figure above drifts mechanically as settled rows accumulate,
+   * so the pre-registered decay bar reads both.
+   */
+  avgPnlPerTradeExDustLast7dCohort: number | null;
+  cohort7dMarked: number;
   /** Same, but priced at the market's last observed mark for candidates still open. */
   totalMarked: number;
   stakeUsd: number;
@@ -129,6 +137,10 @@ export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSumma
   let pnl = 0;
   let pnlExDust = 0;
   let markedExDust = 0;
+  // trailing 7-day cohort (decision date, not settle date)
+  const cohortCutoff = Date.now() - 7 * 86400000;
+  let cohortPnl = 0;
+  let cohortMarked = 0;
   for (const c of candidates) {
     const v = resolves.get(`${c.marketId}|${c.outcome}`);
     if (v === undefined) continue;
@@ -140,6 +152,11 @@ export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSumma
     if (entry >= DRIFT_DUST_MIN_ENTRY) {
       pnlExDust += rowPnl;
       markedExDust++;
+      const decidedAt = Date.parse(String(c.ts));
+      if (Number.isFinite(decidedAt) && decidedAt >= cohortCutoff) {
+        cohortPnl += rowPnl;
+        cohortMarked++;
+      }
     }
   }
   const ts = candidates.map((r) => String(r.ts)).sort();
@@ -155,6 +172,8 @@ export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSumma
     avgPnlPerTradeExDust: markedExDust ? Math.round((pnlExDust / markedExDust) * 100) / 100 : null,
     dustExcluded: marked - markedExDust,
     dustMinEntryPrice: DRIFT_DUST_MIN_ENTRY,
+    avgPnlPerTradeExDustLast7dCohort: cohortMarked ? Math.round((cohortPnl / cohortMarked) * 100) / 100 : null,
+    cohort7dMarked: cohortMarked,
     totalMarked: marked,
     stakeUsd: DRIFT_SHADOW_STAKE_USD,
     firstCandidateAt: ts.length ? ts[0] : null,

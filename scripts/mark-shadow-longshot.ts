@@ -29,6 +29,7 @@ import {
 } from "../src/lib/shadow-wallet-cap";
 import { log, logError } from "../src/lib/redact";
 import * as fs from "fs";
+import { join } from "path";
 
 /**
  * Bound the work per run. The drift feed grows ~2k candidates/day (the gate is
@@ -37,6 +38,20 @@ import * as fs from "fs";
  * so each run finishes and the backlog drains steadily.
  */
 const MARK_LIMIT = Number(process.env.MARK_LIMIT ?? 300);
+
+// 2026-09-20 tuning review #31 rec 2 (user-approved): PRE-REGISTERED DECAY BAR on
+// the drift gate's counterfactual edge. The gate is the book's largest volume
+// blocker and its expectancy has decayed three windows running
+// (avgPnlPerTradeExDust $1.29 -> $0.88 -> $0.67), so a relaxation is only justified
+// if the edge is actually gone. Rule, fixed now and not to be re-tuned at the read:
+//   IF avgPnlPerTradeExDust <= $0.50 on 7 CONSECUTIVE days,
+//   THEN a maxPriceDrift / longshotDriftPct relaxation is brought forward,
+//   attributed by ruleSetVersion (never as one total across v55-v59).
+// Until the bar trips, maxPriceDrift keeps its value. Dated series: one row per run
+// (the day's LAST row is the day's value), so the 7-day condition is computable.
+const DRIFT_DECAY_SERIES_FILE = join(__dirname, "..", "data", "drift-decay-series.jsonl");
+const DRIFT_DECAY_BAR_USD = Number(process.env.DRIFT_DECAY_BAR_USD ?? 0.5);
+const DRIFT_DECAY_DAYS = Number(process.env.DRIFT_DECAY_DAYS ?? 7);
 
 function capPending<T>(m: Map<string, T>, limit = MARK_LIMIT): Map<string, T> {
   if (m.size <= limit) return m;
@@ -137,7 +152,66 @@ async function main() {
     dResolved++;
   }
   const dSummary = summarizeDrift(readDriftRows());
-  fs.writeFileSync(DRIFT_SHADOW_SUMMARY_FILE, JSON.stringify(dSummary, null, 2));
+
+  // ---- rec 2: dated series + the pre-registered bar --------------------------
+  const decayRow = {
+    ts: new Date().toISOString(),
+    day: new Date().toISOString().slice(0, 10),
+    avgPnlPerTradeExDust: dSummary.avgPnlPerTradeExDust,
+    marked: dSummary.marked,
+    dustExcluded: dSummary.dustExcluded,
+  };
+  let decaySeries: Array<{ day: string; avgPnlPerTradeExDust: number | null }> = [];
+  try {
+    fs.appendFileSync(
+      DRIFT_DECAY_SERIES_FILE,
+      JSON.stringify(decayRow) + "\n"
+    );
+    decaySeries = fs
+      .readFileSync(DRIFT_DECAY_SERIES_FILE, "utf-8")
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l) as { day: string; avgPnlPerTradeExDust: number | null });
+    // the day's LAST reading is the day's value (a day can be marked many times)
+    const byDay = new Map<string, { day: string; avgPnlPerTradeExDust: number | null }>();
+    for (const r of decaySeries) byDay.set(r.day, r);
+    decaySeries = [...byDay.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
+  } catch (e) {
+    logError(`[DRIFT-DECAY] series write/read failed: ${e instanceof Error ? e.message : e}`);
+  }
+  const lastN = decaySeries.slice(-DRIFT_DECAY_DAYS);
+  let consecutive = 0;
+  for (let i = decaySeries.length - 1; i >= 0; i--) {
+    const v = decaySeries[i].avgPnlPerTradeExDust;
+    if (v !== null && v <= DRIFT_DECAY_BAR_USD) consecutive++;
+    else break;
+  }
+  // The bar requires BOTH reads to be at/below the threshold: the cumulative mean
+  // drifts mechanically as settled rows accumulate, the trailing 7-day cohort does
+  // not. Pre-registered 2026-09-20 (before either number was ever read).
+  const cohortValue = dSummary.avgPnlPerTradeExDustLast7dCohort;
+  const cohortOk = cohortValue !== null && cohortValue <= DRIFT_DECAY_BAR_USD;
+  const decayBar = {
+    thresholdUsd: DRIFT_DECAY_BAR_USD,
+    daysRequired: DRIFT_DECAY_DAYS,
+    consecutiveDaysAtOrBelow: consecutive,
+    cohort7d: cohortValue,
+    cohort7dMarked: dSummary.cohort7dMarked,
+    cohortAtOrBelow: cohortOk,
+    tripped: consecutive >= DRIFT_DECAY_DAYS && cohortOk,
+    seriesDays: decaySeries.length,
+    recent: lastN.map((r) => ({ day: r.day, avgPnlPerTradeExDust: r.avgPnlPerTradeExDust })),
+    rule:
+      "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $" +
+      DRIFT_DECAY_BAR_USD +
+      " for " +
+      DRIFT_DECAY_DAYS +
+      " consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value.",
+  };
+  fs.writeFileSync(
+    DRIFT_SHADOW_SUMMARY_FILE,
+    JSON.stringify({ ...dSummary, decayBar }, null, 2)
+  );
   log(
     `shadow-drift: +${dResolved} marked this run (cap ${MARK_LIMIT}/run, backlog ${dPending.size}). ` +
       `Gate counterfactual: ${dSummary.candidates} would-have entries, ` +

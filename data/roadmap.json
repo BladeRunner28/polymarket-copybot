@@ -777,11 +777,11 @@
     {
       "id": "ml-doctrine-time-and-era-splits",
       "title": "ML doctrine \u2014 time-ordered + ruleSetVersion era-aware splits, never random row folds",
-      "column": "Backlog",
+      "column": "Scheduled",
       "effort": "~2h (shared split helper + short doc)",
-      "dates": "Proposed 2026-09-16 (follows the model-data audit)",
-      "gate": "One shared split utility (time-ordered holdout + ruleSetVersion era handling) used by every fit/eval script in scripts/; any report whose folds are random rows is rejected. Precedent to reuse: the fold designs already pre-registered in scripts/fit-price-edge.py (wallet-blocked + walk-forward).",
-      "note": "The current label set spans ruleSetVersion 1-53 with 63% of rows from v1-v3 (v2 alone = 488) while the live policy is v54; the feature vector contains policy outputs, so era mixing teaches the average of ~50 policies. The skip probe adds 77k more rows ACROSS eras, so the problem gets worse, not better (in the probe: pre-live skips -0.0199/sh vs live-regime skips +0.0159/sh - a sign flip by era that a pooled model would average away).",
+      "dates": "Promoted 2026-09-20 (tuning review #31 rec 4, user-approved) \u00b7 helper + doc when ML-1 fit work starts",
+      "gate": "One shared split utility (time-ordered holdout + ruleSetVersion era handling) used by every fit/eval script in scripts/; any report whose folds are random rows is rejected. Precedent to reuse: the fold designs already pre-registered in scripts/fit-price-edge.py (wallet-blocked + walk-forward). PROMOTED 2026-09-20: the export half is DONE (training_data.csv now carries ruleSetVersion, era, decision_at, simulated_pnl), so what remains is the shared split helper + the short doc. Verify 7d: every fit/eval script in scripts/ uses the helper (no random-row folds), and a report quoting a metric names its era and its time order.",
+      "note": "The current label set spans ruleSetVersion 1-53 with 63% of rows from v1-v3 (v2 alone = 488) while the live policy is v54; the feature vector contains policy outputs, so era mixing teaches the average of ~50 policies. The skip probe adds 77k more rows ACROSS eras, so the problem gets worse, not better (in the probe: pre-live skips -0.0199/sh vs live-regime skips +0.0159/sh - a sign flip by era that a pooled model would average away). MEASURED 2026-09-20 (this is why the era split matters, not just doctrine): the export's own per-era breakdown reads pre-kelly-v1-48 n=1,855 60.2% good avg +$0.22 | kelly-window-v49-57 n=782 44.9% good avg -$0.24 | exposure-v58plus n=1. The era the live policy ran in is the WORST cohort on good-rate and the only negative-avg one, while the retired era looks best \u2014 a random-row fold would average them and report the retirement as the improvement. eraOf() boundaries (documented in scripts/export-training-data.ts): v<49 pre-kelly-v1-48, v49-57 kelly-window, v>=58 exposure-v58plus; unversioned rows stay 'unknown'.",
       "tags": [
         "ml",
         "doctrine",
@@ -1121,6 +1121,49 @@
         "measurement",
         "decision",
         "c200"
+      ]
+    },
+    {
+      "id": "tr31-rec1-asrecorded-log",
+      "title": "Rec 1 \u2014 immutable as-recorded daily series (audit the T+0 read across reviews)",
+      "column": "Done",
+      "effort": "~1h (query_bankroll.js log + print)",
+      "dates": "Applied 2026-09-20 (tuning review #31 rec 1, user-approved)",
+      "gate": "VERIFIED 2026-09-20: data/phase-streak-log.jsonl appends one row per run per recent day (4 rows on the first run, both day conventions inside each row) and query_bankroll.js prints 'As-recorded vs now' plus the UTC cross-check line. 7d: >=7 dated rows and every day's as-recorded value recoverable from the log alone.",
+      "note": "PREMISE CORRECTED, INSTRUMENT SHIPPED ANYWAY. The rec claimed the daily read is mutable under one convention ('Sep 18 +$1,005.21/18 in #30 vs +$993.70/12 today, same convention'). Measured: Sep 18 reads local 12 legs / +$993.70 and UTC 18 legs / +$1,005.21, both stable and reproducible from the same rows, and ZERO rows carry both closedAt and resolvedAt (so a row cannot move buckets by gaining a stamp) \u2014 the comparison was local vs UTC, the third instance of that mix-up. The auditability gap is real, though: data/phase-streak-history.json OVERWRITES each day's entry, so what the day read at 18:00 is gone by the next run. Now: an append-only log (ts, day, local pnl/legs, utc pnl/legs, convention), the as-recorded vs now diff printed beside the live read, and the UTC counterpart printed alongside with an explicit 'do NOT compare' label.",
+      "tags": [
+        "measurement",
+        "phase-gate",
+        "reporting"
+      ]
+    },
+    {
+      "id": "tr31-rec2-drift-decay-bar",
+      "title": "Rec 2 \u2014 PRE-REGISTERED decay bar on the drift gate's counterfactual edge (no rule change)",
+      "column": "Scheduled",
+      "effort": "~45 min (series + bar in the marker; no threshold moves)",
+      "dates": "Pre-registered 2026-09-20 (tuning review #31 rec 2, user-approved) \u00b7 bar reads daily, decision earliest 2026-09-27",
+      "gate": "PRE-REGISTERED RULE (fixed before any number was read, not to be re-tuned at the read): a maxPriceDrift / longshotDriftPct relaxation is brought forward ONLY IF avgPnlPerTradeExDust <= $0.50 on 7 consecutive days AND the trailing-7d cohort mean is also <= $0.50 \u2014 attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Read: `jq .decayBar data/drift-shadow-summary.json`. Until it trips, maxPriceDrift keeps its value.",
+      "note": "WHY: the drift gate is the book's #1 skip reason (28.9% of 7,556 skips) while its own counterfactual expectancy has decayed three windows running ($1.29 -> $0.88 -> $0.67 per trade ex-dust; $0.56 at the 2026-09-20 mark), and the gate's relaxation for <0.20 entries (v57-A) produced no visible feed effect (that band fell 8 -> 4 legs a window). The bar prevents a relaxation being argued from a decaying number without saying when it would be justified. TWO reads are required because the cumulative mean drifts MECHANICALLY as settled rows accumulate \u2014 it can cross $0.50 because the sample grew, not because the edge is gone; the trailing cohort (settled candidates decided in the last 7 days, 1,819 rows today) is the honest 'is the edge gone now' figure. Series: data/drift-decay-series.jsonl (one row per marker run; a day's last row is the day's value).",
+      "tags": [
+        "copy-score",
+        "drift-gate",
+        "pre-registered",
+        "measurement"
+      ]
+    },
+    {
+      "id": "tr31-rec3-scan-partial-loud",
+      "title": "Rec 3 \u2014 wallet-scan partials are LOUD (log line + alert + EOD coverage line)",
+      "column": "Done",
+      "effort": "~1h (scan-wallets events/state + EOD line)",
+      "dates": "Applied 2026-09-20 (tuning review #31 rec 3, user-approved)",
+      "gate": "VERIFY 7d: `grep -c '\\[SCAN PARTIAL\\]' logs/cron/copybot-scan-wallets.log` equals the count of `Wallet scan complete: N/25` lines with N<25 in the same window, and is 0 when no partial occurred. The EOD carries `\u2022 Wallet scan: N/M profiled (last run HH:MM) \u00b7 K partials in 7d`.",
+      "note": "Six lifetime partials, each reporting a normal completion line and no alert, so 2 wallets silently stopped being profiled until the next hourly cycle (09-09 03:48 23/25, 09-11 02:26 23/25, 09-12 12:36 24/25, 09-13 04:09 24/25, 09-18 14:57 19/25, 09-19 17:52 23/25). Now: `[SCAN PARTIAL] profiled N/M \u2014 K wallet(s) NOT profiled this run (first failure: \u2026)` emitted AFTER the completion line (so the runner's `tail -6` keeps it), an append-only event log data/scan-partials.jsonl, a state file data/scan-wallets-state.json, and a Discord ping rate-limited to one per 6h. Instrumentation only \u2014 no retry, no schedule change, no threshold. EOD line verified in a dry run 2026-09-20: 'Wallet scan: 25/25 profiled (last run 14:04) \u00b7 0 partials in 7d'.",
+      "tags": [
+        "telemetry",
+        "reliability",
+        "scan-wallets"
       ]
     }
   ]

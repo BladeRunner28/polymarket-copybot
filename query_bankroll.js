@@ -36,6 +36,17 @@ const SETTLE_DAYS = 3;
 // "what the day read at T+0" against "what it settled at".
 const HISTORY_FILE = path.join(__dirname, 'data', 'phase-streak-history.json');
 
+// Tuning #31 rec 1 (2026-09-20, user-approved): an IMMUTABLE as-recorded series.
+// HISTORY_FILE is a per-day map that every run OVERWRITES, so the value a day read
+// at 18:00 is gone by the next run — which is what makes 'the daily read moved'
+// unfalsifiable across reviews. This log only ever appends: one row per run per
+// recent day, carrying BOTH day conventions (the gate's local calendar day and the
+// UTC day an ad-hoc review SQL returns), so a later review can diff as-recorded vs
+// re-read AND tell instantly which basis it is quoting.
+const AS_RECORDED_LOG = path.join(__dirname, 'data', 'phase-streak-log.jsonl');
+// Days still capable of moving (today + the settle window); older days are frozen.
+const AS_RECORDED_DAYS = SETTLE_DAYS + 1;
+
 function dayKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -161,6 +172,87 @@ async function main() {
     historyNote = ` · as-recorded history write FAILED (${e.message})`;
   }
 
+  // ---- immutable as-recorded log (rec 1) -------------------------------------
+  // UTC counterpart of the same buckets, computed once here so the log row and the
+  // printed cross-check cannot disagree.
+  const utcKey = (d) => d.toISOString().slice(0, 10);
+  const byDayUtc = new Map();
+  for (const t of finished) {
+    const ts = t.closedAt ?? t.resolvedAt;
+    if (!ts) continue;
+    const k = utcKey(new Date(ts));
+    const e = byDayUtc.get(k) ?? { pnl: 0, legs: 0 };
+    e.pnl += t.realizedPnl ?? 0;
+    e.legs += 1;
+    byDayUtc.set(k, e);
+  }
+
+  const readLog = () => {
+    try {
+      return fs
+        .readFileSync(AS_RECORDED_LOG, 'utf-8')
+        .split('\n')
+        .filter((l) => l.trim().length > 0)
+        .map((l) => JSON.parse(l));
+    } catch {
+      return [];
+    }
+  };
+  const priorLog = readLog();
+  const appended = [];
+  for (let i = 0; i < AS_RECORDED_DAYS; i++) {
+    const day = series[i].day;
+    const u = byDayUtc.get(day) ?? { pnl: 0, legs: 0 };
+    appended.push({
+      ts: new Date().toISOString(),
+      day,
+      // declared convention first: the gate/ladder/Overview local calendar day
+      localPnl: Number(series[i].pnl.toFixed(2)),
+      localLegs: series[i].legs,
+      // the UTC day an ad-hoc review SQL returns (kept so quoting it is explicit)
+      utcPnl: Number(u.pnl.toFixed(2)),
+      utcLegs: u.legs,
+      convention: 'closedAt ?? resolvedAt · local = America/Chicago calendar day',
+      ruleSetVersion: null,
+    });
+  }
+  let logNote = '';
+  try {
+    fs.appendFileSync(AS_RECORDED_LOG, appended.map((r) => JSON.stringify(r)).join('\n') + '\n');
+    logNote = ` · immutable log: data/phase-streak-log.jsonl (+${appended.length} rows, ${priorLog.length + appended.length} total)`;
+  } catch (e) {
+    logNote = ` · immutable log write FAILED (${e.message})`;
+  }
+
+  // As-recorded vs now: the FIRST row logged for a day is what it read when the log
+  // first saw it (T+0); the live value is the re-read. Days with no row predate the
+  // log and are reported as such rather than silently omitted.
+  const firstByDay = new Map();
+  for (const r of priorLog) {
+    if (!firstByDay.has(r.day)) firstByDay.set(r.day, r);
+  }
+  const asRecorded = series
+    .slice(0, 4)
+    .map((s) => {
+      const f = firstByDay.get(s.day);
+      if (!f)
+        return `${s.day.slice(5)} baseline (first row recorded now: ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs}))`;
+      const when = new Date(f.ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Chicago' });
+      const moved = Math.abs(f.localPnl - s.pnl) >= 0.01 || f.localLegs !== s.legs;
+      return (
+        `${s.day.slice(5)} as-recorded ${when} ${f.localPnl >= 0 ? '+' : ''}${f.localPnl.toFixed(2)} (${f.localLegs}) → ` +
+        `now ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs})${moved ? ' ⇐ MOVED' : ''}`
+      );
+    })
+    .join(' · ');
+  const utcCrossCheck = series
+    .slice(0, 3)
+    .map((s) => {
+      const u = byDayUtc.get(s.day) ?? { pnl: 0, legs: 0 };
+      return `${s.day.slice(5)} ${u.pnl >= 0 ? '+' : ''}${u.pnl.toFixed(2)} (${u.legs})`;
+    })
+    .join(' · ');
+
   // Days where the T+0 snapshot (recorded then) differs from today's settled
   // read — the settlement drift the settled streak exists to absorb.
   const drift = [];
@@ -198,6 +290,8 @@ async function main() {
 - **Phase stability (settled, T+3):** ${streakSettled}/${STABILITY_DAYS} consecutive days at $${goal.target}/day from ${series[settledStart].day} back — last ${SETTLE_DAYS} days excluded while they settle; THIS is the basis a phase advance is judged on
 - **Daily realized (T+0 read, most recent first):** ${series.map((s) => `${s.day.slice(5)} ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs})`).join(" · ")}${drift.length ? `
 - **Settlement drift (recorded T+0 → settled now):** ${drift.join(" · ")}` : ''}${historyNote}
+- **As-recorded vs now (declared basis = local, immutable \`data/phase-streak-log.jsonl\`):** ${asRecorded}${logNote}
+- **Cross-check, UTC basis (what an ad-hoc \`date(ts/1000,'unixepoch')\` returns — do NOT compare it to the line above):** ${utcCrossCheck}
 - **Current Bankroll (cash):** $${bankroll.cashBalance.toFixed(2)}
 - **Reproduce:** \`${reproduce}\``);
 }

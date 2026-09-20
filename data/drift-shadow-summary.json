@@ -1,17 +1,36 @@
 {
-  "generatedAt": "2026-09-20T02:35:38.886Z",
-  "candidates": 9843,
-  "marked": 2383,
-  "awaitingResolution": 7460,
-  "wins": 1386,
-  "winRate": 0.5816198069660092,
-  "wouldHavePnl": 36785.67,
-  "avgPnlPerTrade": 15.44,
-  "avgPnlPerTradeExDust": 0.67,
-  "dustExcluded": 587,
+  "generatedAt": "2026-09-20T19:02:02.398Z",
+  "candidates": 12767,
+  "marked": 2412,
+  "awaitingResolution": 10355,
+  "wins": 1389,
+  "winRate": 0.5758706467661692,
+  "wouldHavePnl": 36525.77,
+  "avgPnlPerTrade": 15.14,
+  "avgPnlPerTradeExDust": 0.56,
+  "dustExcluded": 593,
   "dustMinEntryPrice": 0.1,
-  "totalMarked": 2383,
+  "avgPnlPerTradeExDustLast7dCohort": 0.56,
+  "cohort7dMarked": 1819,
+  "totalMarked": 2412,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-09-20T02:30:45.393Z"
+  "lastCandidateAt": "2026-09-20T18:58:55.693Z",
+  "decayBar": {
+    "thresholdUsd": 0.5,
+    "daysRequired": 7,
+    "consecutiveDaysAtOrBelow": 0,
+    "cohort7d": 0.56,
+    "cohort7dMarked": 1819,
+    "cohortAtOrBelow": false,
+    "tripped": false,
+    "seriesDays": 1,
+    "recent": [
+      {
+        "day": "2026-09-20",
+        "avgPnlPerTradeExDust": 0.56
+      }
+    ],
+    "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
+  }
 }

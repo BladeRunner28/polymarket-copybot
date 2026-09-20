@@ -27,6 +27,47 @@ import { prisma } from "./db";
 import { computeBenchmarks } from "./benchmarks";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
+import * as fs from "fs";
+import { join } from "path";
+
+const SCAN_STATE_FILE = join(__dirname, "..", "..", "data", "scan-wallets-state.json");
+const SCAN_PARTIALS_FILE = join(__dirname, "..", "..", "data", "scan-partials.jsonl");
+
+/**
+ * Wallet-scan coverage line (2026-09-20 tuning review #31 rec 3, user-approved).
+ *
+ * A partial profile run is silent otherwise: the scan job still prints a normal
+ * completion line, so a report reader cannot tell a quiet cycle from 2 wallets
+ * that stopped being profiled. Reads the scan job's own state file (latest run)
+ * and event log (one row per partial) — measurement only, no behavior change.
+ */
+function walletScanLine(): string | undefined {
+  let state: { lastRunAt?: string; profiled?: number; target?: number } | null = null;
+  try {
+    state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
+  } catch {
+    return undefined;
+  }
+  if (!state || typeof state.profiled !== "number") return undefined;
+  let partials7d = 0;
+  try {
+    const cutoff = Date.now() - 7 * 86400000;
+    partials7d = fs
+      .readFileSync(SCAN_PARTIALS_FILE, "utf-8")
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l) as { ts?: string })
+      .filter((r) => r.ts && new Date(r.ts).getTime() >= cutoff).length;
+  } catch {
+    partials7d = 0;
+  }
+  const covered = `${state.profiled}/${state.target ?? "?"}`;
+  const complete = state.profiled === state.target;
+  const when = state.lastRunAt
+    ? new Date(state.lastRunAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : "?";
+  return `• Wallet scan: ${complete ? "" : "⚠️ "}${covered} profiled (last run ${when}) · ${partials7d} partial${partials7d === 1 ? "" : "s"} in 7d`;
+}
 
 /** Local calendar date (YYYY-MM-DD) — the label is the day the report covers. */
 function localDate(d: Date): string {
@@ -213,6 +254,7 @@ export async function generateDailyReport(
       ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${c.reason}`).join("; ")}`
       : `• Rule changes: none`,
     `• Top lesson: ${lesson}`,
+    walletScanLine(),
     tailRows.length > 0
       ? `• Late tail carried from ${localDate(tailStart)} (booked after its previous report): C-200 ${fmt(tailCmp)} / STANDARD ${fmt(tailStd)} — ${tailRows.length} trades`
       : undefined,

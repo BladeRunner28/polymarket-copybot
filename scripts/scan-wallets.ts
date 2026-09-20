@@ -9,9 +9,23 @@ import { getAdapter } from "../src/lib/adapters";
 import { getActiveRules } from "../src/lib/rules";
 import { scoreWallet, walletStatus } from "../src/lib/scoring/wallet";
 import { log, logError } from "../src/lib/redact";
+import { sendDiscord } from "../src/lib/discord";
+import * as fs from "fs";
+import { join } from "path";
 
 const SCAN_LIMIT = Number(process.env.WALLET_SCAN_LIMIT ?? 25);
 const LOOKBACK_DAYS = 30;
+
+// 2026-09-20 tuning review #31 rec 3 (user-approved): a partial profile run used
+// to be indistinguishable from a clean one — 6 lifetime occurrences, each logging
+// a normal completion line, each silently leaving N wallets unprofiled until the
+// next cycle. Two artifacts: an append-only event log (one row per partial, so the
+// EOD can count a window) and a state file (the latest run, partial or not, so the
+// EOD line can print the real coverage). The Discord ping is rate-limited to 6h so
+// a transient connector fault cannot spam.
+const SCAN_STATE_FILE = join(__dirname, "..", "data", "scan-wallets-state.json");
+const SCAN_PARTIALS_FILE = join(__dirname, "..", "data", "scan-partials.jsonl");
+const PARTIAL_ALERT_EVERY_MS = 6 * 3_600_000;
 
 async function main() {
   const adapter = getAdapter();
@@ -115,6 +129,61 @@ async function main() {
   }
   // Completion line last so `tail -N` log capture always includes it.
   log(`Wallet scan complete: ${profiled}/${wallets.length} profiled.`);
+
+  // rec 3: the partial condition is the whole point of this block — it is
+  // emitted AFTER the completion line so the runner's `tail -6` keeps it.
+  const partial = profiled < wallets.length;
+  const nowIso = new Date().toISOString();
+  try {
+    if (partial) {
+      log(
+        `[SCAN PARTIAL] profiled ${profiled}/${wallets.length} — ${wallets.length - profiled} wallet(s) NOT profiled this run ` +
+          `(first failure: ${failures[0] ?? "unknown"})`
+      );
+      fs.appendFileSync(
+        SCAN_PARTIALS_FILE,
+        JSON.stringify({ ts: nowIso, profiled, target: wallets.length, failures: failures.slice(0, 5) }) + "\n"
+      );
+    }
+    let prev: { lastAlertAtMs?: number; lastPartialAt?: string | null } = {};
+    try {
+      prev = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
+    } catch {
+      prev = {};
+    }
+    const lastAlertAtMs = partial ? prev.lastAlertAtMs ?? 0 : prev.lastAlertAtMs;
+    fs.writeFileSync(
+      SCAN_STATE_FILE,
+      JSON.stringify(
+        {
+          lastRunAt: nowIso,
+          profiled,
+          target: wallets.length,
+          partial,
+          failures: failures.slice(0, 5),
+          lastPartialAt: partial ? nowIso : prev.lastPartialAt ?? null,
+          lastAlertAtMs,
+        },
+        null,
+        2
+      )
+    );
+    if (partial && Date.now() - (lastAlertAtMs ?? 0) > PARTIAL_ALERT_EVERY_MS) {
+      await sendDiscord(
+        [
+          "⚠️ **Wallet scan PARTIAL** _(paper only)_",
+          `**Profiled:** ${profiled}/${wallets.length} — ${wallets.length - profiled} wallet(s) skipped this cycle`,
+          `**First failure:** ${(failures[0] ?? "unknown").slice(0, 180)}`,
+          "_Those wallets keep their last scores until the next hourly run; repeated partials mean an API or DB fault, not a quiet cycle._",
+        ].join("\n")
+      );
+      const state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
+      state.lastAlertAtMs = Date.now();
+      fs.writeFileSync(SCAN_STATE_FILE, JSON.stringify(state, null, 2));
+    }
+  } catch (e) {
+    logError(`[SCAN PARTIAL] reporting failed: ${e instanceof Error ? e.message : e}`);
+  }
 }
 
 main()
