@@ -136,8 +136,12 @@ roadmap → 200; new cards wallet-cap-shadow-lane (In Progress),
       exit-exemption-20-40-decision (Backlog, pre-committed rule), v58/v59 card
 ```
 
-**Open / first-sample items.** The first scoring cycle started after the v59 apply
-is the load-bearing check: the top wallet should open legs again, and any residual
-veto must carry `basis delta: $X grandfathered + $Y allowance`. The shadow feed needs
-a few days of settlements before its per-band read means anything (the card's gate
-says so explicitly).
+**First-sample check — PASSED (2026-09-20 04:59:26 CDT).** The first scoring cycle
+that read v59 opened a C-200 copy from `0xb0c85813a7a4428f1139ff91d3118a92c391fe7f`
+— the wallet that had been frozen outright — at $4.99, and produced **zero** new
+`v58 per-wallet cap` lines (the counter is unchanged at 109, all pre-fix), so every
+candidate from that wallet now clears its grandfathered ceiling ($992.41 held vs
+$1,418.40 allowed). The wallet's share of the book is unchanged in the meantime
+(76.3%), which is what a grandfather is supposed to do: keep the stock, unblock the
+flow. Remaining sample work is on the cards (the shadow feed needs settlements; the
+7-day read is 2026-09-27).
