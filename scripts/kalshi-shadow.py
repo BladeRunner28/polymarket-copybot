@@ -157,6 +157,33 @@ def stats(rows):
     }
 
 
+def stats_ex_top1(rows):
+    """stats() with the SINGLE largest-PnL settled row removed.
+
+    2026-09-20 (user-approved, Kalshi-shadow report rec 2): the OOS verdict
+    currently hinges on ONE row — cmu6u424e0 (Elon, shadowScore 95.4, ss -0.50)
+    at +$1,076.47 is the entire positive side of the rejected arm (+$857.03 with
+    it, -$37.1% ROI without it). A reader of the raw line concludes the shadow
+    score separates; a reader of the ex-top-1 line concludes it does not (both
+    arms negative, 1.2pp apart). Neither is wrong, and the difference is what the
+    Oct 8 retire call must be made on — so both are published side by side.
+    Measurement only: no gate, rule or routing reads this.
+    """
+    settled = sorted([d for d in rows if d["pnl"] is not None], key=lambda d: d["pnl"], reverse=True)
+    if len(settled) <= 1:
+        out = stats(rows)
+        out["droppedTradeId"] = None
+        out["droppedPnl"] = 0.0
+        return out
+    top = settled[0]
+    kept = [d for d in rows if d is not top]
+    out = stats(kept)
+    out["droppedTradeId"] = top["tradeId"]
+    out["droppedPnl"] = round(top["pnl"], 2)
+    out["n_settled_before"] = len(settled)
+    return out
+
+
 def cumulative_series(rows, mask=None):
     """Cumulative realized PnL by finish day (matches the dashboard day convention)."""
     acc = {}
@@ -227,9 +254,13 @@ def main():
     # PM-only remainder keeps the attribution additive: kalshi + pm_only == live
     pm_only_series = [round(a - b, 2) for a, b in zip(live_series, kalshi_series)]
 
-    def window_stats(since_ms, pred=lambda d: True):
+    def window_stats(since_ms, pred=lambda d: True, ex_top1=False):
         sub = [d for d in rows if (d["openedMs"] or 0) >= since_ms and pred(d)]
-        return stats(sub)
+        out = stats(sub)
+        if ex_top1:
+            # rec 2: publish the same window with its single biggest winner removed
+            out["exTop1"] = stats_ex_top1(sub)
+        return out
 
     SEP5 = 1788677940000  # 2026-09-05 08:39 (breaker clear / Kalshi leg re-priced)
     summary = {
@@ -262,8 +293,8 @@ def main():
             # the fit timestamp score genuinely out-of-sample. It starts empty and
             # fills as the shadow runs.
             "inSample": True,
-            "oosSinceFit": window_stats(art.get("as_of_ms") or 0, lambda d: gate_flags(d)["shadow_model"]),
-            "oosRejected": window_stats(art.get("as_of_ms") or 0, lambda d: not gate_flags(d)["shadow_model"]),
+            "oosSinceFit": window_stats(art.get("as_of_ms") or 0, lambda d: gate_flags(d)["shadow_model"], ex_top1=True),
+            "oosRejected": window_stats(art.get("as_of_ms") or 0, lambda d: not gate_flags(d)["shadow_model"], ex_top1=True),
             "oosStartedMs": art.get("as_of_ms"),
         },
     }
