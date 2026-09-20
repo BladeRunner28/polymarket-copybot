@@ -194,6 +194,13 @@ export interface Rules {
   // each other. Expressed as a fraction of the effective exposure cap, so the
   // ceiling scales with the equity-linked cap. 0 = disabled.
   maxWalletNotionalPctOfCap: number; // ceiling = pct × effective exposure cap
+  // v59 (2026-09-19 daily report rec 2, user-approved): the BASIS the per-wallet
+  // ceiling is measured on. "stock" (default/legacy) = the wallet's whole open
+  // notional, which freezes a wallet already above the ceiling outright; "delta"
+  // = pre-activation notional is GRANDFATHERED, so the ceiling becomes
+  // baseline(wallet) + pct × cap and only new accumulation is gated. Baseline
+  // lives in data/wallet-cap-baseline.json (see src/lib/wallet-cap-basis.ts).
+  walletCapBasis: string; // "stock" | "delta"
   // v56 (2026-09-19 tuning review #29 rec 3, user-approved): the drawdown /
   // exposure BASIS as a first-class rule field, so "which basis is in force" is
   // a versioned fact in the RuleSet rather than only a line in a state file.
@@ -329,6 +336,7 @@ export const DEFAULT_RULES: Rules = {
   maxMarketLegsPerMarketId: 0,
   // v58: per-wallet ceiling disabled by default, same convention.
   maxWalletNotionalPctOfCap: 0,
+  walletCapBasis: "stock",
   ddBasis: "mtm",
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],

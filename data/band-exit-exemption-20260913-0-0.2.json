@@ -1,0 +1,467 @@
+{
+  "generatedAt": "2026-09-20T09:35:52.843Z",
+  "botId": "BANKROLL_200",
+  "bandMin": 0,
+  "bandMax": 0.2,
+  "since": "2026-09-13",
+  "rawRows": 25,
+  "decisions": 21,
+  "dedupeCollapsed": 4,
+  "exitRecoveryTrades": 249,
+  "byExitKind": {
+    "tier1_cut": {
+      "n": 10,
+      "realizedPnl": -191.85,
+      "counterfactualPnl": {
+        "1h": -81.08,
+        "6h": -46.94,
+        "24h": -25.87,
+        "72h": 0,
+        "168h": 0,
+        "final": -19.95
+      },
+      "pricedCount": {
+        "1h": 5,
+        "6h": 3,
+        "24h": 2,
+        "72h": 0,
+        "168h": 0,
+        "final": 1
+      }
+    },
+    "resolved": {
+      "n": 11,
+      "realizedPnl": 1022.95,
+      "counterfactualPnl": {
+        "1h": 0,
+        "6h": 0,
+        "24h": 0,
+        "72h": 0,
+        "168h": 0,
+        "final": 1022.95
+      },
+      "pricedCount": {
+        "1h": 0,
+        "6h": 0,
+        "24h": 0,
+        "72h": 0,
+        "168h": 0,
+        "final": 11
+      }
+    }
+  },
+  "headline": {
+    "tier1Cuts": 10,
+    "realizedPnl": -191.85,
+    "hold24hPnl": -25.87,
+    "hold24hPriced": 2,
+    "hold72hPnl": 0,
+    "hold72hPriced": 0,
+    "hold168hPnl": 0,
+    "hold168hPriced": 0,
+    "settlementPnl": -19.95,
+    "settlementPriced": 1
+  },
+  "caveat": "Survivorship: the rule cuts positions that are not working, so closed-vs-resolved gaps overstate the case for holding. Hold-to-horizon marks answer 'did the cut tickets recover inside the horizon we would actually have held' — that is the decision metric. Guarantee rule: read only buckets with >= 20 priced tickets and >= 7 days of accumulation; anything less is noise.",
+  "rows": [
+    {
+      "tradeId": "cmtzdcn0y006zu8dkzxv3t42m",
+      "marketId": "will-genta-koja-win-the-2026-okinawa-gubernatorial-election-1786470469903",
+      "entryPrice": 0.165,
+      "stakeUsd": 19.94936708860759,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": -16.93,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu01f2zz000ekfy4kcjp24e5",
+      "marketId": "will-dtf-stpt-louis-win-emmys-2026-outstanding-limited-or-anthology-series-20260710152711975",
+      "entryPrice": 0.05499999999999999,
+      "stakeUsd": 19.94936708860759,
+      "kind": "tier1_cut",
+      "ageHours": 34.4,
+      "realizedPnl": -18.32,
+      "counterfactualByHorizon": {
+        "1h": -19.77,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu0n6yi40028kfy453dlww19",
+      "marketId": "highest-temperature-in-wellington-on-september-14-2026-16c",
+      "entryPrice": 0.045,
+      "stakeUsd": 75.12,
+      "kind": "resolved",
+      "ageHours": 10.4,
+      "realizedPnl": -75.12,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -75.12
+    },
+    {
+      "tradeId": "cmu0tj764002wkfy49ewck8p7",
+      "marketId": "elon-musk-of-tweets-september-12-september-14-2026-40-64",
+      "entryPrice": 0.045,
+      "stakeUsd": 19.94936708860759,
+      "kind": "resolved",
+      "ageHours": 12.7,
+      "realizedPnl": -19.95,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu0z8yge0037kfy4jygt9up2",
+      "marketId": "bul-lud-ses-2026-09-14-lud",
+      "entryPrice": 0.185,
+      "stakeUsd": 9.974683544303796,
+      "kind": "resolved",
+      "ageHours": 13.2,
+      "realizedPnl": -9.97,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -9.97
+    },
+    {
+      "tradeId": "cmu19doda003ykfy4nlom0bpg",
+      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
+      "entryPrice": 0.175,
+      "stakeUsd": 80.06,
+      "kind": "tier1_cut",
+      "ageHours": 24.5,
+      "realizedPnl": -18.3,
+      "counterfactualByHorizon": {
+        "1h": -18.3,
+        "6h": -32.02,
+        "24h": -27.45,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu1agfhs0044kfy4br0543l4",
+      "marketId": "will-kate-oflynn-widows-bay-win-emmys-2026-outstanding-supporting-actress-in-a-comedy-series-20260709174231147",
+      "entryPrice": 0.142,
+      "stakeUsd": 19.94936708860759,
+      "kind": "tier1_cut",
+      "ageHours": 24,
+      "realizedPnl": -19.88,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu1e6paq004jkfy4rknx1upx",
+      "marketId": "will-jean-smart-hacks-win-emmys-2026-outstanding-lead-actress-in-a-comedy-series-20260709174230568",
+      "entryPrice": 0.0475,
+      "stakeUsd": 19.94936708860759,
+      "kind": "tier1_cut",
+      "ageHours": 24.5,
+      "realizedPnl": -19.74,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu1yv70e0061kfy4n70psom3",
+      "marketId": "highest-temperature-in-moscow-on-september-15-2026-18c",
+      "entryPrice": 0.12,
+      "stakeUsd": 19.94936708860759,
+      "kind": "resolved",
+      "ageHours": 21.2,
+      "realizedPnl": -19.95,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu2750c5006ykfy47p7kktjt",
+      "marketId": "highest-temperature-in-shanghai-on-september-15-2026-28c",
+      "entryPrice": 0.155,
+      "stakeUsd": 19.94936708860759,
+      "kind": "resolved",
+      "ageHours": 12,
+      "realizedPnl": -19.95,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu2vq9jc0099kfy4o0vpfrdh",
+      "marketId": "lal-elc-rea-2026-09-15-rea",
+      "entryPrice": 0.175,
+      "stakeUsd": 19.94936708860759,
+      "kind": "resolved",
+      "ageHours": 5.9,
+      "realizedPnl": -19.95,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu2vqeaq009fkfy4giof4tw4",
+      "marketId": "will-parti-qubcois-win-the-most-seats-in-the-2026-quebec-general-election",
+      "entryPrice": 0.15,
+      "stakeUsd": 47.41,
+      "kind": "tier1_cut",
+      "ageHours": 40.6,
+      "realizedPnl": -9.48,
+      "counterfactualByHorizon": {
+        "1h": -9.48,
+        "6h": 0,
+        "24h": 1.58,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu2y0km5009rkfy4gquxqxnb",
+      "marketId": "highest-temperature-in-singapore-on-september-16-2026-33c",
+      "entryPrice": 0.17,
+      "stakeUsd": 19.94936708860759,
+      "kind": "resolved",
+      "ageHours": 23,
+      "realizedPnl": 97.4,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": 97.4
+    },
+    {
+      "tradeId": "cmu363stq00aukfy4x98vevwy",
+      "marketId": "highest-temperature-in-tel-aviv-on-september-16-2026-33c",
+      "entryPrice": 0.195,
+      "stakeUsd": 9.974683544303796,
+      "kind": "resolved",
+      "ageHours": 25,
+      "realizedPnl": -9.97,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -9.97
+    },
+    {
+      "tradeId": "cmu38f53p00b0kfy4lryrsi93",
+      "marketId": "lowest-temperature-in-hong-kong-on-september-16-2026-27c",
+      "entryPrice": 0.115,
+      "stakeUsd": 19.94936708860759,
+      "kind": "tier1_cut",
+      "ageHours": 25,
+      "realizedPnl": -19,
+      "counterfactualByHorizon": {
+        "1h": -19.08,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu3e9dup00bikfy40gb84d9b",
+      "marketId": "no-change-in-bank-of-englands-interest-rates-after-september-2026-meeting-20260623013424711",
+      "entryPrice": 0.0635,
+      "stakeUsd": 19.94936708860759,
+      "kind": "tier1_cut",
+      "ageHours": 24.4,
+      "realizedPnl": -18.54,
+      "counterfactualByHorizon": {
+        "1h": -14.45,
+        "6h": -14.92,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu3wirfs00dnkfy4k8f0wpzr",
+      "marketId": "r6siege-de-sharpe-2026-09-16",
+      "entryPrice": 0.06999999999999999,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.5,
+      "realizedPnl": -19.86,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu48susn00etkfy4q9jz5dr9",
+      "marketId": "will-the-fed-decide-differently-in-the-next-three-decisions-julsepoct-20260617191211945",
+      "entryPrice": 0.06999999999999999,
+      "stakeUsd": 33.22,
+      "kind": "tier1_cut",
+      "ageHours": 24.1,
+      "realizedPnl": -31.8,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmu6u424e00hpkfy4ktdeyilw",
+      "marketId": "elon-musk-of-tweets-september-11-september-18-2026-180-199",
+      "entryPrice": 0.08499999999999999,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 6.4,
+      "realizedPnl": 1076.47,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": 1076.47
+    },
+    {
+      "tradeId": "cmu6z7nit00jakfy44po3hork",
+      "marketId": "lal-esp-elc-2026-09-18-elc",
+      "entryPrice": 0.185,
+      "stakeUsd": 9.974683544303796,
+      "kind": "resolved",
+      "ageHours": 8.3,
+      "realizedPnl": 43.94,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": 43.94
+    },
+    {
+      "tradeId": "cmu80dyzr00ndkfy4qvcyv1x9",
+      "marketId": "elon-musk-of-tweets-september-17-september-19-2026-40-64",
+      "entryPrice": 0.035,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.3,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "own-resolution",
+      "counterfactualSettlement": -20
+    }
+  ]
+}

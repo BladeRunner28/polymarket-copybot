@@ -21,6 +21,12 @@ import {
   DRIFT_SHADOW_FILE,
   DRIFT_SHADOW_SUMMARY_FILE,
 } from "../src/lib/shadow-drift";
+import {
+  readWalletCapRows,
+  summarizeWalletCap,
+  WALLET_CAP_SHADOW_FILE,
+  WALLET_CAP_SHADOW_SUMMARY_FILE,
+} from "../src/lib/shadow-wallet-cap";
 import { log, logError } from "../src/lib/redact";
 import * as fs from "fs";
 
@@ -142,6 +148,67 @@ async function main() {
       `${dSummary.avgPnlPerTradeExDust === null ? "—" : "$" + dSummary.avgPnlPerTradeExDust.toFixed(2)}/trade ex-dust ` +
       `[${dSummary.dustExcluded} rows below $${dSummary.dustMinEntryPrice}]). ` +
       `Summary: ${DRIFT_SHADOW_SUMMARY_FILE}`
+  );
+
+  // ---- Per-wallet ceiling shadow (2026-09-19 daily report rec 1a) -----------
+  // v58's ceiling binds HARD on the wallet that was already above it, so every
+  // would-be copy from that wallet is vetoed (109 in the first 15h). This marks
+  // each vetoed would-be entry to settlement so the cost of the rail is a
+  // measured number (per band and per wallet) instead of a veto count.
+  const wRows = readWalletCapRows();
+  const wCandidates = wRows.filter((r) => r.type === "candidate");
+  const wAlready = new Set(
+    wRows.filter((r) => r.type === "resolve").map((r) => `${r.marketId}|${r.outcome}`)
+  );
+  const wPending = new Map<string, { marketId: string; outcome: string }>();
+  for (const c of wCandidates) {
+    const key = `${c.marketId}|${c.outcome}`;
+    if (!wAlready.has(key)) wPending.set(key, { marketId: String(c.marketId), outcome: String(c.outcome) });
+  }
+  let wResolved = 0;
+  for (const { marketId, outcome } of capPending(wPending).values()) {
+    let value: number | undefined;
+    try {
+      const m = await adapter.fetchMarket(marketId);
+      const winnerLabel = m.winningLabel ?? m.winningOutcome;
+      if (m.resolved && winnerLabel) {
+        const won = didOutcomeWin(outcome, { winningLabel: winnerLabel, yesPrice: m.yesPrice });
+        if (won !== null) value = won ? 1 : 0;
+      }
+    } catch {
+      /* fall through to the event-resolution path */
+    }
+    if (value === undefined) {
+      try {
+        const ev = await fetchEventResolution(marketId);
+        if (ev) {
+          const won = didOutcomeWin(outcome, { winningLabel: ev });
+          if (won !== null) value = won ? 1 : 0;
+        }
+      } catch {
+        /* leave unresolved */
+      }
+    }
+    if (value === undefined) continue;
+    fs.appendFileSync(
+      WALLET_CAP_SHADOW_FILE,
+      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
+    );
+    wResolved++;
+  }
+  const wSummary = summarizeWalletCap(readWalletCapRows());
+  fs.writeFileSync(WALLET_CAP_SHADOW_SUMMARY_FILE, JSON.stringify(wSummary, null, 2));
+  const bandLine = Object.entries(wSummary.byBand)
+    .map(([b, v]) => `${b}: ${v.n} (${v.marked} marked, $${v.wouldHavePnl.toFixed(2)})`)
+    .join(" | ");
+  log(
+    `shadow-wallet-cap: +${wResolved} marked this run (backlog ${wPending.size}). ` +
+      `Ceiling counterfactual: ${wSummary.candidates} would-be entries, ` +
+      `${wSummary.marked} settled (${wSummary.wins} wins, ` +
+      `${wSummary.winRate === null ? "—" : (wSummary.winRate * 100).toFixed(1) + "%"}), ` +
+      `$${wSummary.wouldHavePnl.toFixed(2)} on $${wSummary.stakedUsd.toFixed(2)} staked ` +
+      `(${wSummary.avgPnlPerTrade === null ? "—" : "$" + wSummary.avgPnlPerTrade.toFixed(2)}/trade) | ${bandLine}. ` +
+      `Summary: ${WALLET_CAP_SHADOW_SUMMARY_FILE}`
   );
 
   const summary = summarizeShadow(readShadowRows());

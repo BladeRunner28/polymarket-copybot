@@ -24,6 +24,15 @@
  *
  * Run: DATABASE_URL="file:./dev.db" npx tsx scripts/analyze-band-exit-exemption.ts
  *      ... --since 2026-09-13 --band-max 0.20
+ *      ... --since 2026-09-13 --band-min 0.20 --band-max 0.40   # 2nd arm
+ *
+ * BAND RANGE (2026-09-19 daily report rec 1b, user-approved): the read is run
+ * for BOTH the <0.20 band and the 0.20-0.40 band. The second arm exists because
+ * 0.20-0.40 shows a significant POSITIVE resolution edge (+6.3pp, z=+2.35) with a
+ * NEGATIVE realized book (-$406.89 all-time; 7d -$221.87 / -42.7%, early closes
+ * 275 rows -$271.15 vs resolutions 62 rows +$48.38) - an EXIT-side question, which
+ * is exactly what this counterfactual answers. Output files are band-suffixed when
+ * the range is not the legacy [0, 0.20) so the two reads never clobber each other.
  */
 
 import { prisma } from "../src/lib/db";
@@ -34,7 +43,14 @@ import * as fs from "fs";
 import { join } from "path";
 
 const EXIT_RECOVERY_LOG = join(__dirname, "..", "data", "exit-recovery.jsonl");
-const OUT = join(__dirname, "..", "data", "band-exit-exemption.json");
+/** Legacy filename for the original all-time <0.20 arm; window+band suffixed otherwise. */
+function outputPath(bandMin: number, bandMax: number, since: string | undefined): string {
+  const legacy = bandMin === 0 && bandMax === 0.2 && !since;
+  const name = legacy
+    ? "band-exit-exemption.json"
+    : `band-exit-exemption-${since ? since.replace(/-/g, "") : "alltime"}-${bandMin}-${bandMax}.json`;
+  return join(__dirname, "..", "data", name);
+}
 
 const HARD_AGE_HOURS = 168;
 const HORIZONS = ["1h", "6h", "24h", "72h", "168h"];
@@ -72,15 +88,17 @@ function arg(name: string, def?: string): string | undefined {
 async function main() {
   const botId = arg("bot", "BANKROLL_200")!;
   const bandMax = Number(arg("band-max", "0.20"));
+  const bandMin = Number(arg("band-min", "0")); // 0 = legacy lower bound
   const since = arg("since", undefined);
   const sinceMs = since ? new Date(`${since}T00:00:00-04:00`).getTime() : null;
+  const OUT = outputPath(bandMin, bandMax, since);
 
   const trades = await prisma.paperTrade.findMany({
     where: {
       botId,
       isDemo: false,
       venue: { not: "Kalshi" },
-      entryPrice: { lt: bandMax },
+      entryPrice: { gte: bandMin, lt: bandMax },
       status: { in: ["closed", "resolved"] },
       realizedPnl: { not: null },
       ...(sinceMs ? { openedAt: { gte: new Date(sinceMs) } } : {}),
@@ -195,6 +213,7 @@ async function main() {
   const summary = {
     generatedAt: new Date().toISOString(),
     botId,
+    bandMin,
     bandMax,
     since: since ?? "all-time",
     rawRows: trades.length,
@@ -223,7 +242,10 @@ async function main() {
   fs.writeFileSync(OUT, JSON.stringify(summary, null, 2));
 
   const f = (v: number) => (v >= 0 ? `+$${v.toFixed(2)}` : `-$${Math.abs(v).toFixed(2)}`);
-  log(`band-exit-exemption (${botId}, entry < ${bandMax}, ${since ?? "all-time"}) — decision-level n=${decisions.length} (raw ${trades.length})`);
+  log(
+    `band-exit-exemption (${botId}, entry [${bandMin}, ${bandMax}), ${since ?? "all-time"}) — ` +
+      `decision-level n=${decisions.length} (raw ${trades.length})`
+  );
   for (const [k, v] of Object.entries(byKindOut) as any) {
     const cf = v.counterfactualPnl;
     log(

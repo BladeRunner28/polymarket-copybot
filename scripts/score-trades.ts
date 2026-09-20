@@ -13,6 +13,8 @@ import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
 import { effectiveExposureCap, marketCapDecision, walletCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
+import { readWalletCapBaseline, baselineFor } from "../src/lib/wallet-cap-basis";
+import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -239,6 +241,19 @@ async function main() {
   }
   const c200WalletNotionalCap =
     rules.maxWalletNotionalPctOfCap > 0 ? rules.maxWalletNotionalPctOfCap * c200ExposureCap : 0;
+  // v59 (2026-09-19 daily report rec 2, user-approved): grandfather the
+  // pre-activation stock. Under "stock" the ceiling is the wallet's whole open
+  // notional, so a wallet already above it is frozen outright (the top wallet
+  // held $993.66 against a $431 ceiling = 2.3x, 109 vetoes in 15h) instead of
+  // being gated gradually. Under "delta" the ceiling becomes
+  // baseline(wallet) + pct x cap: the wallet keeps its existing book and may add
+  // at most one ceiling of NEW notional, which is the rail's purpose (no wallet
+  // exceeds its activation notional by more than the ceiling) without the
+  // standstill it was never meant to impose. Baseline is a frozen snapshot
+  // (data/wallet-cap-baseline.json); a wallet first seen after activation reads 0
+  // and gets the plain ceiling.
+  const walletCapBasis = rules.walletCapBasis === "delta" ? "delta" : "stock";
+  const walletCapBaseline = walletCapBasis === "delta" ? readWalletCapBaseline() : null;
   const c200CategoryCounts = new Map<string, number>();
   const c200SlugCounts = new Map<string, number>(); // v45: raw marketCategory slug counts
   for (const row of c200OpenRows) {
@@ -877,14 +892,49 @@ async function main() {
           if (botId === "BANKROLL_200" && c200WalletNotionalCap > 0) {
             const walletHere = c200WalletNotional.get(t.walletAddress) ?? 0;
             const walletSize = positionSize || 0.25;
+            // v59: the grandfathered stock is added to the ceiling, not to the
+            // measurement — current + size > baseline + ceiling is exactly
+            // "the wallet may add at most one ceiling of new notional".
+            const baseline = baselineFor(walletCapBaseline, t.walletAddress);
+            const effectiveCeiling = c200WalletNotionalCap + baseline;
             const walletVerdict = walletCapDecision({
               notionalAlready: walletHere,
               sizeUsd: walletSize,
-              notionalCapUsd: c200WalletNotionalCap,
+              notionalCapUsd: effectiveCeiling,
             });
             if (walletVerdict.blocked) {
-              log(`[BANKROLL_200] v58 per-wallet cap (${walletVerdict.why}) — skipping copy ${t.marketId}`);
+              const basisNote =
+                walletCapBasis === "delta"
+                  ? ` | basis delta: $${baseline.toFixed(2)} grandfathered + $${c200WalletNotionalCap.toFixed(2)} allowance`
+                  : "";
+              log(
+                `[BANKROLL_200] v58 per-wallet cap (${walletVerdict.why}${basisNote}) — skipping copy ${t.marketId}`
+              );
               legBlocks.push(`BANKROLL_200: v58 per-wallet cap (${walletVerdict.why})`);
+              // rec 1a (approved): price the veto instead of assuming it. Write-only.
+              try {
+                appendWalletCapShadow({
+                  marketId: t.marketId,
+                  outcome: t.outcome,
+                  side: t.side,
+                  walletAddress: t.walletAddress,
+                  marketQuestion: t.marketQuestion,
+                  currentPrice,
+                  sizeUsd: walletSize,
+                  copyScore: result.copyScore,
+                  confidence: result.confidence,
+                  ttrHours: ttr,
+                  spread,
+                  liquidity,
+                  walletNotionalUsd: walletHere,
+                  ceilingUsd: effectiveCeiling,
+                  reason: walletVerdict.why ?? "",
+                });
+              } catch (e) {
+                logError(
+                  `[WALLET-CAP-SHADOW] append failed for ${t.marketId}: ${e instanceof Error ? e.message : e}`
+                );
+              }
               continue;
             }
             c200WalletNotional.set(t.walletAddress, walletHere + walletSize);
