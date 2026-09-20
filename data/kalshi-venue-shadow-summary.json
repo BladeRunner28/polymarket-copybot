@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-19T03:26:06.765Z",
+  "asOf": "2026-09-20T03:28:42.228Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,17 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 606,
-    "inWindow": 211,
+    "copiesSeen": 662,
+    "inWindow": 267,
     "withKalshiQuote": 0,
     "crossListRate": 0,
     "staleSkips": 395,
-    "quoteFailures": 199,
-    "unverifiedMatches": 12,
+    "quoteFailures": 251,
+    "unverifiedMatches": 16,
     "rejectionReasons": {
-      "pre_guard_quote": 1,
-      "low_match_score_0.67": 11
+      "kalshi orderbook empty for event KXSOCCERTROPHIES-27MCI": 2,
+      "low_match_score_0.67": 16,
+      "pre_guard_quote": 1
     }
   },
   "books": {
@@ -163,6 +164,46 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.535,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will FC Tulsa win on 2026-09-19?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.37,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Florida State vs. Alabama: O/U 48.5",
+      "ticker": "KXLOCALLAW-ALSNAP-27JUL01",
+      "matchedTitle": "Will Alabama cut its state grocery tax again?",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.515,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Getafe CF win on 2026-09-20?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.445,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Villarreal CF win on 2026-09-20?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.335,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
