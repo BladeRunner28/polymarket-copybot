@@ -1144,7 +1144,7 @@
       "effort": "~45 min (series + bar in the marker; no threshold moves)",
       "dates": "Pre-registered 2026-09-20 (tuning review #31 rec 2, user-approved) \u00b7 bar reads daily, decision earliest 2026-09-27",
       "gate": "PRE-REGISTERED RULE (fixed before any number was read, not to be re-tuned at the read): a maxPriceDrift / longshotDriftPct relaxation is brought forward ONLY IF avgPnlPerTradeExDust <= $0.50 on 7 consecutive days AND the trailing-7d cohort mean is also <= $0.50 \u2014 attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Read: `jq .decayBar data/drift-shadow-summary.json`. Until it trips, maxPriceDrift keeps its value.",
-      "note": "WHY: the drift gate is the book's #1 skip reason (28.9% of 7,556 skips) while its own counterfactual expectancy has decayed three windows running ($1.29 -> $0.88 -> $0.67 per trade ex-dust; $0.56 at the 2026-09-20 mark), and the gate's relaxation for <0.20 entries (v57-A) produced no visible feed effect (that band fell 8 -> 4 legs a window). The bar prevents a relaxation being argued from a decaying number without saying when it would be justified. TWO reads are required because the cumulative mean drifts MECHANICALLY as settled rows accumulate \u2014 it can cross $0.50 because the sample grew, not because the edge is gone; the trailing cohort (settled candidates decided in the last 7 days, 1,819 rows today) is the honest 'is the edge gone now' figure. Series: data/drift-decay-series.jsonl (one row per marker run; a day's last row is the day's value).",
+      "note": "WHY: the drift gate is the book's #1 skip reason (28.9% of 7,556 skips) while its own counterfactual expectancy has decayed three windows running ($1.29 -> $0.88 -> $0.67 per trade ex-dust; $0.56 at the 2026-09-20 mark), and the gate's relaxation for <0.20 entries (v57-A) produced no visible feed effect (that band fell 8 -> 4 legs a window). The bar prevents a relaxation being argued from a decaying number without saying when it would be justified. TWO reads are required because the cumulative mean drifts MECHANICALLY as settled rows accumulate \u2014 it can cross $0.50 because the sample grew, not because the edge is gone; the trailing cohort (settled candidates decided in the last 7 days, 1,819 rows today) is the honest 'is the edge gone now' figure. Series: data/drift-decay-series.jsonl (one row per marker run; a day's last row is the day's value). EOD CLAUSE CLOSED 2026-09-21 (tuning #32 flagged it as missing): the ex-dust figure is written by the hourly shadow marker into copybot-shadow-longshot.log, so the number the bar is judged on never reached the EOD report. report.ts now prints `\u2022 Drift gate counterfactual: \u00b1$X/trade ex-dust (N marked) \u00b7 decay bar K/7 days at \u2264$0.50 (cohort7d $Y)` \u2014 read only, verified in a dry run.",
       "tags": [
         "copy-score",
         "drift-gate",
@@ -1209,6 +1209,35 @@
         "funnel",
         "minConfidence",
         "shadow"
+      ]
+    },
+    {
+      "id": "tr32-rec1-one-monitor-sweep",
+      "title": "Rec 1 \u2014 one monitor sweep per cycle + CONCURRENCY 4\u21922 (429s back after 6 clean windows)",
+      "column": "Done",
+      "effort": "~1h (runner edit + pool width + recon of what API_DELAY_MS actually paces)",
+      "dates": "Applied 2026-09-21 (tuning review #32 rec 1, user-approved)",
+      "gate": "VERIFY 7d (2026-09-28): `grep -c 'Too Many Requests' logs/cron/copybot-monitor-score.log` = 0 over the window (baseline 10 across 7 of 109 runs) AND the monitor's median gap stays \u2264 14.0 m (baseline 13.0 m). Both are read from the run headers + 429 lines, no new instrument.",
+      "note": "WHY: the runner ran monitor:trades TWICE per cycle and the 24h lookback made the second sweep pure duplicate load \u2014 it re-fetched the same window and every fill hit ObservedTrade's unique constraint. The second call's `API_DELAY_MS=100` was ALSO inert: monitor-trades never reads API_DELAY_MS (only src/lib/dead-market-resolution.ts does), so both calls issued identical requests at identical pacing. Cost: 10 data-api `/activity` 429s across 7 of 109 runs, ending a 6-window clean streak, with the pool at CONCURRENCY 4 (the pool IS the burst width \u2014 API_DELAY_MS paces pagination INSIDE one wallet, not across wallets). Fix: delete the duplicate sweep (a fill landing mid-cycle is still inside the next cycle's 24h window, so nothing is lost) and set the pool to `MONITOR_CONCURRENCY` default 2. The run is no longer the cadence bind (13.0 m median against a 10 m schedule), so trading burst width for API headroom is the right side of that trade. Revert: re-add the second `npm run --silent monitor:trades` line / set MONITOR_CONCURRENCY=4.",
+      "tags": [
+        "rate-limit",
+        "cadence",
+        "monitor",
+        "applied"
+      ]
+    },
+    {
+      "id": "tr32-rec2-scan-partial-tail",
+      "title": "Rec 2 \u2014 single-line the scan-wallets failure summary (a multi-line dump ate the runner's tail)",
+      "column": "Done",
+      "effort": "~20 min",
+      "dates": "Applied 2026-09-21 (tuning review #32 rec 2, user-approved)",
+      "gate": "VERIFY 7d: run-header count EQUALS completion-line count in copybot-scan-wallets.log (baseline 162/161 in the #32 window, 1,318/1,289 lifetime) and every `Wallet scan complete: N/25` with N<25 is accompanied by exactly one `[SCAN PARTIAL]` in the same run.",
+      "note": "WHY: 2026-09-21 06:08:59 profiled 23/25 and appended its row to data/scan-partials.jsonl, but the failure text was a multi-line Prisma dump \u2014 the run's output was captured through the runner's `tail -6`, so the dump pushed BOTH the completion line and the new [SCAN PARTIAL] line out of the window and the run read as clean (1 log line vs 2 jsonl events, the exact regression rec 3 of #31 existed to stop). Fix: any interpolation of a failure string first collapses whitespace and the entries join with ' | ', so the run always emits one line per concern and the completion + partial lines always survive. Instrumentation only.",
+      "tags": [
+        "telemetry",
+        "scan-wallets",
+        "applied"
       ]
     }
   ]

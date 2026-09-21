@@ -122,7 +122,14 @@ async function main() {
   }
 
   if (failures.length) {
-    logError(`Failures (${failures.length}):\n` + failures.slice(0, 5).join("\n"));
+    // tuning #32 rec 2 (user-approved 2026-09-21): ONE line. A Prisma error dump
+    // spans several lines, and this run's output is captured through the runner's
+    // `tail -6` — on 2026-09-21 06:08:59 the dump pushed the completion line AND the
+    // [SCAN PARTIAL] line out of the captured window (1 log line for 2 jsonl events),
+    // so a partial run looked like a clean one again. Whitespace is collapsed and the
+    // entries are joined, keeping the info and the tail budget.
+    const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
+    logError(`Failures (${failures.length}): ` + failures.slice(0, 5).map(oneLine).join(" | "));
     if (profiled === 0) {
       throw new Error("All wallet profile fetches failed — see errors above.");
     }

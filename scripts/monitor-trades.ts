@@ -30,10 +30,16 @@ async function main() {
   const failures: string[] = [];
 
   // v44 (tuning review #13, approved): bounded-concurrency wallet monitoring —
-  // 5 clean 429 windows justify a 4-at-a-time pool (was strictly serial; run
+  // 5 clean 429 windows justified a 4-at-a-time pool (was strictly serial; run
   // duration is the cadence bind). Per-wallet work stays serial inside each
   // task so the API burst stays bounded.
-  const CONCURRENCY = 4;
+  // tuning #32 rec 1 (user-approved 2026-09-21): 4 -> 2 after 10 data-api 429s
+  // across 7 of 109 runs (the first non-clean window in 7). Each wallet in flight
+  // is one `/activity` page fetch plus its market reads, so the pool IS the burst
+  // width — API_DELAY_MS paces pagination inside one wallet, not across wallets.
+  // The run is no longer the cadence bind (13.0 m median vs a 10 m schedule), so
+  // trading burst width for headroom is the right side of that trade.
+  const CONCURRENCY = Number(process.env.MONITOR_CONCURRENCY ?? 2);
   const processWallet = async (w: (typeof tracked)[number]) => {
     try {
       const activity = await adapter.fetchWalletActivity(w.address, Math.ceil(MONITOR_HOURS / 24) || 1);

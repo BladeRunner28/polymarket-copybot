@@ -31,6 +31,33 @@ import * as fs from "fs";
 import { join } from "path";
 
 const SCAN_STATE_FILE = join(__dirname, "..", "..", "data", "scan-wallets-state.json");
+const DRIFT_SUMMARY_FILE = join(__dirname, "..", "..", "data", "drift-shadow-summary.json");
+
+/**
+ * Drift-gate counterfactual + the pre-registered decay bar (tuning #31 rec 2,
+ * approved 2026-09-20). The rec's verify line expected this value in the EOD log,
+ * but the ex-dust figure is written by the hourly shadow marker into
+ * copybot-shadow-longshot.log — so the number the bar is judged on never reached the
+ * report. Surfaced here, read-only.
+ */
+function driftDecayLine(): string | undefined {
+  try {
+    const s = JSON.parse(fs.readFileSync(DRIFT_SUMMARY_FILE, "utf-8")) as {
+      avgPnlPerTradeExDust?: number;
+      marked?: number;
+      decayBar?: { thresholdUsd?: number; daysRequired?: number; consecutiveDaysAtOrBelow?: number; cohort7d?: number | null; tripped?: boolean };
+    };
+    if (typeof s.avgPnlPerTradeExDust !== "number") return undefined;
+    const b = s.decayBar;
+    const bar = b
+      ? ` · decay bar ${b.consecutiveDaysAtOrBelow ?? 0}/${b.daysRequired ?? 7} days at ≤$${(b.thresholdUsd ?? 0.5).toFixed(2)}` +
+        ` (cohort7d ${b.cohort7d === null || b.cohort7d === undefined ? "—" : "$" + b.cohort7d.toFixed(2)}\)${b.tripped ? " — TRIPPED" : ""}`
+      : "";
+    return `• Drift gate counterfactual: ${s.avgPnlPerTradeExDust >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDust).toFixed(2)}/trade ex-dust (${s.marked ?? 0} marked)${bar}`;
+  } catch {
+    return undefined;
+  }
+}
 const SCAN_PARTIALS_FILE = join(__dirname, "..", "..", "data", "scan-partials.jsonl");
 
 /**
@@ -255,6 +282,7 @@ export async function generateDailyReport(
       : `• Rule changes: none`,
     `• Top lesson: ${lesson}`,
     walletScanLine(),
+    driftDecayLine(),
     tailRows.length > 0
       ? `• Late tail carried from ${localDate(tailStart)} (booked after its previous report): C-200 ${fmt(tailCmp)} / STANDARD ${fmt(tailStd)} — ${tailRows.length} trades`
       : undefined,
