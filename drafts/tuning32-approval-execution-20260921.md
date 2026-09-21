@@ -82,9 +82,29 @@ npm test                → 221/221
 roadmap                 → 200; 2 new cards + the #31-2 EOD clause recorded
 ```
 
-**First production sample.** The 09:09:18 CDT run is the first cycle on the new wiring
-(one sweep, pool 2); its wall-clock, gap and 429 count are the read, and the rec's own
-7-day verify covers the rest.
+**First production sample — verified by a hand-run of the fixed runner (09:16:04 →
+09:18:56 CDT, exit 0):**
+
+| | before (08:40 / 08:55 / 09:09 cycles) | after |
+|---|---|---|
+| `monitor:trades` sweeps per cycle | 2 | **1** |
+| cycle runtime | ~12–15 min (duration-bound) | **2 min 52 s** |
+| 429s in the run | 10 across 7/109 runs | **0** (lifetime counter unchanged at 37) |
+| scoring pass | — | 1 `Scoring complete` (35 skips, 1 shadow, 21 drift counterfactuals) |
+
+The runtime collapse is the load effect: with the duplicate sweep gone the requests
+stop tripping the data-api limiter, so the surviving sweep finishes in a fraction of the
+time despite the narrower pool — i.e. the run is no longer the cadence bind, which is
+what the rec's `median gap ≤ 14.0 m` clause is really asking for.
+
+**Incident, recorded (no data loss).** The 09:09:18 cycle aborted with
+`line 21: …300ms: command not found`: the runner had been rewritten (truncate + write of
+the same inode) while bash was reading it incrementally, so the shell resumed at a stale
+byte offset and died on what was, in the current file, a comment line. The abort landed
+**after** the monitor sweep and **before** the scorer, so that cycle lost its scoring
+pass; its 14 observed trades were picked up unscored by the 09:16:04 hand-run (35 skips
+scored). Lesson recorded in the ops skill: check the lock/run header before editing a
+cron script, and prefer write-temp-then-rename.
 
 ## E · Not done
 
