@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-20T03:28:42.228Z",
+  "asOf": "2026-09-21T03:26:49.317Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,17 +12,17 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 662,
-    "inWindow": 267,
-    "withKalshiQuote": 0,
-    "crossListRate": 0,
+    "copiesSeen": 701,
+    "inWindow": 306,
+    "withKalshiQuote": 2,
+    "crossListRate": 0.007,
     "staleSkips": 395,
-    "quoteFailures": 251,
-    "unverifiedMatches": 16,
+    "quoteFailures": 283,
+    "unverifiedMatches": 21,
     "rejectionReasons": {
-      "kalshi orderbook empty for event KXSOCCERTROPHIES-27MCI": 2,
-      "low_match_score_0.67": 16,
-      "pre_guard_quote": 1
+      "pre_guard_quote": 1,
+      "low_match_score_0.67": 17,
+      "low_match_score_0.60": 3
     }
   },
   "books": {
@@ -204,6 +204,76 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.335,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will OL Lyonnes win on 2026-09-23?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.05,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will AfD win the most seats in 1 German state election in September 2026?",
+      "ticker": "KXAFDSTATEGOV-27",
+      "matchedTitle": "AfD in a German state government in 2026?",
+      "score": 0.8,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.377,
+      "verified": true,
+      "reason": null
+    },
+    {
+      "question": "Will AfD win the most seats in 1 German state election in September 2026?",
+      "ticker": "KXAFDSTATEGOV-27",
+      "matchedTitle": "AfD in a German state government in 2026?",
+      "score": 0.8,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.377,
+      "verified": true,
+      "reason": null
+    },
+    {
+      "question": "Will AfD win the second-most seats in the 2026 Berlin state elections?",
+      "ticker": "KXAFDSTATEGOV-27",
+      "matchedTitle": "AfD in a German state government in 2026?",
+      "score": 0.6,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.7,
+      "verified": false,
+      "reason": "low_match_score_0.60"
+    },
+    {
+      "question": "Will AfD win the third-most seats in the 2026 Berlin state elections?",
+      "ticker": "KXAFDSTATEGOV-27",
+      "matchedTitle": "AfD in a German state government in 2026?",
+      "score": 0.6,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.64,
+      "verified": false,
+      "reason": "low_match_score_0.60"
+    },
+    {
+      "question": "Will AfD win the third-most seats in the 2026 Berlin state elections?",
+      "ticker": "KXAFDSTATEGOV-27",
+      "matchedTitle": "AfD in a German state government in 2026?",
+      "score": 0.6,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.64,
+      "verified": false,
+      "reason": "low_match_score_0.60"
+    },
+    {
+      "question": "Will OL Lyonnes win on 2026-09-23?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.05499999999999999,
       "verified": false,
       "reason": "low_match_score_0.67"
     }

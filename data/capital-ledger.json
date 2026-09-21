@@ -1,0 +1,11 @@
+{
+  "note": "Capital ledger for the C-200 book (BANKROLL_200). + = money put into the bot, - = money taken out (sweep/withdrawal). 'opening' entries are the baseline principal already in the book and are drawn as the capital line's start, never as a daily deposit. WHY THIS FILE EXISTS: BotBankroll.principal has no history (prisma/dev.db is gitignored, nothing logs a principal change), so pre-ledger injection dates are NOT reconstructible — the standing principal is recorded once here and any principal movement that the ledger does not explain shows up as ledgerGapUsd on /capital and in scripts/capital-deposits-report.ts. WHEN YOU CHANGE PRINCIPAL: add the matching entry here in the same change.",
+  "entries": [
+    {
+      "date": "2026-07-22",
+      "amountUsd": 1900.0,
+      "kind": "opening",
+      "note": "Standing principal as of the ledger opening (bot's first C-200 trade 2026-07-22). Date is the bot's start, not a documented funding date — the real funding dates predate any recording and are unrecoverable."
+    }
+  ]
+}

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { hourlyPnlSeries } from "@/lib/pnl-rollup";
 import { Card, Stat, Pnl, Badge, Empty } from "@/components/ui";
 import { LineChart } from "@/components/chart";
+import { CapitalDepositsChart } from "@/components/capital-chart";
+import { loadCapitalState } from "@/lib/capital-data";
 import { KalshiShadowCards } from "@/components/kalshi-shadow";
 import { KalshiVenueShadowCard } from "@/components/kalshi-venue-shadow";
 import { getActiveRules } from "@/lib/rules";
@@ -14,6 +16,10 @@ import { readFileSync, readdirSync, statSync } from "fs";
 import path from "path";
 
 export const dynamic = "force-dynamic";
+
+/** Money formatting for the Capital card (kept local: the page has several inline formats). */
+const capitalUsd = (v: number) => `${v < 0 ? "-" : ""}$${Math.abs(v).toFixed(2)}`;
+const capitalSigned = (v: number) => `${v >= 0 ? "+" : "-"}$${Math.abs(v).toFixed(2)}`;
 
 export default async function Overview() {
   const startOfDay = new Date();
@@ -142,7 +148,7 @@ export default async function Overview() {
 
   // ── Circuit-breaker state — mirrors score-trades.ts gate logic per breaker ──
   const cooldownMs = (riskRules.tokenCircuitBreakerCooldownMin ?? 30) * 60_000;
-  const [recentTokenTrips, kalshiAgg, c200OpenDetail] = await Promise.all([
+  const [recentTokenTrips, kalshiAgg, c200OpenDetail, capitalState] = await Promise.all([
     prisma.tokenCircuitTrip.count({ where: { trippedAt: { gte: new Date(Date.now() - cooldownMs) } } }),
     prisma.paperTrade.aggregate({
       where: { botId: "BANKROLL_200", venue: "Kalshi", status: { in: ["closed", "resolved"] } },
@@ -154,6 +160,9 @@ export default async function Overview() {
         decision: { select: { observedTrade: { select: { marketQuestion: true, marketCategory: true } } } },
       },
     }),
+    // Capital — daily deposits (2026-09-20). Same loader as /capital and the
+    // Discord report, so this card, that page and the message cannot drift.
+    loadCapitalState({ days: 30 }),
   ]);
   const kalshiRealized = kalshiAgg._sum.realizedPnl ?? 0;
   const openCatCounts = new Map<string, number>();
@@ -398,6 +407,20 @@ export default async function Overview() {
       if (risks.some(r => r.includes("Mean Reversion"))) meanReversionCount++;
     } catch { /* old format or corrupted json */ }
   });
+
+  // Newest capital report draft — the Capital card links it when present.
+  // (recentDrafts above is capped at 6 for the Deliverables card; this is not.)
+  let capitalDraft: string | null = null;
+  try {
+    const dir = path.join(process.cwd(), "drafts");
+    const f = readdirSync(dir)
+      .filter((x) => /^capital-deposits-.*\.md$/.test(x))
+      .map((x) => ({ x, m: statSync(path.join(dir, x)).mtimeMs }))
+      .sort((a, b) => b.m - a.m)[0];
+    if (f) capitalDraft = f.x.replace(/\.md$/, "");
+  } catch {
+    /* drafts dir missing */
+  }
 
   return (
     <div className="space-y-4">
@@ -753,6 +776,46 @@ export default async function Overview() {
 
       <Card title="Paper PnL Over Time">
         <LineChart series={chartData} formatY={(v) => `$${v.toFixed(0)}`} />
+      </Card>
+
+      {/* Capital — daily deposits (2026-09-20, user request). Same loader as
+          /capital, so this card and that page can never disagree. */}
+      <Card title="Capital — daily deposits into Total Capital (last 30d)">
+        <CapitalDepositsChart points={capitalState.series.points} principal={capitalState.principal} />
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-dim mt-2">
+          <span>
+            closing booked capital{" "}
+            <span className="font-mono text-ink">{capitalUsd(capitalState.series.closingUsd)}</span>{" "}
+            (principal + every finished trade, early exits included)
+          </span>
+          <span>
+            live incl. open marks <span className="font-mono text-ink">{capitalUsd(capitalState.liveTotalCapital)}</span>
+          </span>
+          <span>
+            30d deposits{" "}
+            <span className="font-mono text-ink">{capitalSigned(capitalState.series.bookedTotal + capitalState.series.injectedTotal)}</span>
+          </span>
+          {Math.abs(capitalState.series.ledgerGapUsd) > 0.01 ? (
+            <span className="text-warn">ledger gap {capitalUsd(capitalState.series.ledgerGapUsd)} — record the injection</span>
+          ) : (
+            <span>ledger reconciled ✓</span>
+          )}
+          <Link href="/capital" className="text-accent hover:text-ink font-mono">
+            /capital — chart + table ↗
+          </Link>
+          {capitalDraft && (
+            <Link href={`/drafts/${capitalDraft}`} className="text-accent hover:text-ink font-mono">
+              report {capitalDraft.slice(-10)} ↗
+            </Link>
+          )}
+        </div>
+        <p className="text-[11px] text-dim mt-1">
+          Deposits are booked PnL + capital injections (injection ledger:{" "}
+          <span className="font-mono">data/capital-ledger.json</span>). The <span className="font-mono">Total Capital</span>{" "}
+          stat above uses a <strong>resolved-only</strong> realized basis — it excludes every early exit (
+          <span className="font-mono">{cmpResolved.length}</span> trades — the {capitalUsd(cmpRealizedPnl - capitalState.realized)}{" "}
+          gap) — so it reads high against the booked basis used here. Flagged for the approval queue, not silently changed.
+        </p>
       </Card>
 
       {/* Deliverables — clickable audits & design docs */}
