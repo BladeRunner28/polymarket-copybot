@@ -118,6 +118,12 @@ model DecisionJournal {
   thesisScore           Float    @default(0)
   simulatedPositionSize Float?
   ruleSetVersion        Int?
+  // 2026-09-20 daily report change 2 (user-approved): the values the gates actually
+  // used. `confidence` is 0 by construction on three skip paths and the lane copy
+  // path, so 99.2% of skip rows could not answer "what did minConfidence see?".
+  // Additive + nullable: existing `confidence`/`copyScore` semantics are unchanged.
+  rawConfidence         Float? // confidence as computed, before any zeroing
+  adjustedCopyScore     Float? // post-boost decision score, unrounded
   isDemo                Boolean  @default(false)
   createdAt             DateTime @default(now())
 

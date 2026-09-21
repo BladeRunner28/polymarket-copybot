@@ -14,7 +14,9 @@ import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
 import { effectiveExposureCap, marketCapDecision, walletCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
 import { readWalletCapBaseline, baselineFor } from "../src/lib/wallet-cap-basis";
+import { applyBandSizeFactor } from "../src/lib/band-size";
 import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
+import { appendLowConfShadow } from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -280,6 +282,11 @@ async function main() {
   let laneCopies = 0; // short-TTR lane copies (scoped to BANKROLL_200)
   let shadowLogged = 0; // v53: sub-0.20 shadow-ladder candidates logged
   let driftShadowLogged = 0; // 2026-09-16 Change 2: late-drift gate counterfactuals logged
+  // change 2 (2026-09-20 daily report, approved): would-have entries the CONFIDENCE
+  // gate rejected. minConfidence is the funnel's biggest blocker by mention count and
+  // was unpriceable — skip rows stored confidence=0, so no outcome could be joined to
+  // the bar. Write-only; a threshold change still needs the Oct 8 window close.
+  let lowConfShadowLogged = 0;
   // #29 rec 2 (2026-09-19, approved): count candidates blocked by a PORTFOLIO gate
   // (drawdown / gross exposure). These fire BEFORE the per-bot leg loop, so when
   // they block everything the run produces no copies, no leg blocks and no signal
@@ -484,6 +491,10 @@ async function main() {
         decision: result.decision,
         copyScore: result.copyScore,
         confidence: result.confidence,
+        // change 2 (approved): the values the gates actually used, so skip rows
+        // stop being unanswerable (confidence is 0 by construction on 3 paths).
+        rawConfidence: result.rawConfidence,
+        adjustedCopyScore: result.adjustedCopyScore,
         reasonsJson: JSON.stringify(result.reasons),
         risksJson: JSON.stringify(result.risks),
         walletQualityScore: result.breakdown.walletQualityScore,
@@ -838,6 +849,30 @@ async function main() {
             positionSize *= hourPolicy.sizeFactor;
           }
 
+          // v60 (2026-09-20 daily report change 1, user-approved): band-scoped size
+          // factor, applied to the FINAL size and to WHATEVER lane booked it. This is
+          // the mechanism the approved change needed: the v38 premium overlay skips
+          // short-TTR lane copies (`lane !== "short_ttr"`) and every 0.60-0.80 copy in
+          // the book is a lane copy (84 of the last 87 opens at exactly $4.99 = lane
+          // size x 0.5 band map), so flipping that flag could not bind here. Sits after
+          // Kelly/lane sizing and before the concentration gates, so v55/v58 measure
+          // the size that actually books.
+          if (botId === "BANKROLL_200" && positionSize && rules.c200BandSizeFactor !== 1) {
+            const sized = applyBandSizeFactor(
+              positionSize,
+              currentPrice,
+              rules.c200BandSizeFactor,
+              rules.c200BandSizeFactorRange
+            );
+            if (sized !== positionSize) {
+              log(
+                `[BAND-SIZE] ${t.marketId} entry=${currentPrice.toFixed(3)} band=${rules.c200BandSizeFactorRange} ` +
+                  `factor=${rules.c200BandSizeFactor} size ${positionSize.toFixed(2)}→${sized.toFixed(2)} (lane=${result.lane ?? "main"})`
+              );
+              positionSize = sized;
+            }
+          }
+
           // v44 (tuning review #13, approved): STANDARD high-side entry cap —
           // 0.80–1.01 is the worst band (z=−2.50, p=0.013). Enforced per-leg
           // here, NOT via the shared maxEntryPrice rule (that gate is
@@ -1050,6 +1085,35 @@ async function main() {
       // measured outcome. Records the would-have entry so the gate can be judged
       // on data at the Oct 9 close; `maxPriceDrift` itself must NOT move before
       // then (the Oct 8 read is benchmarked at drift 0.004).
+      // change 2: price the confidence gate. Recorded for every skip it blocked
+      // (confidenceOnly flags the ones where nothing else was wrong — the population
+      // a lower bar would actually admit).
+      const confRisk = (result.risks ?? []).find((r) => /confidence .* < min/.test(r));
+      if (confRisk) {
+        try {
+          appendLowConfShadow({
+            marketId: t.marketId,
+            outcome: t.outcome,
+            side: t.side,
+            walletAddress: t.walletAddress,
+            marketQuestion: t.marketQuestion,
+            currentPrice,
+            rawConfidence: result.rawConfidence ?? result.confidence,
+            minConfidence:
+              currentPrice < rules.longshotMaxPrice ? rules.longshotMinConfidence : rules.minConfidence,
+            copyScore: result.copyScore,
+            ttrHours: ttr,
+            spread,
+            liquidity,
+            otherBlocks: Math.max(0, (result.risks ?? []).length - 1),
+            reason: confRisk,
+          });
+          lowConfShadowLogged++;
+        } catch (e) {
+          logError(`[LOWCONF-SHADOW] append failed for ${t.marketId}: ${e instanceof Error ? e.message : e}`);
+        }
+      }
+
       const driftRisk = (result.risks ?? []).find((r) => /price drifted/i.test(r));
       if (driftRisk) {
         try {

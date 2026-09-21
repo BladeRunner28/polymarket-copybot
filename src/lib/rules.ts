@@ -207,6 +207,16 @@ export interface Rules {
   // "mtm" | "realized" | "min". Empty string = not set → fall back to
   // data/c200-drawdown.json, then to "mtm" (legacy behavior).
   ddBasis: string;
+  // v60 (2026-09-20 C-200 daily report change 1, user-approved): BAND-SCOPED SIZE
+  // FACTOR. The 0.60-0.80 band is the one significant negative band (excess -0.0995,
+  // z=-3.96 on N=382) and it produced essentially nothing (+$2.66 over 30d on $1,015
+  // of flow) while taking a third of the day's opens, so its new copies are sized
+  // down. Applied to the FINAL size of C-200 copies with an entry price inside
+  // c200BandSizeFactorRange ("lo-hi", lo inclusive / hi exclusive; empty = disabled),
+  // whatever lane booked them — the premium overlay could not deliver this because it
+  // skips short-TTR lane copies and is band-driven (see src/lib/band-size.ts).
+  c200BandSizeFactor: number; // 1 = no change
+  c200BandSizeFactorRange: string; // e.g. "0.6-0.8"
   // v45: per-market-slug open-position cap for C-200. The v41 research-category
   // gate maps esports to "Other" (uncapped), letting lol/cs2 pile up without a
   // gate; this caps open positions per raw marketCategory slug. 0 = disabled.
@@ -337,6 +347,9 @@ export const DEFAULT_RULES: Rules = {
   // v58: per-wallet ceiling disabled by default, same convention.
   maxWalletNotionalPctOfCap: 0,
   walletCapBasis: "stock",
+  // v60: band-scoped size factor disabled by default, same convention.
+  c200BandSizeFactor: 1,
+  c200BandSizeFactorRange: "",
   ddBasis: "mtm",
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],

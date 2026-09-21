@@ -27,6 +27,12 @@ import {
   WALLET_CAP_SHADOW_FILE,
   WALLET_CAP_SHADOW_SUMMARY_FILE,
 } from "../src/lib/shadow-wallet-cap";
+import {
+  readLowConfRows,
+  summarizeLowConf,
+  LOWCONF_SHADOW_FILE,
+  LOWCONF_SHADOW_SUMMARY_FILE,
+} from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
 import * as fs from "fs";
 import { join } from "path";
@@ -283,6 +289,65 @@ async function main() {
       `$${wSummary.wouldHavePnl.toFixed(2)} on $${wSummary.stakedUsd.toFixed(2)} staked ` +
       `(${wSummary.avgPnlPerTrade === null ? "—" : "$" + wSummary.avgPnlPerTrade.toFixed(2)}/trade) | ${bandLine}. ` +
       `Summary: ${WALLET_CAP_SHADOW_SUMMARY_FILE}`
+  );
+
+  // ---- minConfidence gate shadow (2026-09-20 change 2) ----------------------
+  // Same machinery again: every decision the confidence bar rejected, marked to
+  // settlement so the bar can be judged on outcomes instead of mention counts.
+  const lRows = readLowConfRows();
+  const lCandidates = lRows.filter((r) => r.type === "candidate");
+  const lAlready = new Set(
+    lRows.filter((r) => r.type === "resolve").map((r) => `${r.marketId}|${r.outcome}`)
+  );
+  const lPending = new Map<string, { marketId: string; outcome: string }>();
+  for (const c of lCandidates) {
+    const key = `${c.marketId}|${c.outcome}`;
+    if (!lAlready.has(key)) lPending.set(key, { marketId: String(c.marketId), outcome: String(c.outcome) });
+  }
+  let lResolved = 0;
+  for (const { marketId, outcome } of capPending(lPending).values()) {
+    let value: number | undefined;
+    try {
+      const m = await adapter.fetchMarket(marketId);
+      const winnerLabel = m.winningLabel ?? m.winningOutcome;
+      if (m.resolved && winnerLabel) {
+        const won = didOutcomeWin(outcome, { winningLabel: winnerLabel, yesPrice: m.yesPrice });
+        if (won !== null) value = won ? 1 : 0;
+      }
+    } catch {
+      /* fall through to the event-resolution path */
+    }
+    if (value === undefined) {
+      try {
+        const ev = await fetchEventResolution(marketId);
+        if (ev) {
+          const won = didOutcomeWin(outcome, { winningLabel: ev });
+          if (won !== null) value = won ? 1 : 0;
+        }
+      } catch {
+        /* leave unresolved */
+      }
+    }
+    if (value === undefined) continue;
+    fs.appendFileSync(
+      LOWCONF_SHADOW_FILE,
+      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
+    );
+    lResolved++;
+  }
+  const lSummary = summarizeLowConf(readLowConfRows());
+  fs.writeFileSync(LOWCONF_SHADOW_SUMMARY_FILE, JSON.stringify(lSummary, null, 2));
+  const bucketLine = Object.entries(lSummary.byConfidenceBucket)
+    .map(([b, v]) => `${b}: ${v.n} (${v.marked} marked, $${v.wouldHavePnl.toFixed(2)})`)
+    .join(" | ");
+  log(
+    `shadow-lowconf: +${lResolved} marked this run (backlog ${lPending.size}). ` +
+      `Confidence-gate counterfactual: ${lSummary.candidates} rejected (` +
+      `${lSummary.confidenceOnlyCandidates} blocked by confidence ALONE), ` +
+      `${lSummary.marked} settled, $${lSummary.wouldHavePnl.toFixed(2)} @ $${lSummary.stakeUsd}/trade ` +
+      `(${lSummary.avgPnlPerTrade === null ? "—" : "$" + lSummary.avgPnlPerTrade.toFixed(2)}/trade; ` +
+      `confidence-only $${lSummary.confidenceOnly.wouldHavePnl.toFixed(2)} on ${lSummary.confidenceOnly.marked} settled) | ${bucketLine}. ` +
+      `Summary: ${LOWCONF_SHADOW_SUMMARY_FILE}`
   );
 
   const summary = summarizeShadow(readShadowRows());

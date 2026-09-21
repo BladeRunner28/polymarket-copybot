@@ -40,6 +40,17 @@ export interface TradeScoreResult {
   lane?: "short_ttr";
   copyScore: number; // 0..100
   confidence: number; // 0..1
+  /**
+   * Real gate inputs (2026-09-20 daily report change 2, user-approved).
+   *
+   * `confidence` above is 0 BY CONSTRUCTION on skip/watchlist/lane paths (three
+   * skip returns hardcode it), which left 99.2% of skip rows unable to answer
+   * 'what did the minConfidence gate actually see?'. These two fields carry the
+   * values the gates used: the confidence as computed (before any zeroing) and the
+   * post-boost decision score at full precision.
+   */
+  rawConfidence: number; // 0..1 — as computed, before the skip paths zero it
+  adjustedCopyScore: number; // post-boost score, unrounded
   simulatedPositionSize: number | null; // USD 5..20, only for paper_copy
   reasons: string[];
   risks: string[];
@@ -236,6 +247,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
       decision: "skip",
       copyScore: Math.round(copyScore * 10) / 10,
       confidence: 0,
+      rawConfidence: confidence,
+      adjustedCopyScore: copyScore,
       simulatedPositionSize: null,
       reasons: [],
       risks: hardSkips,
@@ -260,6 +273,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
       decision: "skip",
       copyScore: Math.round(copyScore * 10) / 10,
       confidence: 0,
+      rawConfidence: confidence,
+      adjustedCopyScore: copyScore,
       simulatedPositionSize: null,
       reasons: [],
       risks: [
@@ -319,6 +334,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
       decision: "paper_copy",
       copyScore: Math.round(copyScore * 10) / 10,
       confidence: Math.max(0, Math.min(1, confidence)),
+      rawConfidence: confidence,
+      adjustedCopyScore: copyScore,
       simulatedPositionSize: Math.round(clamped * 100) / 100,
       reasons: reasons.length ? reasons : ["Score cleared paper_copy threshold"],
       risks,
@@ -335,6 +352,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
       lane: "short_ttr",
       copyScore: Math.round(copyScore * 10) / 10,
       confidence: 0,
+      rawConfidence: confidence,
+      adjustedCopyScore: copyScore,
       simulatedPositionSize: Math.round(clampPaperSize(rules.shortTtrSizeUsd) * 100) / 100,
       reasons: [...reasons, `Short-TTR lane: resolves in ${ttr !== undefined ? ttr.toFixed(1) : "?"}h — daily PnL channel`],
       risks: [...risks, ...hardSkips, "short-ttr lane (relaxed drift & score bar)"],
@@ -347,6 +366,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
       decision: "watchlist",
       copyScore: Math.round(copyScore * 10) / 10,
       confidence: Math.max(0, Math.min(1, confidence)),
+      rawConfidence: confidence,
+      adjustedCopyScore: copyScore,
       simulatedPositionSize: null,
       reasons: reasons.length ? reasons : ["Interesting but below copy threshold"],
       risks: risks.length ? risks : ["Not clean enough to copy"],
@@ -357,6 +378,8 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     decision: "skip",
     copyScore: Math.round(copyScore * 10) / 10,
     confidence: 0,
+    rawConfidence: confidence,
+    adjustedCopyScore: copyScore,
     simulatedPositionSize: null,
     reasons: [],
     risks: risks.length ? risks : ["Weak overall setup"],
