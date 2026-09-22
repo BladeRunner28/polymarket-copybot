@@ -145,7 +145,9 @@ async function activeMarketIds(): Promise<string[]> {
   // definition. Open paper positions include stale/resolved markets whose
   // tokens are dead on the CLOB WS (gamma returns them, the WS returns []).
   const recent = await prisma.observedTrade.findMany({
-    where: { timestamp: { gte: new Date(Date.now() - 2 * 3_600_000) } },
+    // v61: keep the L2 watch list on copy-candidate markets; observation-only
+    // rows would push real candidates out of the MAX_MARKETS subscription.
+    where: { timestamp: { gte: new Date(Date.now() - 2 * 3_600_000) }, observationOnly: false },
     select: { marketId: true },
     distinct: ["marketId"],
     orderBy: { timestamp: "desc" },

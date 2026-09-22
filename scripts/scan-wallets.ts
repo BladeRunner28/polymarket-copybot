@@ -65,6 +65,11 @@ async function main() {
         where: { id: w.id },
         data: {
           status,
+          // v61 (tuning review #33 rec 1, user-approved 2026-09-22): anchor for
+          // the observation universe. A wallet keeps the timestamp of its last
+          // TRACKED scan after the cap demotes it, which is what lets the monitor
+          // keep observing it — copy bookings excluded — for the trailing window.
+          ...(status === "track" ? { lastTrackedAt: new Date() } : {}),
           roi30d: score.roi30d,
           consistencyScore: score.consistencyScore,
           copyabilityScore: score.copyabilityScore,

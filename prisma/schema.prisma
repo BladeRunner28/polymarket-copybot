@@ -44,6 +44,12 @@ model WalletProfile {
   riskNotes            String?
   isDemo               Boolean  @default(false)
   lastScannedAt        DateTime?
+  // v61 (tuning review #33 rec 1, user-approved 2026-09-22): the anchor for the
+  // OBSERVATION universe. Set to now on every scan that leaves the wallet at
+  // status='track'; a wallet demoted by the hourly cap therefore keeps the
+  // timestamp of its last tracked scan, and the monitor observes it (copy
+  // bookings excluded) while lastTrackedAt is inside the trailing window.
+  lastTrackedAt        DateTime?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -65,6 +71,12 @@ model ObservedTrade {
   timestamp      DateTime
   rawTradeJson   String   @default("{}")
   isDemo         Boolean  @default(false)
+  // v61 (tuning review #33 rec 1, user-approved 2026-09-22): rows detected for a
+  // wallet that held status='track' in the trailing window but is NOT in the
+  // current top-25 copy set. They exist for measurement only — no copy decision
+  // is ever made on them — so every reader whose output feeds a copy decision or
+  // a published number must filter `observationOnly: false`.
+  observationOnly Boolean @default(false)
   createdAt      DateTime @default(now())
 
   wallet    WalletProfile?   @relation(fields: [walletAddress], references: [address])
@@ -72,6 +84,7 @@ model ObservedTrade {
 
   @@unique([walletAddress, marketId, outcome, side, timestamp])
   @@index([walletAddress])
+  @@index([observationOnly, timestamp])
   @@index([marketId])
 }
 

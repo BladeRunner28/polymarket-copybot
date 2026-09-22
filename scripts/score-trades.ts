@@ -30,6 +30,7 @@ import {
 import { kellySizeForCopy } from "../src/lib/kelly";
 import { appendShadowRow, SHADOW_MAX_PRICE } from "../src/lib/shadow-longshot";
 import { appendDriftShadow } from "../src/lib/shadow-drift";
+import { copyWalletAddresses, MAX_TRACKED } from "../src/lib/wallet-universe";
 
 async function main() {
   assertPaperOnly("score:trades");
@@ -265,8 +266,12 @@ async function main() {
     if (ot?.marketCategory) c200SlugCounts.set(ot.marketCategory, (c200SlugCounts.get(ot.marketCategory) ?? 0) + 1);
   }
 
+  // v61 (tuning review #33 rec 1, user-approved 2026-09-22): observation-only
+  // rows are measurement, not candidates — they are never scored, never
+  // journaled and never copied. Excluding them here keeps the skip histogram and
+  // the copy funnel exactly as they were before the observation sweep was added.
   const unscored = await prisma.observedTrade.findMany({
-    where: { decisions: { none: {} } },
+    where: { decisions: { none: {} }, observationOnly: false },
     orderBy: { timestamp: "desc" },
     take: Number(process.env.SCORE_BATCH_LIMIT ?? 400),
   });
@@ -320,6 +325,12 @@ async function main() {
   );
   let deduped = 0;
 
+  // v61 the COPY side of the split: only the current top-N tracked wallets may
+  // book a NEW copy. Same predicate the monitor uses to decide which rows are
+  // copy-eligible, re-read here because a wallet can be demoted by the hourly
+  // scan between the monitor's fetch and this run. Anything else that still
+  // reaches the loop is journaled as a skip rather than scored.
+  const copyEligible = await copyWalletAddresses(adapter.isDemo);
   for (const t of unscored) {
     // v52 sweep-dedup guard (option A): collapse fills of a (wallet, market,
     // outcome) that already has an OPEN copy — cadence-agnostic by design.
@@ -356,15 +367,49 @@ async function main() {
     }
     const wallet = await prisma.walletProfile.findUnique({ where: { address: t.walletAddress } });
     if (!wallet) continue;
+
+    // v61 defensive copy gate (rec 1: "keep new copy bookings on the current
+    // top-25 only"). The monitor already stamps non-top-25 wallets
+    // observationOnly, so this branch fires only on a demotion that landed
+    // between the monitor's sweep and this scoring run.
+    if (!copyEligible.has(t.walletAddress)) {
+      skips++;
+      log(
+        `[OBSERVE-ONLY] ${t.walletAddress.slice(0, 6)}… ${t.marketId} — wallet outside the current top-${MAX_TRACKED} copy set; observed, not copied`
+      );
+      try {
+        await prisma.decisionJournal.create({
+          data: {
+            observedTradeId: t.id,
+            walletAddress: t.walletAddress,
+            marketId: t.marketId,
+            decision: "skip",
+            copyScore: 0,
+            confidence: 0,
+            reasonsJson: "[]",
+            risksJson: JSON.stringify([
+              `observation-only: wallet outside the current top-${MAX_TRACKED} copy set (v61 observation/copy split)`,
+            ]),
+            isDemo: t.isDemo,
+          },
+        });
+      } catch (e) {
+        logError(`[OBSERVE-ONLY] journal write failed for ${t.id}: ${e instanceof Error ? e.message : e}`);
+      }
+      continue;
+    }
     
     // Phase 7: Swarm / Cluster Detection
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    // v61: swarm is a COPY signal — observation-only rows must not inflate it,
+    // or widening the monitored universe would silently move copy scores.
     const swarmCount = await prisma.observedTrade.count({
       where: {
         marketId: t.marketId,
         outcome: t.outcome,
         side: t.side,
-        timestamp: { gte: oneHourAgo }
+        timestamp: { gte: oneHourAgo },
+        observationOnly: false,
       }
     });
 
@@ -563,7 +608,10 @@ async function main() {
           riskGates.push(`token circuit breaker (tripped ${trip.reason})`);
         } else {
           const recent = await prisma.observedTrade.findMany({
-            where: { marketId: t.marketId, timestamp: { gte: windowStart } },
+            // v61: the flash-move breaker is a risk gate on real copy candidates;
+            // observation rows (wallet fill price, no market read) would add a
+            // second price convention to the window.
+            where: { marketId: t.marketId, timestamp: { gte: windowStart }, observationOnly: false },
             select: { detectedPrice: true },
           });
           const prices = recent.map((r) => r.detectedPrice).filter((p) => p > 0);

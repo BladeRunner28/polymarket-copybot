@@ -79,7 +79,9 @@ export async function computeInsiderScore(
   // Recent observed trades (60d) for pre-news / concentration / cluster.
   const since = new Date(Date.now() - 60 * 86_400_000);
   const trades = await prisma.observedTrade.findMany({
-    where: { walletAddress, timestamp: { gte: since }, isDemo: false },
+    // v61: observation-only rows (demoted wallets) are not copy candidates — the
+    // insider profile describes what a TRACKED wallet does, one row per real fill.
+    where: { walletAddress, timestamp: { gte: since }, isDemo: false, observationOnly: false },
     select: { marketId: true, outcome: true, marketCategory: true, marketQuestion: true, timestamp: true },
   });
   const totalTrades = trades.length || nResolved;
@@ -172,6 +174,9 @@ export async function computeInsiderScore(
         where: {
           marketId: { in: chunk },
           timestamp: { gte: new Date(Date.now() - 24 * 3_600_000) },
+          // v61: cross-wallet clustering feeds insider scores of TRACKED wallets;
+          // observation rows would count demoted wallets as if they were copy set.
+          observationOnly: false,
         },
         select: { walletAddress: true, marketId: true, outcome: true, timestamp: true },
       });
