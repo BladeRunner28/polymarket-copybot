@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-21T03:26:49.317Z",
+  "asOf": "2026-09-22T03:23:32.817Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,41 +12,47 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 701,
-    "inWindow": 306,
+    "copiesSeen": 729,
+    "inWindow": 334,
     "withKalshiQuote": 2,
-    "crossListRate": 0.007,
+    "crossListRate": 0.006,
     "staleSkips": 395,
-    "quoteFailures": 283,
-    "unverifiedMatches": 21,
+    "quoteFailures": 310,
+    "unverifiedMatches": 22,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 17,
+      "low_match_score_0.67": 18,
       "low_match_score_0.60": 3
     }
   },
   "books": {
     "pm": {
-      "n": 0,
-      "pnl": 0,
-      "staked": 0,
-      "roiPct": 0
+      "n": 2,
+      "pnl": 29.27,
+      "staked": 17.99,
+      "roiPct": 162.67
     },
     "kalshi": {
-      "n": 0,
-      "pnl": 0,
-      "staked": 0,
-      "roiPct": 0
+      "n": 2,
+      "pnl": 0.17,
+      "staked": 17.99,
+      "roiPct": 0.94
     },
     "delta": {
-      "pnl": 0,
-      "perTrade": 0
+      "pnl": -29.1,
+      "perTrade": -14.55
     }
   },
   "series": {
-    "dates": [],
-    "pmCum": [],
-    "kalshiCum": []
+    "dates": [
+      "2026-09-20"
+    ],
+    "pmCum": [
+      29.27
+    ],
+    "kalshiCum": [
+      0.17
+    ]
   },
   "matchAudit": [
     {
@@ -276,7 +282,36 @@
       "pmEntry": 0.05499999999999999,
       "verified": false,
       "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Norway win on 2026-09-24?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.425,
+      "verified": false,
+      "reason": "low_match_score_0.67"
     }
   ],
-  "perTrade": []
+  "perTrade": [
+    {
+      "tradeId": "cmu9xf2k1001212nojy1pgk6u",
+      "question": "Will AfD win the most seats in 1 German state election in September 2026?",
+      "pmEntry": 0.377,
+      "kalshiEntry": 0.99,
+      "pmPnl": 14.64,
+      "kalshiPnl": 0.08,
+      "delta": -14.55
+    },
+    {
+      "tradeId": "cmu9xf32o001512nohjsrbkix",
+      "question": "Will AfD win the most seats in 1 German state election in September 2026?",
+      "pmEntry": 0.377,
+      "kalshiEntry": 0.99,
+      "pmPnl": 14.64,
+      "kalshiPnl": 0.08,
+      "delta": -14.55
+    }
+  ]
 }

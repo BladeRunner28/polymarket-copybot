@@ -1,59 +1,69 @@
 {
-  "generatedAt": "2026-09-21T14:01:40.840Z",
-  "candidates": 12,
-  "marked": 0,
-  "awaitingResolution": 12,
-  "wins": 0,
-  "winRate": null,
-  "wouldHavePnl": 0,
-  "avgPnlPerTrade": null,
-  "confidenceOnlyCandidates": 0,
+  "generatedAt": "2026-09-22T02:44:54.833Z",
+  "candidates": 445,
+  "marked": 41,
+  "awaitingResolution": 404,
+  "wins": 16,
+  "winRate": 0.3902439024390244,
+  "wouldHavePnl": 19970.93,
+  "avgPnlPerTrade": 487.1,
+  "confidenceOnlyCandidates": 7,
   "stakeUsd": 10,
   "byBand": {
     "0-0.2": {
-      "n": 2,
-      "marked": 0,
-      "wouldHavePnl": 0
+      "n": 35,
+      "marked": 8,
+      "wouldHavePnl": 20142.22
     },
     "0.8-1.01": {
-      "n": 9,
-      "marked": 0,
-      "wouldHavePnl": 0
+      "n": 244,
+      "marked": 10,
+      "wouldHavePnl": -35.16
     },
     "0.4-0.6": {
-      "n": 1,
+      "n": 52,
+      "marked": 13,
+      "wouldHavePnl": -49.83
+    },
+    "0.6-0.8": {
+      "n": 85,
+      "marked": 10,
+      "wouldHavePnl": -86.3
+    },
+    "0.2-0.4": {
+      "n": 29,
       "marked": 0,
       "wouldHavePnl": 0
     }
   },
   "byConfidenceBucket": {
     "<0.40": {
-      "n": 8,
-      "marked": 0,
-      "wouldHavePnl": 0
+      "n": 319,
+      "marked": 34,
+      "wouldHavePnl": 19996.78
     },
     "0.40-0.50": {
-      "n": 2,
-      "marked": 0,
-      "wouldHavePnl": 0
+      "n": 63,
+      "marked": 6,
+      "wouldHavePnl": -25.87
     },
     "0.50-0.60": {
-      "n": 1,
-      "marked": 0,
-      "wouldHavePnl": 0
+      "n": 35,
+      "marked": 1,
+      "wouldHavePnl": 0.02
     },
     "0.60-0.70": {
-      "n": 1,
+      "n": 28,
       "marked": 0,
       "wouldHavePnl": 0
     }
   },
   "confidenceOnly": {
-    "n": 0,
+    "n": 7,
     "marked": 0,
     "wouldHavePnl": 0,
     "avgPnlPerTrade": null
   },
   "firstCandidateAt": "2026-09-21T13:59:15.510Z",
-  "lastCandidateAt": "2026-09-21T13:59:15.783Z"
+  "lastCandidateAt": "2026-09-22T01:04:36.906Z"
 }

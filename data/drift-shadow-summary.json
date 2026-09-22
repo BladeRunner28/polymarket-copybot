@@ -1,30 +1,30 @@
 {
-  "generatedAt": "2026-09-21T02:35:57.220Z",
-  "candidates": 13257,
-  "marked": 2448,
-  "awaitingResolution": 10809,
-  "wins": 1394,
-  "winRate": 0.5694444444444444,
-  "wouldHavePnl": 36217.18,
-  "avgPnlPerTrade": 14.79,
-  "avgPnlPerTradeExDust": 0.42,
-  "dustExcluded": 600,
+  "generatedAt": "2026-09-22T02:36:43.555Z",
+  "candidates": 14763,
+  "marked": 2743,
+  "awaitingResolution": 12020,
+  "wins": 1549,
+  "winRate": 0.5647101713452425,
+  "wouldHavePnl": 35015.33,
+  "avgPnlPerTrade": 12.77,
+  "avgPnlPerTradeExDust": -0.16,
+  "dustExcluded": 608,
   "dustMinEntryPrice": 0.1,
-  "avgPnlPerTradeExDustLast7dCohort": 0.42,
-  "cohort7dMarked": 1848,
-  "totalMarked": 2448,
+  "avgPnlPerTradeExDustLast7dCohort": -0.16,
+  "cohort7dMarked": 2135,
+  "totalMarked": 2743,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-09-21T02:08:49.213Z",
+  "lastCandidateAt": "2026-09-22T01:04:36.906Z",
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
-    "consecutiveDaysAtOrBelow": 2,
-    "cohort7d": 0.42,
-    "cohort7dMarked": 1848,
+    "consecutiveDaysAtOrBelow": 3,
+    "cohort7d": -0.16,
+    "cohort7dMarked": 2135,
     "cohortAtOrBelow": true,
     "tripped": false,
-    "seriesDays": 2,
+    "seriesDays": 3,
     "recent": [
       {
         "day": "2026-09-20",
@@ -32,7 +32,11 @@
       },
       {
         "day": "2026-09-21",
-        "avgPnlPerTradeExDust": 0.42
+        "avgPnlPerTradeExDust": -0.16
+      },
+      {
+        "day": "2026-09-22",
+        "avgPnlPerTradeExDust": -0.16
       }
     ],
     "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
