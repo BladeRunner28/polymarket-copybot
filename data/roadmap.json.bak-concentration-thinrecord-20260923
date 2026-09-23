@@ -1349,33 +1349,30 @@
     {
       "id": "polycopy-concentration-feature-test",
       "title": "Test category CONCENTRATION as a wallet-selection feature (specialist vs generalist)",
-      "column": "Done",
+      "column": "Scheduled",
       "effort": "~2h (compute concentration per wallet from ObservedTrade, join to realized PnL, decile table)",
-      "dates": "Carded 2026-09-23 (from the Polycopy research review) · measured and closed 2026-09-23 (NULL) · code-only, no RuleSet change",
-      "gate": "VERIFY: decile table of wallet-level category concentration (share of the wallet's trade volume in its top category) vs our realized PnL / win rate across our own legs, with n per decile and the window stated; report the measured effect size or a null. Any use as a scoring input is a SEPARATE proposal with its own pre-registered gate. MET 2026-09-23 — NULL on both lanes and on every view. Population: 1,958 settled C-200 legs from 99 wallets ($14,824.27 cost, +$2,426.13 = 16.4%) and 8,669 STANDARD legs from 176 wallets ($99,426.80, +$8,833.69 = 8.9%); 353 of 410 observed wallets carry the feature (>=10 observed trades). Feature measured two ways because the full-history form is confounded: top-category share by volume over the wallet's FULL observed history (spearman -0.721 C-200 / -0.566 STANDARD against how many of its trades we observed — i.e. mostly a thinness proxy) and over its LAST 20 observed trades (equal-n window; confound -0.103 / -0.120). Results: deciles NON-MONOTONE on both lanes and both windows (C-200 last-20 mean leg -$0.13 (D1) to +$4.48 (D8) to -$2.40 (D10), edge -20.6% in D6 vs +71.9% in D8); the vendor's own >=80% split FLIPS SIGN between windows on both lanes (C-200 +27.8% edge for specialists on the last-20 window vs -0.1% on full history; STANDARD +12.1% vs +6.6%) with identical win-leg shares (48.5% vs 50.4%; 64.0% vs 63.5%); wallet-clustered permutation p >= 0.377 on all four splits; within-entry-price-quintile tests show no consistent band (C-200: +$7.48 p=0.447 / -$2.97 p=0.026 / -$0.64 p=0.544 / +$0.65 p=0.452 / -$0.01 p=0.984; STANDARD p = 0.815 / 0.148 / 0.101 / 0.896 / 0.371 — 10 band tests, one nominal hit, sign inconsistent). AUC vs leg outcome: conc fine 0.474 [0.448, 0.500] C-200 and 0.482 [0.470, 0.495] STANDARD, i.e. at/below chance and outside the sample's MDE of ±0.026 / ±0.013; the best case ('prefer generalists') is 0.526 / 0.518. Classifier validated against polycopy's own categoryStrengthsJson at pearson +0.548 / spearman +0.547 over 353 wallets, so this is not a classifier artifact.",
-      "note": "WHY: the Q1 2026 report (marketing-grade, no dataset) claims category concentration is the strongest predictor of trader performance (80%+ of volume in one category = 58.2% win rate vs 51.1% for 4+ categories; NBA O/U specialists +18pp). We store bestCategory/categoryFitScore but had never measured concentration itself. WHAT SHIPPED: scripts/wallet-concentration-test.py — read-only, stdlib-only, one command re-runs everything, writes nothing; a keyword classifier (exact slug series tokens first, then ordered question rules) with its coverage printed before any result, because ObservedTrade.marketCategory is a bare slug token ('highest' 71k rows, 'what', 'fifwc') and unusable as a category. ESTIMATOR FIX THAT MATTERS: two-group tests permute the GROUP LABEL AT THE WALLET LEVEL (pooled wallets re-split each draw) — the first version shuffled legs and returned p=0.006/0.000 for the STANDARD >=80% contrast; clustered it is 0.493/0.377. Any future leg-level two-group test in this stack should be treated as invalid for wallet-level features. SIDE FINDING (carded: wallet-selection-score-information): the scores we select wallets with are coin flips at leg grain (globalScore 0.497/0.496, roi30d 0.496/0.426, consistencyScore 0.494/0.432) while entry price is 0.653/0.758, and only copyabilityScore (STANDARD 0.591) and our observed-trade count (0.631) clear their MDE. Write-up: :3013/drafts/polycopy-concentration-feature-test-20260923",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY: decile table of wallet-level category concentration (share of the wallet's trade volume in its top category) vs our realized PnL / win rate across our own legs, with n per decile and the window stated; report the measured effect size or a null. Any use as a scoring input is a SEPARATE proposal with its own pre-registered gate.",
+      "note": "WHY: the Q1 2026 report (marketing-grade, no dataset — treat as hypothesis) claims category concentration is the strongest predictor of trader performance: wallets with 80%+ of volume in one category averaged 58.2% win rate vs 51.1% for 4+ categories (+7.1pp), and NBA Over/Under specialists beat the category average by 18pp. We already store `bestCategory` and `categoryFitScore`, but we have NEVER measured concentration itself, and our C-200 category blacklist (lol/cs2) is a hard filter rather than a graded feature. This is the cheapest genuinely new selection signal on the table, and it is measurable entirely from data we already hold.",
       "tags": [
         "polycopy",
         "wallet-selection",
         "concentration",
-        "category",
-        "measurement"
+        "category"
       ]
     },
     {
       "id": "polycopy-thin-record-floor-test",
       "title": "Test a minimum-resolved-positions floor on wallet selection (thin-record rule)",
-      "column": "Done",
+      "column": "Scheduled",
       "effort": "~1.5h (per-wallet resolved-leg counts vs realized PnL, threshold sweep)",
-      "dates": "Carded 2026-09-23 (from the Polycopy research review) · measured and closed 2026-09-23 (NULL + two data findings) · code-only, no RuleSet change",
-      "gate": "VERIFY: realized PnL / win rate of our legs grouped by the SOURCE wallet's resolved-position count (buckets stated), n per bucket and window stated, plus the simulated effect of a floor at each candidate N on our copy volume. Any floor is a separate proposal. MET 2026-09-23 — NULL, plus two data findings that outrank it. Population: 1,960 settled C-200 legs / 101 wallets ($14,844.22 cost, +$2,426.31 = 16.3%) and 8,693 STANDARD legs / 184 wallets ($99,672.80, +$8,951.40 = 9.0%, independently re-derived from SQL). (a) STORED SNAPSHOT resolvedTradeCount30d: C-200 <25 = 6 wallets/31 legs (+$0.75/leg, +10.2% edge), 25-99 = 33/714 (+$0.24, +2.5%), 100 = 62/1,215 (+$1.84, +28.5%), thin-vs-deep wallet-clustered p = 0.841 mean / 0.263 median, every CI spans zero. (b) AS-OF-ENTRY observed depth (distinct markets seen before the leg opened, median 228): C-200 quartiles -$0.60 / +$1.65 / -$0.58 / +$3.38 per leg — non-monotone, deepest bucket median leg $0.01, all CIs include zero. STANDARD: thin(<25) vs deep(100) -$1.77 vs +$0.93 per leg, clustered p = 0.092 / 0.068 (NOT significant: the leg-level shuffle gave 0.008/0.000), and within entry-price quintiles only 3 of 5 bands are testable with the single signal contradicting its neighbour (-$7.71 vs -$0.39 p=0.022 in 0.41-0.53; +$5.56 vs +$5.02 p=0.946 below it); thin wallets' median entry 0.482 vs 0.585 deep = a PRICE mix, not a depth law. AUC vs leg won: depth-at-entry 0.496 C-200 / 0.523 STANDARD, resolvedTradeCount30d 0.526 / 0.512, tradeCount30d 0.518 / 0.581 [0.568, 0.593]; entry price 0.653 / 0.758; MDE ±0.026 / ±0.013. FLOOR SIMULATION (in-sample): C-200 snapshot>=100 keeps 52.8% of cost and raises edge 16.3%->28.5% while REMOVING $194.02 of realized PnL and 8 of 13 tracked wallets; as-of-entry>=100 keeps 70.6%, edge 28.6%, removes -$572.73 (a real tail trim) but drops 9 of 13 tracked wallets; as-of-entry>=250 removes +$262.98 again (sign flips). STANDARD as-of-entry>=10 keeps 82.2% of volume and cuts edge 9.0%->2.1% because the removed thin legs carried +$7,232.87. A depth floor buys a better ratio and less profit on both lanes — the ladder is a PnL goal.",
-      "note": "WHY: polycopy's Sep-8 report flags 'thin' records (few resolved positions) and shrinks their stated ROI (their all-time median 10.52% -> 2.07%); our selection has no explicit depth floor. WHAT SHIPPED: scripts/wallet-depth-floor-test.py — read-only, one command, writes nothing; wallet-clustered bootstrap CIs and wallet-clustered permutation tests throughout. DATA FINDINGS (carded: wallet-depth-field-clamp): resolvedTradeCount30d is CLAMPED AT 100 — over 3,201 wallets min 0 / p10 11 / p25 61 / p50 100 / p75 100 / p90 100 / max 100, so 65.3% of every wallet sits at the cap and the field cannot separate a 100-position record from a 900-position one; tradeCount30d is capped at 200 (p90 = max); and the snapshot is a live value (lastScannedAt spans 2026-09-18..09-23) whose spearman against the depth actually seen at entry is -0.21 C-200 / +0.35 STANDARD. Our own as-of-entry depth is time-consistent but a LOWER BOUND (observation window starts 2026-07-13). Write-up: :3013/drafts/polycopy-thin-record-floor-test-20260923",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY: realized PnL / win rate of our legs grouped by the SOURCE wallet's resolved-position count (buckets e.g. <25 / 25-100 / 100-500 / 500+), n per bucket and window stated — plus the simulated effect of a floor at each candidate N on our copy volume. Any floor is a separate proposal.",
+      "note": "WHY: the Sep-8 report flags a record as 'thin' when it holds few resolved positions and shows the share is large — 12 of 88 scoreable wallets on the 30-day board vs 34 of 65 on the all-time board — while noting that a spectacular number over a handful of bets is often one good week (their shrink moves the all-time median from 10.52% raw to 2.07%). Our wallet selection has no explicit depth floor: `globalScore` blends ROI/consistency/copyability, and scan:wallets profiles whatever the 25 least-recently-scanned wallets are. If our legs from thin-record wallets underperform, a floor is a cheap, permanent filter on the same axis their model uses.",
       "tags": [
         "polycopy",
         "wallet-selection",
-        "thin-record",
-        "depth",
-        "measurement"
+        "thin-record"
       ]
     },
     {
@@ -1407,65 +1404,6 @@
         "oracle",
         "user-action"
       ]
-    },
-    {
-      "id": "psmi-history-daily-append",
-      "column": "In Progress",
-      "effort": "~20 min (wrapper script + cron job; no copybot code touched)",
-      "dates": "Carded and applied 2026-09-23 (follow-up approved from polycopy-psmi-regime-measurement)",
-      "gate": "VERIFY 7d (2026-09-30): each scheduled tick leaves a run in logs/cron/copybot-psmi-append.log (`grep -c '=== run' logs/cron/copybot-psmi-append.log` >= 14 for two ticks/day) AND every date their history endpoint returns appears in data/polycopy-psmi-history.csv exactly once AND the 57 pre-existing rows are BYTE-IDENTICAL to the pre-wiring file (the append must never rewrite a stored row — check with `python3 scripts/fetch-psmi-history.py --dry-run` reporting 'no new dates' and a diff of the body against the committed revision) AND `python3 scripts/psmi-regime-measure.py` still reproduces its published null on the grown sample (n rises, verdict unchanged). Kill switch: cronjob_manage action=remove job_id=12618d2787ff.",
-      "note": "WHY (approved 2026-09-23 as the outstanding decision of polycopy-psmi-regime-measurement): their history endpoint keeps 24 months free, but nothing guarantees a value we did not store stays what we measured — the local CSV is the immovable record, and a daily append is what lets a future re-test run on 2-3x the days (the PSMI null is limited by n=45, not by effect size). WHAT SHIPPED: ~/.hermes/scripts/copybot-psmi-append.sh (project script conventions: mkdir lock with stale-lock break, tee to logs/cron/copybot-psmi-append.log, non-zero exit on failure) exec'ing python3 scripts/fetch-psmi-history.py (append-only, --dry-run supported, existing rows never rewritten). Cron job 12618d2787ff 'copybot-psmi-append', schedule '20 9,21 * * *' (09:20 + 21:20 local, twice daily because idempotent and their publish time is not documented), no_agent=true (no LLM, no tokens), deliver=local (silent — Discord stays quiet per HERMES.md). First hand-run 2026-09-23 12:33 returned 'no new dates — file unchanged (57 rows, latest 2026-09-22)' with the body md5 unchanged (c74fcfc51ee5b846c5033b1de75fcf18 pre- and post-run). NOTHING ELSE TOUCHED: no copybot code, no rule, no lane, no report line; the stored record is still 57 rows until their next daily close lands.",
-      "tags": [
-        "polycopy",
-        "psmi",
-        "cron",
-        "data-retention"
-      ],
-      "title": "Daily append of Polycopy's PSMI history to our local record (approved 2026-09-23)"
-    },
-    {
-      "id": "wallet-depth-field-clamp",
-      "column": "Scheduled",
-      "effort": "~1h (scan write path + sample re-scan; a score input's range is involved)",
-      "dates": "Carded 2026-09-23 (found by wallet-depth-floor-test) · recommendation-only",
-      "gate": "VERIFY: the scan write path stores an UNCLAMPED count for WalletProfile.resolvedTradeCount30d and tradeCount30d while any score that consumes them keeps whatever clamp is intended, proven by re-scanning >=25 wallets and showing stored values above 100/200 exist AND that globalScore / roi30d / copyabilityScore for those wallets is unchanged (a stored-truth fix must not move a published score). If the clamp turns out to be intended in the scoring formula, the card closes with that stated and the raw count stored anyway. Either way: the field's resolution above 100 is what any future depth/thin-record work needs.",
-      "note": "WHAT WAS FOUND (2026-09-23, wallet-depth-floor-test): over all 3,201 wallets resolvedTradeCount30d reads min 0 / p10 11 / p25 61 / p50 100 / p75 100 / p90 100 / max 100 — 65.3% of every wallet sits exactly at 100, so a 100-position record is indistinguishable from a 900-position one; tradeCount30d is capped at 200 (p90 = max = 200). Consequence: the vendor's thin-record axis (resolved positions) cannot be graded on our stored copy of it, and the depth measurement had to build its own as-of-entry measure to say anything about the deep end. RECOMMENDATION-ONLY because the field feeds score inputs (globalScore/copyabilityScore) and the scan is the selection path: ship it as store-raw + keep-the-score-clamp, with the before/after of every score it touches.",
-      "tags": [
-        "wallet-selection",
-        "data-integrity",
-        "approval-needed"
-      ],
-      "title": "DECISION (recommendation only): stop clamping the scanner's wallet depth fields at 100 / 200"
-    },
-    {
-      "id": "wallet-selection-score-information",
-      "column": "Scheduled",
-      "effort": "~2h (AUC + price-bucket scaffolding already exists in the two instruments)",
-      "dates": "Carded 2026-09-23 (side finding of the concentration + thin-record measurements) · measurement, no rule",
-      "gate": "VERIFY: AUC with wallet-clustered CIs for EVERY stored selection score (globalScore, roi30d, consistencyScore, copyabilityScore, winRate30d, resolvedTradeCount30d, categoryFitScore) against leg outcome on BOTH lanes, each measured WITHIN entry-price quintiles, with the price-only AUC printed as the bar and the per-lane MDE (Hanley-McNeil) stated; name any ranker that clears its MDE and the population it cleared it on. Any use of a score as a selection input is a separate proposal with its own pre-registered gate.",
-      "note": "WHY (measured 2026-09-23 in wallet-concentration-test.py and wallet-depth-floor-test.py, n = 1,958 C-200 and 8,669 STANDARD settled legs): at leg grain the scores we select wallets with are indistinguishable from coin flips — globalScore 0.497 / 0.496, roi30d 0.496 / 0.426, consistencyScore 0.494 / 0.432, winRate30d 0.480 / 0.462, resolvedTradeCount30d 0.526 / 0.512 — while the market's own entry price is 0.653 / 0.758 (MDE ±0.026 / ±0.013). Two wallet-level features DO clear their MDE on STANDARD: copyabilityScore 0.591 [0.578, 0.603] and our own observed-trade count for the wallet 0.631 [0.618, 0.643]; scan tradeCount30d is 0.581 [0.568, 0.593]. CAVEATS BEFORE ANYONE ACTS: AUC on 'leg won' is not EV (the book profits at ~50% win rate because winners and losers are not the same size), the sample only contains wallets that already cleared every gate, and a busy wallet may simply mean a liquid market — so this is a measurement, not a licence to rescore. Slack: the scaffolding (AUC + Hanley-McNeil MDE + price-bucket control) already exists in the two instruments.",
-      "tags": [
-        "wallet-selection",
-        "measurement",
-        "scoring",
-        "price-baseline"
-      ],
-      "title": "Measure how much information our wallet-selection scores carry about leg outcome (price baseline included)"
-    },
-    {
-      "id": "observed-trade-category-field",
-      "column": "Scheduled",
-      "effort": "~2h (write-path classifier or a declared-vocabulary decision + re-derive the features)",
-      "dates": "Carded 2026-09-23 (found by wallet-concentration-test) · recommendation-only",
-      "gate": "VERIFY: enumerate every reader of ObservedTrade.marketCategory (at least src/lib/scoring/wallet.ts:112 which builds WalletProfile.bestCategory / categoryStrengthsJson / categoryFitScore from it, plus the C-200 category blacklist and per-slug caps in rules.ts) and prove the defect with counts from the live DB (top stored tokens on 331k observed rows: 'will' 106,742, 'highest' 70,964, 'fifwc' 24,063, 'lol' 14,488, 'cs2' 13,840 — versus the leagues those tokens are standing in for), plus a spot check that the blacklist's lol/cs2 matching is genuinely the leagues. Then either fix the write path (src/lib/adapters/polymarket.ts:156/181/219 store String(eventSlug).split('-')[0]) or state that slug tokens are the intended vocabulary and downgrade the category features accordingly. Recommendation-only: the choice changes the input to categoryFitScore.",
-      "note": "WHAT WAS FOUND (2026-09-23, found while building the concentration classifier): ObservedTrade.marketCategory is the first dash-segment of the event slug, not a category — 'highest' (weather markets), 'will' (every plain question), 'fifwc', 'lal', 'what', 'elon', 'white'. src/lib/scoring/wallet.ts consumes it as `t.marketCategory ?? 'uncategorized'` to build the per-wallet category map, so WalletProfile.bestCategory, categoryStrengthsJson and categoryFitScore are slug-token statistics (a wallet's 'best category' can literally read 'highest' or 'what'), and src/lib/insider.ts:88 already documents 'marketCategory is NOT a research category'. The C-200 blacklist still works because lol/cs2/nfl happen to be real league tokens — which is why the defect never surfaced. Practical effect today: the category dimension of WALLET SCORING (categoryFitScore) is measuring slug prefixes, which is a plausible contributor to the scores' coin-flip AUCs at leg grain (wallet-selection-score-information). Fix options: classify at the write path (a keyword classifier already exists in scripts/wallet-concentration-test.py and agrees with polycopy's own category map at r=+0.55), or declare slug tokens canonical and stop describing the features as categories.",
-      "tags": [
-        "data-integrity",
-        "category",
-        "wallet-selection",
-        "approval-needed"
-      ],
-      "title": "ObservedTrade.marketCategory is a slug token, and our wallet category features are built on it"
     }
   ]
 }
