@@ -13,7 +13,16 @@ export interface WalletActivityTrade {
   marketId: string;
   conditionId?: string;
   marketQuestion: string;
+  /**
+   * RAW event-slug token (first dash-segment). Deliberately kept as-is: the v45
+   * per-bot blacklist and the per-slug position cap are defined on this
+   * granularity. Do NOT read it as a category — see marketCategoryClass.
+   */
   marketCategory?: string;
+  /** Real market category (coarse bucket) — src/lib/market-category.ts. */
+  marketCategoryClass?: string;
+  /** Real market category at league/market-type grain. */
+  marketCategoryFine?: string;
   outcome: string; // "YES" | "NO" | token label
   side: "BUY" | "SELL";
   price: number; // 0..1
@@ -57,11 +66,36 @@ export interface MarketState {
   raw?: unknown;
 }
 
+/**
+ * wallet-depth-field-clamp (2026-09-23): the true size of a wallet's position
+ * record, measured past the scanner's sampling ceilings. `censored` means the
+ * walk hit its own budget, so the counts are lower bounds — stored as such.
+ */
+export interface WalletDepth {
+  closedCount: number;
+  openCount: number;
+  totalCount: number;
+  closedCensored: boolean;
+  openCensored: boolean;
+  censored: boolean;
+  capNote: string;
+  requests: number;
+}
+
 export interface DataAdapter {
   readonly source: string;
   readonly isDemo: boolean;
   fetchLeaderboard(limit: number): Promise<LeaderboardEntry[]>;
   fetchWalletActivity(address: string, days: number): Promise<WalletActivityTrade[]>;
+  /**
+   * Depth of the wallet's position record, INDEPENDENT of the scoring sample.
+   * `sample` carries what fetchWalletActivity returned so a wallet below the
+   * sampling ceilings costs no extra requests.
+   */
+  fetchWalletDepth(
+    address: string,
+    sample: { closed: number; open: number }
+  ): Promise<WalletDepth>;
   fetchMarket(marketId: string): Promise<MarketState>;
 }
 

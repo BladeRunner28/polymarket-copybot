@@ -129,6 +129,12 @@ async function main() {
               conditionId: t.conditionId,
               marketQuestion: t.marketQuestion,
               marketCategory: t.marketCategory,
+              // observed-trade-category-field (2026-09-23, approved): the token
+              // above is the raw event-slug segment (v45 blacklist / per-slug cap
+              // granularity); these two are the REAL category, so no reader has
+              // to re-classify free text to get one.
+              marketCategoryClass: t.marketCategoryClass,
+              marketCategoryFine: t.marketCategoryFine,
               outcome: t.outcome,
               side: t.side,
               walletEntryPrice: t.price,

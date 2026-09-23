@@ -1425,47 +1425,93 @@
     },
     {
       "id": "wallet-depth-field-clamp",
-      "column": "Scheduled",
-      "effort": "~1h (scan write path + sample re-scan; a score input's range is involved)",
-      "dates": "Carded 2026-09-23 (found by wallet-depth-floor-test) · recommendation-only",
-      "gate": "VERIFY: the scan write path stores an UNCLAMPED count for WalletProfile.resolvedTradeCount30d and tradeCount30d while any score that consumes them keeps whatever clamp is intended, proven by re-scanning >=25 wallets and showing stored values above 100/200 exist AND that globalScore / roi30d / copyabilityScore for those wallets is unchanged (a stored-truth fix must not move a published score). If the clamp turns out to be intended in the scoring formula, the card closes with that stated and the raw count stored anyway. Either way: the field's resolution above 100 is what any future depth/thin-record work needs.",
-      "note": "WHAT WAS FOUND (2026-09-23, wallet-depth-floor-test): over all 3,201 wallets resolvedTradeCount30d reads min 0 / p10 11 / p25 61 / p50 100 / p75 100 / p90 100 / max 100 — 65.3% of every wallet sits exactly at 100, so a 100-position record is indistinguishable from a 900-position one; tradeCount30d is capped at 200 (p90 = max = 200). Consequence: the vendor's thin-record axis (resolved positions) cannot be graded on our stored copy of it, and the depth measurement had to build its own as-of-entry measure to say anything about the deep end. RECOMMENDATION-ONLY because the field feeds score inputs (globalScore/copyabilityScore) and the scan is the selection path: ship it as store-raw + keep-the-score-clamp, with the before/after of every score it touches.",
+      "column": "Done",
+      "effort": "~2h (helper + adapter method + scan wiring + schema + 6 tests + verify harness)",
+      "dates": "Carded 2026-09-23 · APPLIED + VERIFIED 2026-09-23",
+      "gate": "CLOSED 2026-09-23: causal check PASS (25 wallets, sample frozen across the walk: 0 score deltas, 0 sample mutations, 21/25 took the walk); production scan 25/25 profiled with 143 extra requests, 23/25 recorded deeper, 21 now store a value above the old 100/200 ceiling (resolved>100: 0 -> 21 wallets); prisma drift diff empty; 250/250 tests + tsc clean. Re-read gate moved to wallet-depth-floor-reread (rotation needs ~5 days to make the field truthful for all 3,201 wallets).",
+      "note": "WHAT SHIPPED: src/lib/scoring/wallet-depth.ts (countPaged/measureDepth, pure + tested), DataAdapter.fetchWalletDepth (live: bounded paged walk; demo: sample passthrough), scan-wallets wiring that stores the TRUE counts plus depthCensored/depthCapNote/depthMeasuredAt (3 new WalletProfile columns, applied by ALTER TABLE ADD COLUMN), tests/wallet-depth.test.ts (6), scripts/verify-wallet-depth.ts (--causal-check/--snapshot/--compare). ROOT CAUSE (measured, not assumed): nothing clamped the fields — the FETCH did. fetchWalletActivity takes /closed-positions twice (50 best + 50 worst PnL) and /positions once at limit=100, so it can never see more than 100 resolved / 200 total positions; 65.3% of 3,201 wallets sat at exactly 100 and 728 at exactly 200. Live API probe 2026-09-23: /closed-positions caps a page at 50 rows regardless of limit (and warns Deprecated: use /v1/closed-positions), /positions honours limit>=500, both honour offset, out-of-range offset returns []; a sampled wallet still returned rows at offset 160,000. SAFETY DESIGN: the walk is a SEPARATE read — the scoring sample is untouched, so no published score can move (proven by the causal check, not by a before/after scan: two production scans minutes apart see a moved live book and their deltas are drift, measured at max |delta| 0.00-0.03 per score). A sample under its ceiling IS the whole record and costs ZERO extra requests; only wallets at a ceiling get walked, bounded at 6 pages (300 closed / 600 open) with censored=true stored whenever the budget binds (14 of 25 walked wallets). Artifacts: drafts/wallet-depth-field-clamp-20260923.md, data/wallet-depth-verification.json, data/wallet-depth-causal-check.json, data/wallet-depth-verify-before.json.",
       "tags": [
-        "wallet-selection",
-        "data-integrity",
-        "approval-needed"
+        "data-quality",
+        "depth",
+        "shipped",
+        "verified"
       ],
       "title": "DECISION (recommendation only): stop clamping the scanner's wallet depth fields at 100 / 200"
     },
     {
       "id": "wallet-selection-score-information",
-      "column": "Scheduled",
-      "effort": "~2h (AUC + price-bucket scaffolding already exists in the two instruments)",
-      "dates": "Carded 2026-09-23 (side finding of the concentration + thin-record measurements) · measurement, no rule",
-      "gate": "VERIFY: AUC with wallet-clustered CIs for EVERY stored selection score (globalScore, roi30d, consistencyScore, copyabilityScore, winRate30d, resolvedTradeCount30d, categoryFitScore) against leg outcome on BOTH lanes, each measured WITHIN entry-price quintiles, with the price-only AUC printed as the bar and the per-lane MDE (Hanley-McNeil) stated; name any ranker that clears its MDE and the population it cleared it on. Any use of a score as a selection input is a separate proposal with its own pre-registered gate.",
-      "note": "WHY (measured 2026-09-23 in wallet-concentration-test.py and wallet-depth-floor-test.py, n = 1,958 C-200 and 8,669 STANDARD settled legs): at leg grain the scores we select wallets with are indistinguishable from coin flips — globalScore 0.497 / 0.496, roi30d 0.496 / 0.426, consistencyScore 0.494 / 0.432, winRate30d 0.480 / 0.462, resolvedTradeCount30d 0.526 / 0.512 — while the market's own entry price is 0.653 / 0.758 (MDE ±0.026 / ±0.013). Two wallet-level features DO clear their MDE on STANDARD: copyabilityScore 0.591 [0.578, 0.603] and our own observed-trade count for the wallet 0.631 [0.618, 0.643]; scan tradeCount30d is 0.581 [0.568, 0.593]. CAVEATS BEFORE ANYONE ACTS: AUC on 'leg won' is not EV (the book profits at ~50% win rate because winners and losers are not the same size), the sample only contains wallets that already cleared every gate, and a busy wallet may simply mean a liquid market — so this is a measurement, not a licence to rescore. Slack: the scaffolding (AUC + Hanley-McNeil MDE + price-bucket control) already exists in the two instruments.",
+      "column": "Done",
+      "effort": "~2h (instrument + numpy estimator validated against the pure-Python reference)",
+      "dates": "Carded 2026-09-23 · MEASURED 2026-09-23",
+      "gate": "CLOSED 2026-09-23 (measurement only, gates nothing): scripts/wallet-selection-score-information.py, one command, writes data/wallet-selection-score-information.json. Reproduces the card numbers and extends them with wallet-clustered CIs + within-price-quintile re-measurement.",
+      "note": "RESULT: on C-200 (1,962 settled legs / 102 wallets, MDE +-0.026, win legs 49.5%) NOT ONE wallet-selection score clears its MDE: globalScore 0.497 [0.457,0.563], roi30d 0.496, consistencyScore 0.494, copyabilityScore 0.493, winRate30d 0.480, resolvedTradeCount30d 0.526, tradeCount30d 0.519, categoryFit (token) 0.497 — against entryPrice 0.653 [0.610,0.698] which does clear and still reads 0.572 INSIDE price quintiles. On STANDARD (8,694 legs / 184 wallets, MDE +-0.013, win legs 63.8%): globalScore 0.496, roi30d 0.427, consistencyScore 0.432, winRate30d 0.462 (coin flips or worse); copyabilityScore 0.590 and tradeCount30d 0.581 clear the MDE but their clustered CIs include 0.5 (0.484 / 0.489) so they are NOT cleared; averageLiquidity 0.602 [0.513,0.658] and averageSpread 0.603 [0.505,0.658] DO clear — but both collapse within entry-price quintiles (0.491 / 0.474), i.e. what clears is a market-quality proxy, not a wallet-skill signal. categoryFit (token) 0.525 [0.454,0.590] does not clear — the quantitative case for the class swap. CONTEXT: C-200 q1 (price 0.03-0.29) is 337 legs at 32.9% win yet +$2,729 realized (the long-shot band carries the lane); STANDARD q2 (0.44-0.79) is 4,632 legs / +$5,663; settled legs mix 481 resolved / 1,481 early-exit closed on C-200, and the exit rule is not outcome-neutral. CAVEATS (in the artifact): AUC is not EV; wallet scores are as-of-print snapshots; the sample contains only wallets that already cleared every gate, so this measures the ranking INSIDE the admitted set, not the gates. Artifacts: drafts/wallet-selection-score-information-20260923.md.",
       "tags": [
-        "wallet-selection",
+        "ml",
         "measurement",
-        "scoring",
-        "price-baseline"
+        "wallet-scores",
+        "done"
       ],
       "title": "Measure how much information our wallet-selection scores carry about leg outcome (price baseline included)"
     },
     {
       "id": "observed-trade-category-field",
-      "column": "Scheduled",
-      "effort": "~2h (write-path classifier or a declared-vocabulary decision + re-derive the features)",
-      "dates": "Carded 2026-09-23 (found by wallet-concentration-test) · recommendation-only",
-      "gate": "VERIFY: enumerate every reader of ObservedTrade.marketCategory (at least src/lib/scoring/wallet.ts:112 which builds WalletProfile.bestCategory / categoryStrengthsJson / categoryFitScore from it, plus the C-200 category blacklist and per-slug caps in rules.ts) and prove the defect with counts from the live DB (top stored tokens on 331k observed rows: 'will' 106,742, 'highest' 70,964, 'fifwc' 24,063, 'lol' 14,488, 'cs2' 13,840 — versus the leagues those tokens are standing in for), plus a spot check that the blacklist's lol/cs2 matching is genuinely the leagues. Then either fix the write path (src/lib/adapters/polymarket.ts:156/181/219 store String(eventSlug).split('-')[0]) or state that slug tokens are the intended vocabulary and downgrade the category features accordingly. Recommendation-only: the choice changes the input to categoryFitScore.",
-      "note": "WHAT WAS FOUND (2026-09-23, found while building the concentration classifier): ObservedTrade.marketCategory is the first dash-segment of the event slug, not a category — 'highest' (weather markets), 'will' (every plain question), 'fifwc', 'lal', 'what', 'elon', 'white'. src/lib/scoring/wallet.ts consumes it as `t.marketCategory ?? 'uncategorized'` to build the per-wallet category map, so WalletProfile.bestCategory, categoryStrengthsJson and categoryFitScore are slug-token statistics (a wallet's 'best category' can literally read 'highest' or 'what'), and src/lib/insider.ts:88 already documents 'marketCategory is NOT a research category'. The C-200 blacklist still works because lol/cs2/nfl happen to be real league tokens — which is why the defect never surfaced. Practical effect today: the category dimension of WALLET SCORING (categoryFitScore) is measuring slug prefixes, which is a plausible contributor to the scores' coin-flip AUCs at leg grain (wallet-selection-score-information). Fix options: classify at the write path (a keyword classifier already exists in scripts/wallet-concentration-test.py and agrees with polycopy's own category map at r=+0.55), or declare slug tokens canonical and stop describing the features as categories.",
+      "column": "Done",
+      "effort": "~2.5h (TS port + 3 adapter sites + 2 columns + parity harness)",
+      "dates": "Carded 2026-09-23 · DATA FIX APPLIED 2026-09-23; the scoring swap is carded separately",
+      "gate": "CLOSED (data half) 2026-09-23: PARITY PASS — the TS classifier labels a stratified 2,599-row sample identically to the validated Python reference (0 mismatches, scripts/verify-market-category.py -> .ts); schema applied by ALTER TABLE ADD COLUMN with an empty prisma drift diff; tsc + 250/250 tests clean; NO consumer of marketCategory changed, so no published score moved (the token is still what the v45 blacklist and per-slug cap read). OPEN (scoring half, NOT done): swapping categoryFitScore/bestCategory onto the class is a scoring change with its own card (wallet-category-fit-class-swap) because it feeds the copy score.",
+      "note": "SHIPPED: src/lib/market-category.ts (faithful TS port of scripts/wallet-concentration-test.py::classify, validated against the vendor category map at r=+0.548 over 353 wallets) returning coarse (sports/esports/weather/...) + fine (football-ucl, esports-lol, weather-temp/...); WalletActivityTrade.marketCategoryClass/.marketCategoryFine set at ALL THREE adapter write sites beside the unchanged token; ObservedTrade.marketCategoryClass/.marketCategoryFine written by monitor-trades.ts. DEFECT COUNTED LIVE: 335,443 rows / 863 tokens; 40.3% of a stratified 2,599-row sample carries a question/function word as its token (highest 73,089, which 10,142, next 4,971, lowest 4,754, where 4,591, how 3,736); token highest alone wraps 14,879 distinct marketIds; WalletProfile.bestCategory reads will 101 / world 97 / us 83 / what 74 alongside fifwc 452 / lol 294 / atp 197. READERS ENUMERATED: scoring/wallet.ts:112 (bestCategory/categoryStrengthsJson/categoryFitScore) = the defective one; score-trades.ts:717 v45 per-bot blacklist and :266/725-741 per-slug cap = token granularity BY DESIGN (spot-checked: the lol/cs2/nfl tokens are genuinely the leagues — LoL: Team Secret vs Karmine Corp, Counter-Strike: NIP vs K27, Panthers vs. Cardinals — which is why the defect never surfaced); score-trades.ts:264/447/645 + insider.ts:127 = question-led, already immune. CLASS COVERAGE (stratified sample): weather 26.6% / other 23.1% / sports 17.6% / esports 10.4% / politics 10.4% / crypto 5.0% / tech 3.9% / econ 1.7% / culture 1.5%; 101 of 251 tokens classify to other only, 6 span >2 real classes. Artifacts: drafts/observed-trade-category-field-20260923.md, data/market-category-verification.json, data/market-category-reference.json. SIDE FINDING (carded as slug-cap-token-granularity): the 15-per-slug cap counts TOKENS — 1,002 blocks in the last 7 days, every one of them on the highest bucket (14,879 marketIds), all at 16/15.",
       "tags": [
-        "data-integrity",
+        "data-quality",
         "category",
-        "wallet-selection",
-        "approval-needed"
+        "classifier",
+        "shipped",
+        "verified"
       ],
       "title": "ObservedTrade.marketCategory is a slug token, and our wallet category features are built on it"
+    },
+    {
+      "id": "wallet-category-fit-class-swap",
+      "title": "Swap the category dimension of wallet scoring onto the real class (token -> marketCategoryClass/Fine)",
+      "column": "Backlog",
+      "effort": "~0.5 day (scoring/wallet.ts category map + the score-trades category-win-rate read + tests)",
+      "dates": "Carded 2026-09-23 (follows observed-trade-category-field + wallet-selection-score-information)",
+      "gate": "NEEDS APPROVAL — it changes an input to the copy score (categoryFitScore feeds admission), so it ships behind a rules flag with a pre-registered gate, never as a data fix. PRE-REGISTERED EVIDENCE REQUIRED AT APPLY: (1) the token form is a coin flip today — categoryFit (token) AUC 0.497 C-200 / 0.525 STANDARD vs entry price 0.653 / 0.758; (2) the class form must be measured on the SAME legs before it is wired; (3) verify 7d after apply: C-200 copy-score distribution and admits/day are attributable by ruleSetVersion, and no other consumer moves (the v45 blacklist + per-slug cap stay on the raw token). Post-Oct-8 (Kelly window).",
+      "note": "WHY IT IS NOW POSSIBLE: before 2026-09-23 the class did not exist at ingest, so a class-based wallet category map could not be built without re-classifying 335k rows. The adapter now stamps marketCategoryClass/marketCategoryFine on every WalletActivityTrade and ObservedTrade row, so scoring can build per-class strengths from the SAME sample it already fetches — no new API cost. WHAT IT WOULD READ: src/lib/scoring/wallet.ts:112 builds the cats map from t.marketCategory (the slug token); categoryStrengthsJson/bestCategory/categoryFitScore and the score-trades.ts:434 category-win-rate read all follow from it. Scoping note: use the COARSE class for the wallet strength map (denser per-wallet buckets) and keep the FINE class for diagnostics; do NOT touch the blacklist or the slug cap (they are deliberately token-based).",
+      "tags": [
+        "scoring",
+        "category",
+        "needs-approval",
+        "post-oct-8"
+      ]
+    },
+    {
+      "id": "slug-cap-token-granularity",
+      "title": "FINDING — the v45 15-per-slug cap counts TOKENS, and one token (highest) spans 14,879 marketIds",
+      "column": "Backlog",
+      "effort": "~1h if actioned (cap on the real class/fine class, or cap the market family instead of the token)",
+      "dates": "Surfaced 2026-09-23 while fixing observed-trade-category-field",
+      "gate": "Findings-only until the Oct 8 window close (window purity; it is an admission/sizing change). Post-close: decide between (a) capping the FINE class, (b) capping the market family (event slug) instead of the token, (c) leaving it. Pre-registered trigger: >=10 gated decisions/24h on tokens whose distinct-marketId count exceeds 500.",
+      "note": "MEASURED: rules.maxMarketSlugPositions = 15 and score-trades.ts counts OPEN C-200 positions per RAW marketCategory token. Last 7 days of journal-tagged 'v45 market-slug cap' blocks: 1,002 — 1,000 on token 'highest', 2 on 'lowest', 4 on 'russia'; every block reads 'would be 16/15'. Token 'highest' wraps 14,879 distinct marketIds (weather temperature families plus anything whose event slug starts with 'highest'), vs 'lol' 1,364 and 'cs2' 1,245 — so the cap that v45 designed as league-level exposure control is being consumed by a single mega-bucket and starves unrelated markets. The v45 note already knew question-fragment tokens wrap many markets for the BLACKLIST and deliberately excluded what/of/the/where/which — but the cap shares that token space and did not get the same treatment. Current C-200 open exposure by token is small (unl 8, mlb 6, russia 5), i.e. the binding bucket today is exactly the mega-bucket.",
+      "tags": [
+        "concentration",
+        "slug-cap",
+        "finding",
+        "post-oct-8"
+      ]
+    },
+    {
+      "id": "wallet-depth-floor-reread",
+      "title": "Re-read the thin-record floor test on the now-truthful depth field (after the scan rotation completes)",
+      "column": "Scheduled",
+      "effort": "~1h (re-run the existing instrument + compare against the clamped-field null)",
+      "dates": "Set 2026-09-23 · earliest read 2026-09-28 (25 wallets/hour over 3,201 wallets = ~5.3 days)",
+      "gate": "Read only when depthMeasuredAt covers >=90% of live wallets (the scan rotation is the clock). Compare against the 2026-09-23 null, which was measured on the CLAMPED field: C-200 snapshot >=100 raised edge 16.3% -> 28.5% while removing $194 of realized PnL and half the volume; STANDARD as-of-entry >=10 kept 82% of volume and cut edge 9.0% -> 2.1%. The floor is still expected to be a trap — this re-read exists to make sure the null was not an artifact of the clamp.",
+      "note": "The clamp fix has a visible footprint: 21 of the first 25 re-scanned wallets now store a resolved depth above 100, and the DB-wide 'resolved == 100' population has only started to fall (2,090 -> 2,070). Until the rotation finishes, any depth-based statistic mixes truthful rows with ceiling-clamped ones — state which slice a number was computed on. Instrument: python3 scripts/wallet-depth-floor-test.py (read-only, one command).",
+      "tags": [
+        "measurement",
+        "depth",
+        "follow-up"
+      ]
     }
   ]
 }

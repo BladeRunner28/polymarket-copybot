@@ -46,6 +46,12 @@ async function main() {
   log(`Profiling ${wallets.length} wallets (${LOOKBACK_DAYS}d activity)${adapter.isDemo ? " [DEMO DATA]" : ""}…`);
   let profiled = 0;
   const failures: string[] = [];
+  // wallet-depth-field-clamp (2026-09-23, approved): the depth walk is reported
+  // per censored wallet and summed for the cycle, so a run's extra API cost is
+  // visible rather than implied.
+  let depthRequests = 0;
+  let depthCensoredWallets = 0;
+  let depthAboveSample = 0;
 
   for (const w of wallets) {
     try {
@@ -61,6 +67,22 @@ async function main() {
       }
       const score = scoreWallet(trades, rules);
       const { status, reason } = walletStatus(score, rules);
+
+      // wallet-depth-field-clamp: the counts stored below are measured
+      // SEPARATELY from (and cannot alter) the sample that produced `score`.
+      // The sample's own ceilings are what made the stored fields read 100/200
+      // for 65.3% of wallets; when a sample comes back under its ceiling it IS
+      // the whole record and this costs zero extra requests.
+      const depth = await adapter.fetchWalletDepth(w.address, {
+        closed: score.resolvedTradeCount30d,
+        open: Math.max(0, score.tradeCount30d - score.resolvedTradeCount30d),
+      });
+      depthRequests += depth.requests;
+      if (depth.censored) depthCensoredWallets++;
+      if (depth.totalCount > score.tradeCount30d || depth.closedCount > score.resolvedTradeCount30d) {
+        depthAboveSample++;
+      }
+
       await prisma.walletProfile.update({
         where: { id: w.id },
         data: {
@@ -78,8 +100,11 @@ async function main() {
           bestCategory: score.bestCategory,
           categoryStrengthsJson: JSON.stringify(score.categoryStrengths),
           averageTradeSize: score.averageTradeSize,
-          tradeCount30d: score.tradeCount30d,
-          resolvedTradeCount30d: score.resolvedTradeCount30d,
+          tradeCount30d: depth.totalCount,
+          resolvedTradeCount30d: depth.closedCount,
+          depthCensored: depth.censored,
+          depthCapNote: depth.capNote,
+          depthMeasuredAt: new Date(),
           winRate30d: score.winRate30d,
           averageLiquidity: score.averageLiquidity,
           averageSpread: score.averageSpread,
@@ -90,6 +115,11 @@ async function main() {
         },
       });
       profiled++;
+      if (depth.censored) {
+        log(
+          `[DEPTH] ${w.address}: record continues past the walk budget — closed ${depth.closedCount}+, open ${depth.openCount}+ (${depth.capNote})`
+        );
+      }
     } catch (e) {
       failures.push(`${w.address}: ${e instanceof Error ? e.message : e}`);
     }
@@ -138,6 +168,14 @@ async function main() {
     if (profiled === 0) {
       throw new Error("All wallet profile fetches failed — see errors above.");
     }
+  }
+  // wallet-depth-field-clamp: cycle cost of the depth walk + how many stored
+  // counts moved off the fetch ceiling. Emitted before the completion line so
+  // the runner's `tail -6` window keeps both.
+  if (!adapter.isDemo) {
+    log(
+      `[DEPTH] depth walk: ${depthRequests} extra request(s) | ${depthAboveSample}/${wallets.length} wallet(s) recorded deeper than the sample | ${depthCensoredWallets} at the walk budget`
+    );
   }
   // Completion line last so `tail -N` log capture always includes it.
   log(`Wallet scan complete: ${profiled}/${wallets.length} profiled.`);

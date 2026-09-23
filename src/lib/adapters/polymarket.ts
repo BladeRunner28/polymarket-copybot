@@ -15,11 +15,32 @@ import {
   LeaderboardEntry,
   MarketState,
   WalletActivityTrade,
+  WalletDepth,
 } from "../types";
 import { didOutcomeWin, normalizeOutcomeLabel } from "../resolution";
+import { measureDepth } from "../scoring/wallet-depth";
+import { classifyMarketCategory } from "../market-category";
 
 const DATA_API = "https://data-api.polymarket.com";
 const GAMMA_API = "https://gamma-api.polymarket.com";
+
+/**
+ * Category fields for a wallet-activity row: the RAW event-slug token (v45
+ * blacklist / per-slug cap granularity — unchanged) plus the REAL market
+ * category, which is what anything calling itself a category feature must use.
+ * See src/lib/market-category.ts for the measured defect this closes.
+ */
+function categoryFields(slug: unknown, question: unknown, eventSlug: unknown) {
+  const cls = classifyMarketCategory(
+    slug === undefined || slug === null ? null : String(slug),
+    question === undefined || question === null ? null : String(question)
+  );
+  return {
+    marketCategory: eventSlug ? String(eventSlug).split("-")[0] : undefined,
+    marketCategoryClass: cls.coarse,
+    marketCategoryFine: cls.fine,
+  };
+}
 
 const DELAY_MS = Number(process.env.API_DELAY_MS ?? 250);
 
@@ -153,7 +174,7 @@ export class PolymarketAdapter implements DataAdapter {
         marketId: String(row.slug ?? row.conditionId ?? ""),
         conditionId: row.conditionId ? String(row.conditionId) : undefined,
         marketQuestion: String(row.title ?? "(unknown market)"),
-        marketCategory: row.eventSlug ? String(row.eventSlug).split("-")[0] : undefined,
+        ...categoryFields(row.slug ?? row.conditionId, row.title, row.eventSlug),
         outcome: String(row.outcome ?? "YES").toUpperCase(),
         side: "BUY",
         price: avgPrice,
@@ -178,7 +199,7 @@ export class PolymarketAdapter implements DataAdapter {
           marketId: String(row.slug ?? row.conditionId ?? ""),
           conditionId: row.conditionId ? String(row.conditionId) : undefined,
           marketQuestion: String(row.title ?? "(unknown market)"),
-          marketCategory: row.eventSlug ? String(row.eventSlug).split("-")[0] : undefined,
+          ...categoryFields(row.slug ?? row.conditionId, row.title, row.eventSlug),
           outcome: String(row.outcome ?? "YES").toUpperCase(),
           side: "BUY",
           price: avgPrice,
@@ -192,6 +213,61 @@ export class PolymarketAdapter implements DataAdapter {
 
     await this.enrichWithMarketState(out);
     return out;
+  }
+
+  /**
+   * Depth of the wallet's position record, measured past the sampling ceilings
+   * fetchWalletActivity truncates at (2 x 50 closed pages, 1 x 100 open page).
+   *
+   * The walk is a SEPARATE read in the DESC ordering only, so it double-counts
+   * nothing and touches no scoring input; a wallet whose sample came back below
+   * a ceiling costs ZERO extra requests. Budgets are page-count bounds, and a
+   * capped result is returned flagged (`censored`) rather than silently passed
+   * off as the true depth. Empirical 2026-09-23: /closed-positions caps a page
+   * at 50 rows regardless of `limit` (and warns `Deprecated: use
+   * /v1/closed-positions`), /positions honours limit >= 500, both honour
+   * `offset`, and an out-of-range offset returns [].
+   */
+  async fetchWalletDepth(
+    address: string,
+    sample: { closed: number; open: number }
+  ): Promise<WalletDepth> {
+    const closedPageSize = 50;
+    const openPageSize = 100;
+    const cap = (v: string | undefined, d: number) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? Math.floor(n) : d;
+    };
+    const maxClosedPages = cap(process.env.DEPTH_MAX_CLOSED_PAGES, 6); // <= 300 rows
+    const maxOpenPages = cap(process.env.DEPTH_MAX_OPEN_PAGES, 6); // <= 600 rows
+
+    const fetchClosedPage = async (offset: number) => {
+      const url =
+        `${DATA_API}/closed-positions?user=${address}&limit=${closedPageSize}&offset=${offset}` +
+        `&sortBy=REALIZEDPNL&sortDirection=DESC`;
+      const page = await getJson(url);
+      if (!Array.isArray(page)) throw new AdapterError(url, null, `unexpected closed-positions shape`);
+      await sleep(DELAY_MS);
+      return page as unknown[];
+    };
+    const fetchOpenPage = async (offset: number) => {
+      const url = `${DATA_API}/positions?user=${address}&limit=${openPageSize}&offset=${offset}&sortBy=CURRENT&sortDirection=DESC`;
+      const page = await getJson(url);
+      if (!Array.isArray(page)) throw new AdapterError(url, null, `unexpected positions shape`);
+      await sleep(DELAY_MS);
+      return page as unknown[];
+    };
+
+    return measureDepth(fetchClosedPage, fetchOpenPage, {
+      sampledClosed: sample.closed,
+      sampledOpen: sample.open,
+      sampleClosedCap: 100, // DESC 50 + ASC 50
+      sampleOpenCap: 100,
+      closedPageSize,
+      openPageSize,
+      maxClosedPages,
+      maxOpenPages,
+    });
   }
 
   /** Raw recent trades from the activity feed — used for new-trade monitoring. */
@@ -216,7 +292,7 @@ export class PolymarketAdapter implements DataAdapter {
           marketId: String(row.slug ?? row.market ?? row.conditionId ?? ""),
           conditionId: row.conditionId ? String(row.conditionId) : undefined,
           marketQuestion: String(row.title ?? row.question ?? "(unknown market)"),
-          marketCategory: row.eventSlug ? String(row.eventSlug).split("-")[0] : undefined,
+          ...categoryFields(row.slug ?? row.market ?? row.conditionId, row.title ?? row.question, row.eventSlug),
           outcome: String(row.outcome ?? "YES").toUpperCase(),
           side: String(row.side ?? "BUY").toUpperCase() === "SELL" ? "SELL" : "BUY",
           price,

@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-09-23T20:44:12.890Z",
+  "reference": {
+    "classifier": "scripts/wallet-concentration-test.py::classify",
+    "generatedAt": "2026-09-23T15:44:12.544603",
+    "rows": 2599
+  },
+  "parity": {
+    "passed": true,
+    "mismatchCount": 0,
+    "mismatches": []
+  },
+  "tokenSemantics": {
+    "questionWordRows": 1048,
+    "questionWordShare": 0.40323201231242783,
+    "tokensClassifyingToOtherOnly": 101,
+    "tokensSpanningMoreThanTwoCategories": 6,
+    "distinctTokens": 251
+  },
+  "classes": {
+    "coarse": {
+      "weather": 691,
+      "other": 600,
+      "sports": 458,
+      "esports": 270,
+      "politics": 269,
+      "crypto": 129,
+      "tech": 101,
+      "econ": 43,
+      "culture": 38
+    },
+    "fine": {
+      "weather-temp": 691,
+      "other": 600,
+      "politics-elections": 168,
+      "crypto-btc": 110,
+      "esports-cs2": 108,
+      "football-ucl": 100,
+      "esports-lol": 86,
+      "football-intl": 83,
+      "politics-elon": 79,
+      "esports-dota": 64,
+      "baseball-mlb": 62,
+      "tech-corp": 53,
+      "tennis": 51,
+      "basketball-nba": 50,
+      "tech-ai": 48,
+      "econ-macro": 43,
+      "football-nfl": 42,
+      "football-epl": 40,
+      "culture-media": 38,
+      "football-mls": 24,
+      "politics-us": 22,
+      "esports-valorant": 10,
+      "crypto-price": 9,
+      "crypto-eth": 6,
+      "combat-ufc": 6,
+      "crypto-updown": 4,
+      "esports-other": 2
+    }
+  }
+}

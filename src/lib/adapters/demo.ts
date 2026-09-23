@@ -9,6 +9,7 @@ import {
   LeaderboardEntry,
   MarketState,
   WalletActivityTrade,
+  WalletDepth,
 } from "../types";
 
 // Simple deterministic PRNG so demo data is stable across runs.
@@ -101,6 +102,23 @@ export class DemoAdapter implements DataAdapter {
       });
     }
     return out;
+  }
+
+  async fetchWalletDepth(
+    address: string,
+    sample: { closed: number; open: number }
+  ): Promise<WalletDepth> {
+    // Demo wallets have no deeper record than the generated sample.
+    return {
+      closedCount: sample.closed,
+      openCount: sample.open,
+      totalCount: sample.closed + sample.open,
+      closedCensored: false,
+      openCensored: false,
+      censored: false,
+      capNote: "demo",
+      requests: 0,
+    };
   }
 
   async fetchMarket(marketId: string): Promise<MarketState> {

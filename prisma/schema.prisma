@@ -59,6 +59,14 @@ model WalletProfile {
   // ordered ASC (NULLs first), so the cap walks the whole pool in
   // ~ceil(pool / MAX_OBSERVE) cycles.
   lastObservedAt       DateTime?
+  // wallet-depth-field-clamp (2026-09-23, approved): tradeCount30d /
+  // resolvedTradeCount30d above are now the TRUE size of the wallet's position
+  // record, measured past the scanner's sampling ceilings (previously they were
+  // clamped by the FETCH at 200 / 100). These three fields record the walk that
+  // produced them so a budget-bound count is never read as the real depth.
+  depthCensored        Boolean   @default(false)
+  depthCapNote         String?
+  depthMeasuredAt      DateTime?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -72,6 +80,15 @@ model ObservedTrade {
   conditionId    String?
   marketQuestion String
   marketCategory String?
+  // observed-trade-category-field (2026-09-23, approved): the field above is the
+  // raw EVENT-slug token ('highest', 'lol', 'will') — 33.1% of rows carry a
+  // question word and token 'highest' alone wraps 14,879 marketIds, so it is not
+  // a category. These two hold the real market category (coarse bucket + the
+  // league/market-type grain) written at ingest by src/lib/market-category.ts.
+  // NULL = row written before this change (no backfill — the class is derivable
+  // from marketId + marketQuestion for any historical row).
+  marketCategoryClass String?
+  marketCategoryFine  String?
   outcome        String // "YES" | "NO" | token name
   side           String // "BUY" | "SELL"
   walletEntryPrice Float
