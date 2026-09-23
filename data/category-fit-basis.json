@@ -1,0 +1,182 @@
+{
+ "generatedAt": "2026-09-23T16:06:55.924467",
+ "instrument": "scripts/measure-category-fit-basis.py",
+ "cache": {
+  "wallets": 198,
+  "generatedAt": "2026-09-23T21:05:04.332Z"
+ },
+ "class_parity": {
+  "rows": 48836,
+  "stored_class": 36,
+  "agree": 36,
+  "disagree": 0
+ },
+ "stored_wallet_profiles": {
+  "profiles": 3201,
+  "profiles_with_a_category_map": 3190,
+  "buckets_per_wallet_median": 12,
+  "buckets_per_wallet_max": 106,
+  "share_bucket_trades_that_are_singletons": 0.05740763297297163,
+  "share_trades_in_junk_token_buckets": 0.09030254971027714,
+  "wallets_with_any_junk_token_bucket": 0.41080912214932835,
+  "bestCategory_is_a_junk_token_share": 0.09340830990315527
+ },
+ "bucket_structure": {
+  "token": {
+   "wallets": 198,
+   "buckets_per_wallet_median": 14.0,
+   "bucket_trades_median": 2.5,
+   "share_trades_in_buckets_ge2": 0.9419749886606622,
+   "share_trades_in_junk_token_buckets": 0.06048726754357545
+  },
+  "coarse": {
+   "wallets": 198,
+   "buckets_per_wallet_median": 3.0,
+   "bucket_trades_median": 33.0,
+   "share_trades_in_buckets_ge2": 0.9978617248752673,
+   "share_trades_in_junk_token_buckets": null
+  },
+  "fine": {
+   "wallets": 198,
+   "buckets_per_wallet_median": 8.0,
+   "bucket_trades_median": 7.5,
+   "share_trades_in_buckets_ge2": 0.9906045486943562,
+   "share_trades_in_junk_token_buckets": null
+  },
+  "bestCategory": {
+   "median_share_of_wallet_sample_in_best_bucket": {
+    "token": 0.33590647273874963,
+    "coarse": 0.7258403361344538,
+    "fine": 0.455
+   },
+   "distinct_best_buckets_across_wallets": {
+    "token": 40,
+    "coarse": 7,
+    "fine": 19
+   },
+   "best_is_a_fragment_token_share": 0.06060606060606061
+  }
+ },
+ "lanes": {
+  "BANKROLL_200": {
+   "categoryFit (token, stored)": {
+    "n_legs": 1962,
+    "defined": 1447,
+    "coverage": 0.737512742099898,
+    "auc": 0.49693848300112753,
+    "ci": [
+     0.4463072045743833,
+     0.5540098199672667
+    ],
+    "mde": 0.02555494016186236,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.4916086063627417
+   },
+   "categoryFit (token, fresh)": {
+    "n_legs": 1962,
+    "defined": 1352,
+    "coverage": 0.6890927624872579,
+    "auc": 0.5087303463248941,
+    "ci": [
+     0.4540414565966156,
+     0.5690625577812018
+    ],
+    "mde": 0.02555494016186236,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.49244340523353525
+   },
+   "categoryFit (coarse class, fresh)": {
+    "n_legs": 1962,
+    "defined": 1699,
+    "coverage": 0.8659531090723751,
+    "auc": 0.4870595461932256,
+    "ci": [
+     0.4344584043041266,
+     0.5423953547266741
+    ],
+    "mde": 0.02555494016186236,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.46178170215071807
+   },
+   "categoryFit (fine class, fresh)": {
+    "n_legs": 1962,
+    "defined": 1654,
+    "coverage": 0.8430173292558614,
+    "auc": 0.5016421189991339,
+    "ci": [
+     0.4510701466912631,
+     0.5525656329858256
+    ],
+    "mde": 0.02555494016186236,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.47562528113514135
+   },
+   "_availability": {
+    "both": 1333,
+    "token_only": 19,
+    "class_only": 366,
+    "delta_gt_10pp": 388
+   }
+  },
+  "STANDARD": {
+   "categoryFit (token, stored)": {
+    "n_legs": 8694,
+    "defined": 7285,
+    "coverage": 0.8379342074994249,
+    "auc": 0.5254504269473844,
+    "ci": [
+     0.4281538661241924,
+     0.6425547107185111
+    ],
+    "mde": 0.012626789691637977,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.5547213649164855
+   },
+   "categoryFit (token, fresh)": {
+    "n_legs": 8694,
+    "defined": 7269,
+    "coverage": 0.8360938578329883,
+    "auc": 0.5285252468376626,
+    "ci": [
+     0.43264887668100616,
+     0.6516532988072846
+    ],
+    "mde": 0.012626789691637977,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.5779652843168258
+   },
+   "categoryFit (coarse class, fresh)": {
+    "n_legs": 8694,
+    "defined": 7930,
+    "coverage": 0.9121233034276512,
+    "auc": 0.49347371424849923,
+    "ci": [
+     0.42187723786887915,
+     0.5636447849843299
+    ],
+    "mde": 0.012626789691637977,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.5474426951774147
+   },
+   "categoryFit (fine class, fresh)": {
+    "n_legs": 8694,
+    "defined": 7836,
+    "coverage": 0.9013112491373361,
+    "auc": 0.5222409955941871,
+    "ci": [
+     0.4446191965265183,
+     0.6128884598711464
+    ],
+    "mde": 0.012626789691637977,
+    "clears_mde": false,
+    "auc_within_price_quintiles_mean": 0.5758767995661258
+   },
+   "_availability": {
+    "both": 6840,
+    "token_only": 429,
+    "class_only": 1090,
+    "delta_gt_10pp": 2577
+   }
+  }
+ }
+}
