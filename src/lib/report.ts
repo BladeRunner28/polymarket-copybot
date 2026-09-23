@@ -25,6 +25,7 @@
 
 import { prisma } from "./db";
 import { computeBenchmarks } from "./benchmarks";
+import { computeEdgeCostSnapshot, edgeCostLines } from "./copy-cost";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
 import * as fs from "fs";
@@ -243,6 +244,15 @@ export async function generateDailyReport(
   const bench = await computeBenchmarks();
   const beatBlind = bench.botFiltered.avgPnl > bench.blindCopy.avgPnl;
 
+  // polycopy-edge-cost-pair (2026-09-23): the report quoted realized PnL as if
+  // our modelled fill were free. It is not — the booked entry is a QUOTE read at
+  // scoring time and lands BELOW the wallet's own fill on C-200 (measured
+  // −3.03%/leg lifetime, 2026-09-23), the opposite sign a real copier sees. Both
+  // numbers are printed on the same legs so neither can be read alone.
+  // Measurement only: no threshold, rule, sizing or gate consumes this.
+  const edgeCost = await computeEdgeCostSnapshot(now);
+  const edgeBlock = edgeCostLines(edgeCost);
+
   const lesson =
     ruleChangesToday.length > 0
       ? ruleChangesToday[0].reason
@@ -272,6 +282,7 @@ export async function generateDailyReport(
     `• Sizing Range: $0.10 - $10.00`,
     `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
     ledgerNote,
+    ...(edgeBlock.length ? [``, ...edgeBlock] : []),
     ``,
     `**System Activity:**`,
     `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})`,
