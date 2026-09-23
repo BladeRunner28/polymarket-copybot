@@ -11,7 +11,9 @@ import {
   MAX_TRACKED,
   OBSERVE_LOOKBACK_DAYS,
   copyWalletSet,
+  observeEligibleCount,
   observeOnlyWallets,
+  stampObserved,
 } from "../src/lib/wallet-universe";
 
 const MONITOR_HOURS = Number(process.env.MONITOR_HOURS ?? 24);
@@ -34,8 +36,10 @@ async function main() {
   if (observeWallets.length >= MAX_OBSERVE) {
     // The sweep is bounded (a 7d window of hourly churn can list hundreds of
     // wallets); say so out loud rather than letting the tail look complete.
+    // v62: the remainder is no longer starved — the sweep rotates, so a wallet
+    // deferred this cycle is at the front of the next one.
     log(
-      `[OBSERVE-CAP] observation set hit its ${MAX_OBSERVE}-wallet cap — wallets tracked longest ago are not swept this cycle`
+      `[OBSERVE-CAP] observation set hit its ${MAX_OBSERVE}-wallet cap — the least-recently-observed remainder waits its turn in the rotation`
     );
   }
 
@@ -48,6 +52,9 @@ async function main() {
   let newTrades = 0;
   let newObserved = 0;
   const failures: string[] = [];
+  /** v62: observation wallets whose fetch completed this cycle — stamped after
+   *  the pool drains so the next cycle starts from the least recently observed. */
+  const sweptObserve: string[] = [];
 
   // v44 (tuning review #13, approved): bounded-concurrency wallet monitoring —
   // 5 clean 429 windows justified a 4-at-a-time pool (was strictly serial; run
@@ -141,6 +148,7 @@ async function main() {
           if (!(e instanceof Error && e.message.includes("Unique constraint"))) throw e;
         }
       }
+      if (w.observationOnly) sweptObserve.push(w.address);
     } catch (e) {
       failures.push(`${w.address}: ${e instanceof Error ? e.message : e}`);
     }
@@ -157,10 +165,31 @@ async function main() {
   });
   await Promise.all(workers);
 
+  // v62 (tuning review #34 rec 1, user-approved 2026-09-23): stamp the wallets
+  // this sweep covered, so the next cycle takes the LEAST recently observed
+  // ones. Without the stamp the cap re-takes the newest demotions every cycle
+  // and the trailing-7d window behaves as a ~4 h window (measured 09-23: 108 of
+  // 175 eligible wallets observed zero rows in 24 h). Non-fatal: a stamp failure
+  // must never fail a monitor run that already stored its trades.
+  let stamped = 0;
+  try {
+    stamped = await stampObserved(sweptObserve);
+  } catch (e) {
+    logError(`OBSERVE stamp failed (rotation will re-sweep the same wallets): ${e instanceof Error ? e.message : e}`);
+  }
+
   log(
     `Trade monitor complete: ${newTrades + newObserved} new observed trades ` +
       `(${newTrades} copy-eligible, ${newObserved} observation-only).`
   );
+  if (sweptObserve.length > 0) {
+    const eligible = await observeEligibleCount(adapter.isDemo);
+    const cycles = Math.max(1, Math.ceil(eligible / MAX_OBSERVE));
+    log(
+      `[OBSERVE-ROTATION] swept ${sweptObserve.length}/${eligible} eligible (least-recently-observed first, ` +
+        `stamped ${stamped}); full pool every ~${cycles} cycles ≈ ${cycles * 11} min`
+    );
+  }
   if (failures.length) {
     logError(`Failures (${failures.length}):\n` + failures.slice(0, 5).join("\n"));
     if (newTrades + newObserved === 0 && failures.length === queue.length) {
