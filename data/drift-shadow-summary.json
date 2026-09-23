@@ -1,30 +1,30 @@
 {
-  "generatedAt": "2026-09-22T02:36:43.555Z",
-  "candidates": 14763,
-  "marked": 2743,
-  "awaitingResolution": 12020,
-  "wins": 1549,
-  "winRate": 0.5647101713452425,
-  "wouldHavePnl": 35015.33,
-  "avgPnlPerTrade": 12.77,
-  "avgPnlPerTradeExDust": -0.16,
+  "generatedAt": "2026-09-23T02:36:39.933Z",
+  "candidates": 15204,
+  "marked": 2765,
+  "awaitingResolution": 12439,
+  "wins": 1564,
+  "winRate": 0.5656419529837251,
+  "wouldHavePnl": 35079.22,
+  "avgPnlPerTrade": 12.69,
+  "avgPnlPerTradeExDust": -0.13,
   "dustExcluded": 608,
   "dustMinEntryPrice": 0.1,
-  "avgPnlPerTradeExDustLast7dCohort": -0.16,
-  "cohort7dMarked": 2135,
-  "totalMarked": 2743,
+  "avgPnlPerTradeExDustLast7dCohort": -0.13,
+  "cohort7dMarked": 2157,
+  "totalMarked": 2765,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-09-22T01:04:36.906Z",
+  "lastCandidateAt": "2026-09-23T02:06:55.658Z",
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
-    "consecutiveDaysAtOrBelow": 3,
-    "cohort7d": -0.16,
-    "cohort7dMarked": 2135,
+    "consecutiveDaysAtOrBelow": 4,
+    "cohort7d": -0.13,
+    "cohort7dMarked": 2157,
     "cohortAtOrBelow": true,
     "tripped": false,
-    "seriesDays": 3,
+    "seriesDays": 4,
     "recent": [
       {
         "day": "2026-09-20",
@@ -36,7 +36,11 @@
       },
       {
         "day": "2026-09-22",
-        "avgPnlPerTradeExDust": -0.16
+        "avgPnlPerTradeExDust": -0.13
+      },
+      {
+        "day": "2026-09-23",
+        "avgPnlPerTradeExDust": -0.13
       }
     ],
     "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
