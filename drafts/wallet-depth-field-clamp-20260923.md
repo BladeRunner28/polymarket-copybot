@@ -44,14 +44,23 @@ never presented as the truth.
 3. **Census**: `resolved > 100` went **0 → 21 wallets**; `depth measured` **0 → 25**. The instrument's own
    BEFORE/AFTER lines are in `data/wallet-depth-verification.json`; the causal pass is in
    `data/wallet-depth-causal-check.json`.
+4. **Independent census, 24 wallets (12 busiest by observed rows + 12 random)** — run before the code change:
+   15 of 24 stored exactly 100 resolved and 7 stored exactly 200 total, while their **true** records read
+   `> 100` for 19 and `> 200` for 19. So the ceiling was not a long tail: for the busy half it was the norm.
+   Census cost: 208 requests for 24 wallets.
 
 ## Reality check
 
 - **The DB is only truthful where the scan has been.** The rotation profiles 25 wallets/hour, so a full cycle is
   ~5 days (3,201 wallets). Anything reading depth today sees truth for the scanned slice and the old ceiling
-  elsewhere. The 7-day verification gate is set against the rotation, not the change.
-- **Censoring is honest but still censoring.** 14 of 25 walked wallets continue past the budget. `depthCensored`
-  names that; the cap follows `DEPTH_MAX_CLOSED_PAGES` / `DEPTH_MAX_OPEN_PAGES` if a deeper read is ever needed.
+  elsewhere. The 7-day verification gate is set against the rotation, not the change; the re-read is carded as
+  `wallet-depth-floor-reread` (earliest 2026-09-28).
+- **Censoring is honest but still censoring — and on the busy half it is the common case.** The pre-change census
+  found 18 of 24 sampled wallets already past the closed-position budget and 12 past the open one (median true
+  closed count = the 300-row budget itself), so for whale-heavy wallets the stored value is a flagged lower
+  bound, not a depth. 14 of the 25 walked wallets in the verification scan hit the budget. The numbers still do
+  their job — 300+ is plainly distinguishable from 100 — but finer resolution on the busiest decile costs more
+  requests; `DEPTH_MAX_CLOSED_PAGES` / `DEPTH_MAX_OPEN_PAGES` are the knobs (`censored` stays true either way).
 - **The walk costs API budget**: 143 requests for 25 wallets (~6/wallet, only where the sample was capped). A
   whale-heavy hour is the expensive one.
 - **Re-run of the thin-record (floor) instrument on the now-truthful field is a follow-up card.** The null that
