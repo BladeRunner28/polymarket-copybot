@@ -1299,6 +1299,95 @@
         "eod",
         "wallet-status"
       ]
+    },
+    {
+      "id": "polycopy-edge-cost-pair",
+      "title": "Publish our own EDGE and COPY-COST as two separate numbers in the daily report",
+      "column": "Scheduled",
+      "effort": "~1h (query + report line + note in report-daily.ts)",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY 7d: the daily report prints BOTH (a) realized PnL per position as a % of cost and (b) the measured copy-cost term = mean(our entry - wallet fill)/wallet fill over the same window, split by lane, with the population (n) and window stated — so neither number is quoted alone. Baseline measured 2026-09-23: C-200 -3.03% (1,982 legs), STANDARD +0.84% (9,863); detected-vs-wallet +1.27% / +1.06%.",
+      "note": "WHY: the report currently quotes realized PnL and implicitly treats our modeled fill as free. Polycopy's Sep-8 2026 report (scraped; archived in data/vendor-research/) formalises the opposite: on the top-100 of both Polymarket leaderboards the MEDIAN per-position edge is 1.39% (30-day) / 2.07% (all-time) against a MEDIAN modeled cost of copying of 4.12% / 3.51%, so 77% of traders (63/82 and 46/60) go negative once costs are applied, and only 21 of 200 slots clear them (all 'Ahead', none 'Proven'). Our own numbers are far above that (+16.3% of cost per position on C-200 settled legs, +9.1% STANDARD), and the gap is explainable: our booked entry is `currentPrice` at scoring time (scripts/score-trades.ts:1035), which on C-200 lands ~3% BELOW the wallet's own fill — the opposite sign a real copier sees. So our edge figure is not yet defended. WHAT TO SHIP: one line, two numbers, per lane, with n and window; no threshold change, no rule change. This is the honest-cost disclosure that makes every later sizing/Kelly decision readable.",
+      "tags": [
+        "polycopy",
+        "measurement",
+        "copy-cost",
+        "v62-era"
+      ]
+    },
+    {
+      "id": "polycopy-psmi-regime-measurement",
+      "title": "Measure the Polycopy Smart Money Index against our daily C-200 P&L (keyless free API) before it gates anything",
+      "column": "Scheduled",
+      "effort": "~1h (backfill 57 days + join to daily PnL + correlation/decile table)",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY: the write-up states the joined n, the window, the correlation (or decile table) of PSMI level/delta vs our daily C-200 realized PnL, and an explicit null result if there is none. NO gating, no rule, no shadow lane until a measured relationship exists on our data.",
+      "note": "WHY: PSMI is the one Polycopy surface with a sanctioned automated feed — keyless, free with attribution, methodology 2.0.0: GET https://polycopy.app/api/indexes/smi/public (today: score 65, zone ACTIVE, date 2026-09-22) and GET https://polycopy.app/api/indexes/smi/history?format=csv (57 daily rows from 2026-07-28 with components momentum/breadth/participation/conviction; maxFreeDepthMonths 24). Their /api/ is DISALLOWED by robots.txt in general — these two endpoints are the ones their own page advertises as free to use, so they are the sanctioned ones and nothing else on /api/ may be scraped. CAVEAT: 57 rows is a thin overlap with our book, and the index is a cohort aggregate (1,000 parity-verified wallets, market makers excluded), not a copy signal — so the first step is measurement, and a null result closes the card.",
+      "tags": [
+        "polycopy",
+        "psmi",
+        "regime",
+        "measurement"
+      ]
+    },
+    {
+      "id": "polycopy-concentration-feature-test",
+      "title": "Test category CONCENTRATION as a wallet-selection feature (specialist vs generalist)",
+      "column": "Scheduled",
+      "effort": "~2h (compute concentration per wallet from ObservedTrade, join to realized PnL, decile table)",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY: decile table of wallet-level category concentration (share of the wallet's trade volume in its top category) vs our realized PnL / win rate across our own legs, with n per decile and the window stated; report the measured effect size or a null. Any use as a scoring input is a SEPARATE proposal with its own pre-registered gate.",
+      "note": "WHY: the Q1 2026 report (marketing-grade, no dataset — treat as hypothesis) claims category concentration is the strongest predictor of trader performance: wallets with 80%+ of volume in one category averaged 58.2% win rate vs 51.1% for 4+ categories (+7.1pp), and NBA Over/Under specialists beat the category average by 18pp. We already store `bestCategory` and `categoryFitScore`, but we have NEVER measured concentration itself, and our C-200 category blacklist (lol/cs2) is a hard filter rather than a graded feature. This is the cheapest genuinely new selection signal on the table, and it is measurable entirely from data we already hold.",
+      "tags": [
+        "polycopy",
+        "wallet-selection",
+        "concentration",
+        "category"
+      ]
+    },
+    {
+      "id": "polycopy-thin-record-floor-test",
+      "title": "Test a minimum-resolved-positions floor on wallet selection (thin-record rule)",
+      "column": "Scheduled",
+      "effort": "~1.5h (per-wallet resolved-leg counts vs realized PnL, threshold sweep)",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY: realized PnL / win rate of our legs grouped by the SOURCE wallet's resolved-position count (buckets e.g. <25 / 25-100 / 100-500 / 500+), n per bucket and window stated — plus the simulated effect of a floor at each candidate N on our copy volume. Any floor is a separate proposal.",
+      "note": "WHY: the Sep-8 report flags a record as 'thin' when it holds few resolved positions and shows the share is large — 12 of 88 scoreable wallets on the 30-day board vs 34 of 65 on the all-time board — while noting that a spectacular number over a handful of bets is often one good week (their shrink moves the all-time median from 10.52% raw to 2.07%). Our wallet selection has no explicit depth floor: `globalScore` blends ROI/consistency/copyability, and scan:wallets profiles whatever the 25 least-recently-scanned wallets are. If our legs from thin-record wallets underperform, a floor is a cheap, permanent filter on the same axis their model uses.",
+      "tags": [
+        "polycopy",
+        "wallet-selection",
+        "thin-record"
+      ]
+    },
+    {
+      "id": "polycopy-research-watch",
+      "title": "Watch polycopy.app research for new reports (change-detector cron; no daily scrape)",
+      "column": "In Progress",
+      "effort": "~1h (monitor script + cron job)",
+      "dates": "Applied 2026-09-23 (tuning-free change: new cron job, no copybot code touched)",
+      "gate": "VERIFY 14d: the job's monitor script emits a byte-identical listing on unchanged ticks (agent NOT woken — check executions for skipped runs), and exactly one digest is delivered within 24h of a real change (test with a forced fixture, not by waiting for their next publication). No tick may fetch disallowed paths.",
+      "note": "WHY: their own FAQ states the cadence — '1-2 research reports per month' — so a daily SCRAPE with an LLM report every day would spend tokens to re-read the same two reports ~28 days in 30. WHAT TO SHIP: a deterministic monitor script (report slugs+dates from /research, the Copy Score 'what changed' marker, PSMI methodologyVersion) that the cron engine diffs each tick; identical output skips the agent entirely, so a change (new report or methodology bump) is the ONLY thing that wakes it, and the agent then reads just the new material and posts a short digest mapped to our axes. robots.txt compliance: /research and the marketing pages are Allow:'/'; /api/ and /export-polymarket-trades/ are DISALLOWED, so the watcher must not touch them (the PSMI endpoints are the separately-advertised free API and belong to the psmi measurement card, not this watcher). SHIPPED 2026-09-23: ~/.hermes/scripts/polycopy-research-watch.py (python3, stdlib only, deterministic output) + cron job a32d11dd0c9f `polycopy-research-watch`, daily 09:00, deliver=origin (this DM), monitor=that script. The script emits a stable listing — the /research report slugs, the on-page publication dates, a sha256 of the /copy-score 'What changed' block, and PSMI methodologyVersion — and caches its last good listing so a transient fetch failure REPEATS the previous output instead of looking like a change. The PSMI SCORE is deliberately excluded (it moves daily and would wake the agent every day). GATE VERIFIED END-TO-END with a throwaway job (every 5m, deliver=local): tick 1 = baseline agent run (10:12:27) + baseline hash recorded; tick 2 with identical output = `Status: no_change (agent run suppressed)` (10:18:15, 164-byte stub file, zero LLM work); then a forced fixture line in the script made the next tick emit `## MONITOR CHANGE DETECTED` + a diff and run the agent (10:24:41) — the fixture was reverted, the throwaway job removed, and no fixture text remains in the script or the state file. So: new material wakes it and is delivered; unchanged days are free. Kill switch: cronjob_manage action=remove job_id=a32d11dd0c9f.",
+      "tags": [
+        "polycopy",
+        "watch",
+        "cron",
+        "research"
+      ]
+    },
+    {
+      "id": "polycopy-free-account-oracle",
+      "title": "User action: free Polycopy account as an independent selection oracle + spot wallet CSV exports",
+      "column": "Scheduled",
+      "effort": "~10 min user time; no engineering",
+      "dates": "Carded 2026-09-23 (from the Polycopy research review)",
+      "gate": "VERIFY: (a) state the verdict on >=20 wallets we already copy — do our top-25 wallets look copyable to Copy Score, and do their passers look like ours; (b) one spot CSV export reconciled against ObservedTrade for the same wallet/window (fill counts and prices). Report the agreement rate or the disagreements, not impressions.",
+      "note": "WHY: Copy Score is free on every trader on the free tier and answers the same question `globalScore` answers (does this record survive the cost of copying), which makes it the first INDEPENDENT oracle we have for wallet selection. The export tool downloads a per-fill CSV for ANY public wallet (timestamp_utc, type, market_title, market_slug, condition_id, outcome, side, shares, price, usd_size, cash_flow_usd, transaction_hash) — useful for spot backfill/validation without our 429-prone data-api path. DECLINED: Premium ($30/mo + 0.5% builder fee) buys LIVE EXECUTION through their platform, which contradicts our paper-only invariant and would add a third-party order flow we cannot reconcile against our ledger; revisit only as a post-go-live (2027-01-02) venue question. LIMIT: no public developer API for trader-level data, so this is a manual/spot research surface — automating their UI at scanner scale is out of bounds (and their export page is robots-disallowed).",
+      "tags": [
+        "polycopy",
+        "wallet-selection",
+        "oracle",
+        "user-action"
+      ]
     }
   ]
 }
