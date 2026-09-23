@@ -25,8 +25,9 @@ Live link: http://localhost:3013/drafts/tuning34-approval-execution-20260923
 **Verification done now**
 - `npm test` → **225/225 pass** (4 new DB-backed cases: pool membership, NULL-first → oldest-first ordering, a stamped sweep pushes the newest demotions to the **back**, and the whole 45-wallet pool is covered in `ceil(45/40)` cycles).
 - First live cycle (09:12:14 run): `[OBSERVE-ROTATION] swept 40/199 eligible (least-recently-observed first, stamped 40); full pool every ~5 cycles ≈ 55 min` — 40 rows stamped in `WalletProfile`.
-- Rotation proven deterministic: the swept-40 and the next cycle's 40 overlap by **0** wallets.
-- That run: **0** `Too Many Requests`/429, **0** `FAILED`, **0** lockfile-skip.
+- Second live cycle (09:23:14 run): `[OBSERVE-ROTATION] swept 40/198 eligible (stamped 40)` → **80 wallets stamped in two cycles, the two sweeps disjoint** (the next batch shares 0 wallets with the stamped set, so the cap is genuinely walking the pool, not re-taking it).
+- Coverage moving already: distinct observation wallets/24 h **68 → 79**, observation rows **19,113/24 h** (still inside the 20,000 bar; the 24 h window still carries ~5.4 k of yesterday's one-off cutover catch-up, so both figures should settle rather than drift up — re-read after 2026-09-24).
+- Both cycles: **0** `Too Many Requests`/429, **0** `FAILED`, **0** lockfile-skip.
 
 **Verify 7 d (2026-09-30)** — distinct observation wallets/24 h **≥150** (baseline 68); observation volume **≤20,000/24 h** (baseline 16,834); at most **1** new 429 after the first post-v62 run header (2026-09-23T09:12:14).
 
