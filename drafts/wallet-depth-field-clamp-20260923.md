@@ -37,7 +37,10 @@ never presented as the truth.
 1. **Causal check — 25 wallets, sample frozen**: fetch the sample once, score it, run the depth walk, score the
    *same* sample again, deep-compare the sample array. **0 score deltas, 0 mutations, 21/25 wallets took the walk.**
    This is the only experiment that isolates the change: two production scans minutes apart see a *moved live
-   book*, so their deltas are drift, not the change (measured as context: `max |Δ|` ≈ 0.00–0.03 per score).
+   book*, so their deltas are drift, not the change. That drift is not small and is measured as context —
+   over the same 25 wallets, **23 showed a score delta: `globalScore` max |Δ| 7.6 (median 0.7),
+   `consistencyScore` 8.8 (0.7), `copyabilityScore` 4.6 (0.3), `roi30d` 0.145 (0.007)**. A before/after scan
+   would have read that as a failed change; the frozen-sample pass reads 0.
 2. **Production scan** (the real path, 25/25 profiled): **143 extra API requests** for the cycle,
    **23/25 wallets recorded deeper** than the sample, **21 now store a value above the old 100/200 ceiling**.
    Example moves: `100 → 269` resolved (exact), `200 → 900` total (censored at 9× the old ceiling).

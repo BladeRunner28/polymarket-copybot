@@ -1,7 +1,7 @@
 {
-  "verdict": {
-    "scoresUnchanged": false,
-    "scoreDeltas": [
+  "scanToScanDrift": {
+    "walletsWithAnyScoreDelta": 23,
+    "deltas": [
       {
         "address": "0x2974bd0059e48f215c391882976e0f1b4c8c9c23",
         "field": "globalScore",
@@ -404,8 +404,7 @@
         "before": 55.8,
         "after": 60.1
       }
-    ],
-    "walletsNotRescanned": []
+    ]
   },
   "counts": {
     "reScanned": 25,
@@ -579,5 +578,5 @@
     "n": 3201,
     "measured": 25
   },
-  "generatedAt": "2026-09-23T20:44:36.771Z"
+  "generatedAt": "2026-09-23T20:48:37.973Z"
 }
