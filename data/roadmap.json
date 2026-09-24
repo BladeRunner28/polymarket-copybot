@@ -1512,6 +1512,21 @@
     "depth",
     "follow-up"
    ]
+  },
+  {
+   "id": "tr35-rec1-db-contention-wal",
+   "title": "Rec 1 \u2014 stop the DB contention: journal_mode=wal + a nightly WAL checkpoint before the backup",
+   "column": "Done",
+   "effort": "~1h (journal-mode switch + pragma probe + backup-script checkpoint + the immutable=1 read fix)",
+   "dates": "Raised by tuning review #35 (2026-09-24) \u00b7 user-approved + APPLIED + VERIFIED 2026-09-24 \u00b7 telemetry gate opens 09-25",
+   "gate": "PASSED 2026-09-24 (mechanism + live): fixture proof delete-mode writer waits 6.05s for a 6s reader vs wal 0.00s; on the live 7.59GB DB a held read transaction no longer blocks a Prisma write (6 ms, rolled back intentionally); journal_mode=wal at the file level AND through the app connection; first post-switch monitor cycle 08:37:45 ran clean (1 copy, scoring complete, rollup wrote, 0 timeout/FAILED lines); -wal live at 4.16MB and a mode=ro reader sees the 08:37:41 row; wal_checkpoint(TRUNCATE)=0|0|0; tsc clean; 250/250 tests. OPEN (handed to review #36): 0 timeout/FAILED lines after 2026-09-25, update-pnl coverage >=150 with no PARTIAL line, and the 22:30 backup printing journal_mode=wal.",
+   "note": "WHY: review #35's red headline \u2014 a ~40-min shared-DB outage 00:47-03:38 on 09-24 killed 6 monitor sweeps (4 consecutive), threw a hard score:trades FAILED, crashed scan-wallets at getActiveRules and left update-pnl at PARTIAL 1/1437 covered (0%). Four call sites dying in the same window = contention, not one job: journal_mode was 'delete' on a 7.59GB file held open by two long-lived readers (next-server :3013 + a tsx process 5h33m). CHANGES: (1) prisma/dev.db -> journal_mode=wal (persistent in the DB header, picked up by every connection incl. already-open ones; no data rewrite). (2) busy_timeout was ALREADY 5000 \u2014 measured through the app's own Prisma connection with scripts/probe-sqlite-pragmas.ts BEFORE changing anything, so no URL change was made; the rec's clause is met by Prisma's default, not by us. (3) ~/.hermes/scripts/copybot-git-backup.sh (22:30) now runs PRAGMA wal_checkpoint(TRUNCATE) and logs journal_mode before the backup loop, so the WAL is folded back nightly, -wal truncated to zero and the overnight snapshot is one consistent file (non-fatal: prints busy|log|checkpointed). (4) scripts/verify-market-category.py dropped immutable=1 \u2014 immutable tells SQLite the file can never change, so it SKIPS the WAL and would read a stale pre-checkpoint snapshot; it is now mode=ro (grep confirms it was the only immutable=1 user; the other 15 read-only instruments already use mode=ro). EVIDENCE: fixture concurrency test (delete-mode writer waited the full 6.05s for a 6s reader, i.e. past the 5s timeout = the exact failure signature; wal-mode writer committed in 0.00s) + prod proof on the live DB (read txn held, Prisma write took the lock and rolled back in 6ms). CAVEATS: the DB is now three files (db/-wal/-shm) so any copy must take the WAL or checkpoint first; WAL is unsafe on network filesystems (local disk here); WAL removes LOCK contention, not I/O VOLUME \u2014 the observation lane is writing ~40,000 rows/24h (2x the old bar), which is Rec 2's subject. Dashboard drafts/tuning35-approval-execution-20260924.md.",
+   "tags": [
+    "db",
+    "infra",
+    "contention",
+    "applied"
+   ]
   }
  ]
 }

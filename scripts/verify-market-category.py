@@ -19,7 +19,11 @@ import sqlite3
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB = f"file:{os.path.join(ROOT, 'prisma', 'dev.db')}?mode=ro&immutable=1"
+# mode=ro, deliberately NOT immutable=1: the DB now runs journal_mode=wal (tuning #35
+# Rec 1, applied 2026-09-24), and immutable=1 tells SQLite the file can never change, so
+# it would skip the WAL entirely and read a stale (possibly pre-checkpoint) snapshot.
+# Read-only + busy_timeout reads the current committed state without taking write locks.
+DB = f"file:{os.path.join(ROOT, 'prisma', 'dev.db')}?mode=ro"
 OUT = os.path.join(ROOT, "data", "market-category-reference.json")
 PER_TOKEN = 200
 RANDOM_ROWS = 2000
