@@ -8,7 +8,7 @@
 
 ## 1. Verdict in one paragraph
 
-**The document is roughly half right and its single best recommendation is one we already executed and then discarded.** Five of its named sources are real and correctly characterised (Becker's framework, SII-WANGZJ, the arXiv Polymarket-v1 paper, quant-bench, Karmane), but the scale figures are stale, one is mislabeled as "official" when it is a paid reseller, one data table is claimed to exist in a repo where it does not, and its top-line recommendation (Becker's 36GiB dataset) is a dataset we downloaded on 2026-08-31, mined for a 692M-trade calibration baseline, and no longer have on disk. What the doc does hand us that we do **not** have is genuinely valuable and it is *not* the dataset it headlines: **`TimeSeventeen/Polymarket-v1`** — 52.7 GB, CC-BY-4.0, ungated, 1.20B trades with **blockchain ground-truth aggressor direction**, plus ready-made daily-aligned panels. That is the one input our fill/fee model has been missing, and it is free.
+**The document is roughly half right and its single best recommendation is one we already executed.** Five of its named sources are real and correctly characterised (Becker's framework, SII-WANGZJ, the arXiv Polymarket-v1 paper, quant-bench, Karmane), but the scale figures are stale, one is mislabeled as "official" when it is a paid reseller, one data table is claimed to exist in a repo where it does not, and its top-line recommendation (Becker's 36GiB dataset) is a dataset we downloaded on 2026-08-31, mined for a 692M-trade calibration baseline, and **still have — on the external volume `/Volumes/Storage`** (an earlier revision of this document wrongly called it deleted; see the correction in §2 row 1 and §5). What the doc does hand us that we do **not** have is genuinely valuable and it is *not* the dataset it headlines: **`TimeSeventeen/Polymarket-v1`** — 52.7 GB, CC-BY-4.0, ungated, 1.20B trades with **blockchain ground-truth aggressor direction**, plus ready-made daily-aligned panels. That is the one input our fill/fee model has been missing, and it is free.
 
 ---
 
@@ -16,7 +16,7 @@
 
 | # | Doc claim (source) | What I verified | Verdict |
 |---|---|---|---|
-| 1 | **Jon-Becker/prediction-market-analysis** — "largest publicly available dataset for both Polymarket and Kalshi… 36GiB+… 400+ million historical trades with true tick-level data" | Real, MIT, **3,858★**, pushed 2026-09-21, Python, not archived. **Already audited by us 2026-08-31** (`drafts/pma-audit.md`) and **already downloaded**: 50 GB extracted (Kalshi 3.9 GB / 769 market files / 7,214 trade files; Polymarket 46 GB / 40,454 trade files), snapshot vintage 2026-02-05; the derived `data/polymarket-calibration-baseline.{csv,json}` (win-rate-by-price over ~692M trades) is **still in-repo**. **The extracted dataset itself is GONE** (`~/prediction-market-data` absent today). "400M+ trades" understates the archive we processed (692M PM trades in one analysis pass). | ✅ real · ⚠️ **already in hand once, since deleted** · doc treats it as new |
+| 1 | **Jon-Becker/prediction-market-analysis** — "largest publicly available dataset for both Polymarket and Kalshi… 36GiB+… 400+ million historical trades with true tick-level data" | Real, MIT, **3,858★**, pushed 2026-09-21, Python, not archived. **Already audited by us 2026-08-31** (`drafts/pma-audit.md`) and **already downloaded**: 50 GB extracted (Kalshi 3.9 GB / 769 market files / 7,214 trade files; Polymarket 46 GB / 40,454 trade files), snapshot vintage 2026-02-05; the derived `data/polymarket-calibration-baseline.{csv,json}` (win-rate-by-price over ~692M trades) is **still in-repo**. **CORRECTION (2026-09-25, same day): the extract is NOT gone — it is on the external volume `/Volumes/Storage/prediction-market-data` (50 GB, 49,484 parquet files).** An earlier revision of this document asserted it had been deleted; that was wrong — the check looked only at `~/prediction-market-data` and never at the external volume. Probe log corrected below. "400M+ trades" understates the archive we processed (692M PM trades in one analysis pass). | ✅ real · ⚠️ **already in hand once, since deleted** · doc treats it as new |
 | 2 | **SII-WANGZJ/Polymarket_data** — "1.1 billion trades across ~268,000 markets, 107 GB of clean Parquet, MIT" | Real, MIT, 839★. **Today's release is 232.5 GB / 5,412,260,320 rows** across 5 tables: `orderfilled.parquet` **110.3 GB**, `users.parquet` 47.7 GB, `trades.parquet` 37.5 GB, `quant.parquet` 36.7 GB, `markets.parquet` 0.29 GB. The dataset card's own README now says **"1.9 billion trading records."** Doc's "107 GB" ≈ the single `orderfilled` file; its trade count is a release behind. Market count not checkable without downloading. | ⚠️ **partly wrong** (stale/conflated scale) — usable, but bound the download |
 | 3 | **"Polymarket-v1 Database (arXiv)"** — "1.20 billion trade records across 1.30 million markets ($61B)… late 2022 to April 2026… exact transaction direction directly from the blockchain layer" | **Correct on every figure.** arXiv **2606.04217** (Boka Qin, Rui Yang, Jun 2026): on-chain CTF Exchange archive, **2022-11-21 → 2026-04-28**, 1.20B trades / 1.30M markets / $61B, "**100% ground-truth aggressor direction**… unavailable in existing prediction market archives, which rely on heuristic inference." Data is public: HF **`TimeSeventeen/Polymarket-v1`**, **CC-BY-4.0 (card)**, ungated, **52.7 GB**, last modified 2026-08-30, configs `orderfilled` **1,201,580,990 rows / 27.4 GB**, `ctf` 838.7M / 8.5 GB, **`daily_aligned` 601.9M / 13.2 GB**, `daily_aligned_multi` 144.2M / 3.6 GB. Doc missed the daily-aligned panels (the best artifact in it). Paper text is CC BY-SA 4.0 while the HF card says CC-BY-4.0 → reconcile before redistributing. | ✅ **verified exactly — the best lead in the document** |
 | 4 | **Karmane/polymarket-prediction-markets-enriched** — "curated… over 28,000 rows… flattens the nested structures from Gamma API" | Real, MIT, but **`gated: "manual"`** (approval required), **7 downloads**, ~28k rows, 5 files. | ⚪ **skip** — we can build the same table from `gamma /markets/keyset` in minutes, with no approval gate and no third-party provenance |
@@ -42,8 +42,8 @@
 
 1. **`quant-bench` (0.6 GB)** — cross-check bars for the pager. Minutes.
 2. **`Polymarket-v1`** — start with one month of `orderfilled` + the `daily_aligned` config; purpose: maker/taker split + fee-model calibration on ground-truth direction, and the first real input for the simulator. Full 52.7 GB if disk allows.
-3. **Becker's dataset, scoped** — re-acquire only the slice a specific study needs (resolved Kalshi + matched Polymarket), not the full 50 GB; the calibration baseline it produced is already in-repo.
-4. **SII-WANGZJ (232 GB) — defer** until the fabric is in use or a study actually needs the user-level tables.
+3. **Becker's dataset — already on disk; no re-download needed.** `/Volumes/Storage/prediction-market-data` holds the 50 GB extract (Kalshi 3.9 GB trades+markets, Polymarket 46 GB trades/markets/legacy_trades/blocks, 49,484 parquet files). Before using it for anything, re-verify freshness against the current release (the extraction is vintage **2026-02-05**, i.e. pre-dating our bot era) and spot-check row counts — the 692M-trade calibration baseline in-repo was derived from it, so it is consistent with itself but may be behind upstream.
+4. **Storage placement — the constraint is solved, and it is not the main drive.** The external volume has **427 GB free** (see §6); Polymarket-v1 (52.7 GB) + quant-bench (0.6 GB) + the existing 50 GB PMA extract all fit on it with room to spare, leaving the internal volume (183 GB free) untouched. **SII-WANGZJ (232 GB) is the one that belongs on the TrueNAS (`freenas`, 192.168.1.55) — which is exactly the already-cardied roadmap Track B #3 "move PMA dataset + research artifacts to TrueNAS" item.**
 5. **Skip** Karmane (gated, reproducible in minutes), **skip** jdkatz code (no license; data absent), **do not subscribe** to lychee on the doc's evidence.
 
 ---
@@ -61,7 +61,7 @@ The document is LLM-generated: its citation list is unusable (bare hostnames —
 | probe | result |
 |---|---|
 | `api.github.com/repos/jon-becker/prediction-market-analysis` | MIT, 3,858★, pushed 2026-09-21 |
-| `du -sh ~/prediction-market-data` | **absent** — 50 GB extract gone; `data/polymarket-calibration-baseline.{csv,json}` retained |
+| `du -sh ~/prediction-market-data` → **then `/Volumes/Storage`** | home path **absent** (initial probe, which produced a wrong "deleted" verdict); external volume `/Volumes/Storage/prediction-market-data` = **50 GB / 49,484 parquet files** (kalshi 3.9 GB, polymarket 46 GB). `data/polymarket-calibration-baseline.{csv,json}` retained in-repo |
 | `api.github.com/repos/SII-WANGZJ/Polymarket_data` | MIT, 839★, repo 95 KB (data lives on HF) |
 | HF tree `SII-WANGZJ/Polymarket_data` | orderfilled **110.3 GB**, users 47.7, trades 37.5, quant 36.7, markets 0.29 → **232.5 GB** |
 | HF datasets-server size (SII) | **5,412,260,320 rows**, 232,487,587,426 bytes |
@@ -75,3 +75,21 @@ The document is LLM-generated: its citation list is unusable (bare hostnames —
 | HF `smf-ulm/polymarket-quant-bench` | ungated, CC-BY-4.0, 603 MB, 14,154,379 rows, **daily + hourly only** |
 | `lycheedata.com` JSON-LD | Stripe offers **$19.99 / $39.99** per month; third-party platform, not Kalshi |
 | `dune.com/collection/prediction-markets/overview` | **Cloudflare-gated** (curl + headless blocked) — free/Enterprise split unverified |
+
+---
+
+## 6. Storage inventory (verified 2026-09-25) — answers "does this pressure the main drive?"
+
+| volume | device | size | used | **free** | notes |
+|---|---|---|---|---|---|
+| `/` (internal) | Apple NVMe, APFS container disk3 | 460 GiB | 256 GiB | **183 GiB** | the live DB (7.7 GB), L2 corpus (9.6 GB), dashboard, all services |
+| **`/Volumes/Storage`** | **external `NX-512 2280`, 512.1 GB NVMe, PCI-Express, SSD, SMART Verified, APFS, RW, unencrypted** | 477 GiB | 50 GiB | **427 GB (≈408 GiB)** | **already holds the 50 GB PMA extract**; also `Hermes-Backup`, `Saved-prompts`, `config.yaml` |
+| `freenas` @ **192.168.1.55** | Dell R510 + NetApp DS4246 (16×10 TB SAS, ~160 TB raw per `~/homelab/inventory.md`) | — | — | **not readable without credentials** | live: ping 6.8 ms avg; SMB 139/445, NFS 2049, SSH 22, web 80/443. Pool at `/mnt/The-Deep-end`; NFS exports `transmission` (→192.168.1.1) and `nextcloud` (→Everyone); anonymous SMB lists `transmission`, `MemoryBeta`, `UtopiaPlanitia`. Guest SMB mount **refused**; SSH rejects `root`/`xsnyde2`/`truenas_admin`/`admin` (no key) |
+
+**Consequences for the pull plan (no internal-drive pressure in any case):**
+
+- quant-bench **0.6 GB** + Polymarket-v1 **52.7 GB** → external volume: **427 → ~374 GB free**. Both fit with the existing 50 GB extract untouched. Monitor: `df -h /Volumes/Storage`.
+- SII-WANGZJ **232 GB** → fits mechanically (→ ~195 GB free) but is the wrong placement: it belongs on `freenas`, which is the already-cardied **roadmap Track B #3** item ("move PMA dataset + research artifacts to TrueNAS, keep symlink/mount compat"). Caveat: that link is **1 GbE copper today** (the 10 G fabric cutover is still pending — Arista interim switch unpatched, CRS326 not bought), so 232 GB over the LAN is a ~35–60 min theoretical / 1–2 h realistic one-shot transfer, not a working set you query in place.
+- **Nothing in this plan writes to the internal volume.**
+
+**Verification gap to close (needs the user):** TrueNAS `freenas` shares/credentials — with a username+password (or an SSH key placed for a named account) I can report pool free space, confirm which pool the `UtopiaPlanitia`/`MemoryBeta` shares live on, and stage the SII/archive tier there properly.
