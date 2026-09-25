@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-24T03:19:14.693Z",
+  "asOf": "2026-09-25T03:19:25.416Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,17 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 760,
-    "inWindow": 365,
+    "copiesSeen": 776,
+    "inWindow": 381,
     "withKalshiQuote": 2,
     "crossListRate": 0.005,
     "staleSkips": 395,
-    "quoteFailures": 336,
-    "unverifiedMatches": 27,
+    "quoteFailures": 351,
+    "unverifiedMatches": 28,
     "rejectionReasons": {
+      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 2,
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 23,
+      "low_match_score_0.67": 24,
       "low_match_score_0.60": 3
     }
   },
@@ -340,6 +341,16 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.375,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Germany win on 2026-09-24?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.595,
       "verified": false,
       "reason": "low_match_score_0.67"
     }

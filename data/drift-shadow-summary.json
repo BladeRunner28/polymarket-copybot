@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-24T02:35:57.705Z",
-  "candidates": 15557,
+  "generatedAt": "2026-09-25T02:35:56.116Z",
+  "candidates": 15983,
   "marked": 2765,
-  "awaitingResolution": 12792,
+  "awaitingResolution": 13218,
   "wins": 1564,
   "winRate": 0.5656419529837251,
   "wouldHavePnl": 35079.22,
@@ -10,21 +10,21 @@
   "avgPnlPerTradeExDust": -0.13,
   "dustExcluded": 608,
   "dustMinEntryPrice": 0.1,
-  "avgPnlPerTradeExDustLast7dCohort": -0.13,
-  "cohort7dMarked": 2157,
+  "avgPnlPerTradeExDustLast7dCohort": -2.72,
+  "cohort7dMarked": 565,
   "totalMarked": 2765,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-09-24T01:45:33.873Z",
+  "lastCandidateAt": "2026-09-25T02:16:35.285Z",
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
-    "consecutiveDaysAtOrBelow": 5,
-    "cohort7d": -0.13,
-    "cohort7dMarked": 2157,
+    "consecutiveDaysAtOrBelow": 6,
+    "cohort7d": -2.72,
+    "cohort7dMarked": 565,
     "cohortAtOrBelow": true,
     "tripped": false,
-    "seriesDays": 5,
+    "seriesDays": 6,
     "recent": [
       {
         "day": "2026-09-20",
@@ -44,6 +44,10 @@
       },
       {
         "day": "2026-09-24",
+        "avgPnlPerTradeExDust": -0.13
+      },
+      {
+        "day": "2026-09-25",
         "avgPnlPerTradeExDust": -0.13
       }
     ],
