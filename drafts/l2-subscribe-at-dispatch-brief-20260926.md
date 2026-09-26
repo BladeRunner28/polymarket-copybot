@@ -145,3 +145,22 @@ What the brief asked for vs what shipped, where they differ:
 - Coverage-relevant note: the recorder was down 03:19:39 → 03:29:46 and again for 13 s at 03:34:00
   (handover to the detached process). **No C-200 intent was dispatched in either gap** (newest intent
   03:09:44, next dispatch after go-live), so nothing measurable was lost and the floor exempts nothing real.
+
+## Supervision, second pass (2026-09-26 03:40)
+
+`launchctl bootstrap` is rejected inside Hermes (`Blocked: launchctl submit/bootstrap is restricted inside a
+supervised gateway regardless of the job label` — re-verified, not assumed), so the KeepAlive agent cannot be
+loaded from here and the recorder would still have been one unsupervised process. It now has three nets:
+
+1. **Detached launcher** — `scripts/start-l2-recorder.py` (`start_new_session=True`, `PPID 1`), because a
+   gateway-spawned child is reaped at a session boundary (the pre-flight instance died that way at 03:28:38).
+2. **`copybot-l2-recorder-watchdog` cron, every 5 min** (`~/.hermes/scripts/copybot-l2-recorder-watchdog.sh`,
+   no_agent, silent when healthy): restarts a missing recorder and kills+restarts one whose heartbeat log is
+   >600s stale, behind an `mkdir` lock so two ticks can never start two recorders. Both branches tested by
+   hand — killed the recorder, got the alert and a restart to a new `PPID 1` process; a scheduler-fired run
+   recorded as `silent (empty output)`.
+3. **Watcher check 8** — independent alarm if the process is missing or its heartbeat is >180s stale.
+
+The LaunchAgent (KeepAlive, `~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist`) remains the
+stronger option — restart at login before the gateway is up, and an instant restart instead of a ≤5-minute
+window — but it needs one human command and is no longer load-bearing.

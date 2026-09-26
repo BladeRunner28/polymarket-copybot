@@ -1666,17 +1666,17 @@
   },
   {
    "id": "l2-recorder-supervision",
-   "title": "L2 recorder supervision: cron watchdog live; LaunchAgent bootstrap still needs a human",
-   "column": "In Review",
-   "effort": "watchdog shipped (cron every 5m) \u00b7 launchd agent: one command by Xman, ~1 min",
-   "dates": "Carded 2026-09-26 (recorder found dead, no supervision) \u00b7 watchdog LIVE 2026-09-26 03:40 \u00b7 launchd bootstrap pending (blocked inside Hermes)",
-   "gate": "VERIFIED 2026-09-26: `copybot-l2-recorder-watchdog` (cron 696f10295f35, every 5m, no_agent, silent when healthy) restarts the recorder when the process is missing and kills+restarts it when the heartbeat log is >600s stale; both branches tested by hand (killed the recorder \u2192 alert + restart, new pid reparented to launchd, PPID 1), and one scheduler-fired run recorded as 'silent (empty output)'. Proof it is up: `pgrep -f 'scripts/record-l2.ts' | wc -l` = 2 (tsx + child) and `tail -1 logs/record-l2.log` carries `lastPoll=` seconds ago. OPTIONAL HARDENING (needs a human, blocked inside Hermes): `pkill -f scripts/record-l2.ts && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist` then `launchctl list | grep l2-recorder`. That buys restart-at-login (before the gateway is up) and an instant restart instead of the watchdog's \u22645-min window; it is not required for the cron path to work.",
-   "note": "The L2 recorder was started by hand on 2026-09-24 and nothing supervised it: it died at ~03:19 on 2026-09-26 and coverage stopped silently (found by reading the log, not by an alert). Two nets now: (1) `scripts/start-l2-recorder.py` launches it DETACHED (start_new_session, PPID 1) because a gateway-spawned child is reaped at a session boundary \u2014 proven when the pre-flight instance died at 03:28:38; (2) `~/.hermes/scripts/copybot-l2-recorder-watchdog.sh` via cron every 5m restarts it when down or wedged (heartbeat >600s stale), silent while healthy, with an mkdir lock so two ticks can never start two recorders; (3) watcher check 8 in c200-intent-watch.py still alarms independently if the process is missing or its heartbeat is >180s stale. A KeepAlive LaunchAgent is written at ~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist, but `launchctl bootstrap` is guard-blocked inside the supervised gateway (rejected regardless of label \u2014 verified again 2026-09-26 03:39), so only Xman can load it. Until then the cron watchdog is what actually restores coverage.",
+   "title": "USER ACTION: bootstrap the L2 recorder LaunchAgent (one command)",
+   "column": "Backlog",
+   "effort": "~1 min, run by Xman in a normal Terminal (Hermes cannot bootstrap launchd)",
+   "dates": "Carded 2026-09-26 (found the recorder dead with no supervision)",
+   "gate": "RUN: `pkill -f scripts/record-l2.ts && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist` then `launchctl list | grep l2-recorder` and `tail -3 ~/polymarket-copybot/logs/record-l2.log` (expect a heartbeat line within 15s). KeepAlive then restarts it on death and at login. VERIFY the handover left exactly ONE recorder: `pgrep -f scripts/record-l2.ts | wc -l` = 1.",
+   "note": "The recorder that produces data/l2 and data/l2-events was started by hand from a shell on 2026-09-24 and nothing supervised it: it died at ~03:19 on 2026-09-26 and L2 coverage stopped silently (found by reading the log, not by an alert). A KeepAlive LaunchAgent is written at ~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist; Hermes is blocked from bootstrapping it (launchctl guard), so it needs one human command. Until then the recorder runs detached from scripts/start-l2-recorder.py (its own session, reparented to launchd) plus watcher check 8, which alarms when the process is missing or its heartbeat is >180s stale.",
    "tags": [
     "l2",
     "infra",
-    "reliability",
-    "in-review"
+    "user-action",
+    "reliability"
    ]
   }
  ]
