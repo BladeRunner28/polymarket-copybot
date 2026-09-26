@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-25T03:19:25.416Z",
+  "asOf": "2026-09-26T03:20:16.064Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,17 +12,19 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 776,
-    "inWindow": 381,
+    "copiesSeen": 801,
+    "inWindow": 406,
     "withKalshiQuote": 2,
     "crossListRate": 0.005,
     "staleSkips": 395,
-    "quoteFailures": 351,
-    "unverifiedMatches": 28,
+    "quoteFailures": 372,
+    "unverifiedMatches": 32,
     "rejectionReasons": {
-      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 2,
+      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 7,
+      "kalshi orderbook empty for event KXNHLSEASONPTS-27VGK": 1,
+      "low_match_score_0.67": 29,
+      "kalshi orderbook empty for event KXWITREASURER-26NOV03": 1,
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 24,
       "low_match_score_0.60": 3
     }
   },
@@ -351,6 +353,46 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.595,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Norway win on 2026-09-27?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.595,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Georgia win on 2026-09-25?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.505,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Croatia win on 2026-09-26?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.525,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will China PR win on 2026-09-27?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.32,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
