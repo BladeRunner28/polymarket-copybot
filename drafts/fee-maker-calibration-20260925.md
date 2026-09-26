@@ -119,6 +119,11 @@ By price band at δ=0.02 / 1 h: 0.0–0.1 **45.9%** · 0.1–0.2 83.5% · 0.2–
 
 Weighted by **our own legs' entry prices**: C-200 **74.3% (5 min) / 81.1% (1 h)**; STANDARD 69.2% / 75.6%.
 
+**Cross-check (independent code path):** the same January–April table computed unsharded in a single pass for
+2026-04 reproduces the sharded run **exactly** — 46.47% / 81.96% / 85.66% / 86.23% / 85.55% / 83.60% / 81.41% /
+77.09% / 68.35% / 49.03% by band, Δ = 0.00 pp, n = 191,907,756 in both. The sharding is a memory workaround,
+not a methodological choice.
+
 **So the assumption is not implausible on fill probability.** That is a genuinely useful answer: a bid parked
 2¢ below a fresh print is touched in roughly three of four cases within five minutes at our price mix.
 
