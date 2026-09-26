@@ -6,9 +6,9 @@
  "hub_revision": "b85406f38db8d9127ca45740a6bde0b5f2c7698e",
  "hub_last_modified": "2026-05-12T14:17:14Z",
  "pulled_at": "2026-09-25T18:07:32.749014-05:00",
- "pulled_by": "hermes (hf download, resumable loop; anonymous \u2014 rate-limited)",
+ "pulled_by": "hermes (hf download, resumable loop; anonymous — rate-limited)",
  "local_path": "/Volumes/Storage/pm-data/quant-bench",
- "bytes_on_disk": 612171776,
+ "bytes_on_disk": 602978242,
  "parquet_files": 1417,
  "verification": {
   "method": "duckdb row counts vs HuggingFace datasets-server published totals",
@@ -43,7 +43,7 @@
   "result": "MATCH (all three tables exact)"
  },
  "known_limits": [
-  "daily + hourly bars ONLY \u2014 there is no 1m or 5m series despite third-party claims",
+  "daily + hourly bars ONLY — there is no 1m or 5m series despite third-party claims",
   "covers 'high-liquidity resolved markets' only, not the full universe",
   "bar-level only: no per-trade rows, no order-book depth, no aggressor direction",
   "use as an independent cross-check on our own CLOB price pager and for breadth studies, not as a source of truth"
@@ -52,5 +52,16 @@
   "bars_daily": "token_id, period_start, period_end, open, high, low, close, vwap, volume_usd, n_trades, n_buys, n_sells",
   "bars_hourly": "same as bars_daily (timestamps at hour grain)",
   "markets": "id, condition_id, question, slug, outcomes, outcome_prices, clob_token_ids, volume, liquidity, active, closed, end_date, created_at, market_maker_address, _fetched_at, category"
- }
+ },
+ "bytes_on_disk_verified_against": "HuggingFace file tree (every published file, exact byte size)",
+ "hub_files_total": 1419,
+ "corrections": [
+  {
+   "field": "bytes_on_disk",
+   "was": 612171776,
+   "now": 602978242,
+   "why": "original figure did not match the Hub: it was block-rounded (du-style) or included the local .cache; a byte-for-byte comparison of all published files showed the archive on disk is exact. Corrected 2026-09-25 during independent verification.",
+   "verified_by": "scripts/verify-archive-pmdata.py --hub"
+  }
+ ]
 }

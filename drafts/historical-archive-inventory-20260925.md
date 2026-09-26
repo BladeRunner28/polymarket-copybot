@@ -10,9 +10,9 @@
 
 | dataset | path | size on disk | files | free space after |
 |---|---|---|---|---|
-| **TimeSeventeen/Polymarket-v1** | `/Volumes/Storage/pm-data/polymarket-v1` | **52.89 GB** | 2,152 parquet | — |
-| **smf-ulm/polymarket-quant-bench** | `/Volumes/Storage/pm-data/quant-bench` | **0.61 GB** | 1,417 parquet | — |
-| both | `/Volumes/Storage` (external `NX-512 2280` NVMe, APFS) | **53.5 GB** | | **377 GiB free** (was 427 GB before the pull) |
+| **TimeSeventeen/Polymarket-v1** | `/Volumes/Storage/pm-data/polymarket-v1` | **52.72 GB** | 2,152 parquet | — |
+| **smf-ulm/polymarket-quant-bench** | `/Volumes/Storage/pm-data/quant-bench` | **0.60 GB** | 1,417 parquet | — |
+| both | `/Volumes/Storage` (external `NX-512 2280` NVMe, APFS) | **53.32 GB** | | **377 GiB free** (was 427 GB before the pull) |
 
 Internal volume untouched: **183 GiB free, unchanged**. Stale `.incomplete` leftovers from the sibling's interrupted first attempt (2 per dataset, 6 MB total cache) were removed after confirming every target file exists — parquet counts afterwards unchanged at **2,152 / 1,417**.
 
@@ -67,6 +67,10 @@ Zero missing files, zero size mismatches, zero zero-byte files. Span verified fr
 ```bash
 DUCKDB=/Volumes/Storage/pm-data/.venv/bin/python   # venv already has duckdb 1.5.5
 
+# THE GATE: re-runnable integrity check (rows, file counts, bytes, Hub byte-for-byte)
+# add --hub to re-fetch the Hub tree and compare every published file's exact size
+$DUCKDB /Users/xsnyde2/polymarket-copybot/scripts/verify-archive-pmdata.py [--hub]   # exit 0 = intact
+
 # one-line fee/era sanity check
 $DUCKDB -c "import duckdb;print(duckdb.sql(\"SELECT COUNT(*), SUM(CASE WHEN fee_usdc>0 THEN 1 ELSE 0 END) FROM read_parquet('/Volumes/Storage/pm-data/polymarket-v1/OrderFilled/2026_04.parquet')\").fetchall())"
 
@@ -80,5 +84,18 @@ duckdb -c "SELECT category_refined, COUNT(DISTINCT condition_id) mkts, AVG(taker
 ```
 
 **Known limits (carry these into any study):** `quant-bench` is daily+hourly only (no 1m/5m) and covers high-liquidity resolved markets only; neither archive has order-book depth (our own `data/l2/` remains the only depth source, PM since 2026-08-31); licence is **CC-BY-4.0 on the HF card but CC BY-SA 4.0 on the paper text** — reconcile before redistributing anything derived; all licence/attribution obligations travel with derived artifacts.
+
+## 7. Correction — the manifests overstated bytes (found and fixed 2026-09-25)
+
+My first pass verified **files, rows and per-file sizes** and found zero mismatches, so the archive itself was already proven. The byte *totals* in the two manifests were a separate matter, and they were wrong:
+
+| dataset | manifest said | verified on disk | delta |
+|---|---|---|---|
+| Polymarket-v1 | 52,892,872,704 B (52.89 GB) | **52,721,154,286 B (52.72 GB)** | −171,718,418 B (−163.8 MiB) |
+| quant-bench | 612,171,776 B (0.61 GB) | **602,978,242 B (0.60 GB)** | −9,193,534 B (−8.8 MiB) |
+
+**Which figure is right?** The on-disk one. Re-fetching the Hub file tree and comparing **every published file's exact byte size** (2,154 files for Polymarket-v1, 1,419 for quant-bench) returns zero mismatches — the pull is byte-perfect and the original totals were inflated (block-rounded `du`-style accounting plus the local `.cache`). Both manifests now carry the verified value plus a `corrections[]` record of what changed and why, and `bytes_on_disk_verified_against` names the method.
+
+**Durable artifact:** `scripts/verify-archive-pmdata.py` — the re-runnable gate for an archive that lives on a single unencrypted external NVMe with no redundancy. Offline mode checks published row totals, parquet counts, manifest bytes, zero-byte/`.incomplete` leftovers and ground-truth field population (directions + fees on a first-era and a last-era file); `--hub` adds the byte-for-byte Hub comparison. Exit 0 = intact, 1 = a check failed. Re-run it after any move, drive change or restore.
 
 *Verification summary: the pull was performed by a sibling session; I reproduced every row count, the timestamp span, the direction/fee field population, the fee-era gradient and the file inventory myself. Numbers I did not reproduce are labelled "published".*
