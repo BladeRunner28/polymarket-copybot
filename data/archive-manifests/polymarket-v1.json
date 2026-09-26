@@ -1,0 +1,170 @@
+{
+ "dataset": "TimeSeventeen/Polymarket-v1",
+ "kind": "complete on-chain trade archive, Polymarket CTF Exchange v1 (Polygon), contract lifecycle + daily-aligned panels",
+ "paper": "arXiv 2606.04217 \u2014 'Polymarket-v1 Database' (Boka Qin, Rui Yang, Jun 2026)",
+ "license": "HF card: cc-by-4.0 \u00b7 paper text: CC BY-SA 4.0 (reconcile before redistribution)",
+ "gated": false,
+ "hub_revision": "5aa1b9d52316a8b2e789e81c8ae42c7ed532e8aa",
+ "hub_last_modified": "2026-08-30T02:33:57Z",
+ "pulled_at": "2026-09-25T18:38:52-05:00",
+ "local_path": "/Volumes/Storage/pm-data/polymarket-v1",
+ "bytes_on_disk": 52892872704,
+ "parquet_files_total": 2152,
+ "coverage": {
+  "first_block_timestamp_utc": "2022-11-21",
+  "last_block_timestamp_utc": "2026-04-28",
+  "note": "epochs 1669060209..1777374040 \u2014 matches the paper's stated span exactly"
+ },
+ "verification": {
+  "method": "duckdb row counts vs HuggingFace datasets-server published totals",
+  "published_total_rows": 2786380324,
+  "local_total_rows": 2786380324,
+  "result": "MATCH (all four configs exact)",
+  "per_config": {
+   "CTF": {
+    "rows_local": 838688922,
+    "rows_published": 838688922,
+    "match": true,
+    "files": 5
+   },
+   "OrderFilled": {
+    "rows_local": 1201580990,
+    "rows_published": 1201580990,
+    "match": true,
+    "files": 42
+   },
+   "daily_aligned": {
+    "rows_local": 601934424,
+    "rows_published": 601934424,
+    "match": true,
+    "files": 1248
+   },
+   "daily_aligned_multi": {
+    "rows_local": 144175988,
+    "rows_published": 144175988,
+    "match": true,
+    "files": 857
+   }
+  }
+ },
+ "configs": {
+  "OrderFilled": {
+   "rows": 1201580990,
+   "cols": [
+    "id",
+    "maker",
+    "taker",
+    "block_timestamp",
+    "maker_asset_id",
+    "taker_asset_id",
+    "maker_direction",
+    "taker_direction",
+    "token_asset_id",
+    "token_amount",
+    "usdc_amount",
+    "price",
+    "fee_usdc"
+   ],
+   "note": "per-fill on-chain records: maker/taker addresses, GROUND-TRUTH maker_direction/taker_direction, token_asset_id, token_amount, usdc_amount, price, fee_usdc"
+  },
+  "CTF": {
+   "rows": 838688922,
+   "cols": [
+    "id",
+    "stakeholder",
+    "collateral_token",
+    "parent_collection_id",
+    "condition_id",
+    "partition",
+    "usdc_amount"
+   ],
+   "note": "CTF (conditional token framework) events: split/merge/redeem per stakeholder, collateral, partition"
+  },
+  "daily_aligned": {
+   "rows": 601934424,
+   "cols": [
+    "asset_id",
+    "block_timestamp",
+    "price",
+    "maker",
+    "taker",
+    "taker_direction",
+    "usdc_amount",
+    "fee_usdc",
+    "condition_id",
+    "outcome_seq",
+    "neg_risk",
+    "category",
+    "category_refined",
+    "outcome_label",
+    "winning_outcome_label",
+    "resolution_status",
+    "taker_base_fee",
+    "maker_base_fee",
+    "opens_at",
+    "close_at",
+    "resolved_at",
+    "market_slug",
+    "p_event",
+    "D"
+   ],
+   "note": "asset-level daily panel with direction + fee + category columns (one row per fill, daily-aligned)"
+  },
+  "daily_aligned_multi": {
+   "rows": 144175988,
+   "cols": [
+    "asset_id",
+    "block_timestamp",
+    "price",
+    "maker",
+    "taker",
+    "taker_direction",
+    "usdc_amount",
+    "fee_usdc",
+    "condition_id",
+    "outcome_seq",
+    "neg_risk",
+    "category",
+    "category_refined",
+    "outcome_label",
+    "winning_outcome_label",
+    "resolution_status",
+    "taker_base_fee",
+    "maker_base_fee",
+    "opens_at",
+    "close_at",
+    "resolved_at",
+    "market_slug",
+    "p_event",
+    "D",
+    "neg_risk_market_id"
+   ],
+   "note": "multi-outcome variant of the daily-aligned panel"
+  }
+ },
+ "why_this_matters": [
+  "GROUND-TRUTH AGGRESSOR DIRECTION (taker_direction/maker_direction) \u2014 the field our fee model had to upper-bound as 'all taker' because paper fills never recorded maker/taker",
+  "REAL PER-FILL FEES (fee_usdc) \u2014 lets us calibrate/verify the Polymarket fee formula fee=C*rate*p*(1-p) against actual charged fees instead of assuming a category rate"
+ ],
+ "fee_reality_sample": {
+  "OrderFilled/2022_11.parquet": {
+   "rows": 138,
+   "fee_gt_0_pct": 0.0,
+   "note": "pre-fee-reform era \u2014 zero fees"
+  },
+  "OrderFilled/2026_04.parquet": {
+   "rows": 227285666,
+   "fee_gt_0_pct": 88.0,
+   "avg_fee_usdc": 2.5035,
+   "sum_fee_usdc": 569008984.27,
+   "span": "2026-04-01..2026-04-28",
+   "note": "modern fee regime: 88% of fills carry a fee; single month totals $569M in fees on this exchange"
+  }
+ },
+ "known_limits": [
+  "ENDS 2026-04-28 (CTF Exchange v1 termination) \u2014 BEFORE our bot era (first paper trade 2026-06-18): training/calibration substrate, never a substitute for our own rolling capture",
+  "no order-book depth and no resting-order history (fills only) \u2014 L2 realism still comes from our own recorder",
+  "make it a documented convention: this archive's fee/price/size units must be normalized before joining with Becker's archive or our own ledger",
+  "license discrepancy (card cc-by-4.0 vs paper CC BY-SA 4.0) \u2014 internal use only until reconciled"
+ ]
+}
