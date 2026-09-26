@@ -25,9 +25,12 @@ EVIDENCE SOURCES (each reported with its own coverage; none is assumed complete)
              Direct print evidence — but thin on these markets (2-50 rows/market in total).
   S2 BOOK    our own L2 corpus, data/l2/<assetId>.jsonl (top-25 ladder, 5 s cadence).
              A best ask at/below our level = a seller willing at <= L => a resting bid at L fills.
-             STRUCTURAL GAP: the recorder's universe refreshes every 10 min and admits a market only
-             once a copy exists, so coverage starts ~3-9 min AFTER the dispatch — our own book never
-             covers the 5-minute horizon. Reported per leg, never papered over.
+             COVERAGE (v62, 2026-09-26 03:29 CDT): the recorder now pins the market of every fresh
+             C-200 dispatch, so coverage starts ~20 s after the dispatch and the 5-minute horizon IS
+             covered for legs dispatched after that moment. Legs before it keep the old gap (the
+             10-min candidate refresh admitted a market only once a copy existed, i.e. 2.7-8.6 min
+             AFTER the dispatch); per-leg coverage is computed from the file either way, so a pre-v62
+             leg reports its own lag rather than pretending to 5-min coverage.
   S3 ANCHOR  where the level actually sits: intent vs the copied wallet's real print
              (DecisionJournal -> ObservedTrade.walletEntryPrice) and vs the detection mid
              (ObservedTrade.detectedPrice), plus the first covered L2 quote. This decides whether the

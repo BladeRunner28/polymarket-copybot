@@ -84,3 +84,64 @@ node ws-headroom-probe.js # 20-socket staged probe; kept out of the repo
 du -sh data/l2 && ls data/l2 | wc -l
 grep -c '"t":' data/l2/*.jsonl   # 0 files: no print lines in the corpus
 ```
+
+
+---
+
+# IMPLEMENTED — v62, 2026-09-26 03:29:46 CDT
+
+Approved option set **A2 + B′ + D**, applied to `scripts/record-l2.ts` (+`scripts/c200-intent-watch.py`).
+What the brief asked for vs what shipped, where they differ:
+
+- **A2 — shipped as scoped.** The recorder polls `FillIntent` every 20 s over a 10-min lookback, pins the
+  market of any fresh dispatch (2 h TTL, `L2_PIN_TTL_MS`/`L2_PIN_POLL_MS`/`L2_PIN_LOOKBACK_MS` overridable),
+  and rebuilds `universe = candidates ∪ pinned` so a 10-min candidate refresh can never drop a market we are
+  mid-measurement on. Startup seeds pins before the first universe build. Heartbeat now carries
+  `pinned=N pins=N lastPoll=Ns ago` so a dead poll loop and a fresh one are distinguishable.
+- **B — corrected at implementation time, not as written.** The brief's "fix the print capture
+  (`last_trade_price`)" rested on a wrong premise: a 90 s capture of the market channel showed it sends
+  **only `book` and `price_change`** — there is no trade event, and `last_trade_price` is a field on `book`
+  that did not change once in 90 s (context, not a print tape). Measured event rate: **~7.5 KB/min per
+  market, ~9 price changes/min**, book re-sent every ~45 s. So B became an **event-level quote tape**
+  (`data/l2-events/<assetId>.jsonl`, pinned markets only): every `price_change` level touch between the 5 s
+  snapshots, which is exactly the granularity the "did it fill" question needs. Cost ~0.21 GB/day at 19
+  pinned markets. Prints still come from the public tape (S1) — no in-house print stream exists to capture.
+- **D — shipped, but it had never run.** The watcher's ingest call used `--ingest-closed`, a flag that does
+  not exist in `c200-printthrough.py`; the call exited 2 with a usage error and the failure was swallowed
+  (captured output, no return-code check), so D had ingested nothing since it was written. Fixed to the real
+  entry point (`--json`) with a return-code check that raises an alert, and proven to append:
+  artifact 5 → 6 lines, 30,799 → 41,023 bytes on the first live run.
+
+## Two silent failures found while closing this out
+
+1. **The recorder had no supervision and was dead.** It was started by hand on 2026-09-24 from a shell
+   (`logs/record-l2.log` first line 2026-08-31T12:22:39Z for the previous incarnation); nothing — no
+   launchd job, no cron, no alert — restarted it when it stopped at ~03:19 today. L2 coverage had simply
+   stopped. It is now running **detached** (own session, reparented to launchd: `scripts/start-l2-recorder.py`)
+   so a Hermes session boundary cannot reap it — which is exactly how the pre-flight instance died at
+   03:28:38 — and a LaunchAgent with `KeepAlive` is written and waiting to be bootstrapped by hand:
+   `~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist`.
+2. **The watcher's own new coverage gate was unsafe in three ways**, all fixed before commit: (a) its
+   `L2_FIX_MS` floor was `1790413140000` = **03:59 CDT, 30 min in the future** behind a comment claiming
+   03:19 — it would have exempted every dispatch for the next half hour; (b) it judged coverage from the
+   book file's **first line**, which passes for a market last covered days ago and would have declared
+   coverage healthy for a market the recorder dropped hours before the dispatch; (c) it filtered offenders
+   through `alertedIntents` but never appended to it, so a failed window would have re-alerted on every tick.
+   The gate now tests for a book line **inside `[t0 − 30 s, t0 + 90 s]`** (the recorder snapshots every
+   subscribed asset every 5 s, so a pin shows up within seconds), caches each verdict once, and reports
+   distinct truthful reasons: `book gap A→B spans the dispatch` / `first data N s AFTER the dispatch` /
+   `no asset-map entry (gamma never resolved the tokens)`.
+
+## Verification performed
+
+- 4 gate verdicts + both `recorder_alive` branches asserted from fixtures; real-corpus probe: fresh market
+  (12.8 MB file) → hit in 0.09 s, stale market → answered from the tail with 0.00 MB read (fast path).
+- `tsc --noEmit` clean; recorder live with `universe: 19 markets, 38 assets (19 candidates + 0 pinned)` and
+  `lastPoll` ticking; watcher tick silent, exit 0.
+- **Still unproven on live flow:** the pin path in the production process on a real dispatch (proven in a
+  pre-flight instance: 8 markets pinned from real historical dispatches, sockets open, event files writing).
+  The next C-200 dispatch closes it — watcher check 7 reports the verdict automatically, check 8 alarms if
+  the recorder dies or its heartbeat stalls >180 s.
+- Coverage-relevant note: the recorder was down 03:19:39 → 03:29:46 and again for 13 s at 03:34:00
+  (handover to the detached process). **No C-200 intent was dispatched in either gap** (newest intent
+  03:09:44, next dispatch after go-live), so nothing measurable was lost and the floor exempts nothing real.

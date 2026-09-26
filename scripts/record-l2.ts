@@ -1,15 +1,34 @@
 /**
  * record:l2 — long-running L2 order-book recorder (v40, Homerun-audit item).
  *
- * Subscribes to Polymarket's CLOB WebSocket for the ACTIVE market universe
- * (open paper trades + recently observed trades), snapshots the top-25 book
- * every 5s per asset, and appends trades as they print. Output: append-only
- * JSONL at data/l2/<assetId>.jsonl — the raw material for a future Cox-PH
- * fill-probability model and realistic backtests (homerun fill_simulator
- * concept; AGPL read-only reference).
+ * Subscribes to Polymarket's CLOB WebSocket for the ACTIVE market universe, snapshots the top-25 book
+ * every 5s per asset, and (for markets inside a C-200 dispatch window) appends the raw quote-event
+ * stream. Output: append-only JSONL at data/l2/<assetId>.jsonl — the raw material for a future Cox-PH
+ * fill-probability model and realistic backtests (homerun fill_simulator concept; AGPL read-only
+ * reference).
  *
  *   book line:   {"ts": 1754…, "bids": [["0.55","12.3"], …], "asks": […]}
- *   trade line:  {"ts": 1754…, "t": {"price": "0.55", "size": "123", "side": "1"}}
+ *   event line:  {"ts": 1754…, "pc": {"price":"0.55","side":"BUY","size":"12.3","bestBid":"0.54",
+ *                                     "bestAsk":"0.56"}}   -> data/l2-events/<assetId>.jsonl
+ *   ltp line:    {"ts": 1754…, "ev": "ltp", "price": "0.55"}  (venue's last_trade_price, CHANGES only —
+ *                a coarse traded-price marker, NOT a fill tape: see below)
+ *
+ * THERE IS NO TRADE STREAM on the market channel (verified 2026-09-26 by shape-probing the live feed:
+ * it sends only `book` and `price_change`; an earlier version of this script waited for an
+ * `{event:"trade"}` message that never arrives, which is why the corpus held zero print lines in
+ * 36,042 files). Prints must come from the public trade tape (data-api, see
+ * scripts/c200-printthrough.py) or an on-chain OrderFilled ingest. Do not re-add a print branch here
+ * on the assumption the venue sends fills.
+ *
+ * Three coverage mechanisms, in order of what they guarantee:
+ *   1. candidate universe — top MAX_MARKETS markets by copy-candidate observed-trade recency,
+ *      refreshed every 10 min (unchanged).
+ *   2. PINNED markets (v62, A2) — the market of any fresh C-200 fill intent is pinned immediately
+ *      (polled every PIN_POLL_MS over a short dispatch lookback) and held for PIN_TTL_MS, so coverage
+ *      starts ≤ ~20s after a dispatch instead of 2.7-8.6 min and spans the measurement window. This is
+ *      what makes the 5-minute print-through horizon measurable at all.
+ *   3. quote-event stream — for PINNED markets only, every raw price_change (carrying best_bid and
+ *      best_ask) is appended, so a level touch between 5s snapshots is still observable.
  *
  * Universe refreshes every 10 min (gamma-api, cached clobTokenIds, throttled).
  * Supervised by the cron watchdog copybot-l2-watchdog.sh (pgrep + nohup).
@@ -22,6 +41,7 @@ import { prisma } from "../src/lib/db";
 const WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 const GAMMA = "https://gamma-api.polymarket.com/markets"; // NOTE: no trailing slash — /markets?slug= 404s with one
 const L2_DIR = join(__dirname, "..", "data", "l2");
+const L2_EVENTS = join(__dirname, "..", "data", "l2-events");
 // assetId -> marketId map. The L2 corpus is one file per CLOB asset id, and the DB does NOT
 // carry token ids (ObservedTrade.rawTradeJson is empty for all 283k rows), so without this map
 // every analysis has to re-resolve each file through Gamma (~300ms each). Append-only, one line
@@ -32,8 +52,15 @@ const SNAPSHOT_MS = 5_000;
 const UNIVERSE_REFRESH_MS = 10 * 60_000;
 const MAX_MARKETS = 25;
 const TOP_N = 25;
+// Pinning (A2): how often to look for fresh dispatches, how far back a dispatch still counts, and how
+// long a pinned market stays subscribed. Env overrides exist so the mechanism can be proven against
+// historical dispatches without waiting for a live one.
+const PIN_POLL_MS = Number(process.env.L2_PIN_POLL_MS ?? 20_000);
+const PIN_LOOKBACK_MS = Number(process.env.L2_PIN_LOOKBACK_MS ?? 10 * 60_000);
+const PIN_TTL_MS = Number(process.env.L2_PIN_TTL_MS ?? 2 * 3_600_000);
 
 mkdirSync(L2_DIR, { recursive: true });
+mkdirSync(L2_EVENTS, { recursive: true });
 
 interface BookState {
   bids: Map<string, number>; // price -> size
@@ -63,6 +90,71 @@ function appendAssetMap(marketId: string, assetIds: string[]) {
   } catch (e) {
     console.error(`[l2] asset-map append failed ${marketId}: ${e instanceof Error ? e.message : e}`);
   }
+}
+
+/** Quote-event tape, PINNED markets only (see header). One file per asset, same ts convention. */
+function appendEvent(assetId: string, line: unknown) {
+  try {
+    appendFileSync(join(L2_EVENTS, `${assetId}.jsonl`), JSON.stringify(line) + "\n");
+  } catch (e) {
+    console.error(`[l2] event append failed ${assetId}: ${e instanceof Error ? e.message : e}`);
+  }
+}
+
+// --- Pinned markets (A2): confidence that we were recording when a C-200 copy happened ------------
+// marketId -> {assetIds, expiresAt}. Kept OUTSIDE the candidate universe so a 10-min refresh can
+// neither drop a market mid-measurement nor be the reason coverage starts late.
+const pinned = new Map<string, { assetIds: string[]; expiresAt: number }>();
+const lastLtp = new Map<string, string>(); // assetId -> last stored last_trade_price
+let lastPinPollAt = 0;
+let pinCount = 0; // cumulative pins this process lifetime (observability for the poll path)
+
+/** Pin every market with a C-200 fill intent dispatched in the lookback window. Never throws: a DB
+ *  failure downgrades to "no new pins this tick", which is exactly the pre-v62 behaviour. */
+async function pollDispatches(): Promise<number> {
+  let added = 0;
+  lastPinPollAt = Date.now();
+  try {
+    const since = new Date(Date.now() - PIN_LOOKBACK_MS);
+    const rows = await prisma.fillIntent.findMany({
+      where: { dispatchedAt: { gte: since } },
+      select: { marketId: true, dispatchedAt: true },
+      distinct: ["marketId"],
+      orderBy: { dispatchedAt: "desc" },
+    });
+    for (const r of rows) {
+      const expiresAt = new Date(r.dispatchedAt).getTime() + PIN_TTL_MS;
+      if (expiresAt <= Date.now()) continue;                 // its measurement window is over
+      const existing = pinned.get(r.marketId);
+      if (existing && existing.expiresAt >= expiresAt) continue;
+      const assetIds = await gammaTokenIds(r.marketId);
+      if (!assetIds || assetIds.length === 0) {
+        console.warn(`[l2] pin deferred (no tokens yet) ${r.marketId}`);
+        continue;
+      }
+      pinned.set(r.marketId, { assetIds, expiresAt });
+      added += 1;
+      pinCount += 1;
+      console.log(`[l2] pinned ${r.marketId} until ${new Date(expiresAt).toISOString()} (C-200 dispatch)`);
+    }
+  } catch (e) {
+    console.error(`[l2] dispatch poll failed (kept existing pins): ${e instanceof Error ? e.message : e}`);
+  }
+  if (added > 0) void rebuildUniverse();
+  return added;
+}
+
+function expirePins(): number {
+  const now = Date.now();
+  let dropped = 0;
+  for (const [marketId, p] of pinned) {
+    if (p.expiresAt <= now) {
+      pinned.delete(marketId);
+      dropped += 1;
+      console.log(`[l2] unpinned ${marketId} (measurement window ended)`);
+    }
+  }
+  return dropped;
 }
 
 function snapshot(now: number) {
@@ -166,6 +258,7 @@ async function activeMarketIds(): Promise<string[]> {
 const connections = new Map<string, WebSocket>(); // marketId -> ws
 const retryAt = new Map<string, number>(); // marketId -> retry-after epoch ms
 let universe = new Map<string, string[]>(); // marketId -> asset ids
+let candidates = new Map<string, string[]>(); // marketId -> asset ids (the 10-min candidate refresh)
 
 function openConnection(marketId: string, assetIds: string[]) {
   if (connections.has(marketId)) return;
@@ -192,15 +285,36 @@ function openConnection(marketId: string, assetIds: string[]) {
         }
         return;
       }
-      if (Array.isArray(msg?.price_changes)) {
-        applyPriceChanges(msg.price_changes);
+      // Object-form book message (event_type "book"): the venue re-sends the whole ladder on
+      // subscribe and periodically after. The array form above does not cover it, so without this
+      // branch the in-memory book drifts from the venue's on any missed price_change.
+      if (msg.event_type === "book" && msg.asset_id) {
+        applySnapshot(msg.asset_id, msg.bids ?? [], msg.asks ?? []);
+        if (pinned.has(marketId) && msg.last_trade_price && lastLtp.get(msg.asset_id) !== String(msg.last_trade_price)) {
+          lastLtp.set(msg.asset_id, String(msg.last_trade_price));
+          appendEvent(msg.asset_id, { ts: Date.now(), ev: "ltp", price: msg.last_trade_price });
+        }
         return;
       }
-      if (msg.event === "trade" && Array.isArray(msg.trades)) {
-        for (const t of msg.trades) {
-          append(msg.asset_id, { ts: Date.now(), t: { price: t.price, size: t.size, side: t.side } });
+      if (Array.isArray(msg?.price_changes)) {
+        applyPriceChanges(msg.price_changes);
+        // Quote-event tape for PINNED markets only: a level touch between two 5s snapshots is
+        // invisible in data/l2, and this is the window the C-200 measurement depends on.
+        if (pinned.has(marketId)) {
+          const ts = Date.now();
+          for (const c of msg.price_changes) {
+            if (!c?.asset_id) continue;
+            appendEvent(c.asset_id, {
+              ts,
+              pc: { price: c.price, side: c.side, size: c.size, bestBid: c.best_bid, bestAsk: c.best_ask },
+            });
+          }
         }
+        return;
       }
+      // NOTE: no trade branch. The market channel has no fill stream (verified 2026-09-26): a
+      // `{event:"trade"}` handler sat here for weeks and never fired once. Prints come from the public
+      // trade tape — see scripts/c200-printthrough.py.
     } catch (e) {
       console.error(`[l2] message error: ${e instanceof Error ? e.message : e}`);
     }
@@ -238,17 +352,35 @@ async function refreshUniverse() {
     const ids = await gammaTokenIds(m);
     if (ids && ids.length > 0) next.set(m, ids);
   }
-  universe = next;
+  candidates = next;
+  return rebuildUniverse();
+}
+
+/** universe = candidate markets ∪ pinned dispatch markets. Rebuilt from both sources so a 10-min
+ *  candidate refresh can never drop a market we are mid-measurement on. */
+function rebuildUniverse(): Map<string, string[]> {
+  expirePins();
+  const merged = new Map<string, string[]>(candidates);
+  for (const [marketId, p] of pinned) {
+    if (p.assetIds.length > 0) merged.set(marketId, p.assetIds);
+  }
+  universe = merged;
   // Prune books for assets we no longer track.
-  const live = new Set([...next.values()].flat());
+  const live = new Set([...merged.values()].flat());
   for (const assetId of [...books.keys()]) if (!live.has(assetId)) books.delete(assetId);
-  console.log(`[l2] universe: ${next.size} markets, ${[...next.values()].flat().length} assets`);
+  console.log(
+    `[l2] universe: ${merged.size} markets, ${[...merged.values()].flat().length} assets ` +
+      `(${candidates.size} candidates + ${pinned.size} pinned)`
+  );
   reconcileConnections();
-  return next;
+  return merged;
 }
 
 async function main() {
   console.log(`[l2] recorder starting (${new Date().toISOString()}) — dir ${L2_DIR}`);
+  // Seed pins BEFORE the first universe build, so a restart mid-measurement keeps covering the
+  // dispatch windows that are still open (PIN_TTL_MS decides which those are).
+  await pollDispatches();
   const initial = await refreshUniverse();
   if (initial.size === 0) {
     console.warn("[l2] empty universe on start; will retry in 10m");
@@ -266,11 +398,22 @@ async function main() {
     void refreshUniverse();
   }, UNIVERSE_REFRESH_MS);
 
-  // Diagnostic heartbeat (keep: cheap, proves data is flowing).
+  // A2: the dispatch poll. Cheap (a few rows off an indexed table), never throws, and it is the only
+  // reason coverage can start within ~20s of a C-200 copy instead of at the next 10-min refresh.
+  setInterval(() => {
+    void pollDispatches();
+  }, PIN_POLL_MS);
+
+  // Diagnostic heartbeat (keep: cheap, proves data is flowing). Also surfaces the A2 poll path:
+  // `pinned`/`pins`/`lastPoll` make a silent poll loop and a stale one distinguishable.
   setInterval(() => {
     const age = lastMsgAt ? Math.round((Date.now() - lastMsgAt) / 1000) : -1;
     const open = [...connections.values()].filter((s) => s.readyState === WebSocket.OPEN).length;
-    console.log(`[l2] heartbeat conns=${connections.size} open=${open} books=${books.size} lastMsg=${age}s ago`);
+    const pollAge = lastPinPollAt ? Math.round((Date.now() - lastPinPollAt) / 1000) : -1;
+    console.log(
+      `[l2] heartbeat conns=${connections.size} open=${open} books=${books.size} lastMsg=${age}s ago ` +
+        `pinned=${pinned.size} pins=${pinCount} lastPoll=${pollAge}s ago`
+    );
   }, 15_000);
 
   const shutdown = () => {

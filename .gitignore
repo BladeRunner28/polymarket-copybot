@@ -25,6 +25,8 @@ prisma/dev.db*
 
 # large runtime data (L2 book history — 700MB+; keep the small research JSONL)
 data/l2/
+# pinned-market quote-event tape (v62) — same append-only, regenerable-from-the-venue character
+data/l2-events/
 
 # C-200 print-through: tape cache is refetchable, the watcher state churns every tick
 data/c200-tape/
