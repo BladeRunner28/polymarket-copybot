@@ -26,6 +26,10 @@ prisma/dev.db*
 # large runtime data (L2 book history — 700MB+; keep the small research JSONL)
 data/l2/
 
+# C-200 print-through: tape cache is refetchable, the watcher state churns every tick
+data/c200-tape/
+data/c200-intent-watch-state.json
+
 # large derived datasets — regenerate with scripts/build-decision-dataset.py (read-only DB read)
 data/decision-dataset.csv
 
