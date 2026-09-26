@@ -8,6 +8,7 @@
 
 import { prisma } from "./db";
 import { assertPaperOnly, clampPaperSize, checkCircuitBreaker } from "./safety";
+import { recordFillIntent, stampIntentLink } from "./fill-intent";
 
 export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: number): number {
   if (entryPrice <= 0) return 0;
@@ -151,6 +152,20 @@ export async function openPaperTrade(params: {
           wallet_address: params.walletAddress
         })
       });
+      // c200-maker-fill-assumption option (b): remember the price this lane was
+      // HANDED, so the sidecar's modelled `intent - 0.02` entry becomes a
+      // measurement. Write-only shadow, own guard — recordFillIntent never throws,
+      // so a shadow failure can never be reported as an execution-engine failure.
+      await recordFillIntent({
+        decisionJournalId: params.decisionJournalId,
+        botId,
+        venue,
+        marketId: params.marketId,
+        outcome: params.outcome,
+        side: params.side,
+        intentPrice: params.entryPrice,
+        sizeUsd: size,
+      });
       // Rust webhook will handle the DB write upon successful simulation
       return { id: "rust-pending" };
     } catch (e) {
@@ -207,7 +222,9 @@ export async function recordExecutionResult(body: {
   simulatedPositionSize: number;
 }): Promise<void> {
   assertPaperOnly("recordExecutionResult");
-  await prisma.$transaction(async (tx) => {
+  // c200-maker-fill-assumption option (b): the transaction RETURNS the leg it
+  // created, so the shadow link below can stamp the intent price onto it.
+  const trade = await prisma.$transaction(async (tx) => {
     // 1. If compounding bot, deduct cash
     if (body.botId !== "STANDARD") {
       const bankroll = await tx.botBankroll.findUniqueOrThrow({ where: { botId: body.botId } });
@@ -220,7 +237,7 @@ export async function recordExecutionResult(body: {
       });
     }
     // 2. Write the trade based on Rust's FAK fill confirmation
-    await tx.paperTrade.create({
+    return await tx.paperTrade.create({
       data: {
         botId: body.botId,
         venue: body.venue,
@@ -235,6 +252,21 @@ export async function recordExecutionResult(body: {
       },
     });
   });
+  // c200-maker-fill-assumption option (b): AFTER the booking commits (so the worst
+  // case is a booked copy with no measurement), stamp the intent price this fill
+  // came from onto the leg. Two shadow writes on a nullable column — no booked
+  // figure, balance or PnL is touched, and it cannot throw.
+  if (trade) {
+    await stampIntentLink({
+      paperTradeId: trade.id,
+      decisionJournalId: body.decisionJournalId,
+      marketId: body.marketId,
+      outcome: body.outcome,
+      side: body.side,
+      venue: body.venue,
+      botId: body.botId,
+    });
+  }
 }
 
 /**

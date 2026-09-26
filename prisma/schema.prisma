@@ -184,6 +184,12 @@ model PaperTrade {
   outcome               String
   side                  String
   entryPrice            Float
+  // c200-maker-fill-assumption (option (b), 2026-09-25): the price the lane was
+  // HANDED, before the Rust sidecar's `max(0.01, price - 0.02)` maker fill. NULL
+  // on every leg booked before this instrument existed (including all STANDARD
+  // legs, which write their own row). Write-only shadow: nothing reads it in any
+  // decision, sizing, gate or published number — see src/lib/fill-intent.ts.
+  intentPrice           Float?
   currentPrice          Float
   simulatedPositionSize Float // USD, always 5..20
   unrealizedPnl         Float     @default(0)
@@ -201,6 +207,33 @@ model PaperTrade {
   @@index([status])
   @@index([walletAddress])
   @@index([botId, status])
+}
+
+// c200-maker-fill-assumption (option (b), 2026-09-25, user-approved): the C-200
+// entry price IS the Rust sidecar's modelled maker fill (`max(0.01, intent - 0.02)`,
+// rust-sidecar/src/main.rs "Phase 6 ImMike's Maker Copying"), and the INTENT price
+// it was computed from was never stored — only logged. This is the write-only
+// shadow record that turns the assumption into a measurement: one row per
+// dispatched C-200 intent, linked to the PaperTrade row the sidecar's
+// execution-result webhook later creates (which stamps PaperTrade.intentPrice).
+// Nothing in any decision, sizing, gate or published number reads this table.
+model FillIntent {
+  id                String    @id @default(cuid())
+  decisionJournalId String
+  paperTradeId      String? // set when the webhook lands the row
+  botId             String
+  venue             String
+  marketId          String
+  outcome           String
+  side              String
+  intentPrice       Float
+  sizeUsd           Float
+  dispatchedAt      DateTime  @default(now())
+  linkedAt          DateTime?
+
+  @@index([decisionJournalId])
+  @@index([paperTradeId])
+  @@index([dispatchedAt])
 }
 
 model PnlSnapshot {
