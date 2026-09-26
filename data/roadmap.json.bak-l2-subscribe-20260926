@@ -1647,22 +1647,6 @@
         "measurement",
         "backlog"
       ]
-    },
-    {
-      "id": "l2-subscribe-at-dispatch",
-      "title": "DECISION (recommendation only): make the L2 recorder cover the C-200 5-minute window (subscribe at dispatch + capture prints)",
-      "column": "Backlog",
-      "effort": "~2h (A2 poll + B print capture + D tape ingest in the measurement script) + one recorder restart + re-read the 6 legs",
-      "dates": "Carded 2026-09-26 (scoped while building the C-200 print-through rig) · brief written 2026-09-26 (nothing applied)",
-      "gate": "VERIFY after implementation: for each C-200 dispatch, the market's L2 file must begin at or before t0 + 60s (today: 2.7-8.6 min AFTER) and cover t0..t0+1h, and the file must contain trade-print lines (today: zero print lines in the whole 36,042-file corpus). Check with: first-line ts vs the FillIntent dispatchedAt for the next N legs, and `grep -c '\"t\":' data/l2/<assetId>.jsonl > 0`. Then re-run `python3 scripts/c200-printthrough.py` — the 5-minute share becomes reportable, so the c200-intent-printthrough-check bar (74.3% within 5 min) finally applies. Measurement only: no rule, size, gate or booked figure moves, and any change to the 2c remains a separate approval.",
-      "note": "SCOPE (2026-09-26, option brief — RECOMMENDATION ONLY, nothing applied; full brief at drafts/l2-subscribe-at-dispatch-brief-20260926.md): the measurement rig cannot see the 5-minute window because the recorder's universe is defined by SIGNAL freshness, not positions — activeMarketIds() takes the top-25 markets by copy-candidate observed-trade recency (2h window, observationOnly=false) and refreshes every 10 min. Measured: every one of the 6 measured legs' L2 files begins 2.7-8.6 min AFTER its dispatch (the 5-min horizon has never been covered, on any leg); 29 of the 31 markets where we hold an open C-200 position are not in the universe at all; only 1 of 7 measured-leg markets is still in it; and the corpus holds ZERO trade prints ever (0 of 36,042 files — the handler waits for an {event:'trade'} message the market channel never sends; it sends book/price_change/last_trade_price), so the 'did it print' half rests entirely on the thin public tape (2-50 rows/market). CAPACITY, measured not assumed: one socket per market is a server constraint, and a staged probe held 20 extra sockets alongside the production 18 -> 38 concurrent, 20/20 with book data, first message 0.4s, production heartbeat unaffected; worst case over 7 days is 19 distinct C-200 copy markets in any rolling 2h (avg 5.4), so a bounded 2h hold adds <=+19 sockets; disk ~1.3 MB/market-hour -> ~70 MB/day at the recent copy rate (13-50 legs/day). OPTIONS: (A2, recommended) recorder polls for new dispatches/legs every 20-30s and adds those markets immediately, holding each 2h — trade path untouched, coverage within 30s; (A1) dispatch writes a local subscribe-queue line the recorder tails — ~1-3s latency but adds a write to the trade path; (B, recommended) fix the print capture (handle last_trade_price) so the corpus holds real prints — makes the archive-comparable test possible from our own data; (C, rejected) universe = open positions union candidates — redundant once A2 holds copied markets, re-admits dead-token markets (why v61 excluded it), ~0.6GB/day; (D, free add-on) 1h after each dispatch ingest the public tape for that market into the artifact; (E, rejected) leave it — the gate stays unanswerable. REALITY CHECKS: no backfill (the 6 existing legs' windows are gone; the historical read stays 0/6 with its caveats); 5s cadence can miss an intrabar touch (B is the tighter instrument; 1s cadence for the first 10 min is a further knob ~0.5MB/market); a deliberate recorder restart is required (process started Sep 24; the watchdog only restarts on death; append-only files, seconds of gap); nothing here is a trading change; and even with perfect coverage the gate's RATE still needs >=50 measured legs — this buys capability, not the number. VERDICT: A2 + B + D (~40 lines in record-l2.ts, one restart, <=+19 sockets vs a measured >=38 ceiling, ~70-130 MB/day, zero trade-path change). Approval gate: say go.",
-      "tags": [
-        "c200",
-        "l2",
-        "observability",
-        "fill-model",
-        "backlog"
-      ]
     }
   ]
 }
