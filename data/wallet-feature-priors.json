@@ -1,0 +1,443 @@
+{
+ "generated_at": "2026-09-26T12:36:47-0500",
+ "acted_book": {
+  "source": "decision-dataset.csv",
+  "legs": 3516,
+  "markets": 2576,
+  "wallets": 188,
+  "y_win_mean": 0.5785,
+  "net_win_mean": 0.5728,
+  "caveat": "selection-biased: only the rows the live policy chose to trade"
+ },
+ "bootstrap": {
+  "reps": 1000,
+  "cluster": "market_id",
+  "seed": 20260926
+ },
+ "features": [
+  {
+   "feature": "copy_score",
+   "label": "composite copyScore",
+   "n": 3516,
+   "auc_win": 0.4184,
+   "auc_net": 0.4222,
+   "auc_win_ci95": [
+    0.3965,
+    0.4405
+   ],
+   "spearman_ic_vs_net_pnl": -0.0524,
+   "quintile_auc_win": [
+    0.5022,
+    0.4614,
+    0.4494,
+    0.5181,
+    0.4755
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "confidence",
+   "label": "confidence",
+   "n": 3516,
+   "auc_win": 0.4378,
+   "auc_net": 0.4431,
+   "auc_win_ci95": [
+    0.4156,
+    0.4606
+   ],
+   "spearman_ic_vs_net_pnl": -0.0294,
+   "quintile_auc_win": [
+    0.5169,
+    0.4736,
+    0.4548,
+    0.5085,
+    0.4996
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "wallet_quality_score",
+   "label": "wallet quality",
+   "n": 3516,
+   "auc_win": 0.4203,
+   "auc_net": 0.4168,
+   "auc_win_ci95": [
+    0.3986,
+    0.4435
+   ],
+   "spearman_ic_vs_net_pnl": -0.0303,
+   "quintile_auc_win": [
+    0.452,
+    0.4971,
+    0.466,
+    0.4715,
+    0.463
+   ],
+   "quintiles_above_half": 0,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "category_fit_score",
+   "label": "category fit",
+   "n": 3516,
+   "auc_win": 0.452,
+   "auc_net": 0.4509,
+   "auc_win_ci95": [
+    0.4326,
+    0.4744
+   ],
+   "spearman_ic_vs_net_pnl": -0.048,
+   "quintile_auc_win": [
+    0.473,
+    0.503,
+    0.4148,
+    0.5081,
+    0.5036
+   ],
+   "quintiles_above_half": 3,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "entry_timing_score",
+   "label": "entry timing",
+   "n": 3516,
+   "auc_win": 0.57,
+   "auc_net": 0.5745,
+   "auc_win_ci95": [
+    0.5496,
+    0.5919
+   ],
+   "spearman_ic_vs_net_pnl": -0.0047,
+   "quintile_auc_win": [
+    0.494,
+    0.4768,
+    0.5609,
+    0.5496,
+    0.5095
+   ],
+   "quintiles_above_half": 3,
+   "verdict": "PRICE-PROXY",
+   "reason": "beats chance overall (CI lower > 0.5) but does NOT survive within entry-price quintiles (3/5 above 0.5) -> re-reading price"
+  },
+  {
+   "feature": "spread_score",
+   "label": "spread score",
+   "n": 3516,
+   "auc_win": 0.5364,
+   "auc_net": 0.5409,
+   "auc_win_ci95": [
+    0.5156,
+    0.5583
+   ],
+   "spearman_ic_vs_net_pnl": -0.0181,
+   "quintile_auc_win": [
+    0.5149,
+    0.4859,
+    0.4836,
+    0.5102,
+    0.5746
+   ],
+   "quintiles_above_half": 3,
+   "verdict": "PRICE-PROXY",
+   "reason": "beats chance overall (CI lower > 0.5) but does NOT survive within entry-price quintiles (3/5 above 0.5) -> re-reading price"
+  },
+  {
+   "feature": "liquidity_score",
+   "label": "liquidity score",
+   "n": 3516,
+   "auc_win": 0.4797,
+   "auc_net": 0.4824,
+   "auc_win_ci95": [
+    0.4658,
+    0.4936
+   ],
+   "spearman_ic_vs_net_pnl": -0.0009,
+   "quintile_auc_win": [
+    0.5068,
+    0.4985,
+    0.4954,
+    0.5121,
+    0.4689
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "thesis_score",
+   "label": "thesis",
+   "n": 3516,
+   "auc_win": 0.3703,
+   "auc_net": 0.3694,
+   "auc_win_ci95": [
+    0.3477,
+    0.394
+   ],
+   "spearman_ic_vs_net_pnl": 0.0269,
+   "quintile_auc_win": [
+    0.6334,
+    0.5019,
+    0.462,
+    0.4217,
+    0.3584
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "raw_spread",
+   "label": "raw spread",
+   "n": 3515,
+   "auc_win": 0.4741,
+   "auc_net": 0.4711,
+   "auc_win_ci95": [
+    0.4547,
+    0.4942
+   ],
+   "spearman_ic_vs_net_pnl": 0.0364,
+   "quintile_auc_win": [
+    0.4974,
+    0.5149,
+    0.5189,
+    0.515,
+    0.4257
+   ],
+   "quintiles_above_half": 3,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "raw_liquidity",
+   "label": "raw liquidity",
+   "n": 3515,
+   "auc_win": 0.4507,
+   "auc_net": 0.455,
+   "auc_win_ci95": [
+    0.4269,
+    0.4761
+   ],
+   "spearman_ic_vs_net_pnl": 0.0027,
+   "quintile_auc_win": [
+    0.5453,
+    0.4921,
+    0.5239,
+    0.5154,
+    0.4943
+   ],
+   "quintiles_above_half": 3,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "raw_volume",
+   "label": "raw volume",
+   "n": 3484,
+   "auc_win": 0.468,
+   "auc_net": 0.4693,
+   "auc_win_ci95": [
+    0.4432,
+    0.4911
+   ],
+   "spearman_ic_vs_net_pnl": -0.0248,
+   "quintile_auc_win": [
+    0.4992,
+    0.4695,
+    0.5062,
+    0.5459,
+    0.4706
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "ttr_hours",
+   "label": "time to resolution (h)",
+   "n": 3440,
+   "auc_win": 0.5345,
+   "auc_net": 0.5337,
+   "auc_win_ci95": [
+    0.5104,
+    0.559
+   ],
+   "spearman_ic_vs_net_pnl": 0.0106,
+   "quintile_auc_win": [
+    0.4974,
+    0.4795,
+    0.5286,
+    0.5017,
+    0.4553
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "PRICE-PROXY",
+   "reason": "beats chance overall (CI lower > 0.5) but does NOT survive within entry-price quintiles (2/5 above 0.5) -> re-reading price"
+  },
+  {
+   "feature": "size_usd",
+   "label": "our stake (USD)",
+   "n": 3516,
+   "auc_win": 0.4449,
+   "auc_net": 0.4505,
+   "auc_win_ci95": [
+    0.4252,
+    0.4649
+   ],
+   "spearman_ic_vs_net_pnl": -0.0641,
+   "quintile_auc_win": [
+    0.4714,
+    0.4662,
+    0.4836,
+    0.5278,
+    0.5234
+   ],
+   "quintiles_above_half": 2,
+   "verdict": "VETO-CANDIDATE",
+   "reason": "separates but INVERTED (CI entirely below 0.5): the HIGH end of this feature is the bad end -> usable only as a veto against its top tercile, never as a selector"
+  },
+  {
+   "feature": "observed_size_usd",
+   "label": "wallet's size (USD)",
+   "n": 3516,
+   "auc_win": 0.4908,
+   "auc_net": 0.4929,
+   "auc_win_ci95": [
+    0.4674,
+    0.5139
+   ],
+   "spearman_ic_vs_net_pnl": 0.044,
+   "quintile_auc_win": [
+    0.5461,
+    0.5162,
+    0.4819,
+    0.5264,
+    0.492
+   ],
+   "quintiles_above_half": 3,
+   "verdict": "KILL",
+   "reason": "CI includes 0.5 -- no ranking information beyond noise at this n"
+  },
+  {
+   "feature": "entry_price",
+   "label": "entry price (BASELINE)",
+   "n": 3516,
+   "auc_win": 0.735,
+   "auc_net": 0.7343,
+   "auc_win_ci95": [
+    0.7137,
+    0.7549
+   ],
+   "spearman_ic_vs_net_pnl": 0.1112,
+   "quintile_auc_win": [
+    0.6341,
+    0.5048,
+    0.5411,
+    0.5876,
+    0.6418
+   ],
+   "quintiles_above_half": 5,
+   "verdict": "BASELINE",
+   "reason": "the bar every other feature must clear"
+  }
+ ],
+ "strata_auc": {
+  "BANKROLL_200|kelly-window-v49-57": {
+   "n": 226,
+   "entry_price": 0.6283,
+   "copy_score": 0.5034,
+   "wallet_quality_score": 0.4845,
+   "thesis_score": 0.507,
+   "entry_timing_score": 0.5403
+  },
+  "BANKROLL_200|pre-kelly-v1-48": {
+   "n": 673,
+   "entry_price": 0.6677,
+   "copy_score": 0.4513,
+   "wallet_quality_score": 0.5231,
+   "thesis_score": 0.4137,
+   "entry_timing_score": 0.4825
+  },
+  "STANDARD|pre-kelly-v1-48": {
+   "n": 2537,
+   "entry_price": 0.7607,
+   "copy_score": 0.382,
+   "wallet_quality_score": 0.3972,
+   "thesis_score": 0.3462,
+   "entry_timing_score": 0.5866
+  }
+ },
+ "skip_set": {
+  "source": "skip-edge-probe-20260916.json",
+  "rows_built": 207966,
+  "coverage": {
+   "rows": 207966,
+   "named_token_legs": 53226,
+   "terminal_undecided": 31565,
+   "usable": 77353,
+   "already_decided_at_entry": 45822
+  },
+  "rankers": {
+   "copy_score": 0.4076827028691991,
+   "wallet_quality": 0.5425485231269364,
+   "roi_score": 0.4754721259988857,
+   "consistency": 0.598697628659973,
+   "copyability": 0.4225541155749044,
+   "category_fit": 0.5085170668166122,
+   "entry_timing": 0.4787374788289167,
+   "spread_score": 0.5336581348020116,
+   "liquidity_score": 0.47637120473777234,
+   "thesis_score": 0.26777379862070383,
+   "confidence": 0.5001307759372275,
+   "entry_price": 0.931947732687525
+  },
+  "note": "exit-blind, hold-to-resolution counterfactual labels; discovery window, in-sample; cluster = market"
+ },
+ "archive_wallet_priors": {
+  "source": "data/archive-analysis/archive-wallet-*.json (Polymarket-v1, 2022-12..2026-04)",
+  "half_vs_half_r": {
+   "all_buys": 0.1437,
+   "all_buys_ex_mm": 0.1396,
+   "taker_buys": 0.2058,
+   "taker_mid_prices": 0.2575,
+   "taker_band_neutral": 0.2397
+  },
+  "wallets_paired": {
+   "all_buys": 920,
+   "taker_buys": 438,
+   "taker_band_neutral": 376
+  },
+  "average_wallet_excess": {
+   "all_buys": 0.00242,
+   "taker_buys": 0.00017
+  },
+  "asymmetry": {
+   "all_buys": {
+    "worst_decile_a_to_b": [
+     -16.31,
+     -5.07
+    ],
+    "best_decile_a_to_b": [
+     14.14,
+     -1.27
+    ]
+   },
+   "taker_buys": {
+    "worst_decile_a_to_b": [
+     -10.67,
+     -5.24
+    ],
+    "best_decile_a_to_b": [
+     8.21,
+     -2.67
+    ]
+   }
+  },
+  "verdict": "skill persists one-sided: the worst wallets stay worst, the best do not stay best (top decile flips negative in every variant) -> wallet skill is a VETO, not a selector"
+ }
+}

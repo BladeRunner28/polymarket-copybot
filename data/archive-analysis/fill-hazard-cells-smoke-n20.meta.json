@@ -1,0 +1,31 @@
+{
+ "tag": "smoke-n20",
+ "months": [
+  "2026_04"
+ ],
+ "shards": 1,
+ "unsharded": false,
+ "deltas": [
+  0.01,
+  0.02,
+  0.03,
+  0.05
+ ],
+ "horizons_s": [
+  300,
+  1800,
+  3600
+ ],
+ "fills_processed": 9694609,
+ "cells": 160791,
+ "csv": "fill-hazard-cells-smoke-n20.csv",
+ "labels": "asset-labels-smoke.parquet",
+ "elapsed_s": 11.9,
+ "price_filter": [
+  0.02,
+  0.98
+ ],
+ "memory_limit": "14GB",
+ "note": "cell aggregates; hit_<delta>_<horizon> counts fills where the tape later printed at or below price-delta",
+ "generated_at": "2026-09-26T12:27:16-0500"
+}

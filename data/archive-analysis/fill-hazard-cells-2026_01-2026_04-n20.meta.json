@@ -1,0 +1,34 @@
+{
+ "tag": "2026_01-2026_04-n20",
+ "months": [
+  "2026_01",
+  "2026_02",
+  "2026_03",
+  "2026_04"
+ ],
+ "shards": 20,
+ "unsharded": false,
+ "deltas": [
+  0.01,
+  0.02,
+  0.03,
+  0.05
+ ],
+ "horizons_s": [
+  300,
+  1800,
+  3600
+ ],
+ "fills_processed": 796606520,
+ "cells": 112230,
+ "csv": "fill-hazard-cells-2026_01-2026_04-n20.csv",
+ "labels": "asset-labels-2026_01-2026_04.parquet",
+ "elapsed_s": 1496.3,
+ "price_filter": [
+  0.02,
+  0.98
+ ],
+ "memory_limit": "14GB",
+ "note": "cell aggregates; hit_<delta>_<horizon> counts fills where the tape later printed at or below price-delta",
+ "generated_at": "2026-09-26T12:54:21-0500"
+}
