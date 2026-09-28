@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-09-27T03:20:16.311Z",
+  "asOf": "2026-09-28T03:16:19.167Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 841,
-    "inWindow": 446,
+    "copiesSeen": 849,
+    "inWindow": 454,
     "withKalshiQuote": 2,
     "crossListRate": 0.004,
     "staleSkips": 395,
-    "quoteFailures": 405,
-    "unverifiedMatches": 39,
+    "quoteFailures": 410,
+    "unverifiedMatches": 42,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 35,
+      "low_match_score_0.67": 38,
       "low_match_score_0.60": 3
     }
   },
@@ -55,36 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will Bogota FC win on 2026-09-14?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.66,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Will FC Midtjylland win on 2026-09-14?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.455,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Will Brentford FC win on 2026-09-15?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.23,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Will Arsenal FC win on 2026-09-15?",
       "ticker": "KXANYDEMWINTEXAS-26NOV03",
@@ -452,6 +422,36 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.6849999999999999,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Germany win on 2026-09-27?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.285,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Denmark win on 2026-09-27?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.655,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Netherlands win on 2026-09-27?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.665,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
