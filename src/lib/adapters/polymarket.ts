@@ -20,6 +20,9 @@ import {
 import { didOutcomeWin, normalizeOutcomeLabel } from "../resolution";
 import { measureDepth } from "../scoring/wallet-depth";
 import { classifyMarketCategory } from "../market-category";
+import { gammaProvenance, laggedDataApiProvenance, withProvenance } from "../provenance";
+import { filterTradeRows, isKnownRowType } from "../print-types";
+import { gammaSlugEndpointOrder, gammaSlugUrl, normalizeGammaMarketPayload, type GammaSlugEndpoint } from "./gamma-market-payload";
 
 const DATA_API = "https://data-api.polymarket.com";
 const GAMMA_API = "https://gamma-api.polymarket.com";
@@ -43,6 +46,15 @@ function categoryFields(slug: unknown, question: unknown, eventSlug: unknown) {
 }
 
 const DELAY_MS = Number(process.env.API_DELAY_MS ?? 250);
+
+/**
+ * What the client-side print-type guard dropped on one activity read. Emitted
+ * only when it dropped something, so a quiet run stays quiet — and a non-empty
+ * report is by construction a change in the venue's tape, not routine noise
+ * (measured baseline 2026-09-28: zero drops over 14,500 rows).
+ */
+export type { PrintFilterReport } from "../print-types";
+import type { PrintFilterReport } from "../print-types";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -116,14 +128,19 @@ export class PolymarketAdapter implements DataAdapter {
         const row = data[i];
         const address = String(row.proxyWallet ?? row.address ?? row.wallet ?? "");
         if (!address) continue;
-        out.push({
-          address: address.toLowerCase(),
-          label: (row.userName as string) || (row.name as string) || undefined,
-          rank: num(row.rank) ?? offset + i + 1,
-          pnl: num(row.pnl) ?? num(row.amount),
-          volume: num(row.vol) ?? num(row.volume),
-          raw: row,
-        });
+        out.push(
+          withProvenance(
+            {
+              address: address.toLowerCase(),
+              label: (row.userName as string) || (row.name as string) || undefined,
+              rank: num(row.rank) ?? offset + i + 1,
+              pnl: num(row.pnl) ?? num(row.amount),
+              volume: num(row.vol) ?? num(row.volume),
+              raw: row,
+            },
+            laggedDataApiProvenance(["leaderboard_endpoint"])
+          )
+        );
       }
       if (data.length < take) break;
       await sleep(DELAY_MS);
@@ -139,9 +156,13 @@ export class PolymarketAdapter implements DataAdapter {
    *   - /positions         -> open (unresolved) exposure
    * Then enrich liquidity/spread for a sample of markets via gamma.
    */
-  async fetchWalletActivity(address: string, days: number): Promise<WalletActivityTrade[]> {
+  async fetchWalletActivity(
+    address: string,
+    days: number,
+    onPrintFilter?: (report: PrintFilterReport) => void
+  ): Promise<WalletActivityTrade[]> {
     // Short windows (trade monitoring) still use the raw activity feed.
-    if (days <= 2) return this.fetchRecentTrades(address, days);
+    if (days <= 2) return this.fetchRecentTrades(address, days, onPrintFilter);
 
     const out: WalletActivityTrade[] = [];
 
@@ -170,21 +191,26 @@ export class PolymarketAdapter implements DataAdapter {
       if (avgPrice === undefined || totalBought === undefined || realizedPnl === undefined) continue;
       const sizeUsd = totalBought * avgPrice;
       if (sizeUsd <= 0) continue;
-      out.push({
-        marketId: String(row.slug ?? row.conditionId ?? ""),
-        conditionId: row.conditionId ? String(row.conditionId) : undefined,
-        marketQuestion: String(row.title ?? "(unknown market)"),
-        ...categoryFields(row.slug ?? row.conditionId, row.title, row.eventSlug),
-        outcome: String(row.outcome ?? "YES").toUpperCase(),
-        side: "BUY",
-        price: avgPrice,
-        size: sizeUsd,
-        timestamp: new Date(), // positions API has no timestamps; scoring doesn't use them
-        resolved: true,
-        won: (num(row.curPrice) ?? 0) > 0.5 || realizedPnl > 0,
-        pnl: realizedPnl,
-        raw: row,
-      });
+      out.push(
+        withProvenance(
+          {
+            marketId: String(row.slug ?? row.conditionId ?? ""),
+            conditionId: row.conditionId ? String(row.conditionId) : undefined,
+            marketQuestion: String(row.title ?? "(unknown market)"),
+            ...categoryFields(row.slug ?? row.conditionId, row.title, row.eventSlug),
+            outcome: String(row.outcome ?? "YES").toUpperCase(),
+            side: "BUY" as const,
+            price: avgPrice,
+            size: sizeUsd,
+            timestamp: new Date(), // positions API has no timestamps; scoring doesn't use them
+            resolved: true,
+            won: (num(row.curPrice) ?? 0) > 0.5 || realizedPnl > 0,
+            pnl: realizedPnl,
+            raw: row,
+          },
+          laggedDataApiProvenance(["closed_positions"])
+        )
+      );
     }
 
     await sleep(DELAY_MS);
@@ -195,19 +221,24 @@ export class PolymarketAdapter implements DataAdapter {
         const avgPrice = num(row.avgPrice);
         const initialValue = num(row.initialValue);
         if (avgPrice === undefined || initialValue === undefined || initialValue <= 0) continue;
-        out.push({
-          marketId: String(row.slug ?? row.conditionId ?? ""),
-          conditionId: row.conditionId ? String(row.conditionId) : undefined,
-          marketQuestion: String(row.title ?? "(unknown market)"),
-          ...categoryFields(row.slug ?? row.conditionId, row.title, row.eventSlug),
-          outcome: String(row.outcome ?? "YES").toUpperCase(),
-          side: "BUY",
-          price: avgPrice,
-          size: initialValue,
-          timestamp: new Date(),
-          resolved: false,
-          raw: row,
-        });
+        out.push(
+          withProvenance(
+            {
+              marketId: String(row.slug ?? row.conditionId ?? ""),
+              conditionId: row.conditionId ? String(row.conditionId) : undefined,
+              marketQuestion: String(row.title ?? "(unknown market)"),
+              ...categoryFields(row.slug ?? row.conditionId, row.title, row.eventSlug),
+              outcome: String(row.outcome ?? "YES").toUpperCase(),
+              side: "BUY" as const,
+              price: avgPrice,
+              size: initialValue,
+              timestamp: new Date(),
+              resolved: false,
+              raw: row,
+            },
+            laggedDataApiProvenance(["open_positions"])
+          )
+        );
       }
     }
 
@@ -271,39 +302,84 @@ export class PolymarketAdapter implements DataAdapter {
   }
 
   /** Raw recent trades from the activity feed — used for new-trade monitoring. */
-  private async fetchRecentTrades(address: string, days: number): Promise<WalletActivityTrade[]> {
+  private async fetchRecentTrades(
+    address: string,
+    days: number,
+    onPrintFilter?: (report: PrintFilterReport) => void
+  ): Promise<WalletActivityTrade[]> {
     const since = Math.floor(Date.now() / 1000) - days * 86400;
     const out: WalletActivityTrade[] = [];
     const pageSize = 500;
     let offset = 0;
+    // Print-type guard accounting (audit §P6, approved + wired 2026-09-28).
+    let dropped = 0;
+    const droppedByType: Record<string, number> = {};
+    const uncatalogued = new Set<string>();
     for (let page = 0; page < 4; page++) {
       const url = `${DATA_API}/activity?user=${address}&type=TRADE&limit=${pageSize}&offset=${offset}&start=${since}`;
       const data = (await getJson(url)) as Array<Record<string, unknown>>;
       if (!Array.isArray(data)) {
         throw new AdapterError(url, null, `unexpected activity shape: ${typeof data}`);
       }
-      for (const row of data) {
+      // Client-side print-type guard. The server-side `type=TRADE` filter is
+      // what keeps position-management rows out TODAY — measured 2026-09-28 over
+      // 30 wallets / 14,500 rows: 14,500 kept, 0 dropped. So this guard changes
+      // no current count; it makes the guarantee ours instead of the query
+      // string's, which matters because 17.4% of the SAME rows are non-fills
+      // when the server filter is removed (redeem 1,359, conversion 571,
+      // merge 542 of 2,519). Any drop this reports is therefore a change in the
+      // tape, not noise — which is exactly what we want surfaced.
+      const classified = filterTradeRows(data);
+      if (classified.skipped > 0) {
+        dropped += classified.skipped;
+        for (const [t, n] of Object.entries(classified.skippedByType)) {
+          droppedByType[t] = (droppedByType[t] ?? 0) + n;
+        }
+        for (const row of data) {
+          const raw = (row as Record<string, unknown>).type;
+          if (!isKnownRowType(raw)) uncatalogued.add(String(raw ?? "").toLowerCase() || "(empty)");
+        }
+      }
+      for (const row of classified.kept) {
         const ts = num(row.timestamp);
         if (!ts || ts < since) continue;
         const price = num(row.price);
         const usdc = num(row.usdcSize) ?? num(row.size);
         if (price === undefined || usdc === undefined) continue;
-        out.push({
-          marketId: String(row.slug ?? row.market ?? row.conditionId ?? ""),
-          conditionId: row.conditionId ? String(row.conditionId) : undefined,
-          marketQuestion: String(row.title ?? row.question ?? "(unknown market)"),
-          ...categoryFields(row.slug ?? row.market ?? row.conditionId, row.title ?? row.question, row.eventSlug),
-          outcome: String(row.outcome ?? "YES").toUpperCase(),
-          side: String(row.side ?? "BUY").toUpperCase() === "SELL" ? "SELL" : "BUY",
-          price,
-          size: usdc,
-          timestamp: new Date(ts * 1000),
-          raw: row,
-        });
+        out.push(
+          withProvenance(
+            {
+              marketId: String(row.slug ?? row.market ?? row.conditionId ?? ""),
+              conditionId: row.conditionId ? String(row.conditionId) : undefined,
+              marketQuestion: String(row.title ?? row.question ?? "(unknown market)"),
+              ...categoryFields(row.slug ?? row.market ?? row.conditionId, row.title ?? row.question, row.eventSlug),
+              outcome: String(row.outcome ?? "YES").toUpperCase(),
+              side: String(row.side ?? "BUY").toUpperCase() === "SELL" ? ("SELL" as const) : ("BUY" as const),
+              price,
+              size: usdc,
+              timestamp: new Date(ts * 1000),
+              raw: row,
+            },
+            // Short-window monitoring still reads the LAGGED activity surface —
+            // the label travels with the row so a monitor cannot present it as
+            // the live CLOB tape.
+            laggedDataApiProvenance(["activity_endpoint", "short_window"])
+          )
+        );
       }
+      // Page-cap check uses the RAW page length: the guard must not make a full
+      // page look short and stop pagination early.
       if (data.length < pageSize) break;
       offset += pageSize;
       await sleep(DELAY_MS);
+    }
+    if (onPrintFilter && (dropped > 0 || uncatalogued.size > 0)) {
+      onPrintFilter({
+        address,
+        dropped,
+        droppedByType,
+        uncataloguedTypes: [...uncatalogued].sort(),
+      });
     }
     return out;
   }
@@ -381,13 +457,34 @@ export class PolymarketAdapter implements DataAdapter {
     if (PolymarketAdapter.notFound.has(marketId)) {
       throw new AdapterError(marketId, 404, `market not found (cached): ${marketId}`);
     }
-    const url = `${GAMMA_API}/markets?slug=${encodeURIComponent(marketId)}`;
-    const data = (await getJson(url)) as Array<Record<string, unknown>>;
-    if (!Array.isArray(data) || data.length === 0) {
-      PolymarketAdapter.notFound.add(marketId);
-      throw new AdapterError(url, 404, `market not found: ${marketId}`);
+    // Current-contract-first: `/markets/slug/{slug}` (returns an OBJECT). The
+    // legacy `/markets?slug=` offset form still answers but now sends
+    // `deprecation: true` + `sunset: Fri, 01 May 2026` — verified live
+    // 2026-09-28. Keep it only as a fallback, and record which one answered so a
+    // silent regression is visible in the returned state.
+    let m: Record<string, unknown> | null = null;
+    let usedEndpoint: GammaSlugEndpoint | undefined;
+    let lastError: unknown;
+    for (const endpoint of gammaSlugEndpointOrder()) {
+      const url = gammaSlugUrl(GAMMA_API, marketId, endpoint);
+      try {
+        const normalized = normalizeGammaMarketPayload(await getJson(url));
+        if (!normalized) {
+          lastError = new AdapterError(url, 404, `market not found: ${marketId}`);
+          continue;
+        }
+        m = normalized;
+        usedEndpoint = endpoint;
+        break;
+      } catch (e) {
+        lastError = e;
+      }
     }
-    const m = data[0];
+    if (!m || !usedEndpoint) {
+      PolymarketAdapter.notFound.add(marketId);
+      if (lastError instanceof AdapterError) throw lastError;
+      throw new AdapterError(marketId, null, lastError instanceof Error ? lastError.message : String(lastError));
+    }
     let yesPrice: number | undefined;
     let noPrice: number | undefined;
     // The venue returns the token LABELS next to their prices. Parse both: the
@@ -446,12 +543,17 @@ export class PolymarketAdapter implements DataAdapter {
       spread: bestBid !== undefined && bestAsk !== undefined ? Math.max(0, bestAsk - bestBid) : num(m.spread),
       liquidity: num(m.liquidityNum) ?? num(m.liquidity),
       volume: num(m.volumeNum) ?? num(m.volume),
+      // 24h volume is what the hygiene scores read (polyterm risk_score.py:287-311,
+      // wash_trade_detector.py:195-225). Kept separate from lifetime `volume`.
+      volume24hr: num(m.volume24hr) ?? num(m.volume24Hour),
       timeToResolutionHours: ttrHours,
       resolved,
       winningLabel,
       winningOutcome: winningLabel,
       outcomeLabels,
       outcomePrices,
+      provenance: gammaProvenance(),
+      gammaEndpoint: usedEndpoint,
       raw: m,
     };
   }

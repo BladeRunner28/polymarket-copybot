@@ -83,7 +83,25 @@ async function main() {
           existing.map((r) => `${r.marketId}|${r.outcome}|${r.side}|${r.timestamp.getTime()}`)
         );
       }
-      const activity = await adapter.fetchWalletActivity(w.address, Math.ceil(MONITOR_HOURS / 24) || 1);
+      const activity = await adapter.fetchWalletActivity(
+        w.address,
+        Math.ceil(MONITOR_HOURS / 24) || 1,
+        // Print-type guard (audit §P6, approved 2026-09-28). Silent in the
+        // measured steady state (0 drops / 14,500 rows); anything it prints is a
+        // real change in the venue tape and must not be absorbed quietly.
+        (r) => {
+          log(
+            `[monitor] print-type guard: ${r.address.slice(0, 10)}… dropped ${r.dropped} non-fill row(s) ` +
+              `${JSON.stringify(r.droppedByType)}`
+          );
+          if (r.uncataloguedTypes.length > 0) {
+            logError(
+              `[monitor] ALERT print-type guard saw UNCATALOGUED tape type(s) ${r.uncataloguedTypes.join(", ")} — ` +
+                `classify before trusting this lane's counts`
+            );
+          }
+        }
+      );
       for (const t of activity) {
         if (t.timestamp.getTime() < since) continue;
         if (t.side !== "BUY") continue; // copy entries only, not exits

@@ -2,7 +2,7 @@
   "name": "polymarket-copybot",
   "version": "0.1.0",
   "private": true,
-  "description": "Hermes-operated Polymarket copy-trading RESEARCH system. PAPER TRADING ONLY — never places real trades, never touches private keys.",
+  "description": "Hermes-operated Polymarket copy-trading RESEARCH system. PAPER TRADING ONLY \u2014 never places real trades, never touches private keys.",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -17,11 +17,15 @@
     "paper:update-pnl": "tsx scripts/update-pnl.ts",
     "rollup:pnl": "tsx scripts/rollup-pnl-hourly.ts",
     "shadow:mark": "tsx scripts/mark-shadow-longshot.ts",
+    "shadow:hygiene": "tsx scripts/shadow-market-hygiene.ts",
+    "capture:fees": "tsx scripts/capture-fee-schedules.ts",
+    "audit:print-types": "tsx scripts/audit-print-types.ts",
     "review:outcomes": "tsx scripts/review-outcomes.ts",
     "export:training": "tsx scripts/export-training-data.ts",
     "update:rules": "tsx scripts/update-rules.ts",
     "report:daily": "tsx scripts/report-daily.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "shadow:forward-read": "tsx scripts/shadow-forward-read.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

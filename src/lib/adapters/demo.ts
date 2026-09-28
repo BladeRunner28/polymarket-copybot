@@ -11,6 +11,7 @@ import {
   WalletActivityTrade,
   WalletDepth,
 } from "../types";
+import type { PrintFilterReport } from "../print-types";
 
 // Simple deterministic PRNG so demo data is stable across runs.
 function mulberry32(seed: number) {
@@ -61,7 +62,13 @@ export class DemoAdapter implements DataAdapter {
     return out;
   }
 
-  async fetchWalletActivity(address: string, days: number): Promise<WalletActivityTrade[]> {
+  async fetchWalletActivity(
+    address: string,
+    days: number,
+    // Accepted for interface parity with the live adapter's print-type guard.
+    // Demo rows are synthesised fills, so the guard can never fire here.
+    _onPrintFilter?: (report: PrintFilterReport) => void
+  ): Promise<WalletActivityTrade[]> {
     const seed = address.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
     const rand = mulberry32(seed);
     const n = 5 + Math.floor(rand() * 40);
