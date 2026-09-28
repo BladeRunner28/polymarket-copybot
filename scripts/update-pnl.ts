@@ -18,16 +18,19 @@ import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { didOutcomeWin } from "../src/lib/resolution";
 import { log, logError } from "../src/lib/redact";
 import { sweepExitRecovery } from "../src/lib/exit-recovery";
-import * as fs from "fs";
-import { join } from "path";
+import { loadDeadSlugs, rememberDeadSlug as rememberDeadSlugIn } from "../src/lib/dead-slug-cache";
 
 // v41 (tuning review #12, 2026-09-01, approved): persistent 404 negative-cache.
-// v44 note (tuning review #13): verified live — cache at the 24-slug cap;
-// remaining "404 failures" in logs are first-time dead slugs being cached.
-// Gamma purges dead/renamed slugs; remembering the last 24 lets hourly runs
-// skip the doomed fetch and jump straight to event-resolution recovery.
-const DEAD_SLUG_CACHE_FILE = join(__dirname, "..", "data", "dead-slug-cache.json");
-const MAX_DEAD_SLUGS = 24;
+// v44 note (tuning review #13): verified live — cache at its cap; remaining
+// "404 failures" in logs are first-time dead slugs being cached. Gamma purges
+// dead/renamed slugs; remembering them lets the hourly run skip the doomed
+// fetch and jump straight to event-resolution recovery.
+// tuning review #38 rec 3 (2026-09-28, user-approved): the cache MOVED to
+// src/lib/dead-slug-cache.ts so the scorer can share it (and populate it — it
+// sees dead slugs this job never fetches), and the FIFO cap went 24 -> 200
+// (one 24 h window produced 109 distinct dead slugs, so a 24-slot FIFO evicted
+// them before reuse). Semantics here are unchanged: load, skip a cached slug,
+// remember a clean 404; `has` still reads the same in-memory Set.
 
 // v53 (tuning review #21 rec 1, user-approved 2026-09-11): DB-fault resilience
 // + honest partial reporting. The Sep 9 08:19 run hit a SQLite connector error
@@ -91,20 +94,8 @@ async function main() {
   }
   log(`${byMarket.size} distinct markets to fetch.`);
 
-  let deadSlugs: Set<string>;
-  try {
-    const cached = JSON.parse(fs.readFileSync(DEAD_SLUG_CACHE_FILE, "utf-8"));
-    deadSlugs = new Set(Array.isArray(cached) ? cached.slice(-MAX_DEAD_SLUGS) : []);
-  } catch {
-    deadSlugs = new Set();
-  }
-  const rememberDeadSlug = (marketId: string) => {
-    const slugs = [...deadSlugs];
-    if (!slugs.includes(marketId)) slugs.push(marketId);
-    while (slugs.length > MAX_DEAD_SLUGS) slugs.shift();
-    deadSlugs = new Set(slugs);
-    fs.writeFileSync(DEAD_SLUG_CACHE_FILE, JSON.stringify(slugs));
-  };
+  const deadSlugs = loadDeadSlugs();
+  const rememberDeadSlug = (marketId: string) => rememberDeadSlugIn(deadSlugs, marketId);
 
   // v49 (tuning review #16, approved 2026-09-05): absorb transient gamma
   // burst-limits (429 / Cloudflare 1015). getJson retries at 1s/2s/4s, but a

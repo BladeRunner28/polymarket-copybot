@@ -31,6 +31,7 @@ import { kellySizeForCopy } from "../src/lib/kelly";
 import { appendShadowRow, SHADOW_MAX_PRICE } from "../src/lib/shadow-longshot";
 import { appendDriftShadow } from "../src/lib/shadow-drift";
 import { copyWalletAddresses, MAX_TRACKED } from "../src/lib/wallet-universe";
+import { loadDeadSlugs, rememberDeadSlug } from "../src/lib/dead-slug-cache";
 
 async function main() {
   assertPaperOnly("score:trades");
@@ -303,6 +304,17 @@ async function main() {
   // overshoot past maxGrossExposureUsd).
   let c200RunningExposure = c200OpenNotional;
 
+  // tuning review #38 rec 3 (2026-09-28, user-approved): consult the SHARED 404
+  // negative-cache before every per-observation market fetch, and populate it on a
+  // fresh 404. 299 `Market fetch failed` lines on 109 distinct slugs in one 24 h
+  // window (29 -> 78 -> 299 across three) were the same dead markets re-probed on
+  // every re-detection — pure wasted gamma load, 0 copies. The cache file is the
+  // one update-pnl writes (src/lib/dead-slug-cache.ts); loading it here is why the
+  // scorer's slugs finally enter it (update-pnl only fetches markets the book
+  // holds, so the detected-but-unfillable slugs were never cached).
+  const deadSlugs = loadDeadSlugs();
+  let deadSlugSkips = 0;
+
   // v52 (tuning review #19 rec 1, user-approved 2026-09-08): sweep-fill
   // duplicate coalescing — one wallet sweeping one market+outcome is ONE
   // economic intent (exchange-level order splits), not N full-size copies
@@ -417,15 +429,29 @@ async function main() {
     let liquidity: number | undefined;
     let ttr: number | undefined;
     let currentPrice = t.detectedPrice;
-    try {
-      const m = await adapter.fetchMarket(t.marketId);
-      spread = m.spread;
-      liquidity = m.liquidity;
-      ttr = m.timeToResolutionHours;
-      const p = t.outcome === "NO" ? m.noPrice : m.yesPrice;
-      if (p !== undefined) currentPrice = p;
-    } catch (e) {
-      logError(`Market fetch failed for ${t.marketId} — scoring with detection-time data. (${e instanceof Error ? e.message : e})`);
+    if (deadSlugs.has(t.marketId)) {
+      // tuning review #38 rec 3 (2026-09-28, user-approved): cached 404 — skip the
+      // doomed fetch, keep the detection-time fallback. Logged on its OWN line so
+      // the reviewer's `Market fetch failed` count measures NEW dead slugs rather
+      // than re-probes of known ones (`grep -c "Market fetch failed"` <= 60 is the
+      // 7-day verify; a cache hit must not look like a failure).
+      deadSlugSkips++;
+      log(`Market fetch skipped (cached dead slug) for ${t.marketId} — scoring with detection-time data.`);
+    } else {
+      try {
+        const m = await adapter.fetchMarket(t.marketId);
+        spread = m.spread;
+        liquidity = m.liquidity;
+        ttr = m.timeToResolutionHours;
+        const p = t.outcome === "NO" ? m.noPrice : m.yesPrice;
+        if (p !== undefined) currentPrice = p;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Only a clean 404/not-found is evidence the market is gone — a 429, a
+        // timeout or a connector fault must never poison the cache.
+        if (/404|not found/i.test(msg)) rememberDeadSlug(deadSlugs, t.marketId);
+        logError(`Market fetch failed for ${t.marketId} — scoring with detection-time data. (${msg})`);
+      }
     }
 
     let catWinRate: number | undefined;
@@ -1228,7 +1254,8 @@ async function main() {
   log(
     `Scoring complete: ${copies} paper copies (${laneCopies} short-TTR lane), ${watches} watchlist, ${skips} skips, ` +
       `${deduped} sweep-duplicates coalesced, ${shadowLogged} shadow long-shot candidates logged, ` +
-      `${driftShadowLogged} drift-gate counterfactuals logged.`
+      `${driftShadowLogged} drift-gate counterfactuals logged, ` +
+      `${deadSlugSkips} dead-slug fetches skipped (404 cache).`
   );
 }
 

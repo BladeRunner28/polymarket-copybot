@@ -1,6 +1,6 @@
 {
-  "asOf": "2026-09-27T22:16:19-0500",
-  "asOfMs": 1790565379033,
+  "asOf": "2026-09-28T03:04:19-0500",
+  "asOfMs": 1790582659202,
   "kind": "counterfactual-attribution",
   "note": "C-200 book attributed across candidate Kalshi venue rules. Rows are priced at the Polymarket reference because live Kalshi routing is retired; slice PnL is an attribution, not venue P&L.",
   "model": {
@@ -16,24 +16,24 @@
   },
   "live": {
     "n": 2076,
-    "n_settled": 2067,
-    "n_open": 9,
-    "pnl": 2152.03,
-    "staked": 16006.13,
+    "n_settled": 2068,
+    "n_open": 8,
+    "pnl": 2153.12,
+    "staked": 16008.61,
     "roi_pct": 13.45,
     "win_rate_pct": 49.0
   },
   "liveSinceSep5": {
     "n": 786,
-    "n_settled": 777,
-    "n_open": 9,
-    "pnl": 2011.56,
-    "staked": 8545.15,
-    "roi_pct": 23.54,
-    "win_rate_pct": 44.8
+    "n_settled": 778,
+    "n_open": 8,
+    "pnl": 2012.65,
+    "staked": 8547.63,
+    "roi_pct": 23.55,
+    "win_rate_pct": 44.9
   },
-  "liveFeeEntryUsd": 490.02,
-  "livePnlNetEntryFee": 1662.01,
+  "liveFeeEntryUsd": 490.06,
+  "livePnlNetEntryFee": 1663.06,
   "variants": {
     "gate_as_written": {
       "label": "conf > 0.8 AND copyScore >= 80 (live rule, structurally unsatisfiable post-v37)",
@@ -61,7 +61,7 @@
         "2026-09-05": 90.08,
         "2026-09-08": 89.01
       },
-      "delta_vs_all_pm": -2063.02,
+      "delta_vs_all_pm": -2064.11,
       "fee_entry_usd": 23.31,
       "pnl_net_entry_fee": 65.7,
       "in_sample": true
@@ -105,7 +105,7 @@
         "2026-09-26": 296.69,
         "2026-09-27": 287.69
       },
-      "delta_vs_all_pm": -1864.34,
+      "delta_vs_all_pm": -1865.43,
       "fee_entry_usd": 82.56,
       "pnl_net_entry_fee": 205.13,
       "in_sample": true
@@ -133,7 +133,7 @@
         "2026-09-05": 83.7,
         "2026-09-08": 82.63
       },
-      "delta_vs_all_pm": -2069.4,
+      "delta_vs_all_pm": -2070.49,
       "fee_entry_usd": 8.43,
       "pnl_net_entry_fee": 74.2,
       "in_sample": true
@@ -198,7 +198,7 @@
         "2026-09-26": 2459.65,
         "2026-09-27": 2478.22
       },
-      "delta_vs_all_pm": 326.19,
+      "delta_vs_all_pm": 325.1,
       "fee_entry_usd": 363.78,
       "pnl_net_entry_fee": 2114.44,
       "in_sample": true
@@ -318,7 +318,7 @@
       2361.61,
       2176.07,
       2130.67,
-      2152.03
+      2153.12
     ],
     "kalshiShadowCum": [
       0.0,
@@ -432,7 +432,7 @@
       -506.82,
       -324.88,
       -328.98,
-      -326.19
+      -325.1
     ]
   },
   "shadowScoreSplit": {
@@ -447,11 +447,11 @@
     },
     "rejected": {
       "n": 1013,
-      "n_settled": 1010,
-      "n_open": 3,
-      "pnl": -326.19,
-      "staked": 5517.29,
-      "roi_pct": -5.91,
+      "n_settled": 1011,
+      "n_open": 2,
+      "pnl": -325.1,
+      "staked": 5519.77,
+      "roi_pct": -5.89,
       "win_rate_pct": 51.7
     },
     "inSample": true,
