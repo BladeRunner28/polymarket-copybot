@@ -35,6 +35,13 @@ data/c200-intent-watch-state.json
 # large derived datasets — regenerate with scripts/build-decision-dataset.py (read-only DB read)
 data/decision-dataset.csv
 
+# archive-analysis parquet extracts (2026-09-28, tuning review #38 rec 1): the
+# daily git backup committed a 137 MB asset-labels parquet, which GitHub rejects
+# outright (>100 MB per file, pre-receive hook) — the push failed on 09-26 and
+# 09-27 and the failure is invisible outside logs/cron/copybot-git-backup.log.
+# These are derived extracts rebuilt by the archive scripts: keep them off GitHub.
+data/archive-analysis/*.parquet
+
 # large binaries / regenerable assets
 de421.bsp
 *.bsp
