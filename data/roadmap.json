@@ -1288,15 +1288,16 @@
     {
       "id": "tr34-rec2-eod-asof-marker",
       "title": "Rec 2 — the EOD wallet-status split declares itself an as-of-print snapshot",
-      "column": "In Progress",
+      "column": "Done",
       "effort": "~15 min (one line + doc)",
       "dates": "Applied 2026-09-23 (tuning review #34 rec 2, user-approved) · read-only, no RuleSet change",
-      "gate": "VERIFY 7d (2026-09-30): `grep \"by wallet status\" logs/cron/copybot-eod.log | tail -1` contains `as-of HH:MM print` and `status is live` AND `grep -c \"by wallet status\" logs/cron/copybot-eod.log` ≥7.",
+      "gate": "CLOSED 2026-09-28 (tuning review #38 rec 4): `grep \"by wallet status\" logs/cron/copybot-eod.log | tail -1` carries `as-of HH:MM print` + `status is live` on every run (verified again on the 09-26 22:01 and 09-27 22:0x prints: `track -$630.31 (188) | watch +$2,770.89 (1,845) | total +$2,140.58 (2,033)`). The clause was retired as unachievable (the join reads live status) and stays retired — do not re-open it.",
       "note": "WHY: the line (shipped as #33 rec 2) joins `WalletProfile.status` LIVE, so a later re-run of the same SQL returns a different split — measured across the first two reads: `track 207 -$432.55 | watch 1,745 +$2,817.90` at the 22:00 EOD vs `track 186 -$342.51 | watch 1,770 +$2,718.37` at 07:00 (21 legs / $90 reclassified overnight). #33 rec 2's verify clause ('the printed pair equals a same-day re-run') was unachievable by construction, so the reviewer could never close it; it is retired. WHAT SHIPPED: scripts/wallet-status-split.ts appends `(as-of HH:MM print — WalletProfile.status is live, a later re-run of this SQL can differ)` and the file header records that the EOD print is the immovable record (same convention as data/phase-streak-log.jsonl). Writes nothing; still non-fatal.",
       "tags": [
-        "tuning-34",
-        "measurement",
+        "closed-2026-09-28",
         "eod",
+        "measurement",
+        "tuning-34",
         "wallet-status"
       ]
     },
@@ -1726,6 +1727,82 @@
         "sentiment",
         "infra",
         "measurement"
+      ]
+    },
+    {
+      "id": "tr36-rec1-event-family-concentration",
+      "title": "Rec 1 — EOD read: C-200 open concentration by EVENT FAMILY (top-3 share of open cost)",
+      "column": "Scheduled",
+      "effort": "~30 min (read-only script + appended EOD step)",
+      "dates": "Applied 2026-09-28 (tuning review #38 rec 2, user-approved; carried from #36 R1 for a 3rd cycle) · first EOD print 2026-09-28 22:00",
+      "gate": "VERIFY 7d (2026-10-05): `grep -c \"by event family\" logs/cron/copybot-eod.log` >= 1 AND a same-day re-run of `npx tsx scripts/event-family-concentration.ts` reproduces the printed top-3 exactly (the read joins no live dimension, so it is deterministic) AND the EOD still exits 0 with no new FAILED. RETIRED CLAUSE: the rec's original form ('the printed top-3 equals a recomputation of `substr(marketId,1,30)`') is unachievable — that SQL returns `will-xavier-becerra-win-the-ca` while the rec's own headline quotes `will-xavier-becerra`, and a 30-char prefix SPLITS same-event legs (`unl-nor-prt-2026-09-27-nor` vs `-prt`). The prefix re-run is printed on the script's own cross-check line so the original command still reconciles.",
+      "note": "WHY: the open book is a handful of single-leg $100 positions across SEPARATE families, and v55 (per-market) + v59 (per-wallet) both read 0 vetoes because the exposure is correlated ACROSS markets — the shape that produced the -$300 realisation #37 documented (three adjacent elon tweet-count bands, one wallet). WHAT SHIPPED: scripts/event-family-concentration.ts (READ-ONLY, writes nothing, non-fatal) appended as the last step of ~/.hermes/scripts/copybot-eod.sh with `tail -6`. FAMILY RULE (pre-registered, do not silently re-derive): slug cut at the ISO date when the slug carries one (league/weather events are date-scoped), else the first 3 dash tokens (will-<entity>-…, elon-musk-of-…). MEASURED 2026-09-28 03:0x: 8 open legs / $333.09 cost / 8 families, top-3 = $300.00 = 90.1% of open cost, families with >1 leg = 0 — against #38's in-window read of 28 legs / $558.35 where the top-4 single-leg $100 positions were 71.6% of open cost. CAVEAT: the stem is a slug heuristic, not a contract-level correlation; it prices the shape and gates nothing (no rule, size or cap reads it).",
+      "tags": [
+        "tuning-38",
+        "tuning-36",
+        "measurement",
+        "eod",
+        "concentration"
+      ]
+    },
+    {
+      "id": "decay-bar-tripped-oct8-decision",
+      "title": "DECISION — tripped drift-decay bar (8/7 days): relax maxPriceDrift / longshotDriftPct at the Oct 8 read?",
+      "column": "Scheduled",
+      "effort": "decision at the Oct 8 read; the relaxation itself is a one-field RuleSet apply",
+      "dates": "Carded 2026-09-28 (tuning review #38 rec 4, user-approved) · decision bound to the Oct 8 Kelly-window close",
+      "gate": "At the Oct 8 read: record the decision (relax / hold) WITH the bar's evidence re-read at that date (`jq .decayBar data/drift-shadow-summary.json`) and the window attribution by ruleSetVersion; if relaxed, it ships as a RuleSet version whose re-check is the bar's own counterfactual series for the following 7 days.",
+      "note": "WHY CARDED: the 2026-09-20 pre-registration's precondition is satisfied — `data/drift-shadow-summary.json` decayBar = {consecutiveDaysAtOrBelow: 8, daysRequired: 7, cohort7d: -0.69, tripped: true} (series 2026-09-20…09-27, each day -$0.13/-$0.16) — so a `maxPriceDrift`/`longshotDriftPct` relaxation is JUSTIFIED, but the v60 Kelly freeze runs to Oct 9 and 11 days remained to the read as of #38: the decision belongs there, attributed by ruleSetVersion. NO threshold value is proposed. The reviewer carried this as a queue for two cycles with no card to point at (copy-score axis 1); this card IS the queue. tr31-rec2-drift-decay-bar stays Scheduled as the instrument's card.",
+      "tags": [
+        "tuning-38",
+        "decision",
+        "drift",
+        "oct8"
+      ]
+    },
+    {
+      "id": "git-backup-oversize-blob-guard",
+      "title": "Rec 1 — GitHub backup restored: 137 MB blob out of history + oversize guard in the backup script",
+      "column": "Done",
+      "effort": "~30 min (rewrite 2 unpushed commits + ignore rule + 20-line guard)",
+      "dates": "Fixed + verified 2026-09-28 (tuning review #38 rec 1, user-approved)",
+      "gate": "VERIFIED 2026-09-28 03:08 (real run, not a simulation): `git rev-list --left-right --count origin/main...HEAD` = `0 0`; `git ls-tree -r -l HEAD | awk '$4+0>100000000'` = empty; backup log newest line = `✅ polymarket-copybot: backed up 22 files → GitHub (a019b65)`; the guard fired live on a force-staged 137 MB blob (`⚠️ … 1 file(s) over GitHub's 100 MB limit were left OUT of this commit — … (143 MB)`), exit 0; `grep -c \"PUSH FAILED\" logs/cron/copybot-git-backup.log` stays **3**, not the 1 the rec predicted (the 2026-09-14 backup-test line matches too). STANDING re-read after the next 3 nightly runs: each must log ✅ and no ⚠️.",
+      "note": "CORRECTION TO THE REC'S PREMISE: this was NOT a transient one-shot push failure a retry would fix. The 2026-09-26 22:30 auto-backup committed data/archive-analysis/asset-labels-2026_01-2026_04.parquet (137.03 MB) and GitHub's pre-receive hook rejects any file >100 MB — so 09-26 AND 09-27 failed deterministically (`git push origin main` reproduced the rejection on demand) and the rec's own fix could never have succeeded. Second correction: the failure was NOT silent — the job's stdout is captured and the job is `deliver: discord`, so both nights produced a `Status: script failed` delivery plus the ❌ line (~/.hermes/cron/output/eb5412dee4d7/2026-09-2[67]*.md). What was missing was a RETRY, not a signal. FIX: rewrote the two unpushed auto-backup commits (310582b→2d4ac7c, dfe2ba0→a398501 — byte-identical except that one blob, proven with `git diff --stat`), untracked the file, ignored `data/archive-analysis/*.parquet`, and added a >95 MB unstage-and-warn guard to ~/.hermes/scripts/copybot-git-backup.sh (previously no size check at all, and no retry until 22:30 the next day). Pushed 11 commits, f940c8e..2a4113a. The 137 MB file stays on disk untracked — it is a derived extract, not a source. Reviewer's proposed id `git-backup-push-failed-20260926` maps HERE (renamed to a class-level id per the roadmap convention).",
+      "tags": [
+        "tuning-38",
+        "infra",
+        "git",
+        "backup"
+      ]
+    },
+    {
+      "id": "git-backup-large-artifact-policy",
+      "title": "POLICY — what should the nightly git backup do with large derived artifacts? (exclude / LFS / external store)",
+      "column": "Backlog",
+      "effort": "~1 h (ignore-by-class rule, or git-lfs install + migrate)",
+      "dates": "Parked 2026-09-28 (follow-up from the #38 rec 1 root cause; NOT part of that approval)",
+      "gate": "Decide and apply one option; verification = the next 3 nightly backups all log ✅ with no ⚠️ AND `du -sh .git` stops growing ~50 MB per night.",
+      "note": "CONTEXT: the 09-26 backup failure was one instance of a class — the nightly snapshot commits whatever changed under `data/`, and `.git` is already 564 MB while the largest TRACKED artifacts are a 51 MB smoke parquet and two ~30 MB fill-hazard CSVs (the 137 MB extract is ignored as of this fix). GitHub hard-fails any single file >100 MB, so the next large artifact breaks the backup the same way. OPTIONS (recommended first): (a) EXCLUDE derived binaries by class and keep a size budget — 0 new dependencies, the guard now in place enforces it, no source is lost; (b) git-lfs for the parquet/CSV extracts — git-lfs is NOT installed and the job would need `git lfs` handling (1 GB free storage); (c) move large extracts to an external volume/object store and back up a manifest. Also worth folding in: the job is `deliver: discord` yet its alerts land in the Home channel, not this thread — the 09-26/09-27 failures WERE delivered and were still missed for two days.",
+      "tags": [
+        "tuning-38",
+        "infra",
+        "git",
+        "policy"
+      ]
+    },
+    {
+      "id": "tr38-rec3-scorer-dead-slug-cache",
+      "title": "Rec 3 — the scorer consults AND populates the shared dead-slug cache (FIFO 24 → 200)",
+      "column": "In Progress",
+      "effort": "~45 min (shared lib + 2 call sites + appended EOD-adjacent verify)",
+      "dates": "Applied 2026-09-28 (tuning review #38 rec 3, user-approved) · read-only w.r.t. decisions; gates nothing",
+      "gate": "VERIFY 7d (2026-10-05) over one full window of logs/cron/copybot-monitor-score.log: `grep -c \"Market fetch failed\"` <= 60 (from 299) AND no single slug appears more than 2x (`grep -oE \"Market fetch failed for [a-z0-9-]+\" … | sort | uniq -c | sort -rn | head -1` <= 2) AND the run header count still equals `Scoring complete` + `No unscored trades` with 0 new FAILED AND the completion line carries `N dead-slug fetches skipped (404 cache)`.",
+      "note": "WHY: 299 `Market fetch failed` lines on 109 distinct slugs in one 24 h window (29 → 78 → 299 across three) — the same dead markets re-probed on every re-detection, pure wasted gamma load and 0 copies. The v41 cache existed but was consulted ONLY by scripts/update-pnl.ts. WHAT SHIPPED: src/lib/dead-slug-cache.ts (load / rememberDeadSlug, atomic tmp+rename writes, cap 200) now used by BOTH scripts/update-pnl.ts (cap 24 → 200, semantics unchanged) and scripts/score-trades.ts. The scorer WRITES too, which is the half that makes it work: update-pnl only fetches markets the book HOLDS, so the detected-but-unfillable slugs that account for the 299 lines never entered the cache — `none of the repeaters are in the 24-slot cache` was that gap, not a cap problem alone. Cached hits log `Market fetch skipped (cached dead slug) …` on their own line so the reviewer's `Market fetch failed` count measures NEW dead slugs. Only a clean 404/not-found is cached (a 429/timeout must never poison it). Fallback behaviour unchanged: detection-time data, logging only.",
+      "tags": [
+        "tuning-38",
+        "infra",
+        "perf",
+        "dead-slug"
       ]
     }
   ]
