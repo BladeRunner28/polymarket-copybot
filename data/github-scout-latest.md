@@ -1,25 +1,25 @@
 🔭 **Prediction-Market Repo Scout**
-Scanned 6 queries · 66 new candidates · top 5
+Scanned 6 queries · 62 new candidates · top 5
 **Gate:** watch-only (pipeline busy: Phase A2 outcome review; Phase B — Kelly sizing replaces band siz)
 
-**warproxxx/poly-maker** — 1503★ · MIT · Python · pushed 73d ago · relevance 8
-> An automated market making bot for the Polymarket Prediction Market that provides liquidity by maintaining orders on both sides of the order book with customiza
-> keywords: ai, order book, polymarket, prediction market
-
-**ImMike/polymarket-arbitrage** — 282★ · NO-LICENSE · Python · pushed 286d ago · relevance 8
-> A Polymarket and Kalshi Arbitrage bot written in Python, watches 10,000+ markets looking for inefficient markets on and between platforms
+**txthinkin/polymarket-kalshi-arbitrage-bot** — 203★ · NO-LICENSE · TypeScript · pushed 34d ago · relevance 8
+> polymarket kalshi polymarket kalshi polymarket kalshi polymarket kalshi polymarket kalshi polymarket kalshi polymarket kalshi polymarket kalshi polymarket kalsh
 > keywords: arb, arbitrage, kalshi, polymarket
 
-**machina-sports/sports-skills** — 230★ · MIT · Python · pushed 9d ago · relevance 8
-> Open-source agent skills for live sports data and prediction markets. Football, F1, Kalshi, Polymarket. Zero API keys. SKILL.md format.
-> keywords: kalshi, polymarket, prediction market
+**NYTEMODEONLY/polyterm** — 359★ · MIT · Python · pushed 22d ago · relevance 7
+> Polymarket in your terminal.
+> keywords: crypto, polymarket, prediction-market
 
-**evan-kolberg/prediction-market-backtesting** — 1201★ · NOASSERTION · Python · pushed 127d ago · relevance 8
-> An extension for Nautilus Trader
-> keywords: backtest, polymarket, prediction-market
+**Superior-Trade/superior-skills** — 213★ · MIT · JavaScript · pushed 18d ago · relevance 7
+> Open agent skills and tool schemas for Superior Trade — build, backtest, and deploy trading strategies on Hyperliquid
+> keywords: ai, backtest, polymarket, prediction-market
 
-**brodyautomates/polymarket-pipeline** — 366★ · NO-LICENSE · Python · pushed 170d ago · relevance 7
-> Event-driven AI pipeline that monitors breaking news in real time, classifies market impact with Claude, and trades niche Polymarket markets automatically.
-> keywords: ai, polymarket, prediction-market
+**bennyjo/phil** — 152★ · Apache-2.0 · Python · pushed 0d ago · relevance 7
+> Phil is a self-improving trader: an AI agent that trades short-term prediction markets and rewrites his own strategy after every settled bet. Paper 24/7 in the 
+> keywords: ai, polymarket, prediction market, prediction-market
+
+**arshka/pykalshi** — 126★ · MIT · Python · pushed 61d ago · relevance 7
+> Unofficial Python client for Kalshi's prediction markets API
+> keywords: kalshi, prediction market, prediction-market
 
 Seen list updated. Deep audit only if it maps to an open gap or pipeline has room.
