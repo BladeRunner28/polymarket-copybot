@@ -2044,22 +2044,6 @@
     "external-claim",
     "staleness"
    ]
-  },
-  {
-   "id": "wallet-lag-persistence-ranker",
-   "title": "Lag persistence as a wallet-selection ranker — counterfactual copy return at 0 / +10m / +30m / +1h per tracked wallet",
-   "column": "Backlog",
-   "effort": "~2-3h — offline join over tape we already store (ObservedTrade carries price + timestamp) plus one run of the existing AUC harness; no runtime change",
-   "dates": "Carded 2026-09-28 (external-claim review, drafts/reddit-late-copy-20260928.md) · the measurement is pure offline and may run any time; ANY adoption into wallet selection is post-Oct-8 and recommendation-only",
-   "gate": "VERIFY before this dimension is used for anything: score it through scripts/wallet-selection-score-information.py — wallet-clustered percentile bootstrap CI (2,000 draws, legs inside a wallet are not independent) AND the lane's Hanley-McNeil MDE at A = 0.5, with entry price printed as the bar (AUC 0.653 on C-200, 0.758 on STANDARD). Context that sets the bar: NO current wallet-selection score clears its MDE at leg grain on C-200 (best resolvedTradeCount30d 0.526 against MDE ±0.026) — so a new dimension must show CI-excludes-0.5 on a >=30-settled-entry-per-wallet population, not a story, and the per-wallet n and the settled-entry floor must be printed with it. On a pass it becomes a Backlog/approval item for wallet selection, never a silent add to scoring.",
-   "note": "WHY: every score we rank wallets with is ROI / consistency / copyability, and none of them is LAG ROBUSTNESS — whether the wallet's edge survives a delayed copy, which is the only property that matters if our fill is ever late, gated, or re-priced. The external claim's trader table is the argument: 9 of the 17 traders profitable at the whale's own price are NEGATIVE an hour late (SPCEXBUYER +19.1% -> -27.1% on 102 entries; danielwolfmorales3pddb6dl6 +19.9% -> -25.0% on 52), while Djdjdjekekek (+78.5% -> +62.9%) and 0x4f2 (+16.1% -> +68.7%) hold or improve. Their table is not transferable (their smallest size bucket is $10k against our ~$608 average followed trade, and it is one 3-day window from a product-linked post), but the DIMENSION is: compute each tracked wallet's counterfactual return at 0 / +10m / +30m / +1h from our own tape and ask whether persistence outranks the scores we currently use. This is also the mechanism that would let the copy set depend less on the drift gate at all — a wallet whose edge survives an hour needs no tight staleness rail. Related: wallet-selection-score-information (the harness and its null result), drift-gate-band-winrate-shadow (the other mechanism from the same review).",
-   "tags": [
-    "measurement",
-    "wallet-selection",
-    "post-oct-8",
-    "external-claim",
-    "backlog"
-   ]
   }
  ]
 }
