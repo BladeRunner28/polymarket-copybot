@@ -69,20 +69,26 @@ async function main() {
   const CONCURRENCY = Number(process.env.MONITOR_CONCURRENCY ?? 2);
   const processWallet = async (w: MonitorWallet) => {
     try {
-      // Observation-only wallets pre-filter against the rows already stored: a
-      // busy demoted wallet re-offers its whole 24h book every cycle, and
-      // without this every fill would be an insert attempt that ends in a
-      // unique-constraint rejection.
-      let seen: Set<string> | null = null;
-      if (w.observationOnly) {
-        const existing = await prisma.observedTrade.findMany({
-          where: { walletAddress: w.address, timestamp: { gte: new Date(since) } },
-          select: { marketId: true, outcome: true, side: true, timestamp: true },
-        });
-        seen = new Set(
-          existing.map((r) => `${r.marketId}|${r.outcome}|${r.side}|${r.timestamp.getTime()}`)
-        );
-      }
+      // Pre-filter EVERY wallet against the rows already stored — the key below
+      // is exactly `@@unique([walletAddress, marketId, outcome, side, timestamp])`,
+      // so an already-stored fill can only ever end in that rejection.
+      //
+      // Was observation-only until tuning #42 rec 1 (user-approved 2026-10-01).
+      // In the COPY lane the re-offer was not free: a stored copy-eligible fill
+      // re-paid `adapter.fetchMarket()` + a `marketSnapshot.create()` on every
+      // cycle before the unique index discarded the insert — measured 156,418
+      // MarketSnapshot rows/24 h for 779 real fills (~201x, ~1,194 re-heats per
+      // cycle, DB +0.141 GB/day). Skipping it up front changes no decision, no
+      // count and no journal row: nothing reads MarketSnapshot for a copy
+      // decision, and `detectedPrice` for a duplicate only ever reached a row
+      // that the index refused. Revert = wrap this block in `if (w.observationOnly)`.
+      const existing = await prisma.observedTrade.findMany({
+        where: { walletAddress: w.address, timestamp: { gte: new Date(since) } },
+        select: { marketId: true, outcome: true, side: true, timestamp: true },
+      });
+      const seen = new Set(
+        existing.map((r) => `${r.marketId}|${r.outcome}|${r.side}|${r.timestamp.getTime()}`)
+      );
       const activity = await adapter.fetchWalletActivity(
         w.address,
         Math.ceil(MONITOR_HOURS / 24) || 1,
@@ -106,7 +112,7 @@ async function main() {
         if (t.timestamp.getTime() < since) continue;
         if (t.side !== "BUY") continue; // copy entries only, not exits
         const dedupeKey = `${t.marketId}|${t.outcome}|${t.side}|${t.timestamp.getTime()}`;
-        if (seen?.has(dedupeKey)) continue;
+        if (seen.has(dedupeKey)) continue;
         try {
           // Detected price: current market price at detection time — COPY set
           // only. An observation-only row keeps the wallet's own fill price: the
@@ -164,7 +170,7 @@ async function main() {
               observationOnly: w.observationOnly,
             },
           });
-          seen?.add(dedupeKey);
+          seen.add(dedupeKey);
           if (w.observationOnly) newObserved++;
           else newTrades++;
         } catch (e) {
