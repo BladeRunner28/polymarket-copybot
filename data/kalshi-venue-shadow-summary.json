@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-01T03:16:20.943Z",
+  "asOf": "2026-10-02T03:16:21.347Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 901,
-    "inWindow": 506,
+    "copiesSeen": 923,
+    "inWindow": 528,
     "withKalshiQuote": 2,
     "crossListRate": 0.004,
     "staleSkips": 395,
-    "quoteFailures": 451,
-    "unverifiedMatches": 53,
+    "quoteFailures": 471,
+    "unverifiedMatches": 55,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 49,
+      "low_match_score_0.67": 51,
       "low_match_score_0.60": 3
     }
   },
@@ -55,26 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will Villarreal CF win on 2026-09-20?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.335,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Will OL Lyonnes win on 2026-09-23?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.05,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Will AfD win the most seats in 1 German state election in September 2026?",
       "ticker": "KXAFDSTATEGOV-27",
@@ -452,6 +432,26 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.495,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Côte d'Ivoire win on 2026-10-03?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.45,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Côte d'Ivoire win on 2026-10-03?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.51,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
