@@ -1,52 +1,52 @@
 {
-  "analyzedAt": "2026-10-02T03:01:26.150020+00:00",
+  "analyzedAt": "2026-10-03T03:01:14.152173+00:00",
   "bot": "BANKROLL_200",
   "since": null,
   "deduped": false,
   "dedupedFromRows": null,
   "method": "excess return = win_rate - mean entry price; se=sqrt(wr(1-wr)/N); |z|>=2 significant (port of jon-becker/prediction-market-analysis, MIT)",
   "total": {
-    "n": 2039,
-    "winRate": 0.4895,
-    "avgEntry": 0.491,
-    "excessReturn": -0.0016,
-    "z": -0.143,
-    "p": 0.886654,
+    "n": 2048,
+    "winRate": 0.4907,
+    "avgEntry": 0.4904,
+    "excessReturn": 0.0003,
+    "z": 0.03,
+    "p": 0.975933,
     "significant": false,
-    "realizedPnl": 4018.13
+    "realizedPnl": 4130.58
   },
   "bands": [
     {
-      "n": 202,
-      "winRate": 0.3069,
-      "avgEntry": 0.1047,
-      "excessReturn": 0.2022,
-      "z": 6.231,
+      "n": 203,
+      "winRate": 0.3054,
+      "avgEntry": 0.1046,
+      "excessReturn": 0.2008,
+      "z": 6.212,
       "p": 0.0,
       "significant": true,
-      "realizedPnl": 4260.97,
+      "realizedPnl": 4248.56,
       "band": "0.00-0.20"
     },
     {
-      "n": 392,
-      "winRate": 0.3673,
-      "avgEntry": 0.3029,
-      "excessReturn": 0.0645,
-      "z": 2.648,
-      "p": 0.008108,
+      "n": 397,
+      "winRate": 0.3753,
+      "avgEntry": 0.303,
+      "excessReturn": 0.0724,
+      "z": 2.977,
+      "p": 0.002907,
       "significant": true,
-      "realizedPnl": -76.3,
+      "realizedPnl": 46.95,
       "band": "0.20-0.40"
     },
     {
-      "n": 851,
-      "winRate": 0.4653,
-      "avgEntry": 0.4945,
-      "excessReturn": -0.0291,
-      "z": -1.703,
-      "p": 0.088608,
+      "n": 854,
+      "winRate": 0.466,
+      "avgEntry": 0.4944,
+      "excessReturn": -0.0284,
+      "z": -1.664,
+      "p": 0.09619,
       "significant": false,
-      "realizedPnl": -172.65,
+      "realizedPnl": -171.04,
       "band": "0.40-0.60"
     },
     {
@@ -96,14 +96,14 @@
       "hour": 1
     },
     {
-      "n": 56,
-      "winRate": 0.4464,
-      "avgEntry": 0.539,
-      "excessReturn": -0.0926,
-      "z": -1.394,
-      "p": 0.163265,
+      "n": 57,
+      "winRate": 0.4561,
+      "avgEntry": 0.5342,
+      "excessReturn": -0.0781,
+      "z": -1.184,
+      "p": 0.236494,
       "significant": false,
-      "realizedPnl": -97.32,
+      "realizedPnl": -69.65,
       "hour": 2
     },
     {
@@ -118,14 +118,14 @@
       "hour": 3
     },
     {
-      "n": 48,
-      "winRate": 0.5417,
-      "avgEntry": 0.5053,
-      "excessReturn": 0.0364,
-      "z": 0.506,
-      "p": 0.613109,
+      "n": 49,
+      "winRate": 0.551,
+      "avgEntry": 0.5045,
+      "excessReturn": 0.0465,
+      "z": 0.655,
+      "p": 0.512474,
       "significant": false,
-      "realizedPnl": -89.35,
+      "realizedPnl": -87.92,
       "hour": 4
     },
     {
@@ -184,14 +184,14 @@
       "hour": 9
     },
     {
-      "n": 144,
-      "winRate": 0.4167,
-      "avgEntry": 0.431,
-      "excessReturn": -0.0143,
-      "z": -0.349,
-      "p": 0.727433,
+      "n": 145,
+      "winRate": 0.4138,
+      "avgEntry": 0.4286,
+      "excessReturn": -0.0148,
+      "z": -0.361,
+      "p": 0.717968,
       "significant": false,
-      "realizedPnl": -166.37,
+      "realizedPnl": -178.78,
       "hour": 10
     },
     {
@@ -206,14 +206,14 @@
       "hour": 11
     },
     {
-      "n": 160,
-      "winRate": 0.4875,
-      "avgEntry": 0.4876,
-      "excessReturn": -0.0001,
-      "z": -0.001,
-      "p": 0.998927,
+      "n": 161,
+      "winRate": 0.4907,
+      "avgEntry": 0.4865,
+      "excessReturn": 0.0042,
+      "z": 0.107,
+      "p": 0.915067,
       "significant": false,
-      "realizedPnl": -33.5,
+      "realizedPnl": 5.63,
       "hour": 12
     },
     {
@@ -228,14 +228,14 @@
       "hour": 13
     },
     {
-      "n": 109,
-      "winRate": 0.5413,
-      "avgEntry": 0.4514,
-      "excessReturn": 0.0898,
-      "z": 1.882,
-      "p": 0.059791,
+      "n": 110,
+      "winRate": 0.5455,
+      "avgEntry": 0.4516,
+      "excessReturn": 0.0939,
+      "z": 1.978,
+      "p": 0.047978,
       "significant": false,
-      "realizedPnl": 786.79,
+      "realizedPnl": 788.22,
       "hour": 14
     },
     {
@@ -250,25 +250,25 @@
       "hour": 15
     },
     {
-      "n": 73,
-      "winRate": 0.4795,
-      "avgEntry": 0.4905,
-      "excessReturn": -0.011,
-      "z": -0.188,
-      "p": 0.850777,
+      "n": 75,
+      "winRate": 0.4933,
+      "avgEntry": 0.4855,
+      "excessReturn": 0.0078,
+      "z": 0.136,
+      "p": 0.892158,
       "significant": false,
-      "realizedPnl": -62.11,
+      "realizedPnl": -23.78,
       "hour": 16
     },
     {
-      "n": 58,
-      "winRate": 0.431,
-      "avgEntry": 0.4846,
-      "excessReturn": -0.0535,
-      "z": -0.823,
-      "p": 0.410423,
+      "n": 59,
+      "winRate": 0.4237,
+      "avgEntry": 0.4856,
+      "excessReturn": -0.0619,
+      "z": -0.962,
+      "p": 0.3363,
       "significant": false,
-      "realizedPnl": 43.02,
+      "realizedPnl": 41.77,
       "hour": 17
     },
     {
@@ -305,14 +305,14 @@
       "hour": 20
     },
     {
-      "n": 69,
-      "winRate": 0.5942,
-      "avgEntry": 0.4529,
-      "excessReturn": 0.1413,
-      "z": 2.39,
-      "p": 0.016867,
+      "n": 70,
+      "winRate": 0.6,
+      "avgEntry": 0.4515,
+      "excessReturn": 0.1485,
+      "z": 2.535,
+      "p": 0.011232,
       "significant": true,
-      "realizedPnl": 718.44,
+      "realizedPnl": 736.56,
       "hour": 21
     },
     {

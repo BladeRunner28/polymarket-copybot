@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-02T03:16:21.347Z",
+  "asOf": "2026-10-03T03:16:26.357Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,17 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 923,
-    "inWindow": 528,
+    "copiesSeen": 961,
+    "inWindow": 566,
     "withKalshiQuote": 2,
     "crossListRate": 0.004,
     "staleSkips": 395,
-    "quoteFailures": 471,
-    "unverifiedMatches": 55,
+    "quoteFailures": 505,
+    "unverifiedMatches": 59,
     "rejectionReasons": {
+      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 1,
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 51,
+      "low_match_score_0.67": 55,
       "low_match_score_0.60": 3
     }
   },
@@ -55,46 +56,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will AfD win the most seats in 1 German state election in September 2026?",
-      "ticker": "KXAFDSTATEGOV-27",
-      "matchedTitle": "AfD in a German state government in 2026?",
-      "score": 0.8,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.377,
-      "verified": true,
-      "reason": null
-    },
-    {
-      "question": "Will AfD win the most seats in 1 German state election in September 2026?",
-      "ticker": "KXAFDSTATEGOV-27",
-      "matchedTitle": "AfD in a German state government in 2026?",
-      "score": 0.8,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.377,
-      "verified": true,
-      "reason": null
-    },
-    {
-      "question": "Will AfD win the second-most seats in the 2026 Berlin state elections?",
-      "ticker": "KXAFDSTATEGOV-27",
-      "matchedTitle": "AfD in a German state government in 2026?",
-      "score": 0.6,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.7,
-      "verified": false,
-      "reason": "low_match_score_0.60"
-    },
-    {
-      "question": "Will AfD win the third-most seats in the 2026 Berlin state elections?",
-      "ticker": "KXAFDSTATEGOV-27",
-      "matchedTitle": "AfD in a German state government in 2026?",
-      "score": 0.6,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.64,
-      "verified": false,
-      "reason": "low_match_score_0.60"
-    },
     {
       "question": "Will AfD win the third-most seats in the 2026 Berlin state elections?",
       "ticker": "KXAFDSTATEGOV-27",
@@ -452,6 +413,46 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.51,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Germany win on 2026-10-04?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.495,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Navy vs. Air Force: O/U 63.5",
+      "ticker": "KXSCOTUSCASE-DEPPRU28",
+      "matchedTitle": "Will SCOTUS bar the immediate NEPA challenge to the Air Force’s Guam hazardous-waste permi",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.12,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Alabama vs. Mississippi State: 1H O/U 30.5",
+      "ticker": "KXLOCALLAW-ALSNAP-27JUL01",
+      "matchedTitle": "Will Alabama cut its state grocery tax again?",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.99,
+      "pmEntry": 0.49,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will SD Eibar win on 2026-10-03?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.595,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
