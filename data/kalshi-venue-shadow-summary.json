@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-03T03:16:26.357Z",
+  "asOf": "2026-10-04T03:16:22.528Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,17 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 961,
-    "inWindow": 566,
+    "copiesSeen": 999,
+    "inWindow": 604,
     "withKalshiQuote": 2,
-    "crossListRate": 0.004,
+    "crossListRate": 0.003,
     "staleSkips": 395,
-    "quoteFailures": 505,
-    "unverifiedMatches": 59,
+    "quoteFailures": 540,
+    "unverifiedMatches": 62,
     "rejectionReasons": {
-      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 1,
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 55,
+      "low_match_score_0.67": 58,
       "low_match_score_0.60": 3
     }
   },
@@ -56,36 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will AfD win the third-most seats in the 2026 Berlin state elections?",
-      "ticker": "KXAFDSTATEGOV-27",
-      "matchedTitle": "AfD in a German state government in 2026?",
-      "score": 0.6,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.64,
-      "verified": false,
-      "reason": "low_match_score_0.60"
-    },
-    {
-      "question": "Will OL Lyonnes win on 2026-09-23?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.05499999999999999,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Will Norway win on 2026-09-24?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.425,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Will Austria win on 2026-09-24?",
       "ticker": "KXANYDEMWINTEXAS-26NOV03",
@@ -453,6 +422,36 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.595,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Russia win on 2026-10-03?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.095,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will CA Tucumán win on 2026-10-03?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.475,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will CA Mineiro win on 2026-10-03?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.475,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
