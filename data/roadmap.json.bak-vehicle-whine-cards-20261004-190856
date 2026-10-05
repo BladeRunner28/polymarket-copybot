@@ -2128,21 +2128,6 @@
     "measurement",
     "needs-file"
    ]
-  },
-  {
-   "id": "vehicle-accessory-belt-off-test",
-   "title": "Truck whine — belt-off isolation test (engine COLD, rev in Park): deletes the whole accessory drive",
-   "column": "Backlog",
-   "effort": "~30 min, one person at the truck, engine cold",
-   "dates": "next session at the truck",
-   "note": "The one physical test that outranks any further audio. Engine cold: photograph the serpentine routing, release the single automatic tensioner, take the belt off, then start and run 30-60 s including a brief hold at ~2500 rpm, recorded from a fixed phone position.\nRESULT: whine gone -> it is in the accessory drive (alternator / water pump / A/C clutch / idler / tensioner / fan), and the driving capture only has to say which pulley. Whine still there -> it is internal or the transmission pump, and no amount of audio analysis will name it.\nWHILE THE BELT IS OFF: hand-spin every pulley and note roughness, drag or noise (idler and tensioner bearings are cheap and common; A/C clutch bearing is a classic cold-only front-end whine).\nROLLBACK: key off, belt back on (single tensioner release on this engine), verify routing against the photo before starting. Never do this hot.",
-   "tags": [
-    "vehicle",
-    "engine-audio",
-    "isolation",
-    "field-test"
-   ],
-   "gate": "Only this result flips the verdict between accessory drive and internal/transmission — buy no parts before it."
   }
  ]
 }

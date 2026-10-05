@@ -14,7 +14,9 @@
 
 import { Card, Stat, Pnl, Empty } from "@/components/ui";
 import { CapitalDepositsChart } from "@/components/capital-chart";
-import { loadCapitalState } from "@/lib/capital-data";
+import { OpenMtmHorizonCard } from "@/components/open-mtm-horizon";
+import { loadCapitalState, CAPITAL_BOT } from "@/lib/capital-data";
+import { loadOpenMtmHorizon } from "@/lib/open-mtm-horizon";
 import { positiveStreak, topDays } from "@/lib/capital";
 import { readdirSync, statSync } from "fs";
 import { join } from "path";
@@ -45,6 +47,9 @@ export default async function Capital() {
   // ONE loader for page, Overview card and the report/Discord script — the
   // chart, the table and the Discord message cannot drift (src/lib/capital-data.ts).
   const state = await loadCapitalState({ days: DAYS });
+  // "Total Capital (live)" includes the open mark, so the page that reports it
+  // also has to say when that mark stops moving (2026-10-04).
+  const horizon = await loadOpenMtmHorizon({ botId: CAPITAL_BOT });
   const { series, ledger, principal, realized, openUnreal, openNotional } = state;
   const liveTotalCapital = state.liveTotalCapital;
   const bookedCapital = state.bookedCapital;
@@ -107,6 +112,14 @@ export default async function Capital() {
           tone={Math.abs(series.ledgerGapUsd) < 0.01 ? "pos" : "neg"}
         />
       </div>
+
+      <Card title="Open MTM — when it closes (C-200)">
+        <OpenMtmHorizonCard
+          summary={horizon}
+          label="C-200"
+          capNote={`That is the ${usd(openUnreal)} sitting inside Total Capital (live) above, across ${horizon.totals.legs} open legs.`}
+        />
+      </Card>
 
       <Card title={`Daily deposits into Total Capital — last ${series.points.length} days`}>
         <CapitalDepositsChart points={series.points} principal={principal} />

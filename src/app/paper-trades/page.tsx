@@ -1,8 +1,16 @@
 import { prisma } from "@/lib/db";
 import { Card, Badge, Addr, Empty, Pnl } from "@/components/ui";
+import { OpenMtmHorizonCard } from "@/components/open-mtm-horizon";
+import { loadOpenMtmHorizon } from "@/lib/open-mtm-horizon";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+
+/** Lanes shown on this page, in the order the daily report names them. */
+const LANES = [
+  { botId: "BANKROLL_200", label: "C-200" },
+  { botId: "STANDARD", label: "STANDARD" },
+];
 
 export default async function PaperTrades() {
   const trades = await prisma.paperTrade.findMany({
@@ -11,12 +19,30 @@ export default async function PaperTrades() {
     include: { decision: true, pnlSnapshots: { orderBy: { collectedAt: "desc" }, take: 1 } },
   });
 
+  // When does what is still open actually close? (2026-10-04, user request.)
+  const horizons = await Promise.all(LANES.map((l) => loadOpenMtmHorizon({ botId: l.botId })));
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Paper Trades</h1>
       <p className="text-sm text-dim">
         Simulated positions only — $.25 to $20 each, no real money involved.
       </p>
+
+      <Card title="Open MTM — when it closes">
+        <div className="space-y-6">
+          {LANES.map((lane, i) => (
+            <div key={lane.botId}>
+              <h3 className="text-xs font-semibold text-dim uppercase tracking-wide mb-2">
+                {lane.label} · {horizons[i].totals.legs} open legs in {horizons[i].totals.groups} markets · mark{" "}
+                {horizons[i].totals.unrealized >= 0 ? "+" : "-"}${Math.abs(horizons[i].totals.unrealized).toFixed(2)}
+              </h3>
+              <OpenMtmHorizonCard summary={horizons[i]} label={lane.label} />
+            </div>
+          ))}
+        </div>
+      </Card>
+
       <Card>
         {trades.length === 0 ? (
           <Empty message="No paper trades yet. paper_copy decisions create them automatically." />
