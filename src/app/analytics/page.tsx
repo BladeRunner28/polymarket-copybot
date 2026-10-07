@@ -103,7 +103,7 @@ export default async function Analytics() {
     // (reasonsJson/risksJson) and EVERY ObservedTrade column (rawTradeJson) for
     // 11.2k rows — 22.4 MB of JS objects, ~490 ms of this page's ~1.0 s data
     // path. The rows below touch seven fields. Same rows, same order; measured
-    // 133 ms (3.7x) in _perf-variants.ts.
+    // 133 ms (3.7x) by perf-analytics-query-shape.ts.
     prisma.paperTrade.findMany({
       where: { status: { in: ["closed", "resolved"] }, realizedPnl: { not: null } },
       select: {
