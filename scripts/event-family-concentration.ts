@@ -27,27 +27,32 @@
  * figures that must be read TOGETHER ship on one line: the family share, the
  * denominator (open cost + legs) and the family count.
  *
+ * WALLET DIMENSION (tuning #48 rec 1, user-approved 2026-10-07 — measurement-only, no
+ * cap/sizing/threshold touched): the family line cannot tell eight independent city bets
+ * from one wallet's weather book, which is exactly the shape the 10-07 review found
+ * (highest-temperature-in = 64.6% of open cost, 12 legs, ONE wallet). Two extra lines now
+ * price that: the TOP family's wallet split, and the whole open book's wallet
+ * concentration. Both are pure helpers from src/lib/event-family.ts, ordered cost DESC then
+ * wallet ASC so a re-run at a fixed instant is byte-identical.
+ *
+ * AS-OF SNAPSHOT: this reads OPEN positions, so the population moves between runs (legs open
+ * and resolve). The line is the immovable record of the instant it printed; the satisfiable
+ * determinism test is two consecutive runs at a fixed instant, never equality with history.
+ *
  * Verify (7 d post-apply): `grep -c "by event family" logs/cron/copybot-eod.log`
  * >= 1, and the newest printed top-3 equals a re-run of this script (deterministic)
  * or of the printed SQL for the 30-char prefix, and the EOD still exits 0.
  */
 import { prisma } from "../src/lib/db";
+import { describeSplit, eventFamily, shortWallet, walletSplit } from "../src/lib/event-family";
 
-const SQL = `SELECT marketId, simulatedPositionSize AS cost
+const SQL = `SELECT marketId, walletAddress, simulatedPositionSize AS cost
 FROM PaperTrade
 WHERE botId = 'BANKROLL_200' AND isDemo = 0 AND status = 'open'`;
 
-/** ISO date first, else the first 3 dash tokens (see the rule in the header). */
-export function eventFamily(marketId: string): string {
-  const dated = /^(.*?-\d{4}-\d{2}-\d{2})(?:-|$)/.exec(marketId);
-  if (dated) return dated[1];
-  const toks = marketId.split("-");
-  return toks.length >= 3 ? toks.slice(0, 3).join("-") : marketId;
-}
-
 const money = (v: number) => `${v >= 0 ? "+" : "-"}$${Math.abs(v).toFixed(2)}`;
 
-type Row = { marketId: string; cost: number | null };
+type Row = { marketId: string; walletAddress: string | null; cost: number | null };
 
 async function main() {
   const rows = await prisma.$queryRawUnsafe<Row[]>(SQL);
@@ -55,14 +60,15 @@ async function main() {
     console.log("C-200 open concentration by event family: no open legs.");
     return;
   }
-  const byFamily = new Map<string, { legs: number; cost: number }>();
+  const byFamily = new Map<string, { legs: number; cost: number; members: Row[] }>();
   let total = 0;
   for (const r of rows) {
     const cost = Number(r.cost ?? 0);
     total += cost;
     const k = eventFamily(r.marketId);
-    const cur = byFamily.get(k) ?? { legs: 0, cost: 0 };
-    byFamily.set(k, { legs: cur.legs + 1, cost: cur.cost + cost });
+    const cur = byFamily.get(k) ?? { legs: 0, cost: 0, members: [] };
+    cur.members.push(r);
+    byFamily.set(k, { legs: cur.legs + 1, cost: cur.cost + cost, members: cur.members });
   }
   const ranked = [...byFamily.entries()].sort((a, b) => b[1].cost - a[1].cost);
   const top3 = ranked.slice(0, 3);
@@ -83,6 +89,29 @@ async function main() {
   console.log(
     "  family rule (pre-registered): slug cut at the ISO date when the slug carries one, " +
       "else the first 3 dash tokens — read the top-3 as a SHARE, not a leg count"
+  );
+  // WALLET DIMENSION (tuning #48 rec 1): a family can be eight independent city bets or one
+  // wallet's weather book. These two lines say which, on the same rows as the line above.
+  if (top3.length > 0) {
+    const [topName, topVal] = top3[0];
+    const split = walletSplit(topVal.members);
+    console.log(
+      `  top family wallet split (${topName}, ${topVal.legs} legs ${money(topVal.cost)}): ` +
+        describeSplit(split, topVal.cost) +
+        ` — wallets in family: ${split.length}` +
+        (split.length === 1 ? " (SINGLE-WALLET family)" : "")
+    );
+  }
+  const bookSplit = walletSplit(rows);
+  const bookTop3 = bookSplit.slice(0, 3).reduce((s, w) => s + w.cost, 0);
+  console.log(
+    `  open-book wallet concentration: ${describeSplit(bookSplit, total)}` +
+      ` — top-3 wallets = ${money(bookTop3)} = ` +
+      (total > 0 ? `${((100 * bookTop3) / total).toFixed(1)}%` : "n/a") +
+      ` of open cost | wallets in book: ${bookSplit.length}` +
+      (bookSplit[0] && bookSplit[0].legs > 1
+        ? ` | largest single wallet ${shortWallet(bookSplit[0].wallet)} ${bookSplit[0].legs} legs`
+        : "")
   );
   console.log("  reproduce: npx tsx scripts/event-family-concentration.ts");
   console.log(
