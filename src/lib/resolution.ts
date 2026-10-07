@@ -62,3 +62,21 @@ export function didOutcomeWin(tradeOutcome: string | null | undefined, input: Re
   }
   return null;
 }
+
+/**
+ * Settlement value of a trade's token: 1 (won), 0 (lost), or undefined when the
+ * outcome cannot be determined (callers MUST leave those positions unjudged —
+ * booking 0 on undeterminable data is the phantom-loss failure mode).
+ *
+ * This is the `hold-to-settlement` comparison of the band-exit counterfactual:
+ * the venue's winning label arrives in the venue's own casing ("No", "Under",
+ * "Team Liquid") while the stored outcome is uppercased at ingest ("NO",
+ * "UNDER"), so it goes through didOutcomeWin's normalised compare.
+ */
+export function settlementValue(
+  tradeOutcome: string | null | undefined,
+  input: ResolutionInput
+): 0 | 1 | undefined {
+  const won = didOutcomeWin(tradeOutcome, input);
+  return won === null ? undefined : won ? 1 : 0;
+}

@@ -36,6 +36,7 @@
  */
 
 import { prisma } from "../src/lib/db";
+import { settlementValue } from "../src/lib/resolution";
 import { getAdapter } from "../src/lib/adapters";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { log } from "../src/lib/redact";
@@ -144,14 +145,25 @@ async function main() {
         let v: number | undefined;
         try {
           const m = await adapter.fetchMarket(t.marketId);
-          if (m.resolved && m.winningOutcome) v = m.winningOutcome === t.outcome ? 1 : 0;
+          // settlementValue compares the venue's own label ("Under", "No") to the
+          // stored (uppercased) outcome through the normalised compare. The old
+          // raw `m.winningOutcome === t.outcome` never matched a label-cased
+          // market, so every settled one was valued 0 — a phantom loss (same
+          // class as outcome-casing-mismatch); undefined now means "leave it
+          // unpriced" instead of "lost".
+          if (m.resolved) {
+            v = settlementValue(t.outcome, {
+              winningLabel: m.winningLabel ?? m.winningOutcome,
+              yesPrice: m.yesPrice,
+            });
+          }
         } catch {
           /* fall through */
         }
         if (v === undefined) {
           try {
             const ev = await fetchEventResolution(t.marketId);
-            if (ev) v = ev === t.outcome ? 1 : 0;
+            if (ev) v = settlementValue(t.outcome, { winningLabel: ev });
           } catch {
             /* leave undefined */
           }
