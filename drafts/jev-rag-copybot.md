@@ -237,10 +237,47 @@ path). Board: http://localhost:3013/roadmap — 151 cards, 151 unique ids, all f
   assert "shipped" and "closed" at once. Re-runnable verifier: `python3
   scripts/verify-observe-and-deadslug-gates.py` (exits non-zero on any failing bar).
 
-**Still blocked, and what unblocks it**
-1. `JEV_SHADOW` needs an **openrouter key + the Decisions API endpoint** (the vendor was in
-   early access off a waitlist as of 2026‑09‑15), then `JEV_ENDPOINT`, then a first live call.
+**Still blocked, and what unblocks it** (updated the same evening — see §10)
+1. The KEY is the only credential left: `JEV_SHADOW=1` + `OPENROUTER_API_KEY` (the endpoint is now
+   a documented default — OpenRouter published the Decisions API route on 2026-10-06).
    Until then the lane collects states, which is not wasted work — they are replayable.
 2. **Measure latency from this box** before the call sits near a decision (the vendor's 70–500 ms
    is West-Coast-laptop sourced).
 3. Nothing here is promotion-eligible yet: the bar in §6 is unchanged and unread.
+
+## 10. Evening follow-up (2026‑10‑06) — the wire shape was wrong, and is now pinned
+
+Reading OpenRouter's published Decisions API reference against our own builder found a **real
+bug**, not a cosmetic one: the lane was POSTing `questions` as an **ARRAY** of
+`{key, kind: "probability"|"choice", question}` objects. The API takes an **OBJECT keyed by
+question name**, each member `{type: "noul"|"choice"|"score", instructions, criteria?}`. Every
+call would have returned 400 and every row would have stored an error with a null model arm — and
+because no key existed, nothing would have failed loudly. The shape had been written from a
+secondary source before the vendor documented it.
+
+**What changed (no live path touched; lane still default-off)**
+- `buildJevRequest()` is now the single wire-body builder: `noul` for `outcome_wins` / `beats_entry`
+  (with `true` + `false` criteria), `choice` for `action` with `copy` / `watch` / `skip` criteria
+  (`criteria` is **required** on the wire for `choice`).
+- The parser reads the documented answer keys first (`{type:"noul", noul:0.96}`,
+  `{type:"choice", choice, probabilities, confidence}`) and keeps the old spellings only as
+  tolerance for replaying rows written before provisioning.
+- The response's own `usage` block is now stored per leg (`jevCostUsd`, `jevInputTokens`), so the
+  lane's price is **measured** rather than assumed — it is a cost-benefit lane.
+- `jevCallConfig` defaults the endpoint to the documented route; `JEV_SHADOW=1` + a key stay
+  mandatory, so nothing can call out by itself.
+- `--dry-run` now prints the **wire body**, not the internal spec.
+
+**Verification (without a key)**
+- `scripts/verify-jev-wire-contract.py` validates the body the lane actually builds against the
+  vendor's own OpenAPI `DecisionsRequest` schema — with a **control** (the vendor's own example
+  must also validate, so a broken validator cannot bless us) and a **negative control** proving the
+  old array payload is schema‑INVALID while the new one is VALID.
+- `tests/shadow-jev.test.ts` **23 tests** (was 20) pin the request and response shapes; suite
+  **369/369**; `npx tsc --noEmit` clean.
+- The instrument had **no schedule**, so it could never accumulate a sample. Hourly no‑agent cron
+  `copybot-shadow-jev-mark` (:35) now collects states + marks resolutions, writing zero model‑arm
+  rows while the lane is off.
+
+**Still the only blocker:** `OPENROUTER_API_KEY` in `.env` (plus `JEV_SHADOW=1`), then a latency
+measurement from this box. The bar in §6 is unchanged and unread.

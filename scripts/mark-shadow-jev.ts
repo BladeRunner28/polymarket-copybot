@@ -36,6 +36,7 @@ import {
   appendJevRows,
   buildCandidateRow,
   buildJevQuestions,
+  buildJevRequest,
   buildJevState,
   jevCallConfig,
   readJevRows,
@@ -120,7 +121,7 @@ async function callJev(
 ): Promise<{ decision: JevDecision | null; latencyMs: number; error: string | null; raw: unknown }> {
   const url = cfg.endpoint as string;
   const key = process.env.OPENROUTER_API_KEY ?? process.env.JEV_API_KEY ?? "";
-  const body = { model: cfg.model, state: buildJevState(leg), questions: buildJevQuestions(leg) };
+  const body = buildJevRequest(leg, cfg.model);
   const t0 = Date.now();
   try {
     const ctl = new AbortController();
@@ -173,7 +174,9 @@ async function main() {
       return;
     }
     log(`shadow-jev --dry-run state (wrote nothing): ${JSON.stringify(buildJevState(sample))}`);
-    log(`shadow-jev --dry-run questions: ${JSON.stringify(buildJevQuestions(sample))}`);
+    // Print the WIRE body, not the internal spec: the thing worth previewing is exactly what
+    // would be posted to the Decisions API (questions as an object keyed by name).
+    log(`shadow-jev --dry-run request: ${JSON.stringify(buildJevRequest(sample, cfg.model))}`);
     return;
   }
 

@@ -21,11 +21,24 @@
  * it reasons over has to be assembled for it: that is the RAG slot (Option A), and this
  * file is the instrument that will price whether the assembly is worth anything.
  *
- * DEFAULT OFF: `JEV_SHADOW=1` plus `JEV_ENDPOINT` (and the provider key) are required
- * before a single call is made. There is no default endpoint — the Decisions API route is
- * a separate alpha endpoint from OpenRouter's chat route and could NOT be verified from
- * here, so it must be set explicitly at provisioning rather than guessed in code. Until
- * then the marker collects states only (they are free and they are the real population).
+ * DEFAULT OFF: JEV_SHADOW=1 plus a provider key (OPENROUTER_API_KEY / JEV_API_KEY) are required
+ * before a single call is made. The ENDPOINT is no longer a guess: the Decisions API route was
+ * unverified when this lane was built, and on 2026-10-06 OpenRouter published it in its own API
+ * reference (POST /api/alpha/decisions), so it is now a documented default rather than something
+ * invented in code — JEV_ENDPOINT survives as an override (proxy, mock, a different route).
+ * Until the key exists the marker collects states only (they are free and they are the real
+ * population).
+ *
+ * WIRE CONTRACT (verified 2026-10-06 against OpenRouter's `POST /api/alpha/decisions` reference,
+ * schemas DecisionsRequest / DecisionsNoulQuestion / DecisionsChoiceQuestion / DecisionsNoulAnswer
+ * / DecisionsChoiceAnswer). Request: { model, state: string|object|array, questions: an OBJECT
+ * keyed by question name } where each question is { type: "noul", instructions } (criteria
+ * optional) or { type: "choice", instructions, criteria: { option: criterion, ... } } (criteria
+ * REQUIRED). Response: { model, answers: { name: { type: "noul", noul: 0.96 } |
+ * { type: "choice", choice: "copy", probabilities?, confidence? } }, usage: { input_tokens,
+ * output_tokens, cost? } }. The first cut of this file emitted `questions` as an ARRAY with
+ * `kind`/`question` field names and read only `.probability` — that payload would have 400'd
+ * every call and parsed as null. buildJevRequest() is the single place that shape is produced.
  */
 
 import * as fs from "fs";
@@ -36,6 +49,15 @@ export const JEV_SHADOW_SUMMARY_FILE = join(__dirname, "..", "..", "data", "jev-
 
 /** Pinned model id; override only to A/B a new revision, and keep the id on every row. */
 export const JEV_MODEL_DEFAULT = "typesafe/jev-1.13";
+
+/**
+ * The Decisions API route, VERIFIED 2026-10-06 against OpenRouter's public API reference
+ * (`POST /api/alpha/decisions`, model `typesafe/jev-1.13` or the `~typesafe/jev-latest` alias;
+ * the System One mirror for the official TypeSafe SDKs is `POST /api/v1/systemone`). Pricing
+ * $0.042 / 1M input tokens, output free, 32k context. No waitlist and no separate TypeSafe
+ * account as of that date — an ordinary OpenRouter key is the only credential.
+ */
+export const JEV_ENDPOINT_DEFAULT = "https://openrouter.ai/api/alpha/decisions";
 
 /** Minimum resolved legs before the bar is even readable. */
 export const JEV_MIN_RESOLVED_LEGS = 50;
@@ -57,14 +79,36 @@ export const JEV_PREREGISTRATION =
   "net-of-fee counterfactual PnL/leg at the gate beats copy-all AND beats copyScore. " +
   "No promotion of any kind before all four hold.";
 
-export type JevQuestionKind = "probability" | "choice";
+/**
+ * The three Jev primitives are noul (yes/no probability), choice (one of N) and score (an
+ * ordered scale). This lane only uses the first two: a score needs a legend whose levels we
+ * cannot calibrate yet, and calibration is the entire reason the lane exists.
+ */
+export type JevQuestionKind = "noul" | "choice";
 
 export interface JevQuestion {
   key: string;
   kind: JevQuestionKind;
-  question: string;
-  /** For kind=choice. Reserved for the discrete action question. */
-  options?: string[];
+  /** Goes on the wire as `instructions` — same word, so there is no rename to get wrong. */
+  instructions: string;
+  /** kind=choice: option → that option's own criterion. REQUIRED on the wire for choice. */
+  criteria?: Record<string, string>;
+  /** kind=noul: what true and false mean here; the wire schema requires BOTH keys if sent. */
+  noulCriteria?: { true: string; false: string };
+}
+
+/** The wire question object, exactly as the Decisions API reference defines it. */
+export interface JevWireQuestion {
+  type: JevQuestionKind;
+  instructions: string;
+  criteria?: Record<string, string>;
+}
+
+export interface JevRequest {
+  model: string;
+  state: Record<string, unknown>;
+  /** An OBJECT keyed by question name — never an array. */
+  questions: Record<string, JevWireQuestion>;
 }
 
 export interface JevLeg {
@@ -137,24 +181,52 @@ export function buildJevQuestions(leg: JevLeg): JevQuestion[] {
   return [
     {
       key: "outcome_wins",
-      kind: "probability",
-      question:
+      kind: "noul",
+      instructions:
         `Does the token "${outcome}" resolve as the winning outcome of this market? ` +
-        "Return the probability that it does, at the given hours_to_resolution.",
+        "Answer yes if it does, no if it does not, at the given hours_to_resolution.",
+      noulCriteria: {
+        true: `"${outcome}" is the outcome the market resolves to.`,
+        false: `"${outcome}" is not the outcome the market resolves to, or the market voids.`,
+      },
     },
     {
       key: "beats_entry",
-      kind: "probability",
-      question:
-        `Will buying "${outcome}" at implied_probability ${leg.entryPrice} be profitable after fees?`,
+      kind: "noul",
+      instructions:
+        `Buying "${outcome}" at implied_probability ${leg.entryPrice} pays out 1 if it wins and ` +
+        "0 if it loses. Is that purchase profitable after fees?",
+      noulCriteria: {
+        true: `The win probability is high enough that buying at ${leg.entryPrice} is +EV after fees.`,
+        false: `The win probability is too low for buying at ${leg.entryPrice} to clear fees.`,
+      },
     },
     {
       key: "action",
       kind: "choice",
-      question: "Should this leg be copied, watched, or skipped?",
-      options: ["copy", "watch", "skip"],
+      instructions: "Should this leg be copied, watched, or skipped?",
+      criteria: {
+        copy: "The evidence supports opening this position now.",
+        watch: "The evidence is mixed; it does not support opening now and does not forbid it.",
+        skip: "The evidence argues against opening this position.",
+      },
     },
   ];
+}
+
+/**
+ * THE wire body. One place, built only from the documented Decisions API shape — this is what
+ * callJev posts. Anything that needs to change about the questions (a wording, a new primitive)
+ * changes here and nowhere else, and tests/shadow-jev.test.ts asserts the response contract
+ * against the vendor's own example payload.
+ */
+export function buildJevRequest(leg: JevLeg, model: string = JEV_MODEL_DEFAULT): JevRequest {
+  const questions: Record<string, JevWireQuestion> = {};
+  for (const q of buildJevQuestions(leg)) {
+    const criteria = q.kind === "noul" ? q.noulCriteria : q.criteria;
+    questions[q.key] = { type: q.kind, instructions: q.instructions, ...(criteria ? { criteria } : {}) };
+  }
+  return { model, state: buildJevState(leg), questions };
 }
 
 export interface JevDecision {
@@ -165,6 +237,15 @@ export interface JevDecision {
   /** Model-stated confidence, 0..1, when present. */
   confidence: number | null;
   action: string | null;
+  /** The response's own usage block, stored so the lane's cost is measured, not assumed. */
+  usage?: JevUsage | null;
+}
+
+/** Token counts and the billed cost from the Decisions response (`usage`). */
+export interface JevUsage {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  costUsd: number | null;
 }
 
 function num(v: unknown): number | null {
@@ -181,19 +262,30 @@ function clamp01(n: number | null): number | null {
 }
 
 /**
- * Parse a Decisions-API response defensively. The vendor's type-safety guarantee covers
- * ITS schema, not our mapper — so a payload we do not recognise returns null and the raw
- * body is stored on the row instead of an invented number. The response shape could not be
- * verified before provisioning (no key), hence the tolerance for the plausible nestings.
+ * Parse a Decisions-API response defensively. The vendor's type-safety guarantee covers ITS
+ * schema, not our mapper — so a payload we do not recognise returns null and the raw body is
+ * stored on the row instead of an invented number.
+ *
+ * The documented shapes are read FIRST: noul answers carry `{ type: "noul", noul: 0.96 }` and
+ * choice answers `{ type: "choice", choice: "copy", probabilities?, confidence? }`. The older
+ * `.probability` / bare-string / array forms stay supported because rows written before
+ * provisioning may be replayed, and tolerance costs nothing — an unrecognised value is still
+ * null, never a guess.
  */
 export function parseJevDecision(payload: unknown): JevDecision {
-  const empty: JevDecision = { probability: null, beatsEntryProbability: null, confidence: null, action: null };
-  if (!payload || typeof payload !== "object") return empty;
+  const empty: JevDecision = {
+    probability: null,
+    beatsEntryProbability: null,
+    confidence: null,
+    action: null,
+    usage: null,
+  };
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return empty;
   const root = payload as Record<string, unknown>;
 
-  // find the answer container: {answers|probabilities|result|output|decision: {...}} or root
-  let answers: Record<string, unknown> = {};
-  for (const k of ["answers", "probabilities", "result", "output", "decision", "questions"]) {
+  // The documented container is `answers`; the rest is tolerance for a wrapper change.
+  let answers: Record<string, unknown> = root;
+  for (const k of ["answers", "decisions", "result", "output", "decision"]) {
     const v = root[k];
     if (v && typeof v === "object" && !Array.isArray(v)) {
       answers = v as Record<string, unknown>;
@@ -203,56 +295,81 @@ export function parseJevDecision(payload: unknown): JevDecision {
   const pick = (key: string): unknown => {
     const direct = answers[key] ?? root[key];
     if (direct !== undefined) return direct;
-    // array form: [{key, probability|value|answer}]
+    // array form: [{key, noul|probability|value|answer}]
     const arr = (answers.questions ?? root.answers) as unknown;
     if (Array.isArray(arr)) {
       for (const item of arr) {
         if (item && typeof item === "object") {
           const o = item as Record<string, unknown>;
-          if (o.key === key || o.name === key || o.id === key) return o.probability ?? o.value ?? o.answer;
+          if (o.key === key || o.name === key || o.id === key)
+            return o.noul ?? o.probability ?? o.value ?? o.answer;
         }
       }
     }
     return undefined;
   };
+  /** The answer object for a key, or null when the key is absent. */
+  const answerOf = (key: string): Record<string, unknown> | null => {
+    const raw = pick(key);
+    return raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
+  };
 
+  // noul: documented key first, then the older spellings, then a bare number.
   const readProb = (key: string): number | null => {
     const raw = pick(key);
     if (raw === null || raw === undefined) return null;
     if (raw && typeof raw === "object") {
       const o = raw as Record<string, unknown>;
-      return clamp01(num(o.probability ?? o.p ?? o.value ?? o.score));
+      return clamp01(num(o.noul ?? o.probability ?? o.p ?? o.value ?? o.score));
     }
     return clamp01(num(raw));
   };
 
-  const actionRaw = pick("action");
-  const action =
-    typeof actionRaw === "string"
-      ? actionRaw
-      : actionRaw && typeof actionRaw === "object"
-        ? ((actionRaw as Record<string, unknown>).choice ??
-            (actionRaw as Record<string, unknown>).value ??
-            (actionRaw as Record<string, unknown>).label ??
-            null) as string | null
-        : null;
+  // choice: documented key first, then the older spellings.
+  const readChoice = (key: string): string | null => {
+    const raw = pick(key);
+    if (typeof raw === "string") return raw;
+    if (raw && typeof raw === "object") {
+      const o = raw as Record<string, unknown>;
+      const c = o.choice ?? o.value ?? o.label ?? o.answer;
+      return typeof c === "string" ? c : null;
+    }
+    return null;
+  };
 
-  const confRaw = root.confidence ?? answers.confidence ?? pick("confidence");
+  // Confidence is per-answer in the documented shape (choice carries it; noul does not).
+  const confRaw = answerOf("action")?.confidence ?? answerOf("outcome_wins")?.confidence ?? root.confidence;
   const confidence = clamp01(
     confRaw && typeof confRaw === "object"
       ? num((confRaw as Record<string, unknown>).confidence ?? (confRaw as Record<string, unknown>).value)
       : num(confRaw)
   );
 
+  // usage: { input_tokens, output_tokens, cost? } — the lane's real cost per call.
+  const u = root.usage && typeof root.usage === "object" ? (root.usage as Record<string, unknown>) : null;
+  const usage = u
+    ? {
+        inputTokens: num(u.input_tokens ?? u.inputTokens),
+        outputTokens: num(u.output_tokens ?? u.outputTokens),
+        costUsd: num(u.cost ?? u.costUsd),
+      }
+    : null;
+
   return {
     probability: readProb("outcome_wins"),
     beatsEntryProbability: readProb("beats_entry"),
     confidence,
-    action: action === null ? null : String(action),
+    action: readChoice("action"),
+    usage,
   };
 }
 
-/** Is the lane allowed to make outbound calls? Default off, no default endpoint. */
+/**
+ * Is the lane allowed to make outbound calls? Default OFF. The endpoint now falls back to the
+ * route OpenRouter documents (JEV_ENDPOINT_DEFAULT) instead of refusing, because that route is
+ * verified rather than guessed; JEV_ENDPOINT only needs setting to point somewhere else. The
+ * flag and the key are still both required, so nothing here can call out on its own.
+ */
 export function jevCallConfig(env: Record<string, string | undefined> = process.env): {
   canCall: boolean;
   reason: string;
@@ -260,9 +377,8 @@ export function jevCallConfig(env: Record<string, string | undefined> = process.
   model: string;
 } {
   const model = env.JEV_MODEL ?? JEV_MODEL_DEFAULT;
-  const endpoint = env.JEV_ENDPOINT ?? null;
+  const endpoint = env.JEV_ENDPOINT ?? JEV_ENDPOINT_DEFAULT;
   if (env.JEV_SHADOW !== "1") return { canCall: false, reason: "JEV_SHADOW is not 1 (default off)", endpoint, model };
-  if (!endpoint) return { canCall: false, reason: "JEV_ENDPOINT unset (no default: the Decisions API route is unverified)", endpoint, model };
   const key = env.OPENROUTER_API_KEY ?? env.JEV_API_KEY;
   if (!key) return { canCall: false, reason: "no OPENROUTER_API_KEY/JEV_API_KEY", endpoint, model };
   return { canCall: true, reason: "enabled", endpoint, model };
@@ -311,6 +427,8 @@ export function buildCandidateRow(
     jevAction: decision?.action ?? null,
     jevLatencyMs: meta.latencyMs,
     jevError: meta.error ?? null,
+    jevCostUsd: decision?.usage?.costUsd ?? null,
+    jevInputTokens: decision?.usage?.inputTokens ?? null,
     jevRaw: meta.raw === undefined ? null : meta.raw,
     state: buildJevState(leg),
   };

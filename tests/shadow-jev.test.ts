@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
+  JEV_ENDPOINT_DEFAULT,
   JEV_MIN_RESOLVED_LEGS,
   JEV_PREREGISTRATION,
   auc,
   brier,
   buildCandidateRow,
   buildJevQuestions,
+  buildJevRequest,
   buildJevState,
   jevCallConfig,
   logLoss,
@@ -69,11 +71,80 @@ describe("state + questions", () => {
   it("asks small binary questions (cardinality stays far below the documented 255 ceiling)", () => {
     const qs = buildJevQuestions(leg);
     expect(qs.map((q) => q.key)).toEqual(["outcome_wins", "beats_entry", "action"]);
-    expect(qs[0].kind).toBe("probability");
-    expect(qs[0].question).toContain("YES");
-    expect(qs[1].question).toContain("0.62");
-    expect(qs[2].options).toEqual(["copy", "watch", "skip"]);
+    expect(qs[0].kind).toBe("noul");
+    expect(qs[0].instructions).toContain("YES");
+    expect(qs[1].instructions).toContain("0.62");
+    expect(Object.keys(qs[2].criteria ?? {})).toEqual(["copy", "watch", "skip"]);
     expect(qs.length).toBeLessThanOrEqual(255);
+  });
+});
+
+/**
+ * The wire contract, asserted against the schema OpenRouter publishes for
+ * `POST /api/alpha/decisions` (verified 2026-10-06). The first cut of this lane sent
+ * `questions` as an array with `kind`/`question` fields and read only `.probability`, which
+ * would have 400'd every call and stored a null model arm forever. These tests exist so that
+ * cannot come back: the request shape and the response shape are both pinned here.
+ */
+describe("documented Decisions API contract", () => {
+  it("sends questions as an OBJECT keyed by name, never the old array of kind/question", () => {
+    const body = buildJevRequest(leg);
+    expect(Array.isArray(body.questions)).toBe(false);
+    expect(Object.keys(body.questions).sort()).toEqual(["action", "beats_entry", "outcome_wins"]);
+    expect(body.model).toBe("typesafe/jev-1.13");
+    expect(typeof body.state).toBe("object");
+
+    for (const [key, q] of Object.entries(body.questions)) {
+      // required by DecisionsNoulQuestion/DecisionsChoiceQuestion
+      expect(["noul", "choice"]).toContain(q.type);
+      expect(typeof q.instructions).toBe("string");
+      expect(q.instructions.length).toBeGreaterThan(0);
+      // the old, wrong field names must not survive anywhere in the payload
+      expect(q).not.toHaveProperty("kind");
+      expect(q).not.toHaveProperty("question");
+      expect(q).not.toHaveProperty("options");
+      expect(key.length).toBeGreaterThan(0);
+    }
+
+    // noul criteria, when sent, must carry BOTH true and false
+    const noul = body.questions.outcome_wins;
+    expect(Object.keys(noul.criteria ?? {}).sort()).toEqual(["false", "true"]);
+    // choice criteria is REQUIRED by the schema and maps option → criterion
+    expect(Object.keys(body.questions.action.criteria ?? {})).toEqual(["copy", "watch", "skip"]);
+    expect(JSON.parse(JSON.stringify(body))).toEqual(body);
+  });
+
+  it("reads the documented response: noul, choice, per-answer confidence and usage", () => {
+    const payload = {
+      id: "gen-dec-1789738314-X5e5eKGQdvR9rblyX250",
+      model: "typesafe/jev-1.13-20260917",
+      provider: "TypeSafe",
+      answers: {
+        outcome_wins: { type: "noul", noul: 0.96 },
+        beats_entry: { type: "noul", noul: 0.31 },
+        action: { type: "choice", choice: "copy", confidence: 0.75, probabilities: { copy: 0.84, skip: 0.16 } },
+      },
+      usage: { input_tokens: 476, output_tokens: 70, cost: 0.000019992 },
+    };
+    const d = parseJevDecision(payload);
+    expect(d.probability).toBe(0.96);
+    expect(d.beatsEntryProbability).toBe(0.31);
+    expect(d.action).toBe("copy");
+    expect(d.confidence).toBe(0.75);
+    expect(d.usage).toEqual({ inputTokens: 476, outputTokens: 70, costUsd: 0.000019992 });
+  });
+
+  it("carries the model's own cost onto the row, and null when the call never happened", () => {
+    const d = parseJevDecision({
+      answers: { outcome_wins: { type: "noul", noul: 0.5 } },
+      usage: { input_tokens: 300, output_tokens: 20, cost: 0.0000126 },
+    });
+    const withModel = buildCandidateRow(leg, d, { model: "typesafe/jev-1.13", latencyMs: 210 });
+    expect(withModel.jevCostUsd).toBe(0.0000126);
+    expect(withModel.jevInputTokens).toBe(300);
+    const statesOnly = buildCandidateRow(leg, null, { model: "typesafe/jev-1.13", latencyMs: null });
+    expect(statesOnly.jevCostUsd).toBeNull();
+    expect(statesOnly.jevInputTokens).toBeNull();
   });
 });
 
@@ -111,21 +182,26 @@ describe("parseJevDecision — an unrecognised payload must never become a numbe
   });
 });
 
-describe("jevCallConfig — default off, and no invented endpoint", () => {
-  it("is off by default", () => {
+describe("jevCallConfig — default off, and the endpoint is the one the vendor documents", () => {
+  it("is off by default, and points at the documented route without being asked", () => {
     const c = jevCallConfig({});
     expect(c.canCall).toBe(false);
     expect(c.reason).toContain("default off");
-    expect(c.endpoint).toBeNull();
+    // The route is verified (OpenRouter API reference), so it is a default rather than a gap.
+    expect(c.endpoint).toBe(JEV_ENDPOINT_DEFAULT);
+    expect(JEV_ENDPOINT_DEFAULT).toBe("https://openrouter.ai/api/alpha/decisions");
   });
 
-  it("refuses without an endpoint even when the flag is on (the route is unverified, not guessed)", () => {
+  it("still refuses to call without a key, even with the flag on", () => {
     const c = jevCallConfig({ JEV_SHADOW: "1" });
     expect(c.canCall).toBe(false);
-    expect(c.reason).toContain("JEV_ENDPOINT unset");
+    expect(c.reason).toContain("OPENROUTER_API_KEY");
+    // JEV_SHADOW alone can never produce a call, key or no key: the flag is the master switch.
+    expect(jevCallConfig({ JEV_SHADOW: "1", OPENROUTER_API_KEY: "k" }).canCall).toBe(true);
+    expect(jevCallConfig({ OPENROUTER_API_KEY: "k" }).canCall).toBe(false);
   });
 
-  it("refuses without a key, and enables only with flag + endpoint + key", () => {
+  it("lets JEV_ENDPOINT override (proxy, mock, a different route) and keeps the model id", () => {
     expect(jevCallConfig({ JEV_SHADOW: "1", JEV_ENDPOINT: "https://example.invalid/d" }).canCall).toBe(false);
     const c = jevCallConfig({
       JEV_SHADOW: "1",
@@ -134,6 +210,7 @@ describe("jevCallConfig — default off, and no invented endpoint", () => {
       JEV_MODEL: "typesafe/jev-1.13",
     });
     expect(c.canCall).toBe(true);
+    expect(c.endpoint).toBe("https://example.invalid/d");
     expect(c.model).toBe("typesafe/jev-1.13");
   });
 });
