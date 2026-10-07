@@ -1,35 +1,31 @@
 {
-  "generatedAt": "2026-10-06T02:35:28.956Z",
-  "candidates": 23824,
-  "marked": 4768,
-  "awaitingResolution": 19056,
-  "wins": 3046,
-  "winRate": 0.6388422818791947,
-  "wouldHavePnl": 37406.88,
-  "avgPnlPerTrade": 7.85,
-  "avgPnlPerTradeExDust": 0.43,
-  "dustExcluded": 683,
+  "generatedAt": "2026-10-07T02:35:43.191Z",
+  "candidates": 24670,
+  "marked": 4932,
+  "awaitingResolution": 19738,
+  "wins": 3171,
+  "winRate": 0.6429440389294404,
+  "wouldHavePnl": 37183,
+  "avgPnlPerTrade": 7.54,
+  "avgPnlPerTradeExDust": 0.39,
+  "dustExcluded": 695,
   "dustMinEntryPrice": 0.1,
   "avgPnlPerTradeExDustLast7dCohort": 12.76,
   "cohort7dMarked": 55,
-  "totalMarked": 4768,
+  "totalMarked": 4932,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-10-06T01:58:33.596Z",
+  "lastCandidateAt": "2026-10-07T02:10:34.069Z",
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
-    "consecutiveDaysAtOrBelow": 1,
+    "consecutiveDaysAtOrBelow": 2,
     "cohort7d": 12.76,
     "cohort7dMarked": 55,
     "cohortAtOrBelow": false,
     "tripped": false,
-    "seriesDays": 17,
+    "seriesDays": 18,
     "recent": [
-      {
-        "day": "2026-09-30",
-        "avgPnlPerTradeExDust": -0.01
-      },
       {
         "day": "2026-10-01",
         "avgPnlPerTradeExDust": 0.06
@@ -52,7 +48,11 @@
       },
       {
         "day": "2026-10-06",
-        "avgPnlPerTradeExDust": 0.43
+        "avgPnlPerTradeExDust": 0.39
+      },
+      {
+        "day": "2026-10-07",
+        "avgPnlPerTradeExDust": 0.39
       }
     ],
     "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
