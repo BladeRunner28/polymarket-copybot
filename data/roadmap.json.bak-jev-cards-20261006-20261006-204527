@@ -2193,22 +2193,6 @@
     "process",
     "approved-20261006"
    ]
-  },
-  {
-   "id": "jev-resolution-lag-alert",
-   "title": "Resolution-lag alert lane (Option D) — rule text vs published facts, ALERT-ONLY, no wallet path",
-   "column": "Backlog",
-   "effort": "M — rule-text retrieval + a scorer, alerts only",
-   "dates": "Option D approved 2026-10-06 (drafts/jev-rag-copybot.md) · not started",
-   "gate": "VERIFY: (1) the diff contains NO execution path — `grep -rn \"execute\\|/execute\\|paperTrade\\|FillIntent\" src/lib/jev-resolution*` must be empty, and the lane ships with no wallet, no signing code and no order call; (2) after >=2 weeks, report alert PRECISION measured against how the flagged markets actually resolved (never a count of alerts), on >=50 flagged markets or explicitly say it is unreadable at that n; (3) every alert must cite the resolution clause it relies on and the dated fact it matched. If precision is at or below the base rate of its category, the lane is retired and the retirement is recorded on this card.",
-   "note": "WHY: the `polymarket-jev` pattern — a market whose written resolution criteria are already satisfied by a published fact while the price hasn't moved. Our own resolution surface makes this unusually tractable: OutcomeReview/winningOutcome handling, didOutcomeWin()'s true/false/null contract, and the archived CLOB /markets/<conditionId> -> tokens[].winner route are all already in place, and the label vocabulary problem (non-YES/NO tokens like 'Vitality'/'Under') is solved. THE CAVEAT THAT DECIDES THIS CARD: the same public scanner reported that in its own run the apparent edge was mostly the gap between a category base rate and the market's price, and that Jev's probabilities came back less than half as spread out as the order book — so an alert built on model deviation alone is measuring base rates. That is why the gate measures PRECISION against actual resolutions and gives the lane no execution path: it alerts, a human decides. Do not wire it to a copy lane on the strength of an alert count.",
-   "tags": [
-    "jev",
-    "rag",
-    "resolution",
-    "alert-only",
-    "approved-20261006"
-   ]
   }
  ]
 }
