@@ -46,3 +46,8 @@ data/archive-analysis/*.parquet
 de421.bsp
 *.bsp
 *.tsbuildinfo
+
+# kanban worker worktrees — the gateway dispatcher spawns one per repo-editing card
+# (`.worktrees/<card-id>`). Without this rule the nightly `git add -A` backup stages
+# every worker's tree into main; branches are the review surface, not the worktree dirs.
+.worktrees/

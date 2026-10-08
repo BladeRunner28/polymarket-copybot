@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-07T03:16:29.306Z",
+  "asOf": "2026-10-08T03:16:24.579Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,17 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1076,
-    "inWindow": 681,
+    "copiesSeen": 1099,
+    "inWindow": 704,
     "withKalshiQuote": 2,
     "crossListRate": 0.003,
     "staleSkips": 395,
-    "quoteFailures": 607,
-    "unverifiedMatches": 72,
+    "quoteFailures": 628,
+    "unverifiedMatches": 74,
     "rejectionReasons": {
-      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 1,
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 68,
+      "low_match_score_0.67": 70,
       "low_match_score_0.60": 3
     }
   },
@@ -56,26 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will France win on 2026-09-28?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.485,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Will Sweden win on 2026-09-28?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.475,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Will CD Tenerife win on 2026-09-26?",
       "ticker": "KXANYDEMWINTEXAS-26NOV03",
@@ -453,6 +432,26 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.725,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Sporting CP win on 2026-10-09?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.435,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Arsenal FC win on 2026-10-10?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.275,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
