@@ -1,35 +1,31 @@
 {
-  "generatedAt": "2026-10-08T02:36:32.570Z",
-  "candidates": 25161,
-  "marked": 4933,
-  "awaitingResolution": 20228,
-  "wins": 3172,
-  "winRate": 0.6430164200283803,
-  "wouldHavePnl": 37183.06,
-  "avgPnlPerTrade": 7.54,
-  "avgPnlPerTradeExDust": 0.39,
+  "generatedAt": "2026-10-09T02:36:44.702Z",
+  "candidates": 25885,
+  "marked": 4938,
+  "awaitingResolution": 20947,
+  "wins": 3174,
+  "winRate": 0.6427703523693803,
+  "wouldHavePnl": 37175.48,
+  "avgPnlPerTrade": 7.53,
+  "avgPnlPerTradeExDust": 0.38,
   "dustExcluded": 695,
   "dustMinEntryPrice": 0.1,
-  "avgPnlPerTradeExDustLast7dCohort": 12.76,
-  "cohort7dMarked": 55,
-  "totalMarked": 4933,
+  "avgPnlPerTradeExDustLast7dCohort": 13.32,
+  "cohort7dMarked": 44,
+  "totalMarked": 4938,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-10-08T02:00:35.106Z",
+  "lastCandidateAt": "2026-10-09T02:34:42.028Z",
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
-    "consecutiveDaysAtOrBelow": 3,
-    "cohort7d": 12.76,
-    "cohort7dMarked": 55,
+    "consecutiveDaysAtOrBelow": 4,
+    "cohort7d": 13.32,
+    "cohort7dMarked": 44,
     "cohortAtOrBelow": false,
     "tripped": false,
-    "seriesDays": 19,
+    "seriesDays": 20,
     "recent": [
-      {
-        "day": "2026-10-02",
-        "avgPnlPerTradeExDust": 0.01
-      },
       {
         "day": "2026-10-03",
         "avgPnlPerTradeExDust": 0.01
@@ -52,7 +48,11 @@
       },
       {
         "day": "2026-10-08",
-        "avgPnlPerTradeExDust": 0.39
+        "avgPnlPerTradeExDust": 0.38
+      },
+      {
+        "day": "2026-10-09",
+        "avgPnlPerTradeExDust": 0.38
       }
     ],
     "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
