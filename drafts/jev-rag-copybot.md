@@ -347,3 +347,58 @@ now runs the **local** arm, so the lane keeps topping itself up at $0. Re‑read
 n = 2,551: PRICE AUC 0.439 / Brier 0.3112, JEV AUC 0.443 / Brier 0.3043, copyScore 0.544, gate kept
 1,032 legs net/leg −0.4737 vs copy‑all −0.1803, `beatsPriceOnly: false`. Every figure moved in the
 third decimal — the verdict is not an artifact of the sample it was read on.
+
+## 12. The blind arm — price withheld — 2026‑10‑10 (n = 3,158, and the answer is NO)
+
+The leading arm's failure had a structural shape: the state handed the model `implied_probability`
+(plus the detection mid, the wallet fill and the derived drift) and then asked it to re‑derive that
+same price. So the approved next test was a **different question, not a different model**: replay the
+same stored states with every price field *removed* (`blindState`), ask ONE question — does this token
+resolve as the winner — and use the price only afterwards, for scoring. The replay is
+`scripts/jev-blind-replay.ts`: no DB, no collection, its own output file, resumable.
+**3,985 calls, 0 failures, median 418 ms/call, $0.**
+
+**Key insight: with the price withheld, the model has no belief at all.** **87.4%** of its answers are
+*exactly* 0.5 and it emits only **6 distinct values** in the whole corpus (0.5 / 0.51 / 0.52 and a
+handful of others), at confidence 0.1. The price was the only thing it was reading. Its spread is
+**0.26×** the book's (stdev 0.0532 vs 0.2031) against the gate's 0.7–1.3× requirement — i.e. the arm
+is degenerate, and every apparent metric it produces is an artifact of that degeneracy.
+
+**The numbers (same 3,158 resolved legs, 389 market clusters, base rate label=1 33.5%):**
+
+- PRICE arm — AUC **0.5074**, Brier **0.2947**, logLoss 0.8226
+- LEADING arm — AUC **0.5197**, Brier **0.2849**, logLoss 0.7995, **81.0% exact price echoes**
+- BLIND arm — AUC **0.5330**, Brier **0.2579**, logLoss 0.9083, **87.4% answers at exactly 0.5**
+- copyScore on the same rows — AUC **0.6382** (still the best ranker of the four)
+- **Clustered** bootstrap (markets resampled, 2,000 reps) on the deltas vs price:
+  - leading: ΔAUC **+0.0132** CI **[−0.0231, +0.0537]** → straddles 0; ΔBrier −0.0099 CI [−0.0244, +0.0023] → straddles 0
+  - blind: ΔAUC **+0.0354** CI **[−0.1403, +0.2132]** → straddles 0; ΔBrier −0.0404 CI [−0.1026, +0.0219] → straddles 0
+- Gate @0.55, net of the taker fee (copy‑all −0.2834/leg): leading kept 1,124 legs at **−0.4610** →
+  does **not** beat copy‑all; blind kept **3 legs** (it almost never answers ≥0.55) — a "win" on n=3,
+  which is below the pre‑registered minimum and is not a result.
+
+**Why a constant 0.5 can look good on Brier and still be worthless.** The blind arm's Brier (0.2579)
+beats the price's (0.2947) — that is what a near‑constant predictor does when the price is
+miscalibrated on this population, and it carries **no rank information**: its AUC is decided by the
+~12% of legs where it deviates at all, and the cluster interval on that delta is
+[−0.14, +0.21]. This is exactly why the pre‑registered bar demands Brier *and* AUC *and* a net
+counterfactual *and* a copyScore comparison on the SAME rows: any single one of those four can be won
+by an arm that cannot rank, and three of the four can be won by one that only echoes.
+
+**Verdict: the blind arm is a NO; the model route is retired as framed.** Conditions (a) no price in
+the prompt PASS (0.1% echo); (b) non‑degenerate spread **FAIL** (0.26×, 6 distinct values);
+(c) beat price on both metrics with a cluster interval excluding zero, AND beat copyScore, AND a gate
+counterfactual that beats copy‑all **FAIL** (both intervals straddle zero, copyScore is 0.6382 vs
+0.5330, gate n=3). The honest conclusion is not "this model is too small" — it is that **there is no
+belief to measure without evidence in the state**. Any further model arm must therefore supply actual
+evidence (the retrieved, dated, sourced brief of Option A) rather than re‑asking the same question,
+and that path's own out‑of‑sample measurement already lost to the price (`jev-rag-corpus-index`).
+The lane stays as instrumentation: it is the only thing in the repo that can price a candidate signal
+against the price arm on our own legs, at $0 per read.
+
+**Also landed with this read (instrument hygiene).** The backfill no longer re‑calls legs that already
+carry an arm: the state‑only rows are never rewritten, so their null probability satisfied the
+"needs an arm" filter forever and every hourly run re‑called 100 answered legs (the log had grown to
+8,284 rows for 3,990 legs). `scripts/jev-arm-read.py` now reads **both** arms in one command and
+prints clustered CIs, belief diagnostics per arm, the per‑arm gate counterfactual and the label base
+rate — the base‑rate line is what makes the constant‑0.5 artifact visible instead of flattering.

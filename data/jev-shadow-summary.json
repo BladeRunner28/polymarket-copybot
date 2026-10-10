@@ -1,39 +1,39 @@
 {
-  "generatedAt": "2026-10-10T10:23:51.819Z",
+  "generatedAt": "2026-10-10T15:42:48.905Z",
   "preregistration": "PRE-REGISTERED 2026-10-06: bar = n>=50 resolved legs AND Brier(jev) < Brier(entryPrice) AND AUC(jev) > AUC(entryPrice) AND net-of-fee counterfactual PnL/leg at the gate beats copy-all AND beats copyScore. No promotion of any kind before all four hold.",
-  "candidates": 3374,
-  "withModel": 2551,
-  "resolved": 2551,
-  "resolvedWithModel": 2551,
+  "candidates": 4083,
+  "withModel": 3158,
+  "resolved": 3158,
+  "resolvedWithModel": 3158,
   "priceOnly": {
-    "n": 2551,
-    "auc": 0.4386082645923546,
-    "brier": 0.31118126026118265,
-    "logLoss": 0.8464335155603478,
-    "meanPnlPerStake": -0.10593596460056107,
-    "meanPnlPerStakeNetOfFee": -0.1802820123227745
+    "n": 3158,
+    "auc": 0.5073945909761427,
+    "brier": 0.2947034589696937,
+    "logLoss": 0.8225598547659078,
+    "meanPnlPerStake": -0.20686340586185542,
+    "meanPnlPerStakeNetOfFee": -0.28339400362898837
   },
   "jev": {
-    "n": 2551,
-    "auc": 0.44343646112950735,
-    "brier": 0.3042971876715016,
-    "logLoss": 0.830705589365572,
-    "meanPnlPerStake": -0.10593596460056107,
-    "meanPnlPerStakeNetOfFee": -0.1802820123227745
+    "n": 3158,
+    "auc": 0.519702488841982,
+    "brier": 0.28491650205826996,
+    "logLoss": 0.7994889689391269,
+    "meanPnlPerStake": -0.20686340586185542,
+    "meanPnlPerStakeNetOfFee": -0.28339400362898837
   },
   "copyScore": {
-    "n": 2551,
-    "auc": 0.5443593210154725,
-    "brier": 5910.71416307326,
-    "logLoss": 8.02068687036622
+    "n": 3158,
+    "auc": 0.6382384075154274,
+    "brier": 5142.417929068997,
+    "logLoss": 7.008375386261884
   },
   "gate": {
     "threshold": 0.55,
-    "keptN": 1032,
-    "keptMeanPnlPerStakeNetOfFee": -0.4736534094813899,
-    "vetoedN": 1519,
-    "vetoedMeanPnlPerStakeNetOfFee": 0.019032853949574147,
-    "copyAllMeanPnlPerStakeNetOfFee": -0.1802820123227745,
+    "keptN": 1124,
+    "keptMeanPnlPerStakeNetOfFee": -0.46102402685932203,
+    "vetoedN": 2034,
+    "vetoedMeanPnlPerStakeNetOfFee": -0.1852346397593185,
+    "copyAllMeanPnlPerStakeNetOfFee": -0.28339400362898837,
     "improves": false
   },
   "beatsPriceOnly": false,
