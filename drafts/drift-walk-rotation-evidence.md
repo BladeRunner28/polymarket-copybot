@@ -38,16 +38,26 @@ decided after 2026-10-01: 1133 of 6165 pending keys
 
 `resolved === false` on every one of them means both resolution paths return nothing (`value === undefined` → `continue`), so each row is re-attempted every hour and never leaves the head. None of them 404s; none is archived.
 
-**The `?slug=` empty body in the card is an artifact of the deprecated endpoint, not evidence of archival.** `GET /markets?slug=<slug>` answers `[]` for live AND settled markets alike:
+**The `?slug=` empty body in the card is an artifact of the deprecated endpoint, not evidence of archival.** Measured today (2026-10-10, plain `curl`, no auth, twice), the legacy `GET /markets?slug=<slug>` still returns OPEN markets — HTTP 200, a ~6–9 kB body, `"closed":false,"active":true` on 5/5 live markets sampled, including these pre-fix head rows — and answers `[]` only for CLOSED ones:
 
 ```
+# LIVE pre-fix head rows: the legacy form DOES return them
+$ curl -s "https://gamma-api.polymarket.com/markets?slug=will-the-titans-win-the-season-series-against-the-jaguars-during-the-2026-27-nfl-regular-season-20260717194031567" | wc -c
+    6262        # body: [{"id":"3026140","question":"Will the Titans win the season series against the Jaguars ...","outcomePrices":"[\"0.066\", \"0.934\"]","active":true,"closed":false,"archived":false, ...}]
+$ curl -s "https://gamma-api.polymarket.com/markets?slug=no-change-in-bank-of-englands-interest-rates-after-november-2026-meeting-20260730150602309"
+[... "outcomePrices":"[\"0.09\", \"0.91\"]","active":true,"closed":false, ...]                                                       # 9130 bytes
+$ curl -s "https://gamma-api.polymarket.com/markets?slug=will-the-bank-of-russia-make-no-change-to-the-key-rate-after-the-october-meeting-20260724021538832" | wc -c
+    6619        # same shape (Moonshot 9176, Berlin Abgeordnetenhaus 7163): 5/5 live sampled, all closed=false active=true
+# CLOSED markets: the legacy form answers []
+$ curl -s "https://gamma-api.polymarket.com/markets?slug=nfl-tb-dal-2026-10-09-rec-jake-ferguson-3pt5"
+[]                     # a market the walk DOES mark (settled: outcomePrices ["0","1"], closed)
 $ curl -s "https://gamma-api.polymarket.com/markets?slug=highest-temperature-in-hong-kong-on-september-18-2026-34c"
-[]
+[]                     # the slug the card cites is CLOSED and already carries a resolve row here — never pending
 $ curl -s "https://gamma-api.polymarket.com/markets/slug/highest-temperature-in-hong-kong-on-september-18-2026-34c" | head -c 110
 {"$schema":"https://gamma-api.polymarket.com/schemas/Market.json","id":"4606295","question":"Will the highest temperature in Hong Kong be 34°C ...
-$ curl -s "https://gamma-api.polymarket.com/markets?slug=nfl-tb-dal-2026-10-09-rec-jake-ferguson-3pt5"
-[]                     # same `[]` for a market the walk DOES mark (outcomePrices ["0","1"], closed)
 ```
+
+Both cited temperature slugs (`highest-temperature-in-hong-kong-on-september-18-2026-34c`, `lowest-temperature-in-paris-on-september-17-2026-12c`) are CLOSED at the venue (`/markets/slug/` → `"closed":true`) and both already carry a `resolve` row in `data/drift-shadow.jsonl` (2026-09-21T03:26:18.257Z and 2026-09-17T23:25:45.901Z) — so neither was ever pending and neither was ever in the walk's head. The `[]` was taken on a settled slug.
 
 The adapter prefers `/markets/slug/<slug>`, and the cited slug resolves through it — so it was never unresolvable and never sat in the head:
 

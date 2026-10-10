@@ -23,11 +23,15 @@
  *
  * This is head-of-line blocking, NOT venue archival: the head cannot settle yet,
  * but it will, and none of its rows 404s. The `GET /markets?slug=<slug>` → `[]`
- * body quoted in the original card is the DEPRECATED endpoint, which answers
- * `[]` for live and settled markets alike (it also returns `[]` for markets this
- * walk does mark); the adapter prefers `/markets/slug/<slug>`, which returns the
- * market for every slug the card cited, and the cited Hong Kong temperature
- * market resolves through the walk's own path (resolved: true, "No").
+ * body quoted in the original card is the DEPRECATED endpoint, and measured
+ * today it still returns OPEN markets (HTTP 200, ~6-9 kB body, `"closed":false,
+ * "active":true` for every live market sampled) and answers `[]` ONLY for CLOSED
+ * ones — so its `[]` says nothing about the open head. The head rows come back
+ * from BOTH endpoints, and the slugs the card cited are CLOSED markets that
+ * already carry a resolve row in this feed (never pending, never in the head).
+ * The adapter prefers `/markets/slug/<slug>`, which returns the market for every
+ * slug the card cited, and the cited Hong Kong temperature market resolves
+ * through the walk's own path (resolved: true, "No").
  *
  * WHAT THIS MODULE DOES:
  *  - keeps a per-candidate attempt ledger (last attempt stamp + consecutive
