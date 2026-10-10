@@ -176,6 +176,12 @@ month before trusting them"* — so it was run on 2026-10-10:
   but not a random sample of tokens, and token-level fill rates are dispersed, so a one-shard figure is a
   sample estimate, **not** a population rate — the validated population reproduces the published numbers to
   0.2 pp. Any future "P(fill) = X%" quoted off a shard carries that caveat.
+- **The band profile validates too**, which is the part that matters for a band-conditioned model. P(fill,
+  δ.02) @1h by price band 0→9, unsharded month: 49.2 · 84.5 · 88.0 · 88.2 · 87.1 · 85.2 · 83.3 · 79.2 ·
+  70.5 · 49.8 — against published band 0 / 4 / 5 / 9 = 45.9 / 86.7 / 84.5 / 48.8, i.e. the unsharded read
+  is within 0.5 pp at three of the four published anchors (and +3.3 pp at band 0). The shard sample was low
+  by up to 3.0 pp mid-book (b5 82.2 vs 85.2), the same direction as its flat-rate shortfall, so the
+  one-shard instrument understates the belly of the book specifically.
 
 ### The fit — all 12 targets, 2026-10-10
 
