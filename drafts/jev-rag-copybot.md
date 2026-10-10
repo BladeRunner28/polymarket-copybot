@@ -281,3 +281,63 @@ secondary source before the vendor documented it.
 
 **Still the only blocker:** `OPENROUTER_API_KEY` in `.env` (plus `JEV_SHADOW=1`), then a latency
 measurement from this box. The bar in §6 is unchanged and unread.
+
+## 11. The first read of the arm — 2026‑10‑10 (local provider, n = 2,540)
+
+The vendor account still has zero credits, so option 1 was taken instead: an adapter that renders the
+**same three questions** into a chat prompt and puts a local model behind them (`JEV_PROVIDER=local`
+→ `qwen3.5:9b` on Odin, `think:false`, $0/call). The backlog that had been sitting at *3,368
+candidates / 0 model arms* was drained in one pass.
+
+**Key insight:** the arm now exists and the pre‑registered bar **FAILS** — not because the instrument
+broke, but because the model mostly hands the market price back. **77.6%** of its `outcome_wins`
+answers equal the detection mid *exactly* (84.3% within 1¢, corr 0.79), and on the ~22% where it
+differs it adds no rank information. Its copy/skip decisions are inverted against what actually paid.
+
+**The numbers (all four arms on the SAME 2,540 resolved legs; price arm = detection mid):**
+
+- PRICE arm — AUC **0.4374**, Brier **0.3117**, logLoss 0.8476
+- JEV arm — AUC **0.4420**, Brier **0.3048**, logLoss 0.8318
+- copyScore — AUC **0.5452** (a score, not a probability: its Brier 5,912 is meaningless, but it
+  still ranks better than both arms)
+- Gate @0.55: kept **1,021** legs, net/leg **−0.4811** vs copy‑all **−0.1820** → `improves: false`.
+  Vetoed **1,519** legs, net/leg **+0.0190** — the gate vetoes the *less bad* half, so it is
+  anti‑selective, not merely weak.
+- `beatsPriceOnly: false`, `barReadable: true` → **2 of the 4 pre‑registered conditions hold**: it
+  passes the AUC and Brier comparisons by ~0.005 AUC / 0.007 Brier — inside noise at n=2,540 for two
+  inputs that are 77% identical — and fails the counterfactual gate and the copyScore comparison.
+
+**Reality checks — what these numbers do and do not say**
+
+1. **Population.** These are all 2,540 scored legs in the window, not the copy set. The price arm's
+   AUC of 0.4374 (<0.5) says buying at the detection mid lost more often than the mid implied, which
+   is exactly consistent with copy‑all at −0.182/stake. Both arms are scored on the same rows, so the
+   *comparison* holds; the absolute levels are not the book's edge.
+2. **The echo is the prompt's geometry, not a model bug.** The state handed to the model contains
+   `implied_probability` and the question is "does this token win?" — the cheapest consistent answer
+   for a 9B model is the number it was given. The vendor route would face the same geometry; only the
+   family whose prior it leans on would change.
+3. **It is an exact echo, not shrinkage.** stdev(jev) 0.1924 vs stdev(price) 0.1969 (0.98×), so the
+   "less than half as spread out as the order book" failure the public scanner reported for this
+   model class did **not** occur here.
+4. **Per‑category (n ≥ 50 only; thinner buckets are unreadable, not quoted):** esports‑dota n=942
+   0.351 vs 0.321 · esports‑cs2 n=628 0.288 vs 0.215 · esports‑lol n=336 0.372 vs 0.413 · other n=237
+   **0.657 vs 0.831** · hockey‑nhl n=116 0.602 vs 0.600 · basketball‑nba n=76 0.651 vs 0.655 ·
+   football‑nfl n=67 0.271 vs 0.193.
+5. **Instrument health.** 3,368/3,368 calls answered, **0 parse failures**, median **1,041 ms/call**
+   (p90 1,131), median 758 prompt tokens, cost **$0**. A whole‑corpus read costs one hour of a 12 GB
+   GPU and nothing else — which is the durable win here, whatever the model's verdict.
+6. **Fee caveat unchanged:** net figures use taker 0.10 × min(p, 1−p) per share (archive era) —
+   re‑confirm the era's schedule before quoting a net number as final.
+
+**Verdict: do not spend the $10.** Option 2 was conditional on option 1 showing discrimination
+exists; it did not. The honest next test is a **different question shape**, not a different model:
+stop handing the model the price in the state (ask for the win probability blind, then compare
+against the price *afterwards*), or score the `beats_entry` question alone. The lane keeps its value
+either way — it is the only thing in the repo that can price any model against the price arm on our
+own legs, and the local provider makes each new read free.
+
+**Reproduce:** `python3 scripts/jev-arm-read.py` (read‑only; prints the anchoring/spread/action‑mix
+diagnostics the summary cannot see) and `data/jev-shadow-summary.json` for the pre‑registered
+comparison. Raw rows: `data/jev-shadow.jsonl` (append‑only; rows dedupe by
+`decisionJournalId|marketId|outcome`, preferring the row that carries a model arm).
