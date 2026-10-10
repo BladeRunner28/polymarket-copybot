@@ -155,7 +155,60 @@ too few: that is exactly what the ≥50-leg gate exists to settle, and the inten
 
 ## Results
 
-*← U1 fit results appended here once the 20-shard scan completes; nothing above changes on their account.*
+**Both halves of the archive work are done and they answer the card's question: the conditioning is real, but it does not move the number we trade on.**
+
+### The 20-shard scan — done 2026-09-26, re-validated 2026-10-10
+
+`fill-hazard-cells-2026_01-2026_04-n20.csv`: 112,230 cells / 796,606,520 fills over 2026-01..04, 20 shards,
+1,496s. The docstring's other half was still owed — *"validate the sharded numbers against ONE unsharded
+month before trusting them"* — so it was run on 2026-10-10:
+
+| 2026-04, δ=0.02 | 1 shard (n20 sample) | UNSHARDED month | published |
+|---|---|---|---|
+| P(fill) @5m | 69.20% | **71.29%** | 71.1% |
+| P(fill) @30m | 74.56% | **76.02%** | — |
+| P(fill) @1h | 76.25% | **77.40%** | 77.6% |
+
+- Unsharded month: 195,379,478 fills → 569,261 cells in 247.7s, no OOM
+  (`fill-hazard-cells-validate-2026_04-unsharded.csv`, 11.6 MB) — the whole-file window is survivable with
+  a 14 GB limit on this box, so "OOM-killed with an empty log" applies to the 4-month file, not one month.
+- **The single-shard read was low by 1.2–2.1 pp.** A `hash(token_asset_id) % 20` slice is 1/20 of the fills
+  but not a random sample of tokens, and token-level fill rates are dispersed, so a one-shard figure is a
+  sample estimate, **not** a population rate — the validated population reproduces the published numbers to
+  0.2 pp. Any future "P(fill) = X%" quoted off a shard carries that caveat.
+
+### The fit — all 12 targets, 2026-10-10
+
+`scripts/fit-fill-model.py` on the n20 cells (62,552 cells after the n ≥ 500 filter), 70/30 deterministic
+hash split, weighted logistic GLM (IRLS, ridge 1e-4), weights = cell fill counts:
+
+| target | model Brier | band-flat Brier | model logloss | band-flat logloss | C-200 mix: model | C-200 mix: band-flat |
+|---|---|---|---|---|---|---|
+| δ.02 @5m | 0.00599 | 0.06627 | 0.39333 | 0.54630 | 0.7684 | 0.7662 |
+| δ.02 @30m | 0.11423 | 0.15704 | 0.37579 | 0.48748 | 0.8162 | 0.8139 |
+| δ.02 @1h | 0.11398 | 0.14945 | 0.37564 | 0.46847 | 0.8292 | 0.8269 |
+
+**The honest reading: on the metric that matters — the rate re-weighted onto OUR settled C-200 entry-price
+mix — the full conditional model beats a per-price-band flat rate by 0.002–0.003 (0.2–0.3 pp) at every
+horizon.** The gain in Brier/logloss is large because the model is fitting the *distribution* (thin cells,
+band tails), not because it found a better number for our legs. Price band is the whole story; band, hour,
+size, TTR, activity, volatility and category together add a fifth of a percentage point. The published
+74.3% @5m / 81.1% @1h is bracketed by this instrument's own C-200-weighted reads (76.6–76.8% @5m,
+82.7–82.9% @1h), so the archive's flat number stands — it is just not a 74%.
+
+### Adverse selection — the term the flat rate omits
+
+Filled arm drifts −0.0350 (n=599.5M) and the missed arm +0.1303 (n=152.2M) at 1h; the model's C-200-weighted
+predicted filled markout is −0.0362 vs the naive −0.02 booked on every leg. **The 2¢ credit is a fill model,
+not free money**, and it is worth ~1.6¢ on the legs where it is booked at all.
+
+### What this does to the card
+
+The archive half is closed. Its verdict agrees with the forward arm's measured 18–19% reachability: the
+transfer was never safe because the archive prices a **PRINT**-anchored event and we book a **MID**-anchored
+one (intent == detection mid 336/354, wallet print 5/354, level below the first covered best bid 278/353).
+No amount of conditioning on the archive fixes an anchor mismatch — which is exactly what the forward gate
+measured, independently, on our own book.
 
 ## Follow-ups this creates
 

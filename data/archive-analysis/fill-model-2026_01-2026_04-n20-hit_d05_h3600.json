@@ -1,0 +1,276 @@
+{
+ "generated_at": "2026-10-10T03:50:14-0500",
+ "input_cells": "fill-hazard-cells-2026_01-2026_04-n20.csv",
+ "target": "hit_d05_h3600",
+ "delta": 0.05,
+ "horizon_s": 3600,
+ "cells_fitted": 62552,
+ "fills": 760887899,
+ "model": "binomial logistic GLM, IRLS, ridge lambda=1e-4, weights = cell fill counts",
+ "irls_iterations": 60,
+ "metrics": {
+  "flat_rate_archive": 0.6881,
+  "test": {
+   "n_fills": 233162788,
+   "cells": 18763,
+   "brier_model": 0.14308,
+   "brier_flat": 0.21853,
+   "brier_band_flat": 0.17027,
+   "logloss_model": 0.45083,
+   "logloss_flat": 0.62884,
+   "logloss_band_flat": 0.52213
+  },
+  "train": {
+   "n_fills": 527725111,
+   "brier_model": 0.14009,
+   "brier_band_flat": 0.17019
+  }
+ },
+ "c200_view": {
+  "band_shares": {
+   "0": 0.04484,
+   "1": 0.04883,
+   "2": 0.09068,
+   "3": 0.09716,
+   "4": 0.22023,
+   "5": 0.20329,
+   "6": 0.11261,
+   "7": 0.10214,
+   "8": 0.04235,
+   "9": 0.03787
+  },
+  "flat_rate_all_fills": 0.6881,
+  "band_flat_rate_weighted_to_c200_bands": 0.7436,
+  "model_rate_weighted_to_c200_bands": 0.748,
+  "published_flat_reference": {
+   "at_5m": 0.743,
+   "at_1h": 0.811,
+   "source": "fee-maker-calibration-20260925 \u00a75 (C-200 price weighted, delta=0.02)"
+  }
+ },
+ "markout": {
+  "horizon_s": 3600,
+  "filled": {
+   "n": 523581320,
+   "mean_px_end_minus_p": -0.04005
+  },
+  "missed": {
+   "n": 228103955,
+   "mean_px_end_minus_p": 0.08693
+  },
+  "reading": "filled cases drift NEGATIVE (the market comes through us) while the missed cases are the up-moves we forgo: the 2c credit is a fill model, not free money",
+  "model": {
+   "fit": "weighted least squares on filled-cell mean markout (weights = filled counts)",
+   "c200_weighted_predicted_filled_markout": -0.0363,
+   "unconditional_filled_markout": -0.04005,
+   "naive_assumption": -0.02,
+   "expected_entry_vs_naive": "naive books -0.02 on EVERY leg; the model books -0.02 only on the P(fill) share and adds the filled-arm markout to it"
+  }
+ },
+ "top_coefficients": [
+  {
+   "name": "band^2",
+   "beta": -0.124,
+   "se": 0.0,
+   "z": -7374.55,
+   "odds_ratio": 0.8834
+  },
+  {
+   "name": "band",
+   "beta": 1.0569,
+   "se": 0.0002,
+   "z": 6647.12,
+   "odds_ratio": 2.8774
+  },
+  {
+   "name": "cat:unknown",
+   "beta": 2.4636,
+   "se": 0.0751,
+   "z": 32.81,
+   "odds_ratio": 11.7474
+  },
+  {
+   "name": "cat:Crypto",
+   "beta": 2.2676,
+   "se": 0.0692,
+   "z": 32.78,
+   "odds_ratio": 9.6558
+  },
+  {
+   "name": "cat:Price Action",
+   "beta": 2.2161,
+   "se": 0.0692,
+   "z": 32.04,
+   "odds_ratio": 9.1716
+  },
+  {
+   "name": "cat:Other",
+   "beta": 2.1279,
+   "se": 0.0694,
+   "z": 30.64,
+   "odds_ratio": 8.3974
+  },
+  {
+   "name": "cat:Sports",
+   "beta": 1.8181,
+   "se": 0.0692,
+   "z": 26.28,
+   "odds_ratio": 6.1599
+  },
+  {
+   "name": "cat:Finance",
+   "beta": 1.799,
+   "se": 0.0694,
+   "z": 25.93,
+   "odds_ratio": 6.0436
+  },
+  {
+   "name": "cat:Politics",
+   "beta": 1.3464,
+   "se": 0.0692,
+   "z": 19.47,
+   "odds_ratio": 3.8437
+  },
+  {
+   "name": "cat:Culture",
+   "beta": 0.5338,
+   "se": 0.0711,
+   "z": 7.51,
+   "odds_ratio": 1.7054
+  },
+  {
+   "name": "ttr_b2",
+   "beta": -1.3368,
+   "se": 36.7183,
+   "z": -0.04,
+   "odds_ratio": 0.2627
+  },
+  {
+   "name": "ttr_b3",
+   "beta": -1.5942,
+   "se": 36.7183,
+   "z": -0.04,
+   "odds_ratio": 0.2031
+  },
+  {
+   "name": "vol_b0",
+   "beta": -1.0766,
+   "se": 42.9211,
+   "z": -0.03,
+   "odds_ratio": 0.3407
+  },
+  {
+   "name": "vol_b1",
+   "beta": -1.4911,
+   "se": 42.9211,
+   "z": -0.03,
+   "odds_ratio": 0.2251
+  },
+  {
+   "name": "ttr_b0",
+   "beta": 0.9512,
+   "se": 36.7183,
+   "z": 0.03,
+   "odds_ratio": 2.5888
+  },
+  {
+   "name": "ttr_b4",
+   "beta": 1.0054,
+   "se": 36.7183,
+   "z": 0.03,
+   "odds_ratio": 2.733
+  },
+  {
+   "name": "intercept",
+   "beta": -1.8578,
+   "se": 77.8023,
+   "z": -0.02,
+   "odds_ratio": 0.156
+  },
+  {
+   "name": "act_b1",
+   "beta": -0.7721,
+   "se": 47.4761,
+   "z": -0.02,
+   "odds_ratio": 0.462
+  },
+  {
+   "name": "ttr_b-1",
+   "beta": -0.6845,
+   "se": 36.7183,
+   "z": -0.02,
+   "odds_ratio": 0.5043
+  },
+  {
+   "name": "ttr_b5",
+   "beta": -0.6719,
+   "se": 36.7183,
+   "z": -0.02,
+   "odds_ratio": 0.5107
+  }
+ ],
+ "per_band": {
+  "0": {
+   "observed": 0.1935,
+   "model": 0.3708,
+   "band_flat_train": 0.1784
+  },
+  "1": {
+   "observed": 0.8037,
+   "model": 0.6269,
+   "band_flat_train": 0.7926
+  },
+  "2": {
+   "observed": 0.8374,
+   "model": 0.7679,
+   "band_flat_train": 0.8426
+  },
+  "3": {
+   "observed": 0.8412,
+   "model": 0.8331,
+   "band_flat_train": 0.8353
+  },
+  "4": {
+   "observed": 0.8228,
+   "model": 0.8293,
+   "band_flat_train": 0.8237
+  },
+  "5": {
+   "observed": 0.7895,
+   "model": 0.8148,
+   "band_flat_train": 0.7947
+  },
+  "6": {
+   "observed": 0.7677,
+   "model": 0.8149,
+   "band_flat_train": 0.7672
+  },
+  "7": {
+   "observed": 0.7099,
+   "model": 0.7346,
+   "band_flat_train": 0.7122
+  },
+  "8": {
+   "observed": 0.5959,
+   "model": 0.5684,
+   "band_flat_train": 0.6005
+  },
+  "9": {
+   "observed": 0.32,
+   "model": 0.2918,
+   "band_flat_train": 0.3228
+  }
+ },
+ "gate": {
+  "pre_registered": "beat the flat band-hazard baseline on Brier/log-loss, reproduce the adverse-selection sign, and print expected markout beside naive intent-0.02 on >=50 measured C-200 legs",
+  "status_holdout": "PASS vs band-flat on the hash-split holdout (weak check: cells are not time-ordered)",
+  "status_forward": "PENDING -- needs >=50 measured C-200 legs with an L2/tape-anchored level check"
+ },
+ "caveats": [
+  "archive era ends 2026-04-28 on CTF Exchange v1: structure transfers, levels do not",
+  "no order-book depth / quotes / cancellations in the archive -> spread and queue are NOT features here",
+  "PRINT-anchored: our intent price is the detection MID, so intent-2c is a deeper, different event",
+  "prints are not queue position and size is ignored (a bid is swept only up to the printed size)",
+  "holdout is a hash split of cells, not a time split: use it to reject a model, never to promote one"
+ ]
+}

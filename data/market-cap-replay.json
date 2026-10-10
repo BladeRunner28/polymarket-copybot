@@ -1,55 +1,55 @@
 {
-  "generatedAt": "2026-09-17T05:02:26.930Z",
+  "generatedAt": "2026-10-10T07:25:35.444Z",
   "window": {
-    "days": 7,
-    "since": "2026-09-10T05:02:26.921Z"
+    "days": 30,
+    "since": "2026-09-10T07:25:35.437Z"
   },
   "thresholds": {
     "maxMarketLegsPerMarketId": 2,
-    "maxMarketNotionalPctOfCap": 0.1,
-    "notionalCapUsd": 135.54,
-    "effectiveCapUsd": 1355.39,
-    "netWorth": 2610.78,
+    "maxMarketNotionalPctOfCap": 0.2,
+    "notionalCapUsd": 794.26,
+    "effectiveCapUsd": 3971.32,
+    "netWorth": 7842.63,
     "capOverride": null
   },
-  "legs": 298,
-  "blockedLegs": 13,
-  "blockedNotionalUsd": 283.12,
-  "blockedPnlUsd": -144.01,
-  "bookedPnlUsd": -297.52,
-  "actualWindowPnlUsd": -441.53,
-  "deltaUsd": 144.01,
-  "marketsWithMultipleLegs": 31,
+  "legs": 901,
+  "blockedLegs": 16,
+  "blockedNotionalUsd": 423.12,
+  "blockedPnlUsd": 892.55,
+  "bookedPnlUsd": 3902.76,
+  "actualWindowPnlUsd": 4795.31,
+  "deltaUsd": -892.55,
+  "marketsWithMultipleLegs": 76,
   "worstMarketsUnderCap": [
     {
-      "marketId": "will-dtf-stpt-louis-win-emmys-2026-outstanding-limited-or-anthology-series-20260710152711975",
-      "legs": 2,
-      "notional": 96.55936708860759,
-      "pnl": -88.17
-    },
-    {
-      "marketId": "highest-temperature-in-wellington-on-september-14-2026-16c",
-      "legs": 2,
-      "notional": 77.61367088607595,
-      "pnl": -77.1
-    },
-    {
-      "marketId": "elon-musk-of-tweets-september-4-september-11-2026-160-179",
-      "legs": 2,
-      "notional": 61.104683544303796,
-      "pnl": -60.94
-    },
-    {
-      "marketId": "will-the-price-of-xrp-be-between-1pt30-1pt40-on-september-12-2026",
+      "marketId": "bl2-wob-svd-2026-09-18-wob",
       "legs": 1,
-      "notional": 39.88,
-      "pnl": -39.44
+      "notional": 100,
+      "pnl": -100
     },
     {
-      "marketId": "will-jean-smart-hacks-win-emmys-2026-outstanding-lead-actress-in-a-comedy-series-20260709174230568",
-      "legs": 2,
-      "notional": 39.89873417721518,
-      "pnl": -39.43
+      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-220-239",
+      "legs": 1,
+      "notional": 100,
+      "pnl": -100
+    },
+    {
+      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-200-219",
+      "legs": 1,
+      "notional": 100,
+      "pnl": -100
+    },
+    {
+      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-180-199",
+      "legs": 1,
+      "notional": 100,
+      "pnl": -100
+    },
+    {
+      "marketId": "dota2-xtreme-lgd-2026-09-25-game1",
+      "legs": 1,
+      "notional": 100,
+      "pnl": -100
     }
   ],
   "blockedSample": [
@@ -72,6 +72,15 @@
       "why": "leg 3 > 2"
     },
     {
+      "marketId": "elon-musk-of-tweets-september-19-september-21-2026-40-64",
+      "outcome": "NO",
+      "entryPrice": 0.06999999999999999,
+      "size": 20,
+      "pnl": -20,
+      "status": "resolved",
+      "why": "leg 3 > 2"
+    },
+    {
       "marketId": "elon-musk-of-tweets-september-10-september-12-2026-40-64",
       "outcome": "NO",
       "entryPrice": 0.065,
@@ -81,20 +90,11 @@
       "why": "leg 3 > 2"
     },
     {
-      "marketId": "will-dtf-stpt-louis-win-emmys-2026-outstanding-limited-or-anthology-series-20260710152711975",
+      "marketId": "will-linke-win-less-than-8-of-all-valid-second-votes-mecklenburg-vorpommern",
       "outcome": "NO",
-      "entryPrice": 0.05499999999999999,
-      "size": 19.94936708860759,
-      "pnl": -18.32,
-      "status": "closed",
-      "why": "leg 3 > 2"
-    },
-    {
-      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
-      "outcome": "NO",
-      "entryPrice": 0.125,
-      "size": 65.4,
-      "pnl": -10.46,
+      "entryPrice": 0.117,
+      "size": 20,
+      "pnl": -19.91,
       "status": "closed",
       "why": "leg 3 > 2"
     }
