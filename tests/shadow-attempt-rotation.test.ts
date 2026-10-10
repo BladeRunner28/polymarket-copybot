@@ -3,13 +3,16 @@
  *
  * Baseline it fixes (measured in logs/cron/copybot-shadow-longshot.log): the
  * drift walk took the first MARK_LIMIT entries of an oldest-first pending map.
- * The oldest 300 pending candidates were all decided 2026-09-17 and are
- * long-dated markets STILL OPEN at the venue (30/30 sampled through the walk's
- * own resolution path are `resolved === false` with live quotes), so the walk
- * kept re-attempting rows that cannot settle yet: 14 consecutive hourly runs
- * logged `+0 marked` and settled froze at 4,945 while 828 candidates decided
- * inside the trailing 7 days stayed unreachable — the decay bar's cohort could
- * never be populated (cohort7dMarked: 0).
+ * The pre-fix `capPending` window (the first 300 pending keys) is
+ * 2026-09-17..2026-09-26, seven distinct decision days with 239 of the 300
+ * decided 2026-09-17 (the first 300 CANDIDATE ROWS are all 2026-09-17 — a
+ * different window); those head rows are long-dated markets STILL OPEN at the
+ * venue (30/30 sampled through the walk's own resolution path are
+ * `resolved === false` with live quotes), so the walk kept re-attempting rows
+ * that cannot settle yet: 14 consecutive hourly runs logged `+0 marked` and
+ * settled froze at 4,945 while the 827 pending keys decided inside the trailing
+ * 7 days (cut 2026-10-10T08:00Z; 845 of the live 6,165) stayed unreachable —
+ * the decay bar's cohort could never be populated (cohort7dMarked: 0).
  *
  * These tests pin the ordering that removes the head-of-line block: least
  * recently attempted first, never-attempted before that (most recent decision
