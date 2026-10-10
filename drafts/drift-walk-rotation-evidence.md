@@ -92,6 +92,20 @@ attempted keys decided after 2026-10-01: run4 25/25, run5 25/25
 shadow-drift: +0 marked this run (cap 2/run via DRIFT_TEST_LIMIT, backlog 6147; walk 2/6147 eligible, decided 2026-10-10..2026-10-10, 2 never attempted before, 0 held by the 3-fail/24h retry; trailing-7d attempted 2, resolved 0 — trailing-7d cohort still empty: 0/2 of the attempted candidates decided inside the window resolved at the venue (the rest are still open or archived)).
 ```
 
+**3b — hold-back and the slow cadence, end to end.** Exercised with a synthetic ledger fixture (every one of the 6,147 pending keys stamped `consecutiveFailures: 3`; the fixture only touches instrument state, no candidate row is edited):
+
+* all stamps fresh (< 24 h) → nothing is walked and the run says so:
+
+```
+shadow-drift: +0 marked this run (cap 5/run via DRIFT_TEST_LIMIT, backlog 6147; walk 0/0 eligible, decided —, 0 never attempted before, 6147 held by the 3-fail/24h retry; trailing-7d attempted 0, resolved 0 — trailing-7d cohort still empty: no candidate decided inside the window was attempted this run).
+```
+
+* the same fixture with the stamps 25 h old → the held rows re-enter the walk, oldest stamp first (the most recently decided keys, since the fixture ages them in that order), and their streak advances to 4:
+
+```
+shadow-drift: +0 marked this run (cap 5/run via DRIFT_TEST_LIMIT, backlog 6147; walk 5/6147 eligible, decided 2026-10-10..2026-10-10, 0 never attempted before, 0 held by the 3-fail/24h retry; trailing-7d attempted 5, resolved 0 — trailing-7d cohort still empty: 0/5 of the attempted candidates decided inside the window resolved at the venue (the rest are still open or archived)).
+```
+
 **4 — tsc / vitest / other markers.** `npx tsc --noEmit` clean; `npx vitest run` → 35 files, 391 tests passed (was 34/383). lowconf + wallet-cap lines are byte-identical between the before and after runs at the same cap and same starting data:
 
 ```
