@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-10T08:52:42.002Z",
+  "asOf": "2026-10-10T09:08:25.676Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -20,8 +20,6 @@
     "quoteFailures": 683,
     "unverifiedMatches": 78,
     "rejectionReasons": {
-      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 2,
-      "kalshi orderbook empty for event KXNFLMATCHUP-27AFC": 1,
       "pre_guard_quote": 1,
       "low_match_score_0.67": 74,
       "low_match_score_0.60": 3
