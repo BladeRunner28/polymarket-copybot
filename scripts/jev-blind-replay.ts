@@ -167,7 +167,7 @@ async function main() {
   flush();
   console.log(
     `jev-blind: done — ${ok}/${todo.length} answered, ${failed} failed. Wrote ${OUT_FILE}. ` +
-      `Read it with: python3 scripts/jev-blind-read.py`
+      `Read it with: python3 scripts/jev-arm-read.py (it reads both arms)`
   );
 }
 
