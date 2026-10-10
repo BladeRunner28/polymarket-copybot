@@ -31,7 +31,7 @@ import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { prisma } from "../src/lib/db";
 import { didOutcomeWin } from "../src/lib/resolution";
 import { log, logError } from "../src/lib/redact";
-import { buildLocalMessages, parseLocalReply } from "../src/lib/jev-local";
+import { buildLocalMessages, callLocalChat, parseLocalReply } from "../src/lib/jev-local";
 import * as fs from "fs";
 import {
   appendJevRows,
@@ -187,64 +187,33 @@ async function callJevLocal(
   cfg: { endpoint: string | null; model: string }
 ): Promise<{ decision: JevDecision | null; latencyMs: number; error: string | null; raw: unknown }> {
   const url = cfg.endpoint as string;
-  const { system, user } = buildLocalMessages(buildJevRequest(leg, cfg.model));
-  const body = {
+  const messages = buildLocalMessages(buildJevRequest(leg, cfg.model));
+  // One shared HTTP path (`callLocalChat`) with the blind replay, so the two arms are the same call.
+  const r = await callLocalChat({
+    url,
     model: cfg.model,
-    stream: false,
-    format: "json",
+    messages,
     think: process.env.JEV_LOCAL_THINK === "1",
-    keep_alive: process.env.JEV_KEEP_ALIVE ?? "5m",
-    options: { temperature: 0, num_predict: Number(process.env.JEV_NUM_PREDICT ?? 400) },
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-  };
-  const t0 = Date.now();
-  try {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), CALL_TIMEOUT_MS);
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: ctl.signal,
-    });
-    clearTimeout(timer);
-    const latencyMs = Date.now() - t0;
-    const text = await res.text();
-    let raw: unknown = null;
-    try {
-      raw = JSON.parse(text);
-    } catch {
-      raw = { unparsed: text.slice(0, 2000) };
-    }
-    if (!res.ok) return { decision: null, latencyMs, error: `HTTP ${res.status}`, raw };
-    const d = raw as { message?: { content?: string; thinking?: string }; prompt_eval_count?: number; eval_count?: number };
-    const content = d?.message?.content ?? "";
-    const answers = parseLocalReply(content);
-    if (!answers) {
-      const why = content.trim()
-        ? "unparsed payload shape"
-        : `empty content${d?.message?.thinking ? ` (thinking budget: ${d.message.thinking.length} chars of reasoning)` : ""}`;
-      return { decision: null, latencyMs, error: why, raw };
-    }
-    const decision = parseJevDecision({
-      answers,
-      usage: { input_tokens: d.prompt_eval_count ?? null, output_tokens: d.eval_count ?? null, cost: 0 },
-    });
-    if (decision.probability === null && decision.action === null) {
-      return { decision: null, latencyMs, error: "unparsed payload shape", raw };
-    }
-    return { decision, latencyMs, error: null, raw };
-  } catch (e) {
-    return {
-      decision: null,
-      latencyMs: Date.now() - t0,
-      error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
-      raw: null,
-    };
+    timeoutMs: CALL_TIMEOUT_MS,
+    numPredict: Number(process.env.JEV_NUM_PREDICT ?? 400),
+    keepAlive: process.env.JEV_KEEP_ALIVE ?? "5m",
+  });
+  if (r.error) return { decision: null, latencyMs: r.latencyMs, error: r.error, raw: r.raw };
+  const answers = parseLocalReply(r.content);
+  if (!answers) {
+    const why = r.content.trim()
+      ? "unparsed payload shape"
+      : `empty content${r.thinking ? ` (thinking budget: ${r.thinking.length} chars of reasoning)` : ""}`;
+    return { decision: null, latencyMs: r.latencyMs, error: why, raw: r.raw };
   }
+  const decision = parseJevDecision({
+    answers,
+    usage: { input_tokens: r.promptTokens, output_tokens: r.evalTokens, cost: 0 },
+  });
+  if (decision.probability === null && decision.action === null) {
+    return { decision: null, latencyMs: r.latencyMs, error: "unparsed payload shape", raw: r.raw };
+  }
+  return { decision, latencyMs: r.latencyMs, error: null, raw: r.raw };
 }
 
 async function main() {
@@ -307,9 +276,31 @@ async function main() {
     // BACKFILL the model arm onto rows collected while the lane was off. Without this a
     // state-only row is skipped as "seen" forever and the corpus seeded today can never
     // carry a probability — the states are stored precisely so they can be replayed.
+    //
+    // SKIP LEGS THAT ALREADY CARRY AN ARM (any row for the same leg, not just this one): the
+    // state-only rows are never rewritten, so once a leg has been backfilled its ORIGINAL row keeps
+    // satisfying the null-probability filter forever — which made every hourly run re-call 100 legs
+    // that already had an answer. Measured 2026-10-10: 8,284 rows for 3,990 legs, i.e. ~1,100 wasted
+    // model calls before this filter, at ~1.1 s each on the shared GPU.
     if (cfg.canCall) {
-      const need = readJevRows()
-        .filter((r) => r.type === "candidate" && (r.jevProbability === null || r.jevProbability === undefined))
+      const all = readJevRows();
+      const legKey = (r: JevShadowRow): string =>
+        `${r.decisionJournalId ?? ""}|${r.marketId}|${r.outcome}`;
+      const armed = new Set(
+        all
+          .filter((r) => r.type === "candidate" && r.jevProbability !== null && r.jevProbability !== undefined)
+          .map(legKey)
+      );
+      const seen = new Set<string>();
+      const need = all
+        .filter((r) => {
+          if (r.type !== "candidate") return false;
+          if (r.jevProbability !== null && r.jevProbability !== undefined) return false;
+          const key = legKey(r);
+          if (armed.has(key) || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
         .slice(0, BACKFILL_LIMIT);
       if (need.length) {
         const back: JevShadowRow[] = [];

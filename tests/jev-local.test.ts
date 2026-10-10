@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildJevRequest,
   buildJevQuestions,
+  buildJevState,
   jevCallConfig,
   parseJevDecision,
   JEV_LOCAL_MODEL_DEFAULT,
@@ -9,6 +10,13 @@ import {
   type JevLeg,
 } from "../src/lib/shadow-jev";
 import { buildLocalMessages, extractJsonObject, normalizeAnswer, parseLocalReply } from "../src/lib/jev-local";
+import {
+  BLIND_STRIPPED_FIELDS,
+  blindState,
+  buildBlindMessages,
+  callLocalChat,
+  parseBlindReply,
+} from "../src/lib/jev-local";
 
 /**
  * The LOCAL arm (JEV_PROVIDER=local) puts an Ollama model behind the SAME three questions the
@@ -131,6 +139,99 @@ describe("normalizeAnswer — the spellings a chat model uses", () => {
   it("extractJsonObject takes the first balanced object, not the last brace in the text", () => {
     const obj = extractJsonObject('note {"a":{"b":1}} trailing {"c":2}') as Record<string, unknown>;
     expect(obj).toEqual({ a: { b: 1 } });
+  });
+});
+
+describe("the BLIND arm — the price is withheld, and it cannot leak into the prompt", () => {
+  const priceRevealing = (s: Record<string, unknown>): unknown => {
+    const flat: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(s)) {
+      if (v && typeof v === "object" && !Array.isArray(v))
+        Object.assign(flat, priceRevealing(v as Record<string, unknown>));
+      else flat[k] = v;
+    }
+    return flat;
+  };
+
+  it("blindState removes every price-level field, not just the price itself", () => {
+    const state = buildJevState({ ...leg, walletEntryPrice: 0.65 }) as Record<string, unknown>;
+    const before = priceRevealing(state) as Record<string, unknown>;
+    for (const f of BLIND_STRIPPED_FIELDS) expect(before[f]).not.toBeUndefined();
+    const after = priceRevealing(blindState(state)) as Record<string, unknown>;
+    for (const f of BLIND_STRIPPED_FIELDS) expect(after[f]).toBeUndefined();
+    // and it strips nothing else: the price is withheld, the market is not
+    expect(after.question).toBe(before.question);
+    expect(after.category).toBe(before.category);
+    expect(after.hours_to_resolution).toBe(before.hours_to_resolution);
+    expect(after.copied_wallet).toBe(before.copied_wallet);
+  });
+
+  it("no spelling of the price survives into the prompt", () => {
+    const st = buildJevState({ ...leg, entryPrice: 0.62, detectedPrice: 0.62, walletEntryPrice: 0.65 });
+    const { system, user } = buildBlindMessages(st, "YES");
+    const blob = `${system}\n${user}`;
+    for (const p of ["0.62", "0.65", ".62", "62", "price_drift", "implied_probability", "detection_mid", "wallet_fill_price"])
+      expect(blob).not.toContain(p);
+    // the question and the market description are still there — this is a blind model, not a mute one
+    expect(blob).toContain("Will X happen?");
+    expect(blob).toContain("outcome_wins");
+    expect(user).toContain("no price fields are provided");
+  });
+
+  it("asks ONE question and reads it back as a probability", () => {
+    const { system } = buildBlindMessages(buildJevState(leg), "YES");
+    expect(system).not.toContain("beats_entry");
+    expect(system).toMatch(/ONE JSON object/);
+    expect(parseBlindReply('{"outcome_wins":{"probability":0.71,"confidence":0.6}}')).toEqual({
+      probability: 0.71,
+      confidence: 0.6,
+    });
+    expect(parseBlindReply('{"outcome_wins":{"probability":71}}')?.probability).toBeCloseTo(0.71, 10);
+    expect(parseBlindReply("no idea")).toBeNull();
+    expect(parseBlindReply('{"action":{"choice":"copy"}}')).toBeNull();
+  });
+});
+
+describe("callLocalChat — one HTTP path shared by both arms", () => {
+  const messages = { system: "s", user: "u" };
+
+  it("sends JSON mode with thinking OFF and reads content + token counts", async () => {
+    let sent: any = null;
+    const fake = (async (_url: string, init: any) => {
+      sent = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            message: { content: '{"outcome_wins":{"probability":0.4}}' },
+            prompt_eval_count: 700,
+            eval_count: 12,
+          }),
+      };
+    }) as unknown as typeof fetch;
+    const r = await callLocalChat({ url: "http://x/api/chat", model: "m", messages, fetchImpl: fake });
+    expect(sent.format).toBe("json");
+    expect(sent.think).toBe(false); // the documented pitfall: thinking on returns empty content
+    expect(sent.stream).toBe(false);
+    expect(sent.options.temperature).toBe(0);
+    expect(r.error).toBeNull();
+    expect(r.promptTokens).toBe(700);
+    expect(r.evalTokens).toBe(12);
+    expect(parseBlindReply(r.content)?.probability).toBeCloseTo(0.4, 10);
+  });
+
+  it("reports an HTTP failure and a thrown fetch as errors with no content", async () => {
+    const http500 = (async () => ({ ok: false, status: 500, text: async () => "boom" })) as unknown as typeof fetch;
+    const r1 = await callLocalChat({ url: "http://x", model: "m", messages, fetchImpl: http500 });
+    expect(r1.error).toBe("HTTP 500");
+    expect(r1.content).toBe("");
+    const thrown = (async () => {
+      throw new Error("ECONNREFUSED");
+    }) as unknown as typeof fetch;
+    const r2 = await callLocalChat({ url: "http://x", model: "m", messages, fetchImpl: thrown });
+    expect(r2.error).toContain("ECONNREFUSED");
+    expect(r2.raw).toBeNull();
   });
 });
 
