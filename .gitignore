@@ -32,6 +32,13 @@ data/l2-events/
 data/c200-tape/
 data/c200-intent-watch-state.json
 
+# shadow marker attempt ledger (2026-10-10, card t_81d0a4cb): per-candidate
+# attempt stamps for the rotating settlement walks. Rewritten on every hourly
+# marker run (the walk stamps ~300 rows/run), so it is runtime state like the
+# c200 watcher above — it must survive a process restart, which is the file on
+# disk, not a git commit.
+data/shadow-attempt-state.json
+
 # large derived datasets — regenerate with scripts/build-decision-dataset.py (read-only DB read)
 data/decision-dataset.csv
 

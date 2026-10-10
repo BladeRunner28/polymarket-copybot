@@ -34,6 +34,17 @@ import {
   LOWCONF_SHADOW_SUMMARY_FILE,
 } from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
+import {
+  ATTEMPT_FAIL_LIMIT,
+  ATTEMPT_RETRY_HOURS,
+  attemptKey,
+  pruneAttemptLedger,
+  readAttemptLedger,
+  recordAttemptOutcome,
+  selectPendingForRun,
+  writeAttemptLedger,
+  type PendingEntry,
+} from "../src/lib/shadow-attempts";
 import * as fs from "fs";
 import { join } from "path";
 
@@ -44,6 +55,34 @@ import { join } from "path";
  * so each run finishes and the backlog drains steadily.
  */
 const MARK_LIMIT = Number(process.env.MARK_LIMIT ?? 300);
+
+/**
+ * Drift feed id in the attempt ledger (src/lib/shadow-attempts.ts).
+ *
+ * 2026-10-10 (card t_81d0a4cb): the drift walk is LEAST-RECENTLY-ATTEMPTED, not
+ * oldest-first. Oldest-first let a head that cannot settle YET hold the same 300
+ * slots every hour — the head of the pending map is a September cohort of
+ * long-dated markets that are STILL OPEN at the venue with live quotes, so both
+ * resolution paths return nothing (`resolved === false`). The pre-fix
+ * `capPending` window (the first 300 pending keys) is 2026-09-17..2026-09-26,
+ * seven distinct decision days with 239 of the 300 decided 2026-09-17 (the first
+ * 300 CANDIDATE ROWS are all 2026-09-17 — a different window); 4,526 of the
+ * 6,147 pending keys in this branch's snapshot are decided on/before 2026-09-26
+ * and 1,127 on/after 2026-10-01 (live copy: 4,526 / 1,145 of 6,165). 14
+ * consecutive hourly runs logged `+0 marked`, settled froze at 4,945, and the
+ * 827 pending keys decided inside the trailing 7 days (cut 2026-10-10T08:00Z)
+ * stayed unreachable behind the head. That is why
+ * data/drift-shadow-summary.json reported cohort7dMarked: 0 / cohort7d: null
+ * and the pre-registered 2026-09-20 decay bar could never trip. The walk now
+ * rotates on a persisted attempt stamp (skip after N=3 consecutive failures,
+ * re-attempt once a day) so the trailing-7d cohort is walked every run.
+ */
+const DRIFT_FEED = "drift";
+
+/** Bounded proof runs: caps the DRIFT walk alone so the other three markers'
+ *  output stays comparable (see the exit criteria on card t_81d0a4cb). */
+const DRIFT_TEST_LIMIT = process.env.DRIFT_TEST_LIMIT ? Number(process.env.DRIFT_TEST_LIMIT) : null;
+const driftLimit = DRIFT_TEST_LIMIT ?? MARK_LIMIT;
 
 // 2026-09-20 tuning review #31 rec 2 (user-approved): PRE-REGISTERED DECAY BAR on
 // the drift gate's counterfactual edge. The gate is the book's largest volume
@@ -118,16 +157,50 @@ async function main() {
   // Same marking machinery, different feed: every would-have-copied entry the
   // drift gate blocked, marked to settlement so the gate's counterfactual stops
   // being an assumption.
+  //
+  // 2026-10-10 (card t_81d0a4cb): this feed walks LEAST-RECENTLY-ATTEMPTED
+  // (src/lib/shadow-attempts.ts) instead of oldest-first, so a head of
+  // long-dated, still-open September markets cannot hold the cap. The three
+  // feeds below keep their oldest-first walk untouched: they mark ~91% of their
+  // backlog and have no stuck head.
   const dRows = readDriftRows();
   const dCandidates = dRows.filter((r) => r.type === "candidate");
   const dAlready = new Set(dRows.filter((r) => r.type === "resolve").map((r) => `${r.marketId}|${r.outcome}`));
-  const dPending = new Map<string, { marketId: string; outcome: string }>();
+  const dPending = new Map<string, PendingEntry>();
   for (const c of dCandidates) {
     const key = `${c.marketId}|${c.outcome}`;
-    if (!dAlready.has(key)) dPending.set(key, { marketId: String(c.marketId), outcome: String(c.outcome) });
+    if (dAlready.has(key)) continue;
+    const parsed = Date.parse(String(c.ts));
+    const decidedAt = Number.isFinite(parsed) ? parsed : 0;
+    const prev = dPending.get(key);
+    // Duplicate keys (a market|outcome decided more than once) are walked once
+    // and ranked by their MOST RECENT decision — the row the summary counts
+    // towards the trailing-7d cohort.
+    if (!prev || decidedAt > prev.decidedAt) {
+      dPending.set(key, { marketId: String(c.marketId), outcome: String(c.outcome), decidedAt });
+    }
   }
+  const attemptLedger = readAttemptLedger();
+  const walkNow = Date.now();
+  const walk = selectPendingForRun(DRIFT_FEED, [...dPending.values()], attemptLedger, {
+    limit: driftLimit,
+    now: walkNow,
+  });
+  const pendingLedgerKeys = [...dPending.values()].map((e) => attemptKey(DRIFT_FEED, e.marketId, e.outcome));
+  const attempted: Array<{ marketId: string; outcome: string; decidedAt: number; resolved: boolean }> = [];
+  let folded = 0;
+  // Fold attempts into the ledger as the walk proceeds: this is a long network
+  // loop and the marker is killable, so a killed run must not lose the stamps
+  // the ordering depends on.
+  const foldAttempts = () => {
+    if (folded === attempted.length) return;
+    recordAttemptOutcome(DRIFT_FEED, attempted.slice(folded), attemptLedger, walkNow);
+    folded = attempted.length;
+    pruneAttemptLedger(attemptLedger, pendingLedgerKeys);
+    writeAttemptLedger(attemptLedger);
+  };
   let dResolved = 0;
-  for (const { marketId, outcome } of capPending(dPending).values()) {
+  for (const { marketId, outcome, decidedAt } of walk.selected) {
     let value: number | undefined;
     try {
       const m = await adapter.fetchMarket(marketId);
@@ -150,14 +223,34 @@ async function main() {
         /* leave unresolved */
       }
     }
-    if (value === undefined) continue;
-    fs.appendFileSync(
-      DRIFT_SHADOW_FILE,
-      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
-    );
-    dResolved++;
+    if (value !== undefined) {
+      fs.appendFileSync(
+        DRIFT_SHADOW_FILE,
+        JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
+      );
+      dResolved++;
+    }
+    attempted.push({ marketId, outcome, decidedAt, resolved: value !== undefined });
+    if (attempted.length - folded >= 50) foldAttempts();
   }
+  foldAttempts();
+  // What the walk actually touched this run — the operator's only way to tell
+  // "the cohort is empty because nothing recent was reachable" apart from "the
+  // cohort is empty because nothing recent was attempted".
+  const walkDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  const decidedTimes = attempted.map((a) => a.decidedAt);
+  const walkWindow =
+    decidedTimes.length > 0 ? `${walkDay(Math.min(...decidedTimes))}..${walkDay(Math.max(...decidedTimes))}` : "—";
+  const cohortCutoff = walkNow - 7 * 86400000;
+  const cohortAttempted = attempted.filter((a) => a.decidedAt >= cohortCutoff).length;
+  const cohortResolved = attempted.filter((a) => a.decidedAt >= cohortCutoff && a.resolved).length;
   const dSummary = summarizeDrift(readDriftRows());
+  const cohortNote =
+    dSummary.cohort7dMarked > 0
+      ? ""
+      : cohortAttempted === 0
+        ? " — trailing-7d cohort still empty: no candidate decided inside the window was attempted this run"
+        : ` — trailing-7d cohort still empty: ${cohortResolved}/${cohortAttempted} of the attempted candidates decided inside the window resolved at the venue (the rest are still open or archived)`;
 
   // ---- rec 2: dated series + the pre-registered bar --------------------------
   const decayRow = {
@@ -219,7 +312,10 @@ async function main() {
     JSON.stringify({ ...dSummary, decayBar }, null, 2)
   );
   log(
-    `shadow-drift: +${dResolved} marked this run (cap ${MARK_LIMIT}/run, backlog ${dPending.size}). ` +
+    `shadow-drift: +${dResolved} marked this run (cap ${driftLimit}/run${DRIFT_TEST_LIMIT === null ? "" : " via DRIFT_TEST_LIMIT"}, ` +
+      `backlog ${dPending.size}; walk ${attempted.length}/${walk.eligible} eligible, decided ${walkWindow}, ` +
+      `${walk.neverAttempted} never attempted before, ${walk.heldBack} held by the ${ATTEMPT_FAIL_LIMIT}-fail/${ATTEMPT_RETRY_HOURS}h retry; ` +
+      `trailing-7d attempted ${cohortAttempted}, resolved ${cohortResolved}${cohortNote}). ` +
       `Gate counterfactual: ${dSummary.candidates} would-have entries, ` +
       `${dSummary.marked} settled (${dSummary.wins} wins, ` +
       `${dSummary.winRate === null ? "—" : (dSummary.winRate * 100).toFixed(1) + "%"}), ` +
