@@ -4,18 +4,30 @@
  *
  * WHY THIS EXISTS (measured, not theorised):
  * scripts/mark-shadow-longshot.ts walked each feed's `pending` map oldest-first
- * and took the first MARK_LIMIT (300) entries. The drift feed's head is
- * PERMANENTLY UNRESOLVABLE: the head of the pending map is a September cohort
- * (the first 300 keys in candidate order span 2026-09-17..2026-09-26) whose slugs
- * are archived at the venue (gamma returns HTTP
- * 200 with an empty body, `adapter.fetchMarket` and `fetchEventResolution` both
- * come back empty), so the same 300 slots were re-attempted every hour and the
- * feed stopped marking — 14 consecutive hourly runs logged `+0 marked` (the live
- * log also shows earlier streaks of 22 and 30), settled
- * frozen at 4,945, while 828 candidates decided inside the trailing 7 days sat
- * unreachable behind the head. The pre-registered 2026-09-20 decay bar reads a
- * trailing-7d cohort mean, so it could never be populated: `cohort7dMarked`
- * stayed 0 and the EOD printed "cohort7d —".
+ * and took the first MARK_LIMIT (300) entries. The drift feed's head is a
+ * September cohort of LONG-DATED MARKETS THAT HAVE NOT SETTLED YET: the first
+ * 300 keys in candidate order are all decided 2026-09-17 (the pending block
+ * decided on/before 2026-09-26 is 4,545 of 6,165 keys), and re-read through the
+ * walk's own path (`getAdapter().fetchMarket` + `fetchEventResolution`) the head
+ * is 30/30 still open with live quotes — NFL season series, the November BoE and
+ * October Bank-of-Russia rate decisions, the Berlin Abgeordnetenhaus, the
+ * Richmond mayoral election, NH-02. `m.resolved` is false on every one of them,
+ * so both resolution paths return nothing, `value === undefined`, `continue`,
+ * and the same 300 slots were re-attempted every hour while the feed stopped
+ * marking: 14 consecutive hourly runs logged `+0 marked` (the live log also
+ * shows earlier streaks of 22 and 30), settled frozen at 4,945, while 828
+ * candidates decided inside the trailing 7 days sat unreachable behind the head.
+ * The pre-registered 2026-09-20 decay bar reads a trailing-7d cohort mean, so it
+ * could never be populated: `cohort7dMarked` stayed 0 and the EOD printed
+ * "cohort7d —".
+ *
+ * This is head-of-line blocking, NOT venue archival: the head cannot settle yet,
+ * but it will, and none of its rows 404s. The `GET /markets?slug=<slug>` → `[]`
+ * body quoted in the original card is the DEPRECATED endpoint, which answers
+ * `[]` for live and settled markets alike (it also returns `[]` for markets this
+ * walk does mark); the adapter prefers `/markets/slug/<slug>`, which returns the
+ * market for every slug the card cited, and the cited Hong Kong temperature
+ * market resolves through the walk's own path (resolved: true, "No").
  *
  * WHAT THIS MODULE DOES:
  *  - keeps a per-candidate attempt ledger (last attempt stamp + consecutive
@@ -23,7 +35,8 @@
  *    it survives process restarts (the same idea as the v62 observe rotation,
  *    src/lib/wallet-universe.ts `lastObservedAt` + least-recently-first);
  *  - orders each run's walk by LEAST-RECENTLY-ATTEMPTED instead of strictly
- *    oldest-first, so no unresolvable head can monopolise the run's slots;
+ *    oldest-first, so a head of still-open rows cannot monopolise the run's
+ *    slots;
  *  - holds a candidate back for ATTEMPT_RETRY_HOURS once it has failed
  *    ATTEMPT_FAIL_LIMIT times in a row, then lets it re-enter the walk at its
  *    (by then old) stamp — a market that resolves late is still re-attempted on
@@ -42,7 +55,9 @@
  * reproduce exactly the starvation this module removes — the trailing-7d cohort
  * that justified the fix would sit behind ~5,000 older rows for a whole cycle
  * (~21 h at 300/run). Recently decided candidates are also the ones that can
- * actually resolve at the venue: the archived tail IS the stuck head.
+ * actually resolve at the venue: the stuck head is the long-dated September
+ * cohort that has not settled yet, while the rows behind it are short-dated
+ * markets that already have (the proof runs marked 276/300 and 295/300 of them).
  *
  * BLAST RADIUS: the ledger is instrument state only. It never changes what a
  * candidate means, never marks, edits or back-fills a candidate row, never

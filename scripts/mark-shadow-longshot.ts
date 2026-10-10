@@ -60,13 +60,14 @@ const MARK_LIMIT = Number(process.env.MARK_LIMIT ?? 300);
  * Drift feed id in the attempt ledger (src/lib/shadow-attempts.ts).
  *
  * 2026-10-10 (card t_81d0a4cb): the drift walk is LEAST-RECENTLY-ATTEMPTED, not
- * oldest-first. Oldest-first let a permanently unresolvable head hold the same
- * 300 slots every hour — the head of the pending map is a September cohort (the
- * first 300 keys in candidate order span 2026-09-17..2026-09-26) whose slugs are
- * archived at the venue (gamma answers with an empty body, both resolution paths
- * return nothing), so 14 consecutive hourly runs logged `+0 marked`, settled
- * froze at 4,945, and the 828 candidates decided inside the trailing 7 days
- * stayed unreachable behind the head. That is why
+ * oldest-first. Oldest-first let a head that cannot settle YET hold the same 300
+ * slots every hour — the head of the pending map is a September cohort of
+ * long-dated markets (the first 300 keys in candidate order are all decided
+ * 2026-09-17; 4,545 of 6,165 pending keys are decided on/before 2026-09-26) that
+ * are STILL OPEN at the venue with live quotes, so both resolution paths return
+ * nothing (`resolved === false`), 14 consecutive hourly runs logged `+0 marked`,
+ * settled froze at 4,945, and the 828 candidates decided inside the trailing 7
+ * days stayed unreachable behind the head. That is why
  * data/drift-shadow-summary.json reported cohort7dMarked: 0 / cohort7d: null
  * and the pre-registered 2026-09-20 decay bar could never trip. The walk now
  * rotates on a persisted attempt stamp (skip after N=3 consecutive failures,
@@ -154,9 +155,10 @@ async function main() {
   // being an assumption.
   //
   // 2026-10-10 (card t_81d0a4cb): this feed walks LEAST-RECENTLY-ATTEMPTED
-  // (src/lib/shadow-attempts.ts) instead of oldest-first, so the archived head
-  // cannot hold the cap. The three feeds below keep their oldest-first walk
-  // untouched: they mark ~91% of their backlog and have no unresolvable head.
+  // (src/lib/shadow-attempts.ts) instead of oldest-first, so a head of
+  // long-dated, still-open September markets cannot hold the cap. The three
+  // feeds below keep their oldest-first walk untouched: they mark ~91% of their
+  // backlog and have no stuck head.
   const dRows = readDriftRows();
   const dCandidates = dRows.filter((r) => r.type === "candidate");
   const dAlready = new Set(dRows.filter((r) => r.type === "resolve").map((r) => `${r.marketId}|${r.outcome}`));

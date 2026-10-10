@@ -17,23 +17,49 @@ shadow-drift: +0 marked this run (cap 300/run, backlog 6164)
 
 Trailing consecutive `+0` runs: **14** (earlier streaks in the same log: 22 and 30). `4945 settled` is frozen across 15 consecutive lines.
 
-The old walk selected the first 25 / first 300 keys of the pending map (candidate order). Reconstructed read-only from the same data:
+The old walk selected the first 25 / first 300 keys of the pending map (candidate order). Reconstructed read-only from the live copy (2026-10-10, 6,165 distinct pending keys):
 
 ```
-pending keys in candidate order: 6147
-OLD walk (head of the pending map, cap 25):  window 2026-09-17..2026-09-26
-OLD walk (head of the pending map, cap 300): window 2026-09-17..2026-09-26
-decided after 2026-10-01: 1127 of 6147 pending keys
+pending keys in candidate order (live copy, 2026-10-10): 6165
+OLD walk (head of the pending map, cap 25 and cap 300): window 2026-09-17..2026-09-17
+pending keys decided on/before 2026-09-26 (the head block): 4545
+decided after 2026-10-01: 1133 of 6165 pending keys
 ```
 
-The head is unresolvable at the venue:
+**The head is not archived — it is a cohort of long-dated markets that have not settled yet.** The first 30 of the pre-fix walk, re-read through the walk's OWN resolution path (`getAdapter().fetchMarket` + `fetchEventResolution`, `DATA_MODE=live`): `resolved=0, still open=30, threw=0`, every row carrying a live quote — NFL season series (Titans/Jaguars), the November BoE rate decision, the October Bank of Russia decision, the Berlin Abgeordnetenhaus, the Richmond mayoral election, NH-02, CA-07:
 
 ```
-$ curl -s -o /dev/null -w "%{http_code}\n" "https://gamma-api.polymarket.com/markets/slug/highest-temperature-in-hong-kong-on-september-18-2026-34c"
-200
+2026-09-17 will-the-titans-win-the-season-series-against-the-jaguars-...20260717194031567 [NO] fetchMarket{resolved=false, winner=undefined, yesPrice=0.066, endpoint=slug} fetchEventResolution=null
+2026-09-17 no-change-in-bank-of-englands-interest-rates-after-november-2026-meeting-... [NO] fetchMarket{resolved=false, winner=undefined, yesPrice=0.09, endpoint=slug} fetchEventResolution=null
+2026-09-17 will-the-abgeordnetenhaus-of-berlin-have-163-or-more-seats-after-the-2026-election [YES] fetchMarket{resolved=false, winner=undefined, yesPrice=0.1755, endpoint=slug} fetchEventResolution=null
+2026-09-17 will-the-bank-of-russia-make-no-change-to-the-key-rate-after-the-october-meeting-... [NO] fetchMarket{resolved=false, winner=undefined, yesPrice=0.88, endpoint=slug} fetchEventResolution=null
+2026-09-17 will-rob-howard-win-the-2026-richmond-mayoral-election-1786127591042 [NO] fetchMarket{resolved=false, winner=undefined, yesPrice=0.485, endpoint=slug} fetchEventResolution=null
+```
+
+`resolved === false` on every one of them means both resolution paths return nothing (`value === undefined` → `continue`), so each row is re-attempted every hour and never leaves the head. None of them 404s; none is archived.
+
+**The `?slug=` empty body in the card is an artifact of the deprecated endpoint, not evidence of archival.** `GET /markets?slug=<slug>` answers `[]` for live AND settled markets alike:
+
+```
 $ curl -s "https://gamma-api.polymarket.com/markets?slug=highest-temperature-in-hong-kong-on-september-18-2026-34c"
 []
+$ curl -s "https://gamma-api.polymarket.com/markets/slug/highest-temperature-in-hong-kong-on-september-18-2026-34c" | head -c 110
+{"$schema":"https://gamma-api.polymarket.com/schemas/Market.json","id":"4606295","question":"Will the highest temperature in Hong Kong be 34°C ...
+$ curl -s "https://gamma-api.polymarket.com/markets?slug=nfl-tb-dal-2026-10-09-rec-jake-ferguson-3pt5"
+[]                     # same `[]` for a market the walk DOES mark (outcomePrices ["0","1"], closed)
 ```
+
+The adapter prefers `/markets/slug/<slug>`, and the cited slug resolves through it — so it was never unresolvable and never sat in the head:
+
+```
+adapter.fetchMarket("highest-temperature-in-hong-kong-on-september-18-2026-34c")
+  -> {resolved: true, winningLabel: "No", gammaEndpoint: "slug"}
+fetchEventResolution("highest-temperature-in-hong-kong-on-september-18-2026-34c") -> "No"
+data/drift-shadow.jsonl already carries its resolve row:
+  {"ts":"2026-09-21T03:26:18.257Z","type":"resolve","marketId":"highest-temperature-in-hong-kong-on-september-18-2026-34c","outcome":"NO","value":1}
+```
+
+**True mechanism, same symptom.** Head-of-line blocking: the oldest-first walk burned all 300 slots on a cohort of September-decided long-dated markets that cannot settle yet, so decidable recent candidates sat behind them and 14 consecutive runs logged `+0`. Rotation is the right fix, and it fits this cause better than the archival story: the head's rows are still-open October/November-2026 rate decisions and elections, so they will settle on their own dates and the 24 h slow-cadence re-attempt is what will *mark* them, not just a safety net.
 
 ## 2. Change
 
