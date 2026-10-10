@@ -67,6 +67,53 @@ async fn handle_quote(Json(req): Json<QuoteRequest>) -> Json<serde_json::Value> 
     }
 }
 
+/// BANKROLL_200's maker-fill credit: the inside-spread improvement the sidecar
+/// books on every C-200 BUY (`entry = intent − credit`).
+///
+/// Measured for the first time on 2026-10-10 (freeze thaw): across 354 dispatched
+/// intents / 353 book-analysable legs the level was reachable — a print, or a best
+/// ask, at or below it within an hour of the dispatch — on only ~18% of legs, not
+/// the archive's PRINT-anchored 74.3% @5m / 81.1% @1h the assumption had been
+/// riding on. The rate is BAND-DEPENDENT, and the credit is biggest exactly where
+/// the rate is smallest (2¢ is 34.9% of a $0.05 entry, 2.9% of a $0.70 one), so
+/// the band weights below, not one average, are what the lane should book.
+///   band        own 5s L2 (1h)   public tape (1h)   weight booked
+///   0.00–0.10        0.0%             5.6%            0.028
+///   0.10–0.20        6.7%            10.0%            0.084
+///   0.20–0.40       27.2%            18.5%            0.229
+///   0.40–0.60       17.6%            19.9%            0.188
+///   0.60–0.80       19.6%            17.4%            0.185
+///   ≥0.80           50.0%           100.0%            0.185  (n=2 — unmeasured, extrapolated)
+/// Detail: drafts/thaw-reads-2026-10-10.md §7/§9, cards c200-maker-fill-assumption
+/// and c200-intent-printthrough-check. The same table lives in
+/// src/lib/copy-cost.ts (MEASURED_FILL_WEIGHTS) so the EOD report can print the
+/// as-booked and measured-rate counterfactuals side by side.
+///
+/// MODE (`MAKER_CREDIT_MODE`, read per request, so reverting is an .env edit plus
+/// a `launchctl kickstart` — never a rebuild):
+///   "measured" (default) — 2¢ × the measured share for the leg's price band
+///   "modelled"           — the pre-2026-10-10 behaviour: the full 2¢ on every leg
+fn maker_credit(price: f64, mode: &str) -> f64 {
+    const MODELLED_CREDIT: f64 = 0.02;
+    if mode == "modelled" {
+        return MODELLED_CREDIT;
+    }
+    const BANDS: [(f64, f64, f64); 6] = [
+        (0.00, 0.10, 0.028),
+        (0.10, 0.20, 0.084),
+        (0.20, 0.40, 0.229),
+        (0.40, 0.60, 0.188),
+        (0.60, 0.80, 0.185),
+        (0.80, 999.0, 0.185),
+    ];
+    for (lo, hi, share) in BANDS {
+        if price >= lo && price < hi {
+            return MODELLED_CREDIT * share;
+        }
+    }
+    MODELLED_CREDIT * 0.185
+}
+
 async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_json::Value> {
     println!("🚀 [Shadow FAK] Received Execution Intent for {}: ${:.2} on {} at {:.1}¢", 
         intent.bot_id, intent.size_usd, intent.outcome, intent.price * 100.0);
@@ -112,20 +159,27 @@ async fn handle_execution(Json(intent): Json<ExecutionIntent>) -> Json<serde_jso
     if intent.bot_id == "BANKROLL_200" {
         // Assuming the passed `intent.price` is the Ask (since we're a Taker by default),
         // simulate placing a Maker limit order near the Bid to capture the spread.
-        // We simulate a 2-cent spread improvement.
-        let maker_improvement = 0.02;
-        
+        // The credit is the MEASURED fill share for the leg's band (2026-10-10 read),
+        // not a flat 2¢ — see maker_credit() above. MAKER_CREDIT_MODE=modelled
+        // restores the old behaviour without a rebuild.
+        let credit_mode = env::var("MAKER_CREDIT_MODE").unwrap_or_else(|_| "measured".to_string());
+        let maker_improvement = maker_credit(executed_price, &credit_mode);
+
         if intent.side.to_uppercase() == "BUY" {
             executed_price = f64::max(0.01, executed_price - maker_improvement);
-            println!("📈 [Maker Execution] Parked BUY limit order inside spread at {:.1}¢ (avoided {:.1}¢ taker fee)", executed_price * 100.0, maker_improvement * 100.0);
+            println!("📈 [Maker Credit] mode={} BUY booked {:.2}¢ inside the spread at {:.2}¢ (modelled 2.00¢)", credit_mode, maker_improvement * 100.0, executed_price * 100.0);
         } else {
             executed_price = f64::min(0.99, executed_price + maker_improvement);
-            println!("📉 [Maker Execution] Parked SELL limit order inside spread at {:.1}¢ (avoided {:.1}¢ taker fee)", executed_price * 100.0, maker_improvement * 100.0);
+            println!("📉 [Maker Credit] mode={} SELL booked {:.2}¢ inside the spread at {:.2}¢ (modelled 2.00¢)", credit_mode, maker_improvement * 100.0, executed_price * 100.0);
         }
-        
+
+        let note = match credit_mode.as_str() {
+            "modelled" => "MAKER Shadow Execution (Spread Captured)".to_string(),
+            _ => format!("MAKER Shadow Execution (measured credit {:.2}¢)", maker_improvement * 100.0),
+        };
         execution_note = match depth_warning {
-            Some(w) => format!("MAKER Shadow Execution (Spread Captured) — {w}"),
-            None => "MAKER Shadow Execution (Spread Captured)".to_string(),
+            Some(w) => format!("{note} — {w}"),
+            None => note,
         };
     }
 
@@ -209,4 +263,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     axum::serve(listener, app).await?;
     
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The measured per-band credit (2026-10-10 read) — the whole point of the
+    /// change is that the cheap bands, where 2¢ is worth the most, now book the
+    /// least. A regression to a flat 2¢ fails here.
+    #[test]
+    fn measured_mode_books_the_band_share() {
+        assert!((maker_credit(0.05, "measured") - 0.02 * 0.028).abs() < 1e-12);
+        assert!((maker_credit(0.15, "measured") - 0.02 * 0.084).abs() < 1e-12);
+        assert!((maker_credit(0.30, "measured") - 0.02 * 0.229).abs() < 1e-12);
+        assert!((maker_credit(0.50, "measured") - 0.02 * 0.188).abs() < 1e-12);
+        assert!((maker_credit(0.70, "measured") - 0.02 * 0.185).abs() < 1e-12);
+        assert!((maker_credit(0.95, "measured") - 0.02 * 0.185).abs() < 1e-12);
+        // band edges land on their own band, never on the neighbour's
+        assert!((maker_credit(0.10, "measured") - 0.02 * 0.084).abs() < 1e-12);
+        assert!((maker_credit(0.20, "measured") - 0.02 * 0.229).abs() < 1e-12);
+    }
+
+    /// The cheap bands are where the credit was worth 30-40% of the entry: they
+    /// must never book MORE than the modelled 2¢, and the whole table must stay
+    /// inside [0, 0.02].
+    #[test]
+    fn credit_never_exceeds_the_modelled_two_cents() {
+        for cents in 1..100 {
+            let p = cents as f64 / 100.0;
+            let c = maker_credit(p, "measured");
+            assert!(c >= 0.0 && c <= 0.02, "band {p} booked {c}");
+        }
+    }
+
+    /// Reverting is an env edit, not a rebuild: "modelled" restores the exact
+    /// pre-2026-10-10 behaviour on every price.
+    #[test]
+    fn modelled_mode_is_the_old_behaviour() {
+        for cents in 1..100 {
+            let p = cents as f64 / 100.0;
+            assert_eq!(maker_credit(p, "modelled"), 0.02);
+        }
+        assert_eq!(maker_credit(0.5, ""), 0.02 * 0.188); // unknown mode falls back to measured
+    }
+
+    /// The booked entry must move by exactly the credit, with the floor intact.
+    #[test]
+    fn buy_entry_is_intent_minus_credit_and_never_below_one_cent() {
+        let intent = 0.535_f64;
+        let credit = maker_credit(intent, "measured");
+        let booked = f64::max(0.01, intent - credit);
+        assert!((intent - booked - credit).abs() < 1e-12);
+        // intent − credit below the 1¢ floor clamps to 1¢ (cheap tokens)
+        assert_eq!(f64::max(0.01, 0.0102 - maker_credit(0.0102, "measured")), 0.01);
+    }
 }

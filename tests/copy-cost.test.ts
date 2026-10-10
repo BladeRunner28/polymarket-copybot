@@ -156,6 +156,43 @@ describe("maker credit — the Rust sidecar's 2¢ assumption (C-200 only)", () =
   });
 });
 
+describe("measured-credit counterfactual — the 2026-10-10 fill read", () => {
+  it("values the same credit at the measured per-band fill share, not at 1.0", () => {
+    // entry 0.50 → band 0.40–0.60 → (0.176 + 0.199)/2 = 0.1875
+    const s = laneEdgeCost([leg({ entryPrice: 0.5, sizeUsd: 10, realizedPnl: 4 })], "BANKROLL_200");
+    expect(s.makerCreditUsd).toBe(0.54);
+    expect(s.makerCreditMeasuredUsd).toBeCloseTo(0.54 * 0.1875, 2);
+    // (4 − (0.54 − 0.10)) / 10 = 35.6% — strictly between ex-maker (34.6%) and as-booked (40%),
+    // because only the UNSUPPORTED part of the credit leaves the book.
+    expect(s.exMeasuredCreditEdgePctOfCost).toBeCloseTo(35.6, 1);
+    expect(s.exMeasuredCreditEdgePctOfCost).toBeGreaterThan(s.exMakerEdgePctOfCost ?? 0);
+    expect(s.exMeasuredCreditEdgePctOfCost).toBeLessThan(s.edgePctOfCost ?? 0);
+  });
+
+  it("cuts the cheapest band hardest — that is where the credit is 40% of the entry", () => {
+    // entry 0.05, $10 → 200 shares; +$4 ⇒ exit 0.07. At entry 0.07 the same $10
+    // returns exactly $10, so the whole $4 is the credit; measured weight
+    // (0.000 + 0.056)/2 = 0.028 ⇒ $0.11 of it survives.
+    const s = laneEdgeCost([leg({ entryPrice: 0.05, sizeUsd: 10, realizedPnl: 4 })], "BANKROLL_200");
+    expect(s.makerCreditUsd).toBe(4);
+    expect(s.makerCreditMeasuredUsd).toBeCloseTo(4 * 0.028, 2);
+  });
+
+  it("is zero for STANDARD, and null when there is no credit to cut", () => {
+    const s = laneEdgeCost([leg({ botId: "STANDARD" })], "STANDARD");
+    expect(s.makerCreditMeasuredUsd).toBe(0);
+    expect(s.exMeasuredCreditEdgePctOfCost).toBeNull();
+  });
+
+  it("reports the measured credit beside the modelled one in the report block", () => {
+    const lines = edgeCostLines(
+      edgeCostSnapshot([leg({ entryPrice: 0.05, sizeUsd: 10, realizedPnl: 4 })], NOW)
+    ).join("\n");
+    expect(lines).toContain("measured");
+    expect(lines).toMatch(/\$0\b|\$0\./); // the measured credit is cents on this leg
+  });
+});
+
 describe("edgeCostSnapshot", () => {
   it("reports lifetime and trailing-30d over the same rows, per lane", () => {
     const rows = [

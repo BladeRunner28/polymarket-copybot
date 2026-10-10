@@ -107,9 +107,21 @@ export interface LaneEdgeCost {
    * settled legs: Σ (realizedPnl + size) × 0.02 / (entry + 0.02). Zero for lanes
    * that write their own fills (STANDARD). See the module header. */
   makerCreditUsd: number;
+  /** The same credit valued at the MEASURED fill share for each leg's band
+   * (MEASURED_FILL_WEIGHTS, 2026-10-10 read) instead of the assumed 1.0. This is
+   * the counterfactual that must be quoted beside the headline whenever the
+   * booking assumption is changed or read: the modelled credit is an upper
+   * bound and the measured one is what the venue's own evidence supports. */
+  makerCreditMeasuredUsd: number;
   /** SENSITIVITY, not a measurement: the same edge with makerCreditUsd removed
    * from realized PnL. Null for lanes with no credit to remove. */
   exMakerEdgePctOfCost: number | null;
+  /** The same edge with the credit CUT to makerCreditMeasuredUsd — the priced
+   * form of the approved re-pricing. The unsupported part of the credit
+   * (makerCreditUsd − makerCreditMeasuredUsd) is what leaves the book, so this
+   * equals (realizedPnl − (credit − creditMeasured)) / cost. Null when there is
+   * no credit to cut. */
+  exMeasuredCreditEdgePctOfCost: number | null;
   realizedPnlUsd: number;
   costUsd: number;
 }
@@ -129,6 +141,56 @@ export const MAKER_FEATURE_START_MS = Date.UTC(2026, 7, 28); // 2026-08-28T00:00
 /** Lanes whose fills are written by the Rust sidecar (src/lib/paper.ts
  * dispatch to :3014) and therefore carry MAKER_IMPROVEMENT_USD. */
 export const SIDECAR_LANES = ["BANKROLL_200"];
+
+/**
+ * MEASURED p(fill) for the mid-anchored maker level, by price band — the
+ * 2026-10-10 freeze-thaw read (card `c200-maker-fill-assumption`; 354 dispatched
+ * C-200 intents / 353 book-analysable legs; instrument `scripts/c200-printthrough.py`;
+ * detail in `drafts/thaw-reads-2026-10-10.md` §7 and §9).
+ *
+ * The booking assumption is `entry = intent − 0.02`, settled unconditionally.
+ * Measured, the level is reachable — a seller at or below it, within an hour of
+ * the dispatch — on far fewer legs than the archive's PRINT-anchored base rate
+ * (74.3% @5m / 81.1% @1h) implied, and the rate is band-dependent. Two
+ * independent instruments are averaged, because each is blind differently: the
+ * public trade tape is sparse on these markets (2–50 rows/market), and our own
+ * 5 s L2 corpus sees only the top-25 ladder.
+ *
+ *   band         own L2 1h   tape 1h   weight (mean)
+ *   0.00–0.10       0.0%       5.6%     0.028   (n=18 — the book says zero; the tape keeps it non-zero)
+ *   0.10–0.20       6.7%      10.0%     0.084   (n=30)
+ *   0.20–0.40      27.2%      18.5%     0.229   (n=81)
+ *   0.40–0.60      17.6%      19.9%     0.188   (n=176)
+ *   0.60–0.80      19.6%      17.4%     0.185   (n=46)
+ *   ≥0.80          50.0%     100.0%     0.185   (n=2 — essentially unmeasured; extrapolated from 0.60–0.80)
+ *
+ * The credit is biggest exactly where the rate is smallest: 2¢ is 34.9% of a
+ * $0.05 entry and 2.9% of a $0.70 one, so 83% of the whole credit sits in the
+ * two cheapest bands. Publication only — nothing in the trade path reads this
+ * constant; the booking side applies the same table in the sidecar.
+ */
+export const MEASURED_FILL_WEIGHTS: ReadonlyArray<{
+  lo: number;
+  hi: number;
+  book1h: number;
+  tape1h: number;
+  n: number;
+}> = [
+  { lo: 0, hi: 0.1, book1h: 0.0, tape1h: 0.056, n: 18 },
+  { lo: 0.1, hi: 0.2, book1h: 0.067, tape1h: 0.1, n: 30 },
+  { lo: 0.2, hi: 0.4, book1h: 0.272, tape1h: 0.185, n: 81 },
+  { lo: 0.4, hi: 0.6, book1h: 0.176, tape1h: 0.199, n: 176 },
+  { lo: 0.6, hi: 0.8, book1h: 0.196, tape1h: 0.174, n: 46 },
+  { lo: 0.8, hi: 999, book1h: 0.196, tape1h: 0.174, n: 2 },
+];
+
+/** Measured share of legs on which the `intent − 0.02` level was reachable (1 h),
+ * for an entry in `entryPrice`'s band — the mean of the two instruments. */
+export function measuredFillShare(entryPrice: number): number {
+  const b = MEASURED_FILL_WEIGHTS.find((w) => entryPrice >= w.lo && entryPrice < w.hi);
+  const row = b ?? MEASURED_FILL_WEIGHTS[MEASURED_FILL_WEIGHTS.length - 1];
+  return (row.book1h + row.tape1h) / 2;
+}
 
 export interface EdgeCostSnapshot {
   lifetime: LaneEdgeCost[];
@@ -229,6 +291,7 @@ export function laneEdgeCost(
   let dragSum = 0;
   let dragN = 0;
   let makerCreditUsd = 0;
+  let makerCreditMeasuredUsd = 0;
   const sidecar = SIDECAR_LANES.includes(botId);
 
   for (const leg of legs) {
@@ -245,11 +308,17 @@ export function laneEdgeCost(
     // fixed and re-price the entry at entry+0.02 (so shares = size/(entry+0.02)).
     // Only legs booked while the maker path was live — see MAKER_FEATURE_START_MS.
     if (sidecar && leg.entryPrice > 0 && (leg.openedAtMs ?? 0) >= MAKER_FEATURE_START_MS) {
-      makerCreditUsd += ((pnl + (leg.sizeUsd ?? 0)) * MAKER_IMPROVEMENT_USD) / (leg.entryPrice + MAKER_IMPROVEMENT_USD);
+      const credit =
+        ((pnl + (leg.sizeUsd ?? 0)) * MAKER_IMPROVEMENT_USD) / (leg.entryPrice + MAKER_IMPROVEMENT_USD);
+      makerCreditUsd += credit;
+      // The same leg at the MEASURED reachability for its band: the credit is
+      // only worth what the venue's own evidence supports (see the table above).
+      makerCreditMeasuredUsd += credit * measuredFillShare(leg.entryPrice);
     }
   }
 
   const makerCredit = Math.round(makerCreditUsd * 100) / 100;
+  const makerCreditMeasured = Math.round(makerCreditMeasuredUsd * 100) / 100;
   return {
     botId,
     label: laneLabel(botId),
@@ -259,8 +328,13 @@ export function laneEdgeCost(
     copyCostPctPerLeg: legs.length > 0 ? (copyCostSum / legs.length) * 100 : null,
     detectionDragPctPerLeg: dragN > 0 ? (dragSum / dragN) * 100 : null,
     makerCreditUsd: makerCredit,
+    makerCreditMeasuredUsd: makerCreditMeasured,
     exMakerEdgePctOfCost:
       costUsd > 0 && makerCredit > 0 ? ((realizedPnlUsd - makerCredit) / costUsd) * 100 : null,
+    exMeasuredCreditEdgePctOfCost:
+      costUsd > 0 && makerCredit > 0
+        ? ((realizedPnlUsd - (makerCredit - makerCreditMeasured)) / costUsd) * 100
+        : null,
     realizedPnlUsd: Math.round(realizedPnlUsd * 100) / 100,
     costUsd: Math.round(costUsd * 100) / 100,
   };
@@ -355,6 +429,18 @@ export function edgeCostLines(snap: EdgeCostSnapshot): string[] {
             d30 ? ` / ${pct1(d30.exMakerEdgePctOfCost)}% (30d)` : ""
           }`;
         })
+        .join("; ")}. At the MEASURED fill share for each leg's price band (2026-10-10 read, MEASURED_FILL_WEIGHTS) ` +
+      `that credit is only ≈${usd(
+        makerLanes.reduce((a, l) => a + l.makerCreditMeasuredUsd, 0)
+      )} — the modelled 2¢ is booked on every leg, but the venue's own evidence (our 5 s L2 book and the public tape, agreeing within 1pp) ` +
+      `supports the level on ~2.8–22.9% of legs depending on band, and the credit is LARGEST where the rate is smallest. ` +
+      `At the measured rate ${makerLanes
+        .map((l) => {
+          const d30 = snap.d30.find((d) => d.botId === l.botId && d.n > 0);
+          return `${l.label} reads ${pct1(l.exMeasuredCreditEdgePctOfCost)}% of cost (lifetime)${
+            d30 ? ` / ${pct1(d30.exMeasuredCreditEdgePctOfCost)}% (30d)` : ""
+          }`;
+        })
         .join("; ")}.`
     : ` The booked entry is a quote read at scoring time, not a taker fill.`;
   const legend =
@@ -377,7 +463,8 @@ export function edgeCostLogLine(snap: EdgeCostSnapshot): string {
       `${life.label} edge ${pct1(life.edgePctOfCost)}% of cost (n=${n0(life.n)}) / copy cost ` +
       `${pct1(life.copyCostPctPerLeg)}%/leg (n=${n0(life.n)})` +
       (life.makerCreditUsd > 0
-        ? ` / 2c maker credit ${usd(life.makerCreditUsd)} of ${usd(life.realizedPnlUsd)} realized (ex-maker edge ${pct1(life.exMakerEdgePctOfCost)}%)`
+        ? ` / 2c maker credit ${usd(life.makerCreditUsd)} of ${usd(life.realizedPnlUsd)} realized (ex-maker edge ${pct1(life.exMakerEdgePctOfCost)}%)` +
+          ` / measured-rate credit ${usd(life.makerCreditMeasuredUsd)} (edge at measured rate ${pct1(life.exMeasuredCreditEdgePctOfCost)}%)`
         : "") +
       (d30
         ? ` | 30d edge ${pct1(d30.edgePctOfCost)}% (n=${n0(d30.n)}) / copy cost ${pct1(
