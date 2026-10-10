@@ -1115,7 +1115,7 @@
    "effort": "already instrumented (analyzer --band-min shipped); read is one command",
    "dates": "Rule pre-committed 2026-09-20 (daily report rec 1b, user-approved) · re-read weekly or when a horizon bucket reaches 20 priced tickets",
    "gate": "PRE-COMMITTED DECISION RULE (binding, 2026-09-20): an exit exemption ships for a band ONLY IF, on that band's own sample, (1) hold-to-horizon PnL at the PRE-NAMED horizon beats the realized PnL of the cut tickets, on a bucket with >=20 PRICED tickets (the existing guarantee rule — no exceptions), AND (2) the direction also holds in the all-time arm, AND (3) >=20 decisions were cut in the band. Pre-named horizons: 24h for 0.20–0.40 (short/medium-lived positions), 72h for <0.20 (long-dated). Failing the count test means EXTEND THE CLOCK, never 'decide on the near-miss'.",
-   "note": "READ 2026-09-20 (the Change-2 clock's due date) — NO EXEMPTION SHIPS. Command: `DATABASE_URL=\"file:./dev.db?immutable=1\" npx tsx scripts/analyze-band-exit-exemption.ts --since 2026-09-13 [--band-min 0.20 --band-max 0.40]`. Result: <0.20 since 09-13 — tier1 cuts n=10, realized −$191.85, priced tickets 1h 5 / 6h 3 / 24h 2 / settle 1 → under-powered, the guarantee rule blocks a decision. 0.20–0.40 since 09-13 — cuts n=18, realized −$48.75, 1h −$47.18 (n=11), 6h −$14.25 (n=8), 24h −$4.38 (n=1), settle −$64.18 (n=9) → n<20 and the named 24h bucket has 1 priced ticket. 0.20–0.40 ALL-TIME — cuts n=112, realized −$75.92, 1h −$115.28 (n=34), 6h −$87.60 (n=26), 24h −$8.35 (n=8), 72h −$16.40 (n=3), 168h −$3.91 (n=1), settle −$333.83 (n=41) → the two buckets that DO clear the 20-priced bar (1h, 6h) are both WORSE than the realized exit, i.e. the cuts were right and the 'exit-side' hypothesis behind the 0.20–0.40 arm is not supported where the sample is adequate. The 24h hint (−$8.35 vs −$75.92) is 8 tickets — noise by the card's own standard. Files: data/band-exit-exemption-20260913-0-0.2.json, …-20260913-0.2-0.4.json, …-alltime-0.2-0.4.json (never clobbering each other).",
+   "note": "READ 2026-09-20 (the Change-2 clock's due date) — NO EXEMPTION SHIPS. Command: `DATABASE_URL=\"file:./dev.db?immutable=1\" npx tsx scripts/analyze-band-exit-exemption.ts --since 2026-09-13 [--band-min 0.20 --band-max 0.40]`. Result: <0.20 since 09-13 — tier1 cuts n=10, realized −$191.85, priced tickets 1h 5 / 6h 3 / 24h 2 / settle 1 → under-powered, the guarantee rule blocks a decision. 0.20–0.40 since 09-13 — cuts n=18, realized −$48.75, 1h −$47.18 (n=11), 6h −$14.25 (n=8), 24h −$4.38 (n=1), settle −$64.18 (n=9) → n<20 and the named 24h bucket has 1 priced ticket. 0.20–0.40 ALL-TIME — cuts n=112, realized −$75.92, 1h −$115.28 (n=34), 6h −$87.60 (n=26), 24h −$8.35 (n=8), 72h −$16.40 (n=3), 168h −$3.91 (n=1), settle −$333.83 (n=41) → the two buckets that DO clear the 20-priced bar (1h, 6h) are both WORSE than the realized exit, i.e. the cuts were right and the 'exit-side' hypothesis behind the 0.20–0.40 arm is not supported where the sample is adequate. The 24h hint (−$8.35 vs −$75.92) is 8 tickets — noise by the card's own standard. Files: data/band-exit-exemption-20260913-0-0.2.json, …-20260913-0.2-0.4.json, …-alltime-0.2-0.4.json (never clobbering each other). | 2026-10-10 OPTION B (user-approved): the six shipped `data/band-exit-exemption*.json` outputs still carry PRE-fix values (the band-exit hold-to-settlement arm compared the venue label to the stored uppercase outcome raw, so 106 of 107 market-settlement-priced rows were valued 0; the single 1 was an all-caps label). The code is fixed (src/lib/resolution.ts `settlementValue` + the script's normalised compare, on main since the wt/outcome-casing-fix merge 2026-10-10) and the outputs are DELIBERATELY NOT regenerated — regenerating moves the published 'settle −$333.83 (n=41)' line, which needs its own approval. Evidence: the all-time 0.20–0.40 exit-side read is 11/42 won, not 1/42. Regenerate under this card only, command in the script comment.",
    "tags": [
     "exit-policy",
     "measurement",
@@ -2286,6 +2286,39 @@
     "size-bands",
     "v60",
     "era-cut",
+    "finding"
+   ]
+  },
+  {
+   "id": "benchmarks-bot-vs-blind-base-mix",
+   "column": "Backlog",
+   "title": "FINDING (override-class) — the bot-vs-blind benchmark compares EXIT vs OUTCOME bases inside one number",
+   "effort": "~2h (re-derive both arms on one basis + a before/after of every figure that moves)",
+   "dates": "Surfaced 2026-10-07 by the read-only kanban audit t_1a96fb7a (measurement-label-integrity)",
+   "note": "MEASURED (read-only audit, file:line): src/lib/benchmarks.ts:63,69 — the BOT arm is priced on the legs' `realizedPnl` (EXIT basis: depends on our exit policy) while the BLIND arm is `computePnl(finalOutcome == outcome)` (OUTCOME basis: hold-to-resolution), and the comparison (`beatBlind`) is published from the pair. The two arms therefore answer different questions, and the EOD line reading it is src/lib/report.ts:245,290. Same basis vocabulary as the standing measurement-target rule: OUTCOME = didOutcomeWin, EXIT = realizedPnl > 0, MARK = a price. Corroborating scale from the same audit: label disagreement 401/5204 = 7.7% between the two bases. NOTHING changed — this is a published figure, so it is override-class.",
+   "gate": "VERIFY: both arms are re-derived on the SAME basis (state which one) with the row counts and the delta printed; the before/after of every figure that moves ships with the proposal, as a dry run that writes nothing. A basis change to a PUBLISHED benchmark is a measurement change and needs explicit approval before it lands.",
+   "tags": [
+    "measurement",
+    "benchmarks",
+    "label-basis",
+    "override-class",
+    "finding"
+   ]
+  },
+  {
+   "id": "ruleupdater-exit-labeled-winrate",
+   "column": "Backlog",
+   "title": "FINDING (override-class) — minCopyScore is gated on an exit-contaminated win rate",
+   "effort": "~2h (re-derive the gate's win rate on the OUTCOME basis + price the admits that flip)",
+   "dates": "Surfaced 2026-10-07 by the read-only kanban audit t_1a96fb7a (measurement-label-integrity)",
+   "note": "MEASURED (read-only audit, file:line): src/lib/rule-updater.ts:28-46,106-112 — `update:rules` prints 'avg PnL' / 'win rate' computed as `realizedPnl` over the v52-widened `closed|resolved` population (EXIT basis) and it GATES `minCopyScore` on that number. An exit-policy label standing in for a probability is the exact error class the standing measurement-target rule names: 73.9% of finished legs exit early, and the measured inflation from reading C-200 off settled rows only is +$0.484 -> 0.627 win rate / AUC 0.651 -> 0.747 / Brier 0.237 -> 0.205. Private to us, so the practical risk is a gate that tightens or loosens on the exit policy rather than on signal quality. NOTHING changed — it moves a gate, so it is override-class.",
+   "gate": "VERIFY: the gate's own win rate is re-derived on the OUTCOME basis (`didOutcomeWin`) over the SAME population, with n and both numbers printed side by side; then the number of decisions whose gate verdict would flip is priced (admitted legs and their settled PnL). A change to a gate threshold ships as a RuleSet version with its own before/after; a label-basis correction to the PRINTED number is a measurement change and ships behind its own approval.",
+   "tags": [
+    "measurement",
+    "rule-updater",
+    "minCopyScore",
+    "label-basis",
+    "override-class",
     "finding"
    ]
   }

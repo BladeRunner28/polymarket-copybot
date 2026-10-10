@@ -151,6 +151,15 @@ async function main() {
           // market, so every settled one was valued 0 — a phantom loss (same
           // class as outcome-casing-mismatch); undefined now means "leave it
           // unpriced" instead of "lost".
+          //
+          // NOTE (2026-10-10, option B approved in-thread): the SIX SHIPPED
+          // `data/band-exit-exemption*.json` outputs still carry the PRE-fix
+          // values (106 of 107 market-settlement rows valued 0) and are
+          // DELIBERATELY not regenerated — regenerating moves a published
+          // number (the `exit-exemption-20-40-decision` card's
+          // "settle −$333.83 (n=41)"). Re-run only under that card's own
+          // approval:
+          //   DATABASE_URL="file:./dev.db?immutable=1" npx tsx scripts/analyze-band-exit-exemption.ts --band-min 0.20 --band-max 0.40
           if (m.resolved) {
             v = settlementValue(t.outcome, {
               winningLabel: m.winningLabel ?? m.winningOutcome,
