@@ -1,0 +1,114 @@
+{
+ "action": "scripts/dedupe-open-copies.ts --clean-leaks --ensure-index",
+ "applied_at": "2026-10-10T19:30:36Z",
+ "approved": "user, in-thread 2026-10-10",
+ "leak_key": {
+  "botId": "STANDARD",
+  "walletAddress": "0xb0c85813a7a4428f1139ff91d3118a92c391fe7f",
+  "marketId": "will-no-fed-rate-cuts-happen-in-2026",
+  "outcome": "NO",
+  "open_legs_before": 5,
+  "legs": "1 pre-guard (cmtonogpi001uffq7yhgsnj4i, opened 2026-09-05 17:27:38Z, kept as oldest) + 4 post-guard leaks (opened 2026-09-09 14:12:55 / 14:29:02 / 14:45:07 / 15:01:30Z, one per monitor run, exactly the v52 re-book loop)"
+ },
+ "closed": [
+  {
+   "id": "cmtu6hgf3001rzzbxxs601e92",
+   "exitPrice": 0.0445,
+   "realizedPnl": -6.8
+  },
+  {
+   "id": "cmtu7273u0050gmfgsax7mr5p",
+   "exitPrice": 0.0445,
+   "realizedPnl": -6.8
+  },
+  {
+   "id": "cmtu7mv02006igjaho5jl6rp6",
+   "exitPrice": 0.0445,
+   "realizedPnl": -6.8
+  },
+  {
+   "id": "cmtu87xyo0046w2yck7dmts10",
+   "exitPrice": 0.0445,
+   "realizedPnl": -6.8
+  }
+ ],
+ "close_reason_logged": "v54 duplicate-open cleanup (post-guard leak; journal fix prevents recurrence) (closePaperTrade ignores its 3rd arg \u2014 the reason is stdout-only, so this file is the audit trail)",
+ "aggregates": {
+  "before": {
+   "STANDARD|open": [
+    1290,
+    null,
+    1665.06
+   ],
+   "STANDARD|closed": [
+    6664,
+    1780.54,
+    0.0
+   ],
+   "STANDARD|resolved": [
+    2236,
+    7577.01,
+    0.0
+   ],
+   "BANKROLL_200|open": [
+    28,
+    null,
+    29.53
+   ],
+   "BANKROLL_200|closed": [
+    1594,
+    2412.9,
+    0.0
+   ],
+   "BANKROLL_200|resolved": [
+    774,
+    3342.88,
+    0.0
+   ]
+  },
+  "after": {
+   "STANDARD|open": [
+    1286,
+    null,
+    1692.26
+   ],
+   "STANDARD|closed": [
+    6668,
+    1753.34,
+    0.0
+   ],
+   "STANDARD|resolved": [
+    2236,
+    7577.01,
+    0.0
+   ],
+   "BANKROLL_200|open": [
+    28,
+    null,
+    29.53
+   ],
+   "BANKROLL_200|closed": [
+    1594,
+    2412.9,
+    0.0
+   ],
+   "BANKROLL_200|resolved": [
+    774,
+    3342.88,
+    0.0
+   ]
+  },
+  "total_standard_pnl_before": 3445.6,
+  "total_standard_pnl_after": 3445.6,
+  "c200_lane_touched": false
+ },
+ "verification": {
+  "report_after": "0 post-guard duplicate keys (was 1); 164 legacy keys unchanged",
+  "leak_key_open_legs_after": 1,
+  "leak_key_cost_after": 18.0,
+  "unique_index": "ensure-index SKIPPED \u2014 164 legacy pre-v52 keys still block it (unchanged from the card)",
+  "bankroll_mutation": "none: closePaperTrade only touches BotBankroll for non-STANDARD lanes, and the leak was STANDARD",
+  "db_backup": "~/db-backups/dev.db.pre-dedupe-20261010-143029.db (APFS clonefile, byte-size identical, taken pre-write)"
+ },
+ "pnl_note": "realized lifetime STANDARD moves 1780.54 -> 1753.34 (-27.20) as the 4 leg closes realize their existing unrealized marks (unrealized 1665.06 -> 1692.26, +27.20): a reclassification, not a loss. The C-200 lane and every Kalshi-parity number are untouched."
+}
