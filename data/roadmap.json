@@ -391,10 +391,10 @@
   {
    "id": "precommit-mid-oct-kelly-gate",
    "title": "Pre-commit: Oct 8 Kelly-window gate + concept menu (binding)",
-   "column": "Scheduled",
+   "column": "Done",
    "effort": "decision point only — no code before it",
-   "dates": "Opened 2026-09-05 · reads 2026-10-08 (Kelly window Sep 8–Oct 8, pulled forward)",
-   "note": "BINDING at window close: (1) clean-regime daily expectancy > $0 at current caps; (2) long-shot <0.20 band share of realized PnL 3–6× pre-Kelly share (phase-b falsifiable target); (3) 0.80+ favorite band ≈ 0 trades; (4) no max-drawdown increase vs pre-Kelly clean baseline; (5) 0.40–0.60 mid-band (the −$434 black hole, confirmed 2026-09-05 exit-recovery analysis: entries primary, exits secondary — hold-to-24h still negative) must shrink toward ~0 trades / ~$0 PnL. ALL PASS → unlock the overlay roadmap (ML-1 build, Phase C arb build, GDELT wiring), production-capital sizing, goal-ladder + funding-schedule re-baseline. EXPECTANCY ≤ 0 → stop adding layers; run the concept menu: (a) band-conditional fade-whale test, (b) calibration-only entries, (c) arb-only, (d) ML on market features (NOT whale copies); decide whether the copy lane survives or the bot re-architects around the corrections (premium/timing/category). NO rule/sizing/live-lane changes before the window closes — measurement/observability fixes only (scheduled λ̂ refits Sep 15 + Oct 1 excepted: system-under-test, not changes). Companion: regime-cleanliness-baseline. Observability gap to close pre-window: post-exit token price at +1h/+6h/+24h per early exit (only 211/984 testable today). CONTAMINATION NOTE (2026-09-19, appended — the gate itself is unchanged): two mid-window behavior changes landed after this pre-commit, so gate (1) 'clean-regime daily expectancy > $0' must be read by ruleSetVersion, not on the Oct 8 total: RuleSet v57 change A (drift tolerance price-relative in the <0.20 band, longshotDriftPct 0 → 0.08) moves the drift gate the pre-Kelly baseline was measured at (0.004); v57 change B caps Kelly admits in [0.20,0.60) at the legacy-equivalent size ($17.99), i.e. gate (5) 'mid-band ≈ 0' is now partly shipped rather than purely measured. Both were user-approved for cause; both need attribution at the close (drafts/kelly-window-stage-20260919.md, card v57b-midband-rail-replay). MID-WINDOW RULE CHANGES (2026-09-19): v57 (longshotDriftPct 0→0.08, applied 09-19 06:39, code half committed d9aacd8) and v58 (maxWalletNotionalPctOfCap 0→0.25, applied 09-19 13:25, tuning #30 rec 1) v59 (walletCapBasis stock→delta, applied 09-20 04:40, daily-report rec 2 — grandfathers the per-wallet baseline) and v60 (c200BandSizeFactor 0.5 on [0.6,0.8), applied 09-21 08:4x, 2026-09-20 daily-report change 1 — halves new size in the premium band) both landed INSIDE this window, so the Oct 8 verdict must be ATTRIBUTED BY `ruleSetVersion` (v55/v56/v57/v58 sub-windows via `analyze-calibration.py --since`), never as one total — the pre-Kelly baseline was measured at drift 0.004 and with no per-wallet ceiling. Carded by tuning review #30 rec 3.",
+   "dates": "Opened 2026-09-05 · reads 2026-10-08 (Kelly window Sep 8–Oct 8, pulled forward) | Closed 2026-10-09",
+   "note": "CLOSED 2026-10-09 (tuning review #50 rec 1, user-approved). ALL FIVE PRECONDITIONS MET on the FINAL read (drafts/kelly-final-read-2026-10-09.md): (1) clean-regime expectancy > $0 — window main-lane realized +$3,774 vs baseline +$140; (2) long-shot <0.20 share 8.1x pre-Kelly ($465 -> $3,782) vs the pre-registered 3-6x, exceeds; (3) 0.80+ favorite band 0 trades; (4) no drawdown increase — DD 2.5% vs the 20% gate; (5) 0.40-0.60 mid-band 0 trades / $0 PnL (zero-edge skip held every day, and the band's lambda-hat moved further positive Sep-1 +0.03 -> Oct-1 +0.074, so the skip stayed calibration-consistent). UNLOCKS (per this card's own text): the overlay roadmap (ML-1 build, Phase C arb build, GDELT wiring), production-capital sizing, goal-ladder + funding-schedule re-baseline. Not yet acted on - each unlock is its own decision.",
    "tags": [
     "kelly",
     "measurement",
@@ -977,11 +977,11 @@
   {
    "id": "v55-ceiling-vs-kelly-decision",
    "title": "DECISION — the v55 per-market ceiling vetoes Kelly-sized admits (11 of 12); raise it or scope it",
-   "column": "Backlog",
+   "column": "Done",
    "effort": "one field (maxMarketNotionalPctOfCap)",
-   "dates": "Surfaced 2026-09-19 (tuning review #29) · first exposed after the freeze thawed",
+   "dates": "Surfaced 2026-09-19 (tuning review #29) · first exposed after the freeze thawed | Closed 2026-10-09",
    "gate": "USER PICK. Options: (a) raise maxMarketNotionalPctOfCap 0.10 -> 0.20 (= $250 on the current $1,251 cap, which exactly covers maxMarketLegsPerMarketId x kellyMaxSizeUsd = 2 x $100); (b) exempt the <0.20 band (the only positive-edge band) from the per-market ceiling while keeping legs <= 2; (c) leave it and accept that Kelly cannot size two legs into one market.",
-   "note": "v55's ceiling is doing its job on accumulation, but its interaction with v49 Kelly is wrong: the review's first look after the thaw shows it vetoed 11 of 12 Kelly admits ($200 notional vs a $125.12 cap). Kelly sizes the long-shot band at up to kellyMaxSizeUsd $100, so TWO legs in one market legally exceed 10% of the cap — the rule makes the 2-leg allowance unusable at Kelly size, i.e. the ceiling binds hardest on the lane the book's only |z|>=2 positive edge runs through. RECOMMENDATION: (a) 0.20 — it keeps the concentration intent (a market can never take more than a fifth of the book) while making the leg allowance coherent with the sizing cap it was written to permit.",
+   "note": "DECIDED 2026-10-09, USER-APPROVED in-thread: option (a), raise maxMarketNotionalPctOfCap 0.10 -> 0.20. SHIPPED as RuleSet v61 (scripts/apply-v61-market-ceiling.ts, RuleChange hermes-v61-market-ceiling-approved, 2026-10-10 07:26 UTC; exactly ONE field changed, 84/85 identical, exactly 1 active RuleSet). MEASURED INERT AT THE CURRENT CAP, and the card's premise is already resolved by cap growth: the cap went $1,251 -> $3,971, so 10% = $397.13 already exceeds the $200 two legs can reach (maxMarketLegsPerMarketId 2 x kellyMaxSizeUsd $100) — `replay-market-cap.ts --days 30` is IDENTICAL at 0.10 and 0.20 (16 legs blocked, all [leg 3 > 2]; 0 by notional) and the notional clause has fired 0 times since 2026-09-19 (21 lifetime, all at the $125.12 ceiling, newest log line 49,028 vs the 10-07 window header at 96,877). (a) ships for coherence at the cap floor (20% x $1,000 = $200 = 2 x $100) so the incoherence cannot recur if the cap contracts below $2,000. Revert = v62 with 0.10. THE LIVE CLAUSE IS A DIFFERENT KNOB: see card permarket-legs-rail-finding.",
    "tags": [
     "concentration",
     "kelly",
@@ -1008,11 +1008,11 @@
   {
    "id": "kellyfraction-oct8-decision",
    "title": "DECISION (staged) — kellyFraction for the Kelly window: HOLD at 0.5",
-   "column": "Backlog",
+   "column": "Done",
    "effort": "one script (shipped) + one flag",
-   "dates": "Staged 2026-09-19 · user pick at the Oct 8 window close",
+   "dates": "Staged 2026-09-19 · user pick at the Oct 8 window close | Closed 2026-10-09",
    "gate": "USER PICK — trigger phrase 'apply the fraction cut --fraction=X'. RECOMMENDED: HOLD (the loss is band-specific; a global multiplier also cuts the only positive band, and the v57-B rail already holds 0.20–40 at $17.99 < what fraction 0.25 would book there, $20–26). Probe: DATABASE_URL=\"file:./dev.db\" npx tsx scripts/apply-v59-kelly-fraction.ts (no flag → prints consequences, exit 2, writes nothing).",
-   "note": "Staged by drafts/kelly-window-stage-20260919.md (approved 2026-09-19). Window main-lane Kelly, decision-level (deduped): <0.20 n=23 +$988.16 (+50.1% mean ROI, t=+0.86, boot95 [-0.45,+1.76]); 0.20–40 n=14 −$427.36 (−51.8% ROI, t=−2.21, boot95 [-0.89,−0.02], MDE 0.66). Sizing table through the real kellySizeForCopy at the live bankroll $879 (maxBankrollPct 10% ⇒ $88 binds before maxSizeUsd $100): frac 0.5 → $68/$88/$88 (<0.20 at 0.05/0.10/0.15) and $40/$47/$53 (0.20–40 at 0.25/0.30/0.35); frac 0.25 → $34/$52/$65 and $20/$23/$26. Re-run the probe if the <0.20 band turns negative before the close — that is the only condition that flips this decision. SCRIPT RENAMED 2026-09-19: the staged file is now scripts/apply-v59-kelly-fraction.ts — RuleSet v58 was taken by the per-wallet ceiling (tuning #30 rec 1), so the staged script's name no longer matched the version it would create; it still applies whatever version applyRuleChanges assigns at run time.",
+   "note": "DECIDED 2026-10-09 at the Kelly-window close, USER-APPROVED in-thread: **HOLD kellyFraction at 0.5.** The card's own flip condition was explicit and did NOT occur — 're-run the probe if the <0.20 band turns negative before the close'; the <0.20 band closed at +$3,782 on 51 copies (the entire window's profit), so the HOLD stands and no RuleSet version is created by this card. The staged script scripts/apply-v59-kelly-fraction.ts remains the one-command path if a future read flips the condition (trigger phrase 'apply the fraction cut --fraction=X'). RuleSet v61 is the per-market ceiling (separate card), not a fraction change.",
    "tags": [
     "kelly",
     "sizing",
@@ -1750,11 +1750,11 @@
   {
    "id": "decay-bar-tripped-oct8-decision",
    "title": "DECISION — tripped drift-decay bar (8/7 days): relax maxPriceDrift / longshotDriftPct at the Oct 8 read?",
-   "column": "Scheduled",
+   "column": "Done",
    "effort": "decision at the Oct 8 read; the relaxation itself is a one-field RuleSet apply",
-   "dates": "Carded 2026-09-28 (tuning review #38 rec 4, user-approved) · decision bound to the Oct 8 Kelly-window close",
+   "dates": "Carded 2026-09-28 (tuning review #38 rec 4, user-approved) · decision bound to the Oct 8 Kelly-window close | Closed 2026-10-09",
    "gate": "At the Oct 8 read: record the decision (relax / hold) WITH the bar's evidence re-read at that date (`jq .decayBar data/drift-shadow-summary.json`) and the window attribution by ruleSetVersion; if relaxed, it ships as a RuleSet version whose re-check is the bar's own counterfactual series for the following 7 days.",
-   "note": "WHY CARDED: the 2026-09-20 pre-registration's precondition is satisfied — `data/drift-shadow-summary.json` decayBar = {consecutiveDaysAtOrBelow: 8, daysRequired: 7, cohort7d: -0.69, tripped: true} (series 2026-09-20…09-27, each day -$0.13/-$0.16) — so a `maxPriceDrift`/`longshotDriftPct` relaxation is JUSTIFIED, but the v60 Kelly freeze runs to Oct 9 and 11 days remained to the read as of #38: the decision belongs there, attributed by ruleSetVersion. NO threshold value is proposed. The reviewer carried this as a queue for two cycles with no card to point at (copy-score axis 1); this card IS the queue. tr31-rec2-drift-decay-bar stays Scheduled as the instrument's card.",
+   "note": "CLOSED 2026-10-09 as RESOLVED / NO-CHANGE (tuning review #49 rec 1 + #50 rec 1). The decision read at the Oct 8 Kelly-window close: the bar did NOT trip — `jq .decayBar data/drift-shadow-summary.json` -> tripped false, consecutiveDaysAtOrBelow 4/7 at the 10-09 read (3/7 at the 10-08 close), cohort7d $13.32 vs the $0.50 bar, EOD prints 'N/7 days at <=$0.50'. Both clauses are required by the 2026-09-20 pre-registration and the cohort clause failed, so NO maxPriceDrift/longshotDriftPct relaxation ships and NO threshold value is proposed. The instrument card tr31-rec2-drift-decay-bar stays Scheduled.",
    "tags": [
     "tuning-38",
     "decision",
@@ -2228,17 +2228,65 @@
   {
    "id": "tr48-rec1-event-family-wallet-split",
    "title": "Rec 1 — the EOD event-family read gets a WALLET dimension (top-family split + open-book wallet concentration)",
-   "column": "In Progress",
+   "column": "Done",
    "effort": "S — two added lines on an existing read-only EOD instrument; no cap, sizing, threshold or schedule touched",
-   "dates": "Applied 2026-10-07 (tuning review #48 rec 1, user-approved in-thread; measurement-only, lands inside the Kelly window because nothing it prints gates a decision)",
+   "dates": "Applied 2026-10-07 (tuning review #48 rec 1, user-approved in-thread; measurement-only, lands inside the Kelly window because nothing it prints gates a decision) | Closed 2026-10-09",
    "gate": "VERIFY (7 d, re-read at review #55): `npx tsx scripts/event-family-concentration.ts` prints the top family's wallet split AND the open-book wallet concentration; two consecutive runs at a FIXED INSTANT are byte-identical (determinism at a point — NOT equality with history: the read is over OPEN positions, so the population moves as legs open and resolve); `grep -c \"by event family\" logs/cron/copybot-eod.log` >= 1 over the 7 d with the EOD exiting 0. No cap/sizing/threshold change is proposed or implied by this line — it prices a shape, it does not gate one.",
-   "note": "WHY (review #48, 2026-10-07): the shipped event-family line prices correlated exposure ACROSS markets, but it cannot tell EIGHT INDEPENDENT CITY BETS from ONE WALLET'S WEATHER BOOK — and that is exactly the shape the review found: EOD top-3 = 95.2% of open cost (was 73.2%), with `highest-temperature-in` at $209.92 (62.5%) plus `will-david-lisnard` $100. Live read the same morning: 12 legs / $279.90 on ONE wallet `0x7c63520c…` (track, score 82.8) = 64.6% of the 26-leg / $433.55 book, all booked in 24 h. No cap was breached (wallet $280 vs the $864 per-wallet ceiling, book 12.5% of the exposure cap, realized DD 0.2%) — so this is a MEASUREMENT gap, not a breach: v55 (per-market) and v59 (per-wallet) both read 0 on correlated cross-market exposure, which is the same blind spot #37 documented when a −$300 realisation came out of three adjacent elon tweet-count bands on one wallet. WHAT SHIPPED: `src/lib/event-family.ts` (new, pure — `eventFamily` unchanged from the pre-registered rule, plus `walletSplit` / `describeSplit` / `shortWallet`), `scripts/event-family-concentration.ts` now prints two extra lines (top family's wallet split, whole-book wallet concentration) and imports the helpers; `tests/event-family.test.ts` (10 tests: the pre-registered family rule incl. the non-ISO `october-8-2026` case, order-determinism under shuffled input, the no-wallet sentinel, null-cost handling); the EOD wrapper's budget for this script went `tail -6` -> `tail -8` (six lines now). FIRST READ 2026-10-07 07:1x: `highest-temperature-in 12 legs +$279.90` -> wallet split `0x7c63520c… 12 legs +$279.90 (100.0%) — wallets in family: 1 (SINGLE-WALLET family)`; open book -> `0x7c63520c… 12 legs (64.6%) | 0xcfad110b… 1 leg +$100.00 (23.1%) | 0x885ffdf3… 8 legs +$46.18 (10.7%) — top-3 wallets = +$426.08 = 98.3% of open cost | wallets in book: 6`. Two consecutive runs byte-identical. Baseline before the change: `grep -c \"by event family\"` = 9 in `logs/cron/copybot-eod.log`. REPRODUCE: `npx tsx scripts/event-family-concentration.ts` · `npx vitest run tests/event-family.test.ts` · the wrapper line lives in `~/.hermes/scripts/copybot-eod.sh` (hand-run with `unset DATABASE_URL && set -a; source .env; set +a`). Reviewer standing input updated in place so #49 does not re-propose the dimension.",
+   "note": "VERIFIED 2026-10-09 in its first full EOD (tuning review #50 rec 2). The 2026-10-07 22:01 print carries 'top family wallet split (will-david-lisnard 1 leg $100, 0xcfad110b 100.0%, SINGLE-WALLET family)' + 'open-book wallet concentration (0xcfad110b 50.7% | 0x885ffdf3 29.1% | 0x7c63520c 10.1%, top-3 89.9%, 7 wallets)'; `grep -c 'by event family' logs/cron/copybot-eod.log` = 10; two consecutive event-family-concentration.ts runs byte-identical; 0 FAILED. The one-wallet temperature book it was built to expose has since UNWOUND (12 legs / $279.90 -> 1 leg / $20).",
    "tags": [
     "tuning-48",
     "measurement",
     "exposure",
     "eod",
     "approved-20261007"
+   ]
+  },
+  {
+   "id": "tr50-rec1-v58-era-band-recut",
+   "title": "Rec 3 — re-cut the band evidence on the v58+ era before ANY band-factor change",
+   "column": "Done",
+   "effort": "~1h (read-only; analyze-calibration.py --since 2026-09-19 + the band cut)",
+   "dates": "Carded 2026-10-09 (tuning review #50 rec 3, user-approved) | RUN 2026-10-10",
+   "note": "DONE 2026-10-10 — the re-cut was run, and the answer is that the band evidence is ERA-DEPENDENT in sign and significance. Command: `python3 scripts/analyze-calibration.py --since 2026-09-19` (writes data/calibration-analysis-since-2026-09-19.json, so the canonical all-time artifact is untouched) plus the lifetime arm `python3 scripts/analyze-calibration.py` for the contrast in the same session. v58+ cut (since 2026-09-19, N=525, ALL excess -0.0012 z=-0.06, PnL +$3,445.19): 0.00-0.20 N=80 +0.0993 (z=+2.22 **, PnL +$3,039.68) | 0.20-0.40 N=121 +0.0637 (z=+1.45, +$399.70) | 0.40-0.60 N=243 -0.0532 (z=-1.67, -$11.89) | 0.60-0.80 N=81 -0.0414 (z=-0.78, p=0.4366, PnL +$17.70) | 0.80-1.01 N=0. LIFETIME cut (N=2,266): 0.60-0.80 N=461 -0.0743 (z=-3.28 **) vs v58+ z=-0.78 NOT significant; 0.00-0.20 +0.1898 (z=+6.37 **); 0.20-0.40 +0.0637 (z=+2.80 **); 0.80-1.01 -0.0664 (z=-2.14 **). READ: the whole v58+ edge is the <0.20 band (z=+2.22 carrying +$3,039.68 of +$3,445.19), and the 0.60-0.80 band's significance is carried by PRE-v58 rows — in the current era the band is insignificant AND pays ~zero (+$17.70 on 81 legs), which is the same conclusion v60 reached but for a different reason (v60 cited the significant lifetime excess). Caveat kept: `--since` is a DATE cut standing in for the ruleSetVersion era (v58 created 2026-09-19 13:25 CDT) and v60 (2026-09-21) sits inside it, so a v60-only split is still unmeasured. NO band factor is proposed or changed by this card; the v60 consequence is its own card, v60-bandhalf-era-review.",
+   "gate": "MET 2026-10-10: every band's excess printed with n and z on BOTH the v58+ and the lifetime cut, side by side, in one session; read-only — 0 RuleSet versions created, 0 rows written, canonical calibration-analysis.json untouched (the filtered run writes the -since-<date> file). Any future band-factor proposal must quote the era cut it was measured on.",
+   "tags": [
+    "tuning-50",
+    "measurement",
+    "size-bands",
+    "era-cut"
+   ]
+  },
+  {
+   "id": "permarket-legs-rail-finding",
+   "title": "FINDING — the per-market rail's LIVE clause is legs <= 2, not the notional ceiling (measurement; no threshold proposed)",
+   "column": "Backlog",
+   "effort": "~30 min (re-run the existing replay)",
+   "dates": "Surfaced 2026-10-09 while implementing v61 (v55-ceiling-vs-kelly-decision)",
+   "note": "MEASURED: `scripts/replay-market-cap.ts --days 30 --pct 0.10 --legs 2` and `--pct 0.20` return byte-identical results — the notional ceiling cannot fire (10% of the $3,971 cap = $397.13 > the $200 two legs can reach), so every per-market veto in the window is the LEGS clause: 16 legs across 10 markets, all `[leg 3 > 2]` (56 lifetime log lines; newest 2026-10-03 dota2-ts8-ty). BLOCKED NOTIONAL $423.12 and the blocked legs were NET POSITIVE: actual window PnL $4,795.31 vs counterfactual $3,902.76 = the legs clause cost $892.55 in 30d. No threshold is proposed and nothing is changed: relaxing maxMarketLegsPerMarketId is a rail relaxation and needs its own approved option set (it is also the only thing standing between the book and unbounded per-market accumulation).",
+   "gate": "VERIFY: re-run the replay at the next read and quote the blocked-leg count, the blocked notional and the net blocked PnL (settled) in one line; if the notional clause ever fires again, the finding is re-read (its premise is cap-relative). Any change to maxMarketLegsPerMarketId ships as a RuleSet version with the replay's before/after attached.",
+   "tags": [
+    "c200",
+    "risk-gate",
+    "exposure-cap",
+    "v55",
+    "measurement",
+    "finding"
+   ]
+  },
+  {
+   "id": "v60-bandhalf-era-review",
+   "column": "Backlog",
+   "title": "DECISION (measurement, awaiting approval) — v60's 0.60-0.80 band-half rests on a lifetime z the v58+ era does not reproduce",
+   "effort": "~1h (re-run the two cuts + a v60-only split if n allows)",
+   "dates": "Carded 2026-10-10 (finding produced by tr50-rec1-v58-era-band-recut)",
+   "note": "MEASURED 2026-10-10: v60 (applied 2026-09-21) halved new size in the 0.60-0.80 band on a LIFETIME excess of -0.0743 (z=-3.28, N=461). On the v58+ era the same band reads -0.0414 (z=-0.78, p=0.4366, N=81) — NOT significant — and pays +$17.70, i.e. the band is not losing money now. So the applied factor is unsupported on the current era's data (it is not thereby HARMFUL: +$17.70 on 81 legs is indistinguishable from zero, and the half-size costs nothing measurable). The v58+ cut mixes pre/post-v60 rows, so the honest next read is a v60-only split (ruleSetVersion >= 60) once n permits. Options when the split lands: (a) KEEP the factor (default — no measured harm, and reverting mid-sample would re-open an applied rule for no gain), (b) revert c200BandSizeFactor to 1, (c) leave it and retire the lifetime citation from reviewer standing inputs so the band stops being re-proposed on a stale z. NOTHING is changed by this card.",
+   "gate": "VERIFY: the v60-only band cut prints 0.60-0.80 with n, excess and z (state n and the era explicitly) and the same for the 0.00-0.20 arm on the SAME population; the decision is recorded as one of keep / revert / retire-the-citation with the sample it was read on. A revert ships as a RuleSet version with its own before/after; it is not a side effect of this measurement.",
+   "tags": [
+    "measurement",
+    "size-bands",
+    "v60",
+    "era-cut",
+    "finding"
    ]
   }
  ]
