@@ -51,3 +51,8 @@ de421.bsp
 # (`.worktrees/<card-id>`). Without this rule the nightly `git add -A` backup stages
 # every worker's tree into main; branches are the review surface, not the worktree dirs.
 .worktrees/
+
+# GDELT bulk (keyless 15-min export) shadow rows — high volume (~26k rows/day, ~2 MB/day
+# gzipped) and NOT a decision input: daily gzip append under data/gdelt-bulk/. Keeping it out
+# of the repo protects the nightly backup job's 95 MB per-file guard.
+data/gdelt-bulk/
