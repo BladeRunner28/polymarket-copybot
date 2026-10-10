@@ -251,7 +251,7 @@ describe("edgeCostLines — the report block", () => {
     ];
     const lines = edgeCostLines(edgeCostSnapshot(rows, NOW));
     const legend = lines[lines.length - 1];
-    expect(legend).toContain("maker_improvement");
+    expect(legend).toContain("maker_credit"); // the sidecar symbol that books it
     expect(legend).toContain("$1"); // ≈$1 of the $4 lifetime C-200 PnL
     expect(legend).toContain("Ex that assumption");
     expect(legend).toMatch(/C-200 reads [+-]\d+\.\d% of cost \(lifetime\)/);

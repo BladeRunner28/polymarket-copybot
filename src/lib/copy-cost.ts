@@ -418,9 +418,10 @@ export function edgeCostLines(snap: EdgeCostSnapshot): string[] {
   const makerLanes = snap.lifetime.filter((l) => l.makerCreditUsd > 0);
   const makerNote = makerLanes.length
     ? ` Cause is measured on ${makerLanes
-        .map((l) => l.label)
-        .join("/")}: the Rust sidecar books every BUY 2¢ better (maker_improvement, rust-sidecar/src/main.rs) — worth ` +
-      `≈${usd(makerLanes.reduce((a, l) => a + l.makerCreditUsd, 0))} of the ${usd(
+   .map((l) => l.label)
+   .join("/")}: the Rust sidecar books every BUY inside the spread under its maker-fill model ` +
+ `(maker_credit, rust-sidecar/src/main.rs — a flat 2¢ on every leg before 2026-10-10, the MEASURED per-band share since) — ` +
+ `worth ≈${usd(makerLanes.reduce((a, l) => a + l.makerCreditUsd, 0))} of the ${usd(
         makerLanes.reduce((a, l) => a + l.realizedPnlUsd, 0)
       )} lifetime ${makerLanes.map((l) => l.label).join("/")} PnL. Ex that assumption ${makerLanes
         .map((l) => {
