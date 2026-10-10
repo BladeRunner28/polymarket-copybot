@@ -191,10 +191,20 @@ hash split, weighted logistic GLM (IRLS, ridge 1e-4), weights = cell fill counts
 **The honest reading: on the metric that matters — the rate re-weighted onto OUR settled C-200 entry-price
 mix — the full conditional model beats a per-price-band flat rate by 0.002–0.003 (0.2–0.3 pp) at every
 horizon.** The gain in Brier/logloss is large because the model is fitting the *distribution* (thin cells,
-band tails), not because it found a better number for our legs. Price band is the whole story; band, hour,
-size, TTR, activity, volatility and category together add a fifth of a percentage point. The published
-74.3% @5m / 81.1% @1h is bracketed by this instrument's own C-200-weighted reads (76.6–76.8% @5m,
-82.7–82.9% @1h), so the archive's flat number stands — it is just not a 74%.
+band tails), not because it found a better number for our legs.
+
+**And the coefficient table says where that 0.2 pp comes from — not from the features the card named.**
+For δ.02 @5m: `band` |z| = 4,079 and `band²` |z| = 4,775; the eight terms that clear |z| > 2 are *all*
+category dummies (Culture −2.18, Politics −0.96, Sports −0.87, Finance −0.74, Other −0.70, Price Action
++0.64, Crypto +0.42 logits); and **every hour / size / TTR / volatility / activity block term the fit
+reports sits at se ≈ 37–47 with |z| ≤ 0.04** — indistinguishable from zero on this cell set (the ridge at
+1e-4 does not rescue them; they are not identified). So the model's marginal value over a per-band flat rate
+is **price band + market category**, and the hour/size/TTR/activity/vol conditioning the card set out to
+price contributes nothing measurable. (Caveat: the artifact stores the strongest 20 coefficients, so this is
+a statement about the reported set, not a guarantee for every omitted term.)
+
+The published 74.3% @5m / 81.1% @1h is bracketed by this instrument's own C-200-weighted reads
+(76.6–76.8% @5m, 82.7–82.9% @1h), so the archive's flat number stands — it is just not a 74%.
 
 ### Adverse selection — the term the flat rate omits
 
