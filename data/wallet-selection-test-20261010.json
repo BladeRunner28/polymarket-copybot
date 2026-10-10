@@ -1,0 +1,220 @@
+{
+ "generated_at": "2026-10-10T03:27:16-0500",
+ "dataset": "/Users/xsnyde2/polymarket-copybot/data/decision-dataset-forward-20261010.csv",
+ "target": "pnl_net_full",
+ "feature": "wallet_quality_score",
+ "bootstrap": {
+  "unit": "market_id",
+  "reps": 1000,
+  "seed": 20261010
+ },
+ "runs": [
+  {
+   "label": "forward BANKROLL_200 (opened_at >= 2026-09-26)",
+   "n_legs": 340,
+   "n_markets": 320,
+   "n_wallets": 25,
+   "n_top": 161,
+   "n_top_wallet_level": 42,
+   "n_top_wallet_level_wallets": 10,
+   "date_range": [
+    "2026-09-26",
+    "2026-10-09"
+   ],
+   "cuts": {
+    "wallet_quality_top": 85.4,
+    "wallet_quality_bottom": 84.9,
+    "wallet_tercile_top": 85.9,
+    "entry_price_top": 0.49
+   },
+   "mean_pnl_net_per_leg": {
+    "top_tercile_wallet_quality": 4.527013664596272,
+    "top_tercile_wallet_quality_WALLET_LEVEL": -0.16866666666666658,
+    "bottom_tercile_wallet_quality": 10.222268595041324,
+    "top_tercile_entry_price": 0.07636782608695651,
+    "copy_all": 5.681877058823526
+   },
+   "auc_wallet_quality_vs_net": 0.49767928004535145,
+   "auc_entry_price_vs_net": 0.6748157596371882,
+   "win_rate_y_win": 0.4264705882352941,
+   "gate": {
+    "A_leglevel_top_vs_copy_all": {
+     "diff": -1.1548633942272533,
+     "lo": -7.021636995046776,
+     "hi": 5.198875048355902,
+     "share_gt0": 0.361,
+     "reps": 1000
+    },
+    "A2_walletlevel_top_vs_copy_all": {
+     "diff": -5.850543725490192,
+     "lo": -13.201156122994647,
+     "hi": 1.6016706068125437,
+     "share_gt0": 0.053,
+     "reps": 1000
+    },
+    "B_leglevel_top_vs_price_top": {
+     "diff": 4.450645838509316,
+     "lo": -1.8449295764804536,
+     "hi": 14.392090334928223,
+     "share_gt0": 0.861,
+     "reps": 1000
+    },
+    "B2_walletlevel_top_vs_price_top": {
+     "diff": -0.2450344927536231,
+     "lo": -5.00002,
+     "hi": 6.173446952479339,
+     "share_gt0": 0.421,
+     "reps": 1000
+    },
+    "C_leglevel_top_vs_bottom": {
+     "diff": -5.695254930445052,
+     "lo": -19.960725340136054,
+     "hi": 8.6913293844367,
+     "share_gt0": 0.221,
+     "reps": 1000
+    },
+    "promote_leg_level": false,
+    "promote_wallet_level": false,
+    "promote": false
+   }
+  },
+  {
+   "label": "forward ALL LANES (opened_at >= 2026-09-26)",
+   "n_legs": 379,
+   "n_markets": 341,
+   "n_wallets": 27,
+   "n_top": 185,
+   "n_top_wallet_level": 51,
+   "n_top_wallet_level_wallets": 9,
+   "date_range": [
+    "2026-09-26",
+    "2026-10-09"
+   ],
+   "cuts": {
+    "wallet_quality_top": 85.4,
+    "wallet_quality_bottom": 84.9,
+    "wallet_tercile_top": 86.2,
+    "entry_price_top": 0.495
+   },
+   "mean_pnl_net_per_leg": {
+    "top_tercile_wallet_quality": 4.1396875675675675,
+    "top_tercile_wallet_quality_WALLET_LEVEL": -1.3324568627450977,
+    "bottom_tercile_wallet_quality": 9.333082089552239,
+    "top_tercile_entry_price": 0.4526645669291339,
+    "copy_all": 5.324590237467015
+   },
+   "auc_wallet_quality_vs_net": 0.501377527834583,
+   "auc_entry_price_vs_net": 0.6805839581913201,
+   "win_rate_y_win": 0.43271767810026385,
+   "gate": {
+    "A_leglevel_top_vs_copy_all": {
+     "diff": -1.1849026698994471,
+     "lo": -6.7587453195488685,
+     "hi": 4.668085721343868,
+     "share_gt0": 0.333,
+     "reps": 1000
+    },
+    "A2_walletlevel_top_vs_copy_all": {
+     "diff": -6.657047100212113,
+     "lo": -13.66555175371223,
+     "hi": -0.15905231515151685,
+     "share_gt0": 0.023,
+     "reps": 1000
+    },
+    "B_leglevel_top_vs_price_top": {
+     "diff": 3.6870230006384337,
+     "lo": -2.7063703564727946,
+     "hi": 12.343559630769233,
+     "share_gt0": 0.789,
+     "reps": 1000
+    },
+    "B2_walletlevel_top_vs_price_top": {
+     "diff": -1.7851214296742315,
+     "lo": -6.044452415458938,
+     "hi": 2.59255294117647,
+     "share_gt0": 0.215,
+     "reps": 1000
+    },
+    "C_leglevel_top_vs_bottom": {
+     "diff": -5.193394521984671,
+     "lo": -18.902960537836147,
+     "hi": 8.088905558254389,
+     "share_gt0": 0.221,
+     "reps": 1000
+    },
+    "promote_leg_level": false,
+    "promote_wallet_level": false,
+    "promote": false
+   }
+  },
+  {
+   "label": "FULL HISTORY BANKROLL_200 (no date filter)",
+   "n_legs": 1678,
+   "n_markets": 1496,
+   "n_wallets": 117,
+   "n_top": 575,
+   "n_top_wallet_level": 515,
+   "n_top_wallet_level_wallets": 39,
+   "date_range": [
+    "2026-07-22",
+    "2026-10-09"
+   ],
+   "cuts": {
+    "wallet_quality_top": 90.1,
+    "wallet_quality_bottom": 85.1,
+    "wallet_tercile_top": 88.5,
+    "entry_price_top": 0.57
+   },
+   "mean_pnl_net_per_leg": {
+    "top_tercile_wallet_quality": 2.436025739130434,
+    "top_tercile_wallet_quality_WALLET_LEVEL": 2.523070291262135,
+    "bottom_tercile_wallet_quality": 6.516436805555551,
+    "top_tercile_entry_price": 0.0025317290552585334,
+    "copy_all": 3.4518752085816518
+   },
+   "auc_wallet_quality_vs_net": 0.4984093008777403,
+   "auc_entry_price_vs_net": 0.6533296873862129,
+   "win_rate_y_win": 0.4862932061978546,
+   "gate": {
+    "A_leglevel_top_vs_copy_all": {
+     "diff": -1.0158494694512177,
+     "lo": -4.581330841082155,
+     "hi": 2.8843045726332184,
+     "share_gt0": 0.281,
+     "reps": 1000
+    },
+    "A2_walletlevel_top_vs_copy_all": {
+     "diff": -0.9288049173195168,
+     "lo": -4.5709141803493765,
+     "hi": 3.612379720104538,
+     "share_gt0": 0.324,
+     "reps": 1000
+    },
+    "B_leglevel_top_vs_price_top": {
+     "diff": 2.4334940100751754,
+     "lo": -0.7709779661016933,
+     "hi": 7.122456742556918,
+     "share_gt0": 0.89,
+     "reps": 1000
+    },
+    "B2_walletlevel_top_vs_price_top": {
+     "diff": 2.5205385622068763,
+     "lo": -0.7178371924625357,
+     "hi": 7.842676759358689,
+     "share_gt0": 0.884,
+     "reps": 1000
+    },
+    "C_leglevel_top_vs_bottom": {
+     "diff": -4.080411066425117,
+     "lo": -12.572285875645452,
+     "hi": 3.1353432675730875,
+     "share_gt0": 0.149,
+     "reps": 1000
+    },
+    "promote_leg_level": false,
+    "promote_wallet_level": false,
+    "promote": false
+   }
+  }
+ ]
+}
