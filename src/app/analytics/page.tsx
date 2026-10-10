@@ -97,9 +97,23 @@ export default async function Analytics() {
       reviewed,
       copies,
     })),
+    // Narrow projection (used by the heatmap, category/venue/version bars and
+    // the wallet scatter). The previous `include: { decision: { include: {
+    // observedTrade: true } } }` deserialised EVERY DecisionJournal text column
+    // (reasonsJson/risksJson) and EVERY ObservedTrade column (rawTradeJson) for
+    // 11.2k rows — 22.4 MB of JS objects, ~490 ms of this page's ~1.0 s data
+    // path. The rows below touch seven fields. Same rows, same order; measured
+    // 133 ms (3.7x) by perf-analytics-query-shape.ts.
     prisma.paperTrade.findMany({
       where: { status: { in: ["closed", "resolved"] }, realizedPnl: { not: null } },
-      include: { decision: { include: { observedTrade: true } } },
+      select: {
+        realizedPnl: true,
+        resolvedAt: true,
+        openedAt: true,
+        venue: true,
+        walletAddress: true,
+        decision: { select: { ruleSetVersion: true, observedTrade: { select: { marketQuestion: true } } } },
+      },
     }),
     prisma.walletProfile.findMany({ where: { status: "track" }, select: { address: true, globalScore: true } }),
     prisma.walletInsiderScore.findMany({ select: { walletAddress: true, flagged: true, watch: true } }),
