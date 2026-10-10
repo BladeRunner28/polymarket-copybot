@@ -341,3 +341,9 @@ own legs, and the local provider makes each new read free.
 diagnostics the summary cannot see) and `data/jev-shadow-summary.json` for the pre‑registered
 comparison. Raw rows: `data/jev-shadow.jsonl` (append‑only; rows dedupe by
 `decisionJournalId|marketId|outcome`, preferring the row that carries a model arm).
+
+**The read is stable as the sample grows.** The hourly no‑agent job (`copybot-shadow-jev-mark`, :35)
+now runs the **local** arm, so the lane keeps topping itself up at $0. Re‑read 15 minutes later at
+n = 2,551: PRICE AUC 0.439 / Brier 0.3112, JEV AUC 0.443 / Brier 0.3043, copyScore 0.544, gate kept
+1,032 legs net/leg −0.4737 vs copy‑all −0.1803, `beatsPriceOnly: false`. Every figure moved in the
+third decimal — the verdict is not an artifact of the sample it was read on.
