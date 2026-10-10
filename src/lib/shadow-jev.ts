@@ -59,6 +59,15 @@ export const JEV_MODEL_DEFAULT = "typesafe/jev-1.13";
  */
 export const JEV_ENDPOINT_DEFAULT = "https://openrouter.ai/api/alpha/decisions";
 
+/**
+ * LOCAL-PROVIDER DEFAULTS (JEV_PROVIDER=local): the Ollama lane on Odin. Chosen after measuring one
+ * real leg through each candidate arm on 2026-10-10 — qwen3.5:9b with the thinking budget OFF answers
+ * all three questions in 1.1 s / 44 tokens, where thinking ON spends 400 tokens on reasoning and
+ * returns empty content (which surfaces as "unparsed payload shape", not as an obvious error).
+ * This route needs no credential at all, which is the point: the first read of the arm costs $0.
+ */
+export const JEV_LOCAL_URL_DEFAULT = "http://192.168.1.106:11434/api/chat";
+export const JEV_LOCAL_MODEL_DEFAULT = "qwen3.5:9b";
 /** Minimum resolved legs before the bar is even readable. */
 export const JEV_MIN_RESOLVED_LEGS = 50;
 
@@ -375,13 +384,26 @@ export function jevCallConfig(env: Record<string, string | undefined> = process.
   reason: string;
   endpoint: string | null;
   model: string;
+  provider: "openrouter" | "local";
 } {
-  const model = env.JEV_MODEL ?? JEV_MODEL_DEFAULT;
-  const endpoint = env.JEV_ENDPOINT ?? JEV_ENDPOINT_DEFAULT;
-  if (env.JEV_SHADOW !== "1") return { canCall: false, reason: "JEV_SHADOW is not 1 (default off)", endpoint, model };
+  const provider: "openrouter" | "local" =
+    (env.JEV_PROVIDER ?? "openrouter").toLowerCase() === "local" ? "local" : "openrouter";
+  // The endpoint/model are resolved BEFORE the gate so a dry run (and the log line) can always
+  // print what WOULD be called, whichever provider is selected.
+  const local = provider === "local";
+  const model = env.JEV_MODEL ?? (local ? JEV_LOCAL_MODEL_DEFAULT : JEV_MODEL_DEFAULT);
+  const endpoint = local
+    ? env.JEV_LOCAL_URL ?? JEV_LOCAL_URL_DEFAULT
+    : env.JEV_ENDPOINT ?? JEV_ENDPOINT_DEFAULT;
+  if (env.JEV_SHADOW !== "1")
+    return { canCall: false, reason: "JEV_SHADOW is not 1 (default off)", endpoint, model, provider };
+  // LOCAL: an Ollama host on the LAN — no key exists to require, and the model default differs.
+  if (local)
+    return { canCall: true, reason: "enabled (local provider: no API key required)", endpoint, model, provider };
   const key = env.OPENROUTER_API_KEY ?? env.JEV_API_KEY;
-  if (!key) return { canCall: false, reason: "no OPENROUTER_API_KEY/JEV_API_KEY", endpoint, model };
-  return { canCall: true, reason: "enabled", endpoint, model };
+  if (!key)
+    return { canCall: false, reason: "no OPENROUTER_API_KEY/JEV_API_KEY", endpoint, model, provider };
+  return { canCall: true, reason: "enabled", endpoint, model, provider };
 }
 
 export interface JevShadowRow extends Record<string, unknown> {

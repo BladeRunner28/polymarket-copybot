@@ -31,6 +31,7 @@ import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { prisma } from "../src/lib/db";
 import { didOutcomeWin } from "../src/lib/resolution";
 import { log, logError } from "../src/lib/redact";
+import { buildLocalMessages, parseLocalReply } from "../src/lib/jev-local";
 import * as fs from "fs";
 import {
   appendJevRows,
@@ -55,6 +56,16 @@ const RESOLVE_LIMIT = Number(process.env.MARK_LIMIT ?? 300);
 const CALL_TIMEOUT_MS = Number(process.env.JEV_TIMEOUT_MS ?? 8000);
 /** Cap on replaying stored states through the model per run, so a backlog drains steadily. */
 const BACKFILL_LIMIT = Number(process.env.JEV_BACKFILL_LIMIT ?? 100);
+/** Rows appended per flush during a long backfill (crash-safe progress; see the loop). */
+const BACKFILL_FLUSH = Number(process.env.JEV_BACKFILL_FLUSH ?? 100);
+
+/** Median of the latencies seen so far — the drain's own progress metric. */
+function median(xs: number[]): number {
+  if (!xs.length) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+}
 
 const DRY = process.argv.includes("--dry-run");
 const COLLECT = process.argv.includes("--collect");
@@ -119,6 +130,9 @@ async function callJev(
   leg: JevLeg,
   cfg: { endpoint: string | null; model: string }
 ): Promise<{ decision: JevDecision | null; latencyMs: number; error: string | null; raw: unknown }> {
+  // PROVIDER SWITCH — the vendor route is the default; `JEV_PROVIDER=local` puts an Ollama model
+  // behind the same questions (see src/lib/jev-local.ts for why the translation is worth having).
+  if ((process.env.JEV_PROVIDER ?? "openrouter").toLowerCase() === "local") return callJevLocal(leg, cfg);
   const url = cfg.endpoint as string;
   const key = process.env.OPENROUTER_API_KEY ?? process.env.JEV_API_KEY ?? "";
   const body = buildJevRequest(leg, cfg.model);
@@ -143,6 +157,82 @@ async function callJev(
     }
     if (!res.ok) return { decision: null, latencyMs, error: `HTTP ${res.status}`, raw };
     const decision = parseJevDecision(raw);
+    if (decision.probability === null && decision.action === null) {
+      return { decision: null, latencyMs, error: "unparsed payload shape", raw };
+    }
+    return { decision, latencyMs, error: null, raw };
+  } catch (e) {
+    return {
+      decision: null,
+      latencyMs: Date.now() - t0,
+      error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+      raw: null,
+    };
+  }
+}
+
+/**
+ * The LOCAL arm: an Ollama model behind the same three questions, translated by src/lib/jev-local.ts.
+ *
+ * `think: false` is TOP-LEVEL and is not optional — measured on Odin, a thinking model with the budget
+ * on spends all 400 tokens reasoning and returns empty content, which the lane would record as
+ * "unparsed payload shape" rather than as the configuration error it is. `JEV_LOCAL_THINK=1` exists
+ * only to re-measure that claim.
+ *
+ * Cost is 0 by construction (our own GPU), and the token counts are still stored so the lane's cost
+ * column reads 0 rather than null/unknown.
+ */
+async function callJevLocal(
+  leg: JevLeg,
+  cfg: { endpoint: string | null; model: string }
+): Promise<{ decision: JevDecision | null; latencyMs: number; error: string | null; raw: unknown }> {
+  const url = cfg.endpoint as string;
+  const { system, user } = buildLocalMessages(buildJevRequest(leg, cfg.model));
+  const body = {
+    model: cfg.model,
+    stream: false,
+    format: "json",
+    think: process.env.JEV_LOCAL_THINK === "1",
+    keep_alive: process.env.JEV_KEEP_ALIVE ?? "5m",
+    options: { temperature: 0, num_predict: Number(process.env.JEV_NUM_PREDICT ?? 400) },
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  };
+  const t0 = Date.now();
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), CALL_TIMEOUT_MS);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctl.signal,
+    });
+    clearTimeout(timer);
+    const latencyMs = Date.now() - t0;
+    const text = await res.text();
+    let raw: unknown = null;
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      raw = { unparsed: text.slice(0, 2000) };
+    }
+    if (!res.ok) return { decision: null, latencyMs, error: `HTTP ${res.status}`, raw };
+    const d = raw as { message?: { content?: string; thinking?: string }; prompt_eval_count?: number; eval_count?: number };
+    const content = d?.message?.content ?? "";
+    const answers = parseLocalReply(content);
+    if (!answers) {
+      const why = content.trim()
+        ? "unparsed payload shape"
+        : `empty content${d?.message?.thinking ? ` (thinking budget: ${d.message.thinking.length} chars of reasoning)` : ""}`;
+      return { decision: null, latencyMs, error: why, raw };
+    }
+    const decision = parseJevDecision({
+      answers,
+      usage: { input_tokens: d.prompt_eval_count ?? null, output_tokens: d.eval_count ?? null, cost: 0 },
+    });
     if (decision.probability === null && decision.action === null) {
       return { decision: null, latencyMs, error: "unparsed payload shape", raw };
     }
@@ -223,7 +313,10 @@ async function main() {
         .slice(0, BACKFILL_LIMIT);
       if (need.length) {
         const back: JevShadowRow[] = [];
+        const latencies: number[] = [];
         let bOk = 0;
+        let bFail = 0;
+        let done = 0;
         for (const r of need) {
           const reconstructed: JevLeg = {
             decisionJournalId: (r.decisionJournalId as string) ?? null,
@@ -248,6 +341,8 @@ async function main() {
           };
           const res = await callJev(reconstructed, cfg);
           if (res.decision) bOk++;
+          else bFail++;
+          latencies.push(res.latencyMs);
           back.push(
             buildCandidateRow(reconstructed, res.decision, {
               model: cfg.model,
@@ -256,8 +351,21 @@ async function main() {
               raw: res.raw,
             })
           );
+          // FLUSH AS WE GO. A full backlog is thousands of calls (~1 s each) and the rows are
+          // append-only, so buffering the whole run would throw away an hour of work if the
+          // process dies — and it would leave no progress to watch. Every FLUSH rows are
+          // appended and counted; a re-run skips them because the `need` filter selects rows
+          // still missing a model arm (resumable by construction).
+          if (back.length >= BACKFILL_FLUSH) {
+            appendJevRows(back.splice(0, back.length));
+            done += BACKFILL_FLUSH;
+            log(
+              `shadow-jev: backfill ${done}/${need.length} rows, ${bOk} with an arm, ` +
+                `${bFail} failed, median ${median(latencies)} ms/call.`
+            );
+          }
         }
-        appendJevRows(back);
+        if (back.length) appendJevRows(back);
         log(`shadow-jev: backfilled ${bOk}/${need.length} state-only rows with a model arm.`);
       }
     }
