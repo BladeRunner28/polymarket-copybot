@@ -17,14 +17,19 @@ shadow-drift: +0 marked this run (cap 300/run, backlog 6164)
 
 Trailing consecutive `+0` runs: **14** (earlier streaks in the same log: 22 and 30). `4945 settled` is frozen across 15 consecutive lines.
 
-The old walk selected the first 25 / first 300 keys of the pending map (candidate order). Reconstructed read-only from the live copy (2026-10-10, 6,165 distinct pending keys):
+The old walk selected the first `MARK_LIMIT` keys of the pending map (pre-fix `capPending(dPending)`): the first 25 / first 300 **pending keys** in candidate order, skipping keys that already carry a `resolve` row. Reconstructed read-only from the snapshot this branch ships (`git show HEAD:data/drift-shadow.jsonl`, md5 `5c65da226a4bb67fb98ec3b681cf3faa`, 6,147 distinct pending keys) and from the live copy (`data/drift-shadow.jsonl`, md5 `c75e79691d42236554e59290a31c5514`, mtime 2026-10-10 03:05 = 08:05Z, 6,165 distinct pending keys):
 
 ```
-pending keys in candidate order (live copy, 2026-10-10): 6165
-OLD walk (head of the pending map, cap 25 and cap 300): window 2026-09-17..2026-09-17
-pending keys decided on/before 2026-09-26 (the head block): 4545
-decided after 2026-10-01: 1133 of 6165 pending keys
+                                                   committed 5c65da22   live c75e7969
+first 300 CANDIDATE ROWS (NOT what the walk took)  2026-09-17..09-17    2026-09-17..09-17
+first  25 PENDING keys (the pre-fix walk)          2026-09-17..09-26    2026-09-17..09-26
+first 300 PENDING keys (the pre-fix walk)          2026-09-17..09-26    2026-09-17..09-26
+  those 300 fall on 7 distinct decision days: 239 on 2026-09-17, then 17/10/15/16/1/2 on 09-18..09-26
+pending keys decided on/before 2026-09-26          4526 of 6147         4526 of 6165
+pending keys decided on/after  2026-10-01          1127 of 6147         1145 of 6165
 ```
+
+So the old walk's 300 slots spanned ten calendar days (2026-09-17..2026-09-26), 239 of them decided 09-17 — the card's "the walk window is one day" is the window of the first 300 *candidate rows*, which is not what the walk walked. Starvation is unaffected: nothing decided after 2026-09-26 was reachable at all, and 1,127 pending keys (live 1,145) were decided on/after 2026-10-01.
 
 **The head is not archived — it is a cohort of long-dated markets that have not settled yet.** The first 30 of the pre-fix walk, re-read through the walk's OWN resolution path (`getAdapter().fetchMarket` + `fetchEventResolution`, `DATA_MODE=live`): `resolved=0, still open=30, threw=0`, every row carrying a live quote — NFL season series (Titans/Jaguars), the November BoE rate decision, the October Bank of Russia decision, the Berlin Abgeordnetenhaus, the Richmond mayoral election, NH-02, CA-07:
 

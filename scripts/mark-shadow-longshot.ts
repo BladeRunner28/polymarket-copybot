@@ -62,12 +62,16 @@ const MARK_LIMIT = Number(process.env.MARK_LIMIT ?? 300);
  * 2026-10-10 (card t_81d0a4cb): the drift walk is LEAST-RECENTLY-ATTEMPTED, not
  * oldest-first. Oldest-first let a head that cannot settle YET hold the same 300
  * slots every hour — the head of the pending map is a September cohort of
- * long-dated markets (the first 300 keys in candidate order are all decided
- * 2026-09-17; 4,545 of 6,165 pending keys are decided on/before 2026-09-26) that
- * are STILL OPEN at the venue with live quotes, so both resolution paths return
- * nothing (`resolved === false`), 14 consecutive hourly runs logged `+0 marked`,
- * settled froze at 4,945, and the 828 candidates decided inside the trailing 7
- * days stayed unreachable behind the head. That is why
+ * long-dated markets that are STILL OPEN at the venue with live quotes, so both
+ * resolution paths return nothing (`resolved === false`). The pre-fix
+ * `capPending` window (the first 300 pending keys) is 2026-09-17..2026-09-26,
+ * seven distinct decision days with 239 of the 300 decided 2026-09-17 (the first
+ * 300 CANDIDATE ROWS are all 2026-09-17 — a different window); 4,526 of the
+ * 6,147 pending keys in this branch's snapshot are decided on/before 2026-09-26
+ * and 1,127 on/after 2026-10-01 (live copy: 4,526 / 1,145 of 6,165). 14
+ * consecutive hourly runs logged `+0 marked`, settled froze at 4,945, and the
+ * 827 pending keys decided inside the trailing 7 days (cut 2026-10-10T08:00Z)
+ * stayed unreachable behind the head. That is why
  * data/drift-shadow-summary.json reported cohort7dMarked: 0 / cohort7d: null
  * and the pre-registered 2026-09-20 decay bar could never trip. The walk now
  * rotates on a persisted attempt stamp (skip after N=3 consecutive failures,

@@ -5,18 +5,24 @@
  * WHY THIS EXISTS (measured, not theorised):
  * scripts/mark-shadow-longshot.ts walked each feed's `pending` map oldest-first
  * and took the first MARK_LIMIT (300) entries. The drift feed's head is a
- * September cohort of LONG-DATED MARKETS THAT HAVE NOT SETTLED YET: the first
- * 300 keys in candidate order are all decided 2026-09-17 (the pending block
- * decided on/before 2026-09-26 is 4,545 of 6,165 keys), and re-read through the
- * walk's own path (`getAdapter().fetchMarket` + `fetchEventResolution`) the head
- * is 30/30 still open with live quotes — NFL season series, the November BoE and
- * October Bank-of-Russia rate decisions, the Berlin Abgeordnetenhaus, the
- * Richmond mayoral election, NH-02. `m.resolved` is false on every one of them,
- * so both resolution paths return nothing, `value === undefined`, `continue`,
- * and the same 300 slots were re-attempted every hour while the feed stopped
- * marking: 14 consecutive hourly runs logged `+0 marked` (the live log also
- * shows earlier streaks of 22 and 30), settled frozen at 4,945, while 828
- * candidates decided inside the trailing 7 days sat unreachable behind the head.
+ * September cohort of LONG-DATED MARKETS THAT HAVE NOT SETTLED YET. The pre-fix
+ * walk took the first MARK_LIMIT entries of the pending Map (`capPending`); those
+ * 300 pending keys span SEVEN distinct decision days, 2026-09-17..2026-09-26, of
+ * which 239 are decided 2026-09-17 — while 4,526 of the 6,147 pending keys in the
+ * snapshot this branch ships (`git show HEAD:data/drift-shadow.jsonl`, md5
+ * 5c65da22…) are decided on/before 2026-09-26 and 1,127 on/after 2026-10-01 (the
+ * live copy reads 4,526 / 1,145 of 6,165). The first 300 CANDIDATE ROWS are all
+ * decided 2026-09-17, but that is the candidate-row window, not the walk's.
+ * Re-read through the walk's own path (`getAdapter().fetchMarket` +
+ * `fetchEventResolution`) the head is 30/30 still open with live quotes — NFL
+ * season series, the November BoE and October Bank-of-Russia rate decisions, the
+ * Berlin Abgeordnetenhaus, the Richmond mayoral election, NH-02. `m.resolved` is
+ * false on every one of them, so both resolution paths return nothing,
+ * `value === undefined`, `continue`, and the same 300 slots were re-attempted
+ * every hour while the feed stopped marking: 14 consecutive hourly runs logged
+ * `+0 marked` (the live log also shows earlier streaks of 22 and 30), settled
+ * frozen at 4,945, while the 827 pending keys decided inside the trailing 7 days
+ * (cut 2026-10-10T08:00Z; 845 of the live 6,165) sat unreachable behind the head.
  * The pre-registered 2026-09-20 decay bar reads a trailing-7d cohort mean, so it
  * could never be populated: `cohort7dMarked` stayed 0 and the EOD printed
  * "cohort7d —".
