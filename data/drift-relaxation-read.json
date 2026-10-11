@@ -1,0 +1,287 @@
+{
+  "generatedAt": "2026-10-11T01:13:46.822916+00:00",
+  "reproduction": {
+    "candidates": 26928,
+    "marked": 13881,
+    "wins": 7260,
+    "winRate": 0.523,
+    "wouldHavePnl": 85058.43,
+    "avgPnlPerTrade": 6.13,
+    "avgPnlPerTradeExDust": 0.29,
+    "dustExcluded": 1141,
+    "cohort7d": -0.01,
+    "cohort7dMarked": 3848
+  },
+  "signals": {
+    "poll_rows": 26928,
+    "distinct": 9075,
+    "settled": 3550,
+    "screened": 244
+  },
+  "score_bands": {
+    "0-40": {
+      "n": 704,
+      "n_ex": 675,
+      "mean": 1.24,
+      "se": 0.46
+    },
+    "40-60": {
+      "n": 1563,
+      "n_ex": 1472,
+      "mean": 1.43,
+      "se": 0.39
+    },
+    "60-80": {
+      "n": 970,
+      "n_ex": 950,
+      "mean": 0.65,
+      "se": 0.37
+    },
+    "80-101": {
+      "n": 313,
+      "n_ex": 307,
+      "mean": 1.72,
+      "se": 0.79
+    }
+  },
+  "recut_day_streak": 0,
+  "options": {
+    "flat_0.004": {
+      "admitted_n": 1,
+      "admitted_mean": -10.0,
+      "admitted_se": NaN,
+      "marginal_n": 1,
+      "marginal_markets": 1,
+      "marginal_mean": -10.0,
+      "marginal_se": NaN,
+      "marginal_ci": [
+        -10.0,
+        -10.0
+      ],
+      "marginal_total": -10.0,
+      "marginal_nonlane_n": 1,
+      "marginal_nonlane_mean": -10.0,
+      "marginal_nonlane_se": NaN
+    },
+    "flat_0.005": {
+      "admitted_n": 18,
+      "admitted_mean": 1.87,
+      "admitted_se": 4.29,
+      "marginal_n": 18,
+      "marginal_markets": 13,
+      "marginal_mean": 1.87,
+      "marginal_se": 4.29,
+      "marginal_ci": [
+        -7.62,
+        12.5
+      ],
+      "marginal_total": 33.62,
+      "marginal_nonlane_n": 18,
+      "marginal_nonlane_mean": 1.87,
+      "marginal_nonlane_se": 4.29
+    },
+    "flat_0.006": {
+      "admitted_n": 19,
+      "admitted_mean": 5.82,
+      "admitted_se": 5.67,
+      "marginal_n": 19,
+      "marginal_markets": 13,
+      "marginal_mean": 5.82,
+      "marginal_se": 5.67,
+      "marginal_ci": [
+        -7.3,
+        22.99
+      ],
+      "marginal_total": 110.57,
+      "marginal_nonlane_n": 19,
+      "marginal_nonlane_mean": 5.82,
+      "marginal_nonlane_se": 5.67
+    },
+    "flat_0.008": {
+      "admitted_n": 21,
+      "admitted_mean": 4.82,
+      "admitted_se": 5.17,
+      "marginal_n": 21,
+      "marginal_markets": 15,
+      "marginal_mean": 4.82,
+      "marginal_se": 5.17,
+      "marginal_ci": [
+        -7.0,
+        18.98
+      ],
+      "marginal_total": 101.25,
+      "marginal_nonlane_n": 21,
+      "marginal_nonlane_mean": 4.82,
+      "marginal_nonlane_se": 5.17
+    },
+    "flat_0.01": {
+      "admitted_n": 23,
+      "admitted_mean": 2.56,
+      "admitted_se": 3.9,
+      "marginal_n": 23,
+      "marginal_markets": 17,
+      "marginal_mean": 2.56,
+      "marginal_se": 3.9,
+      "marginal_ci": [
+        -7.28,
+        12.77
+      ],
+      "marginal_total": 58.96,
+      "marginal_nonlane_n": 23,
+      "marginal_nonlane_mean": 2.56,
+      "marginal_nonlane_se": 3.9
+    },
+    "flat_0.015": {
+      "admitted_n": 27,
+      "admitted_mean": 4.1,
+      "admitted_se": 4.09,
+      "marginal_n": 27,
+      "marginal_markets": 20,
+      "marginal_mean": 4.1,
+      "marginal_se": 4.09,
+      "marginal_ci": [
+        -4.96,
+        15.02
+      ],
+      "marginal_total": 110.73,
+      "marginal_nonlane_n": 27,
+      "marginal_nonlane_mean": 4.1,
+      "marginal_nonlane_se": 4.09
+    },
+    "flat_0.02": {
+      "admitted_n": 31,
+      "admitted_mean": 3.35,
+      "admitted_se": 3.58,
+      "marginal_n": 31,
+      "marginal_markets": 23,
+      "marginal_mean": 3.35,
+      "marginal_se": 3.58,
+      "marginal_ci": [
+        -5.08,
+        12.22
+      ],
+      "marginal_total": 103.71,
+      "marginal_nonlane_n": 31,
+      "marginal_nonlane_mean": 3.35,
+      "marginal_nonlane_se": 3.58
+    },
+    "flat_0.03": {
+      "admitted_n": 33,
+      "admitted_mean": 3.77,
+      "admitted_se": 3.49,
+      "marginal_n": 33,
+      "marginal_markets": 25,
+      "marginal_mean": 3.77,
+      "marginal_se": 3.49,
+      "marginal_ci": [
+        -4.06,
+        12.06
+      ],
+      "marginal_total": 124.52,
+      "marginal_nonlane_n": 33,
+      "marginal_nonlane_mean": 3.77,
+      "marginal_nonlane_se": 3.49
+    },
+    "flat_0.05": {
+      "admitted_n": 39,
+      "admitted_mean": 2.01,
+      "admitted_se": 3.04,
+      "marginal_n": 39,
+      "marginal_markets": 30,
+      "marginal_mean": 2.01,
+      "marginal_se": 3.04,
+      "marginal_ci": [
+        -4.4,
+        10.06
+      ],
+      "marginal_total": 78.22,
+      "marginal_nonlane_n": 35,
+      "marginal_nonlane_mean": 2.99,
+      "marginal_nonlane_se": 3.34
+    },
+    "longshot_0.1": {
+      "admitted_n": 5,
+      "admitted_mean": 13.94,
+      "admitted_se": 14.78,
+      "marginal_n": 5,
+      "marginal_markets": 3,
+      "marginal_mean": 13.94,
+      "marginal_se": 14.78,
+      "marginal_ci": [
+        -10.0,
+        49.85
+      ],
+      "marginal_total": 69.7,
+      "marginal_nonlane_n": 5,
+      "marginal_nonlane_mean": 13.94,
+      "marginal_nonlane_se": 14.78
+    },
+    "longshot_0.12": {
+      "admitted_n": 6,
+      "admitted_mean": 22.3,
+      "admitted_se": 14.68,
+      "marginal_n": 6,
+      "marginal_markets": 4,
+      "marginal_mean": 22.3,
+      "marginal_se": 14.68,
+      "marginal_ci": [
+        -10.0,
+        58.38
+      ],
+      "marginal_total": 133.77,
+      "marginal_nonlane_n": 6,
+      "marginal_nonlane_mean": 22.3,
+      "marginal_nonlane_se": 14.68
+    },
+    "longshot_0.16": {
+      "admitted_n": 6,
+      "admitted_mean": 22.3,
+      "admitted_se": 14.68,
+      "marginal_n": 6,
+      "marginal_markets": 4,
+      "marginal_mean": 22.3,
+      "marginal_se": 14.68,
+      "marginal_ci": [
+        -10.0,
+        58.38
+      ],
+      "marginal_total": 133.77,
+      "marginal_nonlane_n": 6,
+      "marginal_nonlane_mean": 22.3,
+      "marginal_nonlane_se": 14.68
+    },
+    "longshot_0.2": {
+      "admitted_n": 6,
+      "admitted_mean": 22.3,
+      "admitted_se": 14.68,
+      "marginal_n": 6,
+      "marginal_markets": 4,
+      "marginal_mean": 22.3,
+      "marginal_se": 14.68,
+      "marginal_ci": [
+        -10.0,
+        58.38
+      ],
+      "marginal_total": 133.77,
+      "marginal_nonlane_n": 6,
+      "marginal_nonlane_mean": 22.3,
+      "marginal_nonlane_se": 14.68
+    }
+  },
+  "incumbent": {
+    "since_shadow_start": {
+      "n": 667,
+      "n_ex": 606,
+      "per10_ex_mean": 1.27,
+      "per10_ex_se": 0.52,
+      "per_trade_mean": 9.19
+    },
+    "all": {
+      "n": 2382,
+      "n_ex": 2257,
+      "per10_ex_mean": 0.33,
+      "per10_ex_se": 0.22,
+      "per_trade_mean": 2.47
+    }
+  }
+}
