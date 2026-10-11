@@ -1,0 +1,137 @@
+wallet depth floor test — READ-ONLY, gates nothing
+  WalletProfile.resolvedTradeCount30d distribution over 3408 wallets: min 0 | p10 10 | p25 63 | p50 290 | p75 300 | p90 300 | max 300
+  >>> the field is STILL CEILING-CLAMPED, now at 300: 1684 wallets (49.4%) sit EXACTLY at the ceiling, so it
+      still cannot distinguish a 300-position record from a deeper one. The ceiling moved 100 -> 300 when the
+      depth fetch was un-clamped (src/lib/adapters/polymarket.ts:272 DEPTH_MAX_CLOSED_PAGES, default 6
+      pages = <=300 rows; env-tunable), so a 2026-09-23-era read at ceiling 100 is NOT comparable
+      bucket-for-bucket with this one. Bucket '100+ (deep)' below is the whole deep end; the
+      as-of-entry measure (b) is the one that can still grade it.
+  WalletProfile.tradeCount30d: p50 302 | p90 692 | max 900 (also capped)
+  as-of stamp: lastScannedAt spans 2026-10-05 -> 2026-10-11, i.e. every wallet's depth is a snapshot of WHEN it was
+      scanned (never the depth our copy decision saw).
+
+AS-OF-ENTRY DEPTH (b): distinct markets we had ALREADY observed that wallet trading before the leg
+opened. Healthy: the median as-of-entry depth is what our scanner had seen, not the wallet's true
+history (observation window starts 2026-07-13), so it is a LOWER BOUND on record depth.
+
+==============================================================================
+BANKROLL_200 — 2396 settled legs, 117 source wallets, realized $5807.47 on $18778.79 cost (30.9% of cost)
+
+  (a) BY STORED snapshot resolvedTradeCount30d — with the price control column
+  bucket            wal  legs     cost$  realized$ mean leg$  median$   win%    edge% med entry
+  <25                 6    36       347    -$16.49    -$0.46    $1.92    58%     -4.8    0.520
+  25-99              30   269      2401   $1256.03     $4.67   -$0.55    43%    +52.3    0.435
+  100+ (deep)        81  2091     16030   $4567.93     $2.18   -$0.04    49%    +28.5    0.485
+    wallet-clustered 95% CI on mean leg (stored snapshot): <25 [-$3.38, $1.77] | 25-99 [-$3.97, $14.56] | 100+ deep [$0.56, $3.59]
+    thin(<25) vs deep(100) — wallet-clustered mean leg: -$0.46 vs $2.18 ; clustered perm p(mean)=0.373 p(median)=0.167 [permutation draws 18805-18805 (adaptive to pool size)]
+
+  (b) BY AS-OF-ENTRY observed depth — quartiles over our own legs (median depth 260 markets)
+  depth bucket      wal  legs     cost$  realized$ mean leg$  median$   win%    edge% med entry
+  <80                85   666      5270   -$593.87    -$0.89   -$0.62    44%    -11.3    0.460
+  80-259             38   434      3039   $1105.98     $2.55    $0.37    52%    +36.4    0.468
+  260-863            20   506      3603    $598.29     $1.18   -$0.38    46%    +16.6    0.470
+  >=864              10   790      6867   $4697.07     $5.95    $0.03    51%    +68.4    0.565
+    wallet-clustered 95% CI on mean leg (as-of-entry depth): 260-863 [-$0.55, $3.18] | 80-259 [-$0.55, $5.63] | <80 [-$2.00, $0.30] | >=864 [$1.86, $11.97]
+
+  PRICE CONTROL on (a): thin(<25) vs deep(100), WITHIN entry-price quintiles
+  entry band     thin  deep thin mean$ deep mean$       diff   clustered p
+  0.00-0.30         8   397     -$2.38     $11.26    -$13.64   n/a — <4 wallets per side
+  0.30-0.45         7   378     -$2.43      $0.76     -$3.19   n/a — <4 wallets per side
+  0.45-0.52         4   477  (too few legs)
+  0.52-0.66        17   392      $1.84      $0.35      $1.49   n/a — <4 wallets per side
+  0.66-1.01         0   447  (too few legs)
+    [permutation draws 18805-18805 (adaptive to pool size); p resolution floor 1/(draws+1); legs are clustered inside wallets]
+
+  RANKERS vs 'leg won' (AUC; 0.50 = no information; entry price is the baseline to beat)
+  MDE: with 1153 winning / 1243 losing legs this sample excludes any true AUC outside 0.50±0.023
+    resolvedTradeCount30d (scan)   AUC 0.521 [0.497, 0.544] (n=2396)
+    tradeCount30d (scan)           AUC 0.511 [0.487, 0.534] (n=2396)
+    depth as-of-entry (ours)       AUC 0.511 [0.488, 0.535] (n=2396)
+    roi30d                         AUC 0.486 [0.463, 0.509] (n=2396)
+    globalScore                    AUC 0.493 [0.469, 0.516] (n=2396)
+    entryPrice (price baseline)    AUC 0.656 [0.633, 0.680] (n=2396)
+    1 - entryPrice                 AUC 0.344 [0.320, 0.367] (n=2396)
+    spearman(stored snapshot, as-of-entry depth) = +0.513 over 2396 legs (they are not the same number)
+
+  FLOOR SIMULATION — what a minimum would remove from THIS lane (in-sample; see caveats)
+  floor (removes < N)                     legs    %cost   removed$  kept PnL$    edge%    wal  tracked
+  none (baseline)                         2396   100.0%      $0.00   $5807.47    30.9%    117    15/15
+  resolvedTradeCount30d >= 10             2392    99.9%    -$13.32   $5820.79    31.0%    116    15/15
+  resolvedTradeCount30d >= 25             2360    98.2%    -$16.49   $5823.96    31.6%    111    12/15
+  resolvedTradeCount30d >= 50             2304    96.2%   -$198.35   $6005.82    33.3%    101    10/15
+  resolvedTradeCount30d >= 100            2091    85.4%   $1239.54   $4567.93    28.5%     81    10/15
+  floor on AS-OF-ENTRY depth (ours)       legs    %cost   removed$  kept PnL$    edge%    wal  tracked
+  as-of-entry depth >= 5                  2363    98.7%     $64.84   $5742.63    31.0%    111    14/15
+  as-of-entry depth >= 10                 2325    97.6%     $46.37   $5761.10    31.4%    102    12/15
+  as-of-entry depth >= 25                 2120    89.8%     -$9.89   $5817.36    34.5%     85     9/15
+  as-of-entry depth >= 50                 1922    80.0%   -$597.46   $6404.93    42.6%     63     8/15
+  as-of-entry depth >= 100                1612    68.2%   -$638.16   $6445.63    50.3%     45     6/15
+  as-of-entry depth >= 250                1297    55.8%    $513.64   $5293.83    50.5%     24     3/15
+  tracked wallets in this lane: 15 of 117 source wallets here
+
+==============================================================================
+STANDARD — 8908 settled legs, 193 source wallets, realized $9323.48 on $102619.40 cost (9.1% of cost)
+
+  (a) BY STORED snapshot resolvedTradeCount30d — with the price control column
+  bucket            wal  legs     cost$  realized$ mean leg$  median$   win%    edge% med entry
+  <25                15   193      2237   -$365.98    -$1.90   -$7.16    40%    -16.4    0.482
+  25-99              47   951     12197   -$406.17    -$0.43    $0.91    55%     -3.3    0.575
+  100+ (deep)       131  7764     88185  $10095.63     $1.30    $0.61    65%    +11.4    0.580
+    wallet-clustered 95% CI on mean leg (stored snapshot): <25 [-$7.47, $4.74] | 25-99 [-$3.59, $2.32] | 100+ deep [$0.27, $2.27]
+    thin(<25) vs deep(100) — wallet-clustered mean leg: -$1.90 vs $1.30 ; clustered perm p(mean)=0.076 p(median)=0.156 [permutation draws 5027-18805 (adaptive to pool size)]
+
+  (b) BY AS-OF-ENTRY observed depth — quartiles over our own legs (median depth 317 markets)
+  depth bucket      wal  legs     cost$  realized$ mean leg$  median$   win%    edge% med entry
+  <86               171  4479     53521   $3888.92     $0.87    $2.87    57%     +7.3    0.535
+  86-316             36  1889     18864   $2629.92     $1.39    $0.28    73%    +13.9    0.686
+  317-1360           24  1640     16453   $1892.94     $1.15    $0.08    70%    +11.5    0.785
+  >=1361             10   900     13781    $911.70     $1.01    $1.07    61%     +6.6    0.645
+    wallet-clustered 95% CI on mean leg (as-of-entry depth): 317-1360 [-$1.07, $2.07] | 86-316 [$0.51, $2.63] | <86 [-$1.16, $2.52] | >=1361 [$0.15, $2.00]
+
+  PRICE CONTROL on (a): thin(<25) vs deep(100), WITHIN entry-price quintiles
+  entry band     thin  deep thin mean$ deep mean$       diff   clustered p
+  0.00-0.41        50  1449      $5.09      $4.33      $0.76   p=0.917
+  0.41-0.53        93  1462     -$7.48     -$1.45     -$6.03   p=0.074
+  0.53-0.60        50  1579      $1.51      $3.72     -$2.21   p=0.739
+  0.60-0.86         0  1566  (too few legs)
+  0.86-1.01         0  1708  (too few legs)
+    [permutation draws 5027-20000 (adaptive to pool size); p resolution floor 1/(draws+1); legs are clustered inside wallets]
+
+  RANKERS vs 'leg won' (AUC; 0.50 = no information; entry price is the baseline to beat)
+  MDE: with 5648 winning / 3260 losing legs this sample excludes any true AUC outside 0.50±0.012
+    resolvedTradeCount30d (scan)   AUC 0.511 [0.498, 0.523] (n=8908)
+    tradeCount30d (scan)           AUC 0.523 [0.510, 0.535] (n=8908)
+    depth as-of-entry (ours)       AUC 0.520 [0.508, 0.533] (n=8908)
+    roi30d                         AUC 0.438 [0.426, 0.451] (n=8908)
+    globalScore                    AUC 0.454 [0.441, 0.466] (n=8908)
+    entryPrice (price baseline)    AUC 0.757 [0.745, 0.769] (n=8908)
+    1 - entryPrice                 AUC 0.243 [0.231, 0.255] (n=8908)
+    spearman(stored snapshot, as-of-entry depth) = +0.575 over 8908 legs (they are not the same number)
+
+  FLOOR SIMULATION — what a minimum would remove from THIS lane (in-sample; see caveats)
+  floor (removes < N)                     legs    %cost   removed$  kept PnL$    edge%    wal  tracked
+  none (baseline)                         8908   100.0%      $0.00   $9323.48     9.1%    193    14/14
+  resolvedTradeCount30d >= 10             8887    99.8%   -$185.16   $9508.64     9.3%    191    14/14
+  resolvedTradeCount30d >= 25             8715    97.8%   -$365.98   $9689.46     9.7%    178    11/14
+  resolvedTradeCount30d >= 50             8338    92.9%   -$138.77   $9462.25     9.9%    164     9/14
+  resolvedTradeCount30d >= 100            7764    85.9%   -$772.15  $10095.63    11.4%    131     9/14
+  floor on AS-OF-ENTRY depth (ours)       legs    %cost   removed$  kept PnL$    edge%    wal  tracked
+  as-of-entry depth >= 5                  7917    88.2%   $5415.80   $3907.68     4.3%    169    13/14
+  as-of-entry depth >= 10                 7446    82.7%   $7273.85   $2049.63     2.4%    145    12/14
+  as-of-entry depth >= 25                 6123    67.3%   $5631.93   $3691.55     5.3%    101     6/14
+  as-of-entry depth >= 50                 5099    55.5%   $4154.63   $5168.85     9.1%     65     6/14
+  as-of-entry depth >= 100                4333    46.8%   $4386.38   $4937.10    10.3%     43     4/14
+  as-of-entry depth >= 250                2727    31.3%   $6258.63   $3064.85     9.5%     26     3/14
+  tracked wallets in this lane: 14 of 193 source wallets here
+
+CAVEATS (printed because these numbers will be quoted):
+  * IN-SAMPLE. Our book exists only where a wallet already cleared every gate, so a floor's
+    'removed PnL' is measured on the legs we actually took — not on what the floor would have
+    traded instead (no counterfactual book).
+  * A floor also removes VOLUME, which is the input to the C-200 phase ladder (the ladder's goal
+    is daily PnL, so a floor that raises edge%% while cutting cost can still slow the ladder).
+  * Our as-of-entry depth is a LOWER BOUND on the wallet's true record: our observation window
+    starts 2026-07-13, so a wallet that traded heavily before that reads thin.
+  * Nothing here is a rule. Any floor is a separate proposal with its own pre-registered gate.
+
+Reproduce: python3 scripts/wallet-depth-floor-test.py   (reads prisma/dev.db; writes nothing)

@@ -59,7 +59,7 @@ random.seed(20260923)
 _DRAWS = []
 _BOOT_DRAWS = []
 
-SNAP_BUCKETS = [(0, 25, "<25"), (25, 100, "25-99"), (100, 10 ** 9, "100 (clamped)")]
+SNAP_BUCKETS = [(0, 25, "<25"), (25, 100, "25-99"), (100, 10 ** 9, "100+ (deep)")]
 
 
 # ---------------------------------------------------------------- statistics
@@ -216,16 +216,26 @@ def main():
     obs, leg_rows, scans = load()
     scan = {r[0]: r for r in scans}
 
-    # ---- measure the clamp before using the field
+    # ---- measure the CEILING before using the field. The ceiling MOVED: it was 100 when this
+    #      test's 2026-09-23 null was measured; since the depth fetch was un-clamped it is higher.
+    #      Derive it (never hard-code it) so the narration cannot describe a field that no longer
+    #      exists — a stale "clamped at 100" line reads as a field defect that has been fixed.
     vals = sorted(r[1] for r in scans)
     n = len(vals)
-    clamp_share = sum(1 for v in vals if v >= 100) / float(n)
+    ceiling = vals[-1]
+    ties = sum(1 for v in vals if v == ceiling)
+    tie_share = ties / float(n)
     print("wallet depth floor test — READ-ONLY, gates nothing")
     print("  WalletProfile.resolvedTradeCount30d distribution over %d wallets: min %d | p10 %d | p25 %d | p50 %d | p75 %d | p90 %d | max %d"
           % (n, vals[0], vals[n // 10], vals[n // 4], vals[n // 2], vals[3 * n // 4], vals[9 * n // 10], vals[-1]))
-    print("  >>> the field is CLAMPED at 100: %.1f%% of ALL wallets sit exactly at the cap, so it cannot" % (100.0 * clamp_share))
-    print("      distinguish a 100-position record from a 900-position one. Bucket '100 (clamped)' below is the")
-    print("      whole deep end, and the as-of-entry measure (b) is the one that can still grade it.")
+    print("  >>> the field is STILL CEILING-CLAMPED, now at %d: %d wallets (%.1f%%) sit EXACTLY at the ceiling, so it"
+          % (ceiling, ties, 100.0 * tie_share))
+    print("      still cannot distinguish a %d-position record from a deeper one. The ceiling moved 100 -> %d when the"
+          % (ceiling, ceiling))
+    print("      depth fetch was un-clamped (src/lib/adapters/polymarket.ts:272 DEPTH_MAX_CLOSED_PAGES, default 6")
+    print("      pages = <=300 rows; env-tunable), so a 2026-09-23-era read at ceiling 100 is NOT comparable")
+    print("      bucket-for-bucket with this one. Bucket '100+ (deep)' below is the whole deep end; the")
+    print("      as-of-entry measure (b) is the one that can still grade it.")
     tvals = sorted(r[2] for r in scans)
     print("  WalletProfile.tradeCount30d: p50 %d | p90 %d | max %d (%s)"
           % (tvals[n // 2], tvals[9 * n // 10], tvals[-1],
@@ -301,8 +311,8 @@ def main():
                 "%+.1f" % (100.0 * sum(l["pnl"] for l in grp) / cost),
                 statistics.median([l["entry"] for l in grp])))
         thin = bucket_legs.get("<25", [])
-        deep = bucket_legs.get("100 (clamped)", [])
-        ci_line(legs, [("<25", thin), ("25-99", bucket_legs.get("25-99", [])), ("100 clamped", deep)],
+        deep = bucket_legs.get("100+ (deep)", [])
+        ci_line(legs, [("<25", thin), ("25-99", bucket_legs.get("25-99", [])), ("100+ deep", deep)],
                 "stored snapshot")
         if thin and deep:
             ga = [[l["pnl"] for l in thin if l["wallet"] == w] for w in {l["wallet"] for l in thin}]
