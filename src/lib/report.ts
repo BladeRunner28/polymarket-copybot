@@ -46,15 +46,28 @@ function driftDecayLine(): string | undefined {
     const s = JSON.parse(fs.readFileSync(DRIFT_SUMMARY_FILE, "utf-8")) as {
       avgPnlPerTradeExDust?: number;
       marked?: number;
+      avgPnlPerTradeExDustPerSignal?: number | null;
+      signalsSettled?: number;
       decayBar?: { thresholdUsd?: number; daysRequired?: number; consecutiveDaysAtOrBelow?: number; cohort7d?: number | null; tripped?: boolean };
+      decayBarPerSignal?: { consecutiveDaysAtOrBelow?: number; daysRequired?: number; cohort7d?: number | null; tripped?: boolean };
     };
     if (typeof s.avgPnlPerTradeExDust !== "number") return undefined;
     const b = s.decayBar;
     const bar = b
       ? ` · decay bar ${b.consecutiveDaysAtOrBelow ?? 0}/${b.daysRequired ?? 7} days at ≤$${(b.thresholdUsd ?? 0.5).toFixed(2)}` +
-        ` (cohort7d ${b.cohort7d === null || b.cohort7d === undefined ? "—" : "$" + b.cohort7d.toFixed(2)}\)${b.tripped ? " — TRIPPED" : ""}`
+        ` (cohort7d ${b.cohort7d === null || b.cohort7d === undefined ? "—" : "$" + b.cohort7d.toFixed(2)}\\)${b.tripped ? " — TRIPPED" : ""}`
       : "";
-    return `• Drift gate counterfactual: ${s.avgPnlPerTradeExDust >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDust).toFixed(2)}/trade ex-dust (${s.marked ?? 0} marked)${bar}`;
+    // Instrument v2 (2026-10-11): the same counterfactual on its per-signal basis
+    // (one row per market|outcome|wallet). The line above is a per-poll average —
+    // a market that stays drifted is counted once per 10-minute tick — so quote
+    // both, and never compare one against the other.
+    const ps =
+      typeof s.avgPnlPerTradeExDustPerSignal === "number"
+        ? ` · per-signal ${s.avgPnlPerTradeExDustPerSignal >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDustPerSignal).toFixed(2)}/trade` +
+          ` ex-dust (${s.signalsSettled ?? 0} settled signals` +
+          `${s.decayBarPerSignal ? `, bar ${s.decayBarPerSignal.consecutiveDaysAtOrBelow ?? 0}/${s.decayBarPerSignal.daysRequired ?? 7}d, cohort7d ${s.decayBarPerSignal.cohort7d === null || s.decayBarPerSignal.cohort7d === undefined ? "—" : "$" + s.decayBarPerSignal.cohort7d.toFixed(2)}` : ""})`
+        : "";
+    return `• Drift gate counterfactual: ${s.avgPnlPerTradeExDust >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDust).toFixed(2)}/trade ex-dust per poll (${s.marked ?? 0} marked)${ps}${bar}`;
   } catch {
     return undefined;
   }

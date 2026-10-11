@@ -1,27 +1,34 @@
 {
-  "generatedAt": "2026-10-11T03:28:54.272Z",
-  "candidates": 26980,
-  "marked": 16354,
-  "awaitingResolution": 10626,
-  "wins": 8545,
-  "winRate": 0.5225021401491989,
-  "wouldHavePnl": 519717.77,
-  "avgPnlPerTrade": 31.78,
-  "avgPnlPerTradeExDust": 0.16,
-  "dustExcluded": 1468,
+  "generatedAt": "2026-10-11T09:03:04.103Z",
+  "candidates": 27013,
+  "marked": 19999,
+  "awaitingResolution": 7014,
+  "wins": 11031,
+  "winRate": 0.551577578878944,
+  "wouldHavePnl": 741833.11,
+  "avgPnlPerTrade": 37.09,
+  "avgPnlPerTradeExDust": 0.37,
+  "dustExcluded": 1755,
   "dustMinEntryPrice": 0.1,
-  "avgPnlPerTradeExDustLast7dCohort": 0.01,
-  "cohort7dMarked": 3829,
-  "totalMarked": 16354,
+  "avgPnlPerTradeExDustLast7dCohort": 0,
+  "cohort7dMarked": 3764,
+  "totalMarked": 19999,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-10-11T03:09:40.650Z",
+  "lastCandidateAt": "2026-10-11T09:01:36.130Z",
+  "signals": 9090,
+  "signalsSettled": 5731,
+  "avgPnlPerTradeExDustPerSignal": 0.92,
+  "dustExcludedPerSignal": 360,
+  "avgPnlPerTradeExDustLast7dCohortPerSignal": 3.11,
+  "cohort7dMarkedPerSignal": 671,
+  "rawConfidenceRows": 1,
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
     "consecutiveDaysAtOrBelow": 6,
-    "cohort7d": 0.01,
-    "cohort7dMarked": 3829,
+    "cohort7d": 0,
+    "cohort7dMarked": 3764,
     "cohortAtOrBelow": true,
     "tripped": false,
     "seriesDays": 22,
@@ -52,9 +59,27 @@
       },
       {
         "day": "2026-10-11",
-        "avgPnlPerTradeExDust": 0.16
+        "avgPnlPerTradeExDust": 0.37
       }
     ],
     "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
+  },
+  "decayBarPerSignal": {
+    "thresholdUsd": 0.5,
+    "daysRequired": 7,
+    "consecutiveDaysAtOrBelow": 0,
+    "cohort7d": 3.11,
+    "cohort7dMarked": 671,
+    "cohortAtOrBelow": false,
+    "tripped": false,
+    "seriesDays": 1,
+    "recent": [
+      {
+        "day": "2026-10-11",
+        "avgPnlPerTradeExDust": 0.92
+      }
+    ],
+    "basis": "per_signal (one row per marketId|outcome|wallet, earliest poll)",
+    "rule": "Same pre-registered 2026-09-20 rule and threshold, read on the per-signal basis. Published ALONGSIDE decayBar, which keeps reading the poll-row series the rule was pre-registered against; repointing decayBar at this basis is a separate, un-taken decision (card drift-shadow-instrument-defects)."
   }
 }

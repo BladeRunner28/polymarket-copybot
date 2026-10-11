@@ -55,6 +55,23 @@ export interface DriftShadowCandidate {
   ttrHours?: number;
   spread?: number;
   liquidity?: number;
+  /**
+   * Residual risks OTHER than the drift gate at decision time (same field the
+   * lowconf feed has always carried). Instrument v2, 2026-10-11: without it a
+   * reader cannot tell "the drift gate was the only blocker" from "this row was
+   * blocked by four things".
+   */
+  otherBlocks?: number;
+  /**
+   * The v37 confidence as COMPUTED, before the skip paths zero it. `confidence`
+   * below is 0 by construction on every skip/watchlist/lane return
+   * (src/lib/scoring/trade.ts:46), so the recorded `confidence` field of this
+   * feed is structurally zero; a gate-correct screen has to read THIS one.
+   * Instrument v2, 2026-10-11. Rows written before that date carry null and the
+   * value must be reconstructed from copyScore:
+   * `(copyScore - watchlistScore) / (100 - watchlistScore)`.
+   */
+  rawConfidence?: number;
   /** Why the gate fired, verbatim from the skip risks. */
   reason: string;
 }
@@ -78,6 +95,8 @@ export function appendDriftShadow(c: DriftShadowCandidate): void {
     ttrHours: c.ttrHours ?? null,
     spread: c.spread ?? null,
     liquidity: c.liquidity ?? null,
+    otherBlocks: c.otherBlocks ?? null,
+    rawConfidence: c.rawConfidence ?? null,
     stakeUsd: DRIFT_SHADOW_STAKE_USD,
     reason: c.reason,
   };
@@ -94,6 +113,59 @@ export function readDriftRows(): Array<Record<string, unknown>> {
   } catch {
     return [];
   }
+}
+
+/**
+ * Instrument v2 (2026-10-11, card drift-shadow-instrument-defects): the SECOND
+ * day series, cut to one row per copy signal. The original series samples the
+ * CUMULATIVE per-poll mean once a day; this one samples the cumulative
+ * per-signal mean, so a market that stays drifted is not counted once per
+ * 10-minute poll. The pre-registered 2026-09-20 bar keeps reading the original
+ * series (that is the quantity it was pre-registered against); this series is
+ * published ALONGSIDE it and is what a per-opportunity read must use.
+ */
+export const DRIFT_DECAY_SERIES_PER_SIGNAL_FILE = join(
+  __dirname,
+  "..",
+  "..",
+  "data",
+  "drift-decay-series-per-signal.jsonl"
+);
+
+/**
+ * One row per distinct copy signal: (marketId, outcome, wallet), keeping the
+ * EARLIEST poll — the decision at which the signal first appeared, which is also
+ * the price a relaxed tolerance would have paid.
+ */
+export function dedupeSignals(
+  rows: Array<Record<string, unknown>>
+): Map<string, Record<string, unknown>> {
+  const out = new Map<string, Record<string, unknown>>();
+  for (const c of rows) {
+    if (c.type !== "candidate") continue;
+    const key = `${c.marketId}|${c.outcome}|${c.wallet}`;
+    const prev = out.get(key);
+    if (!prev || String(c.ts) < String(prev.ts)) out.set(key, c);
+  }
+  return out;
+}
+
+/**
+ * Consecutive days at or below the bar, read from the END of a day series (a
+ * day's last reading is the day's value). Pure, so both bases share one rule and
+ * the rule is testable without a runner.
+ */
+export function consecutiveDaysAtOrBelow(
+  series: Array<{ day: string; avgPnlPerTradeExDust: number | null }>,
+  barUsd: number
+): number {
+  let consecutive = 0;
+  for (let i = series.length - 1; i >= 0; i--) {
+    const v = series[i].avgPnlPerTradeExDust;
+    if (v !== null && v <= barUsd) consecutive++;
+    else break;
+  }
+  return consecutive;
 }
 
 export interface DriftSummary {
@@ -124,6 +196,25 @@ export interface DriftSummary {
   stakeUsd: number;
   firstCandidateAt: string | null;
   lastCandidateAt: string | null;
+  /**
+   * --- instrument v2, one row per SIGNAL (2026-10-11) ------------------------
+   * `candidates`/`marked`/`avgPnlPerTradeExDust` above count one "trade" per
+   * poll row, so a market that stays drifted is counted once per 10-minute tick
+   * (26,928 rows = 9,075 distinct signals; one market contributed 428 rows). The
+   * fields below re-cut the same statistics to one row per
+   * (marketId, outcome, wallet), keeping the EARLIEST poll. They answer "what
+   * would the average blocked COPY have returned", which is the actionable
+   * question; the poll-row numbers stay for continuity and for the
+   * pre-registered bar.
+   */
+  signals: number;
+  signalsSettled: number;
+  avgPnlPerTradeExDustPerSignal: number | null;
+  dustExcludedPerSignal: number;
+  avgPnlPerTradeExDustLast7dCohortPerSignal: number | null;
+  cohort7dMarkedPerSignal: number;
+  /** Candidate rows carrying rawConfidence (rows written from 2026-10-11 on). */
+  rawConfidenceRows: number;
 }
 
 export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSummary {
@@ -160,6 +251,40 @@ export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSumma
     }
   }
   const ts = candidates.map((r) => String(r.ts)).sort();
+
+  // ---- instrument v2: the same statistics, one row per SIGNAL ----------------
+  // The loop above counts one trade per POLL: a market that stays drifted is
+  // counted once per tick, so its mean answers "what did the average poll of a
+  // blocked market return". This pass keeps the earliest poll per
+  // (marketId, outcome, wallet) so the number answers "what would the average
+  // blocked copy have returned" — the question a gate decision needs.
+  let sigPnlEx = 0;
+  let sigMarkedEx = 0;
+  let sigDust = 0;
+  let sigCohortPnl = 0;
+  let sigCohortN = 0;
+  for (const c of dedupeSignals(rows).values()) {
+    const v = resolves.get(`${c.marketId}|${c.outcome}`);
+    if (v === undefined) continue;
+    const entry = Number(c.currentPrice);
+    if (!(entry >= DRIFT_DUST_MIN_ENTRY)) {
+      sigDust++;
+      continue;
+    }
+    const rowPnl = entry > 0 ? ((v - entry) / entry) * Number(c.stakeUsd ?? DRIFT_SHADOW_STAKE_USD) : 0;
+    sigPnlEx += rowPnl;
+    sigMarkedEx++;
+    const decidedAt = Date.parse(String(c.ts));
+    if (Number.isFinite(decidedAt) && decidedAt >= cohortCutoff) {
+      sigCohortPnl += rowPnl;
+      sigCohortN++;
+    }
+  }
+  const signals = dedupeSignals(rows);
+  const signalsSettled = [...signals.values()].filter(
+    (c) => resolves.get(`${c.marketId}|${c.outcome}`) !== undefined
+  ).length;
+
   return {
     generatedAt: new Date().toISOString(),
     candidates: candidates.length,
@@ -178,5 +303,16 @@ export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSumma
     stakeUsd: DRIFT_SHADOW_STAKE_USD,
     firstCandidateAt: ts.length ? ts[0] : null,
     lastCandidateAt: ts.length ? ts[ts.length - 1] : null,
+    signals: signals.size,
+    signalsSettled,
+    avgPnlPerTradeExDustPerSignal: sigMarkedEx ? Math.round((sigPnlEx / sigMarkedEx) * 100) / 100 : null,
+    dustExcludedPerSignal: sigDust,
+    avgPnlPerTradeExDustLast7dCohortPerSignal: sigCohortN
+      ? Math.round((sigCohortPnl / sigCohortN) * 100) / 100
+      : null,
+    cohort7dMarkedPerSignal: sigCohortN,
+    rawConfidenceRows: candidates.filter(
+      (c) => c.rawConfidence !== null && c.rawConfidence !== undefined
+    ).length,
   };
 }

@@ -20,6 +20,8 @@ import {
   summarizeDrift,
   DRIFT_SHADOW_FILE,
   DRIFT_SHADOW_SUMMARY_FILE,
+  DRIFT_DECAY_SERIES_PER_SIGNAL_FILE,
+  consecutiveDaysAtOrBelow,
 } from "../src/lib/shadow-drift";
 import {
   readWalletCapRows,
@@ -279,12 +281,51 @@ async function main() {
     logError(`[DRIFT-DECAY] series write/read failed: ${e instanceof Error ? e.message : e}`);
   }
   const lastN = decaySeries.slice(-DRIFT_DECAY_DAYS);
-  let consecutive = 0;
-  for (let i = decaySeries.length - 1; i >= 0; i--) {
-    const v = decaySeries[i].avgPnlPerTradeExDust;
-    if (v !== null && v <= DRIFT_DECAY_BAR_USD) consecutive++;
-    else break;
+  const consecutive = consecutiveDaysAtOrBelow(decaySeries, DRIFT_DECAY_BAR_USD);
+  // ---- instrument v2 (2026-10-11): the SECOND series, one row per SIGNAL ------
+  // Same rule, same shape, different basis. The pre-registered bar above keeps
+  // reading the poll-row series (that is the quantity it was pre-registered
+  // against on 2026-09-20); this one is published alongside it so a
+  // per-opportunity read exists at all.
+  let perSignalSeries: Array<{ day: string; avgPnlPerTradeExDust: number | null }> = [];
+  const perSignalRow = {
+    ts: new Date().toISOString(),
+    day: new Date().toISOString().slice(0, 10),
+    avgPnlPerTradeExDust: dSummary.avgPnlPerTradeExDustPerSignal,
+    marked: dSummary.signalsSettled,
+    dustExcluded: dSummary.dustExcludedPerSignal,
+    basis: "per_signal",
+  };
+  try {
+    fs.appendFileSync(DRIFT_DECAY_SERIES_PER_SIGNAL_FILE, JSON.stringify(perSignalRow) + "\n");
+    const byDay = new Map<string, { day: string; avgPnlPerTradeExDust: number | null }>();
+    for (const r of fs
+      .readFileSync(DRIFT_DECAY_SERIES_PER_SIGNAL_FILE, "utf-8")
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l) as { day: string; avgPnlPerTradeExDust: number | null })) {
+      byDay.set(r.day, r);
+    }
+    perSignalSeries = [...byDay.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
+  } catch (e) {
+    logError(`[DRIFT-DECAY] per-signal series write/read failed: ${e instanceof Error ? e.message : e}`);
   }
+  const perSignalConsecutive = consecutiveDaysAtOrBelow(perSignalSeries, DRIFT_DECAY_BAR_USD);
+  const perSignalCohort = dSummary.avgPnlPerTradeExDustLast7dCohortPerSignal;
+  const perSignalCohortOk = perSignalCohort !== null && perSignalCohort <= DRIFT_DECAY_BAR_USD;
+  const decayBarPerSignal = {
+    thresholdUsd: DRIFT_DECAY_BAR_USD,
+    daysRequired: DRIFT_DECAY_DAYS,
+    consecutiveDaysAtOrBelow: perSignalConsecutive,
+    cohort7d: perSignalCohort,
+    cohort7dMarked: dSummary.cohort7dMarkedPerSignal,
+    cohortAtOrBelow: perSignalCohortOk,
+    tripped: perSignalConsecutive >= DRIFT_DECAY_DAYS && perSignalCohortOk,
+    seriesDays: perSignalSeries.length,
+    recent: perSignalSeries.slice(-DRIFT_DECAY_DAYS).map((r) => ({ day: r.day, avgPnlPerTradeExDust: r.avgPnlPerTradeExDust })),
+    basis: "per_signal (one row per marketId|outcome|wallet, earliest poll)",
+    rule: "Same pre-registered 2026-09-20 rule and threshold, read on the per-signal basis. Published ALONGSIDE decayBar, which keeps reading the poll-row series the rule was pre-registered against; repointing decayBar at this basis is a separate, un-taken decision (card drift-shadow-instrument-defects).",
+  };
   // The bar requires BOTH reads to be at/below the threshold: the cumulative mean
   // drifts mechanically as settled rows accumulate, the trailing 7-day cohort does
   // not. Pre-registered 2026-09-20 (before either number was ever read).
@@ -309,7 +350,7 @@ async function main() {
   };
   fs.writeFileSync(
     DRIFT_SHADOW_SUMMARY_FILE,
-    JSON.stringify({ ...dSummary, decayBar }, null, 2)
+    JSON.stringify({ ...dSummary, decayBar, decayBarPerSignal }, null, 2)
   );
   log(
     `shadow-drift: +${dResolved} marked this run (cap ${driftLimit}/run${DRIFT_TEST_LIMIT === null ? "" : " via DRIFT_TEST_LIMIT"}, ` +
@@ -323,6 +364,10 @@ async function main() {
       `${dSummary.avgPnlPerTrade === null ? "—" : "$" + dSummary.avgPnlPerTrade.toFixed(2)}/trade, ` +
       `${dSummary.avgPnlPerTradeExDust === null ? "—" : "$" + dSummary.avgPnlPerTradeExDust.toFixed(2)}/trade ex-dust ` +
       `[${dSummary.dustExcluded} rows below $${dSummary.dustMinEntryPrice}]). ` +
+      `Per-signal: ${dSummary.signalsSettled} settled of ${dSummary.signals} signals, ` +
+      `${dSummary.avgPnlPerTradeExDustPerSignal === null ? "—" : "$" + dSummary.avgPnlPerTradeExDustPerSignal.toFixed(2)}/trade ex-dust ` +
+      `[cohort7d ${dSummary.avgPnlPerTradeExDustLast7dCohortPerSignal === null ? "—" : "$" + dSummary.avgPnlPerTradeExDustLast7dCohortPerSignal.toFixed(2)} ` +
+      `over ${dSummary.cohort7dMarkedPerSignal}]. ` +
       `Summary: ${DRIFT_SHADOW_SUMMARY_FILE}`
   );
 

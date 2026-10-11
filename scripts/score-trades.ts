@@ -1206,6 +1206,13 @@ async function main() {
             ttrHours: ttr,
             spread,
             liquidity,
+            // Instrument v2 (2026-10-11): the recorder's own `confidence` is 0 on
+            // every skip path by construction, so store the value the gates
+            // actually compared (v37 rawConfidence) plus the count of OTHER
+            // blockers — without them a reader cannot screen this feed on the
+            // non-drift gates or tell "drift was the only blocker".
+            rawConfidence: result.rawConfidence ?? result.confidence,
+            otherBlocks: Math.max(0, (result.risks ?? []).length - 1),
             reason: driftRisk,
           });
           driftShadowLogged++;

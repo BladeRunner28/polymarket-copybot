@@ -112,21 +112,24 @@ def pnl(entry: float, value: int, maker: bool = False) -> float:
     return ((value - e) / e) * STAKE
 
 
-def raw_confidence(copy_score: float) -> float:
-    """v37: rawConfidence = (copyScore - watchlistScore) / (100 - watchlistScore).
-    watchlistScore is 35 for every RuleSet in the shadow window (v43 -> v61), so the
-    real confidence is recoverable from the recorded copyScore. It has to be: the
-    drift shadow stores `result.confidence`, which is 0 BY CONSTRUCTION on every skip
-    path (src/lib/scoring/trade.ts:46) - so its `confidence` field is structurally
-    zero and the gate must be read off rawConfidence."""
-    return round(((copy_score - WATCHLIST_SCORE) / (100 - WATCHLIST_SCORE)) * 100) / 100
+def raw_confidence(c: dict) -> float:
+    """The confidence the gates actually compared.
+    Prefers the RECORDED rawConfidence (instrument v2, rows written from 2026-10-11).
+    Older rows carry only `confidence`, which is 0 BY CONSTRUCTION on every skip path
+    (src/lib/scoring/trade.ts:46), so for those the value must be recovered from
+    copyScore: rawConfidence = (copyScore - watchlistScore) / (100 - watchlistScore),
+    with watchlistScore 35 for every RuleSet in the shadow window (v43 -> v61)."""
+    recorded = c.get("rawConfidence")
+    if isinstance(recorded, (int, float)):
+        return float(recorded)
+    return round(((float(c.get("copyScore") or 0) - WATCHLIST_SCORE) / (100 - WATCHLIST_SCORE)) * 100) / 100
 
 
 def passes_other_gates(c: dict) -> bool:
     # minConfidence 0.7 <=> copyScore >= 80.5, so the score and confidence gates are
     # the same constraint on this population; minCopyScore is 80.
     return (
-        raw_confidence(float(c.get("copyScore") or 0)) >= MIN_CONFIDENCE
+        raw_confidence(c) >= MIN_CONFIDENCE
         and float(c.get("spread") if c.get("spread") is not None else 9) <= MAX_SPREAD
         and float(c.get("liquidity") or 0) >= MIN_LIQUIDITY
         and float(c.get("ttrHours") or 0) >= MIN_TTR_H

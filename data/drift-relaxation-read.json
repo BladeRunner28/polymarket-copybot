@@ -1,50 +1,50 @@
 {
-  "generatedAt": "2026-10-11T01:13:46.822916+00:00",
+  "generatedAt": "2026-10-11T09:03:24.574531+00:00",
   "reproduction": {
-    "candidates": 26928,
-    "marked": 13881,
-    "wins": 7260,
-    "winRate": 0.523,
-    "wouldHavePnl": 85058.43,
-    "avgPnlPerTrade": 6.13,
-    "avgPnlPerTradeExDust": 0.29,
-    "dustExcluded": 1141,
-    "cohort7d": -0.01,
-    "cohort7dMarked": 3848
+    "candidates": 27013,
+    "marked": 19999,
+    "wins": 11031,
+    "winRate": 0.5516,
+    "wouldHavePnl": 741833.11,
+    "avgPnlPerTrade": 37.09,
+    "avgPnlPerTradeExDust": 0.37,
+    "dustExcluded": 1755,
+    "cohort7d": -0.0,
+    "cohort7dMarked": 3764
   },
   "signals": {
-    "poll_rows": 26928,
-    "distinct": 9075,
-    "settled": 3550,
-    "screened": 244
+    "poll_rows": 27013,
+    "distinct": 9090,
+    "settled": 5731,
+    "screened": 305
   },
   "score_bands": {
     "0-40": {
-      "n": 704,
-      "n_ex": 675,
-      "mean": 1.24,
-      "se": 0.46
+      "n": 1283,
+      "n_ex": 1219,
+      "mean": 0.89,
+      "se": 0.29
     },
     "40-60": {
-      "n": 1563,
-      "n_ex": 1472,
-      "mean": 1.43,
-      "se": 0.39
+      "n": 2636,
+      "n_ex": 2396,
+      "mean": 1.16,
+      "se": 0.27
     },
     "60-80": {
-      "n": 970,
-      "n_ex": 950,
-      "mean": 0.65,
-      "se": 0.37
+      "n": 1392,
+      "n_ex": 1357,
+      "mean": 0.39,
+      "se": 0.3
     },
     "80-101": {
-      "n": 313,
-      "n_ex": 307,
-      "mean": 1.72,
-      "se": 0.79
+      "n": 420,
+      "n_ex": 399,
+      "mean": 1.33,
+      "se": 0.69
     }
   },
-  "recut_day_streak": 0,
+  "recut_day_streak": 1,
   "options": {
     "flat_0.004": {
       "admitted_n": 1,
@@ -115,89 +115,89 @@
       "marginal_nonlane_se": 5.17
     },
     "flat_0.01": {
-      "admitted_n": 23,
-      "admitted_mean": 2.56,
-      "admitted_se": 3.9,
-      "marginal_n": 23,
-      "marginal_markets": 17,
-      "marginal_mean": 2.56,
-      "marginal_se": 3.9,
+      "admitted_n": 24,
+      "admitted_mean": 2.5,
+      "admitted_se": 3.73,
+      "marginal_n": 24,
+      "marginal_markets": 18,
+      "marginal_mean": 2.5,
+      "marginal_se": 3.73,
       "marginal_ci": [
-        -7.28,
-        12.77
+        -6.83,
+        12.89
       ],
-      "marginal_total": 58.96,
-      "marginal_nonlane_n": 23,
-      "marginal_nonlane_mean": 2.56,
-      "marginal_nonlane_se": 3.9
+      "marginal_total": 60.07,
+      "marginal_nonlane_n": 24,
+      "marginal_nonlane_mean": 2.5,
+      "marginal_nonlane_se": 3.73
     },
     "flat_0.015": {
-      "admitted_n": 27,
-      "admitted_mean": 4.1,
-      "admitted_se": 4.09,
-      "marginal_n": 27,
-      "marginal_markets": 20,
-      "marginal_mean": 4.1,
-      "marginal_se": 4.09,
+      "admitted_n": 29,
+      "admitted_mean": 3.51,
+      "admitted_se": 3.83,
+      "marginal_n": 29,
+      "marginal_markets": 22,
+      "marginal_mean": 3.51,
+      "marginal_se": 3.83,
       "marginal_ci": [
-        -4.96,
-        15.02
+        -5.14,
+        13.91
       ],
-      "marginal_total": 110.73,
-      "marginal_nonlane_n": 27,
-      "marginal_nonlane_mean": 4.1,
-      "marginal_nonlane_se": 4.09
+      "marginal_total": 101.84,
+      "marginal_nonlane_n": 29,
+      "marginal_nonlane_mean": 3.51,
+      "marginal_nonlane_se": 3.83
     },
     "flat_0.02": {
-      "admitted_n": 31,
-      "admitted_mean": 3.35,
-      "admitted_se": 3.58,
-      "marginal_n": 31,
-      "marginal_markets": 23,
-      "marginal_mean": 3.35,
-      "marginal_se": 3.58,
-      "marginal_ci": [
-        -5.08,
-        12.22
-      ],
-      "marginal_total": 103.71,
-      "marginal_nonlane_n": 31,
-      "marginal_nonlane_mean": 3.35,
-      "marginal_nonlane_se": 3.58
-    },
-    "flat_0.03": {
-      "admitted_n": 33,
-      "admitted_mean": 3.77,
-      "admitted_se": 3.49,
-      "marginal_n": 33,
-      "marginal_markets": 25,
-      "marginal_mean": 3.77,
-      "marginal_se": 3.49,
-      "marginal_ci": [
-        -4.06,
-        12.06
-      ],
-      "marginal_total": 124.52,
-      "marginal_nonlane_n": 33,
-      "marginal_nonlane_mean": 3.77,
-      "marginal_nonlane_se": 3.49
-    },
-    "flat_0.05": {
-      "admitted_n": 39,
-      "admitted_mean": 2.01,
-      "admitted_se": 3.04,
-      "marginal_n": 39,
-      "marginal_markets": 30,
-      "marginal_mean": 2.01,
-      "marginal_se": 3.04,
+      "admitted_n": 34,
+      "admitted_mean": 2.99,
+      "admitted_se": 3.29,
+      "marginal_n": 34,
+      "marginal_markets": 26,
+      "marginal_mean": 2.99,
+      "marginal_se": 3.29,
       "marginal_ci": [
         -4.4,
-        10.06
+        11.67
       ],
-      "marginal_total": 78.22,
-      "marginal_nonlane_n": 35,
+      "marginal_total": 101.72,
+      "marginal_nonlane_n": 34,
       "marginal_nonlane_mean": 2.99,
-      "marginal_nonlane_se": 3.34
+      "marginal_nonlane_se": 3.29
+    },
+    "flat_0.03": {
+      "admitted_n": 37,
+      "admitted_mean": 3.04,
+      "admitted_se": 3.15,
+      "marginal_n": 37,
+      "marginal_markets": 29,
+      "marginal_mean": 3.04,
+      "marginal_se": 3.15,
+      "marginal_ci": [
+        -3.78,
+        10.82
+      ],
+      "marginal_total": 112.54,
+      "marginal_nonlane_n": 37,
+      "marginal_nonlane_mean": 3.04,
+      "marginal_nonlane_se": 3.15
+    },
+    "flat_0.05": {
+      "admitted_n": 44,
+      "admitted_mean": 1.55,
+      "admitted_se": 2.72,
+      "marginal_n": 44,
+      "marginal_markets": 35,
+      "marginal_mean": 1.55,
+      "marginal_se": 2.72,
+      "marginal_ci": [
+        -3.99,
+        8.56
+      ],
+      "marginal_total": 68.0,
+      "marginal_nonlane_n": 40,
+      "marginal_nonlane_mean": 2.36,
+      "marginal_nonlane_se": 2.95
     },
     "longshot_0.1": {
       "admitted_n": 5,
@@ -270,18 +270,18 @@
   },
   "incumbent": {
     "since_shadow_start": {
-      "n": 667,
-      "n_ex": 606,
-      "per10_ex_mean": 1.27,
+      "n": 681,
+      "n_ex": 620,
+      "per10_ex_mean": 1.21,
       "per10_ex_se": 0.52,
-      "per_trade_mean": 9.19
+      "per_trade_mean": 8.89
     },
     "all": {
-      "n": 2382,
-      "n_ex": 2257,
-      "per10_ex_mean": 0.33,
+      "n": 2396,
+      "n_ex": 2271,
+      "per10_ex_mean": 0.32,
       "per10_ex_se": 0.22,
-      "per_trade_mean": 2.47
+      "per_trade_mean": 2.42
     }
   }
 }

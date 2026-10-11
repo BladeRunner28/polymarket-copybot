@@ -135,3 +135,27 @@ blocked at 6¢+ drift, not just past the 0.4¢ line. The longshot variant is n=6
 
 **Reproduce:** `cd ~/polymarket-copybot && python3 scripts/drift-relaxation-read.py`
 (read-only; writes only `data/drift-relaxation-read.json`).
+
+## 7. Update 2026-10-11 — instrument v2 shipped, and the bar's own basis now disagrees with the honest one
+
+Shipped (`drift-shadow-instrument-defects`, Medusa card `t_18dc9da3`): the feed records
+`rawConfidence` + `otherBlocks` on every row, publishes a per-signal basis next to the
+per-poll one (`data/drift-decay-series-per-signal.jsonl`, `decayBarPerSignal`), and the
+daily report quotes both, labelled. Reads refreshed at 04:00 with marking still running:
+
+- **poll-row (the pre-registered basis):** cumulative **+$0.37**/trade; trailing-7d cohort **−$0.00** (n=3,764 poll rows); bar **6 of 7** days
+- **per-signal (one row per market|outcome|wallet):** cumulative **+$0.92** over 5,731 settled of 9,090 signals; trailing-7d cohort **+$3.11** (n=671, 589 markets, market-clustered CI **[+$1.69, +$4.53]**); bar **0 of 7**, `cohortAtOrBelow: false`
+- **copyable subset on that basis** (score ≥ 80.5, spread ≤ 0.06, liquidity ≥ 750, TTR ≥ 2 h): 7d cohort **+$0.34** (n=94, 77 markets, clustered CI **[−$2.18, +$3.06]**) — below the incumbent (+$1.27 per $10) but the interval straddles zero
+- **all settled signals, first observation:** **+$0.92** (n=5,371, CI **[+$0.58, +$1.30]**); copyable subset **+$1.02** (n=305, CI [−$0.80, +$2.83])
+
+This sharpens §2 rather than reversing it: the trip is a property of the **poll-row** basis, and
+on the honest basis the bar's *cohort* condition **fails outright** (+$3.11 vs a $0.50 bar). The
+apparent edge is concentrated in rows no gate change can reach — the copyable slice is ≈ +$0.34/trade,
+i.e. below what we already book. So **HOLD stands**, reopen condition (i) is **not** met (interval
+straddles zero), and the question the data actually raises is not "widen the tolerance a little"
+(the marginal sets stay 18–39 trades with intervals straddling zero) but **"does the flat 0.4¢ drift
+gate earn its keep at all"** — a much larger question that needs its own pre-registration.
+
+Open, one line each: (a) adopt the per-signal basis for the pre-registered bar itself, or keep
+reading the series it was pre-registered against (`data/drift-shadow-summary.json` publishes both);
+(b) the drift gate's existence as a gate rather than a score input.
