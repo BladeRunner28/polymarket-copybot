@@ -1,0 +1,60 @@
+== 1. ANCHOR — my poll-row recomputation vs the published summary
+   OK  candidates               mine=27020      published=27020
+   OK  marked                   mine=20467      published=20467
+   OK  avgPnlPerTradeExDust     mine=0.33       published=0.33
+   OK  dustExcluded             mine=1775       published=1775
+
+== 2. population (duplicate-accumulation removed)
+   poll rows 27020 -> distinct signals 9092 -> settled 5867 (awaiting resolution 3225)
+   ex-dust (entry >= $0.10): 5499 settled signals, 368 dust-excluded
+   per-signal ex-dust mean $+0.88 (se 0.16; market-clustered 95% CI [+0.51, +1.25]) | published per-signal 0.88
+
+== 3. settled drift-blocked signals by ENTRY BAND (per-signal, ex-dust)
+   band          settled  dust-ex   mean$    se   clustered 95% CI     win%  median entry  markets
+   0.00-0.20       571     203   +23.47   2.52  [+18.26, +28.62]      49%     0.150     193
+   0.20-0.40       687     687    +5.45   0.66  [+4.05, +6.85]        46%     0.310     611
+   0.40-0.60      1166    1166    +0.50   0.30  [-0.09, +1.14]        52%     0.505    1014
+   0.60-0.80      1104    1104    -2.37   0.22  [-2.90, -1.87]        53%     0.695     931
+   0.80-1.01      2339    2339    -0.69   0.07  [-0.86, -0.53]        88%     0.967    1687
+
+== 4. as-of band win rate (>= 30 earlier SETTLED priors in the same band; no look-ahead)
+   settled signals labeled 5717 | unlabeled (too little prior) 150 | ex-dust labeled 5367
+
+   4a. WITHIN each band (split at the band's own median as-of win rate)
+   band          split       n_ex   mean$    se   clustered 95% CI    as-of wr range  med decision date
+   0.00-0.20     LOW half     95   +13.84   3.39  [+7.54, +21.09]     0.08-0.19     2026-09-21
+   0.00-0.20     HIGH half    96   +34.78   3.63  [+27.49, +41.64]    0.20-0.31     2026-10-03
+   0.20-0.40     LOW half    328    +4.73   0.95  [+2.85, +6.88]      0.17-0.41     2026-09-21
+   0.20-0.40     HIGH half   329    +7.05   0.97  [+5.29, +9.09]      0.41-0.46     2026-10-03
+   0.40-0.60     LOW half    568    +0.79   0.43  [-0.13, +1.68]      0.45-0.52     2026-09-22
+   0.40-0.60     HIGH half   568    +0.17   0.43  [-0.63, +1.02]      0.52-0.61     2026-09-30
+   0.60-0.80     LOW half    537    -3.96   0.31  [-4.58, -3.26]      0.53-0.65     2026-10-01
+   0.60-0.80     HIGH half   537    -0.83   0.30  [-1.52, -0.18]      0.65-0.73     2026-09-20
+   0.80-1.01     LOW half   1154    -1.25   0.12  [-1.50, -0.99]      0.88-0.94     2026-09-19
+   0.80-1.01     HIGH half  1155    -0.14   0.08  [-0.35, +0.05]      0.94-0.95     2026-09-20
+   (the median-date column is the TIME CONFOUND control: where the two halves sit on
+    nearly the same date, a HIGH-vs-LOW gap is a win-rate contrast; where they are days
+    apart it is also a time/window contrast and must not be read as win rate alone.)
+
+   4b. POOLED by quintile of the as-of band win rate (all bands)
+   quintile  n_ex   mean$    se   clustered 95% CI    as-of wr range   bands present
+   Q1        1073    +7.95   0.68  [+6.55, +9.29]     0.08-0.50  0.00-0.20,0.20-0.40,0.40-0.60
+   Q2        1073    -0.19   0.30  [-0.84, +0.42]     0.50-0.56  0.40-0.60,0.60-0.80
+   Q3        1073    -2.40   0.22  [-2.89, -1.96]     0.56-0.91  0.40-0.60,0.60-0.80,0.80-1.01
+   Q4        1073    -0.71   0.10  [-0.94, -0.46]     0.91-0.94  0.80-1.01
+   Q5        1075    -0.10   0.08  [-0.30, +0.08]     0.94-0.95  0.80-1.01
+
+   4c. CONTROL — pooled quintiles using the WHOLE-SAMPLE band win rate (LOOK-AHEAD, printed only)
+   whole-sample band win rates: 0.00-0.20 0.31, 0.20-0.40 0.46, 0.40-0.60 0.52, 0.60-0.80 0.53, 0.80-1.01 0.88
+   (the card forbids using these as the axis; they are here to show the arm the
+    as-of discipline replaces, and to make an accidental look-ahead read visible.)
+
+== 5. VERDICT INPUTS (no threshold proposed; the decision belongs to the drift card)
+   bands with >= 25 ex-dust settled signals: 0.00-0.20, 0.20-0.40, 0.40-0.60, 0.60-0.80, 0.80-1.01
+   band means (low->high entry): 0.00-0.20 $+23.47 (n=203) | 0.20-0.40 $+5.45 (n=687) | 0.40-0.60 $+0.50 (n=1166) | 0.60-0.80 $-2.37 (n=1104) | 0.80-1.01 $-0.69 (n=2339)
+   pooled quintile means (low->high as-of win rate): Q1 $+7.95 (n=1073) | Q2 $-0.19 (n=1073) | Q3 $-2.40 (n=1073) | Q4 $-0.71 (n=1073) | Q5 $-0.10 (n=1075)
+   monotone rising with the band's as-of win rate: False | monotone falling: False
+   (a POSITIVE transfer of the external claim needs the FORGONE value to RISE with the
+    band win rate; a flat series is the null and adds nothing to the tolerance call.)
+
+Reproduce: python3 scripts/drift-band-winrate-read.py   (reads data/drift-shadow.jsonl; writes nothing)
