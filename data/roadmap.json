@@ -36,11 +36,12 @@
       "id": "phase-a2-review",
       "title": "Phase A2 outcome review",
       "column": "Scheduled",
-      "dates": "Sep 14 (review only)",
+      "dates": "Sep 14 (review only) | GATE BACKFILLED 2026-10-11 (was gate-less; verification text only — no status change)",
       "note": "Compare [SENTIMENT]-logged decisions against the legacy boost regime over the 2-week window; syncs with biweekly calibration. PULLED-FORWARD IMPLICATION (2026-09-05): review lands inside the Kelly window (Sep 8–Oct 8) — findings are measurement-only; ANY resulting changes are parked until the window closes Oct 8 (lane touches 0.08% of decisions, so deferral cost ≈ nil).",
       "tags": [
         "review"
-      ]
+      ],
+      "gate": "VERIFY: the [SENTIMENT]-logged decisions are compared against the legacy boost regime over the 2-week window ON THE SAME ROWS and label basis, with n and the touched-decision count stated (the lane touches 0.08% of decisions, so the deferral cost is ~nil). The window closed 2026-10-08, so findings are MEASUREMENT-ONLY. FAILS IF: a scoring/sentiment change ships off this read — that needs its own pre-registered gate and approval."
     },
     {
       "id": "phase-b",
@@ -314,13 +315,14 @@
       "title": "Phase Kalshi-1 — Kalshi whale/wallet parity (reviewed: data wall — parked)",
       "column": "Backlog",
       "effort": "n/a — not feasible keyless (see drafts/kalshi-whale-review.md)",
-      "dates": "Opened 2026-09-03",
+      "dates": "Opened 2026-09-03 | GATE BACKFILLED 2026-10-11 (was gate-less; verification text only — no status change)",
       "note": "REVIEWED 2026-09-03 (drafts/kalshi-whale-review.md): Kalshi public API has no leaderboard, no wallet-attributed trade feed, no profiles — the Polymarket stack cannot be duplicated keyless. Options: anonymous size-flow (low value), third-party provider shadow-test (unproven), or status quo. Parked pending TR-16 adapter fix + optional provider probe. Third-party probe done (appendix): polywhaler keyless API is Polymarket-only; botforkalshi anonymous flow only; no keyless Kalshi wallet data exists. Phase stays parked.",
       "tags": [
         "copy-lane",
         "kalshi",
         "reviewed"
-      ]
+      ],
+      "gate": "VERIFY (parked — reopens ONLY on a new fact, never on a re-look): a keyless Kalshi surface supplies wallet-attributed flow or a leaderboard, OR a third-party provider offers it under a documented licence with the coverage stated. The 2026-09-03 review + appendix (drafts/kalshi-whale-review.md) stands: no keyless Kalshi wallet data exists. FAILS IF: the card is re-opened for probing without a NEW data surface — that is the exact loop this card closed."
     },
     {
       "id": "tr16-kalshi-adapter",
@@ -354,39 +356,42 @@
       "title": "Baseline: 32B on Mac mini (Monday) — decide RPC split vs Mac-only",
       "column": "Scheduled",
       "effort": "~1h",
-      "dates": "Scheduled 2026-09-07 (Mon)",
+      "dates": "Scheduled 2026-09-07 (Mon) | GATE BACKFILLED 2026-10-11 (was gate-less; verification text only — no status change)",
       "note": "From the NVIDIA PAIR / 32B-split analysis (drafts/nvidia-pair-setup.md, 2026-09-04): before committing Odin(5070)+Miles(3080) to a llama.cpp RPC 32B split, benchmark the free option we already own. Steps: (1) ollama pull qwen2.5:32b-q4_K_M (or qwen3 equivalent) on the Mac mini; (2) measure decode tok/s + TTFT on a realistic sentiment-shadow prompt; (3) compare vs current 7b lane quality on a small labeled set (data/sentiment-ab.jsonl A/B style); (4) gate: if Mac 32B ≥ ~10 tok/s and quality lifts materially over 7b, adopt Mac-32B as the shadow lane and DROP the RPC split; only build 5070+3080 split if Mac 32B throughput becomes the bottleneck. User has more questions first — card is the parking spot.",
       "tags": [
         "local-llm",
         "benchmark",
         "phase-local1"
-      ]
+      ],
+      "gate": "VERIFY (blocked on the user's open questions first): benchmark the FREE option before committing any two-box RPC split — (1) pull a 32B Q4 on the Mac mini, (2) measure decode tok/s + TTFT on a realistic sentiment-shadow prompt, (3) compare against the current 7B lane on the SAME labeled items (the `data/sentiment-ab.jsonl` A/B shape). ADOPT Mac-32B as the shadow lane and DROP the RPC split only if decode >= ~10 tok/s AND quality lifts materially over 7B; build the 5070+3080 split only if Mac-32B throughput is the measured bottleneck. FAILS IF: the lane is switched or the split is built with the tok/s and quality numbers not printed side by side."
     },
     {
       "id": "h2027-funding-schedule",
       "title": "2027 homelab funding schedule → production forecast inputs",
       "column": "Scheduled",
       "effort": "note only — no code",
-      "dates": "Set 2026-09-05",
+      "dates": "Set 2026-09-05 | GATE BACKFILLED 2026-10-11 (was gate-less; verification text only — no status change)",
       "note": "Homelab hardware purchases unlock ONLY after production CopyBot proves ≥$500/day (7 consecutive days, C-200 advance rule). HARD DEADLINE: TrueNAS R740xd + 12× recert drives (~$3–4.5k) must be purchased by end of Q3 2027 (2027-09-30) — the program's only dated gate. Derived: production proof should land ≈ Q2 2027 to keep sourcing/ordering float. C-200 tuning should size intermediate targets so the cascade holds: Dec 1 2026 ladder → early-2027 production rollout → Q2 2027 proof. Track A (Mac Studio M5 Ultra 256GB ~$9.5k + RTX PRO 5000 48GB ~$5.2–6.5k + Odin RAM) is post-proof with no hard date. Full detail: ~/homelab/roadmap.md sequencing gate + Track B #4. CAPITAL STRUCTURE (decided 2026-09-08, production Jan 2 2027, $500/day assumed): sweep 50% of NET daily profit (max(0, net); governor pauses sweep if trailing-30d capital < floor; compute daily via query_bankroll, transfer weekly). Inside the swept 50%: ~30% to TAX RESERVE first (HYSA/MMF; quarterly estimates; user chose reserve-in-sweep for safety, 2026-09-08) → then Sep-2027 gate bucket (T-bill ladder ≤9mo maturing ≈ 2027-09-30) → personal floor (3–6mo expenses) → then VTI/VXUS growth (NOT PM/crypto — diversify away from the edge). Tax-rate hedge ~25–32% effective, verify with accountant. Paper→live transition costs charged to trading capital, not the sweep. ENTITY (decided 2026-09-08): permanently own money / own book - run as INDIVIDUAL; no LLC; revisit ONLY if accountant confirms the income is SE-taxable AND net > ~$80k (S-corp eval then); outside capital / paid signals permanently off the table (no adviser/CTA exposure).",
       "tags": [
         "infra",
         "forecast",
         "funding"
-      ]
+      ],
+      "gate": "VERIFY (quarterly re-read, no code): the production proof (>= $500/day for 7 consecutive days, the C-200 advance rule) lands by 2027-06-30 so the program's ONLY dated gate (TrueNAS R740xd + 12 recert drives by 2027-09-30) stays reachable. Check `query_bankroll.js` for the 7-day streak at each quarterly review and re-check the sweep audit (50% of NET daily profit, floor governor pausing it while trailing-30d capital is below the floor). FAILS IF: Q2 2027 passes without the proof (then the 2027-09-30 purchase either slips or is funded outside the cascade) — that is the trigger to re-plan the sequencing, not to buy early."
     },
     {
       "id": "regime-cleanliness-baseline",
       "title": "Regime-cleanliness baseline — first valid measurement window (clean regime starts 2026-09-04)",
       "column": "Scheduled",
       "effort": "note only — no code",
-      "dates": "Opened 2026-09-05",
+      "dates": "Opened 2026-09-05 | GATE BACKFILLED 2026-10-11 (was gate-less; verification text only — no status change)",
       "note": "Attribution (2026-09-05): the Gemini→DeepSeek switch errors (Aug 16–27 outage of daily-report + tuning-review on depleted credits) did NOT cause C-200's losses — that window was the ONLY profitable stretch (+$137.20 / 8d). Real attribution of −$324 realized over 33 trading days (Jul 23–Sep 5): W1 early-regime −$299 (pre-fix era, principal ~$400, category-leak undiagnosed), W3 post-switch −$162 (TR-15 daily-loss-gate blindness — Aug 31 booked −$239 early-exit bleed while gate read +$53, fixed Sep 3), Kalshi phantom stubs (92 rows, opens Aug 11–30, re-priced Sep 5), phantom cash +$1,000 (reconciled Aug 28). Polymarket main lane carries −$286 of it. CLEAN REGIME = Sep 4 onward (post v45 category blacklist / TR-15 / TR-16 / kalshi-reprice / v46). Implications: (1) Kelly window Sep 8–Oct 8 (pulled forward 2026-09-05) is the first measurement on a fixed pipeline — re-base edge/expectancy conclusions there, never on contaminated history; (2) ML-1 gate + production-capital sizing ($500-start evaluation) wait for clean data; (3) h2027-funding-schedule 'proof ≈ Q2 2027' re-baselines after the Kelly window.",
       "tags": [
         "data-quality",
         "forecast",
         "measurement"
-      ]
+      ],
+      "gate": "VERIFY (note-only card; the verification is a re-read discipline): every quoted edge/expectancy baseline is re-derivable on the CLEAN regime (2026-09-04 onward) with no pre-Sep-4 row inside the quoted window, and the pre-clean attribution (W1 early-regime, W3 TR-15 gate blindness, Kalshi phantom stubs, phantom cash) stays separated from it. Re-read at the Kelly-window close and at each subsequent baseline change; quote daily figures with the closed|resolved OR-filter. FAILS IF: a number that includes the pre-Sep-4 stretch is presented as the go-forward baseline."
     },
     {
       "id": "precommit-mid-oct-kelly-gate",
@@ -2018,11 +2023,11 @@
     {
       "id": "superior-skills-backtesting-doctrine",
       "title": "superior-skills — adapt ONE artifact: the venue-neutral backtesting discipline, into an existing Hermes skill",
-      "column": "Scheduled",
+      "column": "Done",
       "effort": "~1h (markdown only, into an existing skill — NOT 30 new skills)",
-      "dates": "Audited 2026-09-28 (drafts/superior-skills-audit-2026-09-28.md) · SCHEDULED AFTER the 2026-10-08 window close · docs-only, no runtime behaviour · MIT attribution required",
+      "dates": "Audited 2026-09-28 (drafts/superior-skills-audit-2026-09-28.md) · SCHEDULED AFTER the 2026-10-08 window close · docs-only, no runtime behaviour · MIT attribution required | DONE 2026-10-11 — the ONE artifact was adapted and the gate is met clause by clause (verify below). Nothing was copied wholesale, no new skill was created, no runtime behaviour changed.",
       "gate": "VERIFY: (a) the section lands INSIDE an existing skill (`prediction-market-trading` / `trading-data-integrity`) with MIT attribution to Superior-Trade/superior-skills — not as 30 new skills (24/30 are Hyperliquid/other-venue or generic prose, and the always-loaded listing cost is the real price); (b) the content is venue-neutral discipline (trade-count bar, 3-variant sweep shape-reading, zero-trade 2-strike escalation, exit-reason distortion table, walk-forward protocol) and contains no perp/crypto instruction; (c) it changes no runtime behaviour and deletes cleanly (purely additive markdown); (d) it is NOT presented as filling ml-doctrine-time-and-era-splits or ml-u1-conditional-fill-model — this repo has no split code and no p(fill) formula, so it is conceptual support only.",
-      "note": "Verdict from the audit: queue — adapt one artifact, skip the pack. The other 29 skills are venue-wrong or too generic for a paper-only, Polymarket-only stack. Carded after the freeze because nothing may change scoring behaviour before 2026-10-08 and this is doctrine-only, hence compatible but not urgent.",
+      "note": "Verdict from the audit: queue — adapt one artifact, skip the pack. The other 29 skills are venue-wrong or too generic for a paper-only, Polymarket-only stack. Carded after the freeze because nothing may change scoring behaviour before 2026-10-08 and this is doctrine-only, hence compatible but not urgent.\n\n| EXECUTED 2026-10-11. LANDED: a new `## 5. Backtest discipline checklist — venue-neutral` section inside the EXISTING skill `prediction-market-trading` (`references/calibration-and-backtest-validation.md`, ~85 lines appended) plus a three-line pointer bullet in that skill’s §4 (`SKILL.md:96`). GATE (a) INSIDE an existing skill + MIT attribution, NOT 30 new skills: VERIFIED — `find ~/.hermes/skills -name SKILL.md -newermt \"20 minutes ago\"` shows no new skill file, and the section carries the attribution verbatim (source: Superior-Trade/superior-skills, MIT License, Copyright (c) 2026 Superior Trade, skill `backtesting`); the audit’s 30-skill pack stayed unported. GATE (b) venue-neutral with no perp/crypto instruction: VERIFIED — a case-insensitive scan for hyperliquid/perp/freqtrade/nautilus/rsi/btc/hip3/candle/sharpe over the file returns hits ONLY in the closing \"Deliberately NOT ported\" exclusion list (fee tiers, the Sharpe/profit-factor metric list, the candle-count estimator, the hosted submit/poll lifecycle) and one pre-existing false positive on the word \"versioned\"; every adapted bullet is stated on OUR instruments (settled legs after dedupe, gate tolerances, entry condition fired or not, exit mix, out-of-sample period + population). GATE (c) purely additive, deletes cleanly, no runtime behaviour: VERIFIED — two markdown files touched (`references/calibration-and-backtest-validation.md`, `SKILL.md`), no code, no repo file; reverting = delete §5 and the pointer bullet. GATE (d) not presented as filling `ml-doctrine-time-and-era-splits` or `ml-u1-conditional-fill-model`: VERIFIED — the section closes with an explicit \"Conceptual support only: this section supplies no split code and no p(fill) formula … not a substitute for either\" blockquote, and neither card is claimed or named. CONTENT adapted (source thresholds preserved, population restated in our vocabulary): the trade-count bar (<30 coincidence / 30-50 marginal / 50-200 useful / 200+ comparison-grade, read on settled legs after dedupe to decisions) with the 5-10-leg 100%-win-rate trap named; the three-variant sweep read by SHAPE (all profitable -> best risk-adjusted; 1-2 -> walk forward; all unprofitable or <10 legs each -> the idea is wrong, stop; monotone at the grid edge -> extend by ONE); the two-strike zero-result escalation (never a third attempt); the exit-mix distortion table (translated to our exits, plus the label-basis warning that `realizedPnl` sign is our exit policy and 73.7% of finished legs are early exits, so the exit mix and the outcome question are different populations); walk-forward on a different PERIOD and a different POPULATION with expected degradation.",
       "tags": [
         "skills",
         "repo-audit",
@@ -2101,16 +2106,15 @@
     {
       "id": "dashboard-latest-snapshot-cost",
       "title": "Dashboard perf — latest-snapshot-per-market is the /paper-trades cost: 380 open markets → 860,922 rows read (0.69s → 5.05s)",
-      "column": "Backlog",
+      "column": "Done",
       "effort": "~1-2h: EITHER a covering index MarketSnapshot(marketId, collectedAt) (schema + build on the 8.5 GB / 15.9M-row table) OR a precomputed per-market latest-snapshot artifact refreshed by an existing cron. Decision needed before touching the schema.",
-      "dates": "Measured 2026-10-04 (same session as the open-MTM horizon card; attributed by rebuilding with the card disabled and by a temporary timing route, both removed afterwards). | LIVE RE-MEASURE 2026-10-11 (3 reads, no cron in flight): `/paper-trades` ttfb 8.59 / 4.20 / 4.39s — the card <1.5s gate FAILS by 3-6x, i.e. this is now the dashboard slowest page and the fix is unshipped (contrast /analytics 1.37s after its projection fix landed).",
+      "dates": "Measured 2026-10-04 (same session as the open-MTM horizon card; attributed by rebuilding with the card disabled and by a temporary timing route, both removed afterwards). | LIVE RE-MEASURE 2026-10-11 (3 reads, no cron in flight): `/paper-trades` ttfb 8.59 / 4.20 / 4.39s — the card <1.5s gate FAILS by 3-6x, i.e. this is now the dashboard slowest page and the fix is unshipped (contrast /analytics 1.37s after its projection fix landed). | DONE 2026-10-11 — both halves shipped and MEASURED. (1) INDEX: composite MarketSnapshot(marketId, collectedAt) built 2026-10-11 in a quiet window (waited out the monitor-score lock); dbstat 1,139 MB; plan is now `SEARCH MarketSnapshot USING INDEX MarketSnapshot_marketId_collectedAt_idx (marketId=?)`. (2) LOADER: `loadOpenMtmHorizon()` now reads latest-per-market in TWO steps — an index-only `MAX(collectedAt)` per market, then ONE indexed seek per (marketId, collectedAt) pair, chunked at <=200 pairs per query. In-process, same data, 349 open STANDARD markets, n=5: retired single query median 579 ms -> shipped loader 51 ms end to end. The index ALONE was NOT the fix: the single-query shape still measured 576-606 ms with it installed (MAX() with bare columns cannot be answered from the index), so the split is the load-bearing change. LIVE: /paper-trades ttfb 0.77 / 0.80 / 0.82 / 0.85 / 0.90 s over 5 reads (pre-fix today: 4.57 / 6.89 / 7.84 s) — the card's <1.5 s gate is MET — and the rendered page text is BYTE-IDENTICAL before vs after the rebuild, STANDARD block still showing all 349 open markets (DB: 349 markets / 1,283 legs). CAVEAT: the live read is on a freshly restarted server, so that number mixes the code fix with a fresh heap; the 11x is the same-process figure. Parity is proven at the data layer (market-by-market snapshotMs/ttr/question/isDemo, 0 mismatches) as well as by the identical render. Reproduce: `npx tsx scripts/latest-snapshot-shape-probe.ts` (read-only, exits 1 on mismatch). Tests: 5 wiring tests in tests/open-mtm-horizon-load.test.ts; suite 429/429, tsc clean.",
       "gate": "VERIFY: with the new card present, `curl -s -o /dev/null -w '%{time_starttransfer}' http://127.0.0.1:3013/paper-trades` lands < 1.5s (C-200 lane alone is already 0.24s) AND the STANDARD block still shows all 380 markets (a fix that drops markets silently fails this card). /signals reads the same shape at 60 markets and is 2.1s, so it should improve too.",
-      "note": "MEASURED: /paper-trades TTFB 5.05s with the card vs **0.685s with the horizon load disabled** (identical build otherwise) — the card is the whole delta. Inside the server: C-200 (14 markets) load 244ms, STANDARD (380 markets) load **3.9s**, of which `paperTrade.groupBy` = 17ms and the raw `SELECT marketId, MAX(collectedAt), timeToResolution, question, isDemo ... WHERE marketId IN (380 ids) GROUP BY marketId` = 3.86s. The same query answers in 0.76s under the sqlite3 CLI and 0.67s in a tsx process, and the plan is a clean index search (`SEARCH MarketSnapshot USING INDEX MarketSnapshot_marketId_idx`), so the cost is the per-row fetches for the bare columns across the 860,922 snapshot rows those 380 markets hold — amplified ~5x inside the launchd dashboard process (plist sets `ProcessType: Background`, i.e. background QoS/CPU throttling). Narrowing the market list is NOT a fix: folding out dust (|mark| < $0.50, 154 markets) cuts the CLI scan only 0.90s → 0.69s while hiding 0.43% of the gross mark. `MAX(collectedAt)` with bare columns cannot use the existing single-column index for a per-group max, hence the row fetches; a `(marketId, collectedAt)` index (or a materialised latest-per-market table) turns each group into one index seek.",
+      "note": "MEASURED: /paper-trades TTFB 5.05s with the card vs **0.685s with the horizon load disabled** (identical build otherwise) — the card is the whole delta. Inside the server: C-200 (14 markets) load 244ms, STANDARD (380 markets) load **3.9s**, of which `paperTrade.groupBy` = 17ms and the raw `SELECT marketId, MAX(collectedAt), timeToResolution, question, isDemo ... WHERE marketId IN (380 ids) GROUP BY marketId` = 3.86s. The same query answers in 0.76s under the sqlite3 CLI and 0.67s in a tsx process, and the plan is a clean index search (`SEARCH MarketSnapshot USING INDEX MarketSnapshot_marketId_idx`), so the cost is the per-row fetches for the bare columns across the 860,922 snapshot rows those 380 markets hold — amplified ~5x inside the launchd dashboard process (plist sets `ProcessType: Background`, i.e. background QoS/CPU throttling). Narrowing the market list is NOT a fix: folding out dust (|mark| < $0.50, 154 markets) cuts the CLI scan only 0.90s → 0.69s while hiding 0.43% of the gross mark. `MAX(collectedAt)` with bare columns cannot use the existing single-column index for a per-group max, hence the row fetches; a `(marketId, collectedAt)` index (or a materialised latest-per-market table) turns each group into one index seek.\n\n| EXECUTED 2026-10-11. WHAT WAS ACTUALLY COSTLY — steps measured separately (fresh tsx, 349 markets, n=5): aggregate-only 45 ms | pair fetch 2 ms | retired single query 579 ms. The pair fetch is 2 ms precisely BECAUSE of the composite index (each pair is one seek); without it the same OR-chain is 349 scans. SQLite detail worth keeping: an OR-chain of ~1000 pairs dies with \"Expression tree is too large (maximum depth 1000)\" — measured, n=900 OK / n=1200 ERROR — hence the 200-pair chunk, which also keeps the read safe if the open book grows past today's 349 markets.\n\nDECISION RECORDED: no materialised latest-per-market table. The read is now 51 ms in-process, so the artifact would buy nothing while adding a refresh cron and a staleness failure mode; index + split is the fix. The 1,139 MB index does add write cost to MarketSnapshot (15.9M rows, written continuously by the monitor) — that is the price of the 2 ms seek and it stays unless a write-side regression appears. Index DDL (idempotent, kept in scripts/): `CREATE INDEX IF NOT EXISTS MarketSnapshot_marketId_collectedAt_idx ON MarketSnapshot(marketId, collectedAt);`\n\nSTILL OPEN, now its own card `dashboard-launchd-qos`: the dashboard LaunchAgent is STILL `spawn type = background (5)` (Apple-Silicon background QoS, measured ~4-5x on DB-backed pages), /signals 2.63 s and /journal 2.42 s are the slowest pages, and the reload is a human shell step. The plist edit was NOT made this session — it needs the user's go-ahead.\n\nARTIFACT: drafts/dashboard-paper-trades-latest-snapshot-20261011.md (served at /drafts/<slug>).",
       "tags": [
         "performance",
         "dashboard",
-        "finding",
-        "needs-approval",
+        "done",
         "open-mtm"
       ]
     },
@@ -2119,7 +2123,7 @@
       "title": "Truck whine — driving capture WITH an rpm timeline (this is what names the order/component)",
       "column": "Backlog",
       "effort": "~15 min driving, 3 short clips + one condition line each",
-      "dates": "capture pending — the analysis chain is built and validated, waiting on the file",
+      "dates": "capture pending — the analysis chain is built and validated, waiting on the file | GATE BACKFILLED 2026-10-11 (was gate-less; verification text only — no status change)",
       "note": "The 2026-10-04 cabin park-rev clip (tach extracted, 673 → 2438 rpm) contains NO rpm-locked tone from 250 Hz to 8 kHz, so the whine he describes is not reproduced by a stationary rev — it is likely load- or vehicle-speed-coupled, or cold-only. This capture tests that directly.\nWHAT TO RECORD: phone on the dash (do not hold it against metal), windows up, 3 clips x 20 s — (a) gentle acceleration with the whine audible, (b) steady cruise, (c) coast-down / deceleration. One line of condition text per clip: cold or warm, A/C on/off, blower off/high, gear.\nRPM REFERENCE (required, any one works): tach in frame (phone dash mount), or an OBD-II BLE ELM327 (~$20) with Car Scanner / Torque / OBD Fusion logging RPM to CSV, or a helper reading the tach aloud at each hold. Start the log within a few seconds of the audio.\nWHY IT WORKS: with rpm on the timeline the scan returns an ORDER, and an order names a shaft (crank/accessory/transmission/driveshaft/wheel). Analysis command: python3 ~/video-in/order_delta.py <mono48k.wav> <rpm-json> [--band LO HI]. Validated detection limits from the park-rev take: ~0.10x signal RMS below 3.5 kHz, ~0.30x above it.",
       "tags": [
         "vehicle",
@@ -2127,7 +2131,8 @@
         "capture",
         "measurement",
         "needs-file"
-      ]
+      ],
+      "gate": "VERIFY: three 20 s clips (gentle acceleration with the whine audible, steady cruise, coast-down) captured WITH an rpm timeline (tach in frame, OBD-II BLE log, or read-aloud) — the analysis chain then either returns an rpm-LOCKED order (names the component) or a null at load, and BOTH are verdicts (the parked-rev clip at 673-2438 rpm contained no rpm-locked tone from 250 Hz-8 kHz, so load/speed-coupled vs cold-only is the open question). FAILS IF: a clip ships without rpm on the timeline, or a null is read as 'no whine exists'."
     },
     {
       "id": "vehicle-accessory-belt-off-test",
@@ -2455,6 +2460,22 @@
         "label-integrity",
         "audit-fix",
         "wallet-selection"
+      ]
+    },
+    {
+      "id": "dashboard-launchd-qos",
+      "title": "Dashboard QoS — the LaunchAgent runs at `spawn type = background (5)`: ~4-5x on every DB-backed page",
+      "column": "Backlog",
+      "effort": "~1 min of human shell: add `ProcessType` = `Interactive` to the plist (or reload as-is and check), then `launchctl bootout` + `bootstrap` — the gateway blocks bootstrap by design, so this is a user step.",
+      "dates": "Finding first measured 2026-10-10 (same build, same DB, same moment: /analytics 556 ms fresh vs 3,323 ms live; /journal 400 vs 2,088 ms; non-DB pages matched 42 vs 40 ms) · re-confirmed 2026-10-11 06:4x: the job STILL reports `spawn type = background (5)` even though the plist has carried no `ProcessType` key since 2026-10-10 02:36 — `launchctl kickstart -k` does not re-read the plist, it restarts from launchd's cached job definition. NOT STARTED: the plist edit was proposed and not applied (consent timed out), so nothing on this card has been changed.",
+      "gate": "VERIFY: `launchctl print gui/$UID/com.xsnyde2.copybot-dashboard | grep \"spawn type\"` reports standard/interactive, NOT `background (5)`, AND the DB-backed pages are re-measured on an AGED process (a restart alone moves these numbers): /paper-trades 0.80 s now, /signals 2.63 s, /journal 2.42 s, while non-DB pages (/roadmap, /reports, /trades) stay flat. FAILS IF: `spawn type` still reads background after the reload (then write `ProcessType` = `Interactive` explicitly and reload again), or the before/after are quoted from different process ages.",
+      "note": "MEASURED MECHANISM: `ProcessType = Background` puts the server on Apple-Silicon background QoS (E-cores, reduced memory priority). Like-for-like on the identical build over the same DB at the same moment, the live server ran /analytics 3,323 ms wall / 3,783 ms CPU against 556 ms / 920 ms in a fresh process, and /journal 2,088 vs 400 ms, while non-DB pages matched — i.e. a real, memory-heavy, per-request inflation not explained by any code path, and larger than anything left in the query path. Proposed step: back up the plist (`com.xsnyde2.copybot-dashboard.plist.bak-qos-interactive-<date>`), add `ProcessType` = `Interactive`, then `launchctl bootout gui/$UID/<label>` + `launchctl bootstrap gui/$UID <plist>`; ROLLBACK = restore the .bak and reload again. Reference: skill `polymarket-copybot-ops` -> references/dashboard-performance.md, section \"A live process can be slow for a reason the code does not have: QoS\".",
+      "tags": [
+        "performance",
+        "dashboard",
+        "infra",
+        "human-step",
+        "finding"
       ]
     }
   ]

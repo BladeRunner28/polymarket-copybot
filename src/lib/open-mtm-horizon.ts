@@ -426,12 +426,33 @@ export async function loadOpenMtmHorizon(opts: {
   if (grouped.length === 0) return summarizeHorizon(opts.botId, [], nowMs);
 
   const marketIds = grouped.map((g) => g.marketId);
-  const snaps = await prisma.$queryRaw<LatestSnap[]>(Prisma.sql`
-    SELECT marketId, MAX(collectedAt) AS collectedAt, timeToResolution, question, isDemo
+  // TWO steps, not one. `SELECT marketId, MAX(collectedAt), <bare cols> ... GROUP BY marketId`
+  // cannot answer MAX() from the (marketId, collectedAt) index alone: SQLite still fetches the
+  // row for every snapshot each market holds. With 349 open STANDARD markets that is ~860k row
+  // fetches (median 576 ms in-process). The aggregate by itself is index-only (~45 ms) and the
+  // follow-up fetch is one indexed seek per market (~2 ms), field-identical on the same data —
+  // see scripts/latest-snapshot-shape-probe.ts. Chunked because SQLite's expression-tree depth
+  // (1000) rejects an OR-chain of ~1000 pairs with "Expression tree is too large" — measured.
+  const PAIR_CHUNK = 200;
+  const maxes = await prisma.$queryRaw<{ marketId: string; collectedAt: LatestSnap["collectedAt"] }[]>(Prisma.sql`
+    SELECT marketId, MAX(collectedAt) AS collectedAt
     FROM MarketSnapshot
     WHERE marketId IN (${Prisma.join(marketIds)})
     GROUP BY marketId
   `);
+  const snaps: LatestSnap[] = [];
+  for (let i = 0; i < maxes.length; i += PAIR_CHUNK) {
+    const chunk = maxes.slice(i, i + PAIR_CHUNK);
+    const rows = await prisma.$queryRaw<LatestSnap[]>(Prisma.sql`
+      SELECT marketId, collectedAt, timeToResolution, question, isDemo
+      FROM MarketSnapshot
+      WHERE ${Prisma.join(
+        chunk.map((m) => Prisma.sql`(marketId = ${m.marketId} AND collectedAt = ${m.collectedAt})`),
+        " OR ",
+      )}
+    `);
+    snaps.push(...rows);
+  }
   const latest = new Map(snaps.map((s) => [s.marketId, s]));
 
   const groups = grouped.map((g) => {
