@@ -22,10 +22,23 @@ WHAT IT CAPTURES
 
 DUTY CYCLE (the sampling rule — quote it with any figure derived from this file)
 --------------------------------------------------------------------------------
-The venue tape is a firehose: measured 2026-10-12 at ~167 prints/s venue-wide
-(~14.4M prints/day; a 1,000-print page is ~300 KB, so a continuous capture would
-be ~4 GB/day of transfer). This job therefore captures COMPLETE, GAP-FREE windows
-of --window-minutes (default 3) and lets the rest of the clock go uncaptured.
+The venue tape is a firehose: measured 2026-10-12 at 183-188 prints/s venue-wide
+(a 1,000-print page is ~300 KB). A run also takes roughly as long in WALL time as
+the span it captures (paging is slower than the tape), so coverage is bounded by
+(run wall time) / (cron interval) and cannot reach 100% with one process. POLICY
+(user-overridden 2026-10-12): maximise coverage — the job runs every 15 minutes
+with a 14-minute window (~93% duty, ~4-5 GB/day of transfer), leaving ~1 minute of
+slack per tick so the next tick's lock is never skipped.
+
+Because the covered span is now within a minute of the interval, windows can MEET
+at the minute boundary, and bars are appended per run — so appending blindly would
+emit duplicate (ticker, minute) rows. The dedupe guard below (skip minutes already
+written for a ticker, per the ticker state) is what makes near-continuous coverage
+safe: it is structural, not schedule-dependent. It is counted in every coverage row
+as `bars_deduped`; a boundary minute whose bar was already written is dropped, so a
+boundary bar can be very slightly truncated — `bars_deduped` is the size of that
+effect and is never hidden.
+
 coverage.jsonl records every window and the hole before it, so coverage is
 MEASURED, never assumed. Never present a bar total as venue volume without the
 coverage row beside it.
@@ -38,6 +51,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import shutil
 import sys
 import time
 import urllib.error
@@ -169,6 +183,37 @@ def append_lines(path, rows, gz=False):
             fh.write(json.dumps(row, separators=(",", ":")) + "\n")
 
 
+def rotate_bars():
+    """Roll the live bars file into a per-day gz.
+
+    bars.jsonl is the LIVE append path (so a verifier can read one file without
+    knowing the day), but at ~18 MB/day uncompressed it must not grow without
+    bound — the artifacts are TRACKED IN GIT (user override 2026-10-12), and the
+    nightly backup carries a 95 MB per-file guard. A date change gzips the finished
+    day to bars-<date>.jsonl.gz (~3 MB) and starts the live file fresh.
+    """
+    if not BARS_FILE.exists() or BARS_FILE.stat().st_size == 0:
+        return None
+    day = None
+    try:
+        with BARS_FILE.open() as fh:
+            last = None
+            for last in fh:
+                pass
+        if last:
+            day = json.loads(last).get("minute", "")[:10]
+    except Exception:
+        day = None
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if not day or day == today:
+        return None
+    dest = OUTDIR / ("bars-%s.jsonl.gz" % day)
+    with BARS_FILE.open("rb") as src, gzip.open(str(dest), "ab") as dst:
+        shutil.copyfileobj(src, dst)
+    BARS_FILE.unlink()
+    return dest.name
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--window-minutes", type=float, default=3.0, help="length of the complete capture window")
@@ -279,10 +324,19 @@ def main():
         stop_reason = "cap_hit_pages" if pages >= args.max_pages else "cap_hit_bytes"
 
     # ---- emit bars for every CLOSED minute; the newest minute stays partial ----
+    # DEDUPE GUARD: a minute already written for this ticker is never written again.
+    # Windows can meet at the boundary at 93% duty, and an overlapping tick would
+    # otherwise append a duplicate (ticker, minute) row (re-aggregated from the
+    # prints it re-scanned). Skipped minutes are counted in every coverage row.
     now_min = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     bar_rows = []
+    deduped = 0
     for (tick, minute), bar in bars.items():
         if parse_iso(minute) >= now_min:
+            continue
+        emitted_through = tickers_state.get(tick, {}).get("last_minute")
+        if emitted_through and minute <= emitted_through:
+            deduped += 1
             continue
         bar_rows.append(
             {
@@ -332,6 +386,7 @@ def main():
         "families_scanned_contracts": {k: round(v, 2) for k, v in sorted(fam_scanned.items())},
         "families_kept_contracts": {k: round(v, 2) for k, v in sorted(fam_kept.items())},
         "bars_closed": len(bar_rows),
+        "bars_deduped": deduped,
         "tickers_seen": len({t for t, _ in bars}),
     }
 
@@ -357,8 +412,12 @@ def main():
         return 0
 
     OUTDIR.mkdir(parents=True, exist_ok=True)
-    day = started.strftime("%Y-%m-%d")
-    prints_file = OUTDIR / ("prints-%s.jsonl.gz" % day)
+    # per-HOUR prints file: measured ~29 bytes/print gzipped and ~1.1M prints/day,
+    # so a whole-day file is ~31 MB — fine today, but one busier day should not be
+    # able to push a single tracked file toward the backup's 95 MB guard.
+    stamp = started.strftime("%Y-%m-%dT%H")
+    prints_file = OUTDIR / ("prints-%s.jsonl.gz" % stamp)
+    rotated = rotate_bars()
     append_lines(BARS_FILE, bar_rows)
     append_lines(prints_file, prints_rows, gz=True)
     append_lines(COVERAGE_FILE, [coverage])
@@ -369,9 +428,12 @@ def main():
             tstate["partial"] = partials[tick]
         elif "partial" in tstate:
             del tstate["partial"]
-        minutes = [m for t, m in bars if t == tick]
+        # emitted (closed) minutes only: including the still-partial minute here would
+        # let the dedupe guard swallow that minute's bar once it closes.
+        minutes = [m for t, m in bars if t == tick and parse_iso(m) < now_min]
         if minutes:
-            tstate["last_minute"] = max(minutes)
+            prev = tstate.get("last_minute")
+            tstate["last_minute"] = max(minutes) if not prev else max(prev, max(minutes))
     state["ids"] = known_ids[-ID_MEMORY:]
     state["last_run"] = {
         "started": started.isoformat(),
@@ -382,8 +444,15 @@ def main():
     }
     save_state(state)
     print(
-        "  wrote %d bars, %d verbatim prints (>=%gc, gz), coverage row"
-        % (len(bar_rows), len(prints_rows), args.min_contracts)
+        "  wrote %d bars%s, %d verbatim prints (>=%gc, gz) -> %s, coverage row%s"
+        % (
+            len(bar_rows),
+            " (dedupe guard skipped %d already-written minutes)" % deduped if deduped else "",
+            len(prints_rows),
+            args.min_contracts,
+            prints_file.name,
+            " | rotated %s" % rotated if rotated else "",
+        )
     )
     return 0
 

@@ -64,17 +64,20 @@ de421.bsp
 # of the repo protects the nightly backup job's 95 MB per-file guard.
 data/gdelt-bulk/
 
-# Kalshi venue tape (2026-10-12, complementary-Kalshi workstream option A) — a firehose by
-# design: a single 4-minute capture window is ~3,000 verbatim prints, so the per-day gz plus
-# the per-minute bars run ~200 MB/day, and coverage.jsonl grows one row per cron tick
-# (288/day). Measured 2026-10-12: 45 pages / 13.8 MB of transfer per window. These are
-# local-only capture artifacts (the volume itself is the un-recoverable part, not its
-# version history) and they would trip the nightly backup's own 95 MB per-file guard within
-# days. Same reasoning as the GDELT bulk rule above.
-data/kalshi-tape/
+# Kalshi venue tape (2026-10-12, complementary-Kalshi workstream option A).
+# USER OVERRIDE 2026-10-12 ("override both"): the tape artifacts are TRACKED — the
+# captured history is the un-recoverable asset and a local-only copy is one disk failure
+# from gone. What makes that safe is TIME ROTATION in the capture script, not luck:
+# prints are gzipped per HOUR (~1 MB each), bars roll to bars-<date>.jsonl.gz on the date
+# change (~3 MB), and coverage.jsonl is one ~1 KB row per 15-min tick. Measured
+# 2026-10-12: ~22 MB/day of prints + ~11 MB/day of bars uncompressed, so no single
+# tracked file approaches the nightly backup's 95 MB per-file guard (or GitHub's 100 MB
+# hard limit) the way the old whole-day naming would have.
+# ONLY the volatile cursor is excluded: state.json is ~0.9 MB, rewritten on every tick,
+# and is a resumable position rather than data (losing it costs at most one window's
+# dedupe/last-minute bookkeeping, which the next run rebuilds by re-scanning).
+data/kalshi-tape/state.json
 
-# Kalshi macro lane quotes — one row per OPEN market per run (336 rows per hourly run,
-# ~3 MB/day) by construction. The companion files ARE tracked: kalshi-macro-settled.jsonl
-# (accrues slowly, one row per resolved market) and kalshi-macro-news.jsonl (~400 B/run),
-# because those are the rows a reader wants in the history.
-data/kalshi-macro-quotes.jsonl
+# Macro-lane quotes are tracked too (one row per open market per run, ~3 MB/day): the
+# lane's read needs the quote AT a horizon, so thinning them to settlement-only rows
+# would delete the study. Settled + news files were already tracked.
