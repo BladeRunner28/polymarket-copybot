@@ -18,7 +18,7 @@ book", which is not the same claim as "there is no strategy on Kalshi".
 
 | piece | file | state |
 |---|---|---|
-| Tape capture (option A) | `scripts/kalshi-tape-capture.py` + `~/.hermes/scripts/copybot-kalshi-tape.sh` | **live on cron, every 5 min** (job `60f844c59cfb`) |
+| Tape capture (option A) | `scripts/kalshi-tape-capture.py` + `~/.hermes/scripts/copybot-kalshi-tape.sh` | **live on cron, 15-min interval / 14-min window ≈93% duty** (job `60f844c59cfb`) — policy overridden same day to maximise coverage |
 | Family allowlist | `data/kalshi-tape-families.json` | seeded 2026-10-12 (10 families) |
 | Tape artifacts | `data/kalshi-tape/{bars,coverage}.jsonl`, `prints-<date>.jsonl.gz`, `state.json` | writing |
 | Macro shadow (option B) | `scripts/kalshi-macro-shadow.py` + `~/.hermes/scripts/copybot-kalshi-macro.sh` | **live on cron, hourly** (job `f57d30ef6dee`) |
@@ -35,12 +35,35 @@ Kalshi's public trade tape is keyless but **rolling**: on 2026-10-12 it reaches
 day not captured is microstructure history that cannot be recovered afterwards.
 
 ### The capture's own sampling rule (quote it beside any figure drawn from it)
-The venue tape is a firehose: **188 prints/s venue-wide** measured on the first two
-windows (52,000 prints scanned in 276 s of captured time). A continuous capture would be
-~4 GB/day of transfer, so the job captures **complete, gap-free 4-minute windows every
-5 minutes (~80% duty cycle)** and records the hole before every window in
-`coverage.jsonl`. Coverage is **measured, never assumed**: never quote a bar total as
-venue volume without its coverage row.
+The venue tape is a firehose: **183–188 prints/s venue-wide** (52,000 prints scanned in
+276 s of captured time; a 1,000-print page is ~300 KB). A run also takes roughly as long
+in **wall time** as the span it captures — paging is slower than the tape — so coverage
+is bounded by (run wall time)/(cron interval) and one process cannot reach 100%.
+
+**Policy, as overridden by the user on 2026-10-12 (was 5-min interval / 4-min window /
+80% duty):** the job now runs **every 15 minutes over a 14-minute window (~93% duty,
+~4–5 GB/day of transfer)**, leaving ~1 minute of slack per tick so the next tick's lock is
+never skipped. `coverage.jsonl` records every window and the hole before every window, so
+coverage is **measured, never assumed**: never quote a bar total as venue volume without
+its coverage row.
+
+Because near-continuous windows can now **meet at the minute boundary**, blind bar appends
+would emit duplicate `(ticker, minute)` rows. The capture script therefore carries a
+**dedupe guard** — a minute already written for a ticker is never written again, counted
+per run as `bars_deduped` in the coverage row — so overlap is visible and harmless instead
+of silent corruption (`last_minute` tracks emitted *closed* minutes only, so the guard
+cannot swallow the bar of a minute that was still partial when the previous run ended).
+Proven on 2026-10-12: two back-to-back overlapping windows wrote 45 then 0 bars (27 then
+42 minutes deduped) and `bars.jsonl` stayed at 3,647 rows / 3,647 distinct pairs.
+
+**Artifacts are tracked in git** (second override, same day): the captured history is the
+un-recoverable asset, so a local-only copy is one disk failure from gone. What makes that
+safe is *time rotation*, not luck — prints gzipped **per hour** (~1 MB each), bars rolled
+to `bars-<date>.jsonl.gz` (~3 MB/day) on the date change, coverage one ~1 KB row per tick —
+so no tracked file approaches the nightly backup's 95 MB per-file guard or GitHub's 100 MB
+hard limit. Only the volatile ~0.9 MB `state.json` cursor stays ignored. Growth is ~25–35
+MB/day tracked (~1 GB/month in `.git`): carded as `kalshi-tape-repo-size-policy`, because
+"tracked" must not quietly become a multi-GB repo.
 
 First captured window (17:1x CDT, real, not a dry run): **224 bars, 3,065 verbatim
 prints (≥100 contracts), 7 families, `stop=window_complete`, no cap hit.** Over the two
@@ -83,7 +106,8 @@ the tails**, exactly where the calibration read says the price is already right.
 
 ### Pre-registered read (written now, before the sample exists — do not move it)
 
-Run once **≥30 captured hours** of tape exist (≈1 week of the 80% duty cycle):
+Run once **≥30 captured hours** of tape exist (≈1.5 days at the 93% duty cycle; still
+gate on the coverage rows, not the calendar):
 
 1. **Universe:** allowlisted families with ≥500 captured bars; report per family, no
    pooling across families.
@@ -199,7 +223,11 @@ python3 scripts/kalshi-crossvenue-read.py --city nyc --calibration         # set
 
 ## 7. Open items (carded, not silently decided)
 
-- Maker read runs when the pre-registered sample exists (~1 week); gate as in §2.4.
+- Maker read runs when the pre-registered sample exists (~30 captured hours ≈ 1.5 days at
+  93% duty, gated on the coverage rows); gate as in §2.4.
+- `kalshi-tape-repo-size-policy` — the tape is now tracked in git (~25-35 MB/day), so a size
+  policy (keep-and-watch / separate data repo / external volume + manifest) has to be chosen
+  before "tracked" becomes a multi-GB repo. Card carries the arithmetic.
 - `kalshi-gdelt-context-v2` — replace the keyword column with targeted per-family GDELT
   queries + a measured precision check.
 - Overlap with `bt-data-capture` (backtest data acquisition, Backlog): the Kalshi forward

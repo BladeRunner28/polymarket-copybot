@@ -2616,19 +2616,21 @@
   },
   {
    "id": "kalshi-tape-capture-live",
-   "title": "Kalshi venue tape capture — LIVE on cron (the only irreversible asset in the complementary-Kalshi workstream)",
+   "title": "Kalshi venue tape capture — LIVE at 93% duty, artifacts TRACKED in git (the only irreversible asset in the complementary-Kalshi workstream)",
    "column": "In Progress",
    "effort": "built + live in ~1 h",
-   "dates": "Started 2026-10-12 17:1x CDT · cron job 60f844c59cfb every 5 min (~80% duty) · first window 224 bars / 3,065 verbatim prints",
-   "gate": "VERIFY 2026-10-19 (one week of ticks): (1) integrity — `python3 -c \"import json;rows=[json.loads(l) for l in open('data/kalshi-tape/bars.jsonl')];k=[(r['ticker'],r['minute']) for r in rows];print(len(k), len(set(k)))\"` must print the SAME number twice (a duplicate (ticker,minute) means two runs captured one minute — the windows are overlapping and the duty-cycle rule is broken); (2) health — of the last 500 coverage rows, `cap_hit` false in >=99% and `stop_reason=window_complete` in >=99%, with the median `hole_minutes_before_window` <= 2 min; (3) freshness — the newest coverage row is <15 min old at read time, and each day since has a non-empty prints-<date>.jsonl.gz. Failing (1) or (3) is a re-design, not a tweak. Integrity already holds at n=2 runs: bars.jsonl has 241 rows and 241 distinct (ticker,minute) pairs. Then hand the accrued tape to kalshi-maker-read-prereg.",
-   "note": "User-approved in-thread 2026-10-12 ('Do a, b, and c'). Kalshi's public trade tape is keyless but ROLLING: on 2026-10-12 it reaches 2026-08-15 and nothing at 2026-07-25 (~8 weeks; it was ~10 weeks on 2026-09-25), so every day not captured is microstructure history that cannot be recovered. Shape: scripts/kalshi-tape-capture.py walks /markets/trades newest-first and filters LOCALLY to the families in data/kalshi-tape-families.json (10 seeded: the volume families KXBTC15M/KXBTCD/KXETH15M/KXNFLGAME/KXMLBGAME/KXNBAGAME plus KXHIGHNY/KXWTI/KXCPI/KXFED), writing per-minute BARS per ticker, every print >=100 contracts verbatim (gz per day), and ONE coverage row per run (pages/bytes, prints scanned vs kept, window captured, cap_hit, and the hole before the window). MEASURED firehose: 183-188 prints/s venue-wide, and a real 4-minute window costs 45 pages / 13.8 MB / 45,000 prints scanned -> **~4 GB/day of transfer at 80% duty**, i.e. the window design buys headroom proportional to the duty cycle rather than a large saving (no 429s observed; the docstring's own continuous-capture estimate was the same ~4 GB/day). The job captures COMPLETE 4-minute windows every 5 minutes and records every hole — coverage is measured, never assumed, and no bar total may be quoted as venue volume without its coverage row. Wrapper ~/.hermes/scripts/copybot-kalshi-tape.sh is a silent-when-healthy watchdog (one line to Discord only on a failed run, a cap hit, an incomplete window, or a hole >20 min). OVERLAP: card bt-data-capture (Backlog) already listed 'Kalshi forward tape' as its first acquisition step — the Kalshi half now has a running source; its PM-side pager + Parquet step is still open. Zero trading risk: read-only public endpoints, no API key, no order surface, nothing touches the PM book.",
+   "dates": "Started 2026-10-12 17:1x CDT · policy OVERRIDDEN same day by Xman ('override both') to cron 15 min / 14-min window (~93% duty, was 5 min / 4 min / 80%) · artifacts tracked in git with time rotation · overlap-safety proven 2026-10-12 18:53 (two back-to-back overlapping windows: 45+0 bars written, 27+42 deduped, bars.jsonl 3647 rows / 3647 distinct pairs)",
+   "gate": "VERIFY one week after the 2026-10-12 override (i.e. 2026-10-19): (1) overlap integrity — `python3 -c \"import json;b=[(r['ticker'],r['minute']) for r in map(json.loads,open('data/kalshi-tape/bars.jsonl'))];print(len(b),len(set(b)))\"` must print the SAME number twice. This is now structurally guaranteed by the capture script's dedupe guard, so a failure means the guard regressed, not that the schedule drifted — check `bars_deduped` in the newest coverage row (>0 is EXPECTED and healthy now that windows can meet at the minute boundary); (2) coverage health — of the last 300 coverage rows, `cap_hit` false and `stop_reason=window_complete` in >=99%, median `hole_minutes_before_window` <= 1.5 min (a hole >20 min means a tick's lock was skipped: a 14-min window is at the practical ceiling because a run takes about as long in wall time as the span it captures); (3) freshness of the ARTIFACT (not the job status) — newest coverage row <20 min old at read time, and each day has a non-empty prints-<date>T<hh>.jsonl.gz plus a rotated bars-<date>.jsonl.gz; (4) the tracked tree stays under the backup's guard — `git ls-files -z data/kalshi-tape | xargs -0 du -k | sort -rn | head -3` shows no file near 95 MB (per-hour prints ~1 MB, daily bars ~3 MB by design; a single file that big means the rotation stopped working). Then hand the accrued tape to kalshi-maker-read-prereg.",
+   "note": "User-approved in-thread 2026-10-12 ('Do a, b, and c'). Kalshi's public trade tape is keyless but ROLLING: on 2026-10-12 it reaches 2026-08-15 and nothing at 2026-07-25 (~8 weeks; it was ~10 weeks on 2026-09-25), so every day not captured is microstructure history that cannot be recovered. USER OVERRIDE 2026-10-12 ('override both'), replacing the first cut's 5-min/4-min/80%-duty plus gitignored artifacts: (1) the artifacts ARE tracked in git now — the captured history is the un-recoverable asset and a local-only copy is one disk failure from gone — made safe by TIME ROTATION rather than by luck (prints gzipped PER HOUR ~1 MB, bars rolled to bars-<date>.jsonl.gz ~3 MB on the date change, coverage one ~1 KB row per tick), with only the volatile ~0.9 MB state.json cursor ignored; (2) coverage maximised to ~93% duty (15-min interval / 14-min window, ~4-5 GB/day of transfer) to eliminate most of the hole the 80% design accepted, ~1 min of slack per tick left so the next tick's lock is never skipped. Because near-continuous windows can now MEET at the minute boundary, the script gained a DEDUPE GUARD (a (ticker,minute) bar already written for a ticker is never written again; counted per run as `bars_deduped`), and `last_minute` tracks EMITTED closed minutes only so the guard cannot swallow the bar of a minute that was still partial at the previous run's end. Shape: scripts/kalshi-tape-capture.py walks /markets/trades newest-first and filters LOCALLY to the families in data/kalshi-tape-families.json (10 seeded: the volume families KXBTC15M/KXBTCD/KXETH15M/KXNFLGAME/KXMLBGAME/KXNBAGAME plus KXHIGHNY/KXWTI/KXCPI/KXFED), writing per-minute BARS per ticker, every print >=100 contracts verbatim (gz per day), and ONE coverage row per run (pages/bytes, prints scanned vs kept, window captured, cap_hit, and the hole before the window). MEASURED firehose: 183-188 prints/s venue-wide, and a real 4-minute window costs 45 pages / 13.8 MB / 45,000 prints scanned -> **~4 GB/day of transfer at 80% duty**, i.e. the window design buys headroom proportional to the duty cycle rather than a large saving (no 429s observed; the docstring's own continuous-capture estimate was the same ~4 GB/day). The job captures COMPLETE 4-minute windows every 5 minutes and records every hole — coverage is measured, never assumed, and no bar total may be quoted as venue volume without its coverage row. Wrapper ~/.hermes/scripts/copybot-kalshi-tape.sh is a silent-when-healthy watchdog (one line to Discord only on a failed run, a cap hit, an incomplete window, or a hole >20 min). OVERLAP: card bt-data-capture (Backlog) already listed 'Kalshi forward tape' as its first acquisition step — the Kalshi half now has a running source; its PM-side pager + Parquet step is still open. Zero trading risk: read-only public endpoints, no API key, no order surface, nothing touches the PM book.",
    "tags": [
     "kalshi",
     "tape",
     "measurement",
     "user-approved",
     "live",
-    "cron"
+    "cron",
+    "user-override",
+    "tracked-artifacts"
    ]
   },
   {
@@ -2698,6 +2700,23 @@
     "data-quality",
     "measurement",
     "backlog"
+   ]
+  },
+  {
+   "id": "kalshi-tape-repo-size-policy",
+   "title": "Kalshi tape in git — put a size policy (and a ceiling) on data growth before the repo reaches it",
+   "column": "Backlog",
+   "effort": "~1 h decision + wiring",
+   "dates": "Carded 2026-10-12, immediately after the user override that moved the tape artifacts INTO git",
+   "gate": "Decide and implement ONE of: (a) keep tracking (current) and add a monthly `git count-objects -vH` + per-file size check to the backup log so growth is visible before it bites; (b) move data/kalshi-tape to a SEPARATE data repo (keeps the code repo small; the nightly backup already supports multi-repo scope); (c) external volume + manifest. Whatever is chosen must keep the nightly 95 MB per-file guard satisfied and keep the tape's git-vs-local status STATED on the card, because a reader cannot tell tracked from ignored by looking at the directory.",
+   "note": "Arithmetic measured 2026-10-12 so the decision is not a vibe: at ~93% duty the tape writes ~22 MB/day of prints (gz) + ~11 MB/day of bars (raw, ~3 MB gz daily) + ~1 MB/day of coverage, i.e. roughly 25-35 MB/day of TRACKED growth (~1 GB/month in .git), on top of a repo whose .git was already 707 MB. GitHub's hard limit is 100 MB per FILE (satisfied by the per-hour / per-day rotation) but the practical constraint is total size and clone/push time; git-lfs is not installed and its free tier (1 GB) would be consumed in ~1 month at this rate. Today's override was correct for durability; this card is the follow-up that stops 'tracked' quietly becoming a 10 GB repo. Also relevant: bt-data-capture (Backlog) wants the same tape for backtesting, so whatever policy wins should be the one that serves both.",
+   "tags": [
+    "kalshi",
+    "tape",
+    "data-policy",
+    "backup",
+    "backlog",
+    "size-budget"
    ]
   }
  ]
