@@ -1,0 +1,813 @@
+{
+  "bar": {
+    "auc": 0.729,
+    "brier": 0.212,
+    "comparator": "price-only (entry_price)"
+  },
+  "iters": 2000,
+  "boundary": "2026-08-21T00:00:00.000Z",
+  "preregisteredFamily": [
+    {
+      "name": "C0_fit_price_only",
+      "features": [
+        "logit_price"
+      ],
+      "note": "ANCHOR — monotone in price, so its AUC must equal price-only"
+    },
+    {
+      "name": "C1_fit_price_stored",
+      "features": [
+        "logit_price",
+        "copy_score",
+        "confidence",
+        "wallet_quality_score",
+        "category_fit_score",
+        "entry_timing_score",
+        "spread_score",
+        "liquidity_score",
+        "thesis_score"
+      ],
+      "note": "price + the stored component scores"
+    },
+    {
+      "name": "C2_fit_price_exec",
+      "features": [
+        "logit_price",
+        "log_size",
+        "raw_spread",
+        "log_liquidity",
+        "log_volume",
+        "log_ttr",
+        "price_gap"
+      ],
+      "note": "price + execution features"
+    },
+    {
+      "name": "C3_fit_price_combined",
+      "features": [
+        "logit_price",
+        "copy_score",
+        "confidence",
+        "wallet_quality_score",
+        "category_fit_score",
+        "entry_timing_score",
+        "spread_score",
+        "liquidity_score",
+        "thesis_score",
+        "log_size",
+        "raw_spread",
+        "log_liquidity",
+        "log_volume",
+        "log_ttr",
+        "price_gap"
+      ],
+      "note": "price + stored + execution"
+    }
+  ],
+  "fittedCandidates": {
+    "training_data.csv — the population the model is fitted on": {
+      "C0_fit_price_only": {
+        "usedFeatures": [
+          "logit_price"
+        ],
+        "unavailableFeatures": [],
+        "trainRowsDroppedForMissingFeatures": 0,
+        "l2": 0.03,
+        "innerHoldoutAuc": {
+          "1": 0.6616603927559345,
+          "3": 0.6616603927559345,
+          "0.03": 0.6616603927559345,
+          "0.1": 0.6616603927559345,
+          "0.3": 0.6616603927559345
+        },
+        "testRead": {
+          "n": 2306,
+          "auc": 0.709299762248706,
+          "brier": 0.21779022668584846,
+          "deltaAuc": 0,
+          "ci": [
+            0,
+            0
+          ],
+          "pGreater": 0,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.877169214579132
+      },
+      "C1_fit_price_stored": {
+        "usedFeatures": [
+          "logit_price",
+          "copy_score",
+          "wallet_quality_score",
+          "category_fit_score",
+          "entry_timing_score",
+          "spread_score",
+          "liquidity_score",
+          "thesis_score"
+        ],
+        "unavailableFeatures": [
+          "confidence"
+        ],
+        "trainRowsDroppedForMissingFeatures": 0,
+        "l2": 0.3,
+        "innerHoldoutAuc": {
+          "1": 0.6416730318041246,
+          "3": 0.6396527744949979,
+          "0.03": 0.6388939340032692,
+          "0.1": 0.6415685357364111,
+          "0.3": 0.642175608129794
+        },
+        "testRead": {
+          "n": 2306,
+          "auc": 0.7021803900325027,
+          "brier": 0.22001759274933877,
+          "deltaAuc": -0.00711937221620329,
+          "ci": [
+            -0.016948866184592792,
+            0.0031723870467326165
+          ],
+          "pGreater": 0.083,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.8135820156289186
+      },
+      "C2_fit_price_exec": {
+        "usedFeatures": [
+          "logit_price",
+          "log_size",
+          "raw_spread",
+          "log_liquidity",
+          "log_volume",
+          "log_ttr",
+          "price_gap"
+        ],
+        "unavailableFeatures": [],
+        "trainRowsDroppedForMissingFeatures": 90,
+        "l2": 0.03,
+        "innerHoldoutAuc": {
+          "1": 0.6391317366870392,
+          "3": 0.6385087986653619,
+          "0.03": 0.6396022821454734,
+          "0.1": 0.6395996085917323,
+          "0.3": 0.6395728730543213
+        },
+        "testRead": {
+          "n": 2226,
+          "auc": 0.6807735281200754,
+          "brier": 0.22676444490310244,
+          "deltaAuc": -0.0238550789222145,
+          "ci": [
+            -0.036579520196465265,
+            -0.010634528899407636
+          ],
+          "pGreater": 0,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.7227172993685037
+      },
+      "C3_fit_price_combined": {
+        "usedFeatures": [
+          "logit_price",
+          "copy_score",
+          "wallet_quality_score",
+          "category_fit_score",
+          "entry_timing_score",
+          "spread_score",
+          "liquidity_score",
+          "thesis_score",
+          "log_size",
+          "raw_spread",
+          "log_liquidity",
+          "log_volume",
+          "log_ttr",
+          "price_gap"
+        ],
+        "unavailableFeatures": [
+          "confidence"
+        ],
+        "trainRowsDroppedForMissingFeatures": 90,
+        "l2": 0.3,
+        "innerHoldoutAuc": {
+          "1": 0.6191656373484763,
+          "3": 0.6183074265975821,
+          "0.03": 0.6169412406358781,
+          "0.1": 0.6190426538763856,
+          "0.3": 0.6192886208205671
+        },
+        "testRead": {
+          "n": 2226,
+          "auc": 0.6807832157896097,
+          "brier": 0.22534785994325846,
+          "deltaAuc": -0.02384539125268026,
+          "ci": [
+            -0.038387613072866755,
+            -0.009017758497432915
+          ],
+          "pGreater": 0.002,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.7120544805966431
+      }
+    },
+    "decision-dataset.csv — the bar's population, same candidates": {
+      "C0_fit_price_only": {
+        "usedFeatures": [
+          "logit_price"
+        ],
+        "unavailableFeatures": [],
+        "trainRowsDroppedForMissingFeatures": 0,
+        "l2": 0.03,
+        "innerHoldoutAuc": {
+          "1": 0.6369099860536693,
+          "3": 0.6369099860536693,
+          "0.03": 0.6369099860536693,
+          "0.1": 0.6369099860536693,
+          "0.3": 0.6369099860536693
+        },
+        "testRead": {
+          "n": 1060,
+          "auc": 0.7292286007634216,
+          "brier": 0.21074672843865574,
+          "deltaAuc": 0,
+          "ci": [
+            0,
+            0
+          ],
+          "pGreater": 0,
+          "clearsAucBar": true,
+          "clearsBrierBar": true
+        },
+        "testCalibrationSlope": 0.9918376857627962
+      },
+      "C1_fit_price_stored": {
+        "usedFeatures": [
+          "logit_price",
+          "copy_score",
+          "confidence",
+          "wallet_quality_score",
+          "category_fit_score",
+          "entry_timing_score",
+          "spread_score",
+          "liquidity_score",
+          "thesis_score"
+        ],
+        "unavailableFeatures": [],
+        "trainRowsDroppedForMissingFeatures": 0,
+        "l2": 0.03,
+        "innerHoldoutAuc": {
+          "1": 0.6063783423102818,
+          "3": 0.6040669784553236,
+          "0.03": 0.6076948278349524,
+          "0.1": 0.6062370755987304,
+          "0.3": 0.6063933706838511
+        },
+        "testRead": {
+          "n": 1060,
+          "auc": 0.5977548107365551,
+          "brier": 0.27635955053547046,
+          "deltaAuc": -0.13147379002686643,
+          "ci": [
+            -0.16835059584269185,
+            -0.09135351349760068
+          ],
+          "pGreater": 0,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.3678187213801103
+      },
+      "C2_fit_price_exec": {
+        "usedFeatures": [
+          "logit_price",
+          "log_size",
+          "raw_spread",
+          "log_liquidity",
+          "log_volume",
+          "log_ttr",
+          "price_gap"
+        ],
+        "unavailableFeatures": [],
+        "trainRowsDroppedForMissingFeatures": 68,
+        "l2": 0.03,
+        "innerHoldoutAuc": {
+          "1": 0.6125269730205952,
+          "3": 0.6118374851568585,
+          "0.03": 0.613018552330852,
+          "0.1": 0.6129515187885443,
+          "0.3": 0.6129068297603392
+        },
+        "testRead": {
+          "n": 1043,
+          "auc": 0.7030077130309629,
+          "brier": 0.21810293723858043,
+          "deltaAuc": -0.02238993246484844,
+          "ci": [
+            -0.04091624995078158,
+            -0.006334710903946994
+          ],
+          "pGreater": 0.006,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.8300045103714923
+      },
+      "C3_fit_price_combined": {
+        "usedFeatures": [
+          "logit_price",
+          "copy_score",
+          "confidence",
+          "wallet_quality_score",
+          "category_fit_score",
+          "entry_timing_score",
+          "spread_score",
+          "liquidity_score",
+          "thesis_score",
+          "log_size",
+          "raw_spread",
+          "log_liquidity",
+          "log_volume",
+          "log_ttr",
+          "price_gap"
+        ],
+        "unavailableFeatures": [],
+        "trainRowsDroppedForMissingFeatures": 68,
+        "l2": 1,
+        "innerHoldoutAuc": {
+          "1": 0.5855092633971323,
+          "3": 0.5844877998953,
+          "0.03": 0.5851198304370587,
+          "0.1": 0.5849570346914542,
+          "0.3": 0.5853879646062896
+        },
+        "testRead": {
+          "n": 1043,
+          "auc": 0.6649149352326826,
+          "brier": 0.23468044139551683,
+          "deltaAuc": -0.06048271026312868,
+          "ci": [
+            -0.09049662453318008,
+            -0.030974629130811282
+          ],
+          "pGreater": 0,
+          "clearsAucBar": false,
+          "clearsBrierBar": false
+        },
+        "testCalibrationSlope": 0.6411919499352763
+      }
+    }
+  },
+  "training_data.csv — the population the model is fitted on": {
+    "provenance": "training_data.csv — the population the model is fitted on — frozen time-ordered holdout | boundary 2026-08-21T00:00:00.000Z | train n=2539 | test n=2306 | eras train [pre-kelly-v1-48:2539] test [pre-kelly-v1-48:850,kelly-window-v49-57:832,exposure-v58plus:624] | eras on both sides: pre-kelly-v1-48 | purged 0 train rows labelled after the boundary",
+    "boundary": "2026-08-21T00:00:00.000Z",
+    "trainN": 2539,
+    "testN": 2306,
+    "purged": 0,
+    "tiedAtBoundary": 0,
+    "testBaseRate": 0.49262792714657416,
+    "constantBrier": 0.2499456525418438,
+    "priceOnly": {
+      "auc": 0.709299762248706,
+      "brier": 0.21839252053339114
+    },
+    "arms": [
+      {
+        "arm": "entry_price",
+        "n": 2306,
+        "auc": 0.709299762248706,
+        "brier": 0.21839252053339114,
+        "beatsPriceCiLow": 0,
+        "beatsPriceCiHigh": 0,
+        "deltaAuc": 0,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -2.366240465881583,
+        "topTercileVsCopyAllCi": [
+          -5.133757673618214,
+          -0.15220980523741298
+        ],
+        "topTercileN": 768
+      },
+      {
+        "arm": "detected_price",
+        "n": 2306,
+        "auc": 0.7078593355001805,
+        "brier": 0.21961818408499528,
+        "beatsPriceCiLow": -0.004033330378512501,
+        "beatsPriceCiHigh": 0.0010031473224969556,
+        "deltaAuc": -0.001440426748525403,
+        "pGreater": 0.13,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -2.4502792679649166,
+        "topTercileVsCopyAllCi": [
+          -5.14911555261664,
+          -0.19058447227713843
+        ],
+        "topTercileN": 768
+      },
+      {
+        "arm": "copy_score",
+        "n": 2306,
+        "auc": 0.5118774076080415,
+        "brier": null,
+        "beatsPriceCiLow": -0.23278824248991853,
+        "beatsPriceCiHigh": -0.16025282512928551,
+        "deltaAuc": -0.1974223546406645,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": 1.6108091434934186,
+        "topTercileVsCopyAllCi": [
+          -2.523613390497407,
+          5.946219577757324
+        ],
+        "topTercileN": 768
+      },
+      {
+        "arm": "wallet_quality_score",
+        "n": 2306,
+        "auc": 0.5155144005055977,
+        "brier": null,
+        "beatsPriceCiLow": -0.2276458622975438,
+        "beatsPriceCiHigh": -0.15953152426512407,
+        "deltaAuc": -0.19378536174310823,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": -1.438245413798252,
+        "topTercileVsCopyAllCi": [
+          -4.213695380545853,
+          1.3621102164981187
+        ],
+        "topTercileN": 768
+      },
+      {
+        "arm": "entry_timing_score",
+        "n": 2306,
+        "auc": 0.5429148609606356,
+        "brier": null,
+        "beatsPriceCiLow": -0.20001623065232466,
+        "beatsPriceCiHigh": -0.13355959412788032,
+        "deltaAuc": -0.16638490128807037,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": 1.7986561487017498,
+        "topTercileVsCopyAllCi": [
+          -2.4500886968085167,
+          6.489147207446829
+        ],
+        "topTercileN": 768
+      },
+      {
+        "arm": "thesis_score",
+        "n": 2306,
+        "auc": 0.4572074003852173,
+        "brier": null,
+        "beatsPriceCiLow": -0.29147710996094817,
+        "beatsPriceCiHigh": -0.2119106312722071,
+        "deltaAuc": -0.25209236186348866,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": -3.287111038798251,
+        "topTercileVsCopyAllCi": [
+          -5.984349583209946,
+          -1.0506953667953685
+        ],
+        "topTercileN": 768
+      },
+      {
+        "arm": "C0_fit_price_only",
+        "n": 2306,
+        "auc": 0.709299762248706,
+        "brier": 0.21779022668584846,
+        "beatsPriceCiLow": 0,
+        "beatsPriceCiHigh": 0,
+        "deltaAuc": 0,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -2.366240465881583,
+        "topTercileVsCopyAllCi": [
+          -5.133757673618214,
+          -0.15220980523741298
+        ],
+        "topTercileN": 768,
+        "fitted": true,
+        "note": "ANCHOR — monotone in price, so its AUC must equal price-only",
+        "trainAucInsample": 0.7405383380457797
+      },
+      {
+        "arm": "C1_fit_price_stored",
+        "n": 2306,
+        "auc": 0.7021803900325027,
+        "brier": 0.22001759274933877,
+        "beatsPriceCiLow": -0.016948866184592792,
+        "beatsPriceCiHigh": 0.0031723870467326165,
+        "deltaAuc": -0.00711937221620329,
+        "pGreater": 0.083,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -2.54239502317325,
+        "topTercileVsCopyAllCi": [
+          -5.287647101398276,
+          -0.27762780358047595
+        ],
+        "topTercileN": 768,
+        "fitted": true,
+        "note": "price + the stored component scores",
+        "trainAucInsample": 0.7431146398001477
+      },
+      {
+        "arm": "C2_fit_price_exec",
+        "n": 2226,
+        "auc": 0.6807735281200754,
+        "brier": 0.22676444490310244,
+        "beatsPriceCiLow": -0.036579520196465265,
+        "beatsPriceCiHigh": -0.010634528899407636,
+        "deltaAuc": -0.0238550789222145,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -2.6741927223719735,
+        "topTercileVsCopyAllCi": [
+          -5.494646297450961,
+          -0.307526802721088
+        ],
+        "topTercileN": 742,
+        "fitted": true,
+        "note": "price + execution features",
+        "trainAucInsample": 0.7418583703360384
+      },
+      {
+        "arm": "C3_fit_price_combined",
+        "n": 2226,
+        "auc": 0.6807832157896097,
+        "brier": 0.22534785994325846,
+        "beatsPriceCiLow": -0.038387613072866755,
+        "beatsPriceCiHigh": -0.009017758497432915,
+        "deltaAuc": -0.02384539125268026,
+        "pGreater": 0.002,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -2.5227219676549923,
+        "topTercileVsCopyAllCi": [
+          -5.350291952489078,
+          -0.1458953729839039
+        ],
+        "topTercileN": 742,
+        "fitted": true,
+        "note": "price + stored + execution",
+        "trainAucInsample": 0.7448551411344554
+      }
+    ],
+    "eraRead": [
+      {
+        "era": "exposure-v58plus",
+        "n": 624,
+        "priceAuc": 0.6543790877075297,
+        "priceAucUsable": true
+      },
+      {
+        "era": "kelly-window-v49-57",
+        "n": 832,
+        "priceAuc": 0.6727196044211751,
+        "priceAucUsable": true
+      },
+      {
+        "era": "pre-kelly-v1-48",
+        "n": 850,
+        "priceAuc": 0.7581908831908832,
+        "priceAucUsable": true
+      }
+    ]
+  },
+  "decision-dataset.csv — the bar's population, same candidates": {
+    "provenance": "decision-dataset.csv — the bar's population, same candidates — frozen time-ordered holdout | boundary 2026-08-21T00:00:00.000Z | train n=2308 | test n=1060 | eras train [pre-kelly-v1-48:2308] test [pre-kelly-v1-48:754,kelly-window-v49-57:306] | eras on both sides: pre-kelly-v1-48 | purged 148 train rows labelled after the boundary",
+    "boundary": "2026-08-21T00:00:00.000Z",
+    "trainN": 2308,
+    "testN": 1060,
+    "purged": 148,
+    "tiedAtBoundary": 0,
+    "testBaseRate": 0.5349056603773585,
+    "constantBrier": 0.2487815948736205,
+    "priceOnly": {
+      "auc": 0.7292286007634216,
+      "brier": 0.21103131768867892
+    },
+    "arms": [
+      {
+        "arm": "entry_price",
+        "n": 1060,
+        "auc": 0.7292286007634216,
+        "brier": 0.21103131768867892,
+        "beatsPriceCiLow": 0,
+        "beatsPriceCiHigh": 0,
+        "deltaAuc": 0,
+        "pGreater": 0,
+        "clearsAucBar": true,
+        "clearsBrierBar": true,
+        "topTercileMeanPnl": 0.2514317724090004,
+        "topTercileVsCopyAllCi": [
+          -1.1152524954781027,
+          1.4274123353759167
+        ],
+        "topTercileN": 353
+      },
+      {
+        "arm": "detected_price",
+        "n": 1060,
+        "auc": 0.7264149593426131,
+        "brier": 0.21293871933962216,
+        "beatsPriceCiLow": -0.007032995202695291,
+        "beatsPriceCiHigh": 0.0008928539477026654,
+        "deltaAuc": -0.0028136414208084215,
+        "pGreater": 0.0705,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": 0.20982355711154993,
+        "topTercileVsCopyAllCi": [
+          -1.1530176507730265,
+          1.3315564588979232
+        ],
+        "topTercileN": 353
+      },
+      {
+        "arm": "copy_score",
+        "n": 1060,
+        "auc": 0.48271211421988974,
+        "brier": null,
+        "beatsPriceCiLow": -0.29738565275856016,
+        "beatsPriceCiHigh": -0.19348952286974685,
+        "deltaAuc": -0.2465164865435318,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": -1.0333280009621064,
+        "topTercileVsCopyAllCi": [
+          -2.885922158548229,
+          1.2212970892018755
+        ],
+        "topTercileN": 353
+      },
+      {
+        "arm": "wallet_quality_score",
+        "n": 1060,
+        "auc": 0.5137444505260598,
+        "brier": null,
+        "beatsPriceCiLow": -0.2634279579977871,
+        "beatsPriceCiHigh": -0.1671798494831651,
+        "deltaAuc": -0.21548415023736178,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": -0.994359162435192,
+        "topTercileVsCopyAllCi": [
+          -2.454338931534181,
+          0.43424685919653705
+        ],
+        "topTercileN": 353
+      },
+      {
+        "arm": "entry_timing_score",
+        "n": 1060,
+        "auc": 0.55739256111129,
+        "brier": null,
+        "beatsPriceCiLow": -0.21872569444444445,
+        "beatsPriceCiHigh": -0.12438595054855084,
+        "deltaAuc": -0.17183603965213157,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": -0.4942090207921324,
+        "topTercileVsCopyAllCi": [
+          -2.0131437379576074,
+          1.1952487284830056
+        ],
+        "topTercileN": 353
+      },
+      {
+        "arm": "thesis_score",
+        "n": 1060,
+        "auc": 0.4007695032035803,
+        "brier": null,
+        "beatsPriceCiLow": -0.3877478543947913,
+        "beatsPriceCiHigh": -0.26714534669392404,
+        "deltaAuc": -0.32845909755984126,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": null,
+        "topTercileMeanPnl": -1.3399840916136616,
+        "topTercileVsCopyAllCi": [
+          -2.753686467521153,
+          0.08916510916790665
+        ],
+        "topTercileN": 353
+      },
+      {
+        "arm": "C0_fit_price_only",
+        "n": 1060,
+        "auc": 0.7292286007634216,
+        "brier": 0.21074672843865574,
+        "beatsPriceCiLow": 0,
+        "beatsPriceCiHigh": 0,
+        "deltaAuc": 0,
+        "pGreater": 0,
+        "clearsAucBar": true,
+        "clearsBrierBar": true,
+        "topTercileMeanPnl": 0.2514317724090004,
+        "topTercileVsCopyAllCi": [
+          -1.1152524954781027,
+          1.4274123353759167
+        ],
+        "topTercileN": 353,
+        "fitted": true,
+        "note": "ANCHOR — monotone in price, so its AUC must equal price-only",
+        "trainAucInsample": 0.7297736805508827
+      },
+      {
+        "arm": "C1_fit_price_stored",
+        "n": 1060,
+        "auc": 0.5977548107365551,
+        "brier": 0.27635955053547046,
+        "beatsPriceCiLow": -0.16835059584269185,
+        "beatsPriceCiHigh": -0.09135351349760068,
+        "deltaAuc": -0.13147379002686643,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": 0.32120429365545966,
+        "topTercileVsCopyAllCi": [
+          -1.0287317325800363,
+          1.6036546659626523
+        ],
+        "topTercileN": 353,
+        "fitted": true,
+        "note": "price + the stored component scores",
+        "trainAucInsample": 0.732721688412237
+      },
+      {
+        "arm": "C2_fit_price_exec",
+        "n": 1043,
+        "auc": 0.7030077130309629,
+        "brier": 0.21810293723858043,
+        "beatsPriceCiLow": -0.04091624995078158,
+        "beatsPriceCiHigh": -0.006334710903946994,
+        "deltaAuc": -0.02238993246484844,
+        "pGreater": 0.006,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": -0.12925044305248973,
+        "topTercileVsCopyAllCi": [
+          -1.4654404357015205,
+          1.1313084041548649
+        ],
+        "topTercileN": 347,
+        "fitted": true,
+        "note": "price + execution features",
+        "trainAucInsample": 0.7323292584820298
+      },
+      {
+        "arm": "C3_fit_price_combined",
+        "n": 1043,
+        "auc": 0.6649149352326826,
+        "brier": 0.23468044139551683,
+        "beatsPriceCiLow": -0.09049662453318008,
+        "beatsPriceCiHigh": -0.030974629130811282,
+        "deltaAuc": -0.06048271026312868,
+        "pGreater": 0,
+        "clearsAucBar": false,
+        "clearsBrierBar": false,
+        "topTercileMeanPnl": 0.08551468663050744,
+        "topTercileVsCopyAllCi": [
+          -1.2885737165457742,
+          1.290843702263085
+        ],
+        "topTercileN": 347,
+        "fitted": true,
+        "note": "price + stored + execution",
+        "trainAucInsample": 0.7358382721121572
+      }
+    ],
+    "eraRead": [
+      {
+        "era": "kelly-window-v49-57",
+        "n": 306,
+        "priceAuc": 0.6265239305561539,
+        "priceAucUsable": true
+      },
+      {
+        "era": "pre-kelly-v1-48",
+        "n": 754,
+        "priceAuc": 0.75920245398773,
+        "priceAucUsable": true
+      }
+    ]
+  }
+}
