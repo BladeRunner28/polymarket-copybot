@@ -1,0 +1,19 @@
+{
+  "_note": "Allowlist of Kalshi series (families) captured by scripts/kalshi-tape-capture.py. Seeded 2026-10-12 from a live venue-wide tape + per-family volume probe: these are the families that carry Kalshi's volume and/or overlap a family we already understand. Adding a family changes the artifact's coverage, so note the date when you add one.",
+  "seeded": "2026-10-12",
+  "families": {
+    "KXBTC15M": "BTC 15-minute up/down (venue firehose: ~1.6M contracts/24h, 1 open market at a time)",
+    "KXETH15M": "ETH 15-minute up/down",
+    "KXBTCD": "BTC daily threshold markets",
+    "KXMLBGAME": "MLB game winners",
+    "KXNFLGAME": "NFL game winners (largest 24h volume on the venue: ~7.0M contracts)",
+    "KXNBAGAME": "NBA game winners (~1.4M contracts/24h)",
+    "KXHIGHNY": "NYC daily high temperature brackets (weather; ~109k contracts/24h)",
+    "KXWTI": "WTI crude oil settlement (~101k contracts/24h)",
+    "KXCPI": "US CPI prints (~122k contracts/24h, OI 915k)",
+    "KXFED": "Fed funds rate path (OI ~199k, thin intraday)",
+    "KXU3": "Unemployment rate U-3 (~6.3k contracts/24h, OI 105k)",
+    "KXGDP": "Real GDP prints (OI ~117k)",
+    "KXRECSSNBER": "NBER recession (OI ~1.3M, event-driven)"
+  }
+}

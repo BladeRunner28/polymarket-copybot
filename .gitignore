@@ -63,3 +63,18 @@ de421.bsp
 # gzipped) and NOT a decision input: daily gzip append under data/gdelt-bulk/. Keeping it out
 # of the repo protects the nightly backup job's 95 MB per-file guard.
 data/gdelt-bulk/
+
+# Kalshi venue tape (2026-10-12, complementary-Kalshi workstream option A) — a firehose by
+# design: a single 4-minute capture window is ~3,000 verbatim prints, so the per-day gz plus
+# the per-minute bars run ~200 MB/day, and coverage.jsonl grows one row per cron tick
+# (288/day). Measured 2026-10-12: 45 pages / 13.8 MB of transfer per window. These are
+# local-only capture artifacts (the volume itself is the un-recoverable part, not its
+# version history) and they would trip the nightly backup's own 95 MB per-file guard within
+# days. Same reasoning as the GDELT bulk rule above.
+data/kalshi-tape/
+
+# Kalshi macro lane quotes — one row per OPEN market per run (336 rows per hourly run,
+# ~3 MB/day) by construction. The companion files ARE tracked: kalshi-macro-settled.jsonl
+# (accrues slowly, one row per resolved market) and kalshi-macro-news.jsonl (~400 B/run),
+# because those are the rows a reader wants in the history.
+data/kalshi-macro-quotes.jsonl
