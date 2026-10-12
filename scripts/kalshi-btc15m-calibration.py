@@ -3,11 +3,14 @@
 
 WHAT IT ANSWERS
 ---------------
-Kalshi's 15-minute BTC up/down markets are the single busiest family on the venue
-(1.58M contracts / 24h, OI 403k at 2026-10-12 probe). "Buy the cheap tail" is the
-obvious first hypothesis, so this script settles it from keyless public data before
-anyone builds anything: for every SETTLED market in the rolling window, bucket the
-LAST PRINTED PRICE and compare it to the realized outcome.
+Kalshi's 15-minute BTC up/down markets are the busiest family on the venue — measured
+from our own tape capture, this family alone printed 1,500,158 contracts inside a
+single 4-minute window on 2026-10-12. "Buy the cheap tail" is the obvious first
+hypothesis, so this script settles it from keyless public data before anyone builds
+anything: for every SETTLED market in the rolling window, bucket the LAST PRINTED
+PRICE and compare it to the realized outcome. (No per-day venue-volume estimate is
+quoted here on purpose: extrapolating a captured window to 24h spans a volatility
+regime, and the number is not needed to read the table below.)
 
 Measured 2026-10-12 (6,438 settled markets, window 2026-08-06 -> 2026-10-12):
   implied < 0.02  -> n=3,211, realized YES 0.0000 (implied mean 0.0010)

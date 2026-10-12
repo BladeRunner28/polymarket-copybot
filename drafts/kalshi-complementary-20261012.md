@@ -66,7 +66,7 @@ entire reason this is a *maker* study and not a direction study.
 
 **The cheap hypothesis is already dead, and now reproducibly so.** `scripts/kalshi-btc15m-calibration.py`
 (`python3 scripts/kalshi-btc15m-calibration.py`) reads every settled market in the
-rolling window — **6,438 markets, 2026-08-06 → 2026-10-12** — and compares the last
+rolling window — **6,438 markets, 2026-08-06 → 2026-10-12** (the count grows as markets settle; 6,439 a few minutes later, same read) — and compares the last
 printed price to the realized outcome: implied <0.02 → **n=3,211, realized YES 0.0000**
 (implied mean 0.0010); implied >0.98 → **n=3,222, realized YES 1.0000** (implied 0.9990).
 **99.9% of the sample sits in those two tails**, so 15-minute crypto is a
