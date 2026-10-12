@@ -1,0 +1,358 @@
+{
+ "window": {
+  "label": "2026-10-05 .. 2026-10-11 local (7 complete days)",
+  "basis": "America/Chicago (closedAt ?? resolvedAt; candidate prices = ObservedTrade.detectedPrice)",
+  "start_utc": "2026-10-05T05:00:00+00:00",
+  "end_utc": "2026-10-12T05:00:00+00:00"
+ },
+ "read_at": "2026-10-12T13:58:54.164461+00:00",
+ "detected": {
+  "n": 785638,
+  "copy_eligible": 8192,
+  "observation_only": 777446,
+  "wallets": 942
+ },
+ "bands": {
+  "0.00-0.20": {
+   "detected_copy_eligible": 406,
+   "scored": 406,
+   "copied": 20,
+   "skip": 386,
+   "watch": 0
+  },
+  "0.20-0.40": {
+   "detected_copy_eligible": 2220,
+   "scored": 2217,
+   "copied": 33,
+   "skip": 2184,
+   "watch": 0
+  },
+  "0.40-0.60": {
+   "detected_copy_eligible": 2987,
+   "scored": 2987,
+   "copied": 102,
+   "skip": 2885,
+   "watch": 0
+  },
+  "0.60-0.80": {
+   "detected_copy_eligible": 1918,
+   "scored": 1919,
+   "copied": 18,
+   "skip": 1901,
+   "watch": 0
+  },
+  "0.80-1.01": {
+   "detected_copy_eligible": 661,
+   "scored": 661,
+   "copied": 1,
+   "skip": 660,
+   "watch": 0
+  }
+ },
+ "c200_legs": {
+  "total": 159,
+  "notional": 1251.68,
+  "per_day": 22.71,
+  "by_band": {
+   "0.00-0.20": {
+    "legs": 22,
+    "legs_per_day": 3.14,
+    "notional": 769.95,
+    "notional_share_pct": 61.5,
+    "avg_clip": 35.0,
+    "settled": 22,
+    "realized_pnl": 783.75,
+    "settled_roi_pct": 101.8
+   },
+   "0.20-0.40": {
+    "legs": 33,
+    "legs_per_day": 4.71,
+    "notional": 339.2,
+    "notional_share_pct": 27.1,
+    "avg_clip": 10.28,
+    "settled": 32,
+    "realized_pnl": -42.57,
+    "settled_roi_pct": -13.3
+   },
+   "0.40-0.60": {
+    "legs": 89,
+    "legs_per_day": 12.71,
+    "notional": 104.06,
+    "notional_share_pct": 8.3,
+    "avg_clip": 1.17,
+    "settled": 88,
+    "realized_pnl": 11.44,
+    "settled_roi_pct": 11.1
+   },
+   "0.60-0.80": {
+    "legs": 15,
+    "legs_per_day": 2.14,
+    "notional": 38.47,
+    "notional_share_pct": 3.1,
+    "avg_clip": 2.56,
+    "settled": 15,
+    "realized_pnl": 1.58,
+    "settled_roi_pct": 4.1
+   },
+   "0.80-1.01": {
+    "legs": 0,
+    "legs_per_day": 0.0,
+    "notional": 0,
+    "notional_share_pct": 0.0,
+    "avg_clip": 0.0,
+    "settled": 0,
+    "realized_pnl": 0,
+    "settled_roi_pct": null
+   }
+  }
+ },
+ "longshot": {
+  "legs": 22,
+  "legs_per_day": 3.14,
+  "avg_clip": 35.0,
+  "notional": 769.95,
+  "settled_roi_pct": 101.8,
+  "realized_pnl": 783.75,
+  "share_of_legs_pct": 13.8,
+  "share_of_notional_pct": 61.5,
+  "ranked_blockers_first": [
+   [
+    "DRIFT (price drifted since wallet entry)",
+    183
+   ],
+   [
+    "DEDUPE (same wallet/market/outcome already open)",
+    68
+   ],
+   [
+    "SPREAD",
+    65
+   ],
+   [
+    "BLACKLIST (v45 category)",
+    31
+   ],
+   [
+    "LIQUIDITY",
+    28
+   ],
+   [
+    "NEAR-CERTAINTY (band)",
+    6
+   ],
+   [
+    "HOUR BLACKOUT",
+    3
+   ],
+   [
+    "CONFIDENCE (below minConfidence)",
+    1
+   ],
+   [
+    "TTR (resolves sooner than min)",
+    1
+   ]
+  ],
+  "ranked_blockers_all": [
+   [
+    "DRIFT (price drifted since wallet entry)",
+    275
+   ],
+   [
+    "CONFIDENCE (below minConfidence)",
+    263
+   ],
+   [
+    "NEAR-CERTAINTY (band)",
+    129
+   ],
+   [
+    "TTR (resolves sooner than min)",
+    122
+   ],
+   [
+    "DEDUPE (same wallet/market/outcome already open)",
+    68
+   ],
+   [
+    "SPREAD",
+    65
+   ],
+   [
+    "BLACKLIST (v45 category)",
+    34
+   ],
+   [
+    "LIQUIDITY",
+    33
+   ],
+   [
+    "HOUR BLACKOUT",
+    6
+   ]
+  ]
+ },
+ "longshot_drift": {
+  "candidates_blocked_by_drift": 275,
+  "median_drift": 0.359,
+  "histogram": [
+   [
+    ">0.1000",
+    216
+   ],
+   [
+    "0.0500-0.1000",
+    26
+   ],
+   [
+    "0.0100-0.0500",
+    20
+   ],
+   [
+    "0.0040-0.0100",
+    13
+   ]
+  ],
+  "note": "COUNTS ONLY \u2014 no threshold is proposed from this. The drift bar has its own pre-registered decision (tr31-rec2-drift-decay-bar = HOLD)."
+ },
+ "longshot_sole_blocker": {
+  "note": "rows whose classified blocker set is a SINGLE gate \u2014 the count a one-gate change would actually admit. risksJson[0] is check ORDER, not priority.",
+  "sole": [
+   [
+    "DEDUPE (same wallet/market/outcome already open)",
+    68
+   ],
+   [
+    "BLACKLIST (v45 category)",
+    31
+   ],
+   [
+    "HOUR BLACKOUT",
+    3
+   ],
+   [
+    "NEAR-CERTAINTY (band)",
+    2
+   ],
+   [
+    "CONFIDENCE (below minConfidence)",
+    1
+   ]
+  ],
+  "setsize": [
+   [
+    1,
+    105
+   ],
+   [
+    2,
+    62
+   ],
+   [
+    3,
+    137
+   ],
+   [
+    4,
+    55
+   ],
+   [
+    5,
+    27
+   ]
+  ],
+  "pairs": [
+   [
+    "CONFIDENCE (below minConfidence) + DRIFT (price drifted since wallet entry)",
+    256
+   ],
+   [
+    "CONFIDENCE (below minConfidence) + NEAR-CERTAINTY (band)",
+    127
+   ],
+   [
+    "DRIFT (price drifted since wallet entry) + NEAR-CERTAINTY (band)",
+    123
+   ],
+   [
+    "CONFIDENCE (below minConfidence) + TTR (resolves sooner than min)",
+    122
+   ],
+   [
+    "DRIFT (price drifted since wallet entry) + TTR (resolves sooner than min)",
+    121
+   ],
+   [
+    "NEAR-CERTAINTY (band) + TTR (resolves sooner than min)",
+    68
+   ],
+   [
+    "DRIFT (price drifted since wallet entry) + SPREAD",
+    64
+   ],
+   [
+    "CONFIDENCE (below minConfidence) + SPREAD",
+    52
+   ]
+  ],
+  "all_bands_sole": [
+   [
+    "DEDUPE (same wallet/market/outcome already open)",
+    1455
+   ],
+   [
+    "BLACKLIST (v45 category)",
+    1147
+   ],
+   [
+    "HOUR BLACKOUT",
+    21
+   ],
+   [
+    "CONFIDENCE (below minConfidence)",
+    7
+   ],
+   [
+    "NEAR-CERTAINTY (band)",
+    2
+   ],
+   [
+    "TTR (resolves sooner than min)",
+    1
+   ]
+  ]
+ },
+ "longshot_wallet_depth": [
+  [
+   "censored@cap",
+   225
+  ],
+  [
+   "10-49",
+   73
+  ],
+  [
+   "50-99",
+   41
+  ],
+  [
+   "100-299",
+   41
+  ],
+  [
+   "<10",
+   26
+  ]
+ ],
+ "longshot_ceiling": {
+  "basis": "this window's own <0.20 legs and settled ROI",
+  "current_pnl_per_day": 111.96,
+  "legs_per_day": 3.14,
+  "roi_pct": 101.8,
+  "pnl_per_leg": 35.62
+ },
+ "containment": {
+  "copy_eligible": 8192,
+  "decided": 8190
+ }
+}
