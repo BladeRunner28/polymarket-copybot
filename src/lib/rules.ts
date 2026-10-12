@@ -217,6 +217,15 @@ export interface Rules {
   // skips short-TTR lane copies and is band-driven (see src/lib/band-size.ts).
   c200BandSizeFactor: number; // 1 = no change
   c200BandSizeFactorRange: string; // e.g. "0.6-0.8"
+  // v62 (2026-10-11 C-200 daily report change 2, user-approved): HARD-SKIP a price band
+  // for C-200 copies. "lo-hi" (lo inclusive / hi exclusive, the same parser and the same
+  // boundary semantics as c200BandSizeFactorRange), empty = disabled. A skip and not
+  // another size factor because the 0.40–0.60 band is what it is (−7.4% all-time over
+  // 1,048 legs) and it is spending the binding levers — maxCopiesPerCycle,
+  // maxCopiesPerWalletPerDay, maxOpenPositions — while producing 0.1% of PnL; sizing there
+  // is floored ($0.25–$1.25) so it cannot be shrunk to zero. Applies to every lane that
+  // books a C-200 leg (main, short-TTR, Kelly rails) so the rail cannot be worked around.
+  c200SkipBandRange: string; // e.g. "0.4-0.6"; empty = no skip
   // v45: per-market-slug open-position cap for C-200. The v41 research-category
   // gate maps esports to "Other" (uncapped), letting lol/cs2 pile up without a
   // gate; this caps open positions per raw marketCategory slug. 0 = disabled.
@@ -350,6 +359,8 @@ export const DEFAULT_RULES: Rules = {
   // v60: band-scoped size factor disabled by default, same convention.
   c200BandSizeFactor: 1,
   c200BandSizeFactorRange: "",
+  // v62: band skip disabled by default, same convention.
+  c200SkipBandRange: "",
   ddBasis: "mtm",
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],

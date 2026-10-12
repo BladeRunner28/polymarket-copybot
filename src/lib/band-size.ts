@@ -44,3 +44,24 @@ export function applyBandSizeFactor(sizeUsd: number, price: number, factor: numb
   if (price < parsed.lo || price >= parsed.hi) return sizeUsd;
   return sizeUsd * factor;
 }
+
+/**
+ * v62 (2026-10-11 C-200 daily report change 2, user-approved): is this entry price inside
+ * a band we HARD-SKIP?
+ *
+ * Why a skip and not a smaller factor: the 0.40–0.60 band is all-time −7.4% ROI over 1,048
+ * legs, and the size levers there are exhausted — `c200DeadZoneBandFactor` is already 0.125
+ * and `clampPaperSize` floors a size at $0.25–$1.25, so a factor of 0 would not remove the
+ * leg, it would book a token clip that still consumes `maxCopiesPerCycle`,
+ * `maxCopiesPerWalletPerDay` and `maxOpenPositions` — the levers the +EV bands need.
+ *
+ * Semantics are the SAME as `applyBandSizeFactor` (lo inclusive, hi exclusive) so the two
+ * band mechanisms cannot disagree about which side of a boundary a price sits on. Empty,
+ * malformed or inverted range → false (disabled), so a revert is one field.
+ */
+export function isInBandRange(price: number, range: string): boolean {
+  const parsed = parseBandRange(range);
+  if (!parsed) return false;
+  if (!Number.isFinite(price)) return false;
+  return price >= parsed.lo && price < parsed.hi;
+}

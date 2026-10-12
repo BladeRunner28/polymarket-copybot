@@ -2377,6 +2377,37 @@
       ]
     },
     {
+      "id": "v62-c200-longshot-3p5-and-band-skip",
+      "title": "v62 \u2014 C-200: long-shot \u00d72.5\u21923.5 AND a HARD-SKIP of the 0.40\u20130.60 band (APPLIED 2026-10-12)",
+      "column": "In Progress",
+      "effort": "~1h (one new rule field + pure predicate + 4 tests + apply script) + the 7-day read at 2026-10-19",
+      "dates": "Applied 2026-10-12 06:20:21 CDT (RuleSet v62 active; RuleChange hermes-v62-c200-approved-20261011, afterJson carries exactly the two fields). Both changes were approved in-thread from the 2026-10-11 C-200 daily report. VERIFY at the 7-day mark 2026-10-19.",
+      "gate": "PRE-REGISTERED (do not re-tune on the read, either way), 7d to 2026-10-19. CLAUSE 1 (size) \u2014 C-200 opens with entry <0.20 average \u2265 $45 and total <0.20 notional \u2265 1.9\u00d7 the pre-v62 7d, with no change to the <0.20 win-rate mix beyond noise. CLAUSE 2 (skip) \u2014 `grep -c 'band skip' logs/cron/copybot-monitor-score.log` > 0 once the scorer runs after 2026-10-12 06:20:21, every line a price in [0.40,0.60), and ZERO C-200 legs booked by intent price in [0.40,0.60) after that timestamp (sqlite3 dev.db, botId='BANKROLL_200', isDemo=0, openedAt > strftime('%s','2026-10-12T11:20:21Z')*1000, COALESCE(intentPrice,entryPrice) >= 0.40 AND < 0.60). CLAUSE 3 (no leak) \u2014 no other band's average size moves beyond the population-mix effect already documented on daily-change1-band-size-half (if one does, call it POPULATION, not LEAK, and instrument it). BOTH CLAUSES NULL / band-skip never fires => the honest read is that 0.40\u20130.60 admission was already starved in the v61/Kelly era, i.e. the skip is inert because the band is EMPTY, not because the gate failed. Verified at apply: 484/484 tests pass, `npx tsc --noEmit` clean.",
+      "note": "WHY change 1 (size): <0.20 is the only significantly positive band \u2014 calibration excess +18.73pp, z=+6.38, p<0.0001 (240 legs), all-time +$5,783.98 on $6,888.57 staked \u2014 and it carried 94% of the 14d book PnL (+$3,443.03 of +$3,671.01) on $1,752.33 of flow; every other band is flat-to-negative. Capital was NOT the constraint at the apply read (open exposure $3.74 against a $3,882 cap, ~$3,878 idle headroom), so +40% on the band map is sizing on a proven edge, not a leverage increase. WHY change 2 is a SKIP and not another haircut: 0.40\u20130.60 is the largest loss bucket all-time (\u22127.4% ROI over 1,048 legs, \u2212$321.10) and produced 0.1% of PnL on 51% of the last 14d's legs (172 legs, $209.33 staked, +$3.81) while spending the binding levers \u2014 maxCopiesPerCycle (50), maxCopiesPerWalletPerDay (40), maxOpenPositions (225). Sizing there is exhausted: c200DeadZoneBandFactor is already 0.125 and clampPaperSize floors a clip at $0.25\u2013$1.25, so a factor of 0.0 would still book a token leg and still spend those levers. HOW: one new rule field c200SkipBandRange (default \"\" = disabled, so a ruleset missing the field behaves exactly as pre-v62) consumed by a new pure predicate isInBandRange() in src/lib/band-size.ts that shares parseBandRange and the SAME boundary semantics as applyBandSizeFactor (lo inclusive / hi exclusive), with a test asserting the two mechanisms cannot disagree about which side of a boundary a price is on \u2014 a leg 'inside' for one and 'outside' for the other would make the two band rails fight each other. Placed in scripts/score-trades.ts after Kelly/lane/premium/hour/band sizing and BEFORE the v55/v58 concentration gates, and it `continue`s ahead of the short-TTR lane booking, so it bites WHICHEVER lane would have booked the C-200 leg (verified by code path: skip at ~line 980, short-TTR booking at ~1114). It pushes a legBlock, so legsOpened===0 relabels the decision `skip` and it lands in the skip histogram instead of vanishing. REVERT: change 1 \u2192 2.5 (c200LongshotBandFactor), change 2 \u2192 \"\" (c200SkipBandRange). ARITHMETIC CAVEAT recorded at apply so this is never read as 'the gate closes': even with +40% long-shot size plus a full dead-zone skip the book projects to ~$360/day against the $500/day Phase-1 gate, because <0.20 runs only ~3.4 legs/day \u2014 the remaining gap is long-shot FLOW, carded separately (longshot-flow-funnel). APPLY-DAY READ 2026-10-12 08:45 CDT: RuleSet v62 active, both fields confirmed in the live ruleset AND in the RuleChange afterJson; 484/484 tests, tsc clean; exactly ONE C-200 leg has opened since activation (08:15:37, intent 0.385 = outside the skip band, correctly allowed) and 0 legs by intent in [0.40,0.60), so the skip has not yet been exercised \u2014 that is untested, not disproved.",
+      "tags": [
+        "size-bands",
+        "skip-band",
+        "rules",
+        "v62",
+        "applied"
+      ]
+    },
+    {
+      "id": "longshot-flow-funnel",
+      "title": "Long-shot FLOW is the binding constraint \u2014 measure the <0.20 admission funnel (not the threshold)",
+      "column": "In Progress",
+      "effort": "measurement only, ~half day: funnel counts off the DecisionJournal skip histogram + the monitor log. No rule change.",
+      "dates": "Opened 2026-10-12 off the v62 apply arithmetic (2026-10-11 C-200 daily report).",
+      "gate": "PRE-REGISTERED: over a trailing 7d window report, per blocker, the COUNT of otherwise-eligible C-200 candidates lost at each stage \u2014 wallet/market dedupe, price-drift gate, minConfidence, category blacklist, hour blackout, v55 per-market cap, v58 per-wallet ceiling, open-position cap, v62 band skip \u2014 plus the observed <0.20 legs/day (baseline 3.43/day = 48 legs/14d) and the wallet-depth distribution of the candidates that do reach the band. Output is a ranked blocker list with counts; the card closes on the MEASUREMENT, and any lever it suggests needs its own approval. Do NOT relax the drift gate or any threshold off this read \u2014 the drift bar already has its own pre-registered decision (tr31-rec2-drift-decay-bar, HOLD).",
+      "note": "WHY: every C-200 lever so far has been SIZING on a band whose edge is proven, and that band's FLOW is the ceiling. v62 gave <0.20 +40% size and skipped 0.40\u20130.60 entirely, and the arithmetic still lands at ~$360/day against the $500/day Phase-1 gate purely because <0.20 admits only ~3.4 legs/day at $245.93/day of the 14d book. If the constraint is admission rather than size, more sizing is the wrong lever and the 0/7 streak cannot close on it. Prior evidence that admission is the binding rail (from the 2026-10-01 and 2026-10-11 reports \u2014 to be RE-DERIVED here, not inherited): skip histograms dominated by same-wallet/same-market dedupes and by 'price drifted > 0.0040' (the drift gate as the #1 real blocker), with per-cycle counts of the shape '1,580 / 495 / 278 observed trades and 0\u20134 copy-eligible'. Related open cards: wallet-depth floor (wallet-selection-score-information), permarket-legs-rail-finding, and the copy-eligible universe work (v61). This card's job is to say WHERE in the funnel the long-shot legs die, with counts, so the next approval ask aims at the real rail.",
+      "tags": [
+        "measurement",
+        "funnel",
+        "long-shot",
+        "c200"
+      ]
+    },
+    {
       "id": "drift-shadow-instrument-defects",
       "title": "Measurement integrity \u2014 the drift shadow records confidence as 0 by construction and averages per POLL, not per opportunity",
       "column": "Done",

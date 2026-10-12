@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { applyBandSizeFactor, parseBandRange } from "../src/lib/band-size";
+import { applyBandSizeFactor, isInBandRange, parseBandRange } from "../src/lib/band-size";
 
 describe("parseBandRange", () => {
   it("parses the configured form", () => {
@@ -49,5 +49,41 @@ describe("applyBandSizeFactor", () => {
     const twice = applyBandSizeFactor(once, 0.7, 0.5, "0.6-0.8");
     expect(once).toBe(5);
     expect(twice).toBe(2.5); // documented behavior: it is a plain multiplier
+  });
+});
+
+/**
+ * v62 (2026-10-11 C-200 daily report change 2, user-approved): HARD skip.
+ *
+ * The property that matters is that this predicate and the size factor cannot disagree
+ * about which side of a boundary a price is on — a leg that is "inside" for one mechanism
+ * and "outside" for the other would make the two band rails fight each other.
+ */
+describe("isInBandRange", () => {
+  it("matches the size factor's boundary semantics exactly (lo inclusive, hi exclusive)", () => {
+    for (const price of [0.0, 0.05, 0.2, 0.399, 0.4, 0.41, 0.599, 0.6, 0.79, 0.8, 1.0]) {
+      const skipped = isInBandRange(price, "0.4-0.6");
+      const resized = applyBandSizeFactor(100, price, 0.5, "0.4-0.6") !== 100;
+      expect(skipped).toBe(resized);
+    }
+    expect(isInBandRange(0.4, "0.4-0.6")).toBe(true); // lo inclusive
+    expect(isInBandRange(0.599, "0.4-0.6")).toBe(true);
+    expect(isInBandRange(0.6, "0.4-0.6")).toBe(false); // hi exclusive
+    expect(isInBandRange(0.399, "0.4-0.6")).toBe(false);
+  });
+
+  it("is inert for an empty / malformed / inverted range (so a revert is one field)", () => {
+    for (const range of ["", "all", "0.6-0.4", "0.6..0.8"]) {
+      expect(isInBandRange(0.5, range)).toBe(false);
+    }
+  });
+
+  it("refuses to skip on a non-finite price rather than guessing", () => {
+    expect(isInBandRange(Number.NaN, "0.4-0.6")).toBe(false);
+    expect(isInBandRange(Number.POSITIVE_INFINITY, "0.4-0.6")).toBe(false);
+  });
+
+  it("leaves the long-shot band alone — the band the same change deepens", () => {
+    expect(isInBandRange(0.15, "0.4-0.6")).toBe(false);
   });
 });

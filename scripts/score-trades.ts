@@ -14,7 +14,7 @@ import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
 import { effectiveExposureCap, marketCapDecision, walletCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
 import { readWalletCapBaseline, baselineFor } from "../src/lib/wallet-cap-basis";
-import { applyBandSizeFactor } from "../src/lib/band-size";
+import { applyBandSizeFactor, isInBandRange } from "../src/lib/band-size";
 import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
 import { appendLowConfShadow } from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
@@ -966,6 +966,24 @@ async function main() {
           if (botId === "BANKROLL_200" && rules.c200MaxEntryPrice > 0 && currentPrice > rules.c200MaxEntryPrice) {
             log(`[BANKROLL_200] high-entry cap (${currentPrice.toFixed(3)} > ${rules.c200MaxEntryPrice.toFixed(2)}) — skipping copy ${t.marketId}`);
             legBlocks.push(`BANKROLL_200: high-entry cap (${currentPrice.toFixed(3)} > ${rules.c200MaxEntryPrice.toFixed(2)})`);
+            continue;
+          }
+
+          // v62 (2026-10-11 C-200 daily report change 2, user-approved): HARD-SKIP a band.
+          // 0.40–0.60 is the book's largest loss bucket (−7.4% all-time over 1,048 legs) and
+          // produced 0.1% of PnL on 51% of recent legs, so it is not a sizing question any
+          // more: c200DeadZoneBandFactor is already 0.125 and clampPaperSize floors a clip at
+          // $0.25–$1.25, so a zero factor would still book a token leg and still spend
+          // maxCopiesPerCycle / maxCopiesPerWalletPerDay / maxOpenPositions — the levers the
+          // +EV bands need. Checked BEFORE those concentration gates, on the same price the
+          // band map uses, and after the Kelly/lane sizing so it bites whichever lane would
+          // have booked the leg. Recorded as a legBlock (`legsOpened === 0` then relabels the
+          // decision `skip`), so it lands in the skip histogram rather than vanishing.
+          if (botId === "BANKROLL_200" && isInBandRange(currentPrice, rules.c200SkipBandRange)) {
+            log(
+              `[BANKROLL_200] band skip (${currentPrice.toFixed(3)} in ${rules.c200SkipBandRange}) — skipping copy ${t.marketId}`
+            );
+            legBlocks.push(`BANKROLL_200: band skip (${currentPrice.toFixed(3)} in ${rules.c200SkipBandRange})`);
             continue;
           }
 
