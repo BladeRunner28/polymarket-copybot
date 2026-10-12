@@ -3,15 +3,43 @@ const fs = require('fs');
 const path = require('path');
 const prisma = new PrismaClient();
 
-// C-200 phase goals — each phase requires STABILITY_DAYS consecutive days at
-// target before advancing to the next (user policy, 2026-08-31).
+// C-200 phase goals.
+//
+// GOAL POLICY v2 (2026-10-12, user-approved in-thread — option "A"): the ladder gains a
+// real first rung ($250) and the ADVANCE BASIS changes from "STABILITY_DAYS consecutive
+// days each individually >= target" to "the trailing GATE_WINDOW_DAYS SETTLED days SUM to
+// at least target x GATE_WINDOW_DAYS".
+//
+// WHY THE BASIS CHANGED (measured, not asserted — read 2026-10-12 on the settled series,
+// artifact data/longshot-flow-funnel.json + the 67-day settled daily series): under the old
+// basis Phase 1 was unsatisfiable in practice, and it was not the level that was wrong, it
+// was the TEST. Settled 67 days: mean $86.96/day but a MEDIAN day of $0.15, and the top 3
+// days = 60% of all PnL — the book earns a run-rate while almost never posting 7
+// individually-qualifying days. Longest CONSECUTIVE run at $250/day = 2 days (current 1);
+// at $500/day = 2 days (current 0). Rolling 7-day windows clearing $1,750 (= $250/day) =
+// 8 of 61 (13%), and the most recent window 2026-10-03..10-09 = $1,708.78, i.e. 2.4% short.
+// Rolling windows clearing $3,500 (= $500/day) = 0 of 61 — never once. So $500/day was an
+// unanchored target, and the consecutive-day test measured a day-to-day consistency this
+// book structurally does not have.
+//
+// The old consecutive-day streak is STILL COMPUTED AND PRINTED (the daily reviews quote it
+// and it is a useful instrument) but it is explicitly NOT the advance basis any more.
 const PHASES = [
-  { name: "Phase 1", target: 500 },
-  { name: "Phase 2", target: 1000 },
-  { name: "Phase 3", target: 2000 },
+  { name: "Phase 1", target: 250 },
+  { name: "Phase 2", target: 500 },
+  { name: "Phase 3", target: 1000 },
+  { name: "Phase 4", target: 2000 },
   { name: "Ultimate", target: 5000 },
 ];
 const STABILITY_DAYS = 7;
+// The advance-gate window. Equal to STABILITY_DAYS by construction: the gate is "the
+// trailing 7 SETTLED days sum to at least 7x the target", i.e. the same 7-day ambition,
+// asserted over the window instead of over each day in it.
+const GATE_WINDOW_DAYS = STABILITY_DAYS;
+
+// Goal-policy version, printed in every report so any read can say which ladder AND which
+// basis produced it (the same discipline as RuleSet version for the rules themselves).
+const GOAL_POLICY = "v2-rolling-7d-sum";
 
 // Tuning review #30 rec 2 (2026-09-19, user-approved): the phase streak is a
 // measurement instrument and it was not reproducible across reviews. Sep 17 read
@@ -112,23 +140,34 @@ async function main() {
   }
   const dailyPnl = series.map((s) => s.pnl);
 
-  // Current goal: a phase is CLEARED only after its target held for
-  // STABILITY_DAYS consecutive days; the goal advances accordingly. Judged on the
-  // SETTLED window (the 7 days ending SETTLE_DAYS back) — the T+0 window is
-  // reported when the two disagree.
-  const goalFrom = (arr) => {
+  // Current goal (GOAL_POLICY v2): a phase is CLEARED when the settled rolling
+  // GATE_WINDOW_DAYS-day SUM is >= target x GATE_WINDOW_DAYS; the goal advances
+  // accordingly. Judged on the SETTLED window (the 7 days ending SETTLE_DAYS back) — the
+  // T+0 window is reported when the two disagree.
+  const sumOf = (arr) => arr.reduce((a, b) => a + b, 0);
+  const gateFrom = (arr) => {
     let idx = 0;
     for (let i = 0; i < PHASES.length; i++) {
-      if (arr.length === STABILITY_DAYS && arr.every((d) => d >= PHASES[i].target)) idx = i + 1;
+      const need = PHASES[i].target * GATE_WINDOW_DAYS;
+      if (arr.length === GATE_WINDOW_DAYS && sumOf(arr) >= need) idx = i + 1;
       else break;
     }
     return Math.min(idx, PHASES.length - 1);
   };
   const settledStart = SETTLE_DAYS; // index of the youngest settled day
-  const settledWindow = dailyPnl.slice(settledStart, settledStart + STABILITY_DAYS);
-  const goalIdx = goalFrom(settledWindow);
-  const goalIdxT0 = goalFrom(dailyPnl.slice(0, STABILITY_DAYS));
+  const settledWindow = dailyPnl.slice(settledStart, settledStart + GATE_WINDOW_DAYS);
+  const goalIdx = gateFrom(settledWindow);
+  const goalIdxT0 = gateFrom(dailyPnl.slice(0, GATE_WINDOW_DAYS));
   const goal = PHASES[goalIdx];
+
+  // The gate, printed: the settled rolling sum vs what the CURRENT goal needs.
+  const gateNeed = goal.target * GATE_WINDOW_DAYS;
+  const gateSumSettled = sumOf(settledWindow);
+  const gateSumT0 = sumOf(dailyPnl.slice(0, GATE_WINDOW_DAYS));
+  const gatePctSettled = gateNeed > 0 ? (gateSumSettled / gateNeed) * 100 : 0;
+  const gatePctT0 = gateNeed > 0 ? (gateSumT0 / gateNeed) * 100 : 0;
+  const gateWindowLabel = `${series[settledStart + GATE_WINDOW_DAYS - 1].day} .. ${series[settledStart].day}`;
+
 
   // Streaks. T+0 starts at today (index 0); settled starts at the youngest
   // settled day (index SETTLE_DAYS) and can only be as long as the settled data.
@@ -283,11 +322,14 @@ async function main() {
 
   console.log(`**C-200 Daily Progress Report**
 - **Goal:** $${goal.target}/day (${goal.name}${goalIdx > 0 ? " — CLEARED" : ""})${goalIdx !== goalIdxT0 ? ` — ⚠️ T+0 window would read ${PHASES[goalIdxT0].name}` : ""}
+- **Goal policy:** ${GOAL_POLICY} — advance basis = trailing ${GATE_WINDOW_DAYS} SETTLED days SUM >= $${gateNeed.toLocaleString()} (target × ${GATE_WINDOW_DAYS}). Changed 2026-10-12 from "7 consecutive days each >= target": that test was structurally unsatisfiable here (median settled day $0.15; best consecutive run ever 2 days at either $250 or $500; rolling 7d windows clearing $3,500 = 0 of 61).
+- **Phase gate (settled rolling ${GATE_WINDOW_DAYS}d SUM — THE ADVANCE BASIS):** $${gateSumSettled.toFixed(2)} vs $${gateNeed.toLocaleString()} needed for $${goal.target}/day (${gatePctSettled.toFixed(1)}%) — ${gateSumSettled >= gateNeed ? "[✅ MET]" : `[❌ SHORT by $${(gateNeed - gateSumSettled).toFixed(2)}]`} — window ${gateWindowLabel}
 - **Today's realized PnL:** $${realizedToday.pnl.toFixed(2)} (${realizedToday.legs} legs, PROVISIONAL — settles over ~${SETTLE_DAYS} days)
 - **Open unrealized (book mark-to-market):** $${openUnrealized.toFixed(2)}
 - **Status:** ${realizedToday.pnl >= goal.target ? '[✅ ON TRACK]' : '[❌ BEHIND]'}
+- **Phase stability (settled, T+3 — REPORTED ONLY, NOT the advance basis):** ${streakSettled}/${STABILITY_DAYS} consecutive days at $${goal.target}/day from ${series[settledStart].day} back — last ${SETTLE_DAYS} days excluded while they settle. Kept because the daily reviews quote it and it is the day-to-day consistency instrument; the gate above is what a phase advance is judged on.
 - **Phase stability (T+0):** ${streakT0}/${STABILITY_DAYS} consecutive days at $${goal.target}/day — convention: closedAt ?? resolvedAt, read NOW, today provisional
-- **Phase stability (settled, T+3):** ${streakSettled}/${STABILITY_DAYS} consecutive days at $${goal.target}/day from ${series[settledStart].day} back — last ${SETTLE_DAYS} days excluded while they settle; THIS is the basis a phase advance is judged on
+- **Phase gate (T+0 rolling ${GATE_WINDOW_DAYS}d sum, provisional):** $${gateSumT0.toFixed(2)} vs $${gateNeed.toLocaleString()} (${gatePctT0.toFixed(1)}%) — today's bucket still settles
 - **Daily realized (T+0 read, most recent first):** ${series.map((s) => `${s.day.slice(5)} ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs})`).join(" · ")}${drift.length ? `
 - **Settlement drift (recorded T+0 → settled now):** ${drift.join(" · ")}` : ''}${historyNote}
 - **As-recorded vs now (declared basis = local, immutable \`data/phase-streak-log.jsonl\`):** ${asRecorded}${logNote}

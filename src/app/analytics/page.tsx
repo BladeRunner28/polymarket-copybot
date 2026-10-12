@@ -39,20 +39,39 @@ function etParts(ms: number): { hour: number; weekday: number } {
   return { hour, weekday };
 }
 
-const PHASES = [500, 1000, 2000, 5000];
+// GOAL POLICY v2 (2026-10-12, user-approved) — mirrors query_bankroll.js. The ladder gained
+// a $250 first rung and the advance basis is now "trailing 7-day SUM >= target x 7" rather
+// than "7 consecutive qualifying days"; see query_bankroll.js for the measured why (median
+// settled day $0.15; best consecutive run ever 2 days at either level; rolling 7d windows
+// clearing $3,500 = 0 of 61). The consecutive-day count is still returned as `streak` for the
+// chart's highlight band, but it is NOT the gate.
+const PHASES = [250, 500, 1000, 2000, 5000];
+const PHASE_NAMES = ["Phase 1", "Phase 2", "Phase 3", "Phase 4", "Ultimate"];
+const GATE_DAYS = 7;
 
-function activePhase(daily: { day: string; pnl: number }[]): { goal: number; streak: number; phaseName: string } {
+function activePhase(daily: { day: string; pnl: number }[]): {
+  goal: number;
+  streak: number;
+  phaseName: string;
+  gateSum: number;
+  gateNeed: number;
+} {
   const sorted = [...daily].sort((a, b) => b.day.localeCompare(a.day));
-  const names = ["Phase 1", "Phase 2", "Phase 3", "Ultimate"];
+  const window = sorted.slice(0, GATE_DAYS);
+  const gateSum = window.reduce((a, d) => a + d.pnl, 0);
+  let idx = 0;
   for (let i = 0; i < PHASES.length; i++) {
-    let streak = 0;
-    for (const d of sorted) {
-      if (d.pnl >= PHASES[i]) streak++;
-      else break;
-    }
-    if (streak < 7) return { goal: PHASES[i], streak, phaseName: names[i] };
+    if (window.length === GATE_DAYS && gateSum >= PHASES[i] * GATE_DAYS) idx = i + 1;
+    else break;
   }
-  return { goal: PHASES[3], streak: 7, phaseName: "Ultimate" };
+  idx = Math.min(idx, PHASES.length - 1);
+  const goal = PHASES[idx];
+  let streak = 0;
+  for (const d of sorted) {
+    if (d.pnl >= goal) streak++;
+    else break;
+  }
+  return { goal, streak, phaseName: PHASE_NAMES[idx], gateSum, gateNeed: goal * GATE_DAYS };
 }
 
 function parseBaselineCsv(text: string): { price: number; total: number; winRate: number }[] {
@@ -335,7 +354,23 @@ export default async function Analytics() {
             />
           </Enlargeable>
           <p className="text-xs text-dim mt-2">
-            {phase.streak} consecutive day(s) ≥ ${phase.goal} — {7 - Math.min(phase.streak, 7)} more for the gate.
+            🎯 Gate (GOAL POLICY v2, trailing {GATE_DAYS}-day SUM ≥ target × {GATE_DAYS}):{" "}
+            <span className="font-mono">
+              ${phase.gateSum.toLocaleString(undefined, { maximumFractionDigits: 2 })}/{phase.gateNeed.toLocaleString()}
+            </span>{" "}
+            {phase.gateSum >= phase.gateNeed
+              ? "— ✅ MET"
+              : `— short by $${(phase.gateNeed - phase.gateSum).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+            <span className="block mt-0.5">
+              This window includes today, so it is the PROVISIONAL (T+0) read on this page&rsquo;s rows
+              (resolvedAt ?? openedAt); the settled rolling-7d gate in the daily report is the basis a phase advance is
+              judged on.
+            </span>
+            <span className="block mt-0.5">
+              ⏳ Reported, NOT the gate: <span className="font-mono">{phase.streak}</span> consecutive day(s) ≥ $
+              {phase.goal}/day — the consecutive-day test was the OLD basis and is kept only as the day-to-day
+              consistency instrument.
+            </span>
           </p>
         </Card>
         <Card title="Equity Curves + Oct-1 Projection">

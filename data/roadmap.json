@@ -2597,6 +2597,22 @@
         "c200",
         "near-certainty"
       ]
+    },
+    {
+      "id": "c200-goal-policy-v2-rolling7d-gate",
+      "title": "C-200 goal policy v2 \u2014 $250 first rung + rolling-7d-SUM advance gate (APPLIED 2026-10-12)",
+      "column": "In Progress",
+      "effort": "~1 h",
+      "dates": "Applied + verified 2026-10-12 16:0x CDT (query_bankroll.js, /, /analytics). Re-read due: 2026-10-12 18:00 daily report and 2026-10-13 07:00 tuning review \u2014 those two consumers are the last unverified half.",
+      "gate": "VERIFY at the first two reads after the change (2026-10-12 18:00 daily report; 2026-10-13 07:00 tuning review): both quote `Goal: $250/day (Phase 1)`, the `Goal policy: v2-rolling-7d-sum` line and the `Phase gate (settled rolling 7d SUM \u2014 THE ADVANCE BASIS)` line \u2014 measured 2026-10-12: $1,708.78 vs $1,750 (97.6%, short $41.22, window 2026-10-03..2026-10-09) \u2014 and NEITHER re-proposes the retired '7 consecutive days' basis, a ladder reset, or a scale-up off a single day; if either does, fix its prompt text. Served-page check: `curl -s http://127.0.0.1:3013/ | grep -c 'v2-rolling-7d-sum'` >= 1 AND `curl -s http://127.0.0.1:3013/analytics | grep -c 'GOAL POLICY v2'` >= 1 (both read 1 on 2026-10-12), all five rungs (250/500/1,000/2,000/5,000) render, and no page still prints '7 more for the gate' or a 4-rung ladder. HEAD commit carries query_bankroll.js + the two pages.",
+      "note": "User decision (in-thread option 'A', 2026-10-12; recorded, not inferred): the C-200 ladder gains a real first rung ($250) and the ADVANCE BASIS changes from '7 consecutive settled days each >= target' to 'the trailing 7 SETTLED days SUM >= target x 7'. The basis changed because the old test was structurally unsatisfiable for this book, not because the level was wrong \u2014 re-derived independently 2026-10-12 (local-day, closedAt ?? resolvedAt, days >=3 days old): 67 settled days, mean $86.96/day but MEDIAN day $0.15, top 3 days = $3,513.44 = 60% of the $5,826.06 book; best consecutive run ever = 2 days at BOTH $250 and $500 (currently 1 and 0); rolling 7d windows clearing $1,750 = 8 of 61 (13%) with the most recent at $1,708.78 = 97.6%, and clearing $3,500 = 0 of 61 \u2014 never once. Ladder is now 250 -> 500 -> 1,000 -> 2,000 -> 5,000 (doubling retained; $500 is Phase 2 with its basis stated honestly). Files: query_bankroll.js (PHASES, GATE_WINDOW_DAYS, gateFrom(); GOAL_POLICY='v2-rolling-7d-sum' printed in every report \u2014 the 'version it' half; the consecutive-day streak is kept as a REPORTED-ONLY instrument because the reviews quote it), src/app/page.tsx (ladder + gate card; the ladder tick marks are now DERIVED from C200_PHASES instead of hardcoded at 10/20/40/100%, which had been mislabelling a bar scaled to the ACTIVE target), src/app/analytics/page.tsx (same ladder/basis; the render no longer prints '7 more for the gate' \u2014 that paragraph now reads the rolling-7d sum). ZERO trading risk: query_bankroll.js's own header says measurement only, and no RuleSet field, size, gate or book row changed. KALSHI STAYS OUT OF THE GOAL (recorded, no code change \u2014 it was never in it): kalshi-shadow-summary.json is counterfactual attribution priced at the PM reference and its live.pnl equals settled C-200 realized to the cent ($5,729.99 == $5,729.99, re-read 2026-10-12), and the only instrument pricing Kalshi's own book has 2 Kalshi quotes on 789 in-window copies (0.3% cross-list; 0 of 202 Kalshi candidates clear 0.60 against Kalshi's full 14,766-event index), so nothing prices >=50 legs. Write-up: :3013/drafts/c200-goal-policy-v2-20261012. Supersedes the '4 phases x 7 consecutive days' ladder text in drafts/c200-path-to-5k-20261011.md (corrected in place) and the 'advance ONLY after 7 consecutive days' standing input in the 18:00 daily-report and 07:00 tuning-review cron prompts (updated in place 2026-10-12).",
+      "tags": [
+        "c200",
+        "goal-policy",
+        "ladder",
+        "user-approved",
+        "applied"
+      ]
     }
   ]
 }

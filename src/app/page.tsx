@@ -270,15 +270,26 @@ export default async function Overview() {
     title: "Kalshi execution pauses while the Kalshi leg's realized PnL is below the floor (phantom-0.50 era trades — see kalshi-reprice-92)",
   });
 
-  // C-200 phase goals — each phase requires 7 consecutive days at target
-  // before advancing to the next (user policy, 2026-08-31).
+  // C-200 phase goals — GOAL POLICY v2 (2026-10-12, user-approved): the ladder gained a
+  // $250 first rung and the advance basis changed from "7 consecutive days each >= target"
+  // to "the trailing 7-day SETTLED SUM >= target x 7". The consecutive-day test was
+  // structurally unsatisfiable for this book (median settled day $0.15; best consecutive
+  // run ever 2 days at either level; rolling 7d windows clearing $3,500 = 0 of 61), so it
+  // measured a day-to-day consistency the book does not have. Mirrors query_bankroll.js —
+  // the two must be changed together or the dashboard contradicts the daily report.
+  // NOTE this page's window INCLUDES today (T+0, provisional); the report's gate line is
+  // the settled one and is the basis a phase advance is judged on.
   const C200_PHASES = [
-    { name: "Phase 1", target: 500 },
-    { name: "Phase 2", target: 1000 },
-    { name: "Phase 3", target: 2000 },
+    { name: "Phase 1", target: 250 },
+    { name: "Phase 2", target: 500 },
+    { name: "Phase 3", target: 1000 },
+    { name: "Phase 4", target: 2000 },
     { name: "Ultimate", target: 5000 },
   ];
   const STABILITY_DAYS = 7;
+  // The advance-gate window (equal to STABILITY_DAYS by construction).
+  const GATE_WINDOW_DAYS = STABILITY_DAYS;
+  const GOAL_POLICY = "v2-rolling-7d-sum";
   const c200DayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const c200Since = new Date(startOfDay.getTime() - (STABILITY_DAYS - 1) * 86400000);
   const finishedC200 = await prisma.paperTrade.findMany({
@@ -300,13 +311,18 @@ export default async function Overview() {
   for (let i = 0; i < STABILITY_DAYS; i++) {
     c200Daily.push(c200ByDay.get(c200DayKey(new Date(startOfDay.getTime() - i * 86400000))) ?? 0);
   }
+  const c200Sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
   let c200GoalIdx = 0;
   for (let i = 0; i < C200_PHASES.length; i++) {
-    if (c200Daily.every((d) => d >= C200_PHASES[i].target)) c200GoalIdx = i + 1;
+    if (c200Sum(c200Daily) >= C200_PHASES[i].target * GATE_WINDOW_DAYS) c200GoalIdx = i + 1;
     else break;
   }
   c200GoalIdx = Math.min(c200GoalIdx, C200_PHASES.length - 1);
   const c200Goal = C200_PHASES[c200GoalIdx];
+  // The gate as displayed: this page's window (T+0, provisional) vs what the goal needs.
+  const c200GateNeed = c200Goal.target * GATE_WINDOW_DAYS;
+  const c200GateSum = c200Sum(c200Daily);
+  const c200GatePct = c200GateNeed > 0 ? (c200GateSum / c200GateNeed) * 100 : 0;
   let c200Streak = 0;
   for (const d of c200Daily) {
     if (d >= c200Goal.target) c200Streak++;
@@ -441,41 +457,43 @@ export default async function Overview() {
           <div className="w-full bg-edge/30 rounded-full h-3 mb-1 overflow-hidden relative">
             <div 
               className={`h-3 rounded-full ${todayC200Pnl >= c200Goal.target ? 'bg-pos' : todayC200Pnl > 0 ? 'bg-accent' : 'bg-neg'}`} 
-              style={{ width: `${Math.min(Math.max((todayC200Pnl / c200Goal.target) * 100, 0), 100)}%` }}
+              style={{ width: `${Math.min(Math.max((todayC200Pnl / C200_PHASES[C200_PHASES.length - 1].target) * 100, 0), 100)}%` }}
             ></div>
-            {/* Phase markers */}
-            <div className="absolute left-[10%] top-0 h-3 border-l border-ink/20" title="$500 (Phase 1)"></div>
-            <div className="absolute left-[20%] top-0 h-3 border-l border-ink/20" title="$1,000 (Phase 2)"></div>
-            <div className="absolute left-[40%] top-0 h-3 border-l border-ink/20" title="$2,000 (Phase 3)"></div>
-            <div className="absolute left-[100%] top-0 h-3 border-l border-ink/20" title="$5,000 (Ultimate)"></div>
+            {/* Ladder markers — now DERIVED from C200_PHASES on the same $5,000 scale as the
+                bar, so the ticks and the fill cannot disagree. They were previously
+                hardcoded at 10/20/40/100% with $500/$1,000/$2,000/$5,000 titles while the
+                bar was scaled to the ACTIVE target, i.e. every tick mislabeled the bar. */}
+            {C200_PHASES.map((ph) => (
+              <div
+                key={ph.name}
+                className="absolute top-0 h-3 border-l border-ink/20"
+                style={{ left: `${(ph.target / C200_PHASES[C200_PHASES.length - 1].target) * 100}%` }}
+                title={`$${ph.target.toLocaleString()} (${ph.name})`}
+              ></div>
+            ))}
           </div>
           <div className="flex justify-between text-xs text-dim">
             <span>$0</span>
-            <span>${c200Goal.target.toLocaleString()}/day</span>
+            <span>today vs the ${C200_PHASES[C200_PHASES.length - 1].target.toLocaleString()}/day ladder scale — active rung ${c200Goal.target.toLocaleString()}/day</span>
           </div>
 
-          <div className={`text-xs rounded-lg px-3 py-2 ${c200Streak >= 7 ? 'bg-pos/10 text-pos border border-pos/30' : 'bg-edge/10 border border-edge text-dim'}`}>
-            ⏳ Phase stability: <span className="font-mono">{c200Streak}/{STABILITY_DAYS}</span> consecutive days at ${c200Goal.target.toLocaleString()}/day — each phase must be stable for {STABILITY_DAYS} days before advancing
-            {c200GoalIdx > 0 && <span className="block mt-0.5">✅ {C200_PHASES[c200GoalIdx - 1].name} cleared ({C200_PHASES[c200GoalIdx - 1].target.toLocaleString()}/day stable for {STABILITY_DAYS} days)</span>}
+          <div className={`text-xs rounded-lg px-3 py-2 ${c200GateSum >= c200GateNeed ? 'bg-pos/10 text-pos border border-pos/30' : 'bg-edge/10 border border-edge text-dim'}`}>
+            🎯 Phase gate ({GOAL_POLICY}): <span className="font-mono">${c200GateSum.toLocaleString(undefined, { maximumFractionDigits: 2 })}/{c200GateNeed.toLocaleString()}</span> trailing-{GATE_WINDOW_DAYS}d sum = <span className="font-mono">{c200GatePct.toFixed(1)}%</span> of the ${c200Goal.target.toLocaleString()}/day rung{c200GateSum >= c200GateNeed ? ' — ✅ MET' : ` — ${(c200GateNeed - c200GateSum) < 0 ? '' : 'short by $'}${(c200GateNeed - c200GateSum).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+            <span className="block mt-0.5">Window includes today, so this is the PROVISIONAL (T+0) read; the daily report&rsquo;s settled gate is what a phase advance is judged on.</span>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 mt-2 text-center">
-            <div className={`p-2 border rounded bg-edge/10 ${c200GoalIdx >= 1 ? 'border-pos/40' : 'border-edge'}`}>
-              <div className="text-xs text-dim mb-1">Phase 1</div>
-              <div className="font-mono text-sm">$500/day</div>
-            </div>
-            <div className={`p-2 border rounded bg-edge/10 ${c200GoalIdx >= 2 ? 'border-pos/40' : 'border-edge'}`}>
-              <div className="text-xs text-dim mb-1">Phase 2</div>
-              <div className="font-mono text-sm">$1,000/day</div>
-            </div>
-            <div className={`p-2 border rounded bg-edge/10 ${c200GoalIdx >= 3 ? 'border-pos/40' : 'border-edge'}`}>
-              <div className="text-xs text-dim mb-1">Phase 3</div>
-              <div className="font-mono text-sm">$2,000/day</div>
-            </div>
-            <div className={`p-2 border rounded bg-edge/10 ${c200GoalIdx >= 4 ? 'border-pos/40' : 'border-edge'}`}>
-              <div className="text-xs text-dim mb-1">Ultimate</div>
-              <div className="font-mono text-sm">$5,000/day</div>
-            </div>
+          <div className="text-xs rounded-lg px-3 py-2 bg-edge/10 border border-edge text-dim">
+            ⏳ Day-to-day consistency (reported, NOT the gate): <span className="font-mono">{c200Streak}/{STABILITY_DAYS}</span> consecutive days at ${c200Goal.target.toLocaleString()}/day
+            {c200GoalIdx > 0 && <span className="block mt-0.5">✅ {C200_PHASES[c200GoalIdx - 1].name} cleared ({C200_PHASES[c200GoalIdx - 1].target.toLocaleString()}/day rung met)</span>}
+          </div>
+
+          <div className="grid grid-cols-5 gap-2 mt-2 text-center">
+            {C200_PHASES.map((ph, i) => (
+              <div key={ph.name} className={`p-2 border rounded bg-edge/10 ${c200GoalIdx >= i + 1 ? 'border-pos/40' : 'border-edge'}`}>
+                <div className="text-xs text-dim mb-1">{ph.name}</div>
+                <div className="font-mono text-sm">${ph.target.toLocaleString()}/day</div>
+              </div>
+            ))}
           </div>
         </div>
       </Card>
