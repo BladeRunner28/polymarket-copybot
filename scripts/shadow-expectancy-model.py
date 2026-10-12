@@ -100,6 +100,16 @@ def apply_beta(beta, X):
 def walk_forward(data, feats, l2=10.0, refit_days=10, min_train=300):
     """Expanding-window OOS predictions, refit every `refit_days` (single pass).
 
+    split-doctrine: compliant-inline — this is STRICTER than the shared helper
+    (scripts/lib/splits.walk_forward), which drops training rows whose label settled
+    inside the EVALUATION WINDOW; this walk re-builds the eligible set PER ROW, so a row
+    is trained on only once its own outcome was knowable. That granularity cannot be
+    expressed with window-level purging, and this function is not migrated, because the
+    model it produces (data/shadow-score-model.json) is consumed by
+    scripts/kalshi-shadow.py — re-implementing an equivalent-but-not-identical walk
+    would silently rewrite a live lane's scoring. Verified by the doctrine checker, which
+    requires this marker AND the purge line below to be present.
+
     PURGED: a training row is eligible only once its OUTCOME was knowable, i.e.
     `closed <= prediction time`. Training on rows that were still open at
     prediction time leaks the future (a trade opened Aug 1 may only settle in

@@ -18,7 +18,6 @@ import json
 import math
 import os
 import sqlite3
-import zlib
 
 import numpy as np
 
@@ -36,6 +35,14 @@ auc = pilot.auc
 fit_logit = pilot.fit_logit
 predict = pilot.predict
 calib = pilot.calib_slope_intercept
+
+# Shared split doctrine (card ml-doctrine-time-and-era-splits): same market-blocked fold
+# assignment as pilot-score-separation.py, loaded from the shared module rather than
+# re-derived inline, so both reports' per-fold numbers are the same partition.
+_sspec = importlib.util.spec_from_file_location(
+    "splits", os.path.join(ROOT, "scripts", "lib", "splits.py"))
+splits = importlib.util.module_from_spec(_sspec)
+_sspec.loader.exec_module(splits)
 
 K_FOLDS = 5
 LAMBDAS = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0]
@@ -109,7 +116,7 @@ def main():
     groups_w = {}
     for i, r in enumerate(recs):
         groups_w.setdefault(r["wallet"], []).append(i)
-    folds = np.array([zlib.crc32(r["market"].encode()) % K_FOLDS for r in recs])
+    folds = np.array([splits.assign_blocked_fold(r["market"], K_FOLDS) for r in recs])
     results = {}
 
     def per_fold(a_pred, fold_arr=None):
@@ -139,7 +146,7 @@ def main():
 
     def oof(M, inner_cv=True):
         pred = np.zeros(n)
-        inner_all = np.array([zlib.crc32((r["market"] + "i").encode()) % 3 for r in recs])
+        inner_all = np.array([splits.assign_blocked_fold(r["market"] + "i", 3) for r in recs])
         for k in range(K_FOLDS):
             te, tr = folds == k, folds != k
             mu, sdv = M[tr].mean(0), M[tr].std(0) + 1e-9

@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import importlib.util
 import json
 import os
 import time
@@ -144,11 +145,24 @@ def logloss(y, p, w):
     return float(-np.sum(w * (y * np.log(p) + (1 - y) * np.log(1 - p))) / np.sum(w))
 
 
+_sspec = importlib.util.spec_from_file_location(
+    "splits", os.path.join(ROOT, "scripts", "lib", "splits.py"))
+splits = importlib.util.module_from_spec(_sspec)
+_sspec.loader.exec_module(splits)
+
+
 def hash_split(keys, frac=0.7):
-    tr, te = [], []
-    for i, k in enumerate(keys):
-        h = int(hashlib.sha256(repr(k).encode()).hexdigest()[:8], 16) % 1000
-        (tr if h < frac * 1000 else te).append(i)
+    """Delegates to the shared split module (card ml-doctrine-time-and-era-splits).
+
+    The LEGACY sha256 hasher is pinned so this script keeps reproducing its published
+    U1 read (18,763 test cells, Brier 0.00599 vs band-flat 0.06627 on d.02@5m): moving
+    to the shared crc32 here would silently rewrite those numbers. The assignment rule
+    now lives in scripts/lib/splits.keyed_holdout, not inline, and the holdout remains
+    labelled WEAK in the module docstring — cells have no time order, so this is a
+    keyed holdout, not the time-ordered split the doctrine requires for a temporal
+    claim.
+    """
+    tr, te = splits.keyed_holdout(keys, frac=frac, hasher="sha256")
     return np.array(tr), np.array(te)
 
 

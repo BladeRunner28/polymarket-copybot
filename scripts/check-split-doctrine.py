@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
-"""Split-doctrine checker — makes "no random row folds" machine-enforced.
+"""Split-doctrine checker — makes "no random row folds, one shared fold implementation"
+machine-enforced instead of prose.
 
 Card: `ml-doctrine-time-and-era-splits`. Gate text: *"one shared split utility used by
 every fit/eval script in scripts/; any report whose folds are random rows is rejected"*.
-Prose cannot enforce that, so this script is the enforcement:
 
   1. FAIL on any script that imports or calls a random/row-level fold API from
      scikit-learn (`KFold`, `StratifiedKFold`, `ShuffleSplit`, `GroupShuffleSplit`,
      `train_test_split`, `cross_val_score`, `cross_validate`). `random.shuffle` is NOT
-     flagged: every use of it in this repo is a permutation/null test or a bootstrap,
-     which is legitimate — the ban is on random folds for MODEL SELECTION.
+     flagged: every use in this repo is a permutation/null test or a bootstrap, which is
+     legitimate — the ban is on random folds for MODEL SELECTION.
   2. FAIL if the shared helper is missing, or if its fold assignment disagrees with the
      TypeScript `crc32()` (pinned values below, same ones `tests/splits.test.ts`
      asserts). A helper that silently renumbers folds makes every cross-language read
      unreproducible, so the agreement is checked, not assumed.
-  3. REPORT which fit/eval scripts are imported onto the helper and which still carry
-     their own fold logic (a warning list, not a failure — the migration is the card's
-     7-day verify).
+  3. FAIL on any script that re-derives the fold arithmetic inline
+     (`crc32(<key>) % k`) instead of calling `lib/splits.assign_blocked_fold`. "One
+     shared implementation" is only true if the implementation is not copy-pasted.
+  4. DISCOVER the fold owners instead of naming them. A script is an owner when it shows
+     evidence of fold logic (fold-count constant, fold array, per-fold slicing, holdout
+     or purge language, call into a split helper). Every discovered owner must be either
+       (a) wired to `scripts/lib/splits.py`, or
+       (b) marked `split-doctrine: compliant-inline` inside the owning function's
+           docstring, with a justification of its own — the justification is echoed in
+           this report on every run, so the claim is reviewed, not buried.
+     Anything else FAILS. The previous hand-written owner list was a guess: it named 7
+     owners, of which only 3 had any fold logic at all (2 of them re-derived the
+     arithmetic). Detection replaces the guess, so a new fit script cannot appear
+     un-noticed.
 
 Exit codes: 0 = clean, 1 = violation.
 
@@ -54,23 +65,65 @@ PINNED = [
     ("hello", 5, 0),
 ]
 
-# Fit/eval scripts that own fold logic today. Once each imports scripts/lib/splits.py
-# the card's 7-day verify is met; until then they are listed so the gap is visible.
-FOLD_OWNERS = [
-    "fit-price-edge.py",
-    "fit-fill-model.py",
-    "shadow-expectancy-model.py",
-    "wallet-selection-test.py",
-    "wallet-feature-priors.py",
-    "rag-vs-price-baseline.py",
-    "skip-edge-probe.py",
-    "label-basis-audit.py",
+# Evidence of fold/split logic. Names alone are not evidence: `mode_split()` below splits a
+# parquet scan and `vendor_split()` splits wallets by a category share, and neither is a
+# fold — so these patterns look for fold ARITHMETIC and fold-SHAPED data, not for the
+# substring "split".
+OWNER_EVIDENCE = [
+    (re.compile(r"\b(assign_blocked_fold|keyed_holdout|time_holdout|walk_forward|era_groups|hash_split)\s*\("),
+     "calls a split helper"),
+    (re.compile(r"\b[A-Za-z_]*FOLDS\b"), "fold-count constant"),
+    (re.compile(r"\bfolds\b\s*="), "builds a fold array"),
+    (re.compile(r"\bfolds\b\s*=="), "slices rows by fold"),
+    (re.compile(r"\bfold_arr\b"), "carries a fold array"),
+    (re.compile(r"\bholdout\b"), "holdout"),
+    (re.compile(r"(?i)\bpurged\b"), "purged train rows"),
 ]
+
+# Inline re-derivation of the shared fold arithmetic. `[^\n]*` (not `[^)]*`) so nested
+# calls like `zlib.crc32(r["market"].encode()) % K_FOLDS` are caught — that is exactly the
+# shape the migration removed, and a nested-blind pattern misses it.
+INLINE_ARITH = re.compile(r"crc32\([^\n]*\)[^\n]*%\s*\w+")
+
+# (a) wired to the shared module.
+HELPER_REF = re.compile(r"lib\.splits|from lib import splits|lib[/\"', ]+splits\.py|[\"']lib[\"'],\s*[\"']splits\.py[\"']")
+
+# (b) justified inline. The marker must sit inside a fold-owned function's docstring.
+MARKER = re.compile(r"split-doctrine:\s*compliant-inline", re.I)
+FOLD_DEF = re.compile(r"^def\s+(\w*(?:fold|split|holdout|walk)\w*)\s*\(", re.M)
+MARKER_MAX_DISTANCE = 500
+MIN_JUSTIFICATION = 100
+
+
+def lineno(text: str, pos: int) -> int:
+    return text.count("\n", 0, pos) + 1
+
+
+def owner_evidence(text: str) -> list[str]:
+    return [why for pat, why in OWNER_EVIDENCE if pat.search(text)]
+
+
+def compliant_inline(text: str) -> tuple[bool, str, str]:
+    """(ok, reason-if-not-ok, justification-to-echo)"""
+    m = MARKER.search(text)
+    if not m:
+        return False, "no `split-doctrine: compliant-inline` marker", ""
+    defs = [d for d in FOLD_DEF.finditer(text) if 0 <= m.start() - d.start() <= MARKER_MAX_DISTANCE]
+    if not defs:
+        return False, ("marker is not inside a fold-owned function's docstring (must follow the "
+                       "def it justifies)"), ""
+    tail = text[m.end():m.end() + 900]
+    justification = " ".join(tail.split())[:400]
+    if len(justification) < MIN_JUSTIFICATION:
+        return False, "marker carries no justification", justification
+    return True, "", justification
 
 
 def main() -> int:
     failures: list[str] = []
-    warns: list[str] = []
+    owners_on_helper: list[str] = []
+    owners_inline: list[tuple[str, str, int, str]] = []
+    scanned = 0
 
     if not os.path.exists(LIB):
         failures.append(f"shared split helper missing: {LIB}")
@@ -91,36 +144,60 @@ def main() -> int:
             print(f"OK   shared helper {os.path.relpath(LIB, ROOT)} pins match the TS crc32 values")
 
     for name in sorted(os.listdir(SCRIPTS)):
-        if not name.endswith(".py") or name in ALLOW_MENTION:
+        if not name.endswith(".py"):
             continue
         path = os.path.join(SCRIPTS, name)
         with open(path, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
+        if name in ALLOW_MENTION:
+            continue
+        scanned += 1
+
         for banned in BANNED:
             # import of the symbol, or a call to it
             if re.search(rf"\b{banned}\s*\(", text) or re.search(rf"import[^\n]*\b{banned}\b", text):
                 failures.append(f"{name}: uses the random/row-level fold API {banned}() — use scripts/lib/splits.py instead")
 
-    for name in FOLD_OWNERS:
-        path = os.path.join(SCRIPTS, name)
-        if not os.path.exists(path):
-            warns.append(f"{name}: listed as a fold owner but the file is gone (update FOLD_OWNERS)")
-            continue
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            text = fh.read()
-        if "lib.splits" in text or "lib import splits" in text:
-            print(f"OK   {name} is on the shared helper")
-        else:
-            warns.append(f"{name}: still carries its own fold logic (not yet on the shared helper)")
+        inline = INLINE_ARITH.search(text)
+        if inline:
+            failures.append(
+                f"{name}:{lineno(text, inline.start())}: re-derives the fold "
+                f"arithmetic inline (crc32(...) % k) — call lib/splits.assign_blocked_fold instead"
+            )
 
-    for w in warns:
-        print(f"WARN {w}")
+        evidence = owner_evidence(text)
+        if not evidence:
+            continue
+        if HELPER_REF.search(text):
+            owners_on_helper.append(f"{name} ({', '.join(evidence)})")
+            continue
+        ok, why, justification = compliant_inline(text)
+        marker = MARKER.search(text)
+        if ok and marker:
+            owners_inline.append((name, ", ".join(evidence), lineno(text, marker.start()), justification))
+        else:
+            failures.append(
+                f"{name}: fold owner ({', '.join(evidence)}) with neither the shared helper nor a "
+                f"justified inline exemption — {why}"
+            )
+
+    for name in owners_on_helper:
+        print(f"OK   {name} — on the shared helper")
+    for name, evidence, ln, justification in owners_inline:
+        print(f"OK   {name}:{ln} — compliant-inline ({evidence})")
+        print(f"       reason: {justification}")
+
     for f in failures:
         print(f"FAIL {f}")
     if failures:
-        print(f"\n{len(failures)} violation(s) — random row folds are banned for model selection.")
+        print(f"\n{len(failures)} violation(s) — random row folds and copy-pasted fold arithmetic "
+              f"are banned for model selection.")
         return 1
-    print(f"\nPASS no random/row-level fold APIs in scripts/ ({len(warns)} migration warning(s))")
+    print(f"\nPASS scanned {scanned} script(s) in scripts/: no random/row-level fold APIs, no inline "
+          f"fold arithmetic")
+    print(f"     {len(owners_on_helper) + len(owners_inline)} fold owner(s): "
+          f"{len(owners_on_helper)} on the shared helper, {len(owners_inline)} justified inline, "
+          f"0 unaccounted")
     return 0
 
 

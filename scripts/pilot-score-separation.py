@@ -24,8 +24,8 @@ data/pilot-scoring-separation.json. Does not touch the DB.
 import json
 import math
 import os
+import importlib.util
 import sqlite3
-import zlib
 from collections import defaultdict
 
 import numpy as np
@@ -36,6 +36,16 @@ DB = os.path.join(ROOT, "prisma", "dev.db")
 OUT = os.path.join(ROOT, "data", "pilot-scoring-separation.json")
 K_FOLDS = 5
 LAMBDAS = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0]
+
+# Shared split doctrine (card ml-doctrine-time-and-era-splits): the market-blocked fold
+# assignment lives in scripts/lib/splits.py, so a fold number reported here is the same
+# number fit-price-edge.py and the TypeScript `crc32()` produce. Loaded by path because
+# these scripts run under several interpreters (venv-calib py3.9, system python3) and
+# scripts/ is not a package.
+_sspec = importlib.util.spec_from_file_location(
+    "splits", os.path.join(ROOT, "scripts", "lib", "splits.py"))
+splits = importlib.util.module_from_spec(_sspec)
+_sspec.loader.exec_module(splits)
 
 
 def norm_label(s):
@@ -156,7 +166,7 @@ def main():
           f"({agree / n:.1%}).  Disagreement = the stored label is NOT the trade outcome.")
 
     # ---------- fold assignment (grouped by market) ----------
-    folds = np.array([zlib.crc32(r["market"].encode()) % K_FOLDS for r in recs])
+    folds = np.array([splits.assign_blocked_fold(r["market"], K_FOLDS) for r in recs])
 
     def out_of_fold(builder, lam=None):
         pred = np.zeros(n)
@@ -168,7 +178,7 @@ def main():
             else:
                 # inner CV on the training part to pick lambda
                 best, bestloss = None, np.inf
-                inner = np.array([zlib.crc32((recs[i]["market"] + "i").encode()) % 3
+                inner = np.array([splits.assign_blocked_fold(recs[i]["market"] + "i", 3)
                                   for i in range(n)])
                 for L in LAMBDAS:
                     ll = 0.0
@@ -258,7 +268,7 @@ def main():
     cols = ["wq", "cfit", "etim", "spr", "liq", "thes", "copyScore", "confidence"]
     Mc = np.array([[recs[i][c] for c in cols] for i in range(n)], dtype=float) / 100.0
 
-    inner_all = np.array([zlib.crc32((r["market"] + "i").encode()) % 3 for r in recs])
+    inner_all = np.array([splits.assign_blocked_fold(r["market"] + "i", 3) for r in recs])
 
     def oof_matrix(M, lam=None, inner_cv=True):
         pred = np.zeros(n)

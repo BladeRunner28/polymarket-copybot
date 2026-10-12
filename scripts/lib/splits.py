@@ -166,6 +166,37 @@ def walk_forward(rows, at=None, slice_of=None, era=None, label_ready_at=None, mi
     return out
 
 
+def keyed_holdout(keys, frac=0.7, hasher="crc32"):
+    """Deterministic KEYED holdout: hash a group key, take `frac` as train.
+
+    Grouped by construction (one key -> one side, never split), which is why it is not
+    a random row fold. It is still NOT a substitute for the time-ordered holdout: it has
+    no time order at all, so a model fitted on it may be trained on the future. Use it
+    only where there is no meaningful time axis, and say so in the report.
+
+    Hashers:
+      "crc32"  (default) — the shared assignment, same numbers as the TS `crc32()`.
+      "sha256" — LEGACY, retained for exactly one caller: scripts/fit-fill-model.py fit
+                 its published U1 numbers (Brier-vs-flat on 18,763 test cells) with
+                 `sha256(repr(key))[:8] % 1000 < frac*1000`. Switching that script to
+                 crc32 would silently rewrite a published read, so the legacy assignment
+                 is preserved here, in the shared module, rather than left inline. A
+                 time-ordered re-read of that model is a separate decision.
+    """
+    import hashlib
+
+    tr, te = [], []
+    for i, k in enumerate(keys):
+        if hasher == "crc32":
+            h = crc32(str(k)) % 1000
+        elif hasher == "sha256":
+            h = int(hashlib.sha256(repr(k).encode()).hexdigest()[:8], 16) % 1000
+        else:
+            raise ValueError(f"keyed_holdout: unknown hasher {hasher!r}")
+        (tr if h < frac * 1000 else te).append(i)
+    return tr, te
+
+
 def era_groups(rows, era):
     """Per-era subsets — the per-era sign read (ML-1 gate criterion (d))."""
     m = {}

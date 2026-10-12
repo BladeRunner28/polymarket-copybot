@@ -39,7 +39,6 @@ import json
 import math
 import os
 import sys
-import zlib
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -153,7 +152,7 @@ def predict_multivar(fit_idx, eval_idx, recs, y, band_idx=None):
     Xf, Xe = M(fit_idx), M(eval_idx)
     mu, sd = Xf.mean(0), Xf.std(0) + 1e-9
     Xf, Xe = (Xf - mu) / sd, (Xe - mu) / sd
-    inner = np.array([zlib.crc32((recs[i]["market"] + "i").encode()) % 3 for i in fit_idx])
+    inner = np.array([splits.assign_blocked_fold(recs[i]["market"] + "i", 3) for i in fit_idx])
     best, bestloss = LAMBDAS[0], np.inf
     for L in LAMBDAS:
         ll, tot = 0.0, 0
