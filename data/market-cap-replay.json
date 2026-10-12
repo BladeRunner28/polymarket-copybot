@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-10-10T07:25:35.444Z",
+  "generatedAt": "2026-10-11T12:08:21.229Z",
   "window": {
     "days": 30,
-    "since": "2026-09-10T07:25:35.437Z"
+    "since": "2026-09-11T12:08:21.222Z"
   },
   "thresholds": {
     "maxMarketLegsPerMarketId": 2,
     "maxMarketNotionalPctOfCap": 0.2,
-    "notionalCapUsd": 794.26,
-    "effectiveCapUsd": 3971.32,
-    "netWorth": 7842.63,
+    "notionalCapUsd": 780.16,
+    "effectiveCapUsd": 3900.78,
+    "netWorth": 7701.55,
     "capOverride": null
   },
-  "legs": 901,
-  "blockedLegs": 16,
-  "blockedNotionalUsd": 423.12,
-  "blockedPnlUsd": 892.55,
-  "bookedPnlUsd": 3902.76,
-  "actualWindowPnlUsd": 4795.31,
-  "deltaUsd": -892.55,
-  "marketsWithMultipleLegs": 76,
+  "legs": 863,
+  "blockedLegs": 12,
+  "blockedNotionalUsd": 370.75,
+  "blockedPnlUsd": 938.25,
+  "bookedPnlUsd": 3780.84,
+  "actualWindowPnlUsd": 4719.09,
+  "deltaUsd": -938.25,
+  "marketsWithMultipleLegs": 73,
   "worstMarketsUnderCap": [
     {
       "marketId": "bl2-wob-svd-2026-09-18-wob",
@@ -81,20 +81,20 @@
       "why": "leg 3 > 2"
     },
     {
-      "marketId": "elon-musk-of-tweets-september-10-september-12-2026-40-64",
-      "outcome": "NO",
-      "entryPrice": 0.065,
-      "size": 19.94936708860759,
-      "pnl": -19.95,
-      "status": "resolved",
-      "why": "leg 3 > 2"
-    },
-    {
       "marketId": "will-linke-win-less-than-8-of-all-valid-second-votes-mecklenburg-vorpommern",
       "outcome": "NO",
       "entryPrice": 0.117,
       "size": 20,
       "pnl": -19.91,
+      "status": "closed",
+      "why": "leg 3 > 2"
+    },
+    {
+      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
+      "outcome": "NO",
+      "entryPrice": 0.125,
+      "size": 65.4,
+      "pnl": -10.46,
       "status": "closed",
       "why": "leg 3 > 2"
     }
