@@ -56,6 +56,15 @@ pilot = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(pilot)
 auc, fit_logit, predict, calib = pilot.auc, pilot.fit_logit, pilot.predict, pilot.calib_slope_intercept
 
+# Shared split doctrine (card ml-doctrine-time-and-era-splits): the fold assignment and
+# the walk-forward windows live in scripts/lib/splits.py, so this script's folds are the
+# same objects every other fit/eval script and the TS gate read use. Loaded by path like
+# `pilot` above, because these scripts run under several interpreters.
+_sspec = importlib.util.spec_from_file_location(
+    "splits", os.path.join(ROOT, "scripts", "lib", "splits.py"))
+splits = importlib.util.module_from_spec(_sspec)
+_sspec.loader.exec_module(splits)
+
 BANDS = [(0.0, 0.05), (0.05, 0.10), (0.10, 0.20), (0.20, 0.30), (0.30, 0.40), (0.40, 0.50),
          (0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 0.97), (0.97, 1.01)]
 BAND_PRIOR_N = 10.0
@@ -169,21 +178,25 @@ MODELS = {"M1_logit_price": predict_logit_price, "M2_band_table": predict_bands,
 
 
 # ---------------------------------------------------------------- fold designs
+# The DESIGNS are the shared doctrine's (scripts/lib/splits.py); these wrappers only
+# keep the index-array shape this script's call sites use. Behaviour is unchanged from
+# the inline versions this replaced — verified by re-running and diffing the emitted
+# spec (`data/score-spec-v1*.json`) against the pre-change copy.
 def folds_wallet(recs, k=5):
-    w = np.array([r["wallet"] for r in recs])
-    assign = np.array([zlib.crc32(x.encode()) % k for x in w])
+    assign = np.array([splits.assign_blocked_fold(r["wallet"], k) for r in recs])
     return [np.where(assign == f)[0] for f in range(k)]
 
 
 def folds_time(recs):
-    months = sorted({r["month"] for r in recs})
-    out = []
-    for m in months[1:]:
-        ev = np.array([i for i, r in enumerate(recs) if r["month"] == m])
-        tr = np.array([i for i, r in enumerate(recs) if r["month"] < m])
-        if ev.size >= 50 and tr.size >= 100:
-            out.append((tr, ev))
-    return out
+    # Rows are decorated with their index so the shared helper can return whole row
+    # objects while this script still gets (train_idx, eval_idx) pairs.
+    decorated = [dict(r, _fold_idx=i) for i, r in enumerate(recs)]
+    windows = splits.walk_forward(
+        decorated, at=None, slice_of=lambda r: r["month"], min_train=100, min_eval=50)
+    return [
+        (np.array([r["_fold_idx"] for r in w["train"]]), np.array([r["_fold_idx"] for r in w["test"]]))
+        for w in windows
+    ]
 
 
 def choose_margin(p, entry, pnl_net, fee, fit_mask):
