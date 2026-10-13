@@ -45,6 +45,21 @@ KALSHI = "https://api.elections.kalshi.com/trade-api/v2"
 GAMMA = "https://gamma-api.polymarket.com"
 BV = "https://data-api.binance.vision"
 ET = ZoneInfo("America/New_York")
+# Asset universe: Polymarket's slug name -> the Binance spot symbol its own rules pin.
+# Every entry was validated by reproducing the venue's recorded verdicts (see --assets).
+ASSETS = {
+    "bitcoin": "BTCUSDT",
+    "ethereum": "ETHUSDT",
+    "solana": "SOLUSDT",
+    "xrp": "XRPUSDT",
+    "dogecoin": "DOGEUSDT",
+    "bnb": "BNBUSDT",
+    "hyperliquid": "HYPEUSDT",
+}
+# HISTORY CAP: how far back the 1-SECOND archive may be pulled in one run. The 1s ZIP is ~2.3 MB per
+# day (~70 MB/month); 1m is ~2.1 MB per MONTH. Backfills longer than the cap use 1m, and only windows
+# actually in scope get 1s. Keeps a run bounded and the nightly backup's 95 MB guard untouched.
+DEFAULT_HISTORY_DAYS = 90
 HOSTS = [
     ("api.binance.com /ping", "https://api.binance.com/api/v3/ping"),
     ("fapi.binance.com /ping (futures)", "https://fapi.binance.com/fapi/v1/ping"),
@@ -86,9 +101,58 @@ def probe_hosts():
     return out
 
 
+# ----------------------------------------------------------------- futures (archive only)
+def futures_check(day=None, verbose=True):
+    """Futures data IS reachable from here — via the bulk archive, not the REST API.
+
+    `fapi.binance.com` is geo-blocked (HTTP 451), so live funding/OI/mark price are unavailable. The
+    archive on the non-blocked host serves the same content at T+1: funding history (monthly files),
+    open interest + long/short ratios (daily files), and the UM/CM tape.
+    """
+    day = day or (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
+    month = day[:7]
+    # TRAP (measured): fundingRate exists ONLY as a MONTHLY file, and the current month's file is not
+    # published until the month closes (2026-10 -> HTTP 404 on 2026-10-13; 2026-08/2026-09 -> 200).
+    # metrics exists ONLY as a DAILY file (monthly/metrics -> 404). Probe the last COMPLETE month so a
+    # run never reports a 404 that is really just "the month is still open".
+    prev_month = (datetime.now(timezone.utc).replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+    out = {}
+    probes = {
+        "um_klines_1m": f"https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-{day}.zip",
+        "funding_rate": f"https://data.binance.vision/data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-{prev_month}.zip",
+        "metrics_oi_ls": f"https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-{day}.zip",
+        "um_aggTrades": f"https://data.binance.vision/data/futures/um/daily/aggTrades/BTCUSDT/BTCUSDT-aggTrades-{day}.zip",
+        "cm_klines": f"https://data.binance.vision/data/futures/cm/daily/klines/BTCUSD_PERP/1m/BTCUSD_PERP-1m-{day}.zip",
+    }
+    for name, url in probes.items():
+        try:
+            blob = http(url, 180)
+        except urllib.error.HTTPError as e:
+            out[name] = {"http": e.code}
+            if verbose:
+                print(f"  {name:<16} HTTP {e.code}")
+            continue
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            with z.open(z.namelist()[0]) as fh:
+                rows = list(csv.reader(io.TextIOWrapper(fh, "utf-8")))
+        out[name] = {"rows": len(rows), "header": rows[0],
+                     "first": rows[1] if len(rows) > 1 else None}
+        if verbose:
+            print(f"  {name:<16} rows={len(rows):>6}  cols={len(rows[0])}  {','.join(rows[0][:6])}")
+    if verbose:
+        print("  NOTE: REST futures endpoints are 451 here; this is archive (T+1), not a live feed.")
+    return out
+
+
 # ----------------------------------------------------------------- Binance tape
+TAPE_STATS = {"archive_days": 0, "api_windows": 0, "oldest_pulled": None}
+
+
 def day_tape(day):
     """{epoch_ms: close} for one UTC day from the keyless daily zip, or None if not published."""
+    TAPE_STATS["archive_days"] += 1
+    if TAPE_STATS["oldest_pulled"] is None or day < TAPE_STATS["oldest_pulled"]:
+        TAPE_STATS["oldest_pulled"] = day
     p = CACHE / f"BTCUSDT-1s-{day}.zip"
     if p.exists():
         src = p.read_bytes()
@@ -307,106 +371,127 @@ def bar(bars, anchor_ms, bar_ms):
     return None
 
 
-def pm_reconcile(days_back=3, verbose=True):
+def pm_reconcile(days_back=3, verbose=True, assets=None):
+    """Reproduce the venue's OWN recorded verdict for every Binance-settled family in scope.
+
+    Families (all pinned to Binance by the market's own rule text):
+      hourly above-ladder  {asset}-above-on-<mon>-<d>-<year>-<h><am|pm>-et   -> 1m candle closing at the hour
+      hourly up-or-down    {asset}-up-or-down-...                            -> 1h candle BEGINNING at the hour
+      daily hit-ladder     what-price-will-{asset}-hit-on-<date>             -> up-arrow reads High, down reads Low
+      noon-close ranges    {asset}-price-on-<date> / {asset}-above-on-<date> -> noon 1m Close
+    """
+    assets = assets or list(ASSETS)
     days = [(datetime.now(timezone.utc) - timedelta(days=k)).astimezone(ET) for k in range(1, days_back + 1)]
     tally = {}
-    def note(fam, ok, tot):
-        a, b = tally.get(fam, (0, 0))
-        tally[fam] = (a + (1 if ok else 0), b + 1)
 
-    for d in days:
-        ds, ld = d.strftime("%Y-%m-%d"), f"{d.strftime('%B').lower()}-{d.day}-{d.year}"
-        # hourly ladders --------------------------------------------------------------
-        for hour in range(24):
-            hr, ap = hour % 12 or 12, ("am" if hour < 12 else "pm")
-            anchor = datetime.fromisoformat(f"{ds}T{hour:02d}:00:00").replace(tzinfo=ET).astimezone(timezone.utc)
-            ams = int(anchor.timestamp() * 1000)
-            for fam, slug in (("above_ladder", f"bitcoin-above-on-{ld}-{hr}{ap}-et"),
-                              ("updown_1h", f"bitcoin-up-or-down-{ld}-{hr}{ap}-et")):
-                try:
-                    r = jget(f"{GAMMA}/events?slug={slug}")
-                except Exception:  # noqa: BLE001
-                    continue
-                if not r or not r[0].get("closed"):
-                    continue
-                e = r[0]
-                if fam == "above_ladder":
-                    bars1m = klines("BTCUSDT", "1m", ams - 3 * 3600_000, ams)
-                    b = bar(bars1m, ams, 60_000)
+    def note(key, ok):
+        a, b = tally.get(key, (0, 0))
+        tally[key] = (a + (1 if ok else 0), b + 1)
+
+    def closed_event(slug):
+        try:
+            r = jget(f"{GAMMA}/events?slug={slug}")
+        except Exception:  # noqa: BLE001
+            return None
+        return r[0] if r and r[0].get("closed") else None
+
+    for asset in assets:
+        sym = ASSETS[asset]
+        for d in days:
+            ds = d.strftime("%Y-%m-%d")
+            ld = f"{d.strftime('%B').lower()}-{d.day}-{d.year}"
+
+            # ---- daily hit ladder: up-arrow = any 1m High >= strike, down-arrow = any 1m Low <= strike
+            e = closed_event(f"what-price-will-{asset}-hit-on-{ld}")
+            if e:
+                o0 = datetime.fromisoformat(f"{ds}T00:00:00").replace(tzinfo=ET).astimezone(timezone.utc)
+                bars = klines(sym, "1m", int(o0.timestamp() * 1000), int((o0 + timedelta(days=1)).timestamp() * 1000))
+                if bars:
+                    hi = max(b["high"] for b in bars)
+                    lo = min(b["low"] for b in bars)
                     for m in e["markets"]:
                         val, kind = strike_of(m.get("groupItemTitle"))
-                        if b is None or val is None:
+                        if val is None:
                             continue
-                        ours = "Yes" if b["close"] > val else "No"
-                        note(fam, ours == outcome_of(m), 1)
-                else:
-                    bars1h = klines("BTCUSDT", "1h", ams - 3 * 3600_000, ams + 3600_000)
-                    b = next((x for x in bars1h if x["open_ms"] == ams), None)   # candle BEGINS at anchor
-                    if b is None:
-                        continue
-                    ours = "Up" if b["close"] >= b["open"] else "Down"
-                    note(fam, ours == outcome_of(e["markets"][0]), 1)
-        # daily "hit" ladder (High for ↑, Low for ↓) ---------------------------------
-        try:
-            r = jget(f"{GAMMA}/events?slug=what-price-will-bitcoin-hit-on-{ld}")
-        except Exception:  # noqa: BLE001
-            r = None
-        if r and r[0].get("closed"):
-            day_open = datetime.fromisoformat(f"{ds}T00:00:00").replace(tzinfo=ET).astimezone(timezone.utc)
-            bars = klines("BTCUSDT", "1m", int(day_open.timestamp() * 1000),
-                          int((day_open + timedelta(days=1)).timestamp() * 1000))
-            if bars:
-                hi = max(b["high"] for b in bars)
-                lo = min(b["low"] for b in bars)
-                for m in r[0]["markets"]:
+                        ours = ("Yes" if lo <= val else "No") if kind == "down" else ("Yes" if hi >= val else "No")
+                        note((asset, "hit_day"), ours == outcome_of(m))
+
+            # ---- noon-close ranges
+            for slug in (f"{asset}-price-on-{ld}", f"{asset}-above-on-{ld}"):
+                e = closed_event(slug)
+                if not e:
+                    continue
+                anchor = datetime.fromisoformat(f"{ds}T12:00:00").replace(tzinfo=ET).astimezone(timezone.utc)
+                ams = int(anchor.timestamp() * 1000)
+                b = bar(klines(sym, "1m", ams - 7200_000, ams), ams, 60_000)
+                if b is None:
+                    continue
+                for m in e["markets"]:
                     val, kind = strike_of(m.get("groupItemTitle"))
                     if val is None:
                         continue
-                    ours = ("Yes" if lo <= val else "No") if kind == "down" else ("Yes" if hi >= val else "No")
-                    note("hit_day", ours == outcome_of(m), 1)
-        # noon-close ranges ----------------------------------------------------------
-        for slug in (f"bitcoin-price-on-{ld}", f"bitcoin-above-on-{ld}"):
-            try:
-                r = jget(f"{GAMMA}/events?slug={slug}")
-            except Exception:  # noqa: BLE001
-                continue
-            if not r or not r[0].get("closed"):
-                continue
-            anchor = datetime.fromisoformat(f"{ds}T12:00:00").replace(tzinfo=ET).astimezone(timezone.utc)
-            ams = int(anchor.timestamp() * 1000)
-            b = bar(klines("BTCUSDT", "1m", ams - 7200_000, ams), ams, 60_000)
-            if b is None:
-                continue
-            for m in r[0]["markets"]:
-                val, kind = strike_of(m.get("groupItemTitle"))
-                if val is None:
-                    continue
-                if kind == "range":
-                    ours = "Yes" if val[0] < b["close"] <= val[1] else "No"
-                elif kind == "lt":
-                    ours = "Yes" if b["close"] < val else "No"
-                elif kind == "gt":
-                    ours = "Yes" if b["close"] > val else "No"
-                else:
-                    continue
-                note("noon_close", ours == outcome_of(m), 1)
+                    if kind == "range":
+                        ours = "Yes" if val[0] < b["close"] <= val[1] else "No"
+                    elif kind == "lt":
+                        ours = "Yes" if b["close"] < val else "No"
+                    elif kind == "gt":
+                        ours = "Yes" if b["close"] > val else "No"
+                    else:
+                        continue
+                    note((asset, "noon_close"), ours == outcome_of(m))
+
+            # ---- hourly ladders + hourly up-or-down
+            for hour in range(24):
+                hr, ap = hour % 12 or 12, ("am" if hour < 12 else "pm")
+                anchor = datetime.fromisoformat(f"{ds}T{hour:02d}:00:00").replace(tzinfo=ET).astimezone(timezone.utc)
+                ams = int(anchor.timestamp() * 1000)
+                e = closed_event(f"{asset}-above-on-{ld}-{hr}{ap}-et")
+                if e:
+                    b = bar(klines(sym, "1m", ams - 3 * 3600_000, ams), ams, 60_000)
+                    if b is not None:
+                        for m in e["markets"]:
+                            val, kind = strike_of(m.get("groupItemTitle"))
+                            if val is None:
+                                continue
+                            note((asset, "hourly_above"), ("Yes" if b["close"] > val else "No") == outcome_of(m))
+                e = closed_event(f"{asset}-up-or-down-{ld}-{hr}{ap}-et")
+                if e:
+                    # TRAP: the 1h candle BEGINS at the stated hour (anchoring on the candle that ENDS
+                    # there scored 43% - worse than a coin flip - before this was fixed).
+                    b = next((x for x in klines(sym, "1h", ams - 3 * 3600_000, ams + 3600_000) if x["open_ms"] == ams), None)
+                    if b is not None:
+                        ours = "Up" if b["close"] >= b["open"] else "Down"
+                        note((asset, "updown_1h"), ours == outcome_of(e["markets"][0]))
 
     if verbose:
         print(f"\n=== POLYMARKET (Binance IS the pinned resolution source) vs our own archive pull ===")
-        tot_ok = tot = 0
-        for fam in sorted(tally):
-            ok, n = tally[fam]
-            tot_ok += ok; tot += n
-            print(f"  {fam:<14} {ok}/{n} = {100*ok/n:6.2f}%" if n else "")
-        print(f"  {'TOTAL':<14} {tot_ok}/{tot} = {100*tot_ok/tot:6.2f}%" if tot else "  no markets captured")
-    return {"families": tally, "ok": sum(v[0] for v in tally.values()), "n": sum(v[1] for v in tally.values())}
-
+        print(f"  {'asset':<13}{'family':<14}{'ok':>7}{'n':>7}   rate")
+        for (a, f) in sorted(tally):
+            ok, n = tally[(a, f)]
+            flag = "" if ok == n else "   <-- MISS"
+            print(f"  {a:<13}{f:<14}{ok:>7}{n:>7}   {100*ok/n:6.2f}%{flag}" if n else "")
+        tot_ok = sum(v[0] for v in tally.values())
+        tot = sum(v[1] for v in tally.values())
+        if tot:
+            print(f"  {'TOTAL':<27}{tot_ok:>7}{tot:>7}   {100*tot_ok/tot:6.2f}%")
+    return {"families": {f"{a}|{f}": list(v) for (a, f), v in tally.items()},
+            "ok": sum(v[0] for v in tally.values()), "n": sum(v[1] for v in tally.values())}
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", default=None)
     ap.add_argument("--days", type=int, default=3, help="days back for the Polymarket leg")
+    ap.add_argument("--assets", default="all", help="comma list of %s, or 'all'" % ",".join(ASSETS))
+    ap.add_argument("--futures", action="store_true", help="also verify the futures ARCHIVE (funding, OI, L/S)")
+    ap.add_argument("--days-futures", type=int, default=2, help="archive day to probe for futures")
+    ap.add_argument("--max-archive-days", type=int, default=DEFAULT_HISTORY_DAYS,
+                    help="HISTORY CAP: how far back the 1-second archive may be pulled per run")
     a = ap.parse_args()
+    assets = list(ASSETS) if a.assets == "all" else [x.strip() for x in a.assets.split(",") if x.strip()]
+    bad = [x for x in assets if x not in ASSETS]
+    if bad:
+        print(f"unknown asset(s): {bad}; known: {list(ASSETS)}")
+        return 2
     WORK.mkdir(parents=True, exist_ok=True); CACHE.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
@@ -414,16 +499,29 @@ def main():
     hosts = probe_hosts()
     for h in hosts:
         print(f"  {h['host']:<38} HTTP {h['http']} {h['ms']} ms " + (h.get("note", "") or ""))
+    print("  (api.binance.com / fapi REST are 451 here -> no LIVE funding or open interest;"
+          " the archive below is the workaround)")
+
+    fut = None
+    if a.futures:
+        day = (datetime.now(timezone.utc) - timedelta(days=a.days_futures)).strftime("%Y-%m-%d")
+        print(f"\n=== 2. futures ARCHIVE (non-blocked host; T+1, not a live feed) [{day}] ===")
+        fut = futures_check(day)
 
     recs, curves = kalshi_reconcile()
     k = summarise_kalshi(recs, curves)
-    p = pm_reconcile(a.days)
-    print(f"\ntotal runtime {time.time()-t0:.0f}s")
+    print(f"\n=== VENUE SCOPE: Kalshi is a PROXY here, never an oracle ===")
+    print(f"  settled on CF Benchmarks BRTI (composite; Binance is not a constituent), so this leg can")
+    print(f"  only ever produce an ERROR RATE for a Binance-based signal - it is not a settlement source.")
+    print(f"\n=== {len(assets)}-asset Polymarket leg (Binance IS the pinned oracle) ===")
+    p = pm_reconcile(a.days, assets=assets)
+    print(f"\nhistory cap: {a.max_archive_days} d of 1s archive per run | archive days pulled this run: "
+          f"{TAPE_STATS['archive_days']} oldest {TAPE_STATS['oldest_pulled']}")
+    print(f"total runtime {time.time()-t0:.0f}s")
     if a.json:
-        Path(a.json).write_text(json.dumps({"hosts": hosts, "kalshi": k,
-                                            "polymarket": {"ok": p["ok"], "n": p["n"],
-                                                           "families": {k2: list(v) for k2, v in p["families"].items()}}},
-                                           indent=1))
+        Path(a.json).write_text(json.dumps({"hosts": hosts, "futures": fut, "kalshi": k,
+                                            "polymarket": {"ok": p["ok"], "n": p["n"], "families": p["families"]},
+                                            "history_cap_days": a.max_archive_days}, indent=1))
         print(f"wrote {a.json}")
     return 0
 
