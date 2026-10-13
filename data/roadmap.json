@@ -2718,6 +2718,35 @@
     "backlog",
     "size-budget"
    ]
+  },
+  {
+   "id": "btc-noncopy-lanes-read",
+   "title": "BTC outside the copy path — what actually runs on BTC, and what the skipped BTC copies were worth (MEASURED)",
+   "column": "Done",
+   "effort": "~1 evening",
+   "dates": "Read 2026-10-13 01:0x UTC (question asked 2026-10-12)",
+   "tags": [
+    "kalshi",
+    "btc",
+    "measurement",
+    "done"
+   ],
+   "note": "Answers 'are we doing anything outside copy trading around bitcoin'. (1) WHAT RUNS: the venue tape (live, 15-min, ~94% duty) captures KXBTC15M/KXBTCD/KXETH15M — 215k/210k prints per window, 761/750 bars, no cap hits; the hourly macro lane is the same instrument pattern on the same venue; the btc15m calibration read (6,438 settled markets) shows 99.9% of the sample in the price tails, so 'buy the cheap tail' has no sample and intra-window pricing is the open question the tape feeds. (2) SKIPPED BTC COPIES: all 1,469 of 1,469 btc-updown decisions are skips across 602 markets and NOT ONE PaperTrade exists; counterfactual held to resolution with the venue's own resolution as ground truth = snapshot entry (n=543, 191 mkts) win 45.9%, mean edge -0.0522/$1, clustered 95% CI [-0.0939,-0.0096] (excludes 0 ON THE LOSS SIDE); detected entry (n=1,466, 599 mkts) win 47.8%, mean -0.0419/$1, CI [-0.0835,+0.0012]. The gates walked away from a losing trade, not from edge. (3) THE BLACKLIST IS NOT THE CAUSE: category token is `btc`, the C-200 blacklist names `bitcoin`, and score-trades.ts does an exact token compare — the skips come from the generic gates (drift 'too late', 'resolves in 0.0h < min 2h', liquidity $0 < min $750, price near certainty). (4) CROSS-VENUE PAIR: Kalshi KXBTC15M x PM btc-updown-15m is the ONLY exactly-aligned pair in either venue family, but the oracles differ (CF Benchmarks BRTI 60s vs Chainlink BTC/USD 60s TWAP): 282/287 windows agree over 3 days = 1.74% disagreement, 95% CI [0.75%,4.01%] — and a paired position pays 1.00 on agreement and 0.00 on disagreement, so that rate IS the risk. A single-snapshot ~6-7c 'gap' did NOT survive simultaneity: four back-to-back paired reads gave net -0.1122, -0.0182, -0.0554, -0.0017 (all <= 0). Also: never read PM quotes from Gamma bestBid/bestAsk (stale by ~0.6 vs the live CLOB book). No live-path change; no rule edit recommended. Artifacts: data/pm-btc-skip-probe-20261013.json, scripts/pm-btc-intraday-skip-probe.py, scripts/kalshi-pm-btc-updown-read.py, drafts/btc-outside-copy-20261013.md"
+  },
+  {
+   "id": "kalshi-pm-btc-pair-prereg",
+   "title": "PROPOSAL ONLY (needs approval) — pre-registered Kalshi x Polymarket BTC up/down paired read, true-simultaneity",
+   "column": "Scheduled",
+   "effort": "~half day + ~1 week of samples",
+   "dates": "Carded 2026-10-13 from the BTC read; NOT started — awaiting approval",
+   "tags": [
+    "kalshi",
+    "polymarket",
+    "btc",
+    "prereg",
+    "recommendation-only"
+   ],
+   "note": "The only cross-venue pair that aligns exactly is KXBTC15M x btc-updown-15m, and the 2026-10-13 read says the apparent 6-7c mispricing does not survive simultaneous measurement. This card is the study that would settle it, pre-registered BEFORE more data exists. METHOD: read both venue books within ~1s (PM via the CLOB book endpoint, never Gamma's stale bestBid/bestAsk), record full depth at the touch and the sizes actually available; pin the PM fee schedule FIRST (this market's CLOB reports maker_base_fee=taker_base_fee=1000, unit unconfirmed, vs the repo's 0.07*min(p,1-p) convention — the difference is ~half the apparent gap); n >= 288 aligned windows; report the net-of-fee pair-cost distribution, not a point estimate. GATE: the clustered 95% CI lower bound on net pair edge must exceed 0 AFTER the oracle-disagreement haircut (measured 1.74%, CI [0.75%,4.01%] — a paired position pays 0.00 when the oracles disagree, so use the CI upper bound for the conservative read). If the gate fails, the close is 'both venues price the same 15 minutes correctly' and nothing gets built. No live-path change is proposed by this card."
   }
  ]
 }
