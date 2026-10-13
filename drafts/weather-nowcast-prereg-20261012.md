@@ -19,8 +19,10 @@ regardless — we hold no key.
 - **Oracle product, pinned by the feasibility read** (`drafts/weather-data-feasibility-2026-10-12.md`):
   Polymarket = max of **routine hourly METAR @ KLGA**; Kalshi = **CLINYC / Central Park via The
   Weather Company** (proxied by GHCN-Daily `USW00094728` TMAX, tenths °C → °F, nearest int).
-  Day-of "max so far" is computed from the **hourly METAR @ KLGA** series for both venues' physical
-  state; each venue's own oracle is used for settlement.
+  **Day-of "max so far" is computed per venue on THAT VENUE'S OWN station's hourly METAR series**
+  (Polymarket: KLGA; Kalshi: Central Park / station id `NYC`) — amended 2026-10-12 before any
+  in-window sample, see the amendment note at the bottom. Each venue's own oracle is used for
+  settlement.
 - **Size:** every price recorded with its executable size. The gate is evaluated at **S ≥ 50
   contracts** per leg; a leg thinner than S is reported, never silently upgraded.
 - **Fees (pinned; a change voids the sample):** Kalshi taker `0.07 · P · (1−P)`, maker `0`
@@ -33,11 +35,13 @@ regardless — we hold no key.
 
 Binary mirror: `yes_ask = 1 − no_bid`, `no_ask = 1 − yes_bid`. Each row stores best `yes_bid`,
 `yes_ask`, `no_bid`, `no_ask` **with the size resting at each level**, plus the full best-level set
-of the sampled ladders, the venue's own mid, `max_so_far_F` (hourly METAR @ KLGA), the ET hour of the
+of the sampled ladders, the venue's own mid, `max_so_far_F` **per station** (KLGA for Polymarket, Central Park for
+Kalshi), the ET hour of the
 sample, the ensemble bracket distribution, and the raw fee fields.
 
-**"Dead" bracket at a sample:** `upper_bound < max_so_far_F` that day. The daily maximum is monotone,
-so under the pinned oracle product `P(YES) = 0` for that bracket — no model required.
+**"Dead" bracket at a sample:** `upper_bound < max_so_far_F` that day **measured on that venue's own
+settlement station**. The daily maximum is monotone, so under the pinned oracle product `P(YES) = 0`
+for that bracket — no model required.
 
 ## Q1 — is there *executable* residual mass in dead brackets?
 
@@ -91,3 +95,26 @@ time (2026-10-12 ~23:00 ET, not part of the sample): PM's dead brackets showed *
 with ~9 k size and no YES bids**, Kalshi's showed a **NO bid ladder up to 0.99 with an empty YES
 ladder** — i.e. both venues rested the side *they* had the edge on. That is exactly the shape Q1
 exists to measure over ≥20 days instead of one evening.
+
+---
+
+## Amendment note (2026-10-12 ~23:55 ET, still before any in-window sample)
+
+**What changed:** the day-of "max so far" is now computed **per venue on that venue's own settlement
+station** (Polymarket → KLGA hourly METAR; Kalshi → Central Park `NYC` hourly METAR, proxying the
+CLINYC/TWC product). The first version used the KLGA series for both.
+
+**Why:** the two venues settle on *different* NYC stations (this is the feasibility read's trap 4).
+The very first instrument run caught it: at 23:52 ET on 2026-10-12 the KLGA series read max-so-far
+**71 °F**, so the Kalshi bracket `69° to 70°` was flagged **dead** — while its own book carried a
+**0.99 YES bid**, i.e. Kalshi's market believed (correctly, on Central Park's data) that the bracket
+was still live. Under the v1 basis Q1 would have "measured" a ~0.99 edge on a bracket that could
+still win: a fabricated result, not a finding.
+
+**Also:** the single sample row written by the v1 basis (one run, taken at 23:52 ET after that day's
+high was already final) was **deleted** rather than kept, so `data/weather-nowcast-samples.jsonl`
+starts empty under the v2 semantics. Field-semantics changes void samples by this document's own
+drop rule; there were no in-window samples to void.
+
+**Unchanged:** Q1/Q2, the size floor (S ≥ 50), the fee laws, the hour buckets, the 20-day floor, the
+drop rules, and the falsifiers.
