@@ -29,7 +29,9 @@ import statistics
 import sys
 import urllib.request
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "weather-nowcast-samples.jsonl"
@@ -193,13 +195,38 @@ def main() -> int:
         tot = c["kept"] + c["dropped"]
         if tot and c["dropped"] / tot > DROP_MAX and c["dropped"] > 2:
             excluded_days.add((venue, day))
+
+    # floor accounting: a day COUNTS toward the >= 20-day floor when it is in-window (has_obs),
+    # not excluded, and is SETTLED (its cycle day is over, so its outcome is resolvable).
+    today_et = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    bucket_counts = defaultdict(lambda: defaultdict(int))
+    for r in brackets:
+        if not has_obs(r) or (r["venue"], r.get("cycle_day")) in excluded_days:
+            continue
+        ctx = contexts.get((r.get("cycle_day"), r.get("ts"))) or {}
+        et = ctx.get("et_hour")
+        if et is None:
+            continue
+        bucket = "<14:00" if et < 14 else ("14:00-16:00" if et < 16 else ("16:00+" if et < 18 else "18:00+"))
+        bucket_counts[r["venue"]][bucket] += 1
+    observed, settled = {}, {}
     for venue in ("kalshi", "polymarket"):
-        days = sorted({d for (v, d) in per_venue_day if v == venue})
-        print(f"  {venue:<11} cycle-days seen={len(days)}  {days[0] if days else '-'} -> {days[-1] if days else '-'}")
+        od = sorted({d for (v, d) in per_venue_day if v == venue and (v, d) not in excluded_days})
+        observed[venue] = od
+        settled[venue] = [d for d in od if d < today_et]
+
+    for venue in ("kalshi", "polymarket"):
+        days = settled[venue] or observed[venue]
+        print(f"  {venue:<11} in-window days observed={len(observed[venue])} settled={len(settled[venue])}"
+              f" (floor {MIN_DAYS})  {days[0] if days else '-'} -> {days[-1] if days else '-'}")
+        print(f"              samples by ET bucket: {dict(bucket_counts[venue])}")
     if excluded_days:
         print(f"  days excluded by the >{DROP_MAX:.0%} drop rule: {sorted(excluded_days)}")
 
     out = {"census": {"runs": len(coverage), "bracket_rows": len(brackets),
+                      "observed_days": {k: len(v) for k, v in observed.items()},
+                      "settled_days": {k: len(v) for k, v in settled.items()},
+                      "samples_by_bucket": {k: dict(v) for k, v in bucket_counts.items()},
                       "excluded_days": sorted(str(x) for x in excluded_days)}}
 
     # ---------------- Q1
