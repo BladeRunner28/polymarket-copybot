@@ -378,11 +378,62 @@ def main() -> int:
                      "brier_delta": m_br, "brier_ci": [lo_br, hi_br], "verdict": verdict}
     out["q2"] = q2
 
-    print("\n=== VERDICT ===")
+    # ---------------- diagnostic 2: is the dead-bracket route ABSENT or just THIN?
+    # The pre-registration's size floor (S >= 50) is only meaningful if the harvestable route exists
+    # at all. A "no qualifying leg" verdict must therefore say WHICH it is, per venue:
+    #   absent  -> no dead bracket offered a yes_bid (sell YES) or a no_ask (buy NO) at ANY size
+    #   thin    -> the route exists but every level is below the size floor
+    dbg = {}
     for venue in ("kalshi", "polymarket"):
-        d = max([v.get("days", 0) for k, v in q1.items() if k.startswith(venue)] or [0])
-        print(f"  {venue:<11} distinct qualifying days={d} (floor {MIN_DAYS}) — "
-              f"{'floor met' if d >= MIN_DAYS else 'INSUFFICIENT SAMPLE, no claim'}")
+        d = [r for r in brackets
+             if r["venue"] == venue and r.get("dead") and has_obs(r)
+             and (venue, r.get("cycle_day")) not in excluded_days]
+        yb = [r for r in d if r.get("yes_bid") is not None]
+        na = [r for r in d if r.get("no_ask") is not None]
+        mir = [r for r in d if r.get("yes_ask") is not None or r.get("no_bid") is not None]
+        def sizes(rs, key):
+            vals = sorted(float(r.get(key) or 0) for r in rs)
+            return None if not vals else {"n": len(vals), "min": vals[0],
+                                          "median": vals[len(vals) // 2], "max": vals[-1]}
+        state = "absent" if not (yb or na) else ("thin" if not any(
+            (r.get("size_yes_bid") or 0) >= S_SIZE or (r.get("size_no_ask") or 0) >= S_SIZE
+            for r in d) else "available")
+        dbg[venue] = {"dead_rows": len(d), "offer_yes_bid": len(yb), "offer_no_ask": len(na),
+                      "offer_mirror_side_only": len(mir), "route_state": state,
+                      "size_yes_bid": sizes(yb, "size_yes_bid"), "size_no_ask": sizes(na, "size_no_ask")}
+        print(f"\n  [dead-bracket diagnostic] {venue}: dead_rows={len(d)} route={state.upper()} — "
+              f"yes_bid offered on {len(yb)} rows, no_ask on {len(na)} rows, "
+              f"mirror side only on {len(mir)} rows (sizes {dbg[venue]['size_yes_bid']} / {dbg[venue]['size_no_ask']})")
+    out["dead_bracket_diagnostic"] = dbg
+
+    # ---------------- top-level VERDICT (the artifact's own answer, so no consumer re-derives it)
+    def venue_verdict(v: str) -> str:
+        q1v = [q1[k].get("verdict") for k in q1 if k.startswith(v + ":")]
+        if q1v and any(x == "PASS" for x in q1v):
+            return "PASS"
+        settled_n = len(settled.get(v, []))
+        if settled_n < MIN_DAYS or dbg.get(v, {}).get("route_state") == "absent":
+            return "INSUFFICIENT SAMPLE"
+        return "FAIL"
+    out["verdict"] = {
+        "gate": "drafts/weather-nowcast-prereg-20261012.md (frozen 2026-10-12, amended same evening)",
+        "floor_settled_days": MIN_DAYS, "size_floor_contracts": S_SIZE,
+        "generated_at": datetime.now(ZoneInfo("America/New_York")).isoformat(timespec="seconds"),
+        "venues": {v: {"verdict": venue_verdict(v),
+                       "settled_days": len(settled.get(v, [])),
+                       "q1_16:00+": q1.get(f"{v}:16:00+", {}).get("verdict"),
+                       "q1_18:00+": q1.get(f"{v}:18:00+", {}).get("verdict"),
+                       "q2": q2.get(v, {}).get("verdict"),
+                       "dead_bracket_route": dbg.get(v, {}).get("route_state")}
+                   for v in ("kalshi", "polymarket")}}
+
+    print("\n=== VERDICT ===")
+    for venue, vv in out["verdict"]["venues"].items():
+        extra = ""
+        if vv["verdict"] == "INSUFFICIENT SAMPLE" and vv["dead_bracket_route"] == "absent":
+            extra = " (dead brackets seen, but the harvestable route is ABSENT — not a thin-liquidity miss)"
+        print(f"  {venue:<11} VERDICT={vv['verdict']:<19} settled_days={vv['settled_days']}/{MIN_DAYS} "
+              f"q1_16+={vv['q1_16:00+']} q1_18+={vv['q1_18:00+']} q2={vv['q2']}{extra}")
     if a.json:
         Path(a.json).write_text(json.dumps(out, indent=1) + "\n")
         print(f"JSON -> {a.json}")
