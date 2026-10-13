@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import gzip
 import json
 import random
 import statistics
@@ -30,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PINNED_CODE = "b06650b8c215"          # sampler revision frozen by the pre-registration
+PINNED_CODE = "762ca9de3047"          # sampler revision frozen by the pre-registration
 SIZE_FLOOR = 50
 FEE_SENSITIVITY_RATE = 0.07           # the pair lane's pinned crypto_fees_v2 taker rate
 FLOOR_ROWS_Q1 = 1500                  # pre-registered: executable decided observations
@@ -44,14 +45,19 @@ SENSITIVITY_TREAT_AS_UNKNOWN = ("no_schedule_zero",)
 
 def load(dirpath):
     rows, cov = [], []
-    for f in sorted(glob.glob(str(Path(dirpath) / "btc-convergence-samples-*.jsonl"))):
-        with open(f) as fh:
-            for line in fh:
-                if line.strip():
-                    try:
-                        rows.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        pass
+    files = sorted(glob.glob(str(Path(dirpath) / "btc-convergence-samples-*.jsonl*")))
+    for f in files:                       # finished days are gzipped by the sampler's rotation
+        opener = gzip.open if f.endswith(".gz") else open
+        try:
+            with opener(f, "rt") as fh:
+                for line in fh:
+                    if line.strip():
+                        try:
+                            rows.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            pass
+        except OSError:
+            pass
     cpath = Path(dirpath) / "btc-convergence-coverage.jsonl"
     if cpath.exists():
         with open(cpath) as fh:

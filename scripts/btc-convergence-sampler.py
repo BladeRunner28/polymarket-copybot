@@ -42,6 +42,7 @@ Usage: python3 scripts/btc-convergence-sampler.py [--assets bitcoin,ethereum] [-
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import sys
@@ -485,6 +486,32 @@ FAMILIES = {
 }
 
 
+def rotate_done_days(out_dir, today_ds):
+    """gzip every finished day's raw sample file (raw jsonl for today only).
+
+    STORAGE IS PART OF THE INSTRUMENT'S HONESTY. Measured on the first live ticks: a row is ~912 B
+    and a tick captures every strike of every ladder, so raw capture is ~34 MB/day for the coverage
+    cadence and ~13 MB/day for the window cadence — 47 MB/day would swallow the nightly backup's
+    95 MB guard inside one day and make the repo the warehouse. Gzipped, the same series is ~2 MB/day.
+    Rotation (not deletion) is the point: the raw rows stay available, just compressed, and today's
+    file stays readable while the instrument is live.
+    """
+    import glob as _glob
+    for path in _glob.glob(str(Path(out_dir) / "btc-convergence-samples-*.jsonl")):
+        p = Path(path)
+        ds = p.stem.rsplit("-", 3)[-3:]
+        if len(ds) != 3 or f"{ds[0]}-{ds[1]}-{ds[2]}" == today_ds:
+            continue
+        gz = p.with_suffix(".jsonl.gz")
+        try:
+            with p.open("rb") as src, gzip.open(gz, "wb", compresslevel=6) as dst:
+                while chunk := src.read(1 << 20):
+                    dst.write(chunk)
+            p.unlink()
+        except OSError:
+            continue          # never fail a tick over housekeeping
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--verbose", action="store_true")
@@ -495,6 +522,9 @@ def main():
                     help="how many anchor hours the hourly families look back (window is ~11-12 min)")
     ap.add_argument("--max-minutes-since-determined", type=float, default=None,
                     help="drop decided rows observed later than this (the post-determination window)")
+    ap.add_argument("--undetermined-max-minute", type=int, default=5,
+                    help="undetermined (Q2-candidate) rows are kept only in the first N minutes of the "
+                         "hour — they do not need 15-minute resolution, and this is the volume lever")
     a = ap.parse_args()
     assets = list(ASSETS) if a.assets == "all" else [x.strip() for x in a.assets.split(",") if x.strip()]
     fams = list(FAMILIES) if a.families == "all" else [x.strip() for x in a.families.split(",") if x.strip()]
@@ -510,7 +540,8 @@ def main():
     code = code_hash()
     rows, cov = [], {"kind": "coverage", "ts": ts, "assets": assets, "families": fams, "code": code,
                      "rows": 0, "determined": 0, "family_counts": {}, "fee_laws": {},
-                     "q1_reasons": {}, "dropped_stale": 0, "hours_back": a.hours_back,
+                     "q1_reasons": {}, "dropped_stale": 0, "dropped_undetermined_offhour": 0,
+                     "hours_back": a.hours_back,
                      "errors": [], "size_floor": SIZE_FLOOR}
 
     for asset in assets:
@@ -532,6 +563,9 @@ def main():
                         and r.get("minutes_since_determined") is not None
                         and r["minutes_since_determined"] > a.max_minutes_since_determined):
                     cov["dropped_stale"] += 1
+                    continue
+                if not r.get("determined") and now.minute > a.undetermined_max_minute:
+                    cov["dropped_undetermined_offhour"] += 1
                     continue
                 kept.append(r)
             cov["family_counts"][f"{asset}|{fam}"] = len(kept)
@@ -557,6 +591,7 @@ def main():
             fh.write(json.dumps(r, separators=(",", ":")) + "\n")
     with (out_dir / "btc-convergence-coverage.jsonl").open("a") as fh:
         fh.write(json.dumps(cov, separators=(",", ":")) + "\n")
+    rotate_done_days(out_dir, ds)
     if a.verbose:
         print(f"{ts} rows={cov['rows']} determined={cov['determined']} errors={len(cov['errors'])}")
     return 0

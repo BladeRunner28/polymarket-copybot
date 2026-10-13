@@ -99,7 +99,7 @@ Determination is computed from **Binance tape only — never from the venue's ow
 
 ## 3. Instrument (PINNED)
 
-- **Sampler:** `scripts/btc-convergence-sampler.py`, **code hash `sha256[:12] = b06650b8c215`**.
+- **Sampler:** `scripts/btc-convergence-sampler.py`, **code hash `sha256[:12] = 762ca9de3047`**.
   Every row and every coverage line carries this hash (`code`), so an analysis can restrict itself to
   the frozen revision and a later change can never silently ride on earlier rows.
 - **Reader (the gate's only voice):** `scripts/btc-convergence-read.py` — pinned to the same hash,
@@ -116,13 +116,29 @@ runs two cadences, both frozen here:
 
 | job | schedule | families | purpose |
 |---|---|---|---|
-| **coverage** | every 15 min | all four | the day's ladders, `hit_day` states, decided legs seen late |
-| **window** | minutes **1, 4, 7, 10** every hour | `hourly_above, updown_1h, noon_close`, `--hours-back 1`, `--max-minutes-since-determined 12` | the only place a Q1 edge could live: the first minutes after determination |
+| **coverage** | every 30 min | all four, `--hours-back 1` | the day's ladders, `hit_day` states, decided legs seen late (minutes 15–60 of the curve) |
+| **window** | minutes **1 and 7** every hour | `hourly_above, updown_1h, noon_close`, `--hours-back 1`, `--max-minutes-since-determined 12` | the only place a Q1 edge could live: the first minutes after determination |
 
 *Observation kept, not explained away:* the 5 pm ET ladder was still `acceptingOrders: true` **45
 minutes** after its anchor, so the close is *not* always at +11 min. Every row therefore carries
 `accepting_orders` and `minutes_since_determined`, and no row is ever scored as buyable without an
 ask actually present in the book.
+
+### 3.2 Storage policy (measured, not assumed)
+
+A row is **~912 B** and a tick captures **every strike of every ladder**, so raw capture at the first
+cadences designed would have been **~47 MB/day** — enough to swallow the nightly backup's 95 MB guard
+inside a single day. Two changes, both frozen here, bring it to **~2 MB/day**:
+
+- **undetermined (Q2-candidate) rows are kept only in the first 5 minutes of each hour**
+  (`--undetermined-max-minute 5`): they do not need 15-minute resolution, and they were the largest
+  single contributor. Decided rows are never thinned — they are the measurement.
+- **each finished day's file is gzipped on the next tick** (`btc-convergence-samples-<date>.jsonl` →
+  `.jsonl.gz`) and the raw file for **today only** is kept readable. Rotation, never deletion: the
+  full series stays on disk and in git, compressed ~8–12×. The reader and the gate both read `.gz`.
+
+*Projected: ~16 MB/day raw (today only) → ~2 MB/day compressed, ~55 MB over the 4-week collection.*
+
 - **Books:** both tokens' **real executable CLOB book** per market. Gamma's `bestBid`/`bestAsk` is
   never used (measured stale by up to ~0.6 in the pair lane).
 - **Row payload:** label, strike/strike_kind, `determined`, `determination_basis`,
@@ -292,10 +308,11 @@ review.
 ## 11. Reproduce / operate
 
 ```bash
-# sampler (writes data/btc-convergence-samples-<date>.jsonl + data/btc-convergence-coverage.jsonl)
-python3 scripts/btc-convergence-sampler.py --assets all --verbose
+# sampler (writes data/btc-convergence-samples-<date>.jsonl + data/btc-convergence-coverage.jsonl;
+# finished days are gzipped on the next tick, and the read side accepts both .jsonl and .jsonl.gz)
+python3 scripts/btc-convergence-sampler.py --assets all --hours-back 1 --verbose
 
-# the pre-registered WINDOW job (minutes 1,4,7,10 of every hour)
+# the pre-registered WINDOW job (minutes 1 and 7 of every hour)
 python3 scripts/btc-convergence-sampler.py --families hourly_above,updown_1h,noon_close \
         --hours-back 1 --max-minutes-since-determined 12
 
