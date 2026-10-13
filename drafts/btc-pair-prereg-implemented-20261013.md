@@ -59,14 +59,22 @@ observed live is **not** explained by oracle basis.
   - the **mirror sum** (best A_cost + best B_cost ≈ 2.00 + both spreads — so one direction being cheap *means* the other is expensive; neither is free),
   - the **cross-venue side spread** (PM Up bid − Kalshi Yes ask) at the **first vs last sample** of each window, because a gap that collapses inside the window is a **latency artefact**, not an opportunity.
 
-## First look — n = 1 window, explicitly NOT a claim
+## First look — n = 1 window, explicitly NOT a claim — and the first observation already flipped
 
-Three samples in one window (2026-10-13 01:26Z), recorded here as observation only, because the
-pre-registered floor is 288 windows and 3 samples cannot support anything:
+The opening samples of one window (2026-10-13 01:2x–01:4xZ) looked like an edge. Eleven samples
+later, sampled by the same instrument inside the *same* window, the picture inverted:
 
-- direction **A** net **−0.139 → −0.176** ; direction **B** net **+0.020 → +0.063**
-- mirror sum **2.06** (≈2.00 + spreads — consistent, so the asymmetry is the venue spread, not free money)
-- side spread **+0.07 → +0.11** *inside* the window — it widened rather than collapsing, which is the one pattern that would justify continuing to 288 windows
+- **first ~2 minutes into the window:** direction **B** net **+0.020 / +0.052 / +0.063**, direction A net −0.139 → −0.176, cross-venue side spread (PM Up bid − Kalshi Yes ask) **+0.07 → +0.11**.
+- **~6–8.5 minutes into the same window:** direction B net **−0.025 → −0.120** (only 7 of 8 samples even qualify at ≥50 executable pairs), direction A net **−0.119 → −0.181**, side spread collapsed to **+0.02 → −0.01**.
+
+So the "6¢ edge" was **a repricing lag at the window open**, not a persistent dislocation — the
+venues re-price the new window at different speeds, and the gap closes once both have caught up.
+That is exactly the artefact the analyzer's first-vs-last-sample check exists to catch, and it is
+why the gate is written as "per-window **best** net after the direction's fatal-oracle haircut"
+rather than "the net you can see right now": if the early-window gap recurs systematically, the
+per-window best will find it across 288 windows, and if it doesn't, the gate fails honestly.
+
+Recorded as observation only — 1 window, floor is 288.
 
 ## Overridable flags (one line each, if you want them changed)
 

@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import glob
 import random
 import sys
 from collections import defaultdict
@@ -102,25 +103,33 @@ def main():
                     help="pre-registered sample floor: 288 windows = 72h of 15-min windows")
     ap.add_argument("--boot", type=int, default=4000)
     ap.add_argument("--out", default=None)
-    ap.add_argument("--samples", default=str(SAMPLES),
-                    help="samples JSONL (default: the cron sampler's output)")
+    ap.add_argument("--samples", default=str(ROOT / "data" / "kalshi-pm-btc-pair-*.jsonl"),
+                    help="samples JSONL or glob (default: the cron sampler's rotated series; "
+                         "coverage rows live in kalshi-pm-pair-coverage.jsonl and are not read)")
     args = ap.parse_args()
 
-    samples_path = Path(args.samples)
-    if not samples_path.exists():
-        print("no samples yet at %s — the sampler has not run." % samples_path)
+    # the sampler rotates per UTC day, so read the whole series (and tolerate a plain path)
+    if any(ch in args.samples for ch in "*?["):
+        samples_paths = [Path(p) for p in sorted(glob.glob(args.samples))]
+    else:
+        samples_paths = [Path(args.samples)] if Path(args.samples).exists() else []
+    if not samples_paths:
+        print("no samples yet at %s — the sampler has not run." % args.samples)
         return 0
     rows = []
-    with samples_path.open() as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    ok = [r for r in rows if not r.get("error")]
+    for sp in samples_paths:
+        with sp.open() as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    # a sample row must carry a window and a pairs block; this also keeps any non-sample JSONL
+    # (e.g. a coverage row) out of the statistics
+    ok = [r for r in rows if not r.get("error") and r.get("bucket") and isinstance(r.get("pairs"), dict)]
     print("samples: %d rows total, %d without error, %d windows"
           % (len(rows), len(ok), len({r.get("bucket") for r in ok})))
     if not ok:
@@ -137,7 +146,8 @@ def main():
               "--outcomes 288 --json data/kalshi-pm-btc-oracle.json  (gate needs it)" % ORACLE.name)
 
     # ---- per-window aggregation -------------------------------------------------
-    print("sample file: %s" % samples_path)
+    print("sample files: %d (%s)" % (len(samples_paths),
+                                     ", ".join(p.name for p in samples_paths[:4])))
     per_window = defaultdict(lambda: {"A": [], "B": [], "skew": [], "side_gaps": []})
     for r in ok:
         bucket = r.get("bucket")

@@ -31,6 +31,11 @@ WHAT IT RECORDS (one JSONL row per sample, data/kalshi-pm-btc-pair.jsonl)
     `bestBid`/`bestAsk`, which is stale by up to ~0.6 on these markets (measured 2026-10-12);
   * for each direction: `cost` (sum of the two ask prices), `fee` (per-leg), `net` (= 1.00 -
     cost - fee), and `pairs` (the executable size = min of the two legs' size at those prices);
+  * COVERAGE: one row per invocation in data/kalshi-pm-pair-coverage.jsonl (named with a
+    different prefix on purpose — it must not match the sample glob);
+  * ROTATION: samples land in data/kalshi-pm-btc-pair-<UTC date>.jsonl (one file per day,
+    ~7 MB/day) rather than one ever-growing file, so no single tracked file can approach the
+    nightly backup's 95 MB guard; the analyzer globs the whole series.
   * Kalshi's touch exists TWICE and they disagree by ~1c on the live market (measured
     2026-10-13: market-summary `yes_bid` 0.61 vs a resting yes bid at 0.62 in the ladder, i.e.
     a 1c-better No offer), so every row carries BOTH: `cost`/`net` are priced at the WORSE
@@ -308,8 +313,12 @@ def main():
     ap.add_argument("--seconds", type=int, default=700, help="sampling span per invocation")
     ap.add_argument("--interval", type=float, default=20.0, help="seconds between samples")
     ap.add_argument("--depth", type=int, default=10)
-    ap.add_argument("--out", default=str(OUTFILE))
-    ap.add_argument("--coverage", default=str(ROOT / "data" / "kalshi-pm-btc-pair-coverage.jsonl"),
+    ap.add_argument("--out", default=None,
+                    help="exact output file (testing); default is per-UTC-day rotation")
+    # NOTE the deliberately different prefix: the samples series is `kalshi-pm-btc-pair-*.jsonl`
+    # and the analyzer globs exactly that, so the coverage file must NOT match it (a coverage row
+    # has no `bucket`/`pairs` and would otherwise be counted as a sample).
+    ap.add_argument("--coverage", default=str(ROOT / "data" / "kalshi-pm-pair-coverage.jsonl"),
                     help="one coverage row per invocation, so coverage is MEASURED not assumed")
     args = ap.parse_args()
 
@@ -318,30 +327,39 @@ def main():
     row = {}
     err_examples = []
     per_window = {}
-    with open(args.out, "a") as fh:
-        while time.time() - started < args.seconds:
-            loop_start = time.time()
-            bucket = int(loop_start) // BUCKET * BUCKET
-            row = sample(bucket, args.depth)
-            row["run_id"] = int(started)
-            if row.get("error"):
-                errors += 1
-                if len(err_examples) < 3:
-                    err_examples.append(row.get("error"))
-            else:
-                written += 1
-                w = per_window.setdefault(row["bucket"],
-                                          {"samples": 0, "secs": [], "cal": 0})
-                w["samples"] += 1
-                w["secs"].append(row["secs_into_window"])
-                for d in ("A", "B"):
-                    if (row["pairs"].get(d) or {}).get("complete"):
-                        w["cal"] += 1
-            fh.write(json.dumps(row) + "\n")
-            fh.flush()
-            sleep_for = args.interval - (time.time() - loop_start)
-            if sleep_for > 0:
-                time.sleep(sleep_for)
+    fh = None
+    cur_path = None
+    while time.time() - started < args.seconds:
+        loop_start = time.time()
+        bucket = int(loop_start) // BUCKET * BUCKET
+        row = sample(bucket, args.depth)
+        row["run_id"] = int(started)
+        if row.get("error"):
+            errors += 1
+            if len(err_examples) < 3:
+                err_examples.append(row.get("error"))
+        else:
+            written += 1
+            w = per_window.setdefault(row["bucket"], {"samples": 0, "secs": [], "cal": 0})
+            w["samples"] += 1
+            w["secs"].append(row["secs_into_window"])
+            for d in ("A", "B"):
+                if (row["pairs"].get(d) or {}).get("complete"):
+                    w["cal"] += 1
+        target = args.out or str(ROOT / "data" / ("kalshi-pm-btc-pair-%s.jsonl"
+                                                 % datetime.now(timezone.utc).strftime("%Y%m%d")))
+        if target != cur_path:
+            if fh:
+                fh.close()
+            fh = open(target, "a")
+            cur_path = target
+        fh.write(json.dumps(row) + "\n")
+        fh.flush()
+        sleep_for = args.interval - (time.time() - loop_start)
+        if sleep_for > 0:
+            time.sleep(sleep_for)
+    if fh:
+        fh.close()
     # coverage row: the analyzer must never have to ASSUME how much of each window was sampled
     cov = {
         "run_id": int(started),
