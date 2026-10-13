@@ -1,25 +1,25 @@
 🔭 **Prediction-Market Repo Scout**
-Scanned 6 queries · 59 new candidates · top 5
+Scanned 6 queries · 52 new candidates · top 5
 **Gate:** watch-only (pipeline busy: Phase A2 outcome review; Phase B — Kelly sizing replaces band siz)
 
-**YichengYang-Ethan/oracle3-prediction-market-agent** — 315★ · Apache-2.0 · Python · pushed 4d ago · relevance 14
-> Oracle3: open-source trading engine and MCP server for prediction markets. Finds fee-adjusted no-arbitrage violations across related event contracts and trades 
-> keywords: ai, arb, arbitrage, backtest, kalshi, polymarket, prediction market, prediction-market
+**Synpath-ai/synpath** — 139★ · MIT · Python · pushed 3d ago · relevance 10
+> One open-source API for prediction markets. Trade Kalshi, Polymarket, Polymarket US and Opinion with one Python SDK: unified market data, smart order routing ac
+> keywords: kalshi, order book, polymarket, prediction market, prediction-market
 
-**kuest/prediction-market** — 1101★ · NOASSERTION · TypeScript · pushed 3d ago · relevance 11
-> Launch your own web3 decentralized prediction market in minutes (Polymarket like)
-> keywords: crypto, kalshi, polymarket, prediction market, prediction-market
+**lovePinesnop/polymarket-kalshi-arbitrage-bot** — 138★ · NO-LICENSE · TypeScript · pushed 7d ago · relevance 7
+> polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polyma
+> keywords: arb, arbitrage, kalshi, polymarket
 
-**nahrek/polyledger** — 600★ · MIT · Python · pushed 2d ago · relevance 7
-> Resumable Polymarket indexer: CLOB market metadata plus on-chain trades from Polygon, in one DuckDB file you can query with SQL
-> keywords: ai, polymarket, prediction-market
+**ccxt/ccxt** — 44340★ · MIT · Python · pushed 0d ago · relevance 7
+> A unified trading API with more than 100 crypto exchanges and prediction markets in JavaScript / TypeScript / Python / C# / PHP / Go / Java / Rust
+> keywords: arb, arbitrage, crypto, prediction market
 
-**humanplane/cross-market-state-fusion** — 383★ · MIT · Python · pushed 274d ago · relevance 7
-> RL agent fusing real-time Binance futures data into Polymarket prediction markets. On-device training with MLX on Apple Silicon.
-> keywords: ai, ml, polymarket, prediction market
+**lawmaster10/howcryptoworksbook** — 892★ · NO-LICENSE · ? · pushed 0d ago · relevance 7
+> A free, open-source book that explains how crypto actually works. 15 chapters covering Bitcoin, Ethereum, Solana, DeFi, MEV, market structure, custody, stableco
+> keywords: ai, crypto, prediction market, prediction-market
 
-**chainstacklabs/polyclaw** — 358★ · Apache-2.0 · Python · pushed 160d ago · relevance 7
-> Trading-enabled Polymarket skill for OpenClaw - browse markets, execute trades, track positions, discover hedges
-> keywords: arb, arbitrage, polymarket
+**zeitgeistpm/zeitgeist** — 202★ · GPL-3.0 · Rust · pushed 312d ago · relevance 6
+> An evolving blockchain for prediction markets and futarchy.
+> keywords: ai, prediction market, prediction-market
 
 Seen list updated. Deep audit only if it maps to an open gap or pipeline has room.
