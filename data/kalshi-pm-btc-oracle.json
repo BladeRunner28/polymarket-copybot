@@ -1,0 +1,75 @@
+{
+ "asOf": "2026-10-13T01:35:22.012966+00:00",
+ "series": "KXBTC15M",
+ "windows_checked": 288,
+ "windows_with_both": 287,
+ "agree": 281,
+ "disagree": 6,
+ "cells": {
+  "kalshi_up_pm_up": 136,
+  "kalshi_up_pm_down": 4,
+  "kalshi_down_pm_up": 2,
+  "kalshi_down_pm_down": 145
+ },
+ "disagreement_rate": 0.020905923344947737,
+ "disagreement_ci95": [
+  0.009615619185596776,
+  0.044852517422096214
+ ],
+ "disagreeing_windows": [
+  {
+   "window_start": "2026-10-13T00:30:00Z",
+   "kalshi_ticker": "KXBTC15M-26OCT122045-45",
+   "kalshi": "no",
+   "kalshi_last": 0.001,
+   "pm": "up",
+   "vol_kalshi": 4349565.04,
+   "vol_pm": 51587.22968000009
+  },
+  {
+   "window_start": "2026-10-12T15:45:00Z",
+   "kalshi_ticker": "KXBTC15M-26OCT121200-00",
+   "kalshi": "no",
+   "kalshi_last": 0.001,
+   "pm": "up",
+   "vol_kalshi": 3049939.76,
+   "vol_pm": 43416.984461
+  },
+  {
+   "window_start": "2026-10-11T13:45:00Z",
+   "kalshi_ticker": "KXBTC15M-26OCT111000-00",
+   "kalshi": "yes",
+   "kalshi_last": 0.999,
+   "pm": "down",
+   "vol_kalshi": 2332384.8,
+   "vol_pm": 103244.66534000007
+  },
+  {
+   "window_start": "2026-10-11T02:15:00Z",
+   "kalshi_ticker": "KXBTC15M-26OCT102230-30",
+   "kalshi": "yes",
+   "kalshi_last": 0.999,
+   "pm": "down",
+   "vol_kalshi": 3168570.36,
+   "vol_pm": 411473.50286700024
+  },
+  {
+   "window_start": "2026-10-10T18:45:00Z",
+   "kalshi_ticker": "KXBTC15M-26OCT101500-00",
+   "kalshi": "yes",
+   "kalshi_last": 0.999,
+   "pm": "down",
+   "vol_kalshi": 2362424.71,
+   "vol_pm": 41188.35722500001
+  },
+  {
+   "window_start": "2026-10-10T09:15:00Z",
+   "kalshi_ticker": "KXBTC15M-26OCT100530-30",
+   "kalshi": "yes",
+   "kalshi_last": 0.999,
+   "pm": "down",
+   "vol_kalshi": 1676009.72,
+   "vol_pm": 92266.32873300002
+  }
+ ]
+}

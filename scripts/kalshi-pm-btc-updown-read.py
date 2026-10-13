@@ -165,7 +165,7 @@ def iso(ts):
     return datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def run_outcomes(n_buckets):
+def run_outcomes(n_buckets, json_path=None):
     now = int(time.time())
     start = now // BUCKET * BUCKET
     settled = kalshi_settled_by_close()
@@ -173,6 +173,12 @@ def run_outcomes(n_buckets):
     agree = disagree = both_found = kalshi_only = pm_only = 0
     examples = []
     checked = 0
+    # The 2x2 confusion matrix — WHY IT MATTERS: a cross-venue PAIRED position (buy Up on one
+    # venue, buy Down on the other) loses the whole stake on EXACTLY ONE of the two disagreement
+    # directions, and which one is fatal depends on the direction of the pair. The aggregate
+    # disagreement rate is therefore not enough to price either leg; these cells are.
+    cells = {"kalshi_up_pm_up": 0, "kalshi_up_pm_down": 0,
+             "kalshi_down_pm_up": 0, "kalshi_down_pm_down": 0}
     for i in range(1, n_buckets + 1):
         b = start - i * BUCKET
         close_iso = iso(b + BUCKET)
@@ -183,6 +189,7 @@ def run_outcomes(n_buckets):
             both_found += 1
             k_up = k["result"] == "yes"
             pm_up = winner == "up"
+            cells["kalshi_%s_pm_%s" % ("up" if k_up else "down", "up" if pm_up else "down")] += 1
             if k_up == pm_up:
                 agree += 1
             else:
@@ -209,10 +216,39 @@ def run_outcomes(n_buckets):
             for b, tick, res, last, win, kv, pv in examples:
                 print("  %s  %-28s kalshi=%-3s last=%.2f | PM=%-4s  vol k=%.0f p=%.0f"
                       % (iso(b), tick, res, last, win, kv or 0, pv or 0))
+        print("\n2x2 ORACLE MATRIX (rows = Kalshi verdict, cols = Polymarket verdict):")
+        print("             PM up     PM down")
+        print("  kalshi up  %6d    %6d   <- PM-down cell is FATAL to direction A (PM Up + K No)"
+              % (cells["kalshi_up_pm_up"], cells["kalshi_up_pm_down"]))
+        print("  kalshi dn  %6d    %6d   <- PM-up cell is FATAL to direction B (PM Down + K Yes)"
+              % (cells["kalshi_down_pm_up"], cells["kalshi_down_pm_down"]))
+        for label, key in (("A (PM Up + Kalshi No)", "kalshi_up_pm_down"),
+                           ("B (PM Down + Kalshi Yes)", "kalshi_down_pm_up")):
+            lo_c, hi_c = wilson(cells[key], both_found)
+            print("  fatal rate for direction %-26s %d/%d = %.2f%% (95%% CI %.2f-%.2f%%)"
+                  % (label, cells[key], both_found, 100.0 * cells[key] / both_found,
+                     100 * lo_c, 100 * hi_c))
         print("\nREAD: the two venues resolve on DIFFERENT oracles (CF Benchmarks BRTI vs")
         print("Chainlink BTC/USD 60s TWAP) over the same window, so a disagreement rate")
         print("above ~0 means a cross-venue position carries oracle basis risk, not just")
-        print("the usual spread. Quote this number with any gap the --live mode prints.")
+        print("the usual spread. Quote the per-direction fatal cell with any pair cost the")
+        print("--live mode or the paired sampler prints.")
+        if json_path:
+            payload = {
+                "asOf": datetime.now(timezone.utc).isoformat(),
+                "series": SERIES, "windows_checked": checked, "windows_with_both": both_found,
+                "agree": agree, "disagree": disagree,
+                "cells": cells,
+                "disagreement_rate": (disagree / both_found) if both_found else None,
+                "disagreement_ci95": list(wilson(disagree, both_found)) if both_found else None,
+                "disagreeing_windows": [
+                    {"window_start": iso(b), "kalshi_ticker": tick, "kalshi": res,
+                     "kalshi_last": last, "pm": win, "vol_kalshi": kv, "vol_pm": pv}
+                    for b, tick, res, last, win, kv, pv in examples],
+            }
+            with open(json_path, "w") as fh:
+                json.dump(payload, fh, indent=1)
+            print("wrote oracle matrix -> %s" % json_path)
 
 
 def run_live():
@@ -262,11 +298,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--outcomes", type=int, default=0, help="check the last N 15-min windows for oracle agreement")
     ap.add_argument("--live", action="store_true", help="side-by-side quotes on the current window")
+    ap.add_argument("--json", default=None,
+                    help="write the 2x2 oracle matrix here (the paired read's gate needs it: "
+                         "data/kalshi-pm-btc-oracle.json)")
     args = ap.parse_args()
     if not args.outcomes and not args.live:
         args.outcomes = 96
     if args.outcomes:
-        run_outcomes(args.outcomes)
+        run_outcomes(args.outcomes, json_path=args.json)
         print()
     if args.live:
         run_live()
