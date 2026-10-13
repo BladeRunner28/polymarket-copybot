@@ -45,10 +45,30 @@ SOLUSDT, XRPUSDT, DOGEUSDT, BNBUSDT, HYPEUSDT` (all verified reachable keyless o
 Polymarket verdicts **exactly** over the validation window. Any asset below 100% is **excluded** and
 named. Anything less than exact reproduction is a trap, not a data source.
 
-**Validation (running as this file was frozen).** The `--assets all --days 2` run of that harness was
-launched 2026-10-13 16:47 CDT and validates every asset's families independently; its per-asset table
-is appended below **before the first scheduled sample exists**. Any asset that does not reproduce
-100% is dropped from the universe by this rule, not by judgement.
+**Validation (completed before the first sample; `--assets all --days 2 --futures`, 2026-10-13):**
+
+| asset | families reproduced (ok/n) | rate |
+|---|---|---|
+| bitcoin | hit_day 32/32 · hourly_above 960/960 · noon_close 22/22 · updown_1h 48/48 | **100%** |
+| ethereum | hit_day 28/28 · hourly_above 768/768 · noon_close 22/22 · updown_1h 48/48 | **100%** |
+| solana | hit_day 20/20 · noon_close 22/22 · updown_1h 48/48 | **100%** |
+| xrp | hit_day 20/20 · noon_close 22/22 · updown_1h 48/48 | **100%** |
+| bnb | updown_1h 48/48 | **100%** |
+| dogecoin | updown_1h 48/48 | **100%** |
+| hyperliquid | **no listed families matched in the window** | *unvalidated* |
+| **TOTAL** | **2,204 / 2,204** | **100.00%** |
+
+Two honest readings of that table, both frozen here:
+- A family with **zero** rows (solana `hourly_above`, bnb/dogecoin ladders) means the venue **did not
+  list** that family in the window — not that it failed. Those assets are validated by the families
+  they did list, and a family that is not listed simply produces no rows.
+- **hyperliquid is UNVALIDATED** (nothing listed to check against), so it fails the inclusion rule on
+  the evidence available: its rows, if any appear, are recorded but are **excluded from every
+  statistic** until a later validation reproduces at least one of its families exactly. It is left in
+  the sampler's asset list deliberately — dropping it would mean editing the universe (which §8 voids
+  a series for), and its observations cost nothing while they cannot be used.
+
+No asset that was validated came in below 100%, so no asset was dropped by the exclusion rule.
 
 ### 2.2 Families (PINNED — four, each with a frozen determination rule)
 1. `hit_day` — `what-price-will-<asset>-hit-on-<month>-<d>-<year>`: outcome determined the moment a
@@ -195,6 +215,10 @@ hour ladders).
 the sampler stamps `code` on every row, so pre-estimator rows are excluded transparently rather than
 post-hoc annotated. Until the estimator is implemented and its hash recorded in this section, Q2
 carries **no claim and no verdict**.
+
+**Asset eligibility (from §2.1):** `hyperliquid` is unvalidated (no listed families to check against),
+so any hyperliquid rows are recorded but excluded from Q1 and Q2 statistics until a later validation
+reproduces at least one of its families exactly.
 
 **Gate (frozen).**
 1. **Calibration:** Brier skill of `p̂` against the **venue's own** implied probability, both scored
