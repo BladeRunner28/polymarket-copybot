@@ -168,6 +168,9 @@ def kalshi_side(ticker, close_iso, depth):
         "no_ask_size": yes_bid_sz,
         "volume": fnum(market.get("volume_fp")),
         "read_at": iso(time.time()),
+        # the epoch of the TOUCH read (the market listing), taken before the depth query, so the
+        # venue-to-venue skew below measures the two quotes, not how long the depth calls took
+        "read_epoch": round(time.time(), 3),
     }
     try:
         ob = get_json("%s/markets/%s/orderbook?depth=%d" % (KALSHI, market["ticker"], depth))
@@ -242,6 +245,7 @@ def pm_side(bucket, depth):
             out["%s_cum_2c" % key] = round(sum((s or 0.0) for p, s in asks
                                                if p is not None and p <= (asks[0][0] or 0) + 0.0201), 2)
         out["%s_read_at" % key] = iso(time.time())
+        out["read_epoch"] = round(time.time(), 3)
     return out
 
 
@@ -263,10 +267,17 @@ def sample(bucket, depth):
     skew_ms = int((time.time() - t0) * 1000)
 
     now = time.time()
+    # CARD SPEC <1000 ms is about the TWO VENUE TOUCH READS being simultaneous. `read_skew_ms` is
+    # the whole sampling call (PM books + Kalshi listing + depth) and is NOT that number; the
+    # pre-registered quantity is `venue_skew_ms` = |Kalshi touch epoch - PM touch epoch|.
+    venue_skew = None
+    if kal.get("read_epoch") and (pm.get("read_epoch") if isinstance(pm, dict) else None):
+        venue_skew = int(abs(kal["read_epoch"] - pm["read_epoch"]) * 1000)
     row = {
         "ts": iso(now), "ts_epoch": round(now, 3), "bucket": bucket, "close": close_iso,
         "secs_into_window": round(now - bucket, 1),
         "read_skew_ms": skew_ms,
+        "venue_skew_ms": venue_skew,
         "pm": pm, "kalshi": kal,
         "fee_model": {"pm_rate": PM_FEE_RATE, "pm_law": "rate*min(p,1-p) taker, maker 0",
                       "kalshi_rate": KALSHI_FEE_RATE, "kalshi_law": "rate*p*(1-p) taker, maker 0",
@@ -343,9 +354,10 @@ def main():
             w = per_window.setdefault(row["bucket"], {"samples": 0, "secs": [], "cal": 0})
             w["samples"] += 1
             w["secs"].append(row["secs_into_window"])
-            for d in ("A", "B"):
-                if (row["pairs"].get(d) or {}).get("complete"):
-                    w["cal"] += 1
+            # count SAMPLES with both legs priced, exactly once — the first version incremented
+            # per direction, so the field read up to 2x the sample count and lied about its scale
+            if all((row["pairs"].get(d) or {}).get("complete") for d in ("A", "B")):
+                w["cal"] += 1
         target = args.out or str(ROOT / "data" / ("kalshi-pm-btc-pair-%s.jsonl"
                                                  % datetime.now(timezone.utc).strftime("%Y%m%d")))
         if target != cur_path:
@@ -367,7 +379,7 @@ def main():
         "samples_written": written, "errors": errors,
         "wall_seconds": round(time.time() - started, 1),
         "interval_s": args.interval, "requested_seconds": args.seconds,
-        "windows": {str(b): {"samples": w["samples"], "with_both_legs": w["cal"],
+        "windows": {str(b): {"samples": w["samples"], "samples_both_legs_priced": w["cal"],
                              "secs_min": round(min(w["secs"]), 1),
                              "secs_max": round(max(w["secs"]), 1)}
                     for b, w in per_window.items()},

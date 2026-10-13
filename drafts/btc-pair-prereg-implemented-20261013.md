@@ -50,13 +50,13 @@ observed live is **not** explained by oracle basis.
 ## What got built
 
 - **`scripts/kalshi-pm-btc-pair-sampler.py`** + wrapper `~/.hermes/scripts/copybot-kalshi-pm-pair.sh`, **cron `faa5df74ddf3`, every 15 min** (~11.7-minute span at 20s resolution → ~78% window duty, ~35 samples/window).
-  - both venue books read back-to-back with the **measured skew** recorded (spec: <1000 ms; observed median ~0.6 s);
+  - both venue books read back-to-back with the **venue-to-venue touch skew** recorded as its own field, `venue_skew_ms` = |Kalshi touch epoch − PM touch epoch|. (The first version recorded only the whole sampling call — PM books *plus* the Kalshi depth query — which is **not** the card's <1000 ms spec and read ~0.6–1.5 s. Fixed before the field accumulated.)
   - **real depth** on both legs — Kalshi `/markets/{ticker}/orderbook?depth=10` (`orderbook_fp`), PM `clob.polymarket.com/book` for **both** tokens. **Never** Gamma's `bestBid`/`bestAsk`: stale by up to ~0.6 on these markets (measured 2026-10-12: gamma 0.72/0.73 vs live CLOB 0.86/0.90);
   - per-leg fees at the pinned schedules, both directions' cost/fee/net and **executable size**;
   - **Kalshi's touch exists twice** (market summary vs the resting ladder) and they disagree by ~1¢ live — so every row carries both, `net` is priced at the **worse** ask and `net_optimistic` at the better one. A pass cannot be a snapshot-choice artefact;
   - one **coverage row per invocation** (`data/kalshi-pm-btc-pair-coverage.jsonl`) — coverage is measured, never assumed.
 - **`scripts/kalshi-pm-btc-pair-read.py`** — the analyzer/gate, which prints the **identity checks before any verdict**:
-  - the **mirror sum** (best A_cost + best B_cost ≈ 2.00 + both spreads — so one direction being cheap *means* the other is expensive; neither is free),
+  - the **mirror sum**, computed **within each sample** (A and B are two ways to buy the same 1.00, so pairing the best A with the best B from *different* samples is meaningless — the first version did exactly that and read 2.25). Measured per sample: **median 2.20, p10 2.027** over the first 27 samples, i.e. 2.00 + both venues' own two-sided spreads (~10¢ each). One direction being cheap *means* the other is expensive; neither is free,
   - the **cross-venue side spread** (PM Up bid − Kalshi Yes ask) at the **first vs last sample** of each window, because a gap that collapses inside the window is a **latency artefact**, not an opportunity.
 
 ## First look — n = 1 window, explicitly NOT a claim — and the first observation already flipped

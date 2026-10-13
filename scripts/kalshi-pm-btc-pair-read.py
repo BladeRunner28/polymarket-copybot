@@ -157,8 +157,8 @@ def main():
             if p.get("complete") and (p.get("pairs_executable") or 0) >= args.min_size:
                 w[d].append({"net": p["net"], "net_opt": p.get("net_optimistic"),
                              "cost": p["cost"], "size": p["pairs_executable"]})
-        if r.get("read_skew_ms") is not None:
-            w["skew"].append(r["read_skew_ms"])
+        if r.get("venue_skew_ms") is not None:
+            w["skew"].append(r["venue_skew_ms"])
         # cross-venue side spread: PM bid for Up vs Kalshi ask for Yes
         pm_bid = (r.get("pm") or {}).get("up_bid")
         kal_ask = (r.get("kalshi") or {}).get("yes_ask")
@@ -169,16 +169,26 @@ def main():
     print("windows with ≥1 qualifying sample: %d (floor %d)" % (len(windows), args.min_windows))
     skews = sorted(s for w in per_window.values() for s in w["skew"])
     if skews:
-        print("read skew between venues: median %d ms, p90 %d ms, max %d ms (card spec: <1000)"
+        print("venue-to-venue touch skew: median %d ms, p90 %d ms, max %d ms (card spec: <1000; "
+              "rows seeded before 2026-10-13 01:5xZ carry no venue_skew_ms and are excluded)"
               % (skews[len(skews) // 2], skews[int(0.9 * len(skews))], skews[-1]))
 
     # ---- identity checks --------------------------------------------------------
-    both = [w for w in per_window.values() if w["A"] and w["B"]]
-    if both:
-        sums = [max(x["cost"] for x in w["A"]) + max(x["cost"] for x in w["B"]) for w in both]
-        sums.sort()
-        print("mirror identity: median best A_cost + best B_cost = %.4f (2.00 + both spreads "
-              "would be expected)" % percentile(sums, 0.5))
+    # The mirror sum is a per-SAMPLE identity (A and B are two ways to buy the same 1.00), so
+    # pairing the best A with the best B across DIFFERENT samples is meaningless — it made the
+    # sum read 2.25 instead of ~2.0+. Compute it inside each sample.
+    mirror = []
+    for r in ok:
+        pa = (r.get("pairs") or {}).get("A") or {}
+        pb = (r.get("pairs") or {}).get("B") or {}
+        if pa.get("complete") and pb.get("complete"):
+            mirror.append(round(pa["cost"] + pb["cost"], 6))
+    if mirror:
+        mirror.sort()
+        print("mirror identity (per sample): median A_cost + B_cost = %.4f, p10 %.4f, p90 %.4f "
+              "over %d samples (2.00 + both spreads expected — one direction cheap MEANS the "
+              "other expensive)" % (percentile(mirror, 0.5), percentile(mirror, 0.1),
+                                    percentile(mirror, 0.9), len(mirror)))
     gaps_first_last = []
     for w in per_window.values():
         if len(w["side_gaps"]) >= 2:
