@@ -87,10 +87,15 @@ export interface FillVsIntentSummary {
 /** The gap buckets the distribution is reported in (entry - intent). */
 export const GAP_BUCKETS: Array<{ label: string; lo: number; hi: number }> = [
   { label: "entry better by >2.5c", lo: -Infinity, hi: -0.025 },
-  { label: "better by ~2c (the model)", lo: -0.025, hi: -0.015 },
+  { label: "better by ~2c (flat model)", lo: -0.025, hi: -0.015 },
   { label: "better by 0.5-1.5c", lo: -0.015, hi: -0.005 },
-  { label: "equal (no improvement)", lo: -0.005, hi: 0.005 },
-  { label: "worse (bug signature)", lo: 0.005, hi: Infinity },
+  // The 2026-10-10 switch to the MEASURED per-band credit books gaps of 0.06-0.46c, which the old
+  // +-0.5c "equal (no improvement)" band swallowed whole: the report then contradicted its own header
+  // (bucket "no improvement: 39 (13.1%)" against shareNoImprovement "0.3%"), and the current mode was
+  // indistinguishable from booking no improvement at all. Sub-cent band added for exactly that reason.
+  { label: "better by 0.05-0.5c (measured credit)", lo: -0.005, hi: -NO_IMPROVEMENT_TOL },
+  { label: "equal (no improvement)", lo: -NO_IMPROVEMENT_TOL, hi: NO_IMPROVEMENT_TOL },
+  { label: "worse (bug signature)", lo: NO_IMPROVEMENT_TOL, hi: Infinity },
 ];
 
 /** entry - intent for one leg. Positive = we paid MORE than the lane was handed. */
@@ -109,6 +114,12 @@ export function median(xs: number[]): number {
   const mid = s.length >> 1;
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
+
+/** Half-width, in dollars, of "booked at the price handed in". Quotes are cent-scale, so a genuine
+ *  zero gap is exactly 0 (plus 1e-6 float noise): anything above 5e-4 is a real sub-cent credit and
+ *  must land in the measured-credit band. Kept identical to the GAP_BUCKETS edges so the header
+ *  statistics and the bucket lines can never disagree again. */
+export const NO_IMPROVEMENT_TOL = 5e-4;
 
 /**
  * Pure summariser — the number the card's gate asks for: the measured
