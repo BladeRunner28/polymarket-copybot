@@ -84,6 +84,18 @@ export interface FillVsIntentSummary {
   buckets: FillVsIntentBucket[];
 }
 
+/** Half-width, in dollars, of "booked at the price handed in". Quotes are cent-scale, so a genuine
+ *  zero gap is exactly 0 (plus 1e-6 float noise): anything above 5e-4 is a real sub-cent credit and
+ *  must land in the measured-credit band. Kept identical to the GAP_BUCKETS edges so the header
+ *  statistics and the bucket lines can never disagree again.
+ *
+ *  DECLARED BEFORE GAP_BUCKETS — do not move it below. GAP_BUCKETS is a module-level initializer
+ *  that reads this value at load time, so declaring it after throws
+ *  `ReferenceError: Cannot access 'NO_IMPROVEMENT_TOL' before initialization` (TDZ) and takes down
+ *  every importer of ./fill-intent (paper.ts:11), i.e. all paper booking — the 2026-10-13 16h
+ *  outage (107 crashed cron runs, 0 legs booked). */
+export const NO_IMPROVEMENT_TOL = 5e-4;
+
 /** The gap buckets the distribution is reported in (entry - intent). */
 export const GAP_BUCKETS: Array<{ label: string; lo: number; hi: number }> = [
   { label: "entry better by >2.5c", lo: -Infinity, hi: -0.025 },
@@ -114,12 +126,6 @@ export function median(xs: number[]): number {
   const mid = s.length >> 1;
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
-
-/** Half-width, in dollars, of "booked at the price handed in". Quotes are cent-scale, so a genuine
- *  zero gap is exactly 0 (plus 1e-6 float noise): anything above 5e-4 is a real sub-cent credit and
- *  must land in the measured-credit band. Kept identical to the GAP_BUCKETS edges so the header
- *  statistics and the bucket lines can never disagree again. */
-export const NO_IMPROVEMENT_TOL = 5e-4;
 
 /**
  * Pure summariser — the number the card's gate asks for: the measured
