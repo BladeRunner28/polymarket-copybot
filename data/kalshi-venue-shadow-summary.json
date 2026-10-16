@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-15T03:16:28.476Z",
+  "asOf": "2026-10-16T03:16:28.990Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1217,
-    "inWindow": 822,
+    "copiesSeen": 1226,
+    "inWindow": 831,
     "withKalshiQuote": 2,
     "crossListRate": 0.002,
     "staleSkips": 395,
-    "quoteFailures": 740,
-    "unverifiedMatches": 80,
+    "quoteFailures": 748,
+    "unverifiedMatches": 81,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 76,
+      "low_match_score_0.67": 77,
       "low_match_score_0.60": 3
     }
   },
@@ -55,16 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will Denmark win on 2026-09-27?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.655,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Will Netherlands win on 2026-09-27?",
       "ticker": "KXANYDEMWINTEXAS-26NOV03",
@@ -452,6 +442,16 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.44124,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will CA Huracán win on 2026-10-15?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.6113,
       "verified": false,
       "reason": "low_match_score_0.67"
     }

@@ -1,0 +1,146 @@
+{
+ "generated": "2026-10-15T09:33:29-05:00",
+ "source_csv": "data/decision-dataset.csv",
+ "bot": "BANKROLL_200",
+ "settled_only": true,
+ "bootstrap_reps": 10000,
+ "drops": {
+  "other-bot": 2617,
+  "unsettled": 228,
+  "no-ttr": 9
+ },
+ "ttr_hours": {
+  "min": 2.07,
+  "p25": 11.1,
+  "median": 35.06,
+  "p75": 167.66,
+  "max": 12039.44
+ },
+ "primary": {
+  "params": {
+   "taper_hours": 24.0,
+   "min_edge": 0.02,
+   "cap": 0.1,
+   "base": 0.05
+  },
+  "universe": 662,
+  "admitted_flat": 132,
+  "flip_set": {
+   "n": 62,
+   "mean_pnl_per_leg": -0.3307,
+   "median": -0.8947,
+   "win_rate": 0.3548,
+   "wallets": 23,
+   "ci95_clustered": [
+    -5.5543,
+    3.713
+   ]
+  },
+  "kept_set": {
+   "n": 70,
+   "mean_pnl_per_leg": 2.7552,
+   "median": -4.2202,
+   "win_rate": 0.2571,
+   "wallets": 26,
+   "ci95_clustered": [
+    -3.2956,
+    8.4363
+   ]
+  }
+ },
+ "grid": [
+  {
+   "taper_hours": 6.0,
+   "cap": 0.1,
+   "flip_n": 103,
+   "flip_mean": 1.6001,
+   "flip_ci": [
+    -4.4547,
+    7.8316
+   ],
+   "kept_mean": 0.2602
+  },
+  {
+   "taper_hours": 6.0,
+   "cap": 0.2,
+   "flip_n": 103,
+   "flip_mean": 1.6001,
+   "flip_ci": [
+    -4.4547,
+    7.8316
+   ],
+   "kept_mean": 0.2602
+  },
+  {
+   "taper_hours": 24.0,
+   "cap": 0.1,
+   "flip_n": 62,
+   "flip_mean": -0.3307,
+   "flip_ci": [
+    -5.5543,
+    3.713
+   ],
+   "kept_mean": 2.7552
+  },
+  {
+   "taper_hours": 24.0,
+   "cap": 0.2,
+   "flip_n": 62,
+   "flip_mean": -0.3307,
+   "flip_ci": [
+    -5.5543,
+    3.713
+   ],
+   "kept_mean": 2.7552
+  },
+  {
+   "taper_hours": 72.0,
+   "cap": 0.1,
+   "flip_n": 40,
+   "flip_mean": 0.4679,
+   "flip_ci": [
+    -8.069,
+    7.2818
+   ],
+   "kept_mean": 1.67
+  },
+  {
+   "taper_hours": 72.0,
+   "cap": 0.2,
+   "flip_n": 40,
+   "flip_mean": 0.4679,
+   "flip_ci": [
+    -8.069,
+    7.2818
+   ],
+   "kept_mean": 1.67
+  },
+  {
+   "taper_hours": 168.0,
+   "cap": 0.1,
+   "flip_n": 28,
+   "flip_mean": 0.3153,
+   "flip_ci": [
+    -0.9007,
+    2.9878
+   ],
+   "kept_mean": 1.5724
+  },
+  {
+   "taper_hours": 168.0,
+   "cap": 0.2,
+   "flip_n": 28,
+   "flip_mean": 0.3153,
+   "flip_ci": [
+    -0.9007,
+    2.9878
+   ],
+   "kept_mean": 1.5724
+  }
+ ],
+ "verdict": {
+  "state": "DROP",
+  "why": "flip mean -0.3307/leg, clustered CI [-5.5543, +3.7130] includes 0"
+ },
+ "note": "Read-only replay. Nothing adopted or changed by this run; the shadow spec is only written if the pre-registered rule fires AND the user approves that step."
+}

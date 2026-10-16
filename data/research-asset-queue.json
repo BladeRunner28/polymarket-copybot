@@ -1,0 +1,175 @@
+{
+ "items": [
+  {
+   "approval": {
+    "decided": "2026-10-15 09:32 CDT",
+    "decided_note": "User approved in Discord 2026-10-15: run the read-only horizon-scaled admission-margin replay of the frozen settled C-200 leg set. Adoption conditional on the pre-registered rule (flip-set mean realized net PnL/leg < 0, wallet-clustered CI excluding 0, n>=30).",
+    "requested": "2026-10-15 09:29 CDT",
+    "state": "approved"
+   },
+   "audited": "2026-10-15 09:29 CDT",
+   "claimed": "2026-10-15 09:26 CDT",
+   "claimed_ts": 1792074391.874188,
+   "discovered": "2026-10-15 09:25 CDT",
+   "id": "mbordash/DRADIS",
+   "license": "unknown",
+   "note": "",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "If the flip set (admitted at flat 0.05, rejected by the scaled margin) has mean realized net PnL per leg < 0 with a wallet-clustered CI excluding 0 at n >= 30, adopt the scaled margin as a shadow spec for a further 30-day window; else drop",
+    "effort": "~half day (one replay script + artifact; read-only, no live change)",
+    "reversibility": "Delete the shadow spec/flag - no stored value changes",
+    "text": "Measure a time-to-resolution-scaled admission margin (taper then sqrt, DRADIS required_edge) against the flat 0.05 in a read-only replay of the frozen settled C-200 leg set; touches the shadow price-edge spec in src/lib/scoring/price-edge.ts only, no rule or live path"
+   },
+   "report": "drafts/asset-audit-dradis-20261015.md",
+   "result": {
+    "artifact": "drafts/horizon-margin-replay-20261015.md",
+    "at": "2026-10-15 09:34 CDT",
+    "note": "Measurement ran 2026-10-15: flip set n=62 across 23 wallets, mean -0.3307/leg, wallet-clustered CI [-5.5543, +3.7130] includes 0 (rule needs CI excluding 0 at n>=30); flip-mean sign flips with the anchor across the sensitivity grid. Rule did not fire -> DROP. Shadow spec NOT written; nothing adopted.",
+    "state": "measured-dropped"
+   },
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/mbordash/DRADIS",
+   "verdict": "watch"
+  },
+  {
+   "audited": "2026-10-15 09:29 CDT",
+   "claimed": "2026-10-15 09:26 CDT",
+   "claimed_ts": 1792074391.874193,
+   "discovered": "2026-10-15 09:25 CDT",
+   "id": "JamesANZ/prediction-market-mcp",
+   "license": "unknown",
+   "note": "",
+   "pushed": "",
+   "report": "drafts/asset-audit-prediction-market-mcp-20261015.md",
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/JamesANZ/prediction-market-mcp",
+   "verdict": "drop"
+  },
+  {
+   "audited": "2026-10-15 12:25 CDT",
+   "claimed": "2026-10-15 12:20 CDT",
+   "claimed_ts": 1792084828.3887901,
+   "discovered": "2026-10-15 09:26 CDT",
+   "id": "Lumiwealth/lumibot",
+   "license": "unknown",
+   "note": "",
+   "pushed": "",
+   "report": "drafts/asset-audit-lumibot-20261015.md",
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/Lumiwealth/lumibot",
+   "verdict": "drop"
+  },
+  {
+   "audited": "2026-10-15 12:25 CDT",
+   "claimed": "2026-10-15 12:20 CDT",
+   "claimed_ts": 1792084828.388797,
+   "discovered": "2026-10-15 09:26 CDT",
+   "id": "LLMQuant/awesome-trading-agents",
+   "license": "unknown",
+   "note": "",
+   "pushed": "",
+   "report": "drafts/asset-audit-awesome-trading-agents-20261015.md",
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/LLMQuant/awesome-trading-agents",
+   "verdict": "drop"
+  },
+  {
+   "audited": "2026-10-15 16:23 CDT",
+   "claimed": "2026-10-15 16:20 CDT",
+   "claimed_ts": 1792099228.574734,
+   "discovered": "2026-10-15 09:30 CDT",
+   "id": "Cleverfuxaqo1668/Polymarket-Telegram-Bot",
+   "license": "MIT",
+   "note": "A handy Polymarket prediction bot for Telegram.",
+   "pushed": "2026-10-15",
+   "report": "drafts/asset-audit-polymarket-telegram-bot-20261015.md",
+   "source": "radar-seed",
+   "stars": 170,
+   "status": "audited",
+   "url": "https://github.com/Cleverfuxaqo1668/Polymarket-Telegram-Bot",
+   "verdict": "drop"
+  },
+  {
+   "audited": "2026-10-15 16:23 CDT",
+   "claimed": "2026-10-15 16:20 CDT",
+   "claimed_ts": 1792099228.574739,
+   "discovered": "2026-10-15 09:30 CDT",
+   "id": "anglil/kalshi-ai-trading-bot",
+   "license": "MIT",
+   "note": "AI-powered Kalshi prediction market trading bot using Gemini",
+   "pushed": "2026-10-15",
+   "report": "drafts/asset-audit-kalshi-ai-trading-bot-20261015.md",
+   "source": "radar-seed",
+   "stars": 10,
+   "status": "audited",
+   "url": "https://github.com/anglil/kalshi-ai-trading-bot",
+   "verdict": "drop"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-10-15 20:26 CDT",
+    "state": "pending"
+   },
+   "audited": "2026-10-15 20:26 CDT",
+   "claimed": "2026-10-15 20:20 CDT",
+   "claimed_ts": 1792113628.564872,
+   "discovered": "2026-10-15 12:25 CDT",
+   "id": "agent-next/polymarket-paper-trader",
+   "license": "MIT",
+   "note": "via LLMQuant/awesome-trading-agents (asset-audit 2026-10-15): PM paper-trading simulator + live order books + claimed official fee model + fill-fidelity benchma",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "read-only replay over settled C-200 legs: clob-markets fd must resolve >=90% of conditionIds (measured 25/25 where Gamma serves 6/25) AND the venue-vs-proxy re-pricing must move total fee >= $25 or flip a leg's net sign; else keep the proxy and record the null",
+    "effort": "~1-2h, read-only, keyless, no live-lane risk",
+    "reversibility": "drop the source from the fee-source list; touches no rule, size, gate or published number",
+    "text": "Price fees from the venue per market for ARCHIVED markets too: extend the fee-source list with the CLOB clob-markets/{conditionId} fd block (touches scripts/capture-fee-schedules.ts + the paper-ledger-fee-fidelity card's implementation)"
+   },
+   "report": "drafts/asset-audit-polymarket-paper-trader-20261015.md",
+   "source": "agent",
+   "stars": 499,
+   "status": "audited",
+   "url": "https://github.com/agent-next/polymarket-paper-trader",
+   "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-10-15 20:26 CDT",
+    "state": "pending"
+   },
+   "audited": "2026-10-15 20:26 CDT",
+   "claimed": "2026-10-15 20:20 CDT",
+   "claimed_ts": 1792113628.5648792,
+   "discovered": "2026-10-15 12:25 CDT",
+   "id": "mnemox-ai/tradememory-protocol",
+   "license": "MIT",
+   "note": "via LLMQuant/awesome-trading-agents (asset-audit 2026-10-15): outcome-weighted decision memory + pre-trade brake MCP (17 tools / 35+ REST); second axis (decisio",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "read-only: derive n_trials per axis from RuleChange rows (v40-v62) and compute DSR on the C-200 daily net PnL series, live regime 2026-09-04+; if p>=0.05 or INSUFFICIENT_DATA then the ladder/rule claims carry an explicit 'not distinguishable from selection' caveat, else record the p as the significance statement; no threshold moves either way",
+    "effort": "~2h (reimplement published DSR math + trials count in TS); read-only, zero risk",
+    "reversibility": "a report line only; nothing in the live path reads it",
+    "text": "Reimplement the deflated-Sharpe multiple-testing correction in TS for the rule-selection/ML statistics (touches the rule-tuner/review read path + logs/cron/tuning-review.md reporting; no card currently owns multiple-testing correction)"
+   },
+   "report": "drafts/asset-audit-tradememory-protocol-20261015.md",
+   "source": "agent",
+   "stars": 1430,
+   "status": "audited",
+   "url": "https://github.com/mnemox-ai/tradememory-protocol",
+   "verdict": "watch"
+  }
+ ],
+ "version": 1
+}

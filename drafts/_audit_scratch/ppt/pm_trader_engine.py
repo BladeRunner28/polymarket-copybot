@@ -1,0 +1,1157 @@
+"""Trade execution engine for pm-trader.
+
+Orchestrates the full buy/sell/resolve workflow by wiring together
+the API client, order book simulator, and database layer.
+"""
+
+from __future__ import annotations
+
+import math
+from pathlib import Path
+
+from pm_trader.analytics import Resolution, build_resolutions
+from pm_trader.api import PolymarketClient
+from pm_trader.db import Database
+from pm_trader.kalshi_api import PREFIX as KALSHI_PREFIX
+from pm_trader.kalshi_api import KalshiClient
+from pm_trader.models import (
+    Account,
+    AmbiguousResolutionError,
+    ApiError,
+    InsufficientBalanceError,
+    InvalidOutcomeError,
+    FillResult,
+    Market,
+    OrderBook,
+    MarketClosedError,
+    NoPositionError,
+    NotInitializedError,
+    OrderRejectedError,
+    Position,
+    ResolveResult,
+    TickSizeViolationError,
+    Trade,
+    TradeResult,
+)
+from pm_trader.orders import (
+    _normalize_timestamp,
+    cancel_all_orders as _cancel_all_orders,
+    cancel_order,
+    cancel_orders_for_market,
+    create_order,
+    expire_orders,
+    get_order,
+    get_pending_orders,
+    get_reserved_buy_notional,
+    init_orders_schema,
+    mark_filled,
+    mark_partially_filled,
+    reject_order,
+    should_fill,
+)
+from pm_trader.orderbook import (
+    calculate_fee_schedule,
+    simulate_buy_fill,
+    simulate_sell_fill,
+)
+
+MIN_ORDER_USD = 1.0  # Polymarket minimum order size
+TICK_EPSILON = 1e-9  # float-noise tolerance for tick-grid comparison
+FILL_EPSILON = 1e-9  # float-noise tolerance for "fully filled" comparison
+
+# Errors that indicate an order is permanently unfillable (not transient)
+_PERMANENT_ORDER_ERRORS = (
+    OrderRejectedError,
+    InsufficientBalanceError,
+    InvalidOutcomeError,
+    MarketClosedError,
+    NoPositionError,
+)
+
+
+def _resolve_fee_rate(market: Market) -> float | None:
+    """Return the ``feeSchedule`` rate to charge, or None for the legacy path.
+
+    Polymarket's fee source is the market's ``feeSchedule`` object.  It is
+    usable only when ``rate`` is positive and ``exponent`` is the published
+    identity (1) — the non-identity curve form is not documented, so such a
+    market keeps the legacy bps behaviour rather than guessing.
+    """
+    schedule = market.fee_schedule
+    if not schedule:
+        return None
+    rate = float(schedule.get("rate", 0) or 0)
+    if rate <= 0 or schedule.get("exponent", 0) != 1:
+        return None
+    return rate
+
+
+def _maker_fee(market: Market, fill: FillResult) -> float:
+    """The fee a resting (maker) fill pays.
+
+    ``feeSchedule.takerOnly``: "When true, fees are charged to the taker side
+    only, and makers pay no fee."  A schedule with a ``makerRate`` (Kalshi's
+    maker-fee series) charges makers that rate on the same curve, per filled
+    level like the taker fee.  Otherwise makers pay the taker fee.
+    """
+    schedule = market.fee_schedule
+    if not schedule:
+        return fill.fee
+    if schedule.get("takerOnly", False):
+        return 0.0
+    maker_rate = schedule.get("makerRate")
+    if maker_rate is None:
+        return fill.fee
+    exponent = schedule.get("exponent", 1)
+    return sum(
+        calculate_fee_schedule(float(maker_rate), exponent, f.price, f.shares)
+        for f in fill.fills
+    )
+
+
+def _is_kalshi(slug_or_id: str) -> bool:
+    return isinstance(slug_or_id, str) and slug_or_id.startswith(KALSHI_PREFIX)
+
+
+class _VenueRouter:
+    """Send each market call to the venue its identifier names.
+
+    Kalshi markets carry ``kalshi:``-prefixed slugs and tokens; everything else
+    is Polymarket.  Calls the engine makes per market route by identifier;
+    every other attribute (search, tags, events) is Polymarket's.  The Kalshi
+    client is created on first use.
+    """
+
+    def __init__(self, polymarket: PolymarketClient, db: Database) -> None:
+        self._polymarket = polymarket
+        self._db = db
+        self._kalshi: KalshiClient | None = None
+
+    def _venue(self, key: str):
+        if not _is_kalshi(key):
+            return self._polymarket
+        if self._kalshi is None:
+            self._kalshi = KalshiClient(self._db)
+        return self._kalshi
+
+    def get_market(self, slug_or_id: str) -> Market:
+        venue = self._venue(slug_or_id)
+        if venue is self._polymarket:
+            return venue.get_market(slug_or_id)
+        return venue.get_tradable_market(slug_or_id)
+
+    def get_order_book(self, token_id: str) -> OrderBook:
+        return self._venue(token_id).get_order_book(token_id)
+
+    def get_midpoint(self, token_id: str) -> float:
+        return self._venue(token_id).get_midpoint(token_id)
+
+    def get_fee_rate(self, token_id: str) -> int:
+        return self._venue(token_id).get_fee_rate(token_id)
+
+    def get_tick_size(self, token_id: str, price: float | None = None) -> float:
+        venue = self._venue(token_id)
+        if venue is self._polymarket:
+            return venue.get_tick_size(token_id)
+        return venue.get_tick_size(token_id, price=price)
+
+    def close(self) -> None:
+        self._polymarket.close()
+        if self._kalshi is not None:
+            self._kalshi.close()
+            self._kalshi = None
+
+    def __getattr__(self, name: str):
+        return getattr(self._polymarket, name)
+
+
+class Engine:
+    """Paper trading engine — 1:1 faithful to Polymarket execution."""
+
+    def __init__(self, data_dir: Path) -> None:
+        self.db = Database(data_dir)
+        self.db.init_schema()
+        init_orders_schema(self.db.conn)
+        self.api = _VenueRouter(PolymarketClient(self.db), self.db)
+
+    def close(self) -> None:
+        self.api.close()
+        self.db.close()
+
+    # ------------------------------------------------------------------
+    # Account
+    # ------------------------------------------------------------------
+
+    def init_account(self, balance: float = 10_000.0) -> Account:
+        return self.db.init_account(balance)
+
+    def get_account(self) -> Account:
+        account = self.db.get_account()
+        if account is None:
+            raise NotInitializedError()
+        return account
+
+    def reset(self) -> None:
+        self.db.reset()
+        init_orders_schema(self.db.conn)
+
+    # ------------------------------------------------------------------
+    # Validation helpers
+    # ------------------------------------------------------------------
+
+    def _require_account(self) -> Account:
+        return self.get_account()
+
+    @staticmethod
+    def _validate_outcome(outcome: str, market=None) -> str:
+        """Validate and normalize outcome against the market's actual outcomes.
+
+        When market is provided, verifies the outcome exists in that market.
+        Without market, only normalizes (caller is responsible for validation).
+        """
+        outcome = outcome.lower().strip()
+        if not outcome:
+            raise InvalidOutcomeError(outcome)
+        if market is not None:
+            valid = [o.lower() for o in market.outcomes]
+            if outcome not in valid:
+                raise InvalidOutcomeError(outcome, valid)
+        return outcome
+
+    @staticmethod
+    def _validate_tick_size(price: float, tick_size: float) -> None:
+        """Reject a limit price that is not on the market's tick grid.
+
+        A non-positive tick size carries no grid constraint. Comparison
+        tolerates float noise: the price must round-trip to itself.
+        """
+        if tick_size <= 0:
+            return
+        snapped = round(price / tick_size) * tick_size
+        if abs(price - snapped) > TICK_EPSILON:
+            raise TickSizeViolationError(price, tick_size)
+
+    @staticmethod
+    def _require_market_tradable(market) -> None:
+        """Raise unless the market accepts orders right now."""
+        if market.closed:
+            raise MarketClosedError(market.slug)
+        if not market.active:
+            raise OrderRejectedError(f"Market '{market.slug}' is not active")
+        if not market.accepting_orders:
+            raise OrderRejectedError(
+                f"Market '{market.slug}' is not accepting orders"
+            )
+
+    # ------------------------------------------------------------------
+    # Fee resolution
+    # ------------------------------------------------------------------
+
+    def _resolve_fee(
+        self, market: Market, token_id: str,
+    ) -> tuple[float | None, int]:
+        """Return ``(feeSchedule rate or None, bps for the trade record)``.
+
+        The market's ``feeSchedule`` is the fee source when usable: its rate
+        is recorded as the bps equivalent (``rate × 10_000``) and the CLOB
+        fee-rate endpoint is not consulted.  Otherwise the legacy bps rate.
+        """
+        rate = _resolve_fee_rate(market)
+        if rate is None:
+            return None, self.api.get_fee_rate(token_id)
+        return rate, round(rate * 10_000)
+
+    def _estimate_buy_fee(
+        self, market: Market, token_id: str, amount: float,
+    ) -> float:
+        """Conservative per-order UPPER BOUND on the taker fee for a USD buy.
+
+        Used only by the placement reservation gate: a (possibly marketable)
+        limit's actual fee depends on the realized average price, which is
+        unknown at placement.
+
+        Schedule path: a USD-sized buy receives ``C = amount / p`` shares, so
+        the official curve collapses to ``fee = C·rate·p·(1-p) = amount·rate·(1-p)``
+        — the worst case over fill prices is ``amount * rate`` (deep-low fills
+        are the expensive case). Legacy path: the legacy fee base is the share
+        count ``C = amount / p``, so ``fee = (bps/10000)·min(p, 1-p)·amount/p``
+        peaks at ``(bps/10000)·amount`` for any ``p <= 0.5``, floored at
+        ``calculate_fee``'s 0.0001 minimum.
+        """
+        rate = _resolve_fee_rate(market)
+        if rate is not None:
+            return amount * rate
+        bps = self.api.get_fee_rate(token_id)
+        if bps <= 0:
+            return 0.0
+        return max((bps / 10_000) * amount, 0.0001)
+
+    # ------------------------------------------------------------------
+    # BUY — spend USD, receive shares
+    # ------------------------------------------------------------------
+
+    def buy(
+        self,
+        slug_or_id: str,
+        outcome: str,
+        amount_usd: float,
+        order_type: str = "fok",
+    ) -> TradeResult:
+        """Execute a buy order: spend amount_usd to receive shares.
+
+        Walks the real order book ASK side level-by-level.
+        """
+        self._require_account()
+
+        # Polymarket's $1 minimum; Kalshi has no dollar minimum.
+        if _is_kalshi(slug_or_id):
+            if not amount_usd > 0:
+                raise OrderRejectedError("Order amount must be positive")
+        elif amount_usd < MIN_ORDER_USD:
+            raise OrderRejectedError(
+                f"Minimum order size is ${MIN_ORDER_USD:.2f}"
+            )
+
+        # Fetch market and validate outcome against actual market outcomes
+        market = self.api.get_market(slug_or_id)
+        outcome = self._validate_outcome(outcome, market)
+        self._require_market_tradable(market)
+
+        # Fetch live order book and fee rate
+        token_id = market.get_token_id(outcome)
+        book = self.api.get_order_book(token_id)
+        fee_rate, fee_rate_bps = self._resolve_fee(market, token_id)
+
+        # Simulate fill against the real order book
+        fill = simulate_buy_fill(
+            book, amount_usd, fee_rate_bps, order_type, fee_rate=fee_rate,
+        )
+
+        if not fill.filled and not fill.is_partial:
+            raise OrderRejectedError(
+                "Insufficient liquidity in order book (FOK rejected)"
+            )
+
+        total_outflow = fill.total_cost + fill.fee
+
+        # Cash debit + trade row + position row land in ONE transaction
+        # (issue #69): a crash between the writes must not leave the cash
+        # debited with no position.
+        with self.db.atomic():
+            # Need total_cost + fee. Compare against AVAILABLE cash — open buy
+            # limit orders reserve their remaining_amount, and a market order
+            # must not spend that reserve. Read under the write lock so a
+            # concurrent writer cannot spend it between check and debit.
+            available_cash = self._available_cash()
+            if total_outflow > available_cash:
+                raise InsufficientBalanceError(
+                    required=total_outflow, available=available_cash
+                )
+            self.db.add_cash(-total_outflow)
+
+            trade = self.db.insert_trade(
+                market_condition_id=market.condition_id,
+                market_slug=market.slug,
+                market_question=market.question,
+                outcome=outcome,
+                side="buy",
+                order_type=order_type,
+                avg_price=fill.avg_price,
+                amount_usd=fill.total_cost,
+                shares=fill.total_shares,
+                fee_rate_bps=fee_rate_bps,
+                fee=fill.fee,
+                slippage=fill.slippage_bps,
+                levels_filled=fill.levels_filled,
+                is_partial=fill.is_partial,
+            )
+
+            self._update_position_after_buy(
+                market=market,
+                outcome=outcome,
+                new_shares=fill.total_shares,
+                cost=fill.total_cost + fill.fee,
+                avg_fill_price=fill.avg_price,
+            )
+
+        updated_account = self.get_account()
+        return TradeResult(trade=trade, account=updated_account)
+
+    def _update_position_after_buy(
+        self,
+        *,
+        market,
+        outcome: str,
+        new_shares: float,
+        cost: float,
+        avg_fill_price: float,
+    ) -> None:
+        """Update or create position after a buy."""
+        existing = self.db.get_position(market.condition_id, outcome)
+        if existing and existing.shares > 0:
+            total_shares = existing.shares + new_shares
+            total_cost = existing.total_cost + cost
+            avg_entry = total_cost / total_shares if total_shares > 0 else 0.0
+        else:
+            total_shares = new_shares
+            total_cost = cost
+            avg_entry = cost / total_shares
+
+        self.db.upsert_position(
+            market_condition_id=market.condition_id,
+            market_slug=market.slug,
+            market_question=market.question,
+            outcome=outcome,
+            shares=total_shares,
+            avg_entry_price=avg_entry,
+            total_cost=total_cost,
+            realized_pnl=existing.realized_pnl if existing else 0.0,
+        )
+
+    # ------------------------------------------------------------------
+    # SELL — sell shares, receive USD
+    # ------------------------------------------------------------------
+
+    def sell(
+        self,
+        slug_or_id: str,
+        outcome: str,
+        shares: float,
+        order_type: str = "fok",
+    ) -> TradeResult:
+        """Execute a sell order: sell shares to receive USD.
+
+        Walks the real order book BID side level-by-level.
+        """
+        self._require_account()
+
+        # Fetch market and validate outcome against actual market outcomes
+        market = self.api.get_market(slug_or_id)
+        outcome = self._validate_outcome(outcome, market)
+        position = self.db.get_position(market.condition_id, outcome)
+        if position is None or position.shares <= 0:
+            raise NoPositionError(market.slug, outcome)
+
+        if shares > position.shares:
+            raise OrderRejectedError(
+                f"Cannot sell {shares:.4f} shares, only hold {position.shares:.4f}"
+            )
+
+        self._require_market_tradable(market)
+
+        # Fetch live book and fee rate
+        token_id = market.get_token_id(outcome)
+        book = self.api.get_order_book(token_id)
+        fee_rate, fee_rate_bps = self._resolve_fee(market, token_id)
+
+        # Gross proceeds at the best bid must clear the minimum order size
+        best_bid = max((level.price for level in book.bids), default=0.0)
+        if (
+            not _is_kalshi(market.slug)
+            and best_bid > 0
+            and shares * best_bid < MIN_ORDER_USD
+        ):
+            raise OrderRejectedError(
+                f"Minimum order size is ${MIN_ORDER_USD:.2f}"
+            )
+
+        # Simulate fill against the real order book
+        fill = simulate_sell_fill(
+            book, shares, fee_rate_bps, order_type, fee_rate=fee_rate,
+        )
+
+        if not fill.filled and not fill.is_partial:
+            raise OrderRejectedError(
+                "Insufficient liquidity in order book (FOK rejected)"
+            )
+
+        # Net proceeds = gross - fee
+        net_proceeds = fill.total_cost - fill.fee
+
+        # Cash credit + trade row + position row land in ONE transaction
+        # (issue #69, mirror of the buy path).
+        with self.db.atomic():
+            self._require_shares_locked(market, outcome, fill.total_shares)
+            self.db.add_cash(net_proceeds)
+
+            trade = self.db.insert_trade(
+                market_condition_id=market.condition_id,
+                market_slug=market.slug,
+                market_question=market.question,
+                outcome=outcome,
+                side="sell",
+                order_type=order_type,
+                avg_price=fill.avg_price,
+                amount_usd=fill.total_cost,
+                shares=fill.total_shares,
+                fee_rate_bps=fee_rate_bps,
+                fee=fill.fee,
+                slippage=fill.slippage_bps,
+                levels_filled=fill.levels_filled,
+                is_partial=fill.is_partial,
+            )
+
+            self._update_position_after_sell(
+                market=market,
+                outcome=outcome,
+                sold_shares=fill.total_shares,
+                proceeds=net_proceeds,
+            )
+
+        updated_account = self.get_account()
+        return TradeResult(trade=trade, account=updated_account)
+
+    def _require_shares_locked(self, market: Market, outcome: str, shares: float) -> None:
+        """Re-check the held shares under the write lock.
+
+        The pre-fill check runs before the order-book fetch; another writer on
+        the same database may have sold those shares in between.
+        """
+        position = self.db.get_position(market.condition_id, outcome)
+        if position is None or position.shares <= 0:
+            raise NoPositionError(market.slug, outcome)
+        if shares > position.shares + FILL_EPSILON:
+            raise OrderRejectedError(
+                f"Cannot sell {shares:.4f} shares, only hold {position.shares:.4f}"
+            )
+
+    def _update_position_after_sell(
+        self,
+        *,
+        market,
+        outcome: str,
+        sold_shares: float,
+        proceeds: float,
+    ) -> None:
+        """Update position after a sell."""
+        existing = self.db.get_position(market.condition_id, outcome)
+        if existing is None:
+            return
+
+        remaining_shares = existing.shares - sold_shares
+        # Snap float-sum dust (e.g. 7e-15 after a multi-level sell) to a flat
+        # position so it does not linger as "open".
+        flat = remaining_shares <= FILL_EPSILON
+        # Cost basis of sold portion
+        cost_of_sold = (
+            existing.avg_entry_price * sold_shares
+            if existing.shares > 0
+            else 0.0
+        )
+        realized_pnl = existing.realized_pnl + (proceeds - cost_of_sold)
+        remaining_cost = existing.total_cost - cost_of_sold
+
+        self.db.upsert_position(
+            market_condition_id=market.condition_id,
+            market_slug=market.slug,
+            market_question=market.question,
+            outcome=outcome,
+            shares=0.0 if flat else remaining_shares,
+            avg_entry_price=existing.avg_entry_price,
+            total_cost=0.0 if flat else max(remaining_cost, 0.0),
+            realized_pnl=realized_pnl,
+        )
+
+    # ------------------------------------------------------------------
+    # Portfolio
+    # ------------------------------------------------------------------
+
+    def get_portfolio(self) -> list[dict]:
+        """Return open positions with live prices and unrealized P&L."""
+        self._require_account()
+        positions = self.db.get_open_positions()
+        result = []
+        for pos in positions:
+            try:
+                token_id = self._get_token_id_for_position(pos)
+                live_price = self.api.get_midpoint(token_id)
+            except Exception:
+                live_price = 0.0
+
+            result.append({
+                "market_slug": pos.market_slug,
+                "market_question": pos.market_question,
+                "outcome": pos.outcome,
+                "shares": pos.shares,
+                "avg_entry_price": pos.avg_entry_price,
+                "total_cost": pos.total_cost,
+                "live_price": live_price,
+                "current_value": pos.current_value(live_price),
+                "unrealized_pnl": pos.unrealized_pnl(live_price),
+                "percent_pnl": pos.percent_pnl(live_price),
+            })
+        return result
+
+    def _get_token_id_for_position(self, pos: Position) -> str:
+        """Resolve a position to its token_id for price lookups."""
+        market = self.api.get_market(pos.market_slug)
+        return market.get_token_id(pos.outcome)
+
+    # ------------------------------------------------------------------
+    # Balance
+    # ------------------------------------------------------------------
+
+    def _reserved_buy_notional(self) -> float:
+        """Cash held in reserve by open buy limit orders."""
+        return get_reserved_buy_notional(self.db.conn)
+
+    def _available_cash(self) -> float:
+        """Cash not reserved by open buy limit orders (clamped at 0)."""
+        return max(0.0, self._require_account().cash - self._reserved_buy_notional())
+
+    def get_resolutions(self) -> list[Resolution]:
+        """Resolution events for analytics (resolve_market writes no trade)."""
+        return build_resolutions(
+            self.db.get_resolved_positions(), self.db.get_all_trades(),
+        )
+
+    def get_balance(self) -> dict:
+        """Return cash, reserved/available cash, positions value, and total.
+
+        ``reserved_cash`` is the notional held by open buy limit orders; it is
+        a SUBSET of ``cash``, not a separate pool — ``total_value`` and
+        ``pnl`` are unchanged by it.
+        """
+        account = self._require_account()
+        portfolio = self.get_portfolio()
+        positions_value = sum(p["current_value"] for p in portfolio)
+        reserved = self._reserved_buy_notional()
+        return {
+            "cash": account.cash,
+            "reserved_cash": reserved,
+            "available_cash": max(0.0, account.cash - reserved),
+            "starting_balance": account.starting_balance,
+            "positions_value": positions_value,
+            "total_value": account.cash + positions_value,
+            "pnl": (account.cash + positions_value) - account.starting_balance,
+        }
+
+    # ------------------------------------------------------------------
+    # Trade history
+    # ------------------------------------------------------------------
+
+    def get_history(self, limit: int = 50) -> list[Trade]:
+        """Return recent trades."""
+        self._require_account()
+        return self.db.get_trades(limit)
+
+    def get_all_trades(self) -> list[Trade]:
+        """Return every trade, uncapped (for analytics)."""
+        self._require_account()
+        return self.db.get_all_trades()
+
+    # ------------------------------------------------------------------
+    # Limit orders (GTC / GTD)
+    # ------------------------------------------------------------------
+
+    def place_limit_order(
+        self,
+        slug_or_id: str,
+        outcome: str,
+        side: str,
+        amount: float,
+        limit_price: float,
+        order_type: str = "gtc",
+        expires_at: str | None = None,
+    ) -> dict:
+        """Place a GTC or GTD limit order."""
+        self._require_account()
+        if side not in ("buy", "sell"):
+            raise OrderRejectedError(f"Invalid side: {side!r}")
+        if not (0 < limit_price < 1):
+            raise OrderRejectedError(f"Limit price must be between 0 and 1, got {limit_price}")
+        if order_type not in ("gtc", "gtd"):
+            raise OrderRejectedError(f"Invalid order_type: {order_type!r}. Must be 'gtc' or 'gtd'.")
+        if order_type == "gtd" and not expires_at:
+            raise OrderRejectedError("GTD orders require expires_at timestamp")
+        if order_type == "gtd":
+            try:
+                expires_at = _normalize_timestamp(expires_at)
+            except ValueError:
+                raise OrderRejectedError(
+                    f"Invalid expires_at: {expires_at!r}. Use an ISO 8601 timestamp."
+                ) from None
+        if not math.isfinite(amount) or amount <= 0:
+            raise OrderRejectedError(f"Order amount must be positive and finite, got {amount}")
+        if side == "buy" and amount < MIN_ORDER_USD and not _is_kalshi(slug_or_id):
+            raise OrderRejectedError(f"Minimum buy order size is ${MIN_ORDER_USD:.2f}, got ${amount:.2f}")
+
+        market = self.api.get_market(slug_or_id)
+        outcome = self._validate_outcome(outcome, market)
+        self._require_market_tradable(market)
+        if side == "sell":
+            position = self.db.get_position(market.condition_id, outcome)
+            if position is None or position.shares <= 0:
+                raise NoPositionError(market.slug, outcome)
+            if amount > position.shares + FILL_EPSILON:
+                raise OrderRejectedError(
+                    f"Cannot sell {amount:.4f} shares, only hold {position.shares:.4f}"
+                )
+
+        # Resolve the outcome's token id once: the tick fallback and the
+        # reservation gate below both need it (pure lookup — the outcome was
+        # already validated against the market above).
+        token_id = market.get_token_id(outcome)
+
+        # Validate the price against the market tick grid BEFORE creating any
+        # row: a violation must leave no order behind. Markets reporting no
+        # tick size fall back to the cached CLOB /tick-size endpoint.
+        tick_size = market.tick_size
+        if _is_kalshi(market.slug):
+            # Kalshi's grid is banded: the step depends on the price.
+            tick_size = self.api.get_tick_size(token_id, price=limit_price)
+        elif tick_size <= 0:
+            tick_size = self.api.get_tick_size(token_id)
+        self._validate_tick_size(limit_price, tick_size)
+
+        # Reservation gate (buy only): a resting buy must be fully affordable
+        # at placement — amount plus a conservative fee upper bound, against
+        # cash not already reserved by other open buys. Marketable limits must
+        # therefore cover the full amount + fee estimate to place at all; the
+        # fill itself passes _execute_limit_buy's fill-time check because its
+        # actual cost + fee <= amount + fee estimate. Checked AFTER tick
+        # validation and BEFORE create_order: a rejected placement leaves no
+        # order behind (same philosophy as the tick gate above).
+        if side == "buy":
+            fee_estimate = self._estimate_buy_fee(market, token_id, amount)
+            required = amount + fee_estimate
+            available_cash = self._available_cash()
+            if required > available_cash:
+                raise InsufficientBalanceError(
+                    required=required, available=available_cash
+                )
+
+        order = create_order(
+            self.db.conn,
+            market_slug=market.slug,
+            market_condition_id=market.condition_id,
+            outcome=outcome,
+            side=side,
+            amount=amount,
+            limit_price=limit_price,
+            order_type=order_type,
+            expires_at=expires_at,
+        )
+        # Marketable limit (crosses the book at placement): executes immediately
+        # as a TAKER — it lifts standing liquidity, exactly like a real CLOB never
+        # rests a limit through the opposite side. Only orders that rest unfilled
+        # are maker fills when the market later moves through them.
+        #
+        # ANY failure while deciding marketability (permanent OR transient)
+        # rejects the placement: an order left pending with unknown cross state
+        # would later fill as a fee-free maker via check_orders, undercharging
+        # the taker fee — and a caller retry would then double-place.
+        try:
+            if self._try_immediate_limit_fill(market, order):
+                return _order_to_dict(get_order(self.db.conn, order.id))
+        except Exception:
+            reject_order(self.db.conn, order.id)
+            raise
+        return _order_to_dict(order)
+
+    def _try_immediate_limit_fill(self, market: Market, order) -> bool:
+        """Fill a freshly placed limit order now when it crosses the book.
+
+        A marketable limit is a taker fill (pays the fee). Returns True when
+        the order was executed now — fully (``filled``) or partially (any
+        remainder rests as ``partially_filled`` for the next check_orders);
+        False when it rests (no cross or no fillable liquidity within the
+        limit). Transient errors propagate so the order simply rests and the
+        next check_orders() retries it.
+        """
+        token_id = market.get_token_id(order.outcome)
+        book = self.api.get_order_book(token_id)
+        fee_rate, fee_rate_bps = self._resolve_fee(market, token_id)
+
+        if order.side == "buy":
+            best_ask = min((l.price for l in book.asks), default=None)
+            if best_ask is None or best_ask > order.limit_price:
+                return False
+            fill = simulate_buy_fill(
+                book, order.remaining_amount, fee_rate_bps, "fak",
+                max_price=order.limit_price, fee_rate=fee_rate,
+            )
+            if not fill.filled and not fill.is_partial:
+                return False
+            self._execute_limit_buy(
+                market, order, fill, fee_rate_bps, maker=False, settle=True,
+            )
+        else:
+            best_bid = max((l.price for l in book.bids), default=None)
+            if best_bid is None or best_bid < order.limit_price:
+                return False
+            fill = simulate_sell_fill(
+                book, order.remaining_amount, fee_rate_bps, "fak",
+                min_price=order.limit_price, fee_rate=fee_rate,
+            )
+            if not fill.filled and not fill.is_partial:
+                return False
+            self._execute_limit_sell(
+                market, order, fill, fee_rate_bps, maker=False, settle=True,
+            )
+
+        return True
+
+    def _settle_order_fill(self, order, fill) -> LimitOrder:
+        """Close an order after an execution, keeping any partial remainder.
+
+        Returns the updated order: ``filled`` when nothing (within
+        FILL_EPSILON) is left, otherwise resting as ``partially_filled``
+        with the reduced remaining_amount. Must run inside db.atomic():
+        the status update does not commit on its own.
+        """
+        remaining = (
+            order.remaining_amount - fill.total_cost
+            if order.side == "buy"
+            else order.remaining_amount - fill.total_shares
+        )
+        if remaining <= FILL_EPSILON:
+            return mark_filled(self.db.conn, order.id, commit=False)
+        return mark_partially_filled(
+            self.db.conn, order.id, remaining, commit=False,
+        )
+
+    def get_pending_orders(self) -> list[dict]:
+        """Return all pending limit orders."""
+        orders = get_pending_orders(self.db.conn)
+        return [_order_to_dict(o) for o in orders]
+
+    def cancel_limit_order(self, order_id: int) -> dict | None:
+        """Cancel a pending limit order."""
+        order = cancel_order(self.db.conn, order_id)
+        if order is None:
+            return None
+        return _order_to_dict(order)
+
+    def cancel_all_orders(self) -> list[dict]:
+        """Cancel all pending limit orders. Returns list of cancelled orders."""
+        cancelled = _cancel_all_orders(self.db.conn)
+        return [_order_to_dict(o) for o in cancelled]
+
+    def check_orders(self) -> list[dict]:
+        """Check all open orders against live prices and execute fills.
+
+        This is the agent-callable trigger. Call it periodically.
+        Returns list of filled/partially_filled/expired/rejected orders.
+
+        Limit price enforcement: buy orders only consume ask levels at or
+        below the limit price; sell orders only consume bid levels at or
+        above the limit price.  This guarantees no "price-through" fills.
+        """
+        self._require_account()
+        results = []
+
+        # First expire any GTD orders past their deadline
+        expired = expire_orders(self.db.conn)
+        for o in expired:
+            results.append({"order": _order_to_dict(o), "action": "expired"})
+
+        # Check open orders against live order books
+        pending = get_pending_orders(self.db.conn)
+        for order in pending:
+            try:
+                market = self.api.get_market(order.market_slug)
+                self._require_market_tradable(market)
+                token_id = market.get_token_id(order.outcome)
+                book = self.api.get_order_book(token_id)
+                fee_rate, fee_rate_bps = self._resolve_fee(market, token_id)
+
+                if order.side == "buy":
+                    # Only fill at ask levels <= limit_price
+                    best_ask = min((l.price for l in book.asks), default=None)
+                    if best_ask is None or best_ask > order.limit_price:
+                        continue
+                    fill = simulate_buy_fill(
+                        book, order.remaining_amount, fee_rate_bps, "fak",
+                        max_price=order.limit_price, fee_rate=fee_rate,
+                    )
+                else:
+                    # Only fill at bid levels >= limit_price
+                    best_bid = max((l.price for l in book.bids), default=None)
+                    if best_bid is None or best_bid < order.limit_price:
+                        continue
+                    fill = simulate_sell_fill(
+                        book, order.remaining_amount, fee_rate_bps, "fak",
+                        min_price=order.limit_price, fee_rate=fee_rate,
+                    )
+
+                if not fill.filled and not fill.is_partial:
+                    continue  # No fillable liquidity within limit
+
+                # Execute the fill through normal trade recording
+                # (order status/remainder lands in the same transaction)
+                if order.side == "buy":
+                    updated = self._execute_limit_buy(
+                        market, order, fill, fee_rate_bps, settle=True,
+                    )
+                else:
+                    updated = self._execute_limit_sell(
+                        market, order, fill, fee_rate_bps, settle=True,
+                    )
+                results.append({
+                    "order": _order_to_dict(updated),
+                    "action": updated.status,
+                })
+            except InsufficientBalanceError:
+                # Transient (issue #66): a resting buy that passed the
+                # placement gate can hit a cash shortage at fill when another
+                # order spent the unreserved fee headroom meanwhile. The
+                # order rests and retries — killing it here was a terminal
+                # reject of an approved order.
+                continue
+            except _PERMANENT_ORDER_ERRORS as e:
+                # Permanent failure — mark rejected so it's not retried
+                updated = reject_order(self.db.conn, order.id)
+                results.append({
+                    "order": _order_to_dict(updated),
+                    "action": "rejected",
+                    "reason": str(e),
+                })
+            except Exception:
+                continue  # Transient errors (network, API) — retry next check
+
+        return results
+
+    def _execute_limit_buy(
+        self, market, order, fill, fee_rate_bps: int, *,
+        maker: bool = True, settle: bool = False,
+    ) -> LimitOrder | None:
+        """Record a limit buy fill using a pre-computed FillResult.
+
+        A RESTING limit fill (``maker=True``, the default — the market later
+        moved through our price) pays no fee in a ``takerOnly`` market. A
+        marketable limit that crossed the book at placement passes
+        ``maker=False`` and pays the taker fee.
+        """
+        self._require_account()
+        fee = _maker_fee(market, fill) if maker else fill.fee
+        total_outflow = fill.total_cost + fee
+        # One transaction for all three writes (issue #69).
+        with self.db.atomic():
+            cash = self.get_account().cash
+            if total_outflow > cash:
+                raise InsufficientBalanceError(
+                    required=total_outflow, available=cash,
+                )
+            self.db.add_cash(-total_outflow)
+            self.db.insert_trade(
+                market_condition_id=market.condition_id,
+                market_slug=market.slug,
+                market_question=market.question,
+                outcome=order.outcome,
+                side="buy",
+                order_type="fak",
+                avg_price=fill.avg_price,
+                amount_usd=fill.total_cost,
+                shares=fill.total_shares,
+                fee_rate_bps=fee_rate_bps,
+                fee=fee,
+                slippage=fill.slippage_bps,
+                levels_filled=fill.levels_filled,
+                is_partial=fill.is_partial,
+            )
+            self._update_position_after_buy(
+                market=market,
+                outcome=order.outcome,
+                new_shares=fill.total_shares,
+                cost=fill.total_cost + fee,
+                avg_fill_price=fill.avg_price,
+            )
+            return self._settle_order_fill(order, fill) if settle else None
+
+    def _execute_limit_sell(
+        self, market, order, fill, fee_rate_bps: int, *,
+        maker: bool = True, settle: bool = False,
+    ) -> LimitOrder | None:
+        """Record a limit sell fill using a pre-computed FillResult.
+
+        A RESTING limit fill (``maker=True``, the default — the market later
+        moved through our price) pays no fee in a ``takerOnly`` market. A
+        marketable limit that crossed the book at placement passes
+        ``maker=False`` and pays the taker fee.
+        """
+        self._require_account()
+        fee = _maker_fee(market, fill) if maker else fill.fee
+        position = self.db.get_position(market.condition_id, order.outcome)
+        if position is None or position.shares <= 0:
+            raise NoPositionError(market.slug, order.outcome)
+        if fill.total_shares > position.shares + FILL_EPSILON:
+            raise OrderRejectedError(
+                f"Cannot sell {fill.total_shares:.4f} shares, "
+                f"only hold {position.shares:.4f}"
+            )
+        net_proceeds = fill.total_cost - fee
+        # One transaction for all writes (issue #69).
+        with self.db.atomic():
+            self._require_shares_locked(market, order.outcome, fill.total_shares)
+            self.db.add_cash(net_proceeds)
+            self.db.insert_trade(
+                market_condition_id=market.condition_id,
+                market_slug=market.slug,
+                market_question=market.question,
+                outcome=order.outcome,
+                side="sell",
+                order_type="fak",
+                avg_price=fill.avg_price,
+                amount_usd=fill.total_cost,
+                shares=fill.total_shares,
+                fee_rate_bps=fee_rate_bps,
+                fee=fee,
+                slippage=fill.slippage_bps,
+                levels_filled=fill.levels_filled,
+                is_partial=fill.is_partial,
+            )
+            self._update_position_after_sell(
+                market=market,
+                outcome=order.outcome,
+                sold_shares=fill.total_shares,
+                proceeds=net_proceeds,
+            )
+            return self._settle_order_fill(order, fill) if settle else None
+
+    def watch_prices(
+        self, slugs_or_ids: list[str], outcomes: list[str] | None = None,
+    ) -> list[dict]:
+        """Fetch live midpoint prices for given markets.
+
+        Agent calls this to monitor prices before deciding to trade.
+        """
+        results = []
+        if outcomes is None:
+            outcomes = ["yes"]
+        for slug in slugs_or_ids:
+            try:
+                market = self.api.get_market(slug)
+            except Exception:
+                continue  # Market not found or API error
+            for outcome in outcomes:
+                outcome = outcome.lower()
+                token_id = market.get_token_id(outcome)  # raises ValueError for invalid
+                try:
+                    mid = self.api.get_midpoint(token_id)
+                except Exception:
+                    continue  # API error fetching price
+                results.append({
+                    "market_slug": market.slug,
+                    "outcome": outcome,
+                    "midpoint": mid,
+                    "condition_id": market.condition_id,
+                })
+        return results
+
+    # ------------------------------------------------------------------
+    # Resolution
+    # ------------------------------------------------------------------
+
+    def resolve_market(self, slug_or_id: str) -> list[ResolveResult]:
+        """Resolve a market's positions, paying out $1/share for winner."""
+        account = self._require_account()
+        market = self.api.get_market(slug_or_id)
+
+        if not market.closed:
+            raise MarketClosedError(
+                f"{market.slug} is not yet closed/resolved"
+            )
+
+        winning_outcome = _determine_winner(market)
+
+        results = []
+        # One transaction: payouts and the cancellation of resting orders
+        # (which releases their cash reservation) land together. Positions
+        # are read under the write lock so a concurrent resolver cannot pay
+        # the same position twice.
+        with self.db.atomic():
+            positions = self.db.get_positions_for_market(market.condition_id)
+            if not positions:
+                raise NoPositionError(market.slug, "any")
+            for pos in positions:
+                if pos.is_resolved or pos.shares <= 0:
+                    continue
+
+                if pos.outcome == winning_outcome:
+                    payout = pos.shares * 1.0
+                else:
+                    payout = 0.0
+
+                resolved_pos = self.db.resolve_position(
+                    market.condition_id, pos.outcome, payout
+                )
+                self.db.add_cash(payout)
+                account = self.get_account()
+                results.append(ResolveResult(
+                    position=resolved_pos,
+                    payout=payout,
+                    account=account,
+                ))
+            cancel_orders_for_market(
+                self.db.conn, market.condition_id, commit=False,
+            )
+
+        return results
+
+    def resolve_all(self) -> list[ResolveResult]:
+        """Resolve all open positions in closed markets.
+
+        Skips markets that fail due to transient API/network errors.
+        Raises on permanent resolution failures (e.g. ambiguous outcomes).
+        """
+        self._require_account()
+        positions = self.db.get_open_positions()
+        all_results = []
+
+        seen_markets: set[str] = set()
+        for pos in positions:
+            if pos.market_condition_id in seen_markets:
+                continue
+            try:
+                market = self.api.get_market(pos.market_slug)
+                if market.closed:
+                    seen_markets.add(pos.market_condition_id)
+                    results = self.resolve_market(pos.market_slug)
+                    all_results.extend(results)
+            except (ApiError, ConnectionError, TimeoutError, OSError):
+                continue  # Transient — retry on next call
+
+        return all_results
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _determine_winner(market) -> str:
+    """Determine the winning outcome from a resolved market's prices.
+
+    A Gamma market must report umaResolutionStatus "resolved" (a "proposed"
+    market can still be disputed); CLOB-only data carries no status and keeps
+    the price rule. Raises SimError if no outcome has price >= 0.99,
+    preventing silent zero-payout on ambiguous or partially-resolved markets.
+    """
+    prices = dict(zip(market.outcomes, market.outcome_prices))
+    status = market.uma_resolution_status
+    if status is not None and status.strip().lower() != "resolved":
+        raise AmbiguousResolutionError(market.slug, prices)
+    for i, outcome in enumerate(market.outcomes):
+        price = market.outcome_prices[i] if i < len(market.outcome_prices) else 0.0
+        if price >= 0.99:
+            return outcome.lower()
+    raise AmbiguousResolutionError(market.slug, prices)
+
+
+def _order_to_dict(order) -> dict:
+    """Convert a LimitOrder to a JSON-safe dict."""
+    return {
+        "id": order.id,
+        "market_slug": order.market_slug,
+        "market_condition_id": order.market_condition_id,
+        "outcome": order.outcome,
+        "side": order.side,
+        "amount": order.amount,
+        "remaining_amount": order.remaining_amount,
+        "limit_price": order.limit_price,
+        "order_type": order.order_type,
+        "expires_at": order.expires_at,
+        "status": order.status,
+        "created_at": order.created_at,
+        "filled_at": order.filled_at,
+    }

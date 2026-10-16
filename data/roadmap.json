@@ -2937,6 +2937,72 @@
     "ml-1",
     "export"
    ]
+  },
+  {
+   "id": "research-agent-daily-weekly",
+   "title": "Research agent — daily brief (07:15) + weekly deep-dive (Mon 08:30) · fact-sheet fed · recommendations-only",
+   "column": "Done",
+   "effort": "scripts/research-collect.py + wrapper ~/.hermes/scripts/copybot-research-collect.sh + skill copybot-research-agent + 2 cron jobs (88da82871963 daily, 78f0f313c43c weekly)",
+   "dates": "Built 2026-10-15 · first scheduled fire 2026-10-16 07:15 CDT · weekly 2026-10-19 08:30 CDT · test fire 2026-10-15 09:12 (labelled DRY RUN)",
+   "gate": "Re-read at two weeks (2026-10-29): (1) did EVERY daily brief contain either a cited material item or an explicit [SILENT] — i.e. is it signal or noise? (2) did the weekly produce at least one recommendation WITH a decision rule, and did its retro name a deciding number for each prior recommendation? If the daily turns out to be noise, cut to weekly-only; if recommendations are never adopted, the pre-registration shape is too vague — tighten it rather than adding more recommendations.",
+   "note": "WHY IT EXISTS: the tuning review finds breakage, not opportunity — nothing in the stack looked outside our own book. There was a vendor-catalogue watcher (polycopy-research-watch) and a political-sentiment feed (copybot-research-bot), but no strategy/platform research with recommendations.\n\nHOW IT IS WIRED (three parts, deliberately separated):\n1. DETERMINISTIC COLLECTOR — scripts/research-collect.py reads our book read-only from prisma/dev.db (active RuleSet knobs, settled/realized by window, open exposure, per-lane split, 24h decision funnel, leading skip tags, recent daily reports) plus best-effort keyless venue snapshots (Polymarket gamma top-60 by 24h volume, Kalshi open markets). Sources that fail print `SOURCE FAILED` with the reason and the script's exit contract stays 0/1 — a dead source must be VISIBLE, never silently omitted (per the keep-previous-exit-0 trap). Cross-checked: its C-200 realized ($5,781.41) matched the tuning review's figure exactly.\n2. AGENT SKILL — copybot-research-agent carries the identity (prediction-market bot designer), the hard rules (every book number from the fact sheet; every external claim cited with URL+date; recommendations only; caps of 1 recommendation/day and 4/week; each pre-registered with a decision rule), and the DO-NOT-RE-LITIGATE list (Kalshi copy-routing retirement, the Kelly regime v49+ / C-200 band policy, the ladder/goal policy, already-measured copy-cost economics, the sidecar maker-fill convention; carded lanes in flight are extended by measurement, not re-proposed).\n3. TWO CRON JOBS — daily 07:15 (<=15 Discord lines, one recommendation max, [SILENT] allowed) and weekly Mon 08:30 (drafts/research-weekly-YYYYMMDD.md + <=20-line summary, up to 4 ranked pre-registered recommendations, plus a retro that names the number deciding each prior recommendation, plus roadmap cards for keep-but-not-now items). Both attach the collector wrapper, run with workdir=repo, continuity ON (dedupe against their own previous run), deliver=origin so the user can reply/approve in-thread, and are pinned to deepseek-v4-flash.\n\nKNOWN SHARP EDGES: schema drift in dev.db fails loudly by design (three columns were wrong on the first run and were fixed against the real schema — simulatedPositionSize, decision, Kalshi's deprecated `volume` -> *_fp fields); the dashboard serves drafts WITHOUT the .md suffix (the .md URL 404s), which the weekly prompt states explicitly; and `pinned: true` freezes the model deliberately, consistent with the other LLM copybot jobs.",
+   "tags": [
+    "research",
+    "cron",
+    "agent",
+    "built",
+    "prediction-markets"
+   ]
+  },
+  {
+   "id": "research-agent-recon-github-reddit",
+   "title": "Research agent recon — GitHub asset radar + Reddit Atom feeds added to the fact sheet",
+   "column": "Done",
+   "effort": "scripts/research-collect.py (+8 GH search queries via `gh api`, 4 Reddit Atom feeds, 6h TTL cache) · skill copybot-research-agent v1.1.0 (source tier 6 + asset-evaluation rules + Tooling radar slot + weekly 'Reusable assets' section) · both cron prompts updated",
+   "dates": "Built 2026-10-15 · first dedicated run 2026-10-16 07:15 CDT (daily) · full asset section Mon 2026-10-19 08:30 CDT (weekly)",
+   "gate": "Re-read at two weeks (2026-10-29), same review as the parent card, plus: (1) did ANY asset from the radar survive to `audit` or `adopt-now` — i.e. is the radar producing usable candidates or just noise? (2) did a Reddit entry ever lead to a primary source we acted on, or is the block decorative? If the radar is all zero-star spam, raise the stars floor / add topic: qualifiers; if Reddit never pays off, drop the block.",
+   "note": "WHY: user asked for the agent to research Reddit and GitHub for strategies and for reusable code, agents, scripts, bots, datasets, MCPs and APIs. Done as COLLECTOR sections rather than as prompt guidance, so repo facts arrive verified instead of recalled — the same fail-loud contract as the venue snapshots.\n\nROUTES (hard-won, both were wrong on the first attempt):\n* Reddit .json endpoints return HTTP 403 from this host, and old.reddit/api.reddit also 403/302. The **Atom feeds work**: `www.reddit.com/r/<sub>/top/.rss?t=day` and `search.rss?q=...`. RSS carries title/date/link but no score. A 6-request burst triggers HTTP 429 on the FIRST feed, so the collector now (a) caches each feed to data/cache/research-recon/ with a 6h TTL, (b) paces requests 2.5s apart, and (c) stops issuing feeds after the first 429 instead of making it worse. A stale cache beats an error and is labelled `STALE cache (Xh old) after HTTP 429`.\n* GitHub: `gh` is authenticated as BladeRunner28 (keyring) → 5000 req/h, so the collector uses `gh api` with a keyless-REST fallback (60 req/h). Queries use `in:name,description` ONLY — including `readme` matched 449k repos (`awesome-go` came back as a 'dataset'). The `(a OR b) mcp` grouping was still too loose, so MCP is split into two single-term queries.\n\nWHAT IT SURFACES (first real run): `Jon-Becker/prediction-market-analysis` ★3876 MIT (markets data/analysis framework), `pmxt-dev/pmxt` ★2169 MIT ('CCXT for prediction markets' — unified Polymarket/Kalshi API), `alsk1992/CloddsBot` ★2971 MIT, `warproxxx/poly-maker` ★1512 MIT (Polymarket market-making bot), `LLMQuant/awesome-trading-agents` ★896 CC0, `ccxt/ccxt` ★44k (now covers prediction markets), plus a live Kalshi×Polymarket crypto-barrier arb scanner and a Polymarket weather-market toolkit that overlap our carded lanes.\n\nGUARDRAILS WRITTEN INTO THE SKILL: a repo is a candidate, never an endorsement (licence / last push / does the code match the claim / dependency risk / untrusted-code hygiene; `github-repo-audit` for the verdict); datasets need look-ahead-free licensing; Reddit is CHANGE DETECTION ONLY — never evidence for a strategy or return claim, and never the sole basis for a recommendation.\n\nSELF-INFLICTED BUG WORTH REMEMBERING: the collector died at import with `NameError: name 'time' is not defined` (I dropped an import while rewriting the import block) and earlier with `NameError: name 'REPO' is not defined` — a module-level constant referencing a symbol that only exists inside main(). Same class as the 2026-10-13 fill-intent TDZ outage: a load-time NameError kills the whole script rather than degrading one feature. The cache dir is now derived from `Path(__file__).resolve().parent.parent`, so the collector works from any cwd.",
+   "tags": [
+    "research",
+    "cron",
+    "github",
+    "reddit",
+    "tooling",
+    "built"
+   ]
+  },
+  {
+   "id": "research-asset-audit-pipeline",
+   "title": "Asset audit pipeline — GitHub leads → queue → audit worker → approval asks in the daily/weekly reports",
+   "column": "Done",
+   "effort": "scripts/asset-queue.py (seed/add/pending/complete/skip/approvals/decide) · scripts/asset-inspect.py (read-only repo anatomy via gh api) · ~/.hermes/scripts/copybot-asset-audit.sh · cron job copybot-asset-audit f5de35db70a3 (08:20/12:20/16:20/20:20, ≤2 audits per run) · skill copybot-research-agent v1.2.0 (rules 6-7, approval slots in both report shapes)",
+   "dates": "Built 2026-10-15 · first live audit run 2026-10-15 ~09:30 CDT (test fire) · first scheduled 12:20 CDT · first report carrying approval asks 2026-10-16 07:15 CDT (daily) · first weekly with the audits section Mon 2026-10-19 08:30 CDT",
+   "gate": "Re-read at ten audits (or two weeks, whichever first): (1) did any audit reach adopt-now or audit — i.e. does the radar yield anything usable, or is it all zero-star spam? (2) did EVERY pending recommendation appear in a daily/weekly report until the user decided it (no silent drops — that is the whole point of the ledger)? (3) median discovery→approval-ask latency, and how many audits the user actually decided? (4) hard failure check: zero audits proposing key-requiring or unlicensed code, zero attempts to run candidate code. If (1) is zero across ten audits, raise the seeder bar or widen the queries rather than adding more audits; if (4) is ever non-zero, the audit prompt's guardrails get tightened before anything else.",
+   "note": "WHY: user asked that GitHub leads trigger audits automatically and that the recommendations come back to him FOR APPROVAL IN THE DAILY AND WEEKLY REPORTS (not as a separate ping stream he has to reconcile against the briefs).\n\nARCHITECTURE (three separated concerns):\n1. NOTICE — the daily/weekly research agent enqueues candidates (`asset-queue.py add`), never audits inline: a 15-line brief cannot read five repos, and an audit must survive a brief failing.\n2. READ — the audit worker job runs copybot-asset-audit.sh, which (a) seeds the queue deterministically from the newest fact sheet's radar block, (b) claims ≤2 leads, (c) prints a read-only anatomy per repo. `asset-inspect.py` never clones, installs or executes candidate code and never touches a key — it is built entirely from `gh api` (stars/forks/issues, licence, archived, created/last-push, languages, file+byte counts by type, tests/CI/lockfile/env-example presence, manifests, entrypoints, recent commits, releases, README length and its key/telemetry/hype/stub markers). The 'claims vs substance' problem is therefore structural: claim size sits next to code size.\n3. DECIDE — the audit records `complete --verdict ... --recommend ... --decision-rule ... --effort ... --reversibility ...`, which opens an approval entry (state=pending). The daily brief runs `asset-queue.py approvals --limit 2` and the weekly runs `approvals` + `status`, so every pending item appears in a report with the exact answer to give (`approve <owner/repo>` / `decline <owner/repo>`) until the user decides it. The worker itself never asks for approval — that is deliberate, per the user's instruction. A `--recommend` without a `--decision-rule` is refused by the prompt (measured, not asserted).\n\nSEEDER BAR (deterministic, un-fudgeable): licence ≠ no-licence AND ★≥5 AND pushed ≤90 days AND not already queued AND not mentioned in drafts/. First run: 4 of 35 radar slots cleared it, 31 skipped (nearly all 'no licence') — which is itself the answer to 'is the radar junk?': mostly yes, and now measurably so.\n\nSHARP EDGES: a run that dies mid-audit leaves items in 'auditing' — `status` flags them and `pending` auto-reclaims claims older than 90 min (added after my own test stranded two); `add --force` re-queues manually. The queue is committed at data/research-asset-queue.json so the ledger survives sessions and is visible in the daily GitHub backup. Audit drafts are served at :3013/drafts/asset-audit-<slug>-<date> WITHOUT the .md suffix.",
+   "tags": [
+    "research",
+    "cron",
+    "github",
+    "audit",
+    "approval",
+    "built"
+   ]
+  },
+  {
+   "id": "ttr-scaled-margin-measurement",
+   "column": "Done",
+   "title": "TTR-scaled admission margin — MEASURED, rule did not fire (DROP)",
+   "effort": "scripts/horizon-margin-replay.py (~1 h, read-only; artifact data/horizon-margin-replay.json)",
+   "dates": "Proposed by the DRADIS audit 2026-10-15 · approved by user 2026-10-15 · measured 2026-10-15",
+   "gate": "CLOSED — do not re-propose on the frozen 2026-09-13 basis. Re-open ONLY with (a) a larger basis (e.g. the 2026-09-23 1,962-leg / 102-wallet read) preceded by a power calculation, or (b) an anchor derived from our own realized-vol-per-horizon data instead of borrowed from a donor whose scale is not transferable. A second pass at the same frozen data is the thin-window error our rules forbid.",
+   "note": "Idea from mbordash/DRADIS (AGPL-3.0, keys-required => concept source only, never adopted): a time-to-resolution-scaled admission margin (base*sqrt(secs_left/taper), floored, capped) replacing our flat 0.05 shadow margin in src/lib/scoring/price-edge.ts.\n\nRESULT (read-only replay, 662 settled C-200 legs, 132 admitted flat): flip set (flat-admit, scaled-reject) n=62 across 23 wallets, mean -$0.3307/leg, median -$0.8947, win 35.5%, wallet-clustered 95% CI [-5.5543, +3.7130] -> INCLUDES 0, so the pre-registered rule does not fire. Kept set n=70, mean +$2.7552, CI [-3.2956, +8.4363]. Sensitivity grid across taper 6/24/72/168 h: flip mean +1.60 / -0.33 / +0.47 / +0.32 -- the sign is an artefact of our arbitrary anchor, not of the data (the donor's absolute scale is not transferable; the cap never binds). Means and medians disagree wildly in both sets => heavy tails over few wallets.\n\nWHY IT WAS WORTH THE HOUR: a change with no supporting evidence was stopped before it entered the shadow path, the donor's curve was confirmed byte-equivalent to ours (so the fee CURVE was never the gap), and this is the first closed loop through the new asset-audit pipeline (notice -> queue -> audit -> approval -> measurement -> recorded outcome).",
+   "tags": [
+    "measurement",
+    "negative-result",
+    "scoring",
+    "asset-audit",
+    "closed"
+   ]
   }
  ]
 }
