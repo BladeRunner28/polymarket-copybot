@@ -3003,6 +3003,22 @@
     "asset-audit",
     "closed"
    ]
+  },
+  {
+   "id": "data-api-v2-migration",
+   "title": "Polymarket Data API v1 retires 2026-10-24 — migrate the read adapter (leaderboard / positions / closed-positions / activity) to /v2",
+   "column": "Scheduled",
+   "effort": "~1-2h read-only parity probe + ~half day adapter change (4 routes: /v2 prefix, {data,pagination} envelope, snake_case fields, cursors instead of offset)",
+   "dates": "DEADLINE 2026-10-24 (8 days out; docs warning read 2026-10-16). Probe first; land the cutover with at least one full 24h cycle of margin.",
+   "gate": "VERIFY: (a) a frozen-sample parity probe reads both versions within the same minute for >=25 wallets and >=20 conditions and shows >=99% row/field parity (same id set, same order, same pnl/volume/vol to the cent, same pagination coverage); (b) after cutover, one full 24h cycle shows monitor parity against the v1 baseline (same copies/decisions, 0 new failures, 0 v1 route strings left under src/ and scripts/). FAILS IF: the cutover ships without (a), or v1 dies before a full v2 cycle is verified.",
+   "note": "WHY: docs.polymarket.com/migrate/data-api-v1-to-v2 carries a Warning — 'Data API v1 is retired on October 24, 2026' — and the site banner repeats it; only GET /v1/accounting/snapshot (not used here) is exempt. EXPOSURE (measured 2026-10-16): src/lib/adapters/polymarket.ts is the live read path behind getAdapter() — monitor-trades (30m), scan-wallets (2h), scan-leaderboard (daily 06:00), score-trades, update-pnl, review-outcomes all consume it — and it calls /v1/leaderboard -> /v2/leaderboard, /positions -> /v2/positions, /closed-positions -> /v2/positions?status=CLOSED, /activity -> /v2/activity. Three further files carry v1 strings: scripts/shadow-market-hygiene.ts (/holders -> /v2/holders), scripts/c200-printthrough.py (/trades -> /v2/trades), scripts/audit-print-types.ts (/v1/leaderboard + /activity). CONTRACT DELTA (both versions probed live 2026-10-16 12:17Z): v1 returns a bare array with camelCase (proxyWallet/userName/vol); v2 returns {data:[...], pagination:{next_cursor}} with snake_case (user_id/user_name/volume/pnl) and opaque cursors instead of limit/offset — v1's offset pages stop at 10,000 rows. The month-leaderboard probe returned identical ranks 1-2 with identical pnl/vol to the cent on both versions, so the delta looks mechanical — but our consumers parse camelCase and page with offset, so nothing runs unchanged. Read-only in itself: no rule, size, gate or published number changes. Opened by the daily research brief 2026-10-16 (recommendation only; nothing applied).",
+   "tags": [
+    "venue",
+    "api",
+    "deadline",
+    "adapter",
+    "unapproved"
+   ]
   }
  ]
 }
