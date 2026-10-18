@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-10-11T12:08:21.229Z",
+  "generatedAt": "2026-10-17T12:01:43.289Z",
   "window": {
     "days": 30,
-    "since": "2026-09-11T12:08:21.222Z"
+    "since": "2026-09-17T12:01:43.283Z"
   },
   "thresholds": {
     "maxMarketLegsPerMarketId": 2,
     "maxMarketNotionalPctOfCap": 0.2,
-    "notionalCapUsd": 780.16,
-    "effectiveCapUsd": 3900.78,
-    "netWorth": 7701.55,
+    "notionalCapUsd": 772.06,
+    "effectiveCapUsd": 3860.32,
+    "netWorth": 7620.65,
     "capOverride": null
   },
-  "legs": 863,
-  "blockedLegs": 12,
-  "blockedNotionalUsd": 370.75,
-  "blockedPnlUsd": 938.25,
-  "bookedPnlUsd": 3780.84,
-  "actualWindowPnlUsd": 4719.09,
-  "deltaUsd": -938.25,
-  "marketsWithMultipleLegs": 73,
+  "legs": 694,
+  "blockedLegs": 2,
+  "blockedNotionalUsd": 40,
+  "blockedPnlUsd": -39.91,
+  "bookedPnlUsd": 5167.11,
+  "actualWindowPnlUsd": 5127.2,
+  "deltaUsd": 39.91,
+  "marketsWithMultipleLegs": 48,
   "worstMarketsUnderCap": [
     {
       "marketId": "bl2-wob-svd-2026-09-18-wob",
@@ -54,24 +54,6 @@
   ],
   "blockedSample": [
     {
-      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
-      "outcome": "NO",
-      "entryPrice": 0.095,
-      "size": 50.3,
-      "pnl": -50.04,
-      "status": "closed",
-      "why": "leg 3 > 2"
-    },
-    {
-      "marketId": "elon-musk-of-tweets-september-14-september-16-2026-40-64",
-      "outcome": "NO",
-      "entryPrice": 0.325,
-      "size": 22.22,
-      "pnl": -22.22,
-      "status": "resolved",
-      "why": "leg 3 > 2"
-    },
-    {
       "marketId": "elon-musk-of-tweets-september-19-september-21-2026-40-64",
       "outcome": "NO",
       "entryPrice": 0.06999999999999999,
@@ -86,15 +68,6 @@
       "entryPrice": 0.117,
       "size": 20,
       "pnl": -19.91,
-      "status": "closed",
-      "why": "leg 3 > 2"
-    },
-    {
-      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649",
-      "outcome": "NO",
-      "entryPrice": 0.125,
-      "size": 65.4,
-      "pnl": -10.46,
       "status": "closed",
       "why": "leg 3 > 2"
     }

@@ -161,22 +161,44 @@ def bot_facts(db: str, days: int) -> list[str]:
                         f"GROUP BY {dcol} ORDER BY 2 DESC LIMIT 8", (since,)).fetchall()
                     out.append("- decisions last 24h: " + ", ".join(
                         f"{r or '?'}={c}" for r, c in rows))
-                if "reasonsJson" in cols:
+                if "reasonsJson" in cols or "risksJson" in cols:
+                    # 2026-10-17 fix: the true skip reasons live in risksJson; reasonsJson is the
+                    # BOOST field and is '[]' on the overwhelming majority of skips, so the old
+                    # "first entry of reasonsJson" line reported a boost tag as a skip mix (void).
+                    # Now: count EVERY entry of risksJson, fall back to reasonsJson when empty.
                     from collections import Counter
+                    sel = [c for c in ("risksJson", "reasonsJson") if c in cols]
                     blob = cur.execute(
-                        f"SELECT reasonsJson FROM DecisionJournal WHERE {wcol} >= ? "
+                        f"SELECT {', '.join(sel)} FROM DecisionJournal WHERE {wcol} >= ? "
                         f"AND decision='skip' LIMIT 400", (since,)).fetchall()
                     cnt: Counter = Counter()
-                    for (b,) in blob:
-                        try:
-                            j = json.loads(b or "[]")
-                            items = j if isinstance(j, list) else (list(j.values()) if isinstance(j, dict) else [])
-                            if items:
-                                cnt[str(items[0])[:70]] += 1
-                        except Exception:  # noqa: BLE001
-                            pass
-                    out.append("- leading skip tag (first entry of reasonsJson): "
-                               + (", ".join(f"{k} x{v}" for k, v in cnt.most_common(5)) or "(none parsed)"))
+                    bare = 0
+                    for row in blob:
+                        items = []
+                        for raw in row:  # risksJson is first when present
+                            try:
+                                j = json.loads(raw or "[]")
+                            except Exception:  # noqa: BLE001
+                                continue
+                            cand = j if isinstance(j, list) else (
+                                list(j.values()) if isinstance(j, dict) else [])
+                            if cand:
+                                items = cand
+                                break
+                        if not items:
+                            bare += 1
+                            continue
+                        for tag in items:
+                            cnt[str(tag)[:70]] += 1
+                    out.append(
+                        f"- skip reasons (every entry of risksJson, reasonsJson fallback; "
+                        f"{len(blob)} rows, {bare} empty): "
+                        + (", ".join(f"{k} x{v}" for k, v in cnt.most_common(5)) or "(none parsed)"))
+                    if "risksJson" in cols:
+                        dedup = cur.execute(
+                            f"SELECT COUNT(DISTINCT marketId || '|' || outcome) FROM DecisionJournal "
+                            f"WHERE {wcol} >= ? AND decision='skip'", (since,)).fetchone()
+                        out.append(f"- distinct skipped market/outcome last 24h: {dedup[0] if dedup else '?'}")
             except Exception as e:  # noqa: BLE001
                 out.append(f"- DecisionJournal read FAILED: {e}")
 
