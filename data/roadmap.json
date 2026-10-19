@@ -3035,6 +3035,18 @@
     "pending-gate",
     "research-daily-rec1"
    ]
+  },
+  {
+   "id": "insidercat-source-audit",
+   "title": "Audit InsiderCat as a political/insider-holdings data source",
+   "column": "Backlog",
+   "dates": "queued 2026-10-18 (from r/TrumpsTrades post 1x8gj91)",
+   "note": "Origin: operator-submitted Reddit post (r/TrumpsTrades, u/hakansan, 2026-10-17) pointing at the 'InsiderCat' connector for political (Trump/Congress/government) + corporate insider trading data, used with Claude scheduled tasks for hourly news-vs-holdings alerts. The post itself is a tooling how-to, not an event: it was ingested into the sentiment feed at sentiment 0.0 / conf 0.95 (RegulatorySignal cmvebde1300bm5clozb9dnr5z) and is inert by construction (|s| < 0.3 keeps it out of the aggregated evidence set). The post's reusable artefact is its hourly prompt template: news sweep over a 24h window joined to politician/congress holdings, surfacing committee overlaps. MEASURE: does InsiderCat add opinionated signals (|s|>=0.3) in Macro/Politics that the three live sources miss - congress_gov_api, govinfo_fr_notice, quiver? Compute overlap on a 7d backfill.",
+   "gate": "Adopt only if BOTH: (a) it contributes >=10 distinct opinionated Macro/Politics signals per 7d that none of congress_gov_api / govinfo_fr_notice / quiver already supply, AND (b) it needs no key we must hold ourselves - if a key is required the user configures it; the agent never handles keys. Otherwise record a measured NO-GO with the overlap numbers.",
+   "tags": [
+    "research",
+    "source"
+   ]
   }
  ]
 }

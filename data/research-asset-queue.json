@@ -185,6 +185,34 @@
    "status": "audited",
    "url": "https://github.com/semrincaballero/Polymarket-Prediction-Bot",
    "verdict": "drop"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-10-18 08:24 CDT",
+    "state": "pending"
+   },
+   "audited": "2026-10-18 08:24 CDT",
+   "claimed": "2026-10-18 08:20 CDT",
+   "claimed_ts": 1792329630.052201,
+   "discovered": "2026-10-18 07:17 CDT",
+   "id": "vike-io/vike-data-cli",
+   "license": "MIT",
+   "note": "Free Vike Data API CLI+MCP: Polymarket daily Parquet archive of full L2 order book since 2026-07-25 (CC BY 4.0), REST + MCP; free key vk_ needed for REST/MCP bu",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "if >=25% of the 1,130 gap-window C-200 legs flip to no-fill at intent-0.02, or implied fill rate moves >10pp vs the 08-31->now recorder baseline, adopt as the phase-d2 fill-model input; else keep as one-off calibration and drop the vendor relationship",
+    "effort": "1.5 dev-days + 205 GB storage; user-created free vendor key required",
+    "reversibility": "delete the 37 date partitions; nothing in the live lane references them",
+    "text": "Pull the 37-day pre-recorder L2 window (2026-07-25..08-30, 205 GB) from the Vike archive and extend scripts/c200-printthrough.py to Parquet so the 1,130 uncovered C-200 legs get book-state fill verdicts"
+   },
+   "report": "drafts/asset-audit-vike-data-cli-20261018.md",
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/vike-io/vike-data-cli",
+   "verdict": "watch"
   }
  ],
  "version": 1
