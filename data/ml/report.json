@@ -1,51 +1,51 @@
 {
-  "built_at": "2026-10-19T08:42:55Z",
+  "built_at": "2026-10-19T08:49:36Z",
   "power": {
-    "decisions": 80208,
-    "distinct_markets": 49205,
+    "decisions": 80209,
+    "distinct_markets": 49206,
     "distinct_wallets": 394,
     "note": "rows inside a market share one label -> effective n is the MARKET count, so every CI must cluster on market_id"
   },
   "y_side_win": {
-    "1": 50173,
-    "0": 12998,
-    "null": 17037
+    "1": 49706,
+    "0": 13462,
+    "null": 17041
   },
   "coverage_by_month": {
     "2026-07": {
       "unlabeled": 1686,
       "labeled": 4298,
-      "win": 3219
+      "win": 3113
     },
     "2026-08": {
       "labeled": 27885,
-      "win": 21948,
+      "win": 21835,
       "unlabeled": 6390
     },
     "2026-09": {
-      "labeled": 30581,
-      "win": 24785,
-      "unlabeled": 6092
+      "labeled": 30578,
+      "win": 24586,
+      "unlabeled": 6095
     },
     "2026-10": {
-      "unlabeled": 2869,
+      "unlabeled": 2870,
       "labeled": 407,
-      "win": 221
+      "win": 172
     }
   },
   "database": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
-  "markets": 45956,
-  "decisions": 80208,
+  "markets": 45957,
+  "decisions": 80209,
   "label_mix": {
     "no": 51169,
-    "never_acted": 75345,
-    "has_snapshot": 76595,
-    "no_research_cat": 33950,
+    "never_acted": 75346,
+    "has_snapshot": 76596,
+    "no_research_cat": 33951,
     "yes": 12002,
     "acted_any": 4863,
     "no_market": 3601,
     "no_snapshot": 3613,
-    "abstain_open": 13436,
+    "abstain_open": 13437,
     "research_cat": 46258
   },
   "label_provenance": {
@@ -64,5 +64,5 @@
     "sentiment is joined as-of, see scripts/export-sentiment-features.ts"
   ],
   "purge_key": "resolved_at = first snapshot crossing 0.90/0.10; split must purge on this",
-  "elapsed_s": 57.8
+  "elapsed_s": 55.6
 }

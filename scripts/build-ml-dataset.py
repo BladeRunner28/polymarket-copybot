@@ -226,6 +226,7 @@ def main():
         "ttr_hours", "snapshot_age_min", "has_snapshot",
         "logit_yes", "log_liquidity", "log_volume", "spread_bps", "hour_utc", "dow",
         "category", "category_class", "category_fine", "research_category",
+        "is_yes_side", "side_price",
         "y_yes", "y_side_win", "label_status", "resolved_at", "horizon_hours",
     ])
     for r in cur:
@@ -248,9 +249,28 @@ def main():
         elif ly >= 0.90: y_yes, lab = 1, "yes"
         elif ly <= 0.10: y_yes, lab = 0, "no"
         else: y_yes, lab = None, "abstain_open"
+        # ---- WHICH SIDE DID WE ACTUALLY BUY? ----
+        # ObservedTrade.outcome is NOT a YES/NO flag: it is the token name, and it is
+        # NO 60,915 / YES 3,423 / UNDER / OVER / DOWN / UP / team names. Treating anything
+        # != "YES" as the NO side (the first version of this file) inverted OVER and UP and
+        # assigned a meaningless side to team tokens -- 25% of rows.
+        # Derive it from prices instead: our entry price sits nearer one of the two token
+        # prices. Validated on the 63,120 rows whose token name is unambiguous: 97.31%
+        # agreement (YES tokens 93.0% near_yes, NO tokens 97.5% near_no, OVER 85.0%,
+        # UNDER 85.1% near_no, UP 71.7%, DOWN 70.2% near_no). Semantic fallback only when
+        # the book is missing, because proximity is the empirical truth.
+        is_yes_side = None
+        if yes is not None and fnum(d["s_no"]) is not None and wep is not None:
+            is_yes_side = 1 if abs(wep - yes) < abs(wep - fnum(d["s_no"])) else 0
+        else:
+            sem = str(d["outcome"]).upper()
+            if sem in ("YES", "OVER", "UP"):
+                is_yes_side = 1
+            elif sem in ("NO", "UNDER", "DOWN"):
+                is_yes_side = 0
         y_side = None
-        if y_yes is not None:
-            y_side = y_yes if str(d["outcome"]).upper() == "YES" else 1 - y_yes
+        if y_yes is not None and is_yes_side is not None:
+            y_side = y_yes if is_yes_side == 1 else 1 - y_yes
         hour = dow = None
         if decided is not None:
             import datetime
@@ -292,6 +312,9 @@ def main():
             "" if spread is None or yes is None or yes <= 0 else round(100 * spread / yes, 4),
             "" if hour is None else hour, "" if dow is None else dow,
             d["category"] or "", d["category_class"] or "", d["category_fine"] or "", rc or "",
+            "" if is_yes_side is None else is_yes_side,
+            "" if (yes is None or is_yes_side is None) else
+                round(yes if is_yes_side == 1 else fnum(d["s_no"]) or 0, 6),
             "" if y_yes is None else y_yes, "" if y_side is None else y_side, lab,
             ts(mm.get("cross_at")),
             "" if horizon is None else round(horizon, 3),

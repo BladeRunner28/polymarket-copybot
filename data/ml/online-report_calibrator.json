@@ -1,0 +1,21 @@
+{
+  "model": "OnlineCalibrator (sklearn SGD, identity-seeded)",
+  "streamed_rows": 13776,
+  "prequential_calibrated": {
+    "auc": 0.7601,
+    "brier": 0.1928,
+    "brier_skill_vs_constant": 0.1969
+  },
+  "frozen_batch": {
+    "auc": 0.7609,
+    "brier": 0.1938,
+    "brier_skill_vs_constant": 0.1928
+  },
+  "constant_brier": 0.2401,
+  "delta_brier": -0.001,
+  "drift_alarms": {
+    "n": 0,
+    "first_20": []
+  },
+  "ledger": "data/ml/online-ledger_calibrator.parquet"
+}

@@ -1,0 +1,25 @@
+{
+  "model": "OnlineLogistic",
+  "arm": "logit",
+  "streamed_rows": 13776,
+  "prequential": {
+    "auc": 0.6524,
+    "brier": 0.2713,
+    "constant_brier": 0.2401,
+    "brier_skill_vs_constant": -0.1301
+  },
+  "batch_same_rows": {
+    "lightgbm_auc": 0.7609,
+    "lightgbm_brier": 0.1938,
+    "online_auc_same_rows": 0.6524,
+    "note": "batch trained on the train window only; online never saw a row before predicting it"
+  },
+  "drift_alarms": {
+    "n": 0,
+    "first_20": []
+  },
+  "final_rolling_auc": 0.6137,
+  "final_rolling_brier": 0.3071,
+  "ledger": "data/ml/online-ledger_logit.parquet",
+  "elapsed_s": 2.9
+}

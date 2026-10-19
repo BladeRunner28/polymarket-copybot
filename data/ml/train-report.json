@@ -1,0 +1,221 @@
+{
+  "label": "y_side_win",
+  "ablated": "",
+  "built_at": "2026-10-19T08:54:09Z",
+  "boundary": "2026-08-21T00:00:00+00:00",
+  "rows": {
+    "train": 6517,
+    "test": 13776,
+    "purged": 495,
+    "train_markets": 4975,
+    "test_markets": 9178
+  },
+  "comparators": {
+    "price_yes_frame": {
+      "auc": 0.7077,
+      "brier": 0.2203,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.0822,
+      "n_train": 6516,
+      "n_test": 13770,
+      "coef": -0.3496,
+      "intercept": 0.063
+    },
+    "price_side_frame": {
+      "auc": 0.7075,
+      "brier": 0.2114,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.1195,
+      "n_train": 6517,
+      "n_test": 13776,
+      "coef": 0.6319,
+      "intercept": 0.057
+    }
+  },
+  "bar": {
+    "auc": 0.7077,
+    "brier": 0.2203,
+    "name": "price_yes_frame",
+    "feature": "logit_yes",
+    "definition": "the STRONGER of the two price-only logistic frames"
+  },
+  "correction_note": "the bar first quoted used logit(yes_price); that frame cannot flip sign with the side, so it understated price. price_side_frame is the bar.",
+  "models": {
+    "logistic_anchor": {
+      "auc": 0.768,
+      "brier": 0.1902,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.2079,
+      "n_features": 1629,
+      "C": 0.01,
+      "inner_val_auc_grid": {
+        "0.01": 0.8072,
+        "0.03": 0.806,
+        "0.1": 0.8036,
+        "0.3": 0.7992,
+        "1.0": 0.7919
+      }
+    },
+    "lightgbm": {
+      "auc": 0.7678,
+      "brier": 0.1912,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.2037,
+      "best_iteration": 72
+    }
+  },
+  "deltas_vs_bar": {
+    "logistic_anchor": {
+      "delta_mean": 0.0602,
+      "delta_ci95": [
+        0.0526,
+        0.0678
+      ],
+      "auc_a_ci95": [
+        0.7581,
+        0.7778
+      ],
+      "auc_b_ci95": [
+        0.696,
+        0.7172
+      ],
+      "p_delta_gt_0": 1.0,
+      "n_boot": 400
+    },
+    "lightgbm": {
+      "delta_mean": 0.0602,
+      "delta_ci95": [
+        0.0526,
+        0.067
+      ],
+      "auc_a_ci95": [
+        0.7587,
+        0.7786
+      ],
+      "auc_b_ci95": [
+        0.6976,
+        0.719
+      ],
+      "p_delta_gt_0": 1.0,
+      "n_boot": 400
+    }
+  },
+  "verdict": {
+    "logistic_anchor": {
+      "beats_bar_auc": true,
+      "beats_bar_brier": true,
+      "delta_ci_excludes_zero": true,
+      "PROMOTABLE": true
+    },
+    "lightgbm": {
+      "beats_bar_auc": true,
+      "beats_bar_brier": true,
+      "delta_ci_excludes_zero": true,
+      "PROMOTABLE": true
+    }
+  },
+  "calibration_gbm": {
+    "mean_predicted": [
+      0.2499,
+      0.3809,
+      0.454,
+      0.5356,
+      0.6009,
+      0.6563,
+      0.7367,
+      0.7923,
+      0.8201,
+      0.849
+    ],
+    "fraction_positive": [
+      0.1909,
+      0.3607,
+      0.4328,
+      0.4898,
+      0.5614,
+      0.643,
+      0.7393,
+      0.8117,
+      0.8392,
+      0.9282
+    ]
+  },
+  "top_features": [
+    {
+      "feature": "wallet_entry_price",
+      "gain": 10212.081369876862,
+      "split": 109
+    },
+    {
+      "feature": "thesis_score",
+      "gain": 2681.5525598526,
+      "split": 65
+    },
+    {
+      "feature": "outcome",
+      "gain": 1054.628581047058,
+      "split": 39
+    },
+    {
+      "feature": "logit_side_price",
+      "gain": 961.9594969749451,
+      "split": 26
+    },
+    {
+      "feature": "detected_price",
+      "gain": 667.2143540382385,
+      "split": 21
+    },
+    {
+      "feature": "logit_yes",
+      "gain": 546.6471724510193,
+      "split": 17
+    },
+    {
+      "feature": "price_drift",
+      "gain": 543.1640191078186,
+      "split": 26
+    },
+    {
+      "feature": "ttr_hours",
+      "gain": 259.96052169799805,
+      "split": 22
+    },
+    {
+      "feature": "best_ask",
+      "gain": 245.58282375335693,
+      "split": 12
+    },
+    {
+      "feature": "spread_bps",
+      "gain": 164.58788919448853,
+      "split": 14
+    },
+    {
+      "feature": "volume",
+      "gain": 150.404550075531,
+      "split": 17
+    },
+    {
+      "feature": "roi",
+      "gain": 138.65694093704224,
+      "split": 4
+    },
+    {
+      "feature": "entry_timing",
+      "gain": 116.6994514465332,
+      "split": 8
+    },
+    {
+      "feature": "wallet_quality",
+      "gain": 108.21212911605835,
+      "split": 12
+    },
+    {
+      "feature": "best_bid",
+      "gain": 60.68362045288086,
+      "split": 5
+    }
+  ],
+  "elapsed_s": 6.6
+}

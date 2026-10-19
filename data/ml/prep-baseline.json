@@ -1,30 +1,30 @@
 {
   "boundary": "2026-08-21T00:00:00+00:00",
   "rows": {
-    "labelled": 63171,
+    "labelled": 63168,
     "train": 16472,
-    "test": 46204,
+    "test": 46201,
     "purged": 495
   },
   "power": {
     "train_markets": 11777,
-    "test_markets": 26490,
+    "test_markets": 26487,
     "wallets": 361
   },
   "labels": {
     "y_side_win": {
       "train_n": 16471,
       "test_n": 46195,
-      "train_base_rate": 0.7122,
-      "test_base_rate": 0.8256,
-      "price_only_auc": 0.9224,
+      "train_base_rate": 0.6964,
+      "test_base_rate": 0.8212,
+      "price_only_auc": 0.8771,
       "price_only_auc_ci95_market_clustered": [
-        0.9181,
-        0.9266
+        0.8713,
+        0.8829
       ],
-      "price_only_brier": 0.0834,
-      "constant_brier": 0.144,
-      "brier_skill_vs_constant": 0.4206
+      "price_only_brier": 0.1142,
+      "constant_brier": 0.1468,
+      "brier_skill_vs_constant": 0.2222
     },
     "y_yes": {
       "train_n": 16471,
@@ -48,8 +48,8 @@
     "raw_confidence": 92.6,
     "adjusted_copy_score": 92.6,
     "research_category": 42.3,
-    "y_yes": 21.2,
     "y_side_win": 21.2,
+    "y_yes": 21.2,
     "resolved_at": 18.3,
     "horizon_hours": 18.3,
     "best_bid": 11.5,

@@ -1,0 +1,221 @@
+{
+  "label": "y_side_win",
+  "ablated": "wallet_entry_price",
+  "built_at": "2026-10-19T08:54:17Z",
+  "boundary": "2026-08-21T00:00:00+00:00",
+  "rows": {
+    "train": 6517,
+    "test": 13776,
+    "purged": 495,
+    "train_markets": 4975,
+    "test_markets": 9178
+  },
+  "comparators": {
+    "price_yes_frame": {
+      "auc": 0.7077,
+      "brier": 0.2203,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.0822,
+      "n_train": 6516,
+      "n_test": 13770,
+      "coef": -0.3496,
+      "intercept": 0.063
+    },
+    "price_side_frame": {
+      "auc": 0.7075,
+      "brier": 0.2114,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.1195,
+      "n_train": 6517,
+      "n_test": 13776,
+      "coef": 0.6319,
+      "intercept": 0.057
+    }
+  },
+  "bar": {
+    "auc": 0.7077,
+    "brier": 0.2203,
+    "name": "price_yes_frame",
+    "feature": "logit_yes",
+    "definition": "the STRONGER of the two price-only logistic frames"
+  },
+  "correction_note": "the bar first quoted used logit(yes_price); that frame cannot flip sign with the side, so it understated price. price_side_frame is the bar.",
+  "models": {
+    "logistic_anchor": {
+      "auc": 0.7673,
+      "brier": 0.1904,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.2069,
+      "n_features": 1628,
+      "C": 0.01,
+      "inner_val_auc_grid": {
+        "0.01": 0.8079,
+        "0.03": 0.8066,
+        "0.1": 0.8038,
+        "0.3": 0.7992,
+        "1.0": 0.7919
+      }
+    },
+    "lightgbm": {
+      "auc": 0.7609,
+      "brier": 0.1938,
+      "constant_brier": 0.2401,
+      "brier_skill_vs_constant": 0.1928,
+      "best_iteration": 75
+    }
+  },
+  "deltas_vs_bar": {
+    "logistic_anchor": {
+      "delta_mean": 0.0595,
+      "delta_ci95": [
+        0.0521,
+        0.0669
+      ],
+      "auc_a_ci95": [
+        0.7572,
+        0.7768
+      ],
+      "auc_b_ci95": [
+        0.696,
+        0.7172
+      ],
+      "p_delta_gt_0": 1.0,
+      "n_boot": 400
+    },
+    "lightgbm": {
+      "delta_mean": 0.0533,
+      "delta_ci95": [
+        0.0459,
+        0.06
+      ],
+      "auc_a_ci95": [
+        0.7516,
+        0.7724
+      ],
+      "auc_b_ci95": [
+        0.6976,
+        0.719
+      ],
+      "p_delta_gt_0": 1.0,
+      "n_boot": 400
+    }
+  },
+  "verdict": {
+    "logistic_anchor": {
+      "beats_bar_auc": true,
+      "beats_bar_brier": true,
+      "delta_ci_excludes_zero": true,
+      "PROMOTABLE": true
+    },
+    "lightgbm": {
+      "beats_bar_auc": true,
+      "beats_bar_brier": true,
+      "delta_ci_excludes_zero": true,
+      "PROMOTABLE": true
+    }
+  },
+  "calibration_gbm": {
+    "mean_predicted": [
+      0.2667,
+      0.3986,
+      0.4638,
+      0.5324,
+      0.5907,
+      0.634,
+      0.7202,
+      0.7908,
+      0.8104,
+      0.8329
+    ],
+    "fraction_positive": [
+      0.193,
+      0.3403,
+      0.4764,
+      0.4927,
+      0.5759,
+      0.6205,
+      0.7487,
+      0.7932,
+      0.8423,
+      0.9141
+    ]
+  },
+  "top_features": [
+    {
+      "feature": "price_drift",
+      "gain": 4081.710051059723,
+      "split": 119
+    },
+    {
+      "feature": "detected_price",
+      "gain": 3281.116286754608,
+      "split": 77
+    },
+    {
+      "feature": "logit_side_price",
+      "gain": 3028.712986946106,
+      "split": 57
+    },
+    {
+      "feature": "outcome",
+      "gain": 2397.3876614570618,
+      "split": 41
+    },
+    {
+      "feature": "logit_yes",
+      "gain": 1771.4550280570984,
+      "split": 32
+    },
+    {
+      "feature": "best_ask",
+      "gain": 700.0845727920532,
+      "split": 16
+    },
+    {
+      "feature": "thesis_score",
+      "gain": 486.1683819293976,
+      "split": 26
+    },
+    {
+      "feature": "roi",
+      "gain": 272.1426992416382,
+      "split": 11
+    },
+    {
+      "feature": "ttr_hours",
+      "gain": 200.02849197387695,
+      "split": 16
+    },
+    {
+      "feature": "best_bid",
+      "gain": 84.5094985961914,
+      "split": 4
+    },
+    {
+      "feature": "consistency",
+      "gain": 64.99725008010864,
+      "split": 6
+    },
+    {
+      "feature": "liquidity",
+      "gain": 64.7422206401825,
+      "split": 6
+    },
+    {
+      "feature": "spread_bps",
+      "gain": 43.24421977996826,
+      "split": 4
+    },
+    {
+      "feature": "copyability",
+      "gain": 40.50190997123718,
+      "split": 6
+    },
+    {
+      "feature": "copy_score",
+      "gain": 40.21506071090698,
+      "split": 4
+    }
+  ],
+  "elapsed_s": 6.6
+}
