@@ -1,0 +1,68 @@
+{
+  "built_at": "2026-10-19T08:42:55Z",
+  "power": {
+    "decisions": 80208,
+    "distinct_markets": 49205,
+    "distinct_wallets": 394,
+    "note": "rows inside a market share one label -> effective n is the MARKET count, so every CI must cluster on market_id"
+  },
+  "y_side_win": {
+    "1": 50173,
+    "0": 12998,
+    "null": 17037
+  },
+  "coverage_by_month": {
+    "2026-07": {
+      "unlabeled": 1686,
+      "labeled": 4298,
+      "win": 3219
+    },
+    "2026-08": {
+      "labeled": 27885,
+      "win": 21948,
+      "unlabeled": 6390
+    },
+    "2026-09": {
+      "labeled": 30581,
+      "win": 24785,
+      "unlabeled": 6092
+    },
+    "2026-10": {
+      "unlabeled": 2869,
+      "labeled": 407,
+      "win": 221
+    }
+  },
+  "database": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
+  "markets": 45956,
+  "decisions": 80208,
+  "label_mix": {
+    "no": 51169,
+    "never_acted": 75345,
+    "has_snapshot": 76595,
+    "no_research_cat": 33950,
+    "yes": 12002,
+    "acted_any": 4863,
+    "no_market": 3601,
+    "no_snapshot": 3613,
+    "abstain_open": 13436,
+    "research_cat": 46258
+  },
+  "label_provenance": {
+    "method": "last Book snapshot yesPrice >= 0.90 -> YES, <= 0.10 -> NO, else abstain",
+    "validated_against": "OutcomeReview.finalOutcome on resolved acted positions",
+    "n_validated": 1394,
+    "agree": 1387,
+    "disagree": 7,
+    "agreement_pct": 99.5,
+    "abstentions_in_validation": 574,
+    "note": "0.5% label noise; abstained rows are NULL, never 0"
+  },
+  "leakage_notes": [
+    "WalletProfile NOT joined: current-state table, updatedAt overwrites -> look-ahead",
+    "market features are the latest snapshot at or before decided_at only",
+    "sentiment is joined as-of, see scripts/export-sentiment-features.ts"
+  ],
+  "purge_key": "resolved_at = first snapshot crossing 0.90/0.10; split must purge on this",
+  "elapsed_s": 57.8
+}
