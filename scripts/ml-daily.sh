@@ -30,6 +30,11 @@ step() { # name, command...
 
 STEP_NAMES=(); STEP_RC=(); STEP_SECS=()
 
+# One-decimal percentage. Integer division reported 140/4994 as "2%" against a true
+# 2.8% — the difference between "rounding noise" and "the feature is dead", so it
+# must not be truncated.
+pct1() { awk -v a="$1" -v b="$2" 'BEGIN { if (b > 0) printf "%.1f", a * 100 / b; else printf "0.0" }'; }
+
 step "backfill-labels"   npx tsx scripts/backfill-copy-labels.ts
 step "sentiment-features" npx tsx scripts/export-sentiment-features.ts
 step "export-training"   npx tsx scripts/export-training-data.ts
@@ -77,7 +82,7 @@ for i in "${!STEP_NAMES[@]}"; do
   printf '  %-18s %s (%ss)\n' "${STEP_NAMES[$i]}" "$([ "${STEP_RC[$i]}" -eq 0 ] && echo OK || echo "FAILED rc=${STEP_RC[$i]}")" "${STEP_SECS[$i]}"
 done
 printf '  export rows          %s (terminal_at %s%%)\n' "$export_rows" "$term_pct"
-printf '  sentiment features   %s rows (%s%%)\n' "$sent_rows" "$([ "$export_rows" -gt 0 ] && echo $((100 * sent / export_rows)) || echo 0)"
+printf '  sentiment features   %s rows (%s%%)\n' "$sent_rows" "$(pct1 "$sent_rows" "$export_rows")"
 printf '  gate                 %s\n' "$gate_line"
 printf '  fit                  %s\n' "$fit_line"
 printf '  ledger               %s\n' "$LEDGER"
