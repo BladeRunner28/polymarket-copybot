@@ -344,4 +344,61 @@ continuous traffic in a hot chamber. G28 is the cheap rung; it was passed, not w
 full run. Heat was already exonerated (died at 63.3 °C after surviving 76.8 °C error-free), so a hot soak
 without motion adds nothing.
 
+---
+
+## RESULT 2026-10-19 — the print COMPLETED. 6 h 09 m, where the previous run died at 3 h 29 m.
+
+`state: complete`, `BC-250-pro-v2_ASA_5h30m.gcode`, **22,045 s (6.12 h)**, **71,767 mm** filament, monitored at
+60 s intervals for the whole run (367 samples).
+
+### Within-run traffic and error density (deltas across the monitored window — not cumulative-since-boot)
+
+| node | messages | msg/s | share of bus | bytes_invalid | invalid/1k | retransmits |
+|---|---|---|---|---|---|---|
+| `[mcu]` (M8P, bridge) | 3,048,186 | 138.1 | **83.5 %** | 1,351 | 0.443 | 1,190 |
+| `[mcu EBBCan]` (SB2209) | 558,957 | 25.3 | 15.3 % | 322 | 0.576 | 104 |
+| `[mcu scanner]` (Cartographer v4) | 44,417 | **2.0** | **1.2 %** | 307 | **6.912** | 0 |
+
+### The failure mechanism never engaged
+
+- **`rto` = 0.025 in all 367 samples, on all three nodes.** The set of every observed value across the entire
+  run is exactly `[0.025]`. In the fatal run the scanner reached **3.200**.
+- **Max `send_seq − receive_seq` gap: 3**, and 18 of 367 samples (4.9 %) saw a transient gap ≥ 2 — every one
+  cleared by the next sample. The fatal run sat at **7 behind** at the moment it died.
+- No `Unable to obtain 'trsync_state' response`, no lost-communication error, no Klipper shutdown.
+- Temperatures held 260 / 95 °C for six hours, including the range where the previous run died (63.3 °C).
+
+### What this does and does not establish
+
+**Establishes:** the machine can now complete a 6.12 h print that previously died at 58 % of that duration, and
+it did so while carrying materially worse per-message error density on the probe (**6.912/1k**) than the probe
+showed in the fatal run (3.96/1k). So **`bytes_invalid` rate does not predict this failure.** The fatal run was
+not killed by error volume; it was killed by those errors eventually turning into an `rto` excursion plus a
+sustained gap. That mechanism, not the error count, is the thing to alert on.
+
+**Does not establish that the re-crimp was the fix.** One clean run against one failure is a coin flip. Three
+specific reasons the evidence is weaker than "it's fixed":
+
+1. **The probe is barely loaded on this bus** — 2.0 msg/s, **1.2 % of all traffic**. The bridge carries 83.5 %.
+   If the fault lives in the probe's tap, this run exercised it about as lightly as a print can.
+2. **Only ~4.6 % of samples caught a gap at all.** At 60 s sampling the harness is blind to transients that open
+   and close between samples, so "clean" partly means "unobserved".
+3. The fatal run's historical rates were read from cumulative-since-boot counters, so they cannot be divided by
+   print duration to produce a comparable within-run baseline. Cross-run rate comparisons are indicative only.
+
+**Errors remained bursty and event-driven throughout** — quantized in groups of ~18/30/32/36 separated by
+silences of up to 16 minutes, and moving between nodes rather than accumulating on one. That is traffic-pattern
+noise, not a degradation curve, and it is why this fault presents as "fine for hours then suddenly not".
+
+### Remaining test, in order
+
+1. **H↔H and L↔L end-to-end continuity** on the re-crimped harness (≈0 Ω = both conductors intact). This is the
+   only check that tests the *new* crimp's both conductors, and the only one that would upgrade "not contradicted"
+   to "evidence". A single broken conductor still reads ~60 Ω on CANH↔CANL.
+2. A **second full print** — one clean run does not distinguish a fix from a coincidence.
+3. Only if it recurs: the probe **stub-out test** (comment `[mcu scanner]` L782, `[cartographer]` L785,
+   `[adxl345] cs_pin = scanner:PA3` L791 and `[resonance_tester] accel_chip`; `G28 X Y` with
+   `[force_move] enable_force_move = true` at L229–230) to remove the probe from the bus entirely.
+
+
 
