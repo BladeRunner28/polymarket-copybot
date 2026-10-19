@@ -1,0 +1,40 @@
+{
+ "probe": "data-api-v2-trades-parity",
+ "at": "2026-10-19T13:50:00Z",
+ "conditions": 24,
+ "exact": 18,
+ "v2_subset": 0,
+ "divergent": [
+  {
+   "condition": "0xefa17dee3af09f69f9ddf245b969aa4efbe7c71cdf06ee49d694408bc33e2ed2",
+   "onlyV1": 3,
+   "onlyV2": 4
+  },
+  {
+   "condition": "0x1a01bf78f56a507fcb666d564d8c8b91b0750679163ed6e96746102c9b7d285d",
+   "onlyV1": 0,
+   "onlyV2": 5
+  },
+  {
+   "condition": "0xdf9bf27ee5757c55b44b8b9826ddc9ec3a8809aa3278634c45edbb7fc8f1a3e3",
+   "onlyV1": 0,
+   "onlyV2": 2
+  },
+  {
+   "condition": "0x12aa13b3da17ceae1b0a59b5d5b77121e91bb79b4bb0b52bf6543ed3f8d0953b",
+   "onlyV1": 0,
+   "onlyV2": 3
+  },
+  {
+   "condition": "0x3738ad9665480991affe3ba286cd035516e17d1f8b7703e05088ec19c70c21a4",
+   "onlyV1": 16,
+   "onlyV2": 19
+  },
+  {
+   "condition": "0xd5d9fc47718bd553592d126b1fa5e87183d27f3936975b0c04cc0f2dec1f1bb4",
+   "onlyV1": 0,
+   "onlyV2": 1
+  }
+ ],
+ "verdict": "FAIL"
+}

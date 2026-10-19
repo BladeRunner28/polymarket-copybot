@@ -57,6 +57,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB = os.path.join(ROOT, "prisma", "dev.db")
@@ -136,6 +137,28 @@ def gamma_condition(slug: str) -> str | None:
 
 
 # ------------------------------------------------------------------ S1: public print tape
+DATA_API_V2 = os.environ.get("DATA_API_VERSION", "v2").strip().lower() != "v1"
+
+# v2 renamed every field to snake_case. Add the v1 names onto each row so the
+# dedupe key and every downstream reader stay unchanged (values are identical;
+# parity probe 2026-10-17). Default stays v1 until the dual-read proves parity.
+_V2_TO_V1 = {
+    "transaction_hash": "transactionHash",
+    "token_id": "asset",
+    "condition_id": "conditionId",
+    "proxy_wallet": "proxyWallet",
+    "outcome_index": "outcomeIndex",
+}
+
+
+def _v1_shape(row: dict) -> dict:
+    out = dict(row)
+    for k2, k1 in _V2_TO_V1.items():
+        if out.get(k1) is None and row.get(k2) is not None:
+            out[k1] = row[k2]
+    return out
+
+
 def fetch_tape(condition_id: str, max_pages: int = 6) -> list[dict]:
     """Public trade tape for one market. Keyless; newest-first; filtered client-side."""
     os.makedirs(TAPE_DIR, exist_ok=True)
@@ -146,20 +169,38 @@ def fetch_tape(condition_id: str, max_pages: int = 6) -> list[dict]:
         except Exception:
             pass
     rows: list[dict] = []
+    cursor = None
     for page in range(max_pages):
-        url = (f"https://data-api.polymarket.com/trades?market={condition_id}"
-               f"&limit=500&offset={page * 500}&takerOnly=false")
+        if DATA_API_V2:
+            # v2: /trades -> /v2/trades, market= -> condition=, offset is a 400
+            # ("pages are cursor-only"), envelope is {data:[...], pagination:{...}}.
+            url = (f"https://data-api.polymarket.com/v2/trades?condition={condition_id}"
+                   f"&limit=500&taker_only=false")
+            if cursor:
+                url += f"&cursor={urllib.parse.quote(str(cursor))}"
+        else:
+            url = (f"https://data-api.polymarket.com/trades?market={condition_id}"
+                   f"&limit=500&offset={page * 500}&takerOnly=false")
         try:
             raw = subprocess.run(["curl", "-s", "--max-time", "30", url],
                                  capture_output=True, text=True, timeout=60).stdout
-            chunk = json.loads(raw) if raw.strip() else []
+            payload = json.loads(raw) if raw.strip() else ([] if not DATA_API_V2 else {})
         except Exception:
-            chunk = []
-        if not isinstance(chunk, list) or not chunk:
-            break
-        rows.extend(chunk)
-        if len(chunk) < 500:
-            break
+            payload = [] if not DATA_API_V2 else {}
+        if DATA_API_V2:
+            chunk = (payload or {}).get("data") or []
+            cursor = ((payload or {}).get("pagination") or {}).get("next_cursor")
+            rows.extend(_v1_shape(r) for r in chunk)
+            if not cursor:
+                break
+            time.sleep(0.2)
+        else:
+            chunk = payload if isinstance(payload, list) else []
+            if not chunk:
+                break
+            rows.extend(chunk)
+            if len(chunk) < 500:
+                break
     # takerOnly=false lists fill participants (its default takerOnly=true HIDES maker prints — the
     # very fills a resting bid cares about). Dedupe on fill identity.
     seen, deduped = set(), []

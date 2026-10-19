@@ -106,6 +106,102 @@ function num(v: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/**
+ * Data API version switch (v1 retires 2026-10-24; docs/migrate/data-api-v1-to-v2).
+ *
+ * DEFAULT IS v2 as of 2026-10-19, on measured evidence: the dual-read
+ * (scripts/data-api-v2-dual-read.ts) proved leaderboard parity exact, cursor
+ * pagination exact (300/300 closed, 600/600 open, 12/12 requests), and the print
+ * tape a strict SUPERSET of v1's (deep window: 0 fills only in v1, 7 only in v2).
+ * v1 retires 2026-10-24, so the default must be v2.
+ *
+ * ROLLBACK IS ONE ENV VAR: DATA_API_VERSION=v1.
+ *
+ * Known v2 deviations, measured and accepted (see drafts/data-api-v2-cutover-20261019.md):
+ *   1. outcome names lose punctuation -- v1 "Anyone's Legend" -> v2 "Anyones Legend"
+ *      (HISTORICAL JOINS keyed on outcome text break across the cutover; live
+ *      decisions are unaffected because a cycle reads one version consistently);
+ *   2. sub-0.2-share dust residues are reported as extra OPEN rows;
+ *   3. ~1% of profiling rows aggregate to a 4th-decimal price/PnL difference.
+ */
+function apiV2(): boolean {
+  return (process.env.DATA_API_VERSION ?? "v2").toLowerCase() !== "v1";
+}
+
+/**
+ * v2 wraps every list route in an envelope and reports a miss as `data: null`
+ * (documented), where v1 returned a bare array. A miss is NOT an error.
+ */
+function rowsOf(payload: unknown, url: string): Record<string, unknown>[] {
+  if (Array.isArray(payload)) return payload as Record<string, unknown>[];
+  if (payload && typeof payload === "object") {
+    const d = (payload as Record<string, unknown>).data;
+    if (d === null || d === undefined) return [];
+    if (Array.isArray(d)) return d as Record<string, unknown>[];
+  }
+  throw new AdapterError(url, null, `unexpected payload shape: ${typeof payload}`);
+}
+
+/** v2 pagination is cursor-only (`offset` is rejected outright by the API). */
+function nextCursorOf(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const p = (payload as Record<string, unknown>).pagination;
+  if (!p || typeof p !== "object") return null;
+  const c = (p as Record<string, unknown>).next_cursor;
+  return c === null || c === undefined ? null : String(c);
+}
+
+/**
+ * v2 renames every field to snake_case. Rather than rewrite ~40 call sites we
+ * ALIAS the v1 name onto the row, so every downstream reader is untouched and
+ * `raw` still carries the venue's own shape. Values are numerically identical
+ * (parity probe 2026-10-17: realizedPnl 0.0 delta on 5/5, totalBought exact).
+ *
+ * `user_id` -> `proxyWallet` matters most: `/v2/leaderboard` has NO `proxy_wallet`
+ * field, so a blind rename would yield null addresses for every row.
+ */
+const V2_TO_V1_ALIASES: Record<string, string> = {
+  token_id: "asset",
+  condition_id: "conditionId",
+  avg_price: "avgPrice",
+  total_size: "totalBought",
+  realized_pnl: "realizedPnl",
+  current_price: "curPrice",
+  event_slug: "eventSlug",
+  outcome_index: "outcomeIndex",
+  transaction_hash: "transactionHash",
+  usdc_size: "usdcSize",
+  initial_value: "initialValue",
+  current_value: "currentValue",
+  // v2 has NO `initial_value`; the open-positions reader needs `initialValue` and
+  // the equivalent is `entry_cost_usdc` (verified equal on 3/3 live rows:
+  // 322814.2853 / 12347.4084 / 140048.5646). It is NOT totalBought*avgPrice -- that
+  // product differs by the fees (12320.00 vs 12347.41 on one row), so it must be
+  // mapped, never recomputed. Without this every v2 OPEN row was skipped for lack of
+  // a price basis, which the dual-read caught as 200 v1 rows vs 100 v2 rows.
+  entry_cost_usdc: "initialValue",
+  user_name: "userName",
+  user_id: "proxyWallet",
+  proxy_wallet: "proxyWallet",
+  x_username: "xUsername",
+  verified_badge: "verifiedBadge",
+  volume: "vol",
+};
+
+function toV1Shape(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...row };
+  for (const [v2k, v1k] of Object.entries(V2_TO_V1_ALIASES)) {
+    if (out[v1k] === undefined && row[v2k] !== undefined) out[v1k] = row[v2k];
+  }
+  return out;
+}
+
+/** Rows from either version, normalised to the v1 field names. */
+function rowsNormalised(payload: unknown, url: string): Record<string, unknown>[] {
+  return rowsOf(payload, url).map(toV1Shape);
+}
+
+
 export class PolymarketAdapter implements DataAdapter {
   readonly source = "polymarket";
   readonly isDemo = false;
@@ -113,17 +209,10 @@ export class PolymarketAdapter implements DataAdapter {
   private static notFound = new Set<string>();
 
   async fetchLeaderboard(limit: number): Promise<LeaderboardEntry[]> {
-    // data-api leaderboard caps page size at 50 per request; offset paginates.
     const out: LeaderboardEntry[] = [];
-    const pageSize = 50;
-    for (let offset = 0; offset < limit; offset += pageSize) {
-      const take = Math.min(pageSize, limit - offset);
-      const url = `${DATA_API}/v1/leaderboard?timePeriod=month&orderBy=PNL&limit=${take}&offset=${offset}`;
-      const data = (await getJson(url)) as Array<Record<string, unknown>>;
-      if (!Array.isArray(data)) {
-        throw new AdapterError(url, null, `unexpected leaderboard shape: ${typeof data}`);
-      }
-      if (data.length === 0) break;
+    let seq = 0;
+
+    const mapRows = (data: Record<string, unknown>[]) => {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         const address = String(row.proxyWallet ?? row.address ?? row.wallet ?? "");
@@ -133,7 +222,7 @@ export class PolymarketAdapter implements DataAdapter {
             {
               address: address.toLowerCase(),
               label: (row.userName as string) || (row.name as string) || undefined,
-              rank: num(row.rank) ?? offset + i + 1,
+              rank: num(row.rank) ?? seq + i + 1,
               pnl: num(row.pnl) ?? num(row.amount),
               volume: num(row.vol) ?? num(row.volume),
               raw: row,
@@ -142,6 +231,39 @@ export class PolymarketAdapter implements DataAdapter {
           )
         );
       }
+      seq += data.length;
+    };
+
+    if (apiV2()) {
+      // v2 rejects `offset` outright ("pages are cursor-only, pass 'cursor' from a
+      // prior response's next_cursor") and has no 50-row cap (verified limit=100
+      // -> 100 rows), so this is a cursor walk, not an offset walk.
+      let cursor: string | null = null;
+      for (let page = 0; page < 20 && seq < limit; page++) {
+        const take = Math.min(100, limit - seq);
+        const url =
+          `${DATA_API}/v2/leaderboard?time_period=month&order_by=PNL&limit=${take}` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+        const payload = await getJson(url);
+        const data = rowsNormalised(payload, url);
+        if (data.length === 0) break;
+        mapRows(data);
+        cursor = nextCursorOf(payload);
+        if (!cursor) break;
+        await sleep(DELAY_MS);
+      }
+      return out;
+    }
+
+    // data-api leaderboard caps page size at 50 per request; offset paginates.
+    const pageSize = 50;
+    for (let offset = 0; offset < limit; offset += pageSize) {
+      const take = Math.min(pageSize, limit - offset);
+      const url = `${DATA_API}/v1/leaderboard?timePeriod=month&orderBy=PNL&limit=${take}&offset=${offset}`;
+      const payload = await getJson(url);
+      const data = rowsNormalised(payload, url);
+      if (data.length === 0) break;
+      mapRows(data);
       if (data.length < take) break;
       await sleep(DELAY_MS);
     }
@@ -171,11 +293,13 @@ export class PolymarketAdapter implements DataAdapter {
     const closedRows: Record<string, unknown>[] = [];
     const seenAssets = new Set<string>();
     for (const dir of ["DESC", "ASC"] as const) {
-      const closedUrl = `${DATA_API}/closed-positions?user=${address}&limit=50&sortBy=REALIZEDPNL&sortDirection=${dir}`;
-      const page = (await getJson(closedUrl)) as Array<Record<string, unknown>>;
-      if (!Array.isArray(page)) {
-        throw new AdapterError(closedUrl, null, `unexpected closed-positions shape`);
-      }
+      // v2 folds /closed-positions away: it is /v2/positions?status=CLOSED, and
+      // sortBy=REALIZEDPNL is rejected ("invalid position sortBy") in favour of
+      // sort_by=REALIZED_PNL.
+      const closedUrl = apiV2()
+        ? `${DATA_API}/v2/positions?user=${address}&status=CLOSED&limit=50&sort_by=REALIZED_PNL&sort_direction=${dir}`
+        : `${DATA_API}/closed-positions?user=${address}&limit=50&sortBy=REALIZEDPNL&sortDirection=${dir}`;
+      const page = rowsNormalised(await getJson(closedUrl), closedUrl);
       for (const row of page) {
         const key = String(row.asset ?? row.conditionId ?? Math.random());
         if (seenAssets.has(key)) continue;
@@ -214,9 +338,11 @@ export class PolymarketAdapter implements DataAdapter {
     }
 
     await sleep(DELAY_MS);
-    const openUrl = `${DATA_API}/positions?user=${address}&limit=100&sortBy=CURRENT&sortDirection=DESC`;
-    const open = (await getJson(openUrl)) as Array<Record<string, unknown>>;
-    if (Array.isArray(open)) {
+    const openUrl = apiV2()
+      ? `${DATA_API}/v2/positions?user=${address}&status=OPEN&limit=100&sort_by=CURRENT_VALUE&sort_direction=DESC`
+      : `${DATA_API}/positions?user=${address}&limit=100&sortBy=CURRENT&sortDirection=DESC`;
+    const open = rowsNormalised(await getJson(openUrl), openUrl);
+    {
       for (const row of open) {
         const avgPrice = num(row.avgPrice);
         const initialValue = num(row.initialValue);
@@ -272,19 +398,52 @@ export class PolymarketAdapter implements DataAdapter {
     const maxClosedPages = cap(process.env.DEPTH_MAX_CLOSED_PAGES, 6); // <= 300 rows
     const maxOpenPages = cap(process.env.DEPTH_MAX_OPEN_PAGES, 6); // <= 600 rows
 
+    // v2 paginates by CURSOR ONLY (`offset` is a 400), but measureDepth drives the
+    // walk by page index. Keep its signature and translate inside: page N needs the
+    // cursor page N-1 returned, so hold the chain across calls. A missing link means
+    // the previous page was the last one -> an empty page terminates the walk, which
+    // is what measureDepth already expects from an out-of-range offset.
+    const closedCursors: (string | null)[] = [];
+    const openCursors: (string | null)[] = [];
+
     const fetchClosedPage = async (offset: number) => {
-      const url =
-        `${DATA_API}/closed-positions?user=${address}&limit=${closedPageSize}&offset=${offset}` +
-        `&sortBy=REALIZEDPNL&sortDirection=DESC`;
-      const page = await getJson(url);
-      if (!Array.isArray(page)) throw new AdapterError(url, null, `unexpected closed-positions shape`);
+      const pageNo = Math.floor(offset / closedPageSize);
+      let url: string;
+      if (apiV2()) {
+        const cursor = pageNo === 0 ? null : closedCursors[pageNo - 1] ?? null;
+        if (pageNo > 0 && !cursor) return [];
+        url =
+          `${DATA_API}/v2/positions?user=${address}&status=CLOSED&limit=${closedPageSize}` +
+          `&sort_by=REALIZED_PNL&sort_direction=DESC` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+      } else {
+        url =
+          `${DATA_API}/closed-positions?user=${address}&limit=${closedPageSize}&offset=${offset}` +
+          `&sortBy=REALIZEDPNL&sortDirection=DESC`;
+      }
+      const payload = await getJson(url);
+      closedCursors[pageNo] = nextCursorOf(payload);
+      // A malformed payload must still throw rather than look like an empty page.
+      const page = rowsNormalised(payload, url);
       await sleep(DELAY_MS);
       return page as unknown[];
     };
     const fetchOpenPage = async (offset: number) => {
-      const url = `${DATA_API}/positions?user=${address}&limit=${openPageSize}&offset=${offset}&sortBy=CURRENT&sortDirection=DESC`;
-      const page = await getJson(url);
-      if (!Array.isArray(page)) throw new AdapterError(url, null, `unexpected positions shape`);
+      const pageNo = Math.floor(offset / openPageSize);
+      let url: string;
+      if (apiV2()) {
+        const cursor = pageNo === 0 ? null : openCursors[pageNo - 1] ?? null;
+        if (pageNo > 0 && !cursor) return [];
+        url =
+          `${DATA_API}/v2/positions?user=${address}&status=OPEN&limit=${openPageSize}` +
+          `&sort_by=CURRENT_VALUE&sort_direction=DESC` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+      } else {
+        url = `${DATA_API}/positions?user=${address}&limit=${openPageSize}&offset=${offset}&sortBy=CURRENT&sortDirection=DESC`;
+      }
+      const payload = await getJson(url);
+      openCursors[pageNo] = nextCursorOf(payload);
+      const page = rowsNormalised(payload, url);
       await sleep(DELAY_MS);
       return page as unknown[];
     };
@@ -311,16 +470,18 @@ export class PolymarketAdapter implements DataAdapter {
     const out: WalletActivityTrade[] = [];
     const pageSize = 500;
     let offset = 0;
+    let cursor: string | null = null;
     // Print-type guard accounting (audit §P6, approved + wired 2026-09-28).
     let dropped = 0;
     const droppedByType: Record<string, number> = {};
     const uncatalogued = new Set<string>();
     for (let page = 0; page < 4; page++) {
-      const url = `${DATA_API}/activity?user=${address}&type=TRADE&limit=${pageSize}&offset=${offset}&start=${since}`;
-      const data = (await getJson(url)) as Array<Record<string, unknown>>;
-      if (!Array.isArray(data)) {
-        throw new AdapterError(url, null, `unexpected activity shape: ${typeof data}`);
-      }
+      const url = apiV2()
+        ? `${DATA_API}/v2/activity?user=${address}&type=TRADE&limit=${pageSize}&start=${since}` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "")
+        : `${DATA_API}/activity?user=${address}&type=TRADE&limit=${pageSize}&offset=${offset}&start=${since}`;
+      const payload = await getJson(url);
+      const data = rowsNormalised(payload, url);
       // Client-side print-type guard. The server-side `type=TRADE` filter is
       // what keeps position-management rows out TODAY — measured 2026-09-28 over
       // 30 wallets / 14,500 rows: 14,500 kept, 0 dropped. So this guard changes
@@ -367,10 +528,16 @@ export class PolymarketAdapter implements DataAdapter {
           )
         );
       }
-      // Page-cap check uses the RAW page length: the guard must not make a full
-      // page look short and stop pagination early.
-      if (data.length < pageSize) break;
-      offset += pageSize;
+      // v2 terminates on next_cursor === null; v1 on a short page. The page-cap
+      // check uses the RAW page length: the print guard must not make a full page
+      // look short and stop pagination early.
+      if (apiV2()) {
+        cursor = nextCursorOf(payload);
+        if (!cursor) break;
+      } else {
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
       await sleep(DELAY_MS);
     }
     if (onPrintFilter && (dropped > 0 || uncatalogued.size > 0)) {
