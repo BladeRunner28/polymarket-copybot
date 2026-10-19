@@ -3073,6 +3073,20 @@
     "architecture",
     "bots"
    ]
+  },
+  {
+   "id": "liquidity-gate-zero-reading",
+   "title": "Liquidity gate fires on a $0 reading the book contradicts (14.8% of declined flow)",
+   "column": "Scheduled",
+   "dates": "opened 2026-10-19 (found during the copybot-selection investigation)",
+   "note": "MEASURED 2026-10-19: over 150,000 declined decisions, 22,125 (14.8%) have a SOLE blocker of 'liquidity $0 < min $1000' (9.5%) or 'liquidity $0 < min $500' (5.2%). Of 800 decisions carrying that blocker, all 746 that had a MarketSnapshot at decision time (100%) had liquidity > 0 in the book; ZERO had a genuine zero. The snapshot table itself has liquidity=0 on 0.05% of rows (7,824/15,887,343) and NULL on 1.5%. So the gate consumes a value that is not the market's liquidity -- most likely a missing or partial field defaulting to 0 rather than a measured zero. Second largest sole blocker in the book after the wallet daily copy cap (12.5%). This is a DATA-INTEGRITY defect in the scorer's read path, not a tuning question.",
+   "gate": "Done when (a) the liquidity value the gate consumes is traced to its source and proven equal to MarketSnapshot.liquidity on a sample of decisions, (b) decisions whose snapshot liquidity is > 0 no longer produce a 'liquidity $0' blocker, and (c) a SHADOW read reports what would have been admitted with the fixed read (count by price band plus the realised edge of the newly-admitted rows) BEFORE anything changes what is live. Operator approval required for any change to admission.",
+   "tags": [
+    "bug",
+    "scoring",
+    "admission",
+    "data-integrity"
+   ]
   }
  ]
 }
