@@ -85,6 +85,13 @@ export interface SentimentAggregationOpts {
   minSignals?: number;
   /** |sentimentScore| threshold for "opinionated". */
   opinionatedThreshold?: number;
+  /**
+   * Evaluate the window AS OF this instant instead of now — the historical-replay
+   * door. Signals are filtered to `[asOf - windowDays, asOf]` and recency decay is
+   * measured from `asOf`, so a past decision can be re-scored without look-ahead.
+   * Omitted (the live path) it is exactly the old behaviour.
+   */
+  asOf?: Date;
 }
 
 /**
@@ -98,12 +105,13 @@ export async function aggregateSentimentForCategory(
   opts: SentimentAggregationOpts = {}
 ): Promise<AggregateResult | null> {
   const { windowDays = 7, minSignals = 1, opinionatedThreshold = 0.3 } = opts;
-  const since = new Date(Date.now() - windowDays * 86_400_000);
+  const asOf = opts.asOf ?? new Date();
+  const since = new Date(asOf.getTime() - windowDays * 86_400_000);
 
   const rows = await prisma.regulatorySignal.findMany({
     where: {
       marketCategory: category,
-      processedAt: { gte: since },
+      processedAt: opts.asOf ? { gte: since, lte: asOf } : { gte: since },
       OR: [
         { sentimentScore: { gte: opinionatedThreshold } },
         { sentimentScore: { lte: -opinionatedThreshold } },
@@ -115,6 +123,6 @@ export async function aggregateSentimentForCategory(
 
   if (rows.length < minSignals) return null;
 
-  const items = buildEvidenceItems(rows, new Date());
+  const items = buildEvidenceItems(rows, asOf);
   return aggregateEvidenceItems(items, yesPrice);
 }

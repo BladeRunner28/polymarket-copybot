@@ -59,6 +59,10 @@ interface ExportRow {
   rule_set_version: number | null;
   era: string;
   decision_at: string;
+  /** When the label became KNOWABLE = COALESCE(closedAt, resolvedAt). The split PURGE key.
+   *  Already selected as `terminalAt` since the export was written, and dropped on the floor
+   *  until 2026-10-19 (card ml1-fit-population-gaps). */
+  terminal_at: string | null;
   horizon_to_resolution_hours: number | null;
   pnl_net_entry: number;
   y_net_entry: 0 | 1;
@@ -83,6 +87,12 @@ interface ExportRow {
   liquidity_score: number;
   thesis_score: number;
   copy_score: number;
+  /** Sentiment feature, re-derived per decision from the signal corpus (see
+   *  scripts/export-sentiment-features.ts). Null = no research category or no signal
+   *  coverage; the model must treat null as a distinct state, never as 0. */
+  sentiment_n: number | null;
+  sentiment_delta_signed: number | null;
+  sentiment_delta_50: number | null;
   y_outcome: 0 | 1 | null;
   legacy_was_good: number | null;
   review_id: string | null;
@@ -92,13 +102,14 @@ interface ExportRow {
 
 const COLUMNS: (keyof ExportRow)[] = [
   "review_id", "decision_id", "paper_trade_id", "bot_id", "venue", "wallet", "market_id", "outcome",
-  "decision", "status", "rule_set_version", "era", "decision_at", "horizon_to_resolution_hours",
+  "decision", "status", "rule_set_version", "era", "decision_at", "terminal_at", "horizon_to_resolution_hours",
   "pnl_net_entry", "y_net_entry", "pnl_gross", "pnl_net_full", "entry_price", "exit_price",
   "fee_rate", "fee_entry_usd", "fee_exit_usd",
   "detected_price", "wallet_entry_price", "size_usd", "observed_size_usd",
   "raw_spread", "raw_liquidity", "raw_volume",
   "wallet_quality_score", "category_fit_score", "entry_timing_score",
   "spread_score", "liquidity_score", "thesis_score", "copy_score",
+  "sentiment_n", "sentiment_delta_signed", "sentiment_delta_50",
   "y_outcome", "legacy_was_good", "market_question",
 ];
 
@@ -137,9 +148,36 @@ function targetSums(rawRows: any[]): { rows: number; gross: number; netEntry: nu
   return { rows: dedup.length, gross: round4(gross), netEntry: round4(netEntry), netFull: round4(netFull) };
 }
 
+/**
+ * Sentiment features, produced by scripts/export-sentiment-features.ts and joined on the paper
+ * trade id. Absent file = every sentiment column null (the export must still run — the chain
+ * order is features → export, and a missing corpus is data, not a crash).
+ */
+function loadSentimentFeatures(path: string): Map<string, { n: string; dSigned: string; d50: string }> {
+  const m = new Map<string, { n: string; dSigned: string; d50: string }>();
+  if (!fs.existsSync(path)) {
+    console.log(`  sentiment features: ${path} not found — sentiment columns will be null`);
+    return m;
+  }
+  const lines = fs.readFileSync(path, "utf8").trim().split("\n");
+  const head = lines[0].split(",");
+  const ix = (name: string) => head.indexOf(name);
+  const iT = ix("trade_id"), iN = ix("sentiment_n"), iS = ix("sentiment_delta_signed"), i5 = ix("sentiment_delta_50"), iH = ix("has_sentiment");
+  let kept = 0;
+  for (const l of lines.slice(1)) {
+    const c = l.split(",");
+    if (c[iH] !== "1") continue;
+    m.set(c[iT], { n: c[iN], dSigned: c[iS], d50: c[i5] });
+    kept++;
+  }
+  console.log(`  sentiment features: ${kept} of ${lines.length - 1} trades carry a value`);
+  return m;
+}
+
 async function main() {
   console.log("Exporting ML training data (magnitude target, decision-book source)...");
   const started = Date.now();
+  const sentimentByTrade = loadSentimentFeatures("data/sentiment-features.csv");
 
   const raw = await prisma.$queryRaw<any[]>(Prisma.sql`
     SELECT pt.id AS paperTradeId, pt.botId, pt.venue, pt.walletAddress, pt.marketId, pt.outcome,
@@ -197,6 +235,7 @@ async function main() {
     const targets = netTargets({ realizedPnl: pnl, fees });
     const yOutcome = outcomeLabel(r.outcome, r.finalOutcome);
     const rsv = r.ruleSetVersion === null || r.ruleSetVersion === undefined ? null : Number(r.ruleSetVersion);
+    const sent = sentimentByTrade.get(String(r.paperTradeId));
     const era = eraOf(rsv);
     if (r.rawTtr === null || r.rawTtr === undefined) noSnapshot += 1;
     if (yOutcome !== null) {
@@ -218,6 +257,8 @@ async function main() {
       rule_set_version: rsv,
       era,
       decision_at: new Date(Number(r.openedAt)).toISOString(),
+      terminal_at:
+        r.terminalAt === null || r.terminalAt === undefined ? null : new Date(Number(r.terminalAt)).toISOString(),
       horizon_to_resolution_hours: num(r.rawTtr),
       pnl_net_entry: round4(targets.pnlNetEntry),
       y_net_entry: targets.yNetEntry,
@@ -242,6 +283,9 @@ async function main() {
       liquidity_score: round4(Number(r.liquidityScore)),
       thesis_score: round4(Number(r.thesisScore)),
       copy_score: round4(Number(r.copyScore)),
+      sentiment_n: sent ? num(sent.n) : null,
+      sentiment_delta_signed: sent ? num(sent.dSigned) : null,
+      sentiment_delta_50: sent ? num(sent.d50) : null,
       y_outcome: yOutcome,
       legacy_was_good: r.wasDecisionGood === null || r.wasDecisionGood === undefined ? null : Number(r.wasDecisionGood),
       market_question: String(r.marketQuestion ?? "").slice(0, 160),
