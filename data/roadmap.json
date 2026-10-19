@@ -3047,6 +3047,32 @@
     "research",
     "source"
    ]
+  },
+  {
+   "id": "ml-pipeline-automation",
+   "title": "Automate the ML lane: label → export → fit → gate on a schedule (+ sentiment as a feature)",
+   "column": "Scheduled",
+   "dates": "opened 2026-10-18 (operator directive: 'get the ML automated part of the stack')",
+   "note": "The ML-1 gate is rigorous but every step is a hand-run one-shot: scripts/backfill-copy-labels.ts -> scripts/export-training-data.ts -> scripts/ml1-fit-candidate.ts -> scripts/ml1-gate-read.ts. No cron runs any of them; the daily tuning review only PRINTS the ML-1 line. Two measured gaps block an honest loop: (1) the export has NO terminal/resolution stamp (COLUMNS carries decision_at + horizon_to_resolution_hours only), so the time-ordered SPLIT PURGE KEY has to be derived rather than read - open card ml1-fit-population-gaps; (2) the export has ZERO sentiment columns (score components only: copy_score, thesis_score, confidence...), so sentiment - the operator's stated purpose for the Reddit/sentiment lanes - never reaches the model. Sentiment currently reaches only the live score path (RuleSet sentimentScale=100), which is a different, unvalidated use of the same signal (card data2-per-decision-provenance persists the per-decision delta). Bar is unchanged and must not be weakened: beat price-only on the frozen 2026-08-21 time-ordered holdout, AUC >= 0.729 AND Brier <= 0.212, market-clustered 95% CI excluding 0, label pnl_net_entry > 0. Automation may RUN the gate nightly; it may never PROMOTE a candidate without operator approval.",
+   "gate": "Done when ONE nightly chain runs headless and appends to a ledger (data/ml-ledger.jsonl) with: label backfill row count, export row count + terminal-stamp coverage %, fitted-candidate AUC/Brier vs the price-only baseline on the SAME frozen holdout, and the promotion verdict - and it does this for 7 consecutive days with zero manual steps. Plus: >=1 sentiment feature column in the export, traced to a persisted per-decision sentiment delta, and a pre-registered read of whether it moves AUC at all. Promotion stays manual (operator approval), always.",
+   "tags": [
+    "ml",
+    "automation",
+    "sentiment"
+   ]
+  },
+  {
+   "id": "ml-bot-separate-lane",
+   "title": "Split the ML bot into its own lane and bot, separate from copybot",
+   "column": "Backlog",
+   "dates": "opened 2026-10-19 (operator directive: 'card out making the ML bot its own separate lane and bot from the copybot')",
+   "note": "Today the ML work is a shadow/measurement arm INSIDE copybot: it trains on copybot's own copy decisions (export-training-data.ts), is judged against copybot's price-only baseline, and has no bot_id, no ledger, no sizing and no exposure of its own. The operator's target state is an ML bot that makes its OWN entry decisions - with sentiment as one of its decision lanes - as a first-class bot alongside copybot, not a model bolted onto copybot's decisions. That inverts a core property of the current lane: ML-1 learns 'was copying this wallet's trade profitable', which requires copybot to act first. An independent-entry ML bot must generate candidates itself (from observed flow) and cannot use copybot's acted-only label set without inheriting its selection bias (open card ml1-declined-arm-coverage). Separation work spans: own bot_id + RuleSet namespace, own PaperTrade/DecisionJournal scoping, own exposure cap and daily-loss rail, own dashboard lane and EOD/PnL attribution, and a decision path that does not read copybot's copyScore. Pre-requisite measurement: the declined-arm label coverage must exist before an independent-entry model can be trained without bias.",
+   "gate": "Done when an ML bot exists as a separate bot_id with its own rule set, ledger rows, exposure accounting and PnL attribution, and every ML bot decision is journaled with the features it consumed (incl. sentiment delta) such that its PnL can be reported WITHOUT copybot's ledger - verified by an EOD report that shows the two bots' books side by side and sums to the same total as the combined account. Shadow-only until the pre-registered promotion gate is cleared and the operator approves going live.",
+   "tags": [
+    "ml",
+    "architecture",
+    "bots"
+   ]
   }
  ]
 }
