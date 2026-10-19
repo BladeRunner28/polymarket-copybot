@@ -236,3 +236,50 @@ Not candidates, on the numbers: the shared CAN cable and the terminator *count* 
 (temperature trace, above), the toolhead board (its errors are collateral — though note EBBCan can never
 report warn/passive, `src/rp2040/can.c` hardcodes `bus_state=ACTIVE`, so "EBBCan stayed active" is not
 evidence of health either), and the USB side (bridge `rto=0.025` throughout).
+
+---
+
+## MEASURED 2026-10-19 — hypothesis 1 is REFUTED for the two boards, and the topology is 3 nodes
+
+Operator metered the bus with the **CAN cable unplugged** (the M8P↔SB2209 umbilical) and read **120 Ω at
+the SB2209 and 120 Ω at the M8P**.
+
+Topology confirmed from `klippy.log` — there are **three** CAN MCUs on this bus, not two:
+
+| node | canbus_uuid | log line |
+|---|---|---|
+| `[mcu]` (M8P mainboard) | `b4bbe36cf8d6` | L548 |
+| `[mcu EBBCan]` (SB2209 toolhead) | `336abf1555f3` | L545 |
+| `[mcu scanner]` (**Cartographer v4**) | `dabce9b69073` | L783 |
+
+**120 Ω at each end, measured in isolation, is the textbook healthy state** — one terminator per end,
+≈60 Ω once the cable is in. So the two boards are correct and the "did the cable arrive terminated / is a
+terminator missing" question is closed.
+
+What is still **not** measured is the third node. If the v4's termination pads are bridged, the assembled bus
+reads **≈40 Ω** (three 120 Ω in parallel) instead of 60 Ω — electrically out of spec, and a terminator sitting
+at the **end of the probe's spur** reflects faults straight back into that tap. That is the per-node signature
+this fault has (scanner 3.96 errors/1,000 msgs vs mcu 0.029 and EBBCan 0.047 — a **136×** gap on a shared bus).
+
+### The two measurements that settle it (≈60 s, meter already out)
+
+1. **Probe isolated** — unplug the Cartographer's CAN lead and meter CANH↔CANL **on the probe's own
+   connector**. Expect **open / no continuity**.
+   - open → the probe is not terminated; bus termination is correct and hypothesis 1 is fully dead.
+   - **≈120 Ω → third terminator confirmed.** Remove the bridge on the v4's pads and the bus returns to spec.
+2. **Assembled bus** — cable back in, probe back in, meter CANH↔CANL at either board. Expect **≈60 Ω**.
+   - ≈60 Ω → termination correct end-to-end.
+   - **≈40 Ω → the probe is terminated** (same finding as (1), no need to repeat).
+   - **120 Ω → a line is not conducting**: one conductor, a pin, or a crimp is open even though the other
+     line and the terminator read fine. That is a cable/connector fault, and it would look exactly like this
+     fault on the wire.
+
+If (1) reads open **and** (2) reads 60 Ω, termination is not the cause and the remaining suspect is the
+probe's **spur/stub and connector contact** — the hypothesis-2 family (reversed H/L pair, crimp, far-end
+connector), which no resistance reading detects and which the idle hot soak then has to separate from a
+thermal/board fault.
+
+**Next in the cost order after the meter: the idle hot soak** (no config change — the probe streams
+`cartographer_data` + `analog_in_state` at ~104 msg/s from boot regardless of printing). Printer is currently
+powered down (`192.168.1.100` unreachable), so the soak waits on power-on.
+
