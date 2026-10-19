@@ -283,3 +283,65 @@ thermal/board fault.
 `cartographer_data` + `analog_in_state` at ~104 msg/s from boot regardless of printing). Printer is currently
 powered down (`192.168.1.100` unreachable), so the soak waits on power-on.
 
+---
+
+## MEASURED 2026-10-19 (later) — re-crimp done, terminated bus confirmed, G28 load test does NOT reproduce
+
+Operator then reported: **CANH↔CANL open on the probe with it isolated** (so the v4 is NOT terminated) and
+**60 Ω across the assembled bus** (exactly two terminators, correct). Then: **re-crimped the M8P end.**
+
+So the terminator census is closed on all three nodes — mainboard terminated, toolhead terminated, probe not
+terminated, sum correct. Hypothesis 1 is dead in full, not just for the two boards.
+
+Two honest caveats carried forward: a marginal crimp reads 0 Ω cold, and **a single broken conductor still
+reads ~60 Ω** because the probe's loop closes through the other wire. End-to-end **H↔H / L↔L** (≈0 Ω = intact)
+has still not been run.
+
+### Idle state, post-re-crimp (`last_stats`, 60 s apart)
+
+All three nodes: `bytes_invalid 0`, `bytes_retransmit 0`, `send_seq == receive_seq`, `rto 0.025`,
+idle traffic ~2 msg/s per node. Clean, but at 2 msg/s it tests nothing.
+
+### G28 load test — 60 cycles, ~21 min, zero isolation attempt (probe exercised every cycle)
+
+`scripts g28-load-test.py`: on a Trident `[stepper_z] endstop_pin = probe:z_virtual_endstop`, so **every home
+drives the scanner node** — the cheapest reproduction of load on the probe's tap.
+
+| node | messages sent | bytes_invalid | invalid/1,000 | final rto |
+|---|---|---|---|---|
+| `[mcu]` (bridge) | 64,322 | **+19** | **0.295** | 0.025 |
+| `[mcu EBBCan]` | 12,702 | 0 | 0.000 | 0.025 |
+| `[mcu scanner]` | 19,043 | **0** | **0.000** | 0.025 |
+
+**Home failures: 0 / 60.** A `send−receive` gap of 1 appeared twice on the scanner (cycles 55, 57),
+self-correcting.
+
+**All 19 invalid bytes are in cycle 2 and nowhere else** — cycles 3–60 are 58 consecutive clean cycles.
+
+### Verdict: this is NOT a reproduction, and the automated line saying otherwise was wrong
+
+The harness printed `ERRORS APPEARED under load — fault reproduced` because its rule is a crude "did any
+`bytes_invalid` grow" check. It weighs neither node nor magnitude nor trajectory, and on the evidence it is
+overstated. Against the original signature:
+
+| | original failure | this load test |
+|---|---|---|
+| worst node | **scanner** 3.96 invalid/1k | scanner **0.000** |
+| `rto` | ramped 0.025 → **3.200** | flat 0.025 |
+| `send−recv` gap | **7** | max 1, transient |
+| outcome | died at 3 h 29 m | 60/60 homes fine |
+
+The original fault was **probe-dominant**; here the probe was driven 19,043 messages and logged **not one**
+invalid byte. The 19 bytes are on the bridge (the node that observes every frame), appeared once, and never
+recurred — consistent with first-contact settling after the re-crimp or first-frames-after-idle sync. It
+cannot be told apart from a marginal contact that happened not to recur.
+
+**What G28 therefore does and does not prove.** It exercises the probe's tap hard and finds it clean. But it is
+13-second bursts with 8-second gaps, **no heat**, and nothing sustained — while the failure was 3.5 hours of
+continuous traffic in a hot chamber. G28 is the cheap rung; it was passed, not won.
+
+**Only the real print falsifies this.** `BC-250-pro_v2_ASA_5h30m.gcode`, same conditions, monitored for the
+full run. Heat was already exonerated (died at 63.3 °C after surviving 76.8 °C error-free), so a hot soak
+without motion adds nothing.
+
+
