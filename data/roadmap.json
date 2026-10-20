@@ -3233,6 +3233,21 @@
     "exposure-cap",
     "accounting"
    ]
+  },
+  {
+   "id": "drift-gate-sign-defect",
+   "title": "FINDING — the drift gate uses Math.abs, so it rejects BETTER prices as 'too late' (+29.9% cohort thrown away)",
+   "column": "Scheduled",
+   "effort": "fix is one expression + a scoring input; needs Lane A approval",
+   "dates": "Measured 2026-10-20",
+   "note": "Largest actionable finding of the session. Lane A -- NOTHING APPLIED.\n\nTHE DEFECT: src/lib/scoring/trade.ts:75 computes `drift = Math.abs(currentPrice - walletEntryPrice)` and line 101 hard-skips when `drift > driftTolerance`, labelled '(too late)'. For a BUY, a currentPrice BELOW walletEntryPrice is a BETTER entry -- the bot pays less for the same position. Absolute value cannot distinguish a discount from a chase, so the gate rejects bargains under the same rule as chasing. The same absolute value also feeds entryTimingScore at :138 (`clamp(100 - (drift/maxPriceDrift)*80)`), so a favourable move is penalised twice.\n\nMEASURED on data/drift-shadow.jsonl (gate counterfactual marked to settlement), settled, ex-dust (entry >= $0.10), deduped per wallet/market/outcome, market-clustered CIs:\n  FAVOURABLE (price fell):  n=4,043   net +29.9%  CI [+25.8, +34.1]\n  ADVERSE   (price rose):   n=3,616   net -19.0%  CI [-22.3, -15.7]\n  all blocked:              n=7,659   net  +6.8%  CI [ +4.1,  +9.6]\n=> 52.8% of blocked candidates were available CHEAPER than the wallet paid, and that cohort returns +29.9% net of taker fee.\n\nThe blended +6.8% is a +29.9% cohort plus a -19.0% cohort averaged together -- which is why the instrument's avgPnlPerTradeExDust of $0.31 (and $0.85 for the 7d cohort) never pointed at anything actionable.\n\nTAIL CONFIRMS DIRECTION, ASYMMETRICALLY: adverse [0.05,inf) = -31.7% [-35.2,-27.9]; favourable [0.05,inf) = +71.1% [+62.2,+80.2]. So 'raise maxPriceDrift to infinity earns +11.5%' was two opposite populations averaged -- raising the tolerance is the WRONG instrument, it admits the chasing tail.\n\nPROPOSED (not applied): make the comparison directional. adverse = current - walletEntry; gate on adverse ONLY, tolerance UNCHANGED at 0.004 (the measurement does not license loosening it -- adverse tail is -31.7%). Admit favourable drift. entryTimingScore uses the adverse component only.\n\nPRE-REGISTRATION TENSION FLAGGED, NOT EXPLOITED: the 2026-09-20 decay bar governs a maxPriceDrift relaxation and has NOT tripped (cohort7d $0.85 vs $0.50 bar). A directional fix leaves the chasing bar untouched so it is arguably outside that bar, but it changes what the lane buys => Lane A, explicit yes required.\n\nREALITY CHECKS: (1) only 8,114/33,848 candidates settled (24%) -- resolved markets skew fast/short-TTR; (2) drift-shadow records NO otherBlocks/driftOnly field (unlike shadow-lowconf), so 4,043 is an UPPER BOUND on legs gained, not a forecast; (3) maxCopiesPerCycle=50 and ~15 copies/day today, so throughput caps still bind; (4) a falling price can be information -- the counterfactual cannot separate 'cheap because unloved' from 'cheap because informed'.\n\nCONFIDENCE GATE: NOT PRICEABLE and NOT A LEVER. Settled low-confidence candidates ex-dust = 3,923, of which confidenceOnly = 14 (0.4%). 99.6% were co-blocked by other gates, so relaxing minConfidence alone would admit ~14 candidates. My earlier '25% of the funnel is the confidence gate' framing was wrong -- it is a co-blocker. No change proposed.\n\nLANE B PREREQUISITE: add otherBlocks + driftOnly to appendDriftShadow (mirroring shadow-lowconf) so admitted-set pricing on this gate can ever be honest.\n\nWrite-up: drafts/drift-gate-direction-20261020.md · scripts/drift-direction-read.py · scripts/gate-pricing-read.py",
+   "tags": [
+    "finding",
+    "lane-a",
+    "drift-gate",
+    "sign-defect",
+    "high-value"
+   ]
   }
  ]
 }
