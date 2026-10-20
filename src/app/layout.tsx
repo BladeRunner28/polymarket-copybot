@@ -19,6 +19,7 @@ const NAV = [
   { href: "/journal", label: "Decision Journal" },
   { href: "/performance", label: "Performance" },
   { href: "/analytics", label: "Analytics" },
+  { href: "/ml", label: "ML Lane" },
   { href: "/rules", label: "Rules" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/reports", label: "Reports" },

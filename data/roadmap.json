@@ -3203,6 +3203,21 @@
     "closed",
     "ml-lane"
    ]
+  },
+  {
+   "id": "ml-veto-not-established",
+   "title": "FINDING — the ML model as a VETO on copy legs is NOT established (non-monotone, CIs span zero)",
+   "column": "Backlog",
+   "effort": "measurement done; revisit when held-out settled legs >> 826",
+   "dates": "Measured 2026-10-20",
+   "note": "With market-only prediction closed (card ml-near-certainty-does-not-survive), the ML model's remaining useful job is a VETO on copy legs -- it is wallet-conditioned, and the +47.75% vs -50.64% contrast says the alpha is in WHICH WALLETS get copied. scripts/ml-veto-calibration.py tests that on the time-ordered holdout.\n\nTHE RIGHT QUANTITY IS EDGE, NOT PROBABILITY: a high modelled p on a near-certain market is fairly priced, not an opportunity. So the veto fires on EV = p_model - (entry + feePerShare), not on low p.\n\nSAMPLE: 13,776 held-out predictions -> 826 legs joined to finished PaperTrade rows ($8,298 notional). Baseline: PnL $43.38, ROI 0.52%.\n\nTHE SWEEP LOOKS GREAT AT ONE POINT AND IS NOISE. PnL by threshold:\n  EV>-0.05  $25.84  |  EV>-0.02  -$21.28  |  EV>0.00  $138.12  |  EV>0.02  $313.81  |  EV>0.05  -$165.38\nThe argmax (EV>0.02) reads +$313.81 against a $43.38 baseline, a +$270 'improvement'. But the curve ZIGZAGS: it falls, rises, rises, then COLLAPSES from +$314 to -$165 as the threshold gets stricter. A real ordering must be monotone -- raising the threshold keeps a strictly better subset. 2 direction changes across 5 thresholds. Picking the peak is curve-fitting to 826 legs.\n\nCONFIRMED INDEPENDENTLY BY EV QUARTILES (all CIs span zero, and NOT in EV order):\n  Q1 [-0.077,+0.005] n=207  +3.93%  [-11.9, +21.6]\n  Q2 [+0.005,+0.029] n=206  -4.42%  [-17.9,  +9.8]\n  Q3 [+0.029,+0.051] n=206  -5.16%  [-19.4,  +8.9]\n  Q4 [+0.051,+0.227] n=207 +11.61%  [ -5.8, +30.5]\nQ1 beats Q2 and Q3. EV does not order realised ROI on this sample.\n\nPER-BAND: EV>0 barely moves anything (<0.20 spreads -4.83pp on n=37; 0.4-0.6 -0.35pp on n=385). The only large spread, 0.8-1.0 +17.69pp, rests on n=7.\n\nVERDICT: NO justified veto. I wrote the script's own verdict logic to test monotonicity and refuse the argmax, because the naive reading of this table is exactly the trap I have been avoiding all session.\n\nVALUABLE SIDE FINDING -- INDEPENDENT CORROBORATION OF v63: the held-out 0.4-0.6 band returns -8.97% on 385 legs, with no knowledge of the rule. v63 skips exactly that band in the live lane. Two independent roads to the same conclusion, which is the strongest evidence v63 is right that exists so far.\n\nBLOCKER: n=826 is too small to settle this, and the model's p is refit each run so there is no frozen artifact to rescore history with. Revisit only when the scored-and-settled leg count is far larger; the ml-daily cron accumulates them. Do NOT propose a RuleSet change on the current sample.",
+   "tags": [
+    "finding",
+    "ml",
+    "null-result",
+    "veto",
+    "v63-corroboration"
+   ]
   }
  ]
 }
