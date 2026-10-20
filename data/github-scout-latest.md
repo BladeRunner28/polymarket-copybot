@@ -1,25 +1,25 @@
 🔭 **Prediction-Market Repo Scout**
-Scanned 6 queries · 52 new candidates · top 5
+Scanned 6 queries · 48 new candidates · top 5
 **Gate:** watch-only (pipeline busy: Phase A2 outcome review; Phase B — Kelly sizing replaces band siz)
 
-**Synpath-ai/synpath** — 139★ · MIT · Python · pushed 3d ago · relevance 10
-> One open-source API for prediction markets. Trade Kalshi, Polymarket, Polymarket US and Opinion with one Python SDK: unified market data, smart order routing ac
-> keywords: kalshi, order book, polymarket, prediction market, prediction-market
+**taetaehoho/poly-kalshi-arb** — 445★ · NO-LICENSE · Rust · pushed 302d ago · relevance 6
+> 
+> keywords: arb, kalshi
 
-**lovePinesnop/polymarket-kalshi-arbitrage-bot** — 138★ · NO-LICENSE · TypeScript · pushed 7d ago · relevance 7
-> polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polymarket polyma
-> keywords: arb, arbitrage, kalshi, polymarket
+**alex-jb/orallexa-ai-trading-agent** — 71★ · MIT · Python · pushed 4d ago · relevance 6
+> Self-tuning multi-agent AI trading system. 8-source signal fusion, Bull/Bear/Judge debate on Claude Opus 4.7, Kelly + ATR position sizing. Python · Kalshi + Pol
+> keywords: ai, kalshi, polymarket, prediction-market
 
-**ccxt/ccxt** — 44340★ · MIT · Python · pushed 0d ago · relevance 7
-> A unified trading API with more than 100 crypto exchanges and prediction markets in JavaScript / TypeScript / Python / C# / PHP / Go / Java / Rust
-> keywords: arb, arbitrage, crypto, prediction market
+**Lumiwealth/lumibot** — 2138★ · GPL-3.0 · Python · pushed 0d ago · relevance 6
+> AI agents that actually place the trade. 12 brokers, real backtests, stocks options futures forex crypto and prediction markets.
+> keywords: ai, backtest, crypto, prediction market
 
-**lawmaster10/howcryptoworksbook** — 892★ · NO-LICENSE · ? · pushed 0d ago · relevance 7
-> A free, open-source book that explains how crypto actually works. 15 chapters covering Bitcoin, Ethereum, Solana, DeFi, MEV, market structure, custody, stableco
-> keywords: ai, crypto, prediction market, prediction-market
+**marc-shade/world-intel-mcp** — 969★ · MIT · Python · pushed 0d ago · relevance 6
+> 160-tool MCP server for real-time global intelligence from free public APIs: markets, liquidity, prediction markets, SEC filings, conflict, military, aircraft-c
+> keywords: ai, dashboard, prediction market
 
-**zeitgeistpm/zeitgeist** — 202★ · GPL-3.0 · Rust · pushed 312d ago · relevance 6
-> An evolving blockchain for prediction markets and futarchy.
-> keywords: ai, prediction market, prediction-market
+**LLMQuant/awesome-trading-agents** — 902★ · CC0-1.0 · ? · pushed 67d ago · relevance 5
+> Curated list of LLM-driven trading agents, MCP servers, and agent skills for market research, strategy, and execution.
+> keywords: ai, prediction-market
 
 Seen list updated. Deep audit only if it maps to an open gap or pipeline has room.

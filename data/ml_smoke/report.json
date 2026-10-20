@@ -1,0 +1,34 @@
+{
+  "built_at": "2026-10-19T08:36:56Z",
+  "database": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
+  "markets": 45956,
+  "decisions": 5000,
+  "label_mix": {
+    "no": 3170,
+    "declined": 5000,
+    "has_snapshot": 4810,
+    "no_research_cat": 2434,
+    "yes": 791,
+    "no_market": 189,
+    "no_snapshot": 190,
+    "abstain_open": 850,
+    "research_cat": 2566
+  },
+  "label_provenance": {
+    "method": "last Book snapshot yesPrice >= 0.90 -> YES, <= 0.10 -> NO, else abstain",
+    "validated_against": "OutcomeReview.finalOutcome on resolved acted positions",
+    "n_validated": 1394,
+    "agree": 1387,
+    "disagree": 7,
+    "agreement_pct": 99.5,
+    "abstentions_in_validation": 574,
+    "note": "0.5% label noise; abstained rows are NULL, never 0"
+  },
+  "leakage_notes": [
+    "WalletProfile NOT joined: current-state table, updatedAt overwrites -> look-ahead",
+    "market features are the latest snapshot at or before decided_at only",
+    "sentiment is joined as-of, see scripts/export-sentiment-features.ts"
+  ],
+  "purge_key": "resolved_at = first snapshot crossing 0.90/0.10; split must purge on this",
+  "elapsed_s": 74.8
+}

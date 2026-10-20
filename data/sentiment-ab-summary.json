@@ -1,12 +1,12 @@
 {
-  "analyzedAt": "2026-10-12T18:15:26.692032+00:00",
-  "n": 1600,
-  "withLocal": 1486,
-  "coverage": 0.929,
-  "correlation": 0.304,
-  "signAgreement": 0.61,
+  "analyzedAt": "2026-10-19T18:15:30.483857+00:00",
+  "n": 1834,
+  "withLocal": 1673,
+  "coverage": 0.912,
+  "correlation": 0.272,
+  "signAgreement": 0.587,
   "currentModel": "qwen3.5:9b",
-  "ruleBullishLocalBearish": 477,
+  "ruleBullishLocalBearish": 587,
   "ruleBearishLocalBullish": 3,
   "byModel": {
     "qwen2.5:7b-instruct": {
@@ -16,10 +16,10 @@
       "correlation": 0.687
     },
     "qwen3.5:9b": {
-      "n": 1194,
-      "rows": 1080,
-      "signAgreement": 0.505,
-      "correlation": -0.344
+      "n": 1428,
+      "rows": 1266,
+      "signAgreement": 0.491,
+      "correlation": -0.386
     }
   },
   "uniqueItems": {
@@ -28,8 +28,8 @@
       "signAgreement": 0.852
     },
     "qwen3.5:9b": {
-      "n": 171,
-      "signAgreement": 0.224
+      "n": 217,
+      "signAgreement": 0.219
     }
   }
 }

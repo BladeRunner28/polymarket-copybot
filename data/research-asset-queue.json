@@ -213,6 +213,50 @@
    "status": "audited",
    "url": "https://github.com/vike-io/vike-data-cli",
    "verdict": "watch"
+  },
+  {
+   "audited": "2026-10-19 08:22 CDT",
+   "claimed": "2026-10-19 08:20 CDT",
+   "claimed_ts": 1792416030.526767,
+   "discovered": "2026-10-19 07:17 CDT",
+   "id": "parkyucheol-del/alphapipeline",
+   "license": "MIT",
+   "note": "L2 VWAP slippage/risk guard for agents; possible second method for the fill model (c200-printthrough) alongside vike book archive; single-day-old repo, judge su",
+   "pushed": "",
+   "report": "drafts/asset-audit-alphapipeline-20261019.md",
+   "source": "agent",
+   "stars": 1,
+   "status": "audited",
+   "url": "https://github.com/parkyucheol-del/alphapipeline",
+   "verdict": "drop"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-10-19 12:23 CDT",
+    "state": "pending"
+   },
+   "audited": "2026-10-19 12:23 CDT",
+   "claimed": "2026-10-19 12:20 CDT",
+   "claimed_ts": 1792430430.6553879,
+   "discovered": "2026-10-19 08:33 CDT",
+   "id": "crowdintel-xyz/polymarket-agent-kit",
+   "license": "MIT",
+   "note": "Agent kit over crowdintel.xyz: scored wallets (ev_ci_low, Kish effective n, BH q-values, 90-day decay), wallet timing, insider scores, funding clusters; MCP+RES",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "if >=30% of currently track wallets fall below q=0.10 (or effective n < 8) then propose q-gated shadow ranking in src/lib/scoring/wallet.ts; else drop",
+    "effort": "~0.5 day, read-only",
+    "reversibility": "delete one new script; no rule/size/threshold/config touched",
+    "text": "Add read-only scripts/wallet-skill-fdr.py: recompute per-wallet excess return from existing PaperTrade labels with event-clustered effective n and a BH-FDR correction across the ~500 wallets scan:wallets already screened (no donor code, no gate change)"
+   },
+   "report": "drafts/asset-audit-polymarket-agent-kit-20261019.md",
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/crowdintel-xyz/polymarket-agent-kit",
+   "verdict": "audit"
   }
  ],
  "version": 1

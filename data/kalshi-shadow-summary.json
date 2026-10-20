@@ -1,6 +1,6 @@
 {
-  "asOf": "2026-10-18T22:16:30-0500",
-  "asOfMs": 1792379790781,
+  "asOf": "2026-10-19T22:16:31-0500",
+  "asOfMs": 1792466191172,
   "kind": "counterfactual-attribution",
   "note": "C-200 book attributed across candidate Kalshi venue rules. Rows are priced at the Polymarket reference because live Kalshi routing is retired; slice PnL is an attribution, not venue P&L.",
   "model": {
@@ -15,18 +15,18 @@
     ]
   },
   "live": {
-    "n": 2486,
+    "n": 2488,
     "n_settled": 2485,
-    "n_open": 1,
+    "n_open": 3,
     "pnl": 6070.17,
     "staked": 20031.97,
     "roi_pct": 30.3,
     "win_rate_pct": 47.7
   },
   "liveSinceSep5": {
-    "n": 1196,
+    "n": 1198,
     "n_settled": 1195,
-    "n_open": 1,
+    "n_open": 3,
     "pnl": 5929.7,
     "staked": 12570.98,
     "roi_pct": 47.17,
@@ -149,9 +149,9 @@
     "shadow_model": {
       "label": "shadow expectancy score > 0 (model call, decision-time features only)",
       "selected": {
-        "n": 1381,
+        "n": 1383,
         "n_settled": 1381,
-        "n_open": 0,
+        "n_open": 2,
         "pnl": 6180.77,
         "staked": 14736.3,
         "roi_pct": 41.94,
@@ -552,9 +552,9 @@
   },
   "shadowScoreSplit": {
     "selected": {
-      "n": 1381,
+      "n": 1383,
       "n_settled": 1381,
-      "n_open": 0,
+      "n_open": 2,
       "pnl": 6180.77,
       "staked": 14736.3,
       "roi_pct": 41.94,
@@ -571,17 +571,17 @@
     },
     "inSample": true,
     "oosSinceFit": {
-      "n": 2,
+      "n": 4,
       "n_settled": 2,
-      "n_open": 0,
+      "n_open": 2,
       "pnl": -12.45,
       "staked": 12.46,
       "roi_pct": -99.95,
       "win_rate_pct": 0.0,
       "exTop1": {
-        "n": 1,
+        "n": 3,
         "n_settled": 1,
-        "n_open": 0,
+        "n_open": 2,
         "pnl": -9.97,
         "staked": 9.97,
         "roi_pct": -99.95,
