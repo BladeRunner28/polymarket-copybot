@@ -161,6 +161,64 @@ Differences the arm must model rather than assume:
 
 ---
 
+## 5.5 Cohort scoping — which markets the ML lane trades first
+
+Asked 2026-10-20: *should the ML bot focus on Bitcoin, arbitrage and weather rather than every
+category?* Two of the three, yes — but for reasons that are not "those categories pay", and one of
+the three is not a category at all.
+
+**Measured on the deduped STANDARD book (3,192 legs, 99.4 % category coverage), by notional:**
+
+| cohort | legs | notional | ROI | median hold |
+|---|---|---|---|---|
+| **`highest` (weather)** | **779** | **$10,350 (28 %)** | **+0.7 %** | 1.6 d |
+| mlb | 220 | $2,602 | +8.2 % | 1.0 d |
+| **cs2 (esports)** | 181 | $2,110 | **−14.5 %** | 1.0 d |
+| **lol (esports)** | 180 | $2,026 | **−9.7 %** | 1.0 d |
+| atp | 125 | $1,402 | +3.8 % | 1.0 d |
+| dota2 | 99 | $1,128 | +12.9 % | 1.0 d |
+| world | 95 | $846 | +61.1 % | 4.1 d |
+| wta | 62 | $751 | −18.0 % | 1.0 d |
+
+**BTC does not appear in the top 16 at all** — the copy book has effectively no crypto exposure.
+
+Four conclusions that invert the naive read:
+
+1. **Weather is already the book's largest allocation (28 % of notional) and returns ~nothing
+   (+0.7 %).** "Focus on weather" would deepen the biggest zero in the book. The case for weather
+   is *not* that the book profits there — it is that **the ML lane has information the copy lane
+   structurally cannot have: exogenous ground truth (forecast feeds).** The copy lane copies humans;
+   a weather model can read the forecast. That makes weather the cleanest available test of
+   "can this model see something a copied wallet can't" — and it is testable against a 28 %
+   allocation that is currently earning zero.
+2. **BTC is genuinely NEW exposure, not a reallocation.** Nothing in the copy book touches it, so an
+   ML BTC arm is a real second lane rather than a reshuffle of the same money. It is also the
+   fastest-resolving, highest-frequency class available — the best training substrate a
+   self-learning loop can get, because label turnaround is the binding constraint on how fast any
+   self-learning system can learn.
+3. **Esports is where the book actually bleeds**: cs2 −14.5 %, lol −9.7 %, val −6.0 % — roughly
+   −11 % across ~$4.8 K of notional. This is a finding independent of the ML work and a Lane A
+   candidate in its own right.
+4. **Arbitrage is not a category — it is a strategy with zero prediction content.** It needs both
+   venues and execution speed, not a forecast. It belongs on the existing `kalshi-pm-pair` shadow
+   lane. Putting arb legs inside the ML lane would make the model's AUC/Brier **uninterpretable**,
+   because those legs carry no forecast to be right or wrong about.
+
+**Decision.** No category whitelist. `category` becomes a **feature**, and cohorts are **sequenced**
+rather than filtered: **BTC / short-TTR crypto first** (new exposure + fastest labels), **weather
+second** (tests the exogenous-feature thesis against the book's largest zero). A whitelist would be
+priced on a book that returns +0.7 % in its biggest category — i.e. on nothing.
+
+**Lane B defect found while answering this.** `ObservedTrade.marketCategoryClass` /
+`marketCategoryFine` were introduced around 2026-W39 and **never backfilled**: ISO week 2026-W37 is
+44,671/44,671 null on the new column while the older `marketCategory` column is populated for
+44,431 of those same rows. Any query joining on the new taxonomy silently drops ~90 % of history —
+which is exactly what happened in the first pass at this question (it read 96.4 % "uncategorised"
+when true coverage is 99.4 %). Fix: COALESCE the two columns through one mapping view, behind a
+test that asserts coverage ≥99 % on the closed book.
+
+---
+
 ## 6. Self-learning and self-reinforcing — with the guardrail that makes it safe
 
 "Self-reinforcing" is the most dangerous phrase in this document. A system that reinforces its
@@ -242,7 +300,7 @@ it does not clear** — the OOS read is −29.84 %.
 
 | Phase | Work | Lane | Cost |
 |---|---|---|---|
-| **0** | **Unify accounting**: one module scoring both arms; re-derive the copy baseline on it; stamp the fill-model version | B (repair) | ~1 d |
+| **0** | **Unify accounting** + **fix category attribution** (COALESCE the never-backfilled `marketCategoryClass` against `marketCategory` through one mapping view, with a ≥99 %-coverage test); re-derive the copy baseline on it; stamp the fill-model version | B (repair) | ~1.5 d |
 | **1** | Taker fill model; candidate generator; **shadow book only** (signals recorded, zero positions). Per-band spread distribution **already measured** (see §3) — remaining work is the fee model and the premium-bucket reporting | B | ~1.5 d |
 | **2** | Paper lane on Polymarket (`ML_LANE`), taker fills, external rails, own bankroll | A (approval) | ~1 d |
 | **3** | Kalshi arm (`ML_KALSHI`), fee + resolution mapping, fail-loud | A (approval) | ~2 d |
