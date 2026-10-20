@@ -193,6 +193,19 @@ a reshuffle, which is the point. Those 26 legs return −28.6 %, but they are *c
 wallets into crypto, not ML entries reading a price feed, so they are not evidence against the
 thesis. They are evidence that copying does not work there.
 
+**Era-check (added same day, because the table above is ALL-TIME and all-time ranks categories by
+ancient performance as if it were current).** Re-cut on the last 90 days, the COARSE structure holds:
+weather −0.5 % → **−0.9 %** (512 legs, $8,231, CI [−11.3, +10.3]); sports +5.4 % → +0.9 %;
+other +9.3 % → +10.5 %; esports −6.2 % → **−5.6 %** (CI [−16.2, +5.3], still spans zero);
+politics +19.8 % → +23.9 % (CI [−8.0, +58.1], spans zero); crypto −28.6 % → **−46.4 %**
+(CI [−74.8, −7.2] — excludes zero, but on 14 legs).
+
+The era check also **destroyed the one fine-grained positive** this analysis produced: `football-intl`
+read +31.2 % all-time (CI [+2.7, +64.5], 131 legs — the only CI-positive category in the book) but
+**−41.0 % on its last 16 legs, with zero legs in 30 days**. It is dormant and recently negative, so
+no up-weight was applied. That is the reusable rule: **a category claim must be carried by the recent
+era, and a class with <5 legs in 90 d is not a live signal however good its all-time ROI looks.**
+
 **A confound this table exposes them.** Politics returns +19.8 % holding **12.2 days** and tech +22.3 %
 holding 15.5 days, while weather holds 1.6 days and returns −0.5 %. The band analysis found hold time
 *inversely* ordered to edge; at category level the relation **reverses**. So "short holds are better"

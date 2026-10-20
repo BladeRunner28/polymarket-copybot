@@ -731,6 +731,29 @@ async function main() {
           }
         }
 
+        // v64 (user-approved 2026-10-20): the open-position cap for STANDARD, which had none.
+        // This is the fifth confirmed `botId === "BANKROLL_200"` scoping gap after the v62 band
+        // skip, the stale-exit block, the per-slug cap and the per-market ceiling. Measured
+        // 2026-10-20: STANDARD held 1,263 open legs against a 225 cap that never governed it,
+        // booking 4.90 legs/day -- so the book grows ~150 legs/month with no ceiling at all.
+        // The cap is set ABOVE the current book deliberately: the job here is to STOP THE GROWTH,
+        // not to liquidate. With a 115-day median TTR on this book, a cap below 1,263 would halt
+        // new entries for months. 0 disables the rail entirely (pre-v64 behaviour).
+        if (botId === "STANDARD" && rules.standardMaxOpenPositions > 0) {
+          const stdOpen = await prisma.paperTrade.count({
+            where: { botId: "STANDARD", status: "open" },
+          });
+          if (stdOpen >= rules.standardMaxOpenPositions) {
+            log(
+              `[STANDARD] open-position cap (${stdOpen}/${rules.standardMaxOpenPositions}) reached — skipping copy ${t.marketId}`
+            );
+            legBlocks.push(
+              `STANDARD: open-position cap (${stdOpen}/${rules.standardMaxOpenPositions})`
+            );
+            continue;
+          }
+        }
+
         // v45 (execution-leak Step 2, approved): per-bot market-category
         // blacklist — the structural −EV slug set (lol/cs2/nfl/… lose for
         // BOTH bots regardless of venue; verified 2026-09-03). Per-bot because

@@ -60,6 +60,14 @@ export interface Rules {
   // that haven't moved toward the winning outcome, so capital cycles through
   // fresh +EV signals instead of being stranded.
   maxOpenPositions: number;
+  // v64: the SAME open-position cap for STANDARD, which has never had one. 0 = disabled.
+  // Why this rail and not a per-slug cap: measured 2026-10-20, STANDARD books 4.90 legs/day and
+  // holds 1,263 open positions -- 5.6x the C-200 cap of 225 that never applied to it -- on $13.6k
+  // notional against $7.9k cash. A per-slug/per-class cap was the originally-approved instrument,
+  // but measured it would have blocked ~55% of new flow at cap 15 or 30, and 39.5% of that flow is
+  // the 'other' catch-all bucket, so it would have throttled unclassified markets rather than real
+  // concentration. Open-position count is the quantity that is actually out of control.
+  standardMaxOpenPositions: number;
   staleExitHours: number;
   staleExitMinMove: number;
   // v53 (2026-09-13 daily report Change 1, user-approved): adverse-only tier-1
@@ -300,6 +308,8 @@ export const DEFAULT_RULES: Rules = {
   highScoreCapUsd: 18,
   highScoreMaxDrift: 0.004,
   maxOpenPositions: 100,
+  // v64: disabled by default -- same convention as every other added rail.
+  standardMaxOpenPositions: 0,
   staleExitHours: 48,
   staleExitMinMove: 0.05,
   // v53: adverse-only tier-1 (live values land in the DB ruleset at activation).
