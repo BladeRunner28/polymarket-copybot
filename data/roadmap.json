@@ -3188,6 +3188,21 @@
     "null-result",
     "no-action"
    ]
+  },
+  {
+   "id": "ml-near-certainty-does-not-survive",
+   "title": "FINDING — the 0.8–1.0 band does not survive realistic size; the ML market-only lane is CLOSED",
+   "column": "Done",
+   "effort": "done (measurement, ~1h)",
+   "dates": "Measured and closed 2026-10-20",
+   "note": "This closes the ML bot's market-only thesis on measurement, and it closes it against my own recommendation — I had proposed testing 0.8–1.0 as the one region worth rescuing, and the test says no.\n\nCONTEXT: scripts/ml-market-candidates.py measured 120,884 market-only candidates (both sides, T-24h and T-6h before resolution, labels at ask + fee). Every band lost money except 0.8–1.0, which returned +0.77% with a tight market-clustered CI [+0.5, +1.1] on 38,925 candidates. That was the only statistically solid positive in unselected market entry, so it got a proper test: scripts/ml-near-certainty-read.py.\n\nSUB-BANDS (only two cells clear zero):\n  0.80-0.85  2,764   +1.27%  [-0.63, 3.12]   <- spans zero\n  0.85-0.90  3,821   +0.47%  [-0.88, 1.81]   <- spans zero\n  0.90-0.95  7,368   +1.28%  [+0.62, +1.89]  <- CLEARS\n  0.95-1.00 24,972   +0.62%  [+0.36, +1.00]  <- CLEARS, barely\n\nIT DIES ON FILL QUALITY. Premium + fee cost 1.660pp of a 2.434% gross:\n  premium x1.0 -> +0.774% | x1.5 -> +0.053% | x2.0 -> -1.645%\nA fill 50% worse than the quoted ask erases the edge. No margin for estimation error.\n\nTHE ARITHMETIC MEAN IS NOT A RETURN. 97.2% of trades win +3.7%; the 2.8% that lose return -100.0%. Breakeven win rate 96.4%, realised 97.2% => margin +0.7pp. GEOMETRIC mean per trade = -20.4% against arithmetic +0.774%. At full size this compounds to ruin; sized small enough to survive, the absolute return is nil. Classic pennies-in-front-of-a-steamroller distribution.\n\nCAPITAL PRODUCTIVITY IS WORSE THAN THE LANE WE JUST CAPPED. Return per capital-day = mean ROI / mean hold = 0.774% / 28.05d = 0.028%/day = $0.0055 per $20 leg:\n  C-200    $0.3818/capital-day  -> this lane is 69x worse\n  STANDARD $0.0114/capital-day  -> this lane is 2x worse than the lane v64 is freezing for lack of edge\n\nCAPACITY DOES NOT RESCUE IT: median market liquidity $2,380, median LIFETIME volume $607, p10 volume $59. 404 candidates/day at a $20 leg is $62.57/day gross against ~$14.4K of tied-up capital.\n\nVERDICT: the edge is statistically real, economically immaterial, and destroyed by any fill worse than quoted. The ML lane as a market-only market prediction business is CLOSED.\n\nWHAT THIS DOES NOT CLOSE -- and it is the important part: WALLET-CONDITIONED SELECTION. The copy book's +47.75% in <0.20 comes from WHICH WALLETS were copied, and that signal demonstrably exists. The lesson is not that prediction is worthless; it is that the edge in this system lives in wallet selection, and a price-only model cannot manufacture it. See the counterfactual contrast: identical <0.20 band, +47.75% with wallet selection vs -50.64% without.\n\nSAMPLING CAVEAT recorded honestly: decision points are the snapshot NEAREST T-24h/T-6h, which for thin markets can land far from target (mean hold 28.05d vs median 1.55d). Tightening the window would sharpen the capital-day figure but would not move the payoff geometry or the x1.5 premium result, neither of which depends on hold time.",
+   "tags": [
+    "finding",
+    "ml",
+    "null-result",
+    "closed",
+    "ml-lane"
+   ]
   }
  ]
 }

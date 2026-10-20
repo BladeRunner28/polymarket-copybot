@@ -155,6 +155,62 @@ question for the operator, not a default I should pick.
 
 ---
 
+## 3.6 The one positive band does not survive realistic size
+
+§3.5 left exactly one open question: 0.8–1.0 was the only region with a CI excluding zero
+(+0.77 %, [+0.5, +1.1]). Measured properly with `scripts/ml-near-certainty-read.py`:
+
+**Sub-bands** — the edge is concentrated, and only two cells clear zero:
+
+| sub-band | rows | markets | premium | ROI @mid | ROI net | 95 % CI |
+|---|---|---|---|---|---|---|
+| 0.80–0.85 | 2,764 | 1,737 | 1.7 % | 6.24 % | +1.27 % | [−0.63, 3.12] |
+| 0.85–0.90 | 3,821 | 2,165 | 1.7 % | 4.16 % | +0.47 % | [−0.88, 1.81] |
+| **0.90–0.95** | 7,368 | 3,735 | 1.6 % | 3.80 % | **+1.28 %** | **[0.62, 1.89]** |
+| 0.95–1.00 | 24,972 | 12,530 | 0.5 % | 1.35 % | +0.62 % | [0.36, 1.00] |
+
+**It dies on fill quality.** Premium + fee cost 1.660 pp of a 2.434 % gross. Repriced:
+
+- premium ×1.0 → **+0.774 %**
+- premium ×1.5 → **+0.053 %**  ← the edge is gone
+- premium ×2.0 → **−1.645 %**
+
+A fill 50 % worse than quoted wipes it out entirely. There is no margin for estimation error.
+
+**The arithmetic mean is not a return.** 97.2 % of trades win **+3.7 %**; the 2.8 % that lose return
+**−100.0 %**. Breakeven win rate is 96.4 %, so the realised margin is **+0.7 pp**. The **geometric
+mean per trade is −20.4 %** against an arithmetic +0.774 % — at full size this compounds to ruin.
+This is a pennies-in-front-of-a-steamroller distribution, and it can only be sized very small, which
+reduces the absolute return to nothing.
+
+**And the capital productivity is worse than the lane we just capped.** Return per capital-day =
+mean ROI / mean hold = 0.774 % / 28.05 d = **0.028 % of capital/day = $0.0055 per $20 leg**:
+
+- **C-200: $0.3818** per capital-day → this lane is **69× worse**
+- **STANDARD: $0.0114** → this lane is **2× worse than STANDARD** — the lane v64 is freezing for
+  lack of edge
+
+**Capacity does not rescue it either.** Median market liquidity $2,380, median *lifetime* volume
+$607; p10 volume $59. At 404 candidates/day and a $20 leg the arithmetic says $62.57/day gross, but
+the capital tied up is ~$14.4 K and the geometric reality is negative.
+
+**VERDICT: 0.8–1.0 does NOT survive at realistic size.** The edge is statistically real, economically
+immaterial, and destroyed by any fill worse than the quoted ask. The ML lane as a market-only
+prediction business is closed on this evidence — not because the model cannot rank, but because the
+only rankable region that pays does not pay enough to be worth the variance.
+
+**What this does NOT close:** wallet-conditioned selection. The copy book's +47.75 % in <0.20 comes
+from *which wallets* were copied, and that signal demonstrably exists. The lesson is not "prediction
+is worthless" — it is "the edge in this system lives in wallet selection, and a price-only model
+cannot manufacture it."
+
+**Sampling caveat, recorded honestly:** decision points are the snapshot *nearest* T−24 h / T−6 h,
+which for thinly-traded markets can land far from the target (mean hold 28.05 d vs median 1.55 d).
+Tightening the sampling window would sharpen the capital-day figure. It would not change the
+payoff geometry or the premium-destroyed-at-1.5× result, which do not depend on hold time.
+
+---
+
 ## 4. Architecture
 
 Five layers, each a separate module so the accounting and the model can be swapped independently.
