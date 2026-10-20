@@ -26,16 +26,18 @@ And `BotBankroll.principal` for STANDARD is **`0.00`**. It has never been set:
 | BANKROLL_200 | 1,900.00 | 7,763.70 | 5,944.60 |
 
 So porting the cap to STANDARD does not give it a scaled ceiling. It gives it the **bare
-base** `maxGrossExposureUsd = $250`.
+base** `maxGrossExposureUsd = $1,000` (the LIVE v64 value — note `DEFAULT_RULES` in
+`src/lib/rules.ts` carries 250, which is only a fallback and was wrongly used in the first
+draft of this document).
 
 ## 3. What that means in dollars
 
 | bot | open legs | open notional | principal | effective cap | exposure vs cap |
 |---|---|---|---|---|---|
-| STANDARD | 1,263 | **$13,566.00** | 0.00 | **$250** | **54.3×** |
-| BANKROLL_200 | 7 | $80.90 | 1,900.00 | $250 + 50 % above principal | 0.3× |
+| STANDARD | 1,263 | **$13,566.00** | 0.00 | **$1,000** | **13.6×** |
+| BANKROLL_200 | 7 | $80.90 | 1,900.00 | $1,000 + 50 % above principal | ≪1× |
 
-A $250 ceiling against $13,566 of open notional is not a brake. It is a **halt on the next
+A $1,000 ceiling against $13,566 of open notional is not a brake. It is a **halt on the next
 scoring cycle**, and it cannot recover on its own because the book's median time-to-resolution
 is **115.3 days**.
 
@@ -62,8 +64,8 @@ The obvious counter-move ("so raise C-200's deployment instead, it has the idle 
 not survive contact with the numbers either:
 
 - C-200 holds **$7,763.70 cash** and **$80.90** of open notional — **1.0 % deployed**.
-- Its cap is `$250 + 50 % × max(0, netWorth − $1,900)`, which with net worth above principal
-  is roughly **$4 K**, i.e. **~50× headroom**.
+- Its cap is `$1,000 + 50 % × max(0, netWorth − $1,900)`, which with net worth above principal
+  works out to roughly **$6 K**, i.e. **~70× headroom**.
 
 **C-200 is not exposure-capped. It has 7 open legs because its gates are rejecting
 candidates**, not because a ceiling is holding it back. So idle cash is a *funnel* problem,
@@ -74,8 +76,8 @@ organ.
 
 **Do not port the exposure cap.** Two independent reasons, either sufficient:
 
-1. With STANDARD's principal at 0, the port yields a **$250** ceiling against **$13,566** —
-   a 54× immediate halt on a 115-day book.
+1. With STANDARD's principal at 0, the port yields a **$1,000** ceiling against **$13,566** —
+   a 13.6× immediate halt on a 115-day book.
 2. As a portfolio gate it would freeze **C-200** as well, silently, which is a known
    undetected-failure mode with a 39.7 h precedent.
 
