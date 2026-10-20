@@ -100,6 +100,61 @@ admission-gated to the region where the edge exceeds the spread — see §4.
 
 ---
 
+## 3.5 THE PREMISE IS INVERTED — the cheap-band edge is wallet selection, not the band
+
+Measured 2026-10-20 with `scripts/ml-market-candidates.py` (market-only candidates, both sides,
+decision points at T−24 h and T−6 h before resolution, **labels computed at ask + fee**, 35 %
+taker-premium gate):
+
+36,951 labelled markets → 30,221 with a usable snapshot per horizon → **120,884 candidates**,
+**99,561 passing the gate (82.4 %)**.
+
+| band | rows | median premium | ROI @mid | **ROI net of ask + fee** | 95 % CI (market-clustered) |
+|---|---|---|---|---|---|
+| **<0.20** | 20,668 | 15.2 % | −41.03 % | **−50.64 %** | [−58.8, −40.4] |
+| 0.2–0.4 | 10,503 | 2.3 % | −7.24 % | −13.95 % | [−17.7, −10.3] |
+| 0.4–0.6 | 18,053 | 1.1 % | −0.25 % | −4.79 % | [−5.1, −4.4] |
+| 0.6–0.8 | 11,412 | 1.3 % | +3.36 % | −1.52 % | [−3.1, +0.1] |
+| **0.8–1.0** | 38,925 | 0.8 % | +2.43 % | **+0.77 %** | [+0.5, +1.1] |
+
+By side: **YES −27.90 %** [−32.1, −22.5] (n=41,155) vs **NO −2.04 %** [−2.9, −1.2] (n=58,406).
+
+**What this destroys.** Everything in this document up to this point assumed the cheap tail is where
+the money is — because the copy book returns +47.75 % (STANDARD, 90 d) / +79 % (review) in <0.20. But
+that population is **selected by wallet quality and copyScore**. Take the wallet signal away, which
+is precisely what an independent-entry ML lane does, and the same price band returns **−50.64 %**.
+The cheap tail is not a property of the price; it is a property of *whose trades were copied*.
+
+Note the decomposition, because it matters for blame: at mid the band is **already −41.03 %**, so
+the loss is not caused by the spread. Spread + fee add a further **~9.6 pp**. Execution is not the
+problem; the population is.
+
+**Consequences for this design, all of them unwelcome:**
+
+1. The ML lane's starting point is **−50 %**, not +48 %. To be profitable it must beat the price
+   baseline by **50+ percentage points** through selection skill alone. That is a far taller order
+   than "rank inside a paying band", which is what this design originally assumed.
+2. The **only** band that is naively profitable net of costs is **0.8–1.0 at +0.77 %** with a tight
+   CI — i.e. near-certainty, the opposite of the cheap tail this design was built around.
+3. §5.5's cohort recommendation (BTC / short-TTR crypto first) was justified partly by the cheap
+   band's modelled edge. That justification is gone. The label-turnaround argument for those
+   cohorts still stands, but it can no longer be sold as "the cheap band pays".
+4. The ×2.5 cheap-tail upweight proposed by the 2026-10-20 profit review, and separately measured
+   on STANDARD as CI-spanning-zero, is now doubly refuted: the band it upweights is the worst
+   region in an unselected population.
+
+**What survives:** the taker-premium gate is still correct and still necessary (~10 pp of
+avoidable cost), the accounting and fill machinery is unaffected, and this measurement is exactly
+what Phase 1 existed to produce. It is far cheaper to learn this from 120,884 labelled candidates
+than from a live paper lane.
+
+**What must be re-decided before Phase 2:** on this evidence the ML lane should either target the
+**0.8–1.0** region (naively positive, tight CI, but thin) or treat the whole exercise as a
+selection-skill test with a −50 % base and set expectations accordingly. That is a strategy
+question for the operator, not a default I should pick.
+
+---
+
 ## 4. Architecture
 
 Five layers, each a separate module so the accounting and the model can be swapped independently.
@@ -112,6 +167,28 @@ Five layers, each a separate module so the accounting and the model can be swapp
   100/200) and must never be read as a feature; wallet depth must be derived as-of-entry.
 - Population includes the **declined arm** (open card `ml1-declined-arm-coverage`); a model fit
   only on acted legs cannot learn what we should have taken.
+
+### 4.2a The existing model cannot be reused — Phase 1 starts with a retrain
+
+Discovered 2026-10-20 while beginning Phase 1: the trained model in `data/ml/` is **wallet-
+conditioned**. Its top feature by gain is `wallet_entry_price` (`feature-importance.csv`: gain
+10,212 vs 2,681 for the next), and `ml-train.py` feeds wallet, copy_score, wallet_quality, roi,
+consistency, copyability, thesis_score and category_fit alongside `decision`/`outcome`/`side`.
+
+That is the correct model for the question copybot asks — *"was copying this wallet profitable"* —
+and structurally the wrong model for an independent-entry lane, which by construction **has no
+wallet signal**. Reusing it is not an option; the ML lane needs a market-only model.
+
+**Second, subtler reason the labels cannot be reused:** they price entries at the **mid**. The lane
+trades the **ask** behind a premium cap, and the measured cheap-band premium is 33.3 % of mid. A
+model trained on mid-priced labels learns an edge that does not survive the spread — it would
+predict well and lose money. So every label in the ML lane's dataset must be computed at
+`ask + fee`, and the price-only baseline must be evaluated on the same basis.
+
+So Phase 1 is: **market-only dataset → market-only model → generator → shadow book**, and
+`scripts/ml-market-candidates.py` is the first piece. Ground truth exists (`markets.csv` carries
+`y_yes` for 45,958 labelled markets); decision points are fixed horizons before resolution (T−24 h
+and T−6 h), **not** the last snapshot, because a resolved market's last price encodes its outcome.
 
 ### 4.2 Model — `ml-model`
 - **Primary: regularised logistic.** LightGBM as a cross-check that must keep agreeing (they tied
@@ -234,10 +311,17 @@ Four conclusions that invert the naive read:
    lane. Putting arb legs inside the ML lane would make the model's AUC/Brier **uninterpretable**,
    because those legs carry no forecast to be right or wrong about.
 
-**Decision.** No category whitelist. `category` becomes a **feature**, and cohorts are **sequenced**
-rather than filtered: **BTC / short-TTR crypto first** (new exposure + fastest labels), **weather
-second** (tests the exogenous-feature thesis against the book's largest zero). A whitelist would be
-priced on a book that returns +0.7 % in its biggest category — i.e. on nothing.
+**Decision (partly superseded by §3.5).** No category whitelist. `category` becomes a **feature**,
+and cohorts are **sequenced** rather than filtered: **BTC / short-TTR crypto first** (new exposure +
+fastest labels), **weather second** (tests the exogenous-feature thesis against the book's largest
+zero). A whitelist would be priced on a book returning ~0 % in its biggest category — i.e. on
+nothing.
+
+CAVEAT ADDED AFTER §3.5: the sequencing argument survives as a *label-turnaround* argument, which is
+what actually motivated it — fast-resolving cohorts give a self-learning loop many more training
+cycles. It can NO LONGER be justified by the cheap band's modelled edge, because on an unselected
+population the cheap band returns −50 %. Cohort choice and entry-selection skill are separate
+questions.
 
 **Lane B defect found while answering this.** `ObservedTrade.marketCategoryClass` /
 `marketCategoryFine` were introduced around 2026-W39 and **never backfilled**: ISO week 2026-W37 is
@@ -331,7 +415,7 @@ it does not clear** — the OOS read is −29.84 %.
 | Phase | Work | Lane | Cost |
 |---|---|---|---|
 | **0** | **Unify accounting** + **fix category attribution** (COALESCE the never-backfilled `marketCategoryClass` against `marketCategory` through one mapping view, with a ≥99 %-coverage test); re-derive the copy baseline on it; stamp the fill-model version | B (repair) | ~1.5 d |
-| **1** | Taker fill model; candidate generator; **shadow book only** (signals recorded, zero positions). Per-band spread distribution **already measured** (see §3) — remaining work is the fee model and the premium-bucket reporting | B | ~1.5 d |
+| **1** | **Market-only candidate dataset + retrain** (see §4.2a — the existing model cannot be reused); taker gate at decision time; **shadow book only** (zero positions); premium-bucket reporting | B | ~2.5 d |
 | **2** | Paper lane on Polymarket (`ML_LANE`), taker fills, external rails, own bankroll | A (approval) | ~1 d |
 | **3** | Kalshi arm (`ML_KALSHI`), fee + resolution mapping, fail-loud | A (approval) | ~2 d |
 | **4** | Self-learning loop: nightly refit, online recalibration, ADWIN downside reflex, auto-demotion | A (approval) | ~1 d |
