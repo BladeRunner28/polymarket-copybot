@@ -958,6 +958,28 @@ async function main() {
             continue;
           }
 
+          // v63 (2026-10-20 profit review, user-approved in-thread): HARD-SKIP the dead zone
+          // for STANDARD — the mirror of v62's C-200 rail, which had been scoped
+          // `botId === "BANKROLL_200"` and so never applied to the lane that carries 99% of
+          // the open book. STANDARD is band-blind: it books $10.9–$13.7 in EVERY band within
+          // 26% whether that band returns +47.75% or −7.67%, because the shared scorer's band
+          // factors are neutralised at 1.0 (v41, so C-200's band map would not double-apply)
+          // and STANDARD reads those 1.0s. Measured 2026-10-20 on deduped STANDARD legs with a
+          // market-clustered bootstrap (scripts/profit-band-report.py):
+          //   0.40–0.60  90d: 1,027 legs = 43.5% of legs, 44.1% of notional, −7.67% ROI,
+          //              CI [−14.48,−0.89] — the only CI-negative band — −$1,057.16
+          //              30d: 56.7% of legs · 14d: 68.0% · 7d: 75.5% at −17.91%
+          // Sizing is floored by clampPaperSize, so a factor of 0 would still book a token leg;
+          // a skip is the only lever that removes it. Same `currentPrice` the band map uses,
+          // recorded as a legBlock so it lands in the skip histogram rather than vanishing.
+          if (botId === "STANDARD" && isInBandRange(currentPrice, rules.standardSkipBandRange)) {
+            log(
+              `[STANDARD] band skip (${currentPrice.toFixed(3)} in ${rules.standardSkipBandRange}) — skipping copy ${t.marketId}`
+            );
+            legBlocks.push(`STANDARD: band skip (${currentPrice.toFixed(3)} in ${rules.standardSkipBandRange})`);
+            continue;
+          }
+
           // v47 (2026-09-03 daily report, approved): C-200 high-side entry
           // cap — hard-cap new copy entries at ≤0.80 (the z=−2.48 premium
           // drag band, −8.5pp excess on 0.80–1.01). Same per-leg pattern:

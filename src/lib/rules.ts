@@ -226,6 +226,11 @@ export interface Rules {
   // is floored ($0.25–$1.25) so it cannot be shrunk to zero. Applies to every lane that
   // books a C-200 leg (main, short-TTR, Kelly rails) so the rail cannot be worked around.
   c200SkipBandRange: string; // e.g. "0.4-0.6"; empty = no skip
+  // v63 (2026-10-20 profit review, user-approved in-thread): the SAME hard band skip for
+  // STANDARD, closing a scoping gap — every band/skip rail since v41 had been written
+  // `botId === "BANKROLL_200"`, so the lane carrying 99% of the open book never got one and
+  // sized flat across bands where edge ranges from +47.75% to −7.67%. Empty = no skip.
+  standardSkipBandRange: string; // e.g. "0.4-0.6"; empty = no skip
   // v45: per-market-slug open-position cap for C-200. The v41 research-category
   // gate maps esports to "Other" (uncapped), letting lol/cs2 pile up without a
   // gate; this caps open positions per raw marketCategory slug. 0 = disabled.
@@ -361,6 +366,8 @@ export const DEFAULT_RULES: Rules = {
   c200BandSizeFactorRange: "",
   // v62: band skip disabled by default, same convention.
   c200SkipBandRange: "",
+  // v63: STANDARD band skip disabled by default, same convention.
+  standardSkipBandRange: "",
   ddBasis: "mtm",
   // v45 defaults (live values land in the DB ruleset at activation).
   c200Blacklist: [],

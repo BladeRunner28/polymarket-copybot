@@ -3143,6 +3143,21 @@
     "data-integrity",
     "joined-keys"
    ]
+  },
+  {
+   "id": "standard-exit-rule-replay",
+   "title": "STANDARD exit rule — scope the 168h replay before any change",
+   "column": "Scheduled",
+   "effort": "~3h replay + decision",
+   "dates": "Carded 2026-10-20 (profit review 2026-10-20, user-approved 'yes to both')",
+   "note": "FINDING (profit review 2026-10-20, reproduced): the ENTIRE stale-exit / capital-recycling block is scoped `botId === \"BANKROLL_200\"` (scripts/update-pnl.ts:240). STANDARD exits only on market resolution or a dead-slug 404 older than 24h (update-pnl.ts:148-156, lane-agnostic). It has no time exit and no adverse exit, so its hold time is set by market TERM, not by information decay.\n\nCONSEQUENCE: 1,269 open legs = only 357 distinct bets, $13,623 notional, weighted age 76.3 days. Stranded capital-days 1,033,886 vs 566,915 for the ENTIRE finished history — the live book holds 1.8x more capital-days than every trade ever completed. Edge per capital-day over 30d: C-200 $0.3818 (1.70d hold) vs STANDARD $0.0114 (13.89d hold) = 33x. Hold time is INVERTED against edge: cheap band recycles in 4.4d, 0.6-0.8 in 11.2d, 0.8-1.0 in 34.4d. The >=0.8 stock is $5,661 notional holding ~$469 of remaining upside against $5,661 of downside (~12:1 against) at 82 days old.\n\nTHIS IS THE SAME SCOPING CLASS AS v63: every band/exit/concentration rail written since v41 was guarded `botId === \"BANKROLL_200\"`, so the lane carrying 99% of the open book never got one. v63 (2026-10-20) closed the band-skip half; this card is the exit half.\n\nSCOPE FIRST — DO NOT IMPLEMENT OFF THIS CARD. Step 1 is a read-only replay: run `staleExitDecision` at `staleExitHardHours=168` over deduped STANDARD legs, marking each leg at its first `MarketSnapshot` with `collectedAt >= openedAt + 168h` (15.9M snapshot rows available). Output booked PnL and capital-days versus hold-to-settlement, PER BAND. No RuleSet row is touched by the replay.\n\nDECISION RULE (pre-registered): adopt the exit when capital-days fall >=50% while booked PnL falls <$150 over 90d.\n\nREFUTATION (pre-registered): if a 168h exit turns the >=0.8 band from -1.23% to worse than -8%, it is monetising noise on near-certainty tokens and paying fees to do it — the exit is wrong and hold-to-settlement stands.\n\nFRAMING, so this is not sold as profit: the review's own read is that the exit is bought for SOLVENCY, not profit — PnL is ambiguous at +/-$100/90d. At live scale the current book would be ~1.7x gross against cash, i.e. unexecutable. This is a capital-efficiency and risk-shape fix.\n\nLANE A: implementation needs its own approval after the replay. Replay itself is read-only and Lane B-safe.",
+   "tags": [
+    "exit",
+    "capital-velocity",
+    "standard",
+    "lane-a",
+    "scoping-gap"
+   ]
   }
  ]
 }
