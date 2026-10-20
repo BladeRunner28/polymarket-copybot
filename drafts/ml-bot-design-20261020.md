@@ -167,25 +167,42 @@ Asked 2026-10-20: *should the ML bot focus on Bitcoin, arbitrage and weather rat
 category?* Two of the three, yes — but for reasons that are not "those categories pay", and one of
 the three is not a category at all.
 
-**Measured on the deduped STANDARD book (3,192 legs, 99.4 % category coverage), by notional:**
+**Measured on the deduped STANDARD book (3,192 legs, $38,896 notional) with the live classifier
+(`src/lib/market-category.ts`, parity-checked against the vendor map — NOT the `marketCategory`
+column, which is a slug/event token and carries a question word on 33.1 % of rows):**
 
-| cohort | legs | notional | ROI | median hold |
-|---|---|---|---|---|
-| **`highest` (weather)** | **779** | **$10,350 (28 %)** | **+0.7 %** | 1.6 d |
-| mlb | 220 | $2,602 | +8.2 % | 1.0 d |
-| **cs2 (esports)** | 181 | $2,110 | **−14.5 %** | 1.0 d |
-| **lol (esports)** | 180 | $2,026 | **−9.7 %** | 1.0 d |
-| atp | 125 | $1,402 | +3.8 % | 1.0 d |
-| dota2 | 99 | $1,128 | +12.9 % | 1.0 d |
-| world | 95 | $846 | +61.1 % | 4.1 d |
-| wta | 62 | $751 | −18.0 % | 1.0 d |
+| category | legs | notional | ROI | median hold | share |
+|---|---|---|---|---|---|
+| **weather** | **806** | **$10,665** | **−0.5 %** | 1.6 d | **27.4 %** |
+| sports | 735 | $8,759 | +5.4 % | 1.0 d | 22.5 % |
+| other (unclassified) | 623 | $7,615 | +9.3 % | 2.1 d | 19.6 % |
+| **esports** | **615** | **$7,007** | **−6.2 %** | 1.0 d | **18.0 %** |
+| **politics** | 243 | $2,920 | **+19.8 %** | **12.2 d** | 7.5 % |
+| tech | 72 | $748 | +22.3 % | 15.5 d | 1.9 % |
+| culture | 39 | $475 | −24.7 % | 5.0 d | 1.2 % |
+| econ | 33 | $398 | −8.4 % | 13.8 d | 1.0 % |
+| **crypto** | **26** | **$309** | −28.6 % | 3.8 d | **0.8 %** |
 
-**BTC does not appear in the top 16 at all** — the copy book has effectively no crypto exposure.
+**An earlier draft of this table grouped by the raw `marketCategory` slug and reported "weather 28 %
+at +0.7 %". The slug tokens happen to map to the same buckets here (the classifier's question rules
+send `highest` to weather), so the shape survived — but the numbers did not, and the slug version was
+unfounded method. Corrected values are above.**
+
+**Crypto is 0.8 % of the book** — 26 legs, $309. BTC is therefore genuinely NEW exposure rather than
+a reshuffle, which is the point. Those 26 legs return −28.6 %, but they are *copy* legs following
+wallets into crypto, not ML entries reading a price feed, so they are not evidence against the
+thesis. They are evidence that copying does not work there.
+
+**A confound this table exposes them.** Politics returns +19.8 % holding **12.2 days** and tech +22.3 %
+holding 15.5 days, while weather holds 1.6 days and returns −0.5 %. The band analysis found hold time
+*inversely* ordered to edge; at category level the relation **reverses**. So "short holds are better"
+is a proxy for category, not a law — the honest statement is that hold time is confounded with what
+you are trading, and neither variable should be optimised alone.
 
 Four conclusions that invert the naive read:
 
-1. **Weather is already the book's largest allocation (28 % of notional) and returns ~nothing
-   (+0.7 %).** "Focus on weather" would deepen the biggest zero in the book. The case for weather
+1. **Weather is already the book's largest allocation (27.4 % of notional) and returns nothing
+   (−0.5 %).** "Focus on weather" would deepen the biggest zero in the book. The case for weather
    is *not* that the book profits there — it is that **the ML lane has information the copy lane
    structurally cannot have: exogenous ground truth (forecast feeds).** The copy lane copies humans;
    a weather model can read the forecast. That makes weather the cleanest available test of
@@ -196,9 +213,9 @@ Four conclusions that invert the naive read:
    fastest-resolving, highest-frequency class available — the best training substrate a
    self-learning loop can get, because label turnaround is the binding constraint on how fast any
    self-learning system can learn.
-3. **Esports is where the book actually bleeds**: cs2 −14.5 %, lol −9.7 %, val −6.0 % — roughly
-   −11 % across ~$4.8 K of notional. This is a finding independent of the ML work and a Lane A
-   candidate in its own right.
+3. **Esports is where the book actually bleeds**: −6.2 % across **$7,007 = 18.0 % of notional**
+   (615 legs), the second-largest loss pool after nothing else in the book is negative at that size.
+   This is a finding independent of the ML work and is carded separately as a Lane A item.
 4. **Arbitrage is not a category — it is a strategy with zero prediction content.** It needs both
    venues and execution speed, not a forecast. It belongs on the existing `kalshi-pm-pair` shadow
    lane. Putting arb legs inside the ML lane would make the model's AUC/Brier **uninterpretable**,
