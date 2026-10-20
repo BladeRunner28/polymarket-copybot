@@ -110,10 +110,22 @@ in direct conflict with the standing pre-registration.
 2. **Settlement skew.** Only 8,114 of 33,848 drift-shadow candidates have resolved (24 %). Resolved
    markets are the fast ones, so this population over-represents short-TTR markets. The favourable
    cohort may not generalise to long-dated markets.
-3. **Co-blocking is unmeasured on the drift side.** Unlike the low-confidence instrument,
-   `drift-shadow.jsonl` records no `otherBlocks` / `driftOnly` field, so the 4,043 favourable rows
-   include candidates that another gate would also have rejected. **4,043 is an upper bound on legs
-   gained, not a forecast.** This is a Lane B instrument gap and the fix is cheap (one field).
+3. **Co-blocking kills the standalone value of the fix, and this is the finding that matters most.**
+   `drift-shadow.jsonl` DOES carry `otherBlocks` (added 2026-10-11 as "Instrument v2"); my first pass
+   read a pre-2026-10-11 row, saw null, and wrongly reported the field as missing. Measured properly
+   on the **6,838** rows that carry it:
+
+   - distribution: 1 other blocker 2,559 · 2 → 3,845 · 3 → 141 · 4 → 293
+   - **`otherBlocks == 0`: ZERO rows. Minimum is 1.**
+
+   **The drift gate is never the sole blocker.** A directional fix would therefore admit *zero*
+   additional copies on its own — the candidates would be rejected by another gate anyway. The
+   favourable cohort's +29.9 % is real, but it is not reachable by fixing the sign alone.
+
+   Caveat in the other direction: `result.risks` may mix hard gates with soft/informational penalties,
+   so `otherBlocks > 0` does not prove a second *hard* gate fires. The number of extra copies is
+   therefore bounded above by 4,043 and could be zero — **not established either way**, and the
+   stored data cannot settle it because only the COUNT was recorded.
 4. **Throughput caps still bind.** `maxCopiesPerCycle = 50` and current flow is ~15 copies/day, so
    admitting ~122 favourable candidates/day would not produce 122 copies/day.
 5. **A falling price can be information.** Sometimes the market is telling you the wallet was wrong.
@@ -123,18 +135,34 @@ in direct conflict with the standing pre-registration.
 
 ## 6. Verdict
 
-**There is a real, large, sign-shaped defect in the largest single blocker of the funnel** — 26 % of
-all skip reason-instances sit behind a comparison that cannot distinguish a discount from a chase.
-The measurement is strong (n=7,659 settled, CIs clustered by market, both cohorts tight and on
-opposite sides of zero), and the fix is one expression plus a scoring input.
+**The sign defect is real, and it is a correctness bug rather than a lever.** 26 % of all skip
+reason-instances sit behind a comparison that cannot distinguish a discount from a chase, and the
+directional split is unambiguous (n=7,659 settled, market-clustered CIs, both cohorts tight and on
+opposite sides of zero). It should be fixed because a rule that refuses better prices is wrong.
+
+**But it is not the profit unlock I first presented it as.** Zero of 6,838 field-carrying rows have
+the drift gate as the sole blocker, so fixing the sign alone admits nothing. My earlier estimate of
+~$356/day from the favourable cohort (`122 candidates/day × +29.9 % × $10`) was **an upper bound
+presented as an expectation, and the co-blocking measurement shows it is very likely to be zero in
+practice.** Retracted.
+
+The honest sequence is therefore: fix the sign (correctness), name the co-blockers (instrument), and
+only then price whether relieving the *bundle* of gates that reject favourable-drift candidates is
+worth it. Fixing the sign and measuring no change in copy count would be the expected outcome.
 
 **Nothing is applied.** This is Lane A: it changes what the bot buys.
 
-## 7. Instrument gap to close first (Lane B, cheap)
+## 7. Instrument gap closed (Lane B, done)
 
-Add `otherBlocks` (count of non-drift risks) and `driftOnly` to `appendDriftShadow`, mirroring
-`shadow-lowconf`. Without it, requirement 3 above is permanent and no future admitted-set pricing on
-this gate can be honest.
+`otherBlocks` already existed (2026-10-11). What was genuinely missing is the **identities** of the
+co-blockers: the feed could say "2 other risks fired" but never *which*, which is exactly why
+requirement 3 above cannot be resolved from history.
+
+**Applied 2026-10-20 (Lane B, no approval needed):** `otherRiskKinds: string[]` added to
+`DriftShadowCandidate` and to the row written by `appendDriftShadow`, populated at
+`score-trades.ts` from the non-drift entries of `result.risks`. `tsc` clean, 500/500 tests pass.
+Future rows can be attributed by co-blocker; historical rows cannot, and must not be read as if
+"2 other blockers" meant the same two every time.
 
 ---
 

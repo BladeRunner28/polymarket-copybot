@@ -122,7 +122,8 @@ def main():
             continue
         direction = "favourable" if p < we - 1e-12 else ("adverse" if p > we + 1e-12 else "flat")
         rows.append({"market": c.get("marketId"), "net": net / cost, "dir": direction,
-                     "drift": c.get("drift") or 0.0, "p": p})
+                     "drift": c.get("drift") or 0.0, "p": p,
+                     "otherBlocks": c.get("otherBlocks")})
 
     print(f"\n=== SETTLED, EX-DUST ({len(rows):,} rows) SPLIT BY DIRECTION ===")
     for d in ("favourable", "adverse", "flat"):
@@ -140,6 +141,22 @@ def main():
     for lo, hi in [(0, 0.004), (0.004, 0.006), (0.006, 0.01), (0.01, 0.02), (0.02, 0.05), (0.05, 99)]:
         sel = [r for r in fav if lo <= r["drift"] < hi]
         summarise(sel, f"drift [{lo}, {hi})")
+
+    # otherBlocks was added 2026-10-11 (Instrument v2) -- rows before that carry null and
+    # CANNOT be screened on co-blocking. Restricting to drift-ONLY rows (otherBlocks == 0)
+    # turns the "upper bound" into an actual priceable cohort.
+    print("\n=== DRIFT-ONLY ROWS (otherBlocks == 0): no other gate would have rejected these ===")
+    have = [r for r in rows if r["otherBlocks"] is not None]
+    only = [r for r in have if r["otherBlocks"] == 0]
+    print(f"  rows carrying otherBlocks: {len(have):,} of {len(rows):,} settled")
+    print(f"  of those, drift was the ONLY blocker: {len(only):,}")
+    for d in ("favourable", "adverse"):
+        summarise([r for r in only if r["dir"] == d], f"{d} drift-ONLY")
+    summarise(only, "all drift-only")
+    # co-blocked comparison, for scale
+    for d in ("favourable", "adverse"):
+        summarise([r for r in have if r["dir"] == d and r["otherBlocks"] > 0],
+                  f"{d} co-blocked")
 
     print("\n=== THE DECISION THE GATE IS MAKING TODAY ===")
     blocked = rows  # every row here was blocked by the drift gate

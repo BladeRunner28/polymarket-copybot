@@ -1276,6 +1276,12 @@ async function main() {
             // non-drift gates or tell "drift was the only blocker".
             rawConfidence: result.rawConfidence ?? result.confidence,
             otherBlocks: Math.max(0, (result.risks ?? []).length - 1),
+            // Instrument v3 (2026-10-20): name the co-blockers. Without this the feed can only
+            // say "N other risks fired", so a reader cannot tell whether a drift-gate fix would
+            // admit anything at all — see the 0-of-6,838 finding in shadow-drift.ts.
+            otherRiskKinds: (result.risks ?? [])
+              .filter((r) => !/price drifted/i.test(r))
+              .map((r) => r.slice(0, 60)),
             reason: driftRisk,
           });
           driftShadowLogged++;

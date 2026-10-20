@@ -63,6 +63,17 @@ export interface DriftShadowCandidate {
    */
   otherBlocks?: number;
   /**
+   * Instrument v3 (2026-10-20, Lane B): WHICH other risks fired, not just how many.
+   *
+   * `otherBlocks` counts co-blockers but cannot name them, and the count alone made the
+   * drift gate unpriceable in the direction that matters: measured on 2026-10-20, **0 of
+   * 6,838** rows carrying the field had `otherBlocks === 0`, so a sign fix to the drift
+   * comparison would admit ZERO copies on its own — but the file cannot say whether the
+   * co-blockers are hard gates or soft/informational risks, because only the count was
+   * stored. The identities make that attribution possible on future rows.
+   */
+  otherRiskKinds?: string[];
+  /**
    * The v37 confidence as COMPUTED, before the skip paths zero it. `confidence`
    * below is 0 by construction on every skip/watchlist/lane return
    * (src/lib/scoring/trade.ts:46), so the recorded `confidence` field of this
@@ -96,6 +107,7 @@ export function appendDriftShadow(c: DriftShadowCandidate): void {
     spread: c.spread ?? null,
     liquidity: c.liquidity ?? null,
     otherBlocks: c.otherBlocks ?? null,
+    otherRiskKinds: c.otherRiskKinds ?? null,
     rawConfidence: c.rawConfidence ?? null,
     stakeUsd: DRIFT_SHADOW_STAKE_USD,
     reason: c.reason,
