@@ -5,6 +5,11 @@ node_modules/
 .vercel
 coverage/
 venv-calib/
+# ANY virtualenv, not just the one we happened to name. `.venv-ml/` went unignored and the
+# nightly `git add -A` backup swept 8,005 files / 356 MB into the repo on 2026-10-19 (.git hit
+# 861 MB). The >100 MB per-file guard cannot see a directory full of small files, so a
+# directory-level mistake like this is invisible to it — the ignore rule is the only defence.
+.venv*/
 rust-sidecar/target/
 *.pyc
 __pycache__/

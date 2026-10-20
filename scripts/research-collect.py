@@ -194,10 +194,19 @@ def bot_facts(db: str, days: int) -> list[str]:
                         f"- skip reasons (every entry of risksJson, reasonsJson fallback; "
                         f"{len(blob)} rows, {bare} empty): "
                         + (", ".join(f"{k} x{v}" for k, v in cnt.most_common(5)) or "(none parsed)"))
-                    if "risksJson" in cols:
+                    # `outcome` lives on ObservedTrade, NOT on DecisionJournal — querying it bare
+                    # raised `no such column: outcome` on every run and the except below swallowed
+                    # it into a report line, so this counter read "FAILED" for three days (tuning
+                    # review 2026-10-20). Keying on observedTradeId instead would run but silently
+                    # count distinct *trades* under a label that says market/outcome, so join for
+                    # the real pair. MarketId is identical on both rows, so only the outcome needs
+                    # the join.
+                    if "risksJson" in cols and "observedTradeId" in cols:
                         dedup = cur.execute(
-                            f"SELECT COUNT(DISTINCT marketId || '|' || outcome) FROM DecisionJournal "
-                            f"WHERE {wcol} >= ? AND decision='skip'", (since,)).fetchone()
+                            "SELECT COUNT(DISTINCT dj.marketId || '|' || ot.outcome) "
+                            "FROM DecisionJournal dj "
+                            "JOIN ObservedTrade ot ON ot.id = dj.observedTradeId "
+                            f"WHERE dj.{wcol} >= ? AND dj.decision='skip'", (since,)).fetchone()
                         out.append(f"- distinct skipped market/outcome last 24h: {dedup[0] if dedup else '?'}")
             except Exception as e:  # noqa: BLE001
                 out.append(f"- DecisionJournal read FAILED: {e}")
