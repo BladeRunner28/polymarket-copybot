@@ -53,9 +53,22 @@ function driftDecayLine(): string | undefined {
     };
     if (typeof s.avgPnlPerTradeExDust !== "number") return undefined;
     const b = s.decayBar;
+    // 2026-10-21 self-audit: this printed `${consecutiveDaysAtOrBelow}/${daysRequired}
+    // days` — on live data "16/7 days", a ratio above 1 that reads as "bar met"
+    // while tripped=false, with the reason (the trailing-7d COHORT gate) left off
+    // the line and a stray backslash from a mis-escaped `\\)`. State the streak
+    // against its requirement and name which of the two pre-registered conditions
+    // is holding the bar shut.
+    const barThreshold = b?.thresholdUsd ?? 0.5;
+    const cohort = b?.cohort7d;
+    const cohortTxt = cohort === null || cohort === undefined ? "—" : "$" + cohort.toFixed(2);
     const bar = b
-      ? ` · decay bar ${b.consecutiveDaysAtOrBelow ?? 0}/${b.daysRequired ?? 7} days at ≤$${(b.thresholdUsd ?? 0.5).toFixed(2)}` +
-        ` (cohort7d ${b.cohort7d === null || b.cohort7d === undefined ? "—" : "$" + b.cohort7d.toFixed(2)}\\)${b.tripped ? " — TRIPPED" : ""}`
+      ? ` · decay bar: ${b.consecutiveDaysAtOrBelow ?? 0} consecutive days at ≤$${barThreshold.toFixed(2)}` +
+        ` (needs ${b.daysRequired ?? 7}) · cohort7d ${cohortTxt}` +
+        (cohort !== null && cohort !== undefined && cohort > barThreshold
+          ? ` (> bar, so the cohort gate holds it shut)`
+          : "") +
+        `${b.tripped ? " — TRIPPED" : " — not tripped"}`
       : "";
     // Instrument v2 (2026-10-11): the same counterfactual on its per-signal basis
     // (one row per market|outcome|wallet). The line above is a per-poll average —
@@ -82,7 +95,7 @@ const SCAN_PARTIALS_FILE = join(__dirname, "..", "..", "data", "scan-partials.js
  * that stopped being profiled. Reads the scan job's own state file (latest run)
  * and event log (one row per partial) — measurement only, no behavior change.
  */
-function walletScanLine(): string | undefined {
+async function walletScanLine(now: Date): Promise<string | undefined> {
   let state: { lastRunAt?: string; profiled?: number; target?: number } | null = null;
   try {
     state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
@@ -90,24 +103,91 @@ function walletScanLine(): string | undefined {
     return undefined;
   }
   if (!state || typeof state.profiled !== "number") return undefined;
-  let partials7d = 0;
+  // 2026-10-21 self-audit: this used to print `${profiled}/${target}` — but target
+  // IS WALLET_SCAN_LIMIT (the per-run batch cap), not the pool the scan rotates
+  // through. On live data that rendered "25/25 profiled", which reads as "every
+  // wallet is profiled" while the pool is 3,540 wallets and the scan only ever
+  // takes 25 an hour. The denominator was the batch, so the line could not show a
+  // backlog at all. Print the batch, the pool and the >7d-stale count instead — a
+  // rotating scan is honest about what it has NOT reached.
+  let pool = 0;
+  let stale7d = 0;
+  try {
+    const cutoff = new Date(now.getTime() - 7 * 86400000);
+    [pool, stale7d] = await Promise.all([
+      prisma.walletProfile.count({ where: { isDemo: false } }),
+      prisma.walletProfile.count({
+        where: { isDemo: false, OR: [{ lastScannedAt: null }, { lastScannedAt: { lt: cutoff } }] },
+      }),
+    ]);
+  } catch {
+    pool = 0;
+  }
+  // A reader must be able to tell "no partials" from "the partials log could not be
+  // read" — the old `catch { partials7d = 0 }` printed a clean 0 either way.
+  let partials: string;
   try {
     const cutoff = Date.now() - 7 * 86400000;
-    partials7d = fs
+    const n = fs
       .readFileSync(SCAN_PARTIALS_FILE, "utf-8")
       .split("\n")
       .filter((l) => l.trim().length > 0)
       .map((l) => JSON.parse(l) as { ts?: string })
       .filter((r) => r.ts && new Date(r.ts).getTime() >= cutoff).length;
+    partials = `${n} partial${n === 1 ? "" : "s"} in 7d`;
   } catch {
-    partials7d = 0;
+    partials = "partials log UNREADABLE";
   }
-  const covered = `${state.profiled}/${state.target ?? "?"}`;
-  const complete = state.profiled === state.target;
+  const short = typeof state.target === "number" && state.profiled < state.target;
   const when = state.lastRunAt
     ? new Date(state.lastRunAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
     : "?";
-  return `• Wallet scan: ${complete ? "" : "⚠️ "}${covered} profiled (last run ${when}) · ${partials7d} partial${partials7d === 1 ? "" : "s"} in 7d`;
+  const poolTxt = pool ? ` · pool ${pool.toLocaleString("en-US")}, ${stale7d} stale >7d` : " · pool count UNAVAILABLE";
+  return `• Wallet scan: ${short ? "⚠️ " : ""}${state.profiled} profiled last run (${when}${short ? ` of ${state.target} attempted` : ""})${poolTxt} · ${partials}`;
+}
+
+/**
+ * Sizing range AS SIZED, per bot — 2026-10-21 self-audit.
+ *
+ * The report used to print two HARDCODED strings: STANDARD "$0.25 - $20.00" and
+ * BANKROLL_200 "$0.10 - $10.00". Both were the safety clamp in safety.ts
+ * BOT_LIMITS, not what the lanes size, and both were false against the live book:
+ * every STANDARD trade opened in the 14 days to 2026-10-21 was exactly $18.00
+ * (rules.highScoreCapUsd/sweetSpotSizeUsd = 18), and C-200 opened up to $100.00
+ * — ten times the printed ceiling. A hardcoded range also cannot follow a rule
+ * change, which is how it drifted. Derived from the opened book instead; the
+ * window and n are printed so the number can be re-queried.
+ */
+const SIZING_RANGE_DAYS = 7;
+
+async function observedSizingRanges(now: Date): Promise<Map<string, { min: number; max: number; n: number }>> {
+  const since = new Date(now.getTime() - SIZING_RANGE_DAYS * 86400000);
+  const out = new Map<string, { min: number; max: number; n: number }>();
+  try {
+    const rows = await prisma.paperTrade.groupBy({
+      by: ["botId"],
+      where: { isDemo: false, openedAt: { gte: since } },
+      _min: { simulatedPositionSize: true },
+      _max: { simulatedPositionSize: true },
+      _count: { _all: true },
+    });
+    for (const r of rows) {
+      const min = r._min.simulatedPositionSize;
+      const max = r._max.simulatedPositionSize;
+      if (min === null || max === null || r._count._all === 0) continue;
+      out.set(r.botId, { min, max, n: r._count._all });
+    }
+  } catch {
+    return out;
+  }
+  return out;
+}
+
+function sizingRangeLine(botId: string, ranges: Map<string, { min: number; max: number; n: number }>): string {
+  const s = ranges.get(botId);
+  if (!s) return `• Sizing Range: no ${botId} trade opened in the last ${SIZING_RANGE_DAYS}d`;
+  const span = s.min === s.max ? `$${s.min.toFixed(2)}` : `$${s.min.toFixed(2)}–$${s.max.toFixed(2)}`;
+  return `• Sizing Range: ${span} (opened last ${SIZING_RANGE_DAYS}d, n=${s.n})`;
 }
 
 /** Local calendar date (YYYY-MM-DD) — the label is the day the report covers. */
@@ -275,6 +355,9 @@ export async function generateDailyReport(
 
   const fmt = (n: number) => `${n >= 0 ? "+" : ""}$${n.toFixed(2)}`;
   const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+  // Derived, not hardcoded (2026-10-21 self-audit — see observedSizingRanges).
+  const sizingRanges = await observedSizingRanges(now);
+  const walletScan = await walletScanLine(now);
 
   const summary = [
     `**📊 CopyBot Comparative EOD Report — ${date}**`,
@@ -283,7 +366,7 @@ export async function generateDailyReport(
     `**🤖 STANDARD Bot (Infinite Pool):**`,
     `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)}`,
     `• Win Rate: ${(stdWinRate * 100).toFixed(1)}% | Open Positions: ${standardOpen.length}`,
-    `• Sizing Range: $0.25 - $20.00`,
+    sizingRangeLine("STANDARD", sizingRanges),
     `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmt(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
     largestStack && largestStackShare > 0.5
       ? `• ⚠️ Largest single stack ${fmt(largestStack[1])} = ${(largestStackShare * 100).toFixed(0)}% of the day's STANDARD PnL (${largestStack[0].split("|")[1]}) — do not read it as edge`
@@ -292,7 +375,7 @@ export async function generateDailyReport(
     `**⚖️ BANKROLL_200 Bot (Compounding Pool):**`,
     `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)}`,
     `• Win Rate: ${(cmpWinRate * 100).toFixed(1)}% | Open Positions: ${compoundOpen.length}`,
-    `• Sizing Range: $0.10 - $10.00`,
+    sizingRangeLine("BANKROLL_200", sizingRanges),
     `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
     ledgerNote,
     ...(edgeBlock.length ? [``, ...edgeBlock] : []),
@@ -305,7 +388,7 @@ export async function generateDailyReport(
       ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${c.reason}`).join("; ")}`
       : `• Rule changes: none`,
     `• Top lesson: ${lesson}`,
-    walletScanLine(),
+    walletScan,
     driftDecayLine(),
     tailRows.length > 0
       ? `• Late tail carried from ${localDate(tailStart)} (booked after its previous report): C-200 ${fmt(tailCmp)} / STANDARD ${fmt(tailStd)} — ${tailRows.length} trades`
