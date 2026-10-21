@@ -31,6 +31,12 @@
  */
 
 export interface CapitalLedgerEntry {
+  /**
+   * Which lane this flow belongs to. Absent = the ORIGINAL C-200 ledger entries,
+   * written before lanes existed; `readCapitalLedger` attributes those to
+   * CAPITAL_BOT only, so adding ML_LANE cannot retroactively change C-200's series.
+   */
+  botId?: string;
   /** Local calendar day, 'YYYY-MM-DD'. */
   date: string;
   /** + = money put in, − = money taken out (sweep/withdrawal). */

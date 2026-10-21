@@ -1,7 +1,8 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { Card, Stat, Empty } from "@/components/ui";
+import { Card, Stat, Empty, Pnl } from "@/components/ui";
 import { BarChart } from "@/components/chart";
+import { loadCapitalState, ML_BOT } from "@/lib/capital-data";
 
 export const dynamic = "force-dynamic";
 
@@ -64,8 +65,12 @@ const sgn = (v: number | null, nd = 2) => (v === null || v === undefined ? "—"
 const tone = (v: number | null): "pos" | "neg" | "neutral" | undefined =>
   v === null || v === undefined ? undefined : v > 0 ? "pos" : v < 0 ? "neg" : "neutral";
 
-export default function MlPage() {
+export default async function MlPage() {
   const a = load();
+  // Same loader, same definitions as /capital -- parameterised by bot, so the ML lane's
+  // capital/deposit series is produced by the identical code path C-200 uses rather than a
+  // parallel implementation that could drift.
+  const cap = await loadCapitalState({ days: 30, botId: ML_BOT });
   if (!a) {
     return (
       <div className="space-y-4">
@@ -89,6 +94,56 @@ export default function MlPage() {
           <code className="text-xs">scripts/ml-dashboard-artifacts.py</code>
         </p>
       </div>
+
+      <Card title={`PnL and capital — ML lane (${ML_BOT}), machinery identical to C-200`}>
+        <div className="grid grid-cols-4 gap-3">
+          <Stat label="Realised PnL" value={`$${cap.realized.toFixed(2)}`}
+            sub={`${cap.series.points.length ? "booked" : "no trades yet"}`}
+            tone={cap.realized > 0 ? "pos" : cap.realized < 0 ? "neg" : "neutral"} />
+          <Stat label="Open MTM" value={`$${cap.openUnreal.toFixed(2)}`}
+            sub={`${cap.openCount} open · $${cap.openNotional.toFixed(2)} notional`}
+            tone={cap.openUnreal > 0 ? "pos" : cap.openUnreal < 0 ? "neg" : "neutral"} />
+          <Stat label="Total capital (live)" value={`$${cap.liveTotalCapital.toFixed(2)}`}
+            sub="principal + realized + open MTM" />
+          <Stat label="Booked capital" value={`$${cap.bookedCapital.toFixed(2)}`}
+            sub={`principal $${cap.principal.toFixed(2)}`} />
+        </div>
+        {cap.openCount === 0 && cap.realized === 0 && (
+          <p className="text-dim text-sm mt-3 leading-relaxed">
+            Standing at ${cap.principal.toFixed(0)} with no positions: the book starts here and every
+            figure above is derived from <code className="text-xs">loadCapitalState({"{ botId }"})</code>, the
+            same loader <code className="text-xs">/capital</code> uses for C-200. Nothing is duplicated,
+            so the two lanes cannot disagree about what a deposit is.
+          </p>
+        )}
+      </Card>
+
+      <Card title={`Daily deposits — last ${cap.series.points.length} days (same definition as C-200)`}>
+        {cap.series.points.length === 0 ? (
+          <Empty message="No capital series yet." />
+        ) : (
+          <>
+            <BarChart
+              bars={cap.series.points.map((p) => ({ x: p.day.slice(5), y: p.deposit }))}
+              goalLine={0}
+              height={170}
+              formatY={(y: number) => `$${y.toFixed(0)}`}
+            />
+            <div className="grid grid-cols-3 gap-3 mt-3">
+              <Stat label="Deposits (sum)" value={`$${cap.series.points.reduce((s, p) => s + p.deposit, 0).toFixed(2)}`}
+                sub={`${cap.series.points.filter((p) => p.deposit > 0).length} up / ${cap.series.points.filter((p) => p.deposit < 0).length} down`} />
+              <Stat label="Booked PnL in window" value={`$${(cap.series.points[cap.series.points.length - 1]?.closing ?? 0).toFixed(2)}`}
+                sub="closing booked capital" />
+              <Stat label="Ledger entries" value={String(cap.ledger.length)}
+                sub={cap.ledger.map((e) => `$${e.amountUsd} ${e.kind}`).join(" · ") || "none"} />
+            </div>
+            <p className="text-dim text-xs mt-2">
+              Daily deposit = that day&apos;s booked PnL (finished trades at closedAt ?? resolvedAt) plus
+              any ledger injection — the definition <code>/capital</code> uses, not a second one.
+            </p>
+          </>
+        )}
+      </Card>
 
       <Card title={`Verdict — lane ${a.lane.state}`}>
         <p className="text-sm font-medium">{a.lane.headline}</p>

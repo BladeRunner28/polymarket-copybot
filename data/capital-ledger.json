@@ -3,9 +3,16 @@
   "entries": [
     {
       "date": "2026-07-22",
-      "amountUsd": 1900.0,
+      "amountUsd": 1900,
       "kind": "opening",
       "note": "Standing principal as of the ledger opening (bot's first C-200 trade 2026-07-22). Date is the bot's start, not a documented funding date — the real funding dates predate any recording and are unrecoverable."
+    },
+    {
+      "botId": "ML_LANE",
+      "date": "2026-10-21",
+      "amountUsd": 2500,
+      "kind": "opening",
+      "note": "ML paper lane opening capital (user request 2026-10-20: $2,500 to work with, capital rules mirroring C-200 so the two books are comparable). Lane trades no capital above this without a further deposit."
     }
   ]
 }

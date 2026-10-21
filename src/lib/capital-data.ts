@@ -15,6 +15,22 @@ import { buildCapitalSeries, type CapitalLedgerEntry, type CapitalSeries } from 
 
 export const CAPITAL_BOT = "BANKROLL_200";
 
+/**
+ * The ML lane (2026-10-20, user request). Its paper book is capital-identical to C-200 --
+ * same Kelly fields, same $2,500-style standing principal, same daily-deposit definition --
+ * so any difference between the two books is attributable to the SIGNAL, not to the capital
+ * machinery. The rule VALUES are shared, never duplicated: the scorer reads C-200's own
+ * fields, because two copies of a number drift apart (see the BotBankroll maxPositionSize
+ * false rail, fixed the same day).
+ */
+export const ML_BOT = "ML_LANE";
+
+/** Ledger entries with no botId belong to the original C-200 book (they predate lanes). */
+export function ledgerEntryBelongsTo(entry: { botId?: string }, botId: string): boolean {
+  if (entry.botId) return entry.botId === botId;
+  return botId === CAPITAL_BOT;
+}
+
 export interface CapitalState {
   series: CapitalSeries;
   ledger: CapitalLedgerEntry[];
@@ -33,24 +49,31 @@ export interface CapitalState {
   bookedCapital: number;
 }
 
-export function readCapitalLedger(): CapitalLedgerEntry[] {
+export function readCapitalLedger(botId: string = CAPITAL_BOT): CapitalLedgerEntry[] {
   try {
     const raw = JSON.parse(readFileSync(join(process.cwd(), "data", "capital-ledger.json"), "utf8"));
-    return Array.isArray(raw?.entries) ? (raw.entries as CapitalLedgerEntry[]) : [];
+    const all: CapitalLedgerEntry[] = Array.isArray(raw?.entries) ? raw.entries : [];
+    return all.filter((e) => ledgerEntryBelongsTo(e, botId));
   } catch {
     return [];
   }
 }
 
-export async function loadCapitalState(opts: { days: number; nowMs?: number }): Promise<CapitalState> {
+export async function loadCapitalState(opts: {
+  days: number;
+  nowMs?: number;
+  /** Lane to load. Defaults to C-200 so every existing caller is unchanged. */
+  botId?: string;
+}): Promise<CapitalState> {
+  const bot = opts.botId ?? CAPITAL_BOT;
   const [bankroll, finished, openAgg] = await Promise.all([
-    prisma.botBankroll.findUnique({ where: { botId: CAPITAL_BOT } }),
+    prisma.botBankroll.findUnique({ where: { botId: bot } }),
     prisma.paperTrade.findMany({
-      where: { botId: CAPITAL_BOT, status: { in: ["closed", "resolved"] } },
+      where: { botId: bot, status: { in: ["closed", "resolved"] } },
       select: { closedAt: true, resolvedAt: true, realizedPnl: true },
     }),
     prisma.paperTrade.aggregate({
-      where: { botId: CAPITAL_BOT, status: "open" },
+      where: { botId: bot, status: "open" },
       _sum: { unrealizedPnl: true, simulatedPositionSize: true },
       _count: true,
     }),
@@ -60,7 +83,7 @@ export async function loadCapitalState(opts: { days: number; nowMs?: number }): 
   const realized = bankroll?.realizedPnl ?? 0;
   const openUnreal = openAgg._sum.unrealizedPnl ?? 0;
   const openNotional = openAgg._sum.simulatedPositionSize ?? 0;
-  const ledger = readCapitalLedger();
+  const ledger = readCapitalLedger(bot);
 
   const series = buildCapitalSeries({
     principal,
