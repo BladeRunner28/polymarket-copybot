@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { Card, Stat, Empty, Pnl } from "@/components/ui";
+import { Card, Stat, Empty } from "@/components/ui";
 import { BarChart } from "@/components/chart";
 import { loadCapitalState, ML_BOT } from "@/lib/capital-data";
 
@@ -62,6 +62,31 @@ function load(): Art | null {
 }
 
 const sgn = (v: number | null, nd = 2) => (v === null || v === undefined ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(nd)}%`);
+
+type ObsBucket = {
+  bucket: number; n: number; markets: number; win_rate: number;
+  roi_net_pct: number; ci_lo: number | null; ci_hi: number | null;
+};
+type ObserveReport = {
+  built_at: string; status: string; observations: number; distinct_markets: number;
+  settled_observations: number; settled_markets: number; by_day: Record<string, number>;
+  baseline_roi_net_pct: number | null; buckets: number; tables: Record<string, ObsBucket[]>;
+  nominal_tests: number; expected_hits_by_chance: number; hits: ObsBucket[];
+};
+
+/**
+ * The observe-only record, written by scripts/ml-observe-read.py. Read, never recomputed here --
+ * same rule as dashboard.json: the page must not be able to drift from the script that measured it.
+ */
+function loadObserve(): ObserveReport | null {
+  const p = join(process.cwd(), "data", "ml", "observe-report.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as ObserveReport;
+  } catch {
+    return null;
+  }
+}
 const tone = (v: number | null): "pos" | "neg" | "neutral" | undefined =>
   v === null || v === undefined ? undefined : v > 0 ? "pos" : v < 0 ? "neg" : "neutral";
 
@@ -71,6 +96,7 @@ export default async function MlPage() {
   // capital/deposit series is produced by the identical code path C-200 uses rather than a
   // parallel implementation that could drift.
   const cap = await loadCapitalState({ days: 30, botId: ML_BOT });
+  const obs = loadObserve();
   if (!a) {
     return (
       <div className="space-y-4">
@@ -141,6 +167,71 @@ export default async function MlPage() {
               Daily deposit = that day&apos;s booked PnL (finished trades at closedAt ?? resolvedAt) plus
               any ledger injection — the definition <code>/capital</code> uses, not a second one.
             </p>
+          </>
+        )}
+      </Card>
+
+      <Card title={`Observe-only record — the lane rates candidates and opens nothing (${obs?.status ?? "NOT YET"})`}>
+        {!obs ? (
+          <Empty message="No observe report yet. It is written by scripts/ml-observe-read.py." />
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-3">
+              <Stat label="Observations" value={obs.observations.toLocaleString()}
+                sub={`${obs.distinct_markets} distinct markets`} />
+              <Stat label="Settled" value={obs.settled_observations.toLocaleString()}
+                sub={`${obs.settled_markets} markets with an outcome`}
+                tone={obs.settled_observations > 0 ? "pos" : "neutral"} />
+              <Stat label="Days accumulating" value={String(Object.keys(obs.by_day ?? {}).length)}
+                sub="one observation per market+side per day" />
+              <Stat label="Baseline net ROI" value={obs.baseline_roi_net_pct === null ? "—" : sgn(obs.baseline_roi_net_pct, 3)}
+                sub={obs.settled_observations > 0 ? "settled, net of fee at ask" : "nothing resolved yet"} />
+            </div>
+            {obs.status === "NOT_YET" ? (
+              <p className="text-dim text-sm mt-3 leading-relaxed">
+                The lane is recording and this is the honest state: {obs.observations} candidates rated,
+                none resolved yet. Candidates are restricted to the model&apos;s trained time-to-resolution
+                support so the served scores mean what they meant in training. At ~58–196 observations/day
+                the first quintile read is roughly <strong>3 weeks</strong> away and a decile read ~6 weeks.
+              </p>
+            ) : (
+              <>
+                <p className="text-dim text-xs mt-2">
+                  {obs.nominal_tests} nominal 95% intervals computed → {obs.expected_hits_by_chance} expected
+                  to clear zero by chance alone. {obs.hits.length} did. This lane never trades on its own:
+                  a cleared bucket raises a promotion question for you, it does not act.
+                </p>
+                {Object.entries(obs.tables ?? {}).map(([arm, rows]) => (
+                  rows.length === 0 ? null : (
+                    <div key={arm} className="mt-3">
+                      <div className="text-xs text-dim mb-1">{arm}</div>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-dim text-xs">
+                            <th className="text-left">Bucket</th><th className="text-right">n</th>
+                            <th className="text-right">Win</th><th className="text-right">Net ROI</th>
+                            <th className="text-right">95% CI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((r) => (
+                            <tr key={`${arm}-${r.bucket}`}>
+                              <td>B{r.bucket}</td>
+                              <td className="text-right">{r.n}</td>
+                              <td className="text-right">{r.win_rate.toFixed(1)}%</td>
+                              <td className="text-right">{sgn(r.roi_net_pct, 3)}</td>
+                              <td className="text-right text-dim">
+                                {r.ci_lo === null ? "—" : `[${sgn(r.ci_lo)}, ${sgn(r.ci_hi)}]`}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                ))}
+              </>
+            )}
           </>
         )}
       </Card>

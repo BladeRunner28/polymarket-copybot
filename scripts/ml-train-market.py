@@ -285,11 +285,16 @@ def main():
     else:
         print("  => Only the naive price rule clears zero; the model adds nothing.")
 
-    # Refit best model on ALL data for serving, and persist.
+    # Refit best model on ALL data for serving, and persist. The regressor is persisted alongside
+    # it because the observe lane needs all three arms (p_profit, ev, roi_reg) to accumulate
+    # comparable forward decile economics -- serving one arm would make the forward test unable to
+    # reproduce the historical comparison.
     final = models[best_name]
     final.fit(d[NUM_FEATURES + CAT_FEATURES], d["target"].values)
+    reg.fit(d[NUM_FEATURES + CAT_FEATURES], d["roi_net"].clip(-1.0, 5.0).values)
     joblib.dump({
         "model": final,
+        "roi_model": reg,
         "num_features": NUM_FEATURES,
         "cat_features": CAT_FEATURES,
         "trained_at": pd.Timestamp.utcnow().isoformat(),
@@ -298,6 +303,14 @@ def main():
         "cutoff_day": str(cutoff_day),
         "holdout_auc": results[best_name]["auc"],
         "kind": best_name,
+        "trained_through_day": str(d["day"].max()),
+        "label": "roi_net > 0 (net of taker fee and spread at ask)",
+        "arms": {
+            "p_profit": "model.predict_proba[:,1]",
+            "ev": "p_profit / (ask + fee_ps) - 1",
+            "roi_reg": "roi_model.predict",
+        },
+        "horizons_in_training": sorted(d["horizon_h"].dropna().unique().tolist()),
     }, OUT_MODEL)
     print("\nsaved {} (refit on all {:,} rows)".format(OUT_MODEL, len(d)))
 
