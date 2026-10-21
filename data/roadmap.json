@@ -3263,6 +3263,18 @@
     "dead-rail",
     "finding"
    ]
+  },
+  {
+   "id": "ambiguity-filter-priced",
+   "title": "Ambiguity filter priced: no edge (600 mkt, both CIs span zero); LLM judge unreproducible, deterministic proxy used",
+   "column": "Done",
+   "note": "Pre-registered test (ambig rules => YES overpriced; y_yes - implied price; cluster CI by market) FALSIFIED. 600 archived markets, 64.7% flagged by a deterministic structural proxy: ambiguous n=388 residual -0.73pp CI [-4.14,+2.61], buy-NO -3.36% CI [-10.50,+3.81]; clean n=212 residual -1.47pp CI [-5.34,+2.53], buy-NO -5.58% CI [-13.67,+2.63]. Point estimate runs OPPOSITE the hypothesis but not significantly. || DATA: 0 of 15,889,482 MarketSnapshot rows carry resolution text (rawMarketJson='{}' 100%). Gamma condition_ids returns 0 rows even with closed=true; gamma slug only 3/20 (15%) on archived markets; CLOB /markets/<conditionId> 600/600 (100%), 773-2569 chars. || JUDGE IS THE BLOCKER: qwen3.5:9b never terminates (1600/1600 tokens in thinking, done_reason=length, EMPTY response, 42.5s/market); qwen2.5:7b-instruct flips 95% -> 0% ambiguous at conf 1.00 on the SAME 20 markets from a prompt reword. Flag-rate abort guard (3-70%, widened to 95% for the proxy) caught both. || LIMITS: proxy sees structural markers only (provenance/vague standards/contingencies), not semantic vagueness; +/-4pp intervals rule out a LARGE effect, not a small one. || DECISION: do not build. Unblock if ever revisited = paid judge with the 4-check rubric already in the script (~$1-2 per 240 markets, needs a key) - but that buys a look at an effect the proxy says is small. Spend on wallet behaviour instead: +47.75% with selection vs -50.64% without on the identical band. || Repro: .venv-ml/bin/python scripts/ml-ambiguity-read.py --limit 600 --judge regex --concurrency 8. Draft: drafts/ambiguity-filter-20261021.md",
+   "tags": [
+    "ml-lane",
+    "measurement",
+    "negative-result",
+    "ambiguity"
+   ]
   }
  ]
 }

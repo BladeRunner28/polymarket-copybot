@@ -1,0 +1,45 @@
+{
+  "built_at": "2026-10-21T08:32:23.504720+00:00",
+  "pre_registration": {
+    "hypothesis": "ambiguous rules make YES overpriced (resolves YES less than implied)",
+    "metric": "mean(y_yes - implied yesPrice) for ambiguous vs clean, CI clustered by market",
+    "falsifier": "ambiguous residual CI includes 0, or buy-NO ROI does not clear 0"
+  },
+  "sample": 600,
+  "judge": "qwen3.5:9b",
+  "flag_rate_pct": 64.67,
+  "judge_errors": 0,
+  "groups": {
+    "AMBIGUOUS": {
+      "n": 388,
+      "mean_residual_pp": -0.734,
+      "residual_ci": [
+        -4.141,
+        2.606
+      ],
+      "buy_no_roi_pct": -3.356,
+      "buy_no_ci": [
+        -10.502,
+        3.815
+      ],
+      "win_rate_yes": 25.26,
+      "implied_yes_pct": 25.99
+    },
+    "CLEAN": {
+      "n": 212,
+      "mean_residual_pp": -1.471,
+      "residual_ci": [
+        -5.344,
+        2.534
+      ],
+      "buy_no_roi_pct": -5.582,
+      "buy_no_ci": [
+        -13.666,
+        2.633
+      ],
+      "win_rate_yes": 19.81,
+      "implied_yes_pct": 21.28
+    }
+  },
+  "verdict": "NOT_ESTABLISHED"
+}
