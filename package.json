@@ -25,7 +25,8 @@
     "update:rules": "tsx scripts/update-rules.ts",
     "report:daily": "tsx scripts/report-daily.ts",
     "test": "vitest run",
-    "shadow:forward-read": "tsx scripts/shadow-forward-read.ts"
+    "shadow:forward-read": "tsx scripts/shadow-forward-read.ts",
+  "verify:bankroll-limits": "tsx scripts/verify-botbankroll-limits.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

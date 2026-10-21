@@ -23,8 +23,20 @@ not the table's $30.
 
 **Observable consequence:** 69 C-200 clips exceed the $30 the table advertises, totalling
 **$5,491.37**, with a maximum of **$100.00** — and one of them was booked **today (2026-10-20)**.
-Nothing is broken in the book; the *advertised rail* is fiction. A dashboard reading
-`BotBankroll.maxPositionSize` would report a $30 cap against a book that routinely books $100.
+Nothing is broken in the book; the *advertised rail* is fiction.
+
+**Correction to my first report of this:** no dashboard reads these columns either — `BotBankroll`
+is read only for `principal`, `cashBalance` and `realizedPnl`. So the false rail was never rendered
+anywhere; the harm was to anyone reading the schema or the table, **including me, twice in one day**
+(both the exposure-cap write-up and the sizing report described "$20 STANDARD / $30 C-200" as the
+sizing stack). That is a lower blast radius than I claimed and a more embarrassing one.
+
+**Fixed 2026-10-20 (Lane B):** C-200 `maxPositionSize` 30.00 → 100.00 (the highest ceiling any path
+permits); `prisma/schema.prisma` now documents both columns as DISPLAY-ONLY with the real authority
+named; and `scripts/verify-botbankroll-limits.ts` fails loudly when the table stops matching the
+code. It caught its own bug first — an early version applied the Kelly ceiling to STANDARD, which is
+wrong because `isKellyCandidate` gates on `botId === "BANKROLL_200"`, so STANDARD's $20 was correct
+all along.
 
 ## 2. C-200's sizing follows edge. STANDARD's runs against it.
 

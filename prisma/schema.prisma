@@ -295,6 +295,15 @@ model BotBankroll {
   principal        Float    @default(0)   // $0.00 for infinite, $200.00 for compounding
   cashBalance      Float    @default(0)   // Liquid capital currently available for trades
   realizedPnl      Float    @default(0)
+  /// DISPLAY-ONLY. These two columns are read by NOTHING -- verified repo-wide 2026-10-20.
+  /// The ceilings that actually bind live in code:
+  ///   legacy path  clampPaperSize(usd, botId)         -> BOT_LIMITS in src/lib/safety.ts
+  ///   Kelly path   clampPaperSize(usd, botId, maxUsd) -> rules.kellyMaxSizeUsd, C-200 ONLY
+  ///                  (`isKellyCandidate` in scripts/score-trades.ts gates on botId)
+  /// They mirror the HIGHEST ceiling each bot's paths permit so the row does not contradict the
+  /// book. Do NOT read them for enforcement, and do not treat a stale value here as a safety
+  /// issue -- it is a misreading hazard, which is why scripts/verify-botbankroll-limits.ts fails
+  /// loudly when they drift.
   minPositionSize  Float    @default(0.25)
   maxPositionSize  Float    @default(20.00)
   updatedAt        DateTime @updatedAt
