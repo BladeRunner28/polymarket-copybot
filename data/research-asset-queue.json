@@ -257,6 +257,22 @@
    "status": "audited",
    "url": "https://github.com/crowdintel-xyz/polymarket-agent-kit",
    "verdict": "audit"
+  },
+  {
+   "audited": "2026-10-20 08:23 CDT",
+   "claimed": "2026-10-20 08:20 CDT",
+   "claimed_ts": 1792502431.128855,
+   "discovered": "2026-10-20 07:21 CDT",
+   "id": "bennyjo/phil",
+   "license": "Apache-2.0",
+   "note": "RE-SURFACE, not fresh: standing audit drafts/phil-audit-2026-09-28.md stands unamended. Audited core frozen since 2026-09-02 (replay.py/forward_test.py/policy.py), so no new math. Record got worse: 70 settled, -20.73 on 350 staked, brier +0.0571 vs market; forecasts replicated +0.0136 on 2177 settled (was +0.0092 on 1039). Forward-test issue #3 (FAIL -0.1557 on 169) closed 2026-10-13 and the workf",
+   "pushed": "",
+   "report": "drafts/phil-reaudit-20261020.md",
+   "source": "agent",
+   "stars": 232,
+   "status": "audited",
+   "url": "https://github.com/bennyjo/phil",
+   "verdict": "watch"
   }
  ],
  "version": 1
