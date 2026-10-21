@@ -3275,6 +3275,66 @@
     "negative-result",
     "ambiguity"
    ]
+  },
+  {
+   "id": "crowdintel-wallet-fdr-audit",
+   "title": "Wallet selection vs BH-FDR: is any tracked wallet's edge distinguishable from selection? (crowdintel-xyz approved 10-21)",
+   "column": "Scheduled",
+   "tags": [
+    "wallet-selection",
+    "multiple-testing",
+    "measurement",
+    "approved"
+   ],
+   "note": "APPROVED by user 2026-10-21 ('I approve of all 4'). Source: crowdintel-xyz/polymarket-agent-kit [audit], concepts only - no code adopted. HYPOTHESIS: per-wallet ROI in the tracked set is indistinguishable from selection across ~500 screened wallets once you correct for the number of wallets scanned. MEASUREMENT: per-wallet excess return over the price implied by entry band, event-clustered effective n (cluster by market, not leg), BH-FDR q-values across the full screened population. DECISION RULE: if >=30% of current `track` wallets have q>0.10 (or n_eff<8) => propose a q-gated shadow ranking (Lane A, recommendation only, shadow-first); else DROP the item permanently and record the null. REFUTATION: if <30% fall below q<=0.10 AND H1->H2 wallet-rank correlation >= +0.30 on >=30 overlapping wallets, wallet selection is real and the band thesis is incomplete - escalate instead of dropping. COST ~0.5d. Guard: this is the SAME question as profit-recs #3 (per-wallet forward ROI Spearman -0.018, p=0.942, n=16) - run them as ONE instrument with one decision rule, do not report two conflicting numbers. Prior: cards `label-integrity-wallet-win-filter` (a MARK read as a resolved win feeds winRate30d/roi30d -> copyScore) contaminates this measurement - resolve that first or state the contamination."
+  },
+  {
+   "id": "vike-l2-prerecorder-window",
+   "title": "BLOCKED ON USER: 37-day pre-recorder L2 window for 1,130 uncovered C-200 legs (vike-io approved 10-21, needs a vendor key)",
+   "column": "Backlog",
+   "tags": [
+    "fillability",
+    "l2",
+    "blocked",
+    "approved-needs-key"
+   ],
+   "note": "APPROVED by user 2026-10-21 ('I approve of all 4'). BLOCKED: vike-io/vike-data-cli requires a vendor API key. Standing rule = never handle keys; the user pulls the data and hands over the file/parquet. Do NOT install, do NOT store a key, do not sign up. HYPOTHESIS: the 1,130 C-200 legs with no L2 coverage around dispatch cannot be given a fill verdict from our own corpus, so whether intent-$0.02 was reachable is unknown for them. MEASUREMENT once the user supplies the window: level-reachability test at intent-$0.02 against that L2, per leg. DECISION RULE: >=25% of the 1,130 flip to no-fill, OR aggregate fill rate moves >10pp => adopt as the d2 input to the fill model. REFUTATION: if <25% flip and the rate moves <=10pp, the uncovered block is representative and the existing fill model stands - close the card with that null. COST 1.5 dev-days AFTER the data exists. Read references/backtest-data-surface.md first (live-source semantics: a mid-anchored level is not a print)."
+  },
+  {
+   "id": "paper-trader-archived-fee-reprice",
+   "title": "Re-price archived-market fees off CLOB clob-markets fd: does it move >=$25 or flip a leg's sign? (agent-next approved 10-21)",
+   "column": "Scheduled",
+   "tags": [
+    "fees",
+    "archived-markets",
+    "measurement",
+    "approved"
+   ],
+   "note": "APPROVED by user 2026-10-21 ('I approve of all 4'). Source: agent-next/polymarket-paper-trader [watch], concept only. HYPOTHESIS: archived markets are fee-priced off a flat/default schedule, and the CLOB `fd` field resolves the real fee for enough of them to change net figures. MEASUREMENT: fetch `clob-markets/{conditionId}` for the archived-market population, read `fd`, re-price fees on those legs, diff against the stored fee. DECISION RULE: `fd` resolves >=90% of conditionIds AND re-pricing moves aggregate fee >=$25 OR flips at least one leg's net PnL sign => adopt as the fee input. REFUTATION: if fd coverage <90% the field is not a usable source and the card closes with that null; if coverage is high but the delta is <$25 and no sign flips, the existing fee model stands. COST ~1-2h. CHEAPEST of the 4 - do this first. All fee numbers ship with the era they apply to (schedule changed ~4x since 2026-01)."
+  },
+  {
+   "id": "tradememory-deflated-sharpe",
+   "title": "Deflated Sharpe on rule-selection stats: do the ladder claims survive multiple-testing? (mnemox-ai approved 10-21)",
+   "column": "Scheduled",
+   "tags": [
+    "multiple-testing",
+    "deflated-sharpe",
+    "measurement",
+    "approved"
+   ],
+   "note": "APPROVED by user 2026-10-21 ('I approve of all 4'). Source: mnemox-ai/tradememory-protocol [watch], concept only. HYPOTHESIS: rule-selection claims across the tuning history (v33..v64, each with its own measured edge) carry selection bias: with N rule variants tried, the best-looking statistic is inflated even if every variant is worthless. MEASUREMENT: deflated Sharpe (Bailey/Lopez de Prado) over the rule-selection trials, using the count of DISTINCT rule variants tested from the RuleChange audit table plus the trial return dispersion. DECISION RULE: p>=0.05 or INSUFFICIENT_DATA => every ladder/phase claim carries an explicit 'not distinguishable from selection' caveat in the report and the card note. REFUTATION: if the deflated p<0.05 for a specific claim, that claim survives the correction and may be quoted without the caveat. COST ~2h. This does NOT change any rule - it changes how strongly we may state a result, so it lands in report/caveat text, not in the RuleSet."
+  },
+  {
+   "id": "wallet-quality-admission-only",
+   "title": "v65: wallet quality is admission-only; size loses the 0.30 wallet term (-5.2% notional)",
+   "column": "Done",
+   "tags": [
+    "sizing",
+    "wallet-selection",
+    "v65",
+    "applied"
+   ],
+   "note": "User approved 2026-10-21 ('Do recommendation' on profit-recs #3). SHIPPED as RuleSet v65: walletQualityInSize 1->0, audit row hermes-v65-wallet-admission-only, commit follows. MEASURED (scripts/wallet-size-separation-read.py, 9,043 STANDARD legs, both arms under v64 rules): notional $137,895.70 -> $130,697.91 (-5.2%, -$7,197.80), mean clip $15.25 -> $14.45, 1,738 down / 632 up / 6,673 unchanged, $18 bucket 6,520 -> 5,801 legs. ADMISSION UNCHANGED - copyScore still includes wallet, verified through the real scorer (72.4/87.4 identical across both flag values) by scripts/verify-v65-wallet-size.ts. || TWO CORRECTIONS TO THE REC ITSELF: (1) it claimed wallet routed into 'Kelly sizes' - it never did; kellySizeForCopy takes no wallet score, so C-200 was never exposed and only STANDARD's legacy score->size bucket was. (2) The first measurement compared a recomputed size against the STORED size and read +34% notional; that is a basis error (stored sizes come from the ruleset live at the time) and reversed to -5.2% once both arms were recomputed under one ruleset. || CAVEAT: pre-registered trigger wanted >=30 overlapping wallets, there are 16. Shipped on explicit user approval with the gate unmet. REVERT = set walletQualityInSize back to 1; code default is already 1 and tests/wallet-quality-in-size.test.ts pins that default. || REAL FINDING: STANDARD has almost no size gradient - sweetSpotSizeUsd == highScoreCapUsd == 18 with minCopyScore 70 means every admitted leg is $18.00 flat (which is why the self-audit saw all 58 recent trades at exactly $18.00). Wallet-in-size could only move legs lifted over 70 by a high wallet score, or the long-shot relaxed-floor band. The leverage is the FLAT size path, not which component feeds it. Write-up: drafts/wallet-size-separation-20261021.md"
   }
  ]
 }

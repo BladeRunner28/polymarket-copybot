@@ -55,6 +55,14 @@ export interface Rules {
   sweetSpotSizeUsd: number;
   highScoreCapMin: number;
   highScoreCapUsd: number;
+  /**
+   * v65 (approved 2026-10-21): whether the wallet-quality component may move the
+   * SIZE bucket. 1 = legacy (wallet score feeds the size score); 0 = wallet
+   * quality is an ADMISSION-only signal and the size score renormalises the
+   * remaining 0.70 weights. Default 1 so any ruleset lacking the field keeps
+   * the historical behaviour — a revert is this single field.
+   */
+  walletQualityInSize: number;
   highScoreMaxDrift: number; // stricter drift ceiling for scores ≥ highScoreCapMin
   // v29: capital recycling — cap the open book and force-close stale positions
   // that haven't moved toward the winning outcome, so capital cycles through
@@ -306,6 +314,9 @@ export const DEFAULT_RULES: Rules = {
   // bucket (+$0.57/trade) — it pays the same top allocation as the sweet spot
   // instead of the old v29 penalty cap. The drift ceiling stays as the gate.
   highScoreCapUsd: 18,
+  // v65 default 1 = legacy (wallet quality feeds the size bucket). The active
+  // ruleset sets 0 via scripts/apply-v65.ts; revert = set this field back to 1.
+  walletQualityInSize: 1,
   highScoreMaxDrift: 0.004,
   maxOpenPositions: 100,
   // v64: disabled by default -- same convention as every other added rail.

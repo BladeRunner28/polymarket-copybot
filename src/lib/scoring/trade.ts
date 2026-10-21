@@ -306,16 +306,37 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     // Band sizing: 70–79 sweet spot and ≥80 (best bucket per 2026-08-29 30d
     // data) both take the top allocation; 55–69 keeps the base curve.
     // Clamped $.25–$20.
+    // v65 (approved 2026-10-21, profit-recs #3): wallet quality is an ADMISSION
+    // signal, not a SIZE signal. Per-wallet ROI carries no forward information
+    // (Spearman -0.018, p=0.942; H1-worst third earned +130% vs +31.8% for the
+    // H1-best), so a 0.30-weight wallet term moving the size bucket sizes on
+    // noise. `walletQualityInSize !== 0` keeps the legacy behaviour; 0 removes
+    // the wallet contribution from the SIZE score and renormalises the other
+    // 0.70 back to a 0-100 scale, while `copyScore` (admission, floors, the
+    // long-shot relaxation) still includes it. Other additive adjustments
+    // (cluster +25, regulatory cap) survive because they are carried in
+    // copyScore and only the wallet term is subtracted.
+    // Measured on 9,043 historical STANDARD legs re-computed under v64 rules:
+    // notional $137,895.70 -> $130,697.91 (-5.2%), mean clip $15.25 -> $14.45,
+    // 1,738 legs down / 632 up / 6,673 unchanged.
+    const sizeScore =
+      rules.walletQualityInSize === 0
+        ? clamp((copyScore - walletQualityScore * 0.3) / 0.7)
+        : copyScore;
+    const sizeConfidence =
+      rules.walletQualityInSize === 0
+        ? Math.max(0, Math.min(1, (sizeScore - rules.watchlistScore) / (100 - rules.watchlistScore)))
+        : confidence;
     let size: number;
-    if (copyScore >= rules.highScoreCapMin) {
+    if (sizeScore >= rules.highScoreCapMin) {
       size = rules.highScoreCapUsd;
-    } else if (copyScore >= rules.sweetSpotMinScore && copyScore < rules.highScoreCapMin) {
+    } else if (sizeScore >= rules.sweetSpotMinScore && sizeScore < rules.highScoreCapMin) {
       // Sweet spot is everything below the cap band (rounded scores 70–79.9);
       // `<= sweetSpotMaxScore` would leave 79.1–79.9 in a dead zone that
       // falls through to the base curve.
       size = rules.sweetSpotSizeUsd;
     } else {
-      size = rules.baseSizeUsd + Math.max(0, confidence - 0.5) * rules.confidenceSizeBonus;
+      size = rules.baseSizeUsd + Math.max(0, sizeConfidence - 0.5) * rules.confidenceSizeBonus;
     }
     // v37: entry-band sizing (2026-08-30 report) — the 0.2–0.6 entry band is
     // the all-time drain (−$227 on 71% of volume): halve size there. Entries
