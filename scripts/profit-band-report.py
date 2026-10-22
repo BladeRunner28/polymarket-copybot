@@ -42,6 +42,7 @@ USAGE
      best sits in that distribution. This is what separates "we can pick wallets" from
      "we kept the winners".
 """
+import bisect
 import sqlite3
 import sys
 import time
@@ -52,6 +53,7 @@ BOTS = ["STANDARD", "BANKROLL_200"]
 BANDS = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.0001)]
 ARGS = sys.argv[1:]
 V2 = "--v2" in ARGS or "--all" in ARGS
+V3 = "--v3" in ARGS or "--all" in ARGS
 
 
 def band_name(lo, hi):
@@ -893,6 +895,530 @@ def open_book():
           f"(all-time; deduped per lane)")
 
 
+# =========================================================== 2026-10-22 additions
+# The three questions the 10-21 draft left open, each answerable from this DB:
+#   M. RICH-TAIL DECOMPOSITION -- is the >=0.80 leak live flow or legacy stock?
+#   N. DOES SIZE SEE THE BAND? -- is the clip a function of the band it is buying?
+#   O. SIZING SHADOW -- what would a band map have paid on the legs we took?
+#   P. 168h STOP REPLAY -- the gate the 10-21 draft set for itself and never ran.
+
+def rich_band(p):
+    if p < 0.20:
+        return "0.00-0.20"
+    if p < 0.40:
+        return "0.20-0.40"
+    if p < 0.60:
+        return "0.40-0.60"
+    if p < 0.80:
+        return "0.60-0.80"
+    if p < 0.95:
+        return "0.80-0.95"
+    return "0.95-1.00"
+
+
+RICH_BANDS = ["0.00-0.20", "0.20-0.40", "0.40-0.60", "0.60-0.80", "0.80-0.95", "0.95-1.00"]
+
+
+def rich_tail():
+    """M. The 0.80-1.00 band is not one thing: 0.80-0.95 still has (1-p)/p upside, >=0.95 has none.
+    Splitting them decides whether the last draft's 'stranded capital' framing was an exit-rule
+    problem or a legacy-stock problem that maxEntryPrice=0.85/0.88 has already stopped."""
+    print("\n" + "=" * 78)
+    print("M. RICH-TAIL DECOMPOSITION -- 0.80-0.95 vs >=0.95, realised and open")
+    print("=" * 78)
+    print(f"   {'band':10} {'n':>5} {'stake':>9} {'pnl':>9} {'roi%':>7} "
+          f"{'CI95':>18} {'%notl':>6}")
+    tot_n = tot_p = 0.0
+    for bot in BOTS:
+        legs = load(bot, days=None)
+        if not legs:
+            continue
+        print(f"\n   {bot} (all-time, deduped, cost=dollars at risk)")
+        by = {}
+        for l in legs:
+            b = rich_band(l["px"])
+            d = by.setdefault(b, [0, 0.0, 0.0])
+            d[0] += 1
+            d[1] += l["notional"]
+            d[2] += l["pnl"]
+        grand_n = sum(d[1] for d in by.values())
+        for b in RICH_BANDS:
+            if b not in by:
+                continue
+            d = by[b]
+            sub = [l for l in legs if rich_band(l["px"]) == b]
+            lo, hi = cluster_ci(sub)
+            print(f"   {b:10} {d[0]:>5} {d[1]:>9,.0f} {d[2]:>+9,.0f} "
+                  f"{100*d[2]/d[1]:>+6.1f}% [{lo:>+6.1f},{hi:>+6.1f}] {100*d[1]/grand_n:>5.1f}%")
+        tot_n += grand_n
+        tot_p += sum(d[2] for d in by.values())
+    print(f"\n   all-lanes realised: ${tot_p:+,.2f} on ${tot_n:,.0f} staked "
+          f"({100*tot_p/tot_n:+.1f}%)")
+
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    now = time.time() * 1000
+    print(f"\n   OPEN BOOK by rich band (deduped per lane, MTM = DB unrealisedPnl)")
+    for bot in BOTS:
+        rows = con.execute(
+            """SELECT walletAddress, marketId, outcome, entryPrice, simulatedPositionSize,
+                      unrealizedPnl, openedAt, status
+               FROM PaperTrade WHERE isDemo=0 AND status='open' AND botId=?""", (bot,)).fetchall()
+        seen, by = set(), {}
+        for r in rows:
+            k = (r["walletAddress"], r["marketId"], r["outcome"])
+            if k in seen or not r["entryPrice"] or r["entryPrice"] <= 0:
+                continue
+            seen.add(k)
+            size = r["simulatedPositionSize"] or 0
+            if size <= 0:
+                continue
+            b = rich_band(r["entryPrice"])
+            age = max(0.0, (now - r["openedAt"]) / 86_400_000.0)
+            upside = size * (1 - r["entryPrice"]) / r["entryPrice"]
+            d = by.setdefault(b, [0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            d[0] += 1
+            d[1] += size
+            d[2] += r["unrealizedPnl"] or 0
+            d[3] += size * age
+            d[4] += upside
+            d[5] += age * size
+        if not by:
+            continue
+        tt = sum(d[1] for d in by.values())
+        print(f"\n   {bot}: ${tt:,.0f} open notional")
+        print(f"   {'band':10} {'n':>4} {'stake':>8} {'MTM':>8} {'capdays':>9} "
+              f"{'upside left':>11} {'upside/stake':>12} {'$/capday':>9}")
+        for b in RICH_BANDS:
+            if b not in by:
+                continue
+            d = by[b]
+            ratio = d[4] / d[1]
+            per_cd = (d[2] / (d[3] / 365.0)) if d[3] else 0.0
+            print(f"   {b:10} {d[0]:>4} {d[1]:>8,.0f} {d[2]:>+8,.2f} {d[3]:>9,.0f} "
+                  f"{d[4]:>11,.0f} {ratio:>11.3f}x {per_cd:>8.1f}%")
+
+
+def size_sees_band():
+    """N. Is the clip a function of the band? Pre-cap size from DecisionJournal, which is what
+    the SCORER decided (PaperTrade.simulatedPositionSize can be post-clamp and hide the answer).
+    If a lane's pre-cap size is constant while its bands return -8% and +83%, no band
+    information is reaching the order and every band claim is about a size the bot never chose."""
+    print("\n" + "=" * 78)
+    print("N. DOES SIZE SEE THE BAND? -- pre-cap clip by band, per lane")
+    print("=" * 78)
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    for bot in BOTS:
+        rows = con.execute(
+            """SELECT p.entryPrice, p.simulatedPositionSize AS post, j.simulatedPositionSize AS pre,
+                      j.confidence
+               FROM PaperTrade p JOIN DecisionJournal j ON p.decisionJournalId = j.id
+               WHERE p.botId=? AND p.isDemo=0
+                 AND p.openedAt >= ?""",
+            (bot, int((time.time() - 45 * 86400) * 1000))).fetchall()
+        if not rows:
+            continue
+        by = {}
+        for r in rows:
+            if not r["entryPrice"] or r["entryPrice"] <= 0:
+                continue
+            b = rich_band(r["entryPrice"])
+            pre = r["pre"] if r["pre"] is not None else r["post"]
+            d = by.setdefault(b, [0, [], []])
+            d[0] += 1
+            d[1].append(pre)
+            d[2].append(r["confidence"] or 0)
+        print(f"\n   {bot} (last 45d)")
+        print(f"   {'band':10} {'n':>5} {'pre-cap avg':>12} {'min':>8} {'max':>8} "
+              f"{'conf avg':>9} {'conf range':>14}")
+        for b in RICH_BANDS:
+            if b not in by:
+                continue
+            d = by[b]
+            print(f"   {b:10} {d[0]:>5} {np.mean(d[1]):>12.2f} {min(d[1]):>8.2f} "
+                  f"{max(d[1]):>8.2f} {np.mean(d[2]):>9.3f} "
+                  f"{min(d[2]):>6.2f}-{max(d[2]):<7.2f}")
+        allsizes = [x for d in by.values() for x in d[1]]
+        if allsizes and max(allsizes) > 0:
+            print(f"   span: max/min pre-cap clip = {max(allsizes)/max(min(allsizes), 0.01):.1f}x")
+
+
+# C-200 live band map (RuleSet v65): longshot x3.5, dead zone x0.125 (and hard-skipped),
+# 0.6-0.8 x0.5, everything else x1.0.
+C200_MAP = {"0.00-0.20": 3.5, "0.20-0.40": 1.0, "0.40-0.60": 0.125,
+            "0.60-0.80": 0.5, "0.80-0.95": 1.0, "0.95-1.00": 1.0}
+# The 10-21 draft's counter-proposal, for comparison: skip the dead zone, leave the rest.
+SKIP_ONLY = {"0.00-0.20": 1.0, "0.20-0.40": 1.0, "0.40-0.60": 0.0,
+             "0.60-0.80": 1.0, "0.80-0.95": 1.0, "0.95-1.00": 1.0}
+
+
+def tail_ladder():
+    """Q. Is a band's dollar edge an edge, or its top few legs? For each band: ROI as the
+    N biggest winners in that band are removed. A band whose ROI survives losing its top 10
+    legs can be sized against; a band that collapses to negative is a lottery ticket with a
+    positive mean, and up-weighting it multiplies variance, not edge.
+
+    This is the test that decides the sizing question, and it is reported per lane because the
+    two lanes size the same band very differently (C-200 ~3.5x on <0.20, STANDARD flat)."""
+    print("\n" + "=" * 78)
+    print("Q. TAIL LADDER -- band ROI with the top-N legs in that band removed")
+    print("=" * 78)
+    for bot in BOTS:
+        legs = load(bot, days=None)
+        if not legs:
+            continue
+        print(f"\n   {bot}")
+        print(f"   {'band':10} {'n':>5} {'roi all':>9} {'-top1':>9} {'-top3':>9} "
+              f"{'-top5':>9} {'-top10':>9} {'top10 pnl':>10} {'share':>7}")
+        for b in RICH_BANDS:
+            sub = [l for l in legs if rich_band(l["px"]) == b]
+            if len(sub) < 12:
+                continue
+            ntl = sum(l["notional"] for l in sub)
+            if ntl <= 0:
+                continue
+            ordered = sorted(sub, key=lambda l: -l["pnl"])
+            cells = []
+            for k in (1, 3, 5, 10):
+                kept = ordered[k:]
+                kntl = sum(l["notional"] for l in kept)
+                cells.append(100 * sum(l["pnl"] for l in kept) / kntl if kntl else 0.0)
+            top10 = sum(l["pnl"] for l in ordered[:10])
+            tot = sum(l["pnl"] for l in sub)
+            share = 100 * top10 / tot if tot else float("nan")
+            print(f"   {b:10} {len(sub):>5} {100*tot/ntl:>+8.1f}% "
+                  + " ".join(f"{c:>+8.1f}%" for c in cells)
+                  + f" {top10:>+10,.0f} {share:>6.0f}%")
+
+
+def accumulation_ladder():
+    """R. Does COPYING THE SAME MARKET AGAIN pay? The book holds up to 64 separate legs in one
+    (wallet, market, outcome) -- each a distinct observed whale fill, so this is genuine
+    mirroring, not a re-fire bug. The question is whether the 2nd..64th copies of a position
+    earn anything, because C-200 has a per-market ceiling (v55 maxMarketSlugPositions) and
+    STANDARD has none.
+
+    Legs inside a group are ordered by openedAt, so index 1 is the first copy. PnL is realised
+    only (settled legs), cost basis = dollars at risk, so the ROI of leg k is directly
+    comparable across k.
+    """
+    print("\n" + "=" * 78)
+    print("R. ACCUMULATION LADDER -- realised ROI by copy index within (wallet, market, outcome)")
+    print("=" * 78)
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    for bot in BOTS:
+        rows = con.execute(
+            """SELECT walletAddress, marketId, outcome, entryPrice, simulatedPositionSize,
+                      realizedPnl, openedAt
+               FROM PaperTrade WHERE botId=? AND isDemo=0 AND status IN ('closed','resolved')
+                 AND realizedPnl IS NOT NULL AND entryPrice > 0
+               ORDER BY walletAddress, marketId, outcome, openedAt""", (bot,)).fetchall()
+        groups = {}
+        for r in rows:
+            d = groups.setdefault((r["walletAddress"], r["marketId"], r["outcome"]), [])
+            d.append(r)
+        buckets = {"1 (first)": [0, 0.0, 0.0], "2-3": [0, 0.0, 0.0], "4-9": [0, 0.0, 0.0],
+                   "10+": [0, 0.0, 0.0]}
+        for legs in groups.values():
+            for i, r in enumerate(legs, start=1):
+                key = ("1 (first)" if i == 1 else "2-3" if i <= 3 else "4-9" if i <= 9 else "10+")
+                b = buckets[key]
+                b[0] += 1
+                b[1] += r["simulatedPositionSize"] or 0
+                b[2] += r["realizedPnl"] or 0
+        tot_stake = sum(b[1] for b in buckets.values())
+        print(f"\n   {bot}: {len(groups)} groups, {sum(b[0] for b in buckets.values())} settled legs")
+        print(f"   {'copy index':12} {'legs':>6} {'stake':>10} {'pnl':>10} {'roi':>8} "
+              f"{'%stake':>7} {'pnl/share':>10}")
+        for k in ("1 (first)", "2-3", "4-9", "10+"):
+            b = buckets[k]
+            if not b[0]:
+                continue
+            r_ = 100 * b[2] / b[1] if b[1] else 0.0
+            print(f"   {k:12} {b[0]:>6} {b[1]:>10,.0f} {b[2]:>+10,.0f} {r_:>7.1f}% "
+                  f"{100*b[1]/tot_stake:>6.1f}% {100*b[2]/sum(x[2] for x in buckets.values()) if sum(x[2] for x in buckets.values()) else 0:>9.0f}%")
+        # concentration of a single market
+        sizes = sorted((sum(r["simulatedPositionSize"] or 0 for r in legs) for legs in groups.values()),
+                       reverse=True)
+        if sizes:
+            print(f"   largest group ${sizes[0]:,.0f}; top-5 groups "
+                  f"${sum(sizes[:5]):,.0f} = {100*sum(sizes[:5])/sum(sizes):.1f}% of staked")
+
+
+def rate_check():
+    """S. THE LADDER GAP, measured. Profit = edge x capital x turnover, so the honest scale
+    number is realised dollars per calendar day (not ROI, which flatters long holds), and the
+    multiple it implies for the ladder's next rung. This is the number that decides whether a
+    band or exit change can matter at all."""
+    print("\n" + "=" * 78)
+    print("S. RATE CHECK -- realised $/day, staked $/day, and the ladder multiple")
+    print("=" * 78)
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    now = time.time() * 1000
+    print(f"   {'window':10} {'legs':>6} {'stake/day':>10} {'pnl/day':>9} {'roi':>8} "
+          f"{'days at $5k':>12}")
+    for days in (14, 30, 60, 90, 126):
+        since = now - days * 86400 * 1000
+        rows = con.execute(
+            """SELECT p.simulatedPositionSize, p.realizedPnl, p.closedAt, p.resolvedAt
+               FROM PaperTrade p WHERE p.isDemo=0 AND p.status IN ('closed','resolved')
+                 AND p.realizedPnl IS NOT NULL AND p.openedAt >= ?""", (since,)).fetchall()
+        if not rows:
+            continue
+        stake = sum(r["simulatedPositionSize"] or 0 for r in rows)
+        pn = sum(r["realizedPnl"] or 0 for r in rows)
+        print(f"   last {days:>3}d  {len(rows):>6} {stake/days:>10,.0f} {pn/days:>+9,.2f} "
+              f"{100*pn/stake if stake else 0:>7.1f}% {(5000/(pn/days)) if pn > 0 else float('inf'):>11,.0f}x")
+    # open exposure, both bases
+    rows = con.execute(
+        """SELECT botId, simulatedPositionSize FROM PaperTrade
+           WHERE isDemo=0 AND status='open'""").fetchall()
+    print(f"\n   open notional (capital basis, all legs): "
+          f"${sum(r['simulatedPositionSize'] or 0 for r in rows):,.0f}")
+    for bot in BOTS:
+        sub = [r for r in rows if r["botId"] == bot]
+        print(f"     {bot}: {len(sub)} legs, ${sum(r['simulatedPositionSize'] or 0 for r in sub):,.0f}")
+
+
+def sizing_shadow():
+    """O. Shadow computation on REALISED legs: what would a band map have paid?
+
+    This is a frozen-leg shadow, not a simulation. It holds the leg set fixed and scales each
+    leg's stake by the map, which is exactly the question 'was the notional where the edge was'
+    and NOT the question 'would re-sizing have changed which trades we took'. PnL scales
+    linearly with stake because the paper fill pays a fixed price with no impact.
+
+    Reported three ways because the honest answer differs by basis:
+      raw map          -- what the C-200 factors would have done to STANDARD's book
+      notional-neutral -- same factors, rescaled so total staked dollars are UNCHANGED
+                          (a reallocation, not a size-up; this is the defensible version)
+      ex-top-10        -- the same, with the 10 biggest winners removed, because 96% of booked
+                          profit is one leg and any up-weight of the cheap band multiplies it
+    """
+    print("\n" + "=" * 78)
+    print("O. SIZING SHADOW -- realised legs re-priced under a band map (frozen legs)")
+    print("=" * 78)
+    for bot in BOTS:
+        legs = load(bot, days=None)
+        if not legs:
+            continue
+        gross = sum(l["notional"] for l in legs)
+        base = sum(l["pnl"] for l in legs)
+        print(f"\n   {bot}: {len(legs)} deduped settled legs, ${gross:,.0f} staked, "
+              f"PnL ${base:+,.2f} ({100*base/gross:+.2f}%)")
+        for name, m in (("C-200 map (raw)", C200_MAP),
+                        ("C-200 map (notional-neutral)", C200_MAP),
+                        ("dead-zone skip only", SKIP_ONLY)):
+            scale = 1.0
+            if "neutral" in name:
+                newgross = sum(l["notional"] * m[rich_band(l["px"])] for l in legs)
+                scale = gross / newgross if newgross else 1.0
+            tot = sum(l["pnl"] * (1 + (m[rich_band(l["px"])] * scale - 1)) for l in legs)
+            # ex-top-10 by pnl
+            top = set(sorted(range(len(legs)), key=lambda i: -legs[i]["pnl"])[:10])
+            tot_x = sum(l["pnl"] * m[rich_band(l["px"])] * scale
+                        for i, l in enumerate(legs) if i not in top)
+            base_x = sum(l["pnl"] for i, l in enumerate(legs) if i not in top)
+            print(f"     {name:32} PnL ${tot:>+10,.0f} (delta {tot-base:>+9,.0f})  "
+                  f"ex-top-10 delta {tot_x-base_x:>+9,.0f}")
+        # per-band contribution of the raw map
+        print(f"     {'band':10} {'n':>4} {'stake':>8} {'pnl':>9} {'factor':>7} "
+              f"{'delta':>9} {'delta ex-top10':>15}")
+        top = set(sorted(range(len(legs)), key=lambda i: -legs[i]["pnl"])[:10])
+        for b in RICH_BANDS:
+            idx = [i for i, l in enumerate(legs) if rich_band(l["px"]) == b]
+            if not idx:
+                continue
+            st = sum(legs[i]["notional"] for i in idx)
+            pn = sum(legs[i]["pnl"] for i in idx)
+            f = C200_MAP[b]
+            dx = sum(legs[i]["pnl"] for i in idx if i not in top) * (f - 1)
+            print(f"     {b:10} {len(idx):>4} {st:>8,.0f} {pn:>+9,.0f} {f:>7.3f} "
+                  f"{pn*(f-1):>+9,.0f} {dx:>+15,.0f}")
+
+
+def stop_replay(dedup=True):
+    """P. The 168h stop replay -- the gate the 10-21 draft pre-registered and never ran.
+
+    TWO BASES, because they answer different questions and an earlier draft conflated them:
+      deduped  -- one row per (wallet|market|outcome): the per-BET view, right for per-trade
+                  statistics (duplicate accumulation rows are pseudo-replication).
+      all legs -- every fill: the CAPITAL view. Verified that the duplicates are genuine
+                  (64 legs in the Barcelona market carry 64 distinct observedTradeIds -- the
+                  executor mirrors each whale fill separately, it does not re-fire one signal),
+                  so real deployed notional is the full $13.6k, not the deduped $5.3k. A stop
+                  rule is a capital rule, so this is the base that sizes the effect.
+
+    Counterfactual: exit at the first recorded mark at or after entry+168h (a bot can only
+    exit when a price exists, so the realised exit age is reported rather than assumed to be
+    exactly 168h). Hold arm: the market's latest recorded mark, which is the same series, so
+    the comparison does not mix a snapshot price against a DB mark. The DB mark is also shown
+    as a cross-check.
+
+    Cost basis: dollars at risk, and PnL at a mark m for an entry at p is stake*(m/p - 1) --
+    the same convention as open_book()'s '(1-p)/p upside left'.
+    """
+    print("\n" + "=" * 78)
+    print(f"P. 168h STOP REPLAY ({'deduped per bet' if dedup else 'ALL legs (capital basis)'}) "
+          f"-- open STANDARD book")
+    print("=" * 78)
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    now = time.time() * 1000
+    STOP = 168 * 3600 * 1000
+    rows = con.execute(
+        """SELECT walletAddress, marketId, outcome, side, entryPrice, simulatedPositionSize,
+                  currentPrice, openedAt
+           FROM PaperTrade WHERE isDemo=0 AND status='open' AND botId='STANDARD'""").fetchall()
+    seen, trades = set(), []
+    for r in rows:
+        k = (r["walletAddress"], r["marketId"], r["outcome"])
+        if dedup:
+            if k in seen:
+                continue
+            seen.add(k)
+        if r["side"] != "BUY" or r["outcome"] not in ("YES", "NO"):
+            continue
+        if not r["entryPrice"] or r["entryPrice"] <= 0 or not r["simulatedPositionSize"]:
+            continue
+        trades.append(dict(r))
+    by = {}
+    for t in trades:
+        by.setdefault(t["marketId"], []).append(t)
+    priced = []
+    for mkt, ts in by.items():
+        snaps = con.execute(
+            "SELECT collectedAt, yesPrice, noPrice FROM MarketSnapshot WHERE marketId=? "
+            "ORDER BY collectedAt", (mkt,)).fetchall()
+        if not snaps:
+            continue
+        times = [s["collectedAt"] for s in snaps]
+        for t in ts:
+            target = t["openedAt"] + STOP
+            i = bisect.bisect_left(times, target)
+            if i >= len(snaps):
+                i = len(snaps) - 1          # market went quiet: last observed mark
+            s, last = snaps[i], snaps[-1]
+            px = s["yesPrice"] if t["outcome"] == "YES" else s["noPrice"]
+            lpx = last["yesPrice"] if t["outcome"] == "YES" else last["noPrice"]
+            if px is None or lpx is None:
+                continue
+            t = dict(t)
+            t["stop_px"] = px
+            t["hold_px"] = lpx
+            t["stop_age_h"] = (s["collectedAt"] - t["openedAt"]) / 3600000.0
+            t["age_h"] = (now - t["openedAt"]) / 3600000.0
+            priced.append(t)
+    if not priced:
+        print("   no priceable open legs")
+        return
+
+    def pnl_at(t, px):
+        return t["simulatedPositionSize"] * (px / t["entryPrice"] - 1.0)
+
+    def scope(lo, hi):
+        return [t for t in priced if lo <= t["entryPrice"] < hi]
+
+    print(f"   priced {len(priced)}/{len(trades)} open STANDARD "
+          f"{'bets' if dedup else 'legs'} "
+          f"(${sum(t['simulatedPositionSize'] for t in priced):,.0f} notional)")
+    print(f"   realised exit age: median {np.median([t['stop_age_h'] for t in priced]):.0f}h, "
+          f"p90 {np.percentile([t['stop_age_h'] for t in priced], 90):.0f}h")
+    print(f"\n   {'scope':14} {'n':>4} {'notional':>9} {'hold':>9} {'stop':>9} "
+          f"{'delta':>8} {'capdays hold':>13} {'capdays stop':>13} {'%kept':>6}")
+    for label, lo, hi in (("0.20-1.00 (10-21)", 0.20, 1.01),
+                          ("0.40-1.00", 0.40, 1.01),
+                          ("0.60-1.00", 0.60, 1.01),
+                          ("0.00-0.40 (exempt)", 0.0, 0.40),
+                          ("ALL", 0.0, 1.01)):
+        sub = scope(lo, hi)
+        if not sub:
+            continue
+        ntl = sum(t["simulatedPositionSize"] for t in sub)
+        hold = sum(pnl_at(t, t["hold_px"]) for t in sub)
+        stop = sum(pnl_at(t, t["stop_px"]) for t in sub)
+        cdh = sum(t["simulatedPositionSize"] * t["age_h"] / 24.0 for t in sub)
+        cds = sum(t["simulatedPositionSize"] * min(t["age_h"], t["stop_age_h"]) / 24.0 for t in sub)
+        print(f"   {label:14} {len(sub):>4} {ntl:>9,.0f} {hold:>+9,.0f} {stop:>+9,.0f} "
+              f"{stop-hold:>+8,.0f} {cdh:>13,.0f} {cds:>13,.0f} {100*cds/cdh:>5.0f}%")
+
+    # THE MARK QUESTION, stated rather than buried: the snapshot series for these markets ends
+    # a median 35 days before today, so 'hold at the latest snapshot' is a STALE hold estimate.
+    # The DB's currentPrice is fresher. Both are reported; the DB basis is the pessimistic one
+    # for the stop and is the one the recommendation has to survive.
+    print(f"\n   hold-arm basis comparison (the snapshot series is stale; see docstring)")
+    print(f"   {'scope':14} {'stop':>9} {'hold@snap':>10} {'d@snap':>8} "
+          f"{'hold@DB':>9} {'d@DB':>8} {'stop@DB%':>9}")
+    for label, lo, hi in (("0.40-1.00", 0.40, 1.01), ("0.60-1.00", 0.60, 1.01)):
+        sub = scope(lo, hi)
+        if not sub:
+            continue
+        ntl = sum(t["simulatedPositionSize"] for t in sub)
+        stop = sum(pnl_at(t, t["stop_px"]) for t in sub)
+        hs = sum(pnl_at(t, t["hold_px"]) for t in sub)
+        hd = sum(pnl_at(t, t["currentPrice"]) for t in sub)
+        print(f"   {label:14} {stop:>+9,.0f} {hs:>+10,.0f} {stop-hs:>+8,.0f} "
+              f"{hd:>+9,.0f} {stop-hd:>+8,.0f} {100*(stop-hd)/ntl:>8.1f}%")
+
+    print(f"\n   per-band detail (stop vs hold, same marks)")
+    print(f"   {'band':10} {'n':>4} {'notional':>9} {'hold':>9} {'stop':>9} {'delta':>8} "
+          f"{'delta%notl':>11}")
+    by_band = {}
+    for t in priced:
+        by_band.setdefault(rich_band(t["entryPrice"]), []).append(t)
+    for b in RICH_BANDS:
+        if b not in by_band:
+            continue
+        sub = by_band[b]
+        ntl = sum(t["simulatedPositionSize"] for t in sub)
+        hold = sum(pnl_at(t, t["hold_px"]) for t in sub)
+        stop = sum(pnl_at(t, t["stop_px"]) for t in sub)
+        print(f"   {b:10} {len(sub):>4} {ntl:>9,.0f} {hold:>+9,.0f} {stop:>+9,.0f} "
+              f"{stop-hold:>+8,.0f} {100*(stop-hold)/ntl:>10.1f}%")
+
+    # EXIT COST: a stop sells at the bid, not the mark. Charge the haircut on the proceeds of
+    # every stopped leg and report the breakeven haircut -- the fill assumption, stated.
+    def proceeds(t):
+        return t["simulatedPositionSize"] * (t["stop_px"] / t["entryPrice"])
+
+    print(f"\n   exit-cost sensitivity (haircut on stopped proceeds)")
+    print(f"   {'scope':14} {'delta h=0':>10} {'h=0.5%':>10} {'h=1%':>10} {'h=2%':>10} "
+          f"{'breakeven h':>12}")
+    for label, lo, hi in (("0.40-1.00", 0.40, 1.01), ("0.60-1.00", 0.60, 1.01)):
+        sub = scope(lo, hi)
+        if not sub:
+            continue
+        hold = sum(pnl_at(t, t["hold_px"]) for t in sub)
+        stop = sum(pnl_at(t, t["stop_px"]) for t in sub)
+        pr = sum(proceeds(t) for t in sub)
+        d0 = stop - hold
+        cells = [d0 - h * pr for h in (0.0, 0.005, 0.01, 0.02)]
+        be = d0 / pr if pr else 0.0
+        print(f"   {label:14} " + " ".join(f"{c:>+10,.0f}" for c in cells)
+              + f" {100*be:>11.1f}%")
+
+    dball = sum(pnl_at(t, t["currentPrice"]) for t in priced)
+    dbsn = sum(pnl_at(t, t["hold_px"]) for t in priced)
+    print(f"\n   cross-check: hold arm at DB mark ${dball:+,.2f} vs at latest snapshot "
+          f"${dbsn:+,.2f} (same sign, ${abs(dball-dbsn):,.0f} apart)")
+    print(f"   DECISION RULE (set 2026-10-21): capital-days cut >=50% for <$150 PnL cost.")
+    sub = scope(0.60, 1.01)
+    if sub:
+        ntl = sum(t["simulatedPositionSize"] for t in sub)
+        hold = sum(pnl_at(t, t["hold_px"]) for t in sub)
+        stop = sum(pnl_at(t, t["stop_px"]) for t in sub)
+        cdh = sum(t["simulatedPositionSize"] * t["age_h"] / 24.0 for t in sub)
+        cds = sum(t["simulatedPositionSize"] * min(t["age_h"], t["stop_age_h"]) / 24.0 for t in sub)
+        print(f"   >=0.60 scope: capdays {cdh:,.0f} -> {cds:,.0f} "
+              f"({100*(1-cds/cdh):.0f}% cut), PnL delta ${stop-hold:+,.2f} "
+              f"-> {'PASS' if (cds/cdh <= 0.5 and stop-hold > -150) else 'FAIL'}")
+    if dedup:
+        stop_replay(dedup=False)
+
+
 if "--v2" in ARGS or "--all" in ARGS:
     calibration_report()
     inband_concentration()
@@ -918,3 +1444,12 @@ if "--only-d" in ARGS:
     wallet_null()
 if "--only-e" in ARGS:
     recency_and_basis()
+
+if V3:
+    rich_tail()
+    size_sees_band()
+    tail_ladder()
+    accumulation_ladder()
+    rate_check()
+    sizing_shadow()
+    stop_replay()
