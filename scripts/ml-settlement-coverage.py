@@ -97,7 +97,10 @@ def fetch_venue(condition_id, timeout=20):
         # facts and conflating them is how a report ends up lying about its own coverage.
         return {"ok": True, "closed": closed, "y": None,
                 "state": "closed_without_winner" if closed else "not_closed_yet"}
-    return {"ok": True, "closed": closed, "y": 1 if winners[0].get("outcome") == "Yes" else 0,
+    # y_yes is relative to TOKEN 0 (the YES / first-listed outcome). Scoring on outcome == "Yes"
+    # would mark every named-outcome market (Over/Under, team names) as NO.
+    y = 1 if toks[0].get("winner") in (True, "true") else 0
+    return {"ok": True, "closed": closed, "y": y,
             "outcome": winners[0].get("outcome"), "state": "resolved"}
 
 

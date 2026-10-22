@@ -183,3 +183,63 @@ error key conflated "closed with no winner" and "still trading", which is exactl
 that makes a coverage report lie about itself. Fixed in the script; the artefact now distinguishes
 them.
 
+---
+
+# APPLIED 2026-10-22 (approved) — and the bug I shipped into it
+
+The switch is live: `ml-observe-read.py` now settles from venue truth by default
+(`--settlement-source=venue`), keeps the snapshot proxy behind `--settlement-source=snapshot` and
+`--no-venue-fetch`, computes **both** on every run, and writes a `settlement` block into
+`observe-report.json`. Resolutions are cached in `data/ml/settlement-cache.json`; the cache carries a
+`CACHE_MAPPING` tag so a future mapping change is refetched rather than silently trusted.
+
+## My mapping was wrong, and it published a false number for two minutes
+
+The first version read:
+
+```python
+y = 1 if winners[0].get("outcome") == "Yes" else 0
+```
+
+That is only correct for markets whose tokens are literally `Yes` / `No`. Polymarket also lists
+markets whose outcomes are `Over` / `Under` or team names — indices, totals, esports — and for those
+the winning side is never the string `"Yes"`, so **every one of them scored as NO regardless of what
+actually happened**. The give-away was the cache: **63 NO vs 9 YES**, which no plausible portfolio of
+markets produces.
+
+Correct mapping: **`tokens[0]` is the YES / first-listed outcome**, so
+
+```python
+y = 1 if toks[0].get("winner") in (True, "true") else 0
+```
+
+After the fix the cache reads **36 YES / 36 NO**.
+
+## What the bug had already corrupted — both now corrected
+
+- **Baseline mean net ROI: `+7.982 %` → `−3.390 %`.** The positive figure was live on `/ml` for about
+  two minutes before I caught it. The corrected number is the one that matters, and it is negative.
+- **Direction agreement on the 72 venue-resolved markets: `45.8 %` → `55.6 %`.** My earlier claim
+  that the old proxy "leaned the correct way only 45.8 % of the time — below a coin flip" is
+  **retracted**; that figure was the mapping bug, not a property of the data. 55.6 % is still weak,
+  and the real finding stands unchanged: the last snapshot sits a median **0.075** from 0.50 when the
+  band rule needs **0.40**, so it carries almost no resolution information.
+
+## State after the fix
+
+- venue settles **224 observations across 72 markets**; snapshot settles **0**
+- 13 markets `not_closed_yet`; conditionId and CLOB retrieval both **100 %**
+- `status: NOT_YET` — and that label is now earned: 224 settled observations exist but no arm has
+  `MIN_PER_BUCKET` = 60 settled per bucket, so no table is built. The script previously would have
+  written `NOT_ESTABLISHED` here, claiming a negative result we have not earned; that path is now
+  split out explicitly.
+- `/ml` shows `Settled 224`, `Baseline net ROI −3.390 %`, the settlement source, and both counts side
+  by side.
+
+## The lesson worth keeping
+
+A settlement mapping that is wrong in a *direction-consistent* way does not look broken — it looks
+like a plausible base rate. What caught it was checking the cache's outcome distribution (63/9)
+against what markets actually are. Assert on the label distribution, not just that labels exist.
+
+

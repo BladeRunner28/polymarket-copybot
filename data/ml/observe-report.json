@@ -1,17 +1,36 @@
 {
-  "built_at": "2026-10-22T01:18:06.254503+00:00",
+  "built_at": "2026-10-22T16:20:13.631096+00:00",
   "status": "NOT_YET",
-  "observations": 226,
-  "distinct_markets": 72,
-  "settled_observations": 0,
-  "settled_markets": 0,
+  "observations": 252,
+  "distinct_markets": 85,
+  "settled_observations": 224,
+  "settled_markets": 72,
   "by_day": {
     "2026-10-21": 144,
-    "2026-10-22": 82
+    "2026-10-22": 108
   },
-  "baseline_roi_net_pct": null,
+  "baseline_roi_net_pct": -3.39,
   "buckets": 5,
-  "tables": {},
+  "settlement": {
+    "source": "venue (clob tokens[].winner)",
+    "venue_settled_markets": 72,
+    "venue_settled_observations": 224,
+    "snapshot_settled_markets": 0,
+    "snapshot_settled_observations": 0,
+    "decisive_overlap": 0,
+    "agreement_pct": null,
+    "disagreements": [],
+    "market_state": {
+      "resolved_now": 72,
+      "not_closed_yet": 13
+    },
+    "cache": "data/ml/settlement-cache.json"
+  },
+  "tables": {
+    "p_profit": [],
+    "ev": [],
+    "roi_reg": []
+  },
   "nominal_tests": 0,
   "expected_hits_by_chance": 0.0,
   "hits": [],

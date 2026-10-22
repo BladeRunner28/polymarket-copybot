@@ -73,6 +73,12 @@ type ObserveReport = {
   settled_observations: number; settled_markets: number; by_day: Record<string, number>;
   baseline_roi_net_pct: number | null; buckets: number; tables: Record<string, ObsBucket[]>;
   nominal_tests: number; expected_hits_by_chance: number; hits: ObsBucket[];
+  settlement?: {
+    source: string;
+    venue_settled_markets: number; venue_settled_observations: number;
+    snapshot_settled_markets: number; snapshot_settled_observations: number;
+    decisive_overlap: number; agreement_pct: number | null;
+  };
 };
 
 /**
@@ -268,12 +274,31 @@ export default async function MlPage() {
               <Stat label="Baseline net ROI" value={obs.baseline_roi_net_pct === null ? "—" : sgn(obs.baseline_roi_net_pct, 3)}
                 sub={obs.settled_observations > 0 ? "settled, net of fee at ask" : "nothing resolved yet"} />
             </div>
+            {obs.settlement && (
+              <p className="text-dim text-xs mt-2">
+                settlement source: <span className="text-fg">{obs.settlement.source}</span> —{" "}
+                {obs.settlement.venue_settled_observations.toLocaleString()} settled observations by venue truth
+                vs {obs.settlement.snapshot_settled_observations.toLocaleString()} by the old snapshot-price proxy
+                {obs.settlement.decisive_overlap > 0
+                  ? ` · agreement ${obs.settlement.agreement_pct ?? "—"}% on ${obs.settlement.decisive_overlap} overlapping markets.`
+                  : ` · the proxy settles nothing here, so the two cannot be compared on this population.`}
+              </p>
+            )}
             {obs.status === "NOT_YET" ? (
               <p className="text-dim text-sm mt-3 leading-relaxed">
-                The lane is recording and this is the honest state: {obs.observations} candidates rated,
-                none resolved yet. Candidates are restricted to the model&apos;s trained time-to-resolution
-                support so the served scores mean what they meant in training. At ~58–196 observations/day
-                the first quintile read is roughly <strong>3 weeks</strong> away and a decile read ~6 weeks.
+                {obs.settled_observations > 0 ? (
+                  <>
+                    {obs.settled_observations.toLocaleString()} observations have settled across{" "}
+                    {obs.settled_markets} markets, but no arm has enough settled per bucket to build a
+                    table yet. That is <strong>accumulating</strong>, not a failed test — nothing here
+                    says the model does or does not work.{" "}
+                  </>
+                ) : (
+                  <>The lane is recording and nothing has resolved yet. </>
+                )}
+                Candidates are restricted to the model&apos;s trained time-to-resolution support so the
+                served scores mean what they meant in training. This lane never trades on its own: a
+                cleared bucket raises a promotion question for you, it does not act.
               </p>
             ) : (
               <>

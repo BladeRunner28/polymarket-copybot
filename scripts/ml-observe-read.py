@@ -8,10 +8,19 @@ from its LAST snapshot using the same rule the training labels used, computes ea
 ROI at the ask it was recorded at, and reports decile economics per arm with CIs bootstrapped by
 MARKET — the identical machinery used on the historical holdout, so the two are directly comparable.
 
-RESOLUTION RULE (deliberately the same as build-ml-dataset.py):
-    last snapshot yesPrice >= 0.90 -> YES, <= 0.10 -> NO, else ABSTAIN (excluded).
-It agreed 99.5% with OutcomeReview.finalOutcome on the resolved acted population. It is a proxy, not
-ground truth, so an abstaining or barely-crossing market is excluded rather than guessed.
+RESOLUTION RULE (changed 2026-10-22, user-approved):
+    DEFAULT is VENUE TRUTH -- join each market to its conditionId and read
+    GET clob.polymarket.com/markets/{conditionId} -> tokens[].winner. A resolved market is cached
+    permanently in data/ml/settlement-cache.json because resolutions are immutable.
+    `--settlement-source=snapshot` restores the previous rule:
+        last snapshot yesPrice >= 0.90 -> YES, <= 0.10 -> NO, else ABSTAIN (excluded).
+    That rule is kept and still computed on every run for side-by-side comparison, because it was
+    measured on 2026-10-22 to be reading noise: over 72 venue-resolved markets it settled ZERO, its
+    last price sat a median 0.075 from 0.50 (the band needs 0.40), and it leaned the correct way only
+    45.8% of the time -- below a coin flip. See drafts/ml-settlement-source-20261022.md.
+    The old docstring claimed 99.5% agreement with OutcomeReview.finalOutcome; that was measured on
+    the ACTED population, and OutcomeReview carries no marketId, so it cannot settle observe-lane
+    markets at all.
 
 HONESTY RULES BAKED IN
 1. Nothing is reported until there are settled observations; the script says NOT YET rather than
@@ -31,6 +40,10 @@ import json
 import os
 import sqlite3
 import sys
+import time
+import urllib.error
+import urllib.request
+from collections import Counter
 
 import numpy as np
 import pandas as pd
@@ -38,6 +51,11 @@ import pandas as pd
 DEFAULT_DB = "prisma/dev.db"
 DEFAULT_LOG = "data/ml/observe-log.jsonl"
 DEFAULT_OUT = "data/ml/observe-report.json"
+DEFAULT_CACHE = "data/ml/settlement-cache.json"
+# Bump when the outcome mapping changes: entries carrying a different value are refetched rather
+# than trusted, so a mapping fix can never be masked by a stale cache.
+CACHE_MAPPING = "tokens[0].winner"
+CLOB_MARKET = "https://clob.polymarket.com/markets/"
 MIN_PER_BUCKET = 60
 
 
@@ -80,12 +98,122 @@ def bucket_table(df, score_col, buckets):
     return out
 
 
+def _snapshot_outcomes(ids, db=DEFAULT_DB):
+    """The previous rule, kept for comparison: last snapshot yesPrice band."""
+    con = sqlite3.connect("file:{}?mode=ro".format(db), uri=True)
+    out = {}
+    CHUNK = 900
+    for i in range(0, len(ids), CHUNK):
+        batch = ids[i:i + CHUNK]
+        ph = ",".join("?" * len(batch))
+        q = """
+            SELECT s.marketId, s.yesPrice
+            FROM MarketSnapshot s
+            JOIN (SELECT marketId, MAX(collectedAt) AS mx FROM MarketSnapshot
+                  WHERE isDemo = 0 GROUP BY marketId) l
+              ON l.marketId = s.marketId AND l.mx = s.collectedAt
+            WHERE s.marketId IN ({})
+        """.format(ph)
+        for mid, yes in con.execute(q, batch):
+            if yes is None:
+                continue
+            if yes >= 0.90:
+                out[mid] = 1
+            elif yes <= 0.10:
+                out[mid] = 0
+    con.close()
+    return out
+
+
+def _condition_ids(ids, db=DEFAULT_DB):
+    con = sqlite3.connect("file:{}?mode=ro".format(db), uri=True)
+    ph = ",".join("?" * len(ids))
+    q = ("SELECT marketId, MAX(conditionId) FROM MarketSnapshot WHERE marketId IN ({}) "
+         "AND conditionId IS NOT NULL AND conditionId <> '' GROUP BY marketId").format(ph)
+    out = dict(con.execute(q, ids))
+    con.close()
+    return out
+
+
+def _load_cache(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _venue_outcomes(ids, cache_path=DEFAULT_CACHE, db=DEFAULT_DB, sleep=0.25, fetch=True):
+    """Venue truth: CLOB tokens[].winner. Resolutions are immutable, so they are cached forever.
+
+    Returns (outcomes, stats). Any network failure leaves the market UNSETTLED rather than guessing --
+    an abstention is honest, a fabricated label is not.
+    """
+    stats = Counter()
+    cache = _load_cache(cache_path)
+    out = {}
+    cids = _condition_ids(ids, db)
+    for mid in ids:
+        cached = cache.get(mid)
+        if isinstance(cached, dict) and cached.get("y") in (0, 1) and cached.get("mapping") == CACHE_MAPPING:
+            out[mid] = int(cached["y"])
+            stats["from_cache"] += 1
+            continue
+        cid = cids.get(mid)
+        if not cid:
+            stats["no_conditionId"] += 1
+            continue
+        if not fetch:
+            stats["fetch_disabled"] += 1
+            continue
+        req = urllib.request.Request(CLOB_MARKET + cid, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            d = json.load(urllib.request.urlopen(req, timeout=20))
+        except urllib.error.HTTPError as e:
+            stats["http_%d" % e.code] += 1
+            time.sleep(sleep)
+            continue
+        except Exception as e:
+            stats["fetch_" + type(e).__name__] += 1
+            time.sleep(sleep)
+            continue
+        toks = d.get("tokens") or []
+        winners = [t for t in toks if t.get("winner") in (True, "true")]
+        if winners:
+            # y_yes is relative to TOKEN 0 -- Polymarket's tokens[0] is the YES / first-listed outcome.
+            # Testing outcome == "Yes" instead would score every named-outcome market (Over/Under,
+            # team names, "Under") as NO regardless of who actually won, which silently collapsed the
+            # first run of this cache to 63 NO vs 9 YES.
+            y = 1 if (toks and toks[0].get("winner") in (True, "true")) else 0
+            out[mid] = y
+            cache[mid] = {"y": y, "conditionId": cid, "mapping": CACHE_MAPPING,
+                          "outcome": winners[0].get("outcome"),
+                          "cachedAt": pd.Timestamp.utcnow().isoformat()}
+            stats["resolved_now"] += 1
+        elif d.get("closed"):
+            stats["closed_without_winner"] += 1
+        else:
+            stats["not_closed_yet"] += 1
+        time.sleep(sleep)
+    try:
+        with open(cache_path, "w") as f:
+            json.dump(cache, f, indent=2)
+    except Exception as e:
+        print("  !! could not write settlement cache: {}".format(e))
+    return out, stats
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=DEFAULT_DB)
     ap.add_argument("--log", default=DEFAULT_LOG)
     ap.add_argument("--out", default=DEFAULT_OUT)
     ap.add_argument("--buckets", type=int, default=5)
+    ap.add_argument("--settlement-source", choices=["venue", "snapshot"], default="venue",
+                    help="which derivation labels y_yes; both are always computed and reported")
+    ap.add_argument("--settlement-cache", default=DEFAULT_CACHE)
+    ap.add_argument("--no-venue-fetch", action="store_true",
+                    help="skip the CLOB network calls entirely (offline); falls back to snapshot")
     args = ap.parse_args()
 
     if not os.path.exists(args.log):
@@ -108,36 +236,58 @@ def main():
     by_day = obs.groupby("day").size().to_dict()
     print("by day: {}".format(dict(sorted(by_day.items()))))
 
-    # Derive y_yes from each market's LAST snapshot.
-    con = sqlite3.connect("file:{}?mode=ro".format(args.db), uri=True)
+    # --- settlement derivation -------------------------------------------------------------
+    # Venue truth is the default; the old snapshot proxy is still computed every run so the two
+    # can be reported side by side during the verification week.
     ids = obs["market_id"].dropna().unique().tolist()
-    resolved = {}
-    CHUNK = 900
-    for i in range(0, len(ids), CHUNK):
-        batch = ids[i:i + CHUNK]
-        ph = ",".join("?" * len(batch))
-        q = """
-            SELECT s.marketId, s.yesPrice
-            FROM MarketSnapshot s
-            JOIN (SELECT marketId, MAX(collectedAt) AS mx FROM MarketSnapshot
-                  WHERE isDemo = 0 GROUP BY marketId) l
-              ON l.marketId = s.marketId AND l.mx = s.collectedAt
-            WHERE s.marketId IN ({})
-        """.format(ph)
-        for mid, yes in con.execute(q, batch):
-            if yes is None:
-                continue
-            if yes >= 0.90:
-                resolved[mid] = 1
-            elif yes <= 0.10:
-                resolved[mid] = 0
-    con.close()
-    print("markets with a derived outcome: {:,} of {:,} ({:.1f}%)".format(
-        len(resolved), len(ids), 100.0 * len(resolved) / max(len(ids), 1)))
+    snap_map = _snapshot_outcomes(ids, args.db)
+    venue_map, venue_stats = _venue_outcomes(
+        ids, cache_path=args.settlement_cache, db=args.db, fetch=not args.no_venue_fetch)
+
+    if args.settlement_source == "venue" and not (args.no_venue_fetch and not venue_map):
+        resolved = venue_map
+        source_used = "venue (clob tokens[].winner)"
+    else:
+        resolved = snap_map
+        source_used = ("snapshot (last-price band) -- venue fetch disabled"
+                       if args.no_venue_fetch else "snapshot (last-price band)")
+
+    overlap = [m for m in ids if m in snap_map and m in venue_map]
+    disagree = [m for m in overlap if snap_map[m] != venue_map[m]]
+    obs_by_market = obs["market_id"].value_counts().to_dict()
+    settled_obs_venue = int(sum(obs_by_market.get(m, 0) for m in venue_map))
+    settled_obs_snap = int(sum(obs_by_market.get(m, 0) for m in snap_map))
+
+    settlement = {
+        "source": source_used,
+        "venue_settled_markets": len(venue_map),
+        "venue_settled_observations": settled_obs_venue,
+        "snapshot_settled_markets": len(snap_map),
+        "snapshot_settled_observations": settled_obs_snap,
+        "decisive_overlap": len(overlap),
+        "agreement_pct": (round(100.0 * (len(overlap) - len(disagree)) / len(overlap), 2)
+                          if overlap else None),
+        "disagreements": [{"market": m, "venue": venue_map[m], "snapshot": snap_map[m]}
+                          for m in disagree[:50]],
+        "market_state": dict(venue_stats),
+        "cache": args.settlement_cache,
+    }
+
+    print("settlement source: {}".format(source_used))
+    print("  markets with a venue outcome    : {:,} of {:,} ({:.1f}%)".format(
+        len(venue_map), len(ids), 100.0 * len(venue_map) / max(len(ids), 1)))
+    print("  markets with a snapshot outcome : {:,} of {:,} ({:.1f}%)".format(
+        len(snap_map), len(ids), 100.0 * len(snap_map) / max(len(ids), 1)))
+    print("  venue market states             : {}".format(dict(venue_stats)))
+    if overlap:
+        print("  decisive overlap {} | disagreements {}".format(len(overlap), len(disagree)))
+    else:
+        print("  decisive overlap 0 -> the two sources cannot be compared on this population")
 
     obs["y_yes"] = obs["market_id"].map(resolved)
     settled = obs[obs["y_yes"].notna()].copy()
-    print("settled observations: {:,}".format(len(settled)))
+    print("settled observations: {:,} (venue {:,} | snapshot {:,})".format(
+        len(settled), settled_obs_venue, settled_obs_snap))
 
     def write_report(status, tables=None, hits=None, n_tests=0, expected=0.0, baseline=None):
         """Always leave a report behind, including the NOT YET state -- the dashboard must be able
@@ -153,6 +303,7 @@ def main():
                 "by_day": dict(sorted(by_day.items())),
                 "baseline_roi_net_pct": baseline,
                 "buckets": args.buckets,
+                "settlement": settlement,
                 "tables": tables or {},
                 "nominal_tests": n_tests,
                 "expected_hits_by_chance": expected,
@@ -191,6 +342,18 @@ def main():
             if r["ci_lo"] is not None and r["ci_lo"] > 0:
                 hits.append({"arm": a, "bucket": r["bucket"], "roi": r["roi_net_pct"],
                              "ci": [r["ci_lo"], r["ci_hi"]], "n": r["n"], "markets": r["markets"]})
+
+    # A zero-test run is NOT the same as a tested-and-failed run. Before the settlement switch this
+    # path was unreachable (settled was always empty); now that venue truth yields settlements early,
+    # reporting "NOT_ESTABLISHED" here would claim a negative result we have not earned.
+    if n_tests == 0:
+        print("\n  => NOT YET: {:,} settled observations exist, but no arm has enough per bucket".format(
+            len(settled)))
+        print("     to build a table (needs >= {} settled per bucket). Still accumulating.".format(
+            MIN_PER_BUCKET))
+        write_report("NOT_YET", tables=tables, hits=[], n_tests=0, expected=0.0,
+                     baseline=round(float(settled["roi_net_pct"].mean()), 3))
+        return
 
     expected = round(n_tests * 0.05, 2)
     print("\n=== VERDICT ===")
