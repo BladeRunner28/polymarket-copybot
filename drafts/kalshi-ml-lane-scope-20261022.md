@@ -107,3 +107,78 @@ pairs never measured what they appear to.
    ~1 h, and it may reclassify the whole cross-venue premise.
 3. Confirm the fee model assumption should be verified against Kalshi's published schedule rather than
    reused from the Polymarket adapter (I believe they differ; I have not verified it here).
+
+---
+
+# RESULTS — Step 0 and K2 measurement (2026-10-22)
+
+## Step 0: the $0.00 was my arithmetic, not a silent instrument
+
+Two of my own numbers were wrong, and both are retracted:
+
+- **"721 resolved pairs with Kalshi PnL $0.00."** I summed `kalshiPnl` across 721 rows and coerced
+  nulls to zero. Only **2** of those rows have a non-null `kalshiPnl`. The instrument is correctly
+  booking almost nothing because it only books *verified* pairs, and there are two of them.
+- **"46.5 % kalshiResolved-vs-won agreement."** Meaningless. `won` is a **trade outcome**
+  (`realizedPnl > 0`); `kalshiResolved` means **we obtained a Kalshi quote**
+  (`row.kalshiResolved = true; row.kalshiEntry = q.price`). It is not a market resolution. The
+  comparison never meant anything.
+
+**The real Step 0 finding is worse than a bug:** cross-list coverage is **0.2 %** (2 of 1,281 copies
+in the summary's own `withKalshiQuote`). Failure buckets: `no open Kalshi event matched question
+(scored 0.00 of open events over 25 pages)` 657 · `kalshi orderbook empty for event …` 59 ·
+`stale_first_sighting (> 6 h)` 35 · `quoteFailures` 790 · `staleSkips` 395 · **`unverifiedMatches` 94**
+(low match score 0.60–0.67, i.e. the matcher guessing). The job's own NOTE already said it: *"the
+binding constraint is matcher coverage, not the delta."* The venue-shadow book cannot support a
+cross-venue study at n=2, and its 94 "matches" are low-confidence guesses.
+
+## K2, arb form — REFUTED
+
+Structurally paired source instead: **`kalshi-pm-btc-pair-*.jsonl`, 17,937 rows, 801 windows** of
+BTC 15-minute up/down, both venues quoted with per-venue fee laws and `venue_skew_ms`.
+
+Median net cost of a **complete** pair (both directions pay $1):
+
+- **A: n=15,834 · median −0.1222 · mean −0.1072 · p90 −0.0127 · net-positive 0.59 %**
+- **B: n=16,185 · median −0.1232 · mean −0.1050 · p90 −0.0108 · net-positive 0.78 %**
+
+Skew control: medians are identical either side of the median `venue_skew_ms` (−0.1217 vs −0.1223;
+−0.1242 vs −0.1216), so latency does not create the gap. Fails the pre-registered rule on two counts —
+median edge sits far outside the fee band, and net-positive share is ~0.6 % against a ≥ 30 % bar.
+
+**Correction to my own inference:** I read the ~12 % pair cost as a ~12 pp probability disagreement.
+It is not. Pair cost is the sum of two **asks**, so it contains both spreads; measured mid-vs-mid the
+venues agree at the **median 0.0000**.
+
+## K2, informational form — REFUTED
+
+The form an ML lane would actually use: does Kalshi's quote predict the outcome better than
+Polymarket's own price? 801 windows, **470 labelled** (331 dropped for an ambiguous final price),
+base rate 49.4 % UP.
+
+- AUC P(UP) from **Polymarket** mid: **0.9418** (n=450)
+- AUC P(UP) from **Kalshi** mid: **0.9436** (n=470)
+- 5-fold CV, logit: PM only **0.9394** · **PM + Kalshi 0.9401** (+0.0007) · Kalshi only 0.9365
+- Disagreement: median **0.0000**, p10 −0.07, p90 +0.06; **18.2 %** of observations differ by more
+  than one fee
+
+**Kalshi adds +0.0007 AUC over Polymarket alone.** That is nothing, and the pre-registered refutation
+said: *"Kalshi adds no independent edge and the lane closes."* It closes.
+
+Caveat on the absolute AUCs: features are taken mid-window and labels from the window's last
+observation, and in sparse windows those can be close together — so 0.94 is probably optimistic. The
+**comparison** is fair (identical treatment), and the comparison is the finding.
+
+## What this leaves standing
+
+- **K1** — unchanged: calendar-gated on tape age, don't build before ~2027-01.
+- **K3** — unchanged: macro calibration at 14 settled of its own n≥20 per-family bar. Still a wait.
+- **Fee model** — resolved, and it upgrades a separate open item: `fee_model` is written per row as
+  **Polymarket `rate*min(p,1-p)` vs Kalshi `rate*p*(1-p)`, both at 7 %**. The Polymarket lane's own
+  reprice model uses `rate*p*(1-p)`, i.e. **the Kalshi law applied to a Polymarket fee**. That was an
+  unverified suspicion; the repo's own data now confirms it.
+- **No Kalshi ML lane is justified by this data.** The venue agrees with Polymarket, adds no predictive
+  information, and offers no executable arb. Reopening it needs a new hypothesis — e.g. Kalshi's
+  *macro* families (KXFED, KXCPI, KXPAYROLLS), which are event-driven and plausibly less efficiently
+  priced than a 15-minute BTC coin-flip, and which already have 75,278 quotes and venue-truth labels.
+
