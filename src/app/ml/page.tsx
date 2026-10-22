@@ -88,6 +88,33 @@ function loadObserve(): ObserveReport | null {
     return null;
   }
 }
+type KalshiLane = {
+  builtAt: string; status: string; closedOn: string; reason: string;
+  arb: {
+    byDirection: Record<string, { n: number; medianNet: number; netPositivePct: number }>;
+    medianNetAll: number | null; feeBand: number;
+  };
+  information: {
+    windows: number; labelled: number; aucPm: number | null; aucKalshi: number | null;
+    disagreementMedian: number | null; disagreementOverOneFeePct: number | null;
+  };
+  coverage: { copiesSeen: number; withKalshiQuote: number; crossListPct: number; unverifiedMatches: number } | null;
+  reopenCondition: string;
+};
+
+/**
+ * Second-venue status, written by scripts/kalshi-lane-status.py. Same rule as above: the page
+ * reads the artefact, it never restates a number the script did not measure.
+ */
+function loadKalshi(): KalshiLane | null {
+  const p = join(process.cwd(), "data", "ml", "kalshi-lane.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as KalshiLane;
+  } catch {
+    return null;
+  }
+}
 const tone = (v: number | null): "pos" | "neg" | "neutral" | undefined =>
   v === null || v === undefined ? undefined : v > 0 ? "pos" : v < 0 ? "neg" : "neutral";
 
@@ -98,6 +125,7 @@ export default async function MlPage() {
   // parallel implementation that could drift.
   const cap = await loadCapitalState({ days: 30, botId: ML_BOT });
   const obs = loadObserve();
+  const kal = loadKalshi();
   if (!a) {
     return (
       <div className="space-y-4">
@@ -139,6 +167,40 @@ export default async function MlPage() {
           </p>
         )}
       </div>
+
+      {kal && (
+        <Card title={`Second venue — Kalshi (${kal.status}, ${kal.closedOn})`}>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat
+              label="Arb: complete pair"
+              value={`$${(1 - (kal.arb.medianNetAll ?? 0)).toFixed(4)}`}
+              sub={`cost per $1.00 payout · ${kal.arb.byDirection.A?.netPositivePct ?? 0}% / ${kal.arb.byDirection.B?.netPositivePct ?? 0}% net-positive`}
+              tone="neg"
+            />
+            <Stat
+              label="Information: AUC P(up)"
+              value={`${kal.information.aucPm?.toFixed(4) ?? "—"} / ${kal.information.aucKalshi?.toFixed(4) ?? "—"}`}
+              sub={`Polymarket / Kalshi · ${kal.information.labelled} labelled windows`}
+            />
+            <Stat
+              label="Venue disagreement"
+              value={`${(kal.information.disagreementOverOneFeePct ?? 0).toFixed(1)}%`}
+              sub={`differ by >1 fee · median ${kal.information.disagreementMedian?.toFixed(4) ?? "—"}`}
+            />
+          </div>
+          <p className="text-dim text-sm mt-3 leading-relaxed">
+            Status: {kal.reason}. A complete cross-venue pair costs more than the payout it buys, and
+            Kalshi&apos;s own quote adds nothing to Polymarket&apos;s price at predicting the same
+            outcome. Reopening requires {kal.reopenCondition}.
+          </p>
+          <p className="text-dim text-xs mt-2">
+            Measured {kal.builtAt.slice(0, 19).replace("T", " ")}Z by{" "}
+            <code className="text-xs">scripts/kalshi-lane-status.py</code>
+            {kal.coverage &&
+              ` · copy cross-list coverage ${kal.coverage.crossListPct}% (${kal.coverage.withKalshiQuote}/${kal.coverage.copiesSeen}), ${kal.coverage.unverifiedMatches} unverified matches`}
+          </p>
+        </Card>
+      )}
 
       <Card title={`PnL and capital — ML lane (${ML_BOT}), machinery identical to C-200`}>
         <div className="grid grid-cols-4 gap-3">
