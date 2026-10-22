@@ -49,10 +49,15 @@ const UNFILTERED = process.argv.includes("--unfiltered");
 /** Sample wallets we already track, so the sample is one our lane actually sees. */
 async function sampleWallets(limit: number): Promise<string[]> {
   if (USE_LEADERBOARD) {
-    const data = await venueGetJson(`${VENUE.dataApi}/v1/leaderboard?timePeriod=month&orderBy=PNL&limit=${limit}`);
-    if (!Array.isArray(data)) throw new Error(`unexpected leaderboard shape: ${typeof data}`);
-    return (data as Record<string, unknown>[])
-      .map((r) => String(r.proxyWallet ?? r.address ?? "").toLowerCase())
+    // Data API v1 is retired 2026-10-24 (drafts/data-api-v2-cutover-20261019.md).
+    // v2 differs in three ways, so this is not a route swap: the answer is
+    // wrapped in {data:[...]}, the wallet key is `user_id` (not `proxyWallet`),
+    // and paging is cursor-only -- `offset` is rejected (`invalid_request`).
+    const data = await venueGetJson(`${VENUE.dataApi}/v2/leaderboard?timePeriod=month&orderBy=PNL&limit=${limit}`);
+    const rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : (data as { data?: unknown }).data;
+    if (!Array.isArray(rows)) throw new Error(`unexpected leaderboard shape: ${typeof data}`);
+    return rows
+      .map((r) => String(r.user_id ?? r.proxyWallet ?? r.address ?? "").toLowerCase())
       .filter(Boolean);
   }
   const grouped = await prisma.observedTrade.groupBy({
