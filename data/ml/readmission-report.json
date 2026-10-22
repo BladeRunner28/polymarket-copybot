@@ -1,0 +1,97 @@
+{
+  "builtAt": "2026-10-22T16:31:06Z",
+  "fromVersion": 49,
+  "band": [
+    0.5,
+    0.65
+  ],
+  "split": 0.6,
+  "legs": 16420,
+  "labelled": 15218,
+  "labelStates": {
+    "not_closed_yet": 1096,
+    "outcome_name_not_in_tokens": 46,
+    "closed_without_winner": 60,
+    "resolved_labelled": 15218
+  },
+  "rows": [
+    {
+      "label": "all 0.50-0.65",
+      "n": 15218,
+      "markets": 3657,
+      "edgePerShare": 0.0012,
+      "ci95": [
+        -0.0473,
+        0.0481
+      ],
+      "winRatePct": 56.64,
+      "meanPrice": 0.5664,
+      "top10MarketShareOfPositivePct": 16.41,
+      "netOfFee": {
+        "1c": -0.0088,
+        "2c": -0.0188
+      }
+    },
+    {
+      "label": "in v63 band <0.60",
+      "n": 11307,
+      "markets": 2801,
+      "edgePerShare": 0.0167,
+      "ci95": [
+        -0.0367,
+        0.0737
+      ],
+      "winRatePct": 56.2,
+      "meanPrice": 0.562,
+      "top10MarketShareOfPositivePct": 20.97,
+      "netOfFee": {
+        "1c": 0.0067,
+        "2c": -0.0033
+      }
+    },
+    {
+      "label": "0.60-0.65 (v63 open)",
+      "n": 3911,
+      "markets": 1249,
+      "edgePerShare": -0.0438,
+      "ci95": [
+        -0.1157,
+        0.0234
+      ],
+      "winRatePct": 57.91,
+      "meanPrice": 0.5791,
+      "top10MarketShareOfPositivePct": 17.34,
+      "netOfFee": {
+        "1c": -0.0538,
+        "2c": -0.0638
+      }
+    },
+    {
+      "label": "v63+ subgroup",
+      "n": 355,
+      "markets": 62,
+      "edgePerShare": 0.147,
+      "ci95": [
+        -0.1411,
+        0.3404
+      ],
+      "winRatePct": 70.42,
+      "meanPrice": 0.7042,
+      "top10MarketShareOfPositivePct": 84.52,
+      "netOfFee": {
+        "1c": 0.137,
+        "2c": 0.127
+      }
+    }
+  ],
+  "discovery": {
+    "n": 1886,
+    "edgePerShare": 0.1199
+  },
+  "verdict": "REFUTED",
+  "reasons": [
+    "CI includes zero (lo -0.0473)"
+  ],
+  "feeNote": "edge is GROSS. No single defensible fee law covers this population; the netOfFee block shows a 1c and 2c sensitivity rather than asserting one.",
+  "readOnly": true
+}
