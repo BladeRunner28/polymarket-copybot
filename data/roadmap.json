@@ -3372,6 +3372,45 @@
     "lane-a-gated"
    ],
    "note": "APPROVED 2026-10-21 as the TEST only - its own wording gates the rule change on separate approval ('per-position cap or concurrent-long-shot limit is the next test, with your approval'). HYPOTHESIS: the $100 cap binds on every long-shot Kelly position (= 1.3% of net worth per full loss at 7,831 NW), so a cluster of concurrent long-shots can produce a correlated drawdown the current 20% drawdown gate is too coarse to catch. MEASUREMENT: distribution of concurrent open long-shot positions and of per-position loss as a share of net worth; count days where simulated concurrent full-loss exposure exceeded 5/10/15% of net worth; replay against realized outcomes. DECISION RULE: propose a per-position cap or a concurrent-long-shot limit ONLY if the measured concurrent-full-loss exposure exceeded 10% of net worth on >=1 day in the read window, or a single leg lost >1.3% of net worth twice in 30 days. REFUTATION: if concurrent full-loss exposure never exceeded 10% of net worth, the concentration concern is arithmetically unreachable and the card closes with that null - state it and drop it. DO NOT implement any cap without a second approval; this card authorises measurement only."
+  },
+  {
+   "id": "ml-settlement-venue-truth",
+   "title": "ML observe lane: settle from venue truth (CLOB tokens[].winner), not the last-snapshot price band",
+   "column": "Scheduled",
+   "tags": [
+    "ml",
+    "settlement",
+    "lane-a",
+    "proposed",
+    "measurement"
+   ],
+   "note": "PROPOSED 2026-10-22, Lane A (feeds the promotion gate) - NOT applied. Write-up: drafts/ml-settlement-source-20261022.md. DEFECT: ml-observe-read.py derives outcomes from our own last MarketSnapshot with yesPrice>=0.90 / <=0.10, but collection stops while markets are still mid-priced - measured 201/234 (85.9%) of near-resolution markets have a mid last price, so ~1 in 7 ever settles. LIVE PROOF: 6/6 of the soonest observed markets are closed at the venue with a decisive winner (CLOB 200 OK), while observe-report.json reports settled_observations=0. OutcomeReview CANNOT fix this: it has no marketId/conditionId and keys on paperTradeId, so it only covers acted markets. FIX: observe.market_id -> MarketSnapshot.conditionId (46,227 populated) -> GET clob.polymarket.com/markets/{conditionId} -> tokens[].winner; keep --settlement-source=snapshot and compute both for a week. DECISION RULE: adopt only if conditionId+CLOB coverage >=90% of observed markets AND agreement with the proxy >=95% on the decisive overlap. REFUTATION: proxy stands if coverage <70%, or disagreement >5%, or >20% of observed markets lack a conditionId. EFFECT: n>=400 settled moves from ~early December to ~2026-11-01. Does NOT change the §8 bar and opens no positions. Cost ~2h read-only."
+  },
+  {
+   "id": "kalshi-venue-shadow-zero-pnl",
+   "title": "Step 0 for any Kalshi build: explain Kalshi PnL $0.00 across 721 resolved venue-shadow pairs",
+   "column": "Scheduled",
+   "tags": [
+    "kalshi",
+    "instrument",
+    "step0",
+    "unexplained",
+    "two-lane-b"
+   ],
+   "note": "OPEN 2026-10-22, read-only, ~1h. kalshi-venue-shadow.jsonl holds 1,281 paired rows, 721 resolved. Across those, Kalshi PnL sums to $0.00 while the Polymarket side sums to $3,216.44, and raw kalshiResolved-vs-won agreement is 335/721 (46.5%). NOT YET CALLED A DEFECT: kalshiResolved and won may encode different things (venue resolved vs our side won), which would make the agreement arithmetic meaningless, and $0.00 may be by design if that arm books quotes rather than positions. But a paired arm producing zero PnL over 721 resolutions is the shape of a silent instrument. RULE: no Kalshi lane may be built until one of those two readings is confirmed, because K2's entire premise is that those pairs measure cross-venue edge. Closes as EITHER 'by design, arm books quotes only' OR 'silent instrument, fixed + re-measured'; if the latter, every pair-derived number published so far gets a caveat."
+  },
+  {
+   "id": "kalshi-cross-venue-ml-lane",
+   "title": "Kalshi ML lane: scope done, awaiting K1-vs-K2 decision (K2 = cross-venue mispricing recommended)",
+   "column": "Backlog",
+   "tags": [
+    "kalshi",
+    "ml",
+    "scope",
+    "awaiting-decision",
+    "lane-a"
+   ],
+   "note": "SCOPED 2026-10-22, no code written. Doc: drafts/kalshi-ml-lane-scope-20261022.md. CORRECTION OF RECORD: earlier briefs said Kalshi had no lane; the accurate statement is that no ml-* script READS Kalshi. Six Kalshi cron jobs run (shadow 15m, shadow-report 18:30, venue-shadow 15m, tape 15m, macro 60m, pm-pair 15m) with 195MB tape since 2026-10-12, kalshi-macro-quotes 75,278 quotes / 336 markets / 9.7d across 6 macro families, macro-settled 14 rows carrying venue truth (result + expiration_value), venue-shadow 721 resolved pairs, and 92 Kalshi PaperTrade legs (+$27.82). 'No wallets' was never a blocker - the ML lane is market-only by construction. OPTIONS: K1 Kalshi-only model = blocked on CALENDAR not code (tape 10d vs Polymarket's 99,561 rows/29,686 markets; comparable ~2027-01), do not build now. K2 cross-venue mispricing PM-vs-Kalshi = recommended, ~3.5 dev-days, uses data on disk, and is the only lane where Kalshi adds information rather than another book to lose on. K3 macro calibration already runs with its own pre-registered bar (n>=20 settled/family at >=24h and <=6h) at 14 settled - a wait, not a build. K2 PRE-REGISTRATION: median executable edge must exceed round-trip fees AND >=30% of pairs clear fees AND survive ex-top-10 AND survive excluding pairs above median venue_skew_ms. REFUTATION: if median edge is inside the fee band, <30% clear, edge is carried by <10 pairs, the skew control kills it, or the Step 0 zero-PnL question shows the pairs never measured what they appear to, the lane closes. Kalshi fee model must be verified against the venue, not reused from the Polymarket adapter. NEXT: K1 vs K2 decision + Step 0 authorisation."
   }
  ]
 }
