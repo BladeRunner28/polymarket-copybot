@@ -106,6 +106,61 @@ function fmtRow(band: string, g: any): string {
   return `| ${band} | ${g.n} | $${avg.toFixed(0)} | $${mx.toFixed(0)} | $${g.realized.toFixed(0)} (${g.resolved} res) | $${g.open.toFixed(0)} open |`;
 }
 
+/** Long-shot absolute target (re-baselined 2026-10-21, kelly rec 3): realized <0.20 PnL in the
+ *  trailing 30 days, main lane only. The retired 3-6x ratio target is NOT reproduced here — it
+ *  divided by a $140 pre-Kelly baseline over a different (much longer) sample and produced a
+ *  false FAIL at 8.0x. */
+async function longShot30d() {
+  const d30 = new Date(Date.now() - 30 * DAY);
+  const base = { botId: "BANKROLL_200", isDemo: false, entryPrice: { lt: 0.2 }, decision: { ruleSetVersion: { gte: 49 }, reasonsJson: LANE } };
+  const rows = await prisma.paperTrade.findMany({
+    where: { ...base, status: { in: ["closed", "resolved"] }, OR: [{ resolvedAt: { gte: d30 } }, { closedAt: { gte: d30 } }] },
+    select: { realizedPnl: true },
+  });
+  // The same 30 days read by OPEN date (the cohort opened inside the window). Live: $2,875 on 24 copies
+  // settled in 30d vs $624 on the 19 copies opened in 30d — the difference is copies opened BEFORE the
+  // window that resolved inside it. The target says "per 30 days" without naming a basis, so both print.
+  const cohort = await prisma.paperTrade.findMany({
+    where: { ...base, openedAt: { gte: d30 } },
+    select: { realizedPnl: true, status: true },
+  });
+  return {
+    n: rows.length,
+    realized: rows.reduce((a, t) => a + (t.realizedPnl ?? 0), 0),
+    cohortN: cohort.length,
+    cohortSettled: cohort.filter((t) => t.status === "closed" || t.status === "resolved").length,
+    cohortRealized: cohort.reduce((a, t) => a + (t.realizedPnl ?? 0), 0),
+  };
+}
+
+/**
+ * §6 verdict fields (pre-registered).
+ *
+ * Two instrument defects fixed 2026-10-22:
+ *   * the FINAL block printed the LITERAL strings "concentration ✓/✗ above | mid-band ≈0 ✓/✗ above"
+ *     — the verdicts were never rendered, so all 14 FINAL drafts (2026-10-09 → 2026-10-22) carried a
+ *     verdict block with no verdict in it;
+ *   * the mid-band test passed on an empty denominator: 0/0 satisfied `midHighN <= max(2, n*0.1)` and
+ *     printed "≈0 ✓ (zero-edge skips holding)", i.e. an empty window read as a clean pass. Zero
+ *     copies is now UNDETERMINED, never ✓.
+ */
+export function verdictFields(totalN: number, midHighN: number): { concentration: string; midBand: string } {
+  if (totalN === 0) {
+    return {
+      concentration: "UNDETERMINED — 0 main-lane copies in the window (no denominator, so no pass)",
+      midBand: "UNDETERMINED — 0 main-lane copies in the window",
+    };
+  }
+  const lowN = totalN - midHighN;
+  return {
+    concentration:
+      `${lowN}/${totalN} copies in <0.40` + (midHighN === 0 ? ` ✓ (mid/high ${midHighN})` : ` ✗ (mid/high ${midHighN})`),
+    midBand:
+      `${midHighN}/${totalN}` +
+      (midHighN <= Math.max(2, totalN * 0.1) ? " ✓ (zero-edge skips holding)" : " ✗ ABOVE expected ≈0 — inspect"),
+  };
+}
+
 async function main() {
   const [st, wt, bl, kl] = await Promise.all([state(), windowTrades(), baseline(), kellyLog()]);
   const regimeDays = Math.floor((now.getTime() - REGIME_V49_MS) / DAY) + 1;
@@ -125,16 +180,30 @@ async function main() {
     where: { ruleSetVersion: { gte: 49 }, paperTrades: { some: { botId: "BANKROLL_200", openedAt: { gte: d1 } } } },
     include: { paperTrades: { where: { botId: "BANKROLL_200", openedAt: { gte: d1 } } } },
   });
-  const opened: { simulatedPositionSize: number; isLane: boolean }[] = [];
+  const opened: { simulatedPositionSize: number; isLane: boolean; realizedPnl: number | null; settled: boolean }[] = [];
   for (const dj of djs24) {
     const isLane = (dj.reasonsJson || "").includes("Short-TTR lane");
-    for (const t of dj.paperTrades) opened.push({ simulatedPositionSize: t.simulatedPositionSize, isLane });
+    for (const t of dj.paperTrades)
+      opened.push({
+        simulatedPositionSize: t.simulatedPositionSize,
+        isLane,
+        realizedPnl: t.realizedPnl,
+        settled: t.status === "closed" || t.status === "resolved",
+      });
   }
   const realizedRows = await prisma.paperTrade.findMany({ where: { botId: "BANKROLL_200", status: { in: ["closed", "resolved"] }, OR: [{ resolvedAt: { gte: d1 } }, { closedAt: { gte: d1 } }] }, select: { realizedPnl: true } });
   const realized24 = realizedRows.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const main24 = opened.filter((t) => !t.isLane).length;
   const lane24 = opened.length - main24;
-  out.push("**Last 24h:** " + opened.length + " Kelly-regime copies opened (" + main24 + " main-lane, " + lane24 + " lane) | realized $" + realized24.toFixed(2) + " | $" + opened.reduce((a, t) => a + t.simulatedPositionSize, 0).toFixed(0) + " booked");
+  // The $ figure was labelled as belonging to the copies just listed, but it summed every trade that
+  // SETTLED in the window, whatever its open date (measured 2026-10-22: $52.34 across 8 settled trades
+  // vs $82.49 attributable to the 9 opened copies). Both are now printed with their own entity.
+  const settledOpened = opened.filter((t) => t.settled);
+  const realizedOfOpened = settledOpened.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
+  out.push(
+    "**Last 24h:** " + opened.length + " copies opened (" + main24 + " main-lane, " + lane24 + " lane) | $" + opened.reduce((a, t) => a + t.simulatedPositionSize, 0).toFixed(0) + " booked | realized $" + realizedOfOpened.toFixed(2) + " on the " + settledOpened.length + " of them already settled"
+  );
+  out.push("**Settled in the last 24h (any open date):** realized $" + realized24.toFixed(2) + " across " + realizedRows.length + " trades");
   if (kl) {
     const sz = Object.values(kl.sized).reduce((a: number, b: number) => a + b, 0);
     const sk = Object.values(kl.skipped).reduce((a: number, b: number) => a + b, 0);
@@ -149,9 +218,10 @@ async function main() {
   for (const b of BANDS) out.push(fmtRow(b, wt.main[b]));
   const totalN = BANDS.reduce((a, b) => a + wt.main[b].n, 0);
   const midHighN = wt.main["0.40-0.60"].n + wt.main["0.60-0.80"].n + wt.main[">=0.80"].n;
+  const verdict = verdictFields(totalN, midHighN);
   out.push("");
   out.push("**Lane (short-TTR, Kelly-exempt):** " + BANDS.reduce((a, b) => a + wt.lane[b].n, 0) + " copies, realized $" + BANDS.reduce((a, b) => a + wt.lane[b].realized, 0).toFixed(0));
-  out.push("**Target check:** mid/high-band main-lane copies " + midHighN + "/" + totalN + (midHighN <= Math.max(2, totalN * 0.1) ? " → ≈0 ✓ (zero-edge skips holding)" : " → ABOVE expected ≈0 ✗ — inspect"));
+  out.push("**Target check (mid/high-band ≈0):** " + verdict.midBand);
   out.push("");
   // --- weekly ---
   if (isWeekly || mode === "weekly") {
@@ -173,9 +243,17 @@ async function main() {
     out.push("| band | n | realized |");
     out.push("|---|---|---|");
     for (const b of BANDS) out.push(`| ${b} | ${bl[b].n} | $${bl[b].realized.toFixed(0)} |`);
-    out.push("Baseline total realized $" + blTot.toFixed(0) + " | Kelly-window main-lane realized $" + cur.toFixed(0));
-    out.push("Long-shot (<0.20) realized: baseline $" + bl["<0.20"].realized.toFixed(0) + " → window $" + wt.main["<0.20"].realized.toFixed(0) + (bl["<0.20"].realized !== 0 ? " (" + ((wt.main["<0.20"].realized / bl["<0.20"].realized)).toFixed(1) + "x)" : " (baseline 0 — ratio n/a)"));
-    out.push("**Verdict fields (pre-registered §6):** concentration ✓/✗ above | mid-band ≈0 ✓/✗ above | drawdown " + (st.dd * 100).toFixed(1) + "% vs 20% gate " + (st.dd <= 0.2 ? "✓" : "✗"));
+    const blN = Object.values(bl).reduce((a: any, b: any) => a + b.n, 0);
+    out.push("Baseline total realized $" + blTot.toFixed(0) + " on " + blN + " pre-Kelly copies | Kelly-window main-lane realized $" + cur.toFixed(0) + " on " + totalN + " copies — raw totals, different periods and sample sizes (not a like-for-like rate)");
+    const ls = await longShot30d();
+    out.push(
+      "<0.20 long-shot vs the ABSOLUTE target (re-baselined 2026-10-21, kelly rec 3), trailing 30d by SETTLE date: realized $" +
+        ls.realized.toFixed(0) + " on n=" + ls.n + " vs $2,500 → " +
+        (ls.n === 0 ? "UNDETERMINED (0 settled copies in 30d)" : ls.realized >= 2500 ? "✓ +$" + (ls.realized - 2500).toFixed(0) : "✗ short $" + Math.abs(ls.realized - 2500).toFixed(0)) +
+        " · all-time in regime $" + wt.main["<0.20"].realized.toFixed(0) + " on n=" + wt.main["<0.20"].n +
+        " · same 30d by OPEN date (cohort opened in-window, " + ls.cohortSettled + "/" + ls.cohortN + " settled): $" + ls.cohortRealized.toFixed(0) + " — different cohort, NOT the 30-day PnL rate"
+    );
+    out.push("**Verdict fields (pre-registered §6):** concentration " + verdict.concentration + " | mid-band ≈0 " + verdict.midBand + " | drawdown " + (st.dd * 100).toFixed(1) + "% vs 20% gate " + (st.dd <= 0.2 ? "✓" : "✗"));
     out.push("CAVEAT (design §6): λ̂ is a premium measure, not PnL — check band λ̂ vs realized alignment at the Sep 15 refit; mid-band skip is by zero-edge rule, not calibration sight.");
     const doc = out.join("\n");
     const fp = join(__dirname, "..", "drafts", `kelly-final-read-${now.toISOString().slice(0, 10)}.md`);
@@ -185,4 +263,7 @@ async function main() {
   console.log(out.join("\n"));
 }
 
-main().catch((e) => { console.error("kelly-window-report FAILED:", e); process.exit(1); }).finally(() => prisma.$disconnect());
+// Guarded so verdictFields() can be imported by a fixture test without running the report.
+if (require.main === module) {
+  main().catch((e) => { console.error("kelly-window-report FAILED:", e); process.exit(1); }).finally(() => prisma.$disconnect());
+}
