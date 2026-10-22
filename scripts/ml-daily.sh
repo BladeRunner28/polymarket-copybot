@@ -41,6 +41,16 @@ step "export-training"   npx tsx scripts/export-training-data.ts
 step "ml1-fit"           npx tsx scripts/ml1-fit-candidate.ts
 step "ml1-gate"          npx tsx scripts/ml1-gate-read.ts
 
+# The /ml page reads data/ml/dashboard.json. Nothing refreshed it on a schedule before this, so
+# it sat two days stale while this job still reported ok -- the page kept showing 10-20 numbers as
+# if current. It only reads committed artefacts, so it runs LAST, after the export above has
+# rewritten them, and its failure must not be silent: the step rc lands in the ledger like any other.
+# market-candidates.parquet had NO scheduled producer either, so the page's band economics were
+# 41h old while this job reported ok. Measured 2026-10-22: 239.6s, 120,884 candidates -> 99,561
+# gated. It must run BEFORE dashboard-artifacts, which reads the parquet it writes.
+step "market-candidates" .venv-ml/bin/python scripts/ml-market-candidates.py
+step "dashboard-artifacts" .venv-ml/bin/python scripts/ml-dashboard-artifacts.py
+
 # ---- facts for the ledger + report (never inferred, always read back from artifacts) ----
 export_rows=0; term_pct=0; sent_rows=0; gate_line="none"; fit_line="none"
 if [ -f training_data.csv ]; then

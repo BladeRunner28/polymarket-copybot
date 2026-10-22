@@ -31,6 +31,7 @@ type Band = {
 type SubBand = { band: string; rows: number; markets: number; roiNetPct: number; ciLoPct: number | null; ciHiPct: number | null; clearsZero: boolean };
 type Art = {
   generatedAt: string;
+  sources?: Record<string, { path: string; role?: string; exists: boolean; mtimeZ: string | null; ageHours: number | null }>;
   lane: { state: string; headline: string; detail: string; alphaSource: string };
   contrast: { withWalletPct: number; withoutWalletPct: number; note: string };
   marketOnly: { candidates: number; gated: number; bands: Band[] };
@@ -119,6 +120,24 @@ export default async function MlPage() {
           Generated {a.generatedAt.slice(0, 19).replace("T", " ")}Z by{" "}
           <code className="text-xs">scripts/ml-dashboard-artifacts.py</code>
         </p>
+        {/* Data age, not just build age: a fresh rebuild over a stale parquet would otherwise
+            read as current. Each entry is the mtime of the artefact the numbers come from. */}
+        {a.sources && (
+          <p className="text-dim text-xs mt-1">
+            input data:{" "}
+            {Object.entries(a.sources).map(([k, s], i) => (
+              <span key={k}>
+                {i > 0 && " · "}
+                {k}{" "}
+                {s.ageHours === null
+                  ? "MISSING"
+                  : s.role === "study"
+                    ? `study ${s.mtimeZ?.slice(0, 10) ?? ""}`   /* frozen held-out artefact: date is provenance, not staleness */
+                    : s.ageHours < 24 ? `${Math.round(s.ageHours)}h` : `${(s.ageHours / 24).toFixed(1)}d`}
+              </span>
+            ))}
+          </p>
+        )}
       </div>
 
       <Card title={`PnL and capital — ML lane (${ML_BOT}), machinery identical to C-200`}>

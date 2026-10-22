@@ -180,9 +180,38 @@ def veto():
             "justified": False}
 
 
+def source_freshness():
+    """When each INPUT was last measured, so the page can show data age, not just build age.
+
+    generatedAt alone only says when this JSON was written: a fresh rebuild over a week-old
+    parquet would still read as current. These are the mtimes of the artefacts the numbers are
+    actually derived from, so a stale input cannot hide behind a new build.
+    """
+    # role matters: "rolling" inputs SHOULD advance daily (a stale one is a defect), while a
+    # "study" artefact is the frozen held-out output of a closed experiment -- re-running it would
+    # change a historical result, so its age is provenance, not staleness. predictions_test.parquet
+    # comes from ml-train.py, the WALLET-conditioned model, which is NOT part of the market-only
+    # daily chain; it is deliberately not regenerated here.
+    out = {}
+    for key, path, role in (("marketCandidates", "data/ml/market-candidates.parquet", "rolling"),
+                            ("paperTrades", DB, "rolling"),
+                            ("predictionsTest", "data/ml/predictions_test.parquet", "study")):
+        try:
+            m = os.path.getmtime(path)
+        except OSError:
+            out[key] = {"path": path, "role": role, "exists": False, "mtimeZ": None, "ageHours": None}
+            continue
+        dt = datetime.fromtimestamp(m, tz=timezone.utc)
+        out[key] = {"path": path, "role": role, "exists": True,
+                    "mtimeZ": dt.isoformat().replace("+00:00", "Z"),
+                    "ageHours": round((datetime.now(timezone.utc) - dt).total_seconds() / 3600.0, 1)}
+    return out
+
+
 def main():
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "sources": source_freshness(),
         "lane": {
             "state": "CLOSED",
             "headline": "Market-only prediction does not pay",
