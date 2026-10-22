@@ -1,0 +1,128 @@
+{
+  "builtAt": "2026-10-22T16:58:17Z",
+  "coveragePct": 99.68,
+  "markets": 4040,
+  "marketsWithFee": 4027,
+  "legs": 12710,
+  "notionalUsd": 137379.97,
+  "feeCurrentUsd": 5024.02,
+  "feeVenueUsd": 4996.97,
+  "deltaUsd": -27.05,
+  "signFlips": 2,
+  "flips": [
+    {
+      "bot": "BANKROLL_200",
+      "market": "will-spd-win-between-7-and-9-of-all-valid-second-votes-sachsen-anhalt",
+      "price": 0.405,
+      "shares": 12.31,
+      "pnl": 0.25,
+      "feeCurrent": 0.2374,
+      "feeVenue": 0.2967,
+      "netCurrent": 0.0126,
+      "netVenue": -0.0467
+    },
+    {
+      "bot": "BANKROLL_200",
+      "market": "will-left-party-v-win-between-7-and-9-of-all-valid-votes-20260812172636443",
+      "price": 0.5,
+      "shares": 2.48,
+      "pnl": 0.05,
+      "feeCurrent": 0.0496,
+      "feeVenue": 0.062,
+      "netCurrent": 0.0004,
+      "netVenue": -0.012
+    }
+  ],
+  "baseFeeValues": {
+    "1000.0": 12392,
+    "0.0": 318
+  },
+  "skipped": {
+    "no_fee_field": 40
+  },
+  "perBot": {
+    "STANDARD": {
+      "legs": 10204,
+      "deltaUsd": -20.87
+    },
+    "BANKROLL_200": {
+      "legs": 2506,
+      "deltaUsd": -6.18
+    }
+  },
+  "perCategory": {
+    "other": {
+      "legs": 2204,
+      "rateOurs": 0.05,
+      "rateDocs": 0.05,
+      "feeOursUsd": 561.77,
+      "feeDocsUsd": 573.21,
+      "deltaUsd": 11.44
+    },
+    "sports": {
+      "legs": 6848,
+      "rateOurs": 0.05,
+      "rateDocs": 0.05,
+      "feeOursUsd": 1760.11,
+      "feeDocsUsd": 1760.59,
+      "deltaUsd": 0.48
+    },
+    "economics": {
+      "legs": 382,
+      "rateOurs": 0.05,
+      "rateDocs": 0.05,
+      "feeOursUsd": 74.3,
+      "feeDocsUsd": 74.3,
+      "deltaUsd": 0.0
+    },
+    "tech": {
+      "legs": 263,
+      "rateOurs": 0.05,
+      "rateDocs": 0.04,
+      "feeOursUsd": 71.93,
+      "feeDocsUsd": 57.54,
+      "deltaUsd": -14.39
+    },
+    "culture": {
+      "legs": 150,
+      "rateOurs": 0.05,
+      "rateDocs": 0.05,
+      "feeOursUsd": 24.06,
+      "feeDocsUsd": 24.06,
+      "deltaUsd": 0.0
+    },
+    "crypto": {
+      "legs": 309,
+      "rateOurs": 0.07,
+      "rateDocs": 0.07,
+      "feeOursUsd": 82.45,
+      "feeDocsUsd": 82.45,
+      "deltaUsd": 0.0
+    },
+    "weather": {
+      "legs": 1481,
+      "rateOurs": 0.05,
+      "rateDocs": 0.05,
+      "feeOursUsd": 267.55,
+      "feeDocsUsd": 267.55,
+      "deltaUsd": 0.0
+    },
+    "politics": {
+      "legs": 1073,
+      "rateOurs": 0.04,
+      "rateDocs": 0.04,
+      "feeOursUsd": 268.33,
+      "feeDocsUsd": 247.96,
+      "deltaUsd": -20.38
+    }
+  },
+  "lawArtifactFeeUsd": 4694.67,
+  "lawSource": "https://docs.polymarket.com/trading/fees.md \u2014 fee = C x feeRate x p x (1-p); verified against the docs 100-share Crypto table (p=0.50 -> $1.75 = 100*0.07*0.25)",
+  "verdict": "ADOPT",
+  "reason": "aggregate delta $-27.05 >= $25 AND 2 leg(s) flip net sign",
+  "bars": {
+    "minCoveragePct": 90.0,
+    "minDeltaUsd": 25.0
+  },
+  "readOnly": true
+}

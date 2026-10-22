@@ -42,11 +42,17 @@ WHAT IT RECORDS (one JSONL row per sample, data/kalshi-pm-btc-pair.jsonl)
     (higher) Kalshi ask and `cost_optimistic`/`net_optimistic` at the better one. The gate is
     evaluated on the conservative pair, so a pass cannot be an artefact of snapshot choice.
 
-FEE SCHEDULE — PINNED 2026-10-13 from the venue's own structured fields, not from a constant
-  * Polymarket: Gamma publishes `feeType=crypto_fees_v2` and
-    `feeSchedule={rate:0.07, exponent:1, takerOnly:true, rebateRate:0.2}` for this market, and
-    `scripts/bt-fee-maker-calibration` (archive-measured, $1.21B of fees) established the law
-    `taker fee = rate x shares x min(p, 1-p)` with makers at $0. So 0.07 * min(p,1-p) per share.
+FEE SCHEDULE — CORRECTED 2026-10-22 against Polymarket's own documentation
+  * Polymarket: `fee = C x feeRate x p x (1 - p)`, per-taker, makers never charged
+    (https://docs.polymarket.com/trading/fees.md). Verified against the docs' own 100-share
+    Crypto table: p=0.50 -> $1.75, and 100 * 0.07 * 0.50 * 0.50 = $1.75 exactly. Rates by
+    category: crypto 0.07, sports 0.05, politics/finance/tech/mentions 0.04,
+    economics/culture/weather/other 0.05, geopolitics 0.
+    THIS FILE USED TO SAY `min(p, 1-p)`, citing an archive calibration to `bt-fee-maker-
+    calibration`. That was wrong: min(p,1-p) returns $3.50 for the same 100-share trade above,
+    exactly 2x the documented $1.75. Every `pairs.*.net` written before 2026-10-22 therefore
+    carries an OVERSTATED Polymarket fee, i.e. a pair looked slightly worse than it was. The
+    correction does not rescue the cross-venue arb read (the ~12c gap is two spreads, not fees).
     TRAP: `takerBaseFee`/`makerBaseFee`/CLOB `/fee-rate` are a legacy constant 1000 on ~85% of
     markets regardless of schedule — pricing base/1e4 would charge 0.10/share here. Not used.
   * Kalshi: taker 0.07 * P * (1-P) per contract (repo constant `KALSHI_FEE_RATE`, published
@@ -112,7 +118,13 @@ def iso(ts):
 
 
 def pm_fee(price):
-    return PM_FEE_RATE * min(price, 1.0 - price)
+    # Polymarket's documented law is fee = C x feeRate x p x (1-p)
+    # (https://docs.polymarket.com/trading/fees.md, fetched 2026-10-22), verified against the docs'
+    # own 100-share Crypto table: p=0.50 -> $1.75 = 100 * 0.07 * 0.25. The min(p,1-p) law this
+    # function used before returned $3.50 for the same trade -- exactly 2x too high at the
+    # midpoint, and it made every pair's `net` look more negative than it was. Corrected here;
+    # historical rows in the tape carry the old, overstated PM fee and the old pm_law string.
+    return PM_FEE_RATE * price * (1.0 - price)
 
 
 def kalshi_fee(price):
@@ -279,9 +291,10 @@ def sample(bucket, depth):
         "read_skew_ms": skew_ms,
         "venue_skew_ms": venue_skew,
         "pm": pm, "kalshi": kal,
-        "fee_model": {"pm_rate": PM_FEE_RATE, "pm_law": "rate*min(p,1-p) taker, maker 0",
+        "fee_model": {"pm_rate": PM_FEE_RATE, "pm_law": "rate*p*(1-p) taker, maker 0",
                       "kalshi_rate": KALSHI_FEE_RATE, "kalshi_law": "rate*p*(1-p) taker, maker 0",
-                      "pm_feeType": "crypto_fees_v2"},
+                      "pm_feeType": "crypto_fees_v2",
+                      "source": "docs.polymarket.com/trading/fees.md (2026-10-22)"},
         "pairs": {},
     }
     legs = {
