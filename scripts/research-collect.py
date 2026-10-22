@@ -218,8 +218,24 @@ def bot_facts(db: str, days: int) -> list[str]:
             cols_sel = [c for c in ("date", "paperPnl", "compoundingPnl", "totalCapital") if c in cols]
             rows = cur.execute(
                 f"SELECT {', '.join(cols_sel)} FROM DailyReport ORDER BY date DESC LIMIT 5").fetchall()
-            out.append("- last daily reports: " + "; ".join(
-                " ".join(str(x) for x in r) for r in rows))
+
+            def _labelled(r: tuple) -> str:
+                """Label every value: paperPnl is the STANDARD lane, compoundingPnl is C-200.
+
+                Printed bare (2026-10-21 27.44 -12.06) the two PnL columns are
+                indistinguishable, and a reader cannot tell which lane moved or which
+                number is which -- a silent ambiguity in a fact sheet the agent is told
+                to trust. src/lib/report.ts:411-414 writes stdPnlToday -> paperPnl and
+                cmpPnlToday -> compoundingPnl, so the labels are the lane names.
+                """
+                labels = {"date": "", "paperPnl": "STANDARD", "compoundingPnl": "C-200",
+                          "totalCapital": "capital"}
+                return " ".join(
+                    str(v) if name == "date" else f"{labels.get(name, name)} {v}"
+                    for name, v in zip(cols_sel, r))
+
+            out.append("- last daily reports (lane-labelled, date STANDARD$ C-200$): " + "; ".join(
+                _labelled(r) for r in rows))
         except Exception as e:  # noqa: BLE001
             out.append(f"- DailyReport read FAILED: {e}")
 
