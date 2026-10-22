@@ -3377,15 +3377,18 @@
     {
       "id": "ml-settlement-venue-truth",
       "title": "ML observe lane: settle from venue truth (CLOB tokens[].winner), not the last-snapshot price band",
-      "column": "Scheduled",
+      "column": "Done",
       "tags": [
-        "ml",
-        "settlement",
+        "applied",
+        "done",
         "lane-a",
+        "measurement",
+        "ml",
         "proposed",
-        "measurement"
+        "settlement",
+        "verified"
       ],
-      "note": "PROPOSED 2026-10-22, Lane A (feeds the promotion gate) - NOT applied. Write-up: drafts/ml-settlement-source-20261022.md. DEFECT: ml-observe-read.py derives outcomes from our own last MarketSnapshot with yesPrice>=0.90 / <=0.10, but collection stops while markets are still mid-priced - measured 201/234 (85.9%) of near-resolution markets have a mid last price, so ~1 in 7 ever settles. LIVE PROOF: 6/6 of the soonest observed markets are closed at the venue with a decisive winner (CLOB 200 OK), while observe-report.json reports settled_observations=0. OutcomeReview CANNOT fix this: it has no marketId/conditionId and keys on paperTradeId, so it only covers acted markets. FIX: observe.market_id -> MarketSnapshot.conditionId (46,227 populated) -> GET clob.polymarket.com/markets/{conditionId} -> tokens[].winner; keep --settlement-source=snapshot and compute both for a week. DECISION RULE: adopt only if conditionId+CLOB coverage >=90% of observed markets AND agreement with the proxy >=95% on the decisive overlap. REFUTATION: proxy stands if coverage <70%, or disagreement >5%, or >20% of observed markets lack a conditionId. EFFECT: n>=400 settled moves from ~early December to ~2026-11-01. Does NOT change the \u00a78 bar and opens no positions. Cost ~2h read-only."
+      "note": "PROPOSED 2026-10-22, Lane A (feeds the promotion gate) - NOT applied. Write-up: drafts/ml-settlement-source-20261022.md. DEFECT: ml-observe-read.py derives outcomes from our own last MarketSnapshot with yesPrice>=0.90 / <=0.10, but collection stops while markets are still mid-priced - measured 201/234 (85.9%) of near-resolution markets have a mid last price, so ~1 in 7 ever settles. LIVE PROOF: 6/6 of the soonest observed markets are closed at the venue with a decisive winner (CLOB 200 OK), while observe-report.json reports settled_observations=0. OutcomeReview CANNOT fix this: it has no marketId/conditionId and keys on paperTradeId, so it only covers acted markets. FIX: observe.market_id -> MarketSnapshot.conditionId (46,227 populated) -> GET clob.polymarket.com/markets/{conditionId} -> tokens[].winner; keep --settlement-source=snapshot and compute both for a week. DECISION RULE: adopt only if conditionId+CLOB coverage >=90% of observed markets AND agreement with the proxy >=95% on the decisive overlap. REFUTATION: proxy stands if coverage <70%, or disagreement >5%, or >20% of observed markets lack a conditionId. EFFECT: n>=400 settled moves from ~early December to ~2026-11-01. Does NOT change the \u00a78 bar and opens no positions. Cost ~2h read-only.\n\n--- APPLIED AND VERIFIED 2026-10-22 (approved by user). ml-observe-read.py settles from CLOB tokens[].winner by default; --settlement-source=snapshot and --no-venue-fetch are both tested rollbacks. Result: venue settles 224 observations across 72 markets, the old proxy settles 0, coverage 100% (85/85 conditionId, 85/85 CLOB record), 13 markets not_closed_yet. Every run still computes BOTH sources and reports them side by side; observe-report.json now carries a settlement block and /ml renders the source plus both counts. BUG SHIPPED AND CAUGHT SAME DAY: y was 1 if outcome=='Yes', which marks every named-outcome market (Over/Under, team names) as NO regardless of the winner -- cache gave it away at 63 NO/9 YES, corrected to tokens[0].winner, now 36/36. Two published figures corrected: baseline net ROI +7.982% -> -3.390% (the positive was live on /ml about 2 minutes) and direction agreement 45.8% -> 55.6% (the 'below a coin flip' claim is retracted). Unchanged finding: the last snapshot sits a median 0.075 from 0.50 where the band rule needs 0.40, so it carries almost no resolution information. Cache carries a CACHE_MAPPING tag so a future mapping change is refetched, never trusted. Also split the zero-test path out of NOT_ESTABLISHED: 224 settled but <60/bucket is ACCUMULATING, not a failed test."
     },
     {
       "id": "kalshi-venue-shadow-zero-pnl",
