@@ -1,0 +1,54 @@
+{
+  "builtAt": "2026-10-22T16:09:54Z",
+  "observations": 252,
+  "markets": 85,
+  "coverage": {
+    "conditionIdPresent": 85,
+    "conditionIdPct": 100.0,
+    "clobRetrieved": 85,
+    "clobRetrievedPct": 100.0,
+    "venueDecisive": 72,
+    "venueDecisivePct": 84.71,
+    "notes": {
+      "not_closed_yet": 13
+    }
+  },
+  "agreement": {
+    "overlap": 0,
+    "agree": 0,
+    "agreePct": null,
+    "disagreements": []
+  },
+  "recovery": {
+    "venueSettledProxyMissedMarkets": 72,
+    "venueSettledProxyMissedObservations": 224,
+    "proxySettledVenueQuietMarkets": 0,
+    "proxySettledVenueQuietObservations": 0
+  },
+  "settledObservations": {
+    "proxy": 0,
+    "venue": 224,
+    "ratio": null
+  },
+  "postHocDirectionCheck": {
+    "note": "The pre-registered agreement clause is unmeasurable when the proxy settles nothing (overlap 0). This substitute is POST-HOC, chosen after seeing that. It asks whether the old source carries any signal worth preserving, so it can only make the switch safer, and it is reported rather than used to declare the verdict.",
+    "n": 72,
+    "agree": 33,
+    "agreePct": 45.83,
+    "coinFlipPct": 50.0,
+    "medianAbsDeviationFromHalf": 0.075,
+    "bandRuleNeeds": 0.4
+  },
+  "target": 400,
+  "verdict": "INSUFFICIENT",
+  "reasons": [
+    "coverage or agreement under the adopt bar but above the refute floor"
+  ],
+  "bars": {
+    "coverageMin": 0.9,
+    "agreeMin": 0.95,
+    "coverageRefute": 0.7,
+    "disagreeRefute": 0.05,
+    "noConditionIdRefute": 0.2
+  }
+}

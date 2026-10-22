@@ -126,3 +126,60 @@ computed and reported for a week before the switch is trusted.
 - Venue resolution also removes a small amount of information the proxy had: the proxy could in
   principle flag a market that trades to 0.97 while still formally open. That case is rare and is
   worth reporting as a divergence rather than silently preferring either source.
+
+---
+
+# MEASURED 2026-10-22 — `scripts/ml-settlement-coverage.py`
+
+`data/ml/settlement-coverage.json`. Read-only, all 85 observed markets, no switch applied.
+
+## Coverage — passes the adopt bar outright
+
+- **conditionId present: 85/85 (100 %)**
+- **CLOB record retrieved: 85/85 (100 %)**
+- venue-decisive winner: **72/85 (84.7 %)**; the other 13 report `not_closed_yet`
+
+## What it recovers
+
+- **venue settled, proxy missed: 72 markets / 224 observations**
+- proxy settled, venue quiet: **0 markets / 0 observations**
+- settled observations: **proxy 0 → venue 224**
+
+## Agreement — my rule was mis-specified
+
+The pre-registered agreement clause ("≥ 95 % on the decisive overlap") is **unmeasurable here**:
+the overlap is **0**, because the proxy settles nothing, and there is nothing to agree with. The
+clause silently presupposed that the old source would sometimes be decisive. It never is.
+
+## Post-hoc substitute, labelled as post-hoc
+
+Chosen after seeing the empty overlap, so it is reported and **not** used to declare the verdict:
+for the 72 venue-resolved markets, does the last snapshot price at least lean the right way?
+**33/72 = 45.8 %** — below a coin flip. Median `|last price − 0.50|` is **0.075**, against the
+**0.40** the band rule needs.
+
+That is the sharpest finding of the whole exercise. The last snapshot is not "a price taken slightly
+too early near resolution"; it is a price taken while the market is still essentially 50/50. The
+derivation was not conservative, it was reading noise — which is why `settled_observations` sat at 0
+while 224 observations were demonstrably settled at the venue.
+
+## Verdict under the rule as written
+
+**INSUFFICIENT** — coverage 100 % clears the 90 % bar, but the agreement clause cannot be satisfied
+by construction, so neither ADOPT nor any REFUTED condition triggers.
+
+## Recommendation
+
+**Switch anyway, on your approval.** Every substantive indicator is one-directional: coverage is
+100 %, 224 settled observations appear immediately, there is not one market where the proxy settles
+and the venue disagrees, and the post-hoc check shows the old source has no signal worth preserving.
+The rule's letter blocks this only through a clause I wrote badly. That is my error to own, not
+evidence against the switch — but it is Lane A, so the decision is yours.
+
+## Instrument correction made while measuring
+
+The first run reported 13 markets as `closed_without_winner`. They are **`not_closed_yet`** — my
+error key conflated "closed with no winner" and "still trading", which is exactly the kind of label
+that makes a coverage report lie about itself. Fixed in the script; the artefact now distinguishes
+them.
+
