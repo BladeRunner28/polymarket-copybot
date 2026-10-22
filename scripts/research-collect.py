@@ -255,9 +255,23 @@ def polymarket_snapshot() -> list[str]:
     return out
 
 
+KALSHI_CLOSE_WINDOW_S = 2 * 86400
+
+
 def kalshi_snapshot() -> list[str]:
+    """The closing-soon board, NOT the newest listings.
+
+    `?limit=200&status=open` with no close filter returns the newest 200 LISTINGS — parlay
+    legs and freshly-created templates — where every volume field reads 0. That is a silent
+    zero that reads like a quiet venue: measured 2026-10-22, 200/200 rows at 0, while the
+    same endpoint under a 2-day close window returned $267,000 of summed volume on 18/200
+    nonzero rows. So this block asks the close window and prints how many rows are nonzero,
+    which makes a genuine zero visible as `0/200` instead of an unexplained `0`.
+    """
+    now = int(time.time())
     data, err = fetch_json(
-        "https://api.elections.kalshi.com/trade-api/v2/markets?limit=200&status=open")
+        "https://api.elections.kalshi.com/trade-api/v2/markets?limit=200&status=open"
+        f"&min_close_ts={now}&max_close_ts={now + KALSHI_CLOSE_WINDOW_S}")
     if data is None:
         return [f"- **SOURCE FAILED — Kalshi**: {err}"]
     mk = data.get("markets", data if isinstance(data, list) else [])
@@ -274,8 +288,9 @@ def kalshi_snapshot() -> list[str]:
         return 0.0
 
     vol = sum(vol_of(m) for m in mk)
-    out = [f"- Kalshi: {len(mk)} open markets on the first page, summed volume/OI {vol:,.0f} "
-           f"(fixed-point fields)"]
+    nonzero = sum(1 for m in mk if vol_of(m) > 0)
+    out = [f"- Kalshi: {len(mk)} open markets closing within 48h, summed 24h volume/OI "
+           f"{vol:,.0f} on {nonzero}/{len(mk)} nonzero rows (close-window, not newest-listing)"]
     top = sorted(mk, key=vol_of, reverse=True)[:6]
     for m in top:
         t = (m.get("title") or m.get("ticker") or "")[:76]
