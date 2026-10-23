@@ -47,16 +47,45 @@ export interface CapitalState {
   liveTotalCapital: number;
   /** principal + realized — finished trades only, the basis of the chart/table. */
   bookedCapital: number;
+  /** Non-null when data/capital-ledger.json exists but could not be read. */
+  ledgerError: string | null;
+}
+
+export interface CapitalLedgerRead {
+  entries: CapitalLedgerEntry[];
+  /**
+   * Non-null when the ledger could not be READ as a ledger (missing file, invalid
+   * JSON, `entries` not an array). Distinct from "read fine, has no entries": a
+   * broken file used to return [] and every downstream number stayed plausible
+   * while silently dropping every recorded injection (see ledgerLine in
+   * scripts/capital-deposits-report.ts). Callers must surface this, never absorb it.
+   */
+  error: string | null;
+  path: string;
+}
+
+export function readCapitalLedgerResult(botId: string = CAPITAL_BOT): CapitalLedgerRead {
+  const path = join(process.cwd(), "data", "capital-ledger.json");
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { entries: [], error: `cannot read ${path}: ${msg}`, path };
+  }
+  const entries = (raw as { entries?: unknown })?.entries;
+  if (!Array.isArray(entries)) {
+    return { entries: [], error: `${path} has no \`entries\` array (got ${typeof entries})`, path };
+  }
+  return {
+    entries: (entries as CapitalLedgerEntry[]).filter((e) => ledgerEntryBelongsTo(e, botId)),
+    error: null,
+    path,
+  };
 }
 
 export function readCapitalLedger(botId: string = CAPITAL_BOT): CapitalLedgerEntry[] {
-  try {
-    const raw = JSON.parse(readFileSync(join(process.cwd(), "data", "capital-ledger.json"), "utf8"));
-    const all: CapitalLedgerEntry[] = Array.isArray(raw?.entries) ? raw.entries : [];
-    return all.filter((e) => ledgerEntryBelongsTo(e, botId));
-  } catch {
-    return [];
-  }
+  return readCapitalLedgerResult(botId).entries;
 }
 
 export async function loadCapitalState(opts: {
@@ -83,7 +112,14 @@ export async function loadCapitalState(opts: {
   const realized = bankroll?.realizedPnl ?? 0;
   const openUnreal = openAgg._sum.unrealizedPnl ?? 0;
   const openNotional = openAgg._sum.simulatedPositionSize ?? 0;
-  const ledger = readCapitalLedger(bot);
+  const ledgerRead = readCapitalLedgerResult(bot);
+  const ledger = ledgerRead.entries;
+  // A broken ledger must reach series.warnings (the /capital page renders those) —
+  // otherwise seed silently falls back to the principal and the reconciliation line
+  // passes with every recorded injection missing.
+  const ledgerWarning = ledgerRead.error
+    ? `capital ledger ${ledgerRead.error} — injections are UNKNOWN, every deposit number below assumes none`
+    : null;
 
   const series = buildCapitalSeries({
     principal,
@@ -98,8 +134,9 @@ export async function loadCapitalState(opts: {
   });
 
   return {
-    series,
+    series: ledgerWarning ? { ...series, warnings: [...series.warnings, ledgerWarning] } : series,
     ledger,
+    ledgerError: ledgerRead.error,
     principal,
     realized,
     openUnreal,

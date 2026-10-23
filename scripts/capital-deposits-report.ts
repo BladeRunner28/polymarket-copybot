@@ -85,16 +85,21 @@ async function main() {
   L.push("");
   L.push("## Capital ledger (injections)");
   L.push("");
-  if (ledger.length === 0) {
-    L.push("- no entries — \`data/capital-ledger.json\` is empty");
+  if (state.ledgerError) {
+    L.push(`- ⚠ **UNREADABLE**: ${state.ledgerError}`);
+    L.push("- Every number above is booked-PnL only — recorded injections are MISSING from this report.");
+  } else if (ledger.length === 0) {
+    L.push("- no entries — `data/capital-ledger.json` is empty");
   } else {
     for (const e of ledger) L.push(`- \`${e.kind}\` ${e.date} **${usd(e.amountUsd)}**${e.note ? ` — ${e.note}` : ""}`);
   }
   L.push("");
   L.push(
-    `- Ledger reconciliation: principal ${usd(principal)} − (seed ${usd(s.seedUsd)} + net flows ${usd(
-      ledger.filter((e) => e.kind !== "opening").reduce((a, e) => a + e.amountUsd, 0)
-    )}) = **${usd(s.ledgerGapUsd)}**${Math.abs(s.ledgerGapUsd) < 0.01 ? " ✓" : " ⚠ unexplained — record the injection/withdrawal"}`
+    state.ledgerError
+      ? "- Ledger reconciliation: **NOT CHECKED** — the ledger could not be read, so there is nothing to reconcile against."
+      : `- Ledger reconciliation: principal ${usd(principal)} − (seed ${usd(s.seedUsd)} + net flows ${usd(
+          ledger.filter((e) => e.kind !== "opening").reduce((a, e) => a + e.amountUsd, 0)
+        )}) = **${usd(s.ledgerGapUsd)}**${Math.abs(s.ledgerGapUsd) < 0.01 ? " ✓" : " ⚠ unexplained — record the injection/withdrawal"}`
   );
   L.push("");
   L.push("## Caveats");
@@ -143,11 +148,19 @@ async function main() {
   D.push("Worst days (window):");
   for (const p of bottom.slice(0, 3)) D.push(`• ${p.day}  **${signed(p.deposit)}**  (capital ${usd(p.closing)})`);
   D.push("");
-  D.push(
-    Math.abs(s.ledgerGapUsd) < 0.01
-      ? `Ledger: reconciled ✓ (principal ${usd(principal)} = seed ${usd(s.seedUsd)} + net flows ${usd(0)})`
-      : `⚠ Ledger gap ${usd(s.ledgerGapUsd)} — principal is not explained by data/capital-ledger.json (record the injection/withdrawal)`
-  );
+  // Reconciliation line: three states, and a broken ledger is NOT the passing one.
+  // Before this, `readCapitalLedger` returned [] on any read error, which made
+  // principal == seed and printed "reconciled ✓ (… net flows $0.00)" — a clean pass
+  // on a file the instrument could not read (verified: invalid JSON printed the
+  // identical line). `$0` was also hardcoded there, so a real recorded injection
+  // would have printed as zero while the arithmetic reconciled.
+  const netFlows = ledger.filter((e) => e.kind !== "opening").reduce((a, e) => a + e.amountUsd, 0);
+  const reconLine = state.ledgerError
+    ? `⚠ Ledger UNREADABLE — ${state.ledgerError}. Every deposit above is booked-PnL only; recorded injections are missing.`
+    : Math.abs(s.ledgerGapUsd) < 0.01
+      ? `Ledger: reconciled ✓ (principal ${usd(principal)} = seed ${usd(s.seedUsd)} + net flows ${usd(netFlows)})`
+      : `⚠ Ledger gap ${usd(s.ledgerGapUsd)} — principal is not explained by data/capital-ledger.json (record the injection/withdrawal)`;
+  D.push(reconLine);
   D.push(
     `📄 report: :3013/drafts/capital-deposits-${day} · chart: :3013/capital · regenerate: \`npx tsx scripts/capital-deposits-report.ts --write --discord\``
   );

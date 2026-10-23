@@ -91,6 +91,8 @@ async function main(): Promise<number> {
   const report: Record<string, unknown>[] = [];
   let totalRows = 0;
   let totalKept = 0;
+  let cappedWallets = 0;
+  const failed: string[] = [];
   const skippedByType: Record<string, number> = {};
   const unclassified: string[] = [];
 
@@ -99,9 +101,11 @@ async function main(): Promise<number> {
     try {
       rows = await activityPage(address, since, PAGE);
     } catch (e) {
+      failed.push(address);
       logError(`[print-types] ${address} activity failed: ${e instanceof Error ? e.message : e}`);
       continue;
     }
+    if (PAGE > 0 && rows.length >= PAGE) cappedWallets += 1;
     const filtered = filterTradeRows(rows);
     totalRows += rows.length;
     totalKept += filtered.kept.length;
@@ -139,11 +143,28 @@ async function main(): Promise<number> {
 
   if (report.length > 0) appendFileSync(OUT, report.map((r) => JSON.stringify(r)).join("\n") + "\n");
 
-  const skipRate = totalRows > 0 ? totalKept / totalRows : 1;
-  log(
-    `[print-types] TOTAL rows=${totalRows} kept=${totalKept} (${(skipRate * 100).toFixed(1)}% fill-share) ` +
-      `skipped=${totalRows - totalKept} ${JSON.stringify(skippedByType)}`
-  );
+  // TOTAL line: it used to read `rows=0 kept=0 (100.0% fill-share)` when nothing was
+  // read at all — 0/0 defaulted to 1, i.e. a perfect measurement of an empty sample
+  // (reproduced live with PRINT_AUDIT_PAGE=0). And a page-capped wallet returns a
+  // LOWER BOUND, which the total never said. Both now print.
+  const fillShare = totalRows > 0 ? totalKept / totalRows : null;
+  const scope = [
+    `wallets=${wallets.length}`,
+    failed.length > 0 ? `failed=${failed.length}` : null,
+    cappedWallets > 0 ? `capped=${cappedWallets} (row counts are LOWER BOUNDS)` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  if (fillShare === null) {
+    log(
+      `[print-types] UNDETERMINED: no rows read across ${wallets.length} wallet(s) (${failed.length} failed) — nothing measured, this is NOT a clean result`
+    );
+  } else {
+    log(
+      `[print-types] TOTAL rows=${totalRows} kept=${totalKept} (${((fillShare as number) * 100).toFixed(1)}% fill-share) ` +
+        `skipped=${totalRows - totalKept} ${JSON.stringify(skippedByType)} | ${scope}`
+    );
+  }
   if (unclassified.length > 0) {
     log(`[print-types] unclassified types seen: ${[...new Set(unclassified)].slice(0, 10).join(", ")}`);
   }
