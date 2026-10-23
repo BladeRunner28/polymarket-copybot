@@ -1,9 +1,32 @@
 {
- "generatedAt": "2026-10-20T21:47:35.984820Z",
+ "generatedAt": "2026-10-22T15:13:35.320940Z",
+ "sources": {
+  "marketCandidates": {
+   "path": "data/ml/market-candidates.parquet",
+   "role": "rolling",
+   "exists": true,
+   "mtimeZ": "2026-10-22T15:13:16.367204Z",
+   "ageHours": 0.0
+  },
+  "paperTrades": {
+   "path": "prisma/dev.db",
+   "role": "rolling",
+   "exists": true,
+   "mtimeZ": "2026-10-22T15:06:45.037479Z",
+   "ageHours": 0.1
+  },
+  "predictionsTest": {
+   "path": "data/ml/predictions_test.parquet",
+   "role": "study",
+   "exists": true,
+   "mtimeZ": "2026-10-19T08:54:09.889491Z",
+   "ageHours": 78.3
+  }
+ },
  "lane": {
   "state": "CLOSED",
   "headline": "Market-only prediction does not pay",
-  "detail": "With the wallet signal removed, the <0.20 band returns -50.64% net of ask+fee. The only naively-positive band (0.8-1.0, +0.77%) dies at 1.5x the quoted premium, has a geometric mean of -20.4%, and yields $0.0055 per $20 leg per capital-day against C-200's $0.3818. The model-as-veto is also not established: the EV sweep is non-monotone (6 direction changes) and every quartile CI spans zero.",
+  "detail": "With the wallet signal removed, the <0.20 band returns -50.64% net of ask+fee. The only naively-positive band (0.8-1.0, +0.77%) dies at 1.5x the quoted premium, has a geometric mean of -20.4%, and yields $0.0055 per $20 leg per capital-day against C-200's $0.3818. The model-as-veto is not established either: every EV quartile CI spans zero and the sweep reverses direction.",
   "alphaSource": "wallet-conditioned selection, not price prediction"
  },
  "contrast": {
