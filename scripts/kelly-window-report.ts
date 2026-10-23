@@ -42,10 +42,27 @@ async function state() {
   const netWorth = (br?.principal ?? 0) + (br?.realizedPnl ?? 0) + (open._sum.unrealizedPnl ?? 0);
   const baseCap = rules.maxGrossExposureUsd ?? 0;
   const effCap = baseCap + 0.5 * Math.max(0, netWorth - (br?.principal ?? 0));
-  let peak = 0;
-  try { peak = JSON.parse(readFileSync(join(__dirname, "..", "data", "c200-drawdown.json"), "utf8")).peak ?? 0; } catch { /* */ }
-  const dd = peak > 0 ? Math.max(0, (peak - netWorth) / peak) : 0;
-  return { br, openNotional: open._sum.simulatedPositionSize ?? 0, openUnreal: open._sum.unrealizedPnl ?? 0, netWorth, effCap, dd, rules, rulesVersion: rs?.version };
+  // Peak is the denominator of the drawdown gate. It used to default to 0 on ANY read
+  // failure, which made dd = 0 and printed "drawdown 0.0% vs 20% gate ✓" — a passing
+  // risk check produced by an unreadable file. NULL now means "cannot compute", and the
+  // report says so instead of showing a zero.
+  const ddRead = loadDrawdownPeak();
+  const dd = ddRead.peak === null ? null : Math.max(0, (ddRead.peak - netWorth) / ddRead.peak);
+  return { br, openNotional: open._sum.simulatedPositionSize ?? 0, openUnreal: open._sum.unrealizedPnl ?? 0, netWorth, effCap, dd, ddError: ddRead.error, peak: ddRead.peak, rules, rulesVersion: rs?.version };
+}
+
+/** Peak net worth for the drawdown gate, or an error explaining why it is unknown. */
+function loadDrawdownPeak(): { peak: number | null; error: string | null } {
+  const path = process.env.C200_DRAWDOWN_FILE ?? join(__dirname, "..", "data", "c200-drawdown.json");
+  try {
+    const peak = JSON.parse(readFileSync(path, "utf8")).peak;
+    if (typeof peak !== "number" || !Number.isFinite(peak) || peak <= 0) {
+      return { peak: null, error: `peak ${JSON.stringify(peak)} in ${path} is not a positive number` };
+    }
+    return { peak, error: null };
+  } catch (e) {
+    return { peak: null, error: `${path}: ${e instanceof Error ? e.message : String(e)}` };
+  }
 }
 
 /** C-200 trades under Kelly rules (journal v>=49), split main-lane vs lane. */
@@ -169,10 +186,11 @@ async function main() {
   out.push(`**Kelly Window Report — ${now.toISOString().slice(0, 10)}** (regime day ${regimeDays}${isFinal ? " — FINAL READ" : `, official window ends in ~${daysLeft}d`})`);
   out.push(`Rules v${st.rulesVersion}: kellyEnabled=${st.rules.kellyEnabled} fraction=${st.rules.kellyFraction} maxBankrollPct=${(st.rules.kellyMaxBankrollPct * 100).toFixed(0)}% maxSizeUsd=$${st.rules.kellyMaxSizeUsd} minBet=$${st.rules.kellyMinBetUsd} minEdge=${((st.rules.kellyMinEdgePct ?? 0.02) * 100).toFixed(0)}%`);
   out.push("");
-  out.push("**State:** cash $" + (st.br?.cashBalance ?? 0).toFixed(0) + " | open $" + st.openNotional.toFixed(0) + " | net worth $" + st.netWorth.toFixed(0) + " | realized $" + (st.br?.realizedPnl ?? 0).toFixed(0) + " | exposure " + st.openNotional.toFixed(0) + "/$" + st.effCap.toFixed(0) + " | drawdown " + (st.dd * 100).toFixed(1) + "%");
+  out.push("**State:** cash $" + (st.br?.cashBalance ?? 0).toFixed(0) + " | open $" + st.openNotional.toFixed(0) + " | net worth $" + st.netWorth.toFixed(0) + " | realized $" + (st.br?.realizedPnl ?? 0).toFixed(0) + " | exposure " + st.openNotional.toFixed(0) + "/$" + st.effCap.toFixed(0) + " | drawdown " + (st.dd === null ? "UNDETERMINED (peak unreadable: " + st.ddError + ")" : (st.dd * 100).toFixed(1) + "%"));
   if (st.openNotional > st.effCap * 0.9) out.push("⚠ exposure cap nearly binding — Kelly sizing headroom limited");
   const ddGate = st.rules.maxDrawdownPct ?? 0.2;
-  if (ddGate > 0 && st.dd > ddGate) out.push("⚠ **drawdown " + (st.dd * 100).toFixed(1) + "% EXCEEDS the " + (ddGate * 100).toFixed(0) + "% gate** — new copies should be journaled watchlist; confirm the gate is tripping");
+  if (ddGate > 0 && st.dd !== null && st.dd > ddGate) out.push("⚠ **drawdown " + (st.dd * 100).toFixed(1) + "% EXCEEDS the " + (ddGate * 100).toFixed(0) + "% gate** — new copies should be journaled watchlist; confirm the gate is tripping");
+  if (st.dd === null) out.push("⚠ **drawdown gate NOT EVALUATED** — peak net worth is unknown (" + st.ddError + "), so this report cannot say whether the " + (ddGate * 100).toFixed(0) + "% gate is breached. Fix the file; do not read the blank as a pass.");
   out.push("");
   // --- daily ---
   const d1 = new Date(now.getTime() - DAY);
@@ -253,7 +271,7 @@ async function main() {
         " · all-time in regime $" + wt.main["<0.20"].realized.toFixed(0) + " on n=" + wt.main["<0.20"].n +
         " · same 30d by OPEN date (cohort opened in-window, " + ls.cohortSettled + "/" + ls.cohortN + " settled): $" + ls.cohortRealized.toFixed(0) + " — different cohort, NOT the 30-day PnL rate"
     );
-    out.push("**Verdict fields (pre-registered §6):** concentration " + verdict.concentration + " | mid-band ≈0 " + verdict.midBand + " | drawdown " + (st.dd * 100).toFixed(1) + "% vs 20% gate " + (st.dd <= 0.2 ? "✓" : "✗"));
+    out.push("**Verdict fields (pre-registered §6):** concentration " + verdict.concentration + " | mid-band ≈0 " + verdict.midBand + " | drawdown " + (st.dd === null ? "UNDETERMINED (peak unreadable) vs 20% gate" : (st.dd * 100).toFixed(1) + "% vs 20% gate " + (st.dd <= 0.2 ? "✓" : "✗")));
     out.push("CAVEAT (design §6): λ̂ is a premium measure, not PnL — check band λ̂ vs realized alignment at the Sep 15 refit; mid-band skip is by zero-edge rule, not calibration sight.");
     const doc = out.join("\n");
     const fp = join(__dirname, "..", "drafts", `kelly-final-read-${now.toISOString().slice(0, 10)}.md`);
