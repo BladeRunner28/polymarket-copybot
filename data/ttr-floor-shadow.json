@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-10-24T02:58:42Z",
+  "approval_date": "2026-10-23",
+  "shadow_days": 14,
+  "days_elapsed": 1.12,
+  "bot": "STANDARD",
+  "rule": {
+    "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
+    "live_floor_h": 2.0,
+    "proposed_floor_h": 24.0,
+    "at_risk_band_h": [
+      2.0,
+      24.0
+    ],
+    "min_settled_legs": 150,
+    "refute_if_band_roi_at_or_above": 0.03,
+    "decision": "flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs"
+  },
+  "bands": {
+    "at_risk_2_24h": {
+      "legs": 1,
+      "markets": 1,
+      "notional": 18.0,
+      "pnl": 7.53,
+      "roi": 0.41833333333333333,
+      "resolved_legs": 1,
+      "resolved_roi": 0.41833333333333333
+    },
+    "kept_24h_plus": {
+      "legs": 0,
+      "markets": 0,
+      "notional": 0.0,
+      "pnl": 0.0,
+      "roi": null,
+      "resolved_legs": 0,
+      "resolved_roi": null
+    },
+    "under_live_floor_lt_2h": {
+      "legs": 0,
+      "markets": 0,
+      "notional": 0.0,
+      "pnl": 0.0,
+      "roi": null,
+      "resolved_legs": 0,
+      "resolved_roi": null
+    }
+  },
+  "opened_legs_in_band": 2,
+  "openings_per_day": 1.78,
+  "unclassified_ttr": 0,
+  "verdict": "ACCUMULATING",
+  "reason": "1 of 150 settled band legs (from 2 opened); 149 to go (~84 days at the current 1.8 OPENINGS/day; settlement lag not included) -- the 14-day window CANNOT reach n=150 at this throughput, so the day-14 trigger in the approved rule is unmeetable",
+  "not_yet_evaluable": [
+    "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
+    "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"
+  ],
+  "note": "Read-only shadow. Changing the floor is Lane A and still needs the user."
+}
