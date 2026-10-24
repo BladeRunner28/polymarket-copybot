@@ -620,6 +620,21 @@ export class PolymarketAdapter implements DataAdapter {
   }
 
   async fetchMarket(marketId: string): Promise<MarketState> {
+    // tuning review #64 Rec 1 (user-approved 2026-10-23) — FAIL LOUD on a blank
+    // id. Without this, a blank slug falls through to the legacy `?slug=`
+    // fallback, which ignores an empty slug and returns the WHOLE board, and
+    // normalizeGammaMarketPayload then takes payload[0] — so fetchMarket("")
+    // silently prices the caller off an unrelated market with no error line.
+    // Intake (scripts/monitor-trades.ts) already stamps those rows
+    // observationOnly; this guard is the SECOND line, not the first, because a
+    // guard alone zeroes the drift gate and would start ADMITTING parlays.
+    if (!marketId || marketId.trim() === "") {
+      throw new AdapterError(
+        marketId || "(blank)",
+        400,
+        "blank marketId — a market cannot be fetched without a slug"
+      );
+    }
     // Negative-cache: dead/expired slugs 404 forever — don't refetch each cycle.
     if (PolymarketAdapter.notFound.has(marketId)) {
       throw new AdapterError(marketId, 404, `market not found (cached): ${marketId}`);

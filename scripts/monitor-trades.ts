@@ -51,6 +51,7 @@ async function main() {
   const since = Date.now() - MONITOR_HOURS * 3600_000;
   let newTrades = 0;
   let newObserved = 0;
+  let blankMarket = 0;
   const failures: string[] = [];
   /** v62: observation wallets whose fetch completed this cycle — stamped after
    *  the pool drains so the next cycle starts from the least recently observed. */
@@ -82,12 +83,28 @@ async function main() {
       // count and no journal row: nothing reads MarketSnapshot for a copy
       // decision, and `detectedPrice` for a duplicate only ever reached a row
       // that the index refused. Revert = wrap this block in `if (w.observationOnly)`.
+      // ONE key shape for both the DB seed and the in-loop check. A blank
+      // marketId is "" for every parlay leg, so keying on it alone would
+      // collapse distinct legs and silently drop them; the question stands in
+      // for the missing slug. This function must stay the only place the shape
+      // is defined, or the seed and the loop drift apart and every existing
+      // blank row is re-attempted each cycle.
+      const seenKey = (
+        marketId: string,
+        question: string,
+        outcome: string,
+        side: string,
+        ts: number
+      ) =>
+        marketId && marketId.trim() !== ""
+          ? `${marketId}|${outcome}|${side}|${ts}`
+          : `blank:${question}|${outcome}|${side}|${ts}`;
       const existing = await prisma.observedTrade.findMany({
         where: { walletAddress: w.address, timestamp: { gte: new Date(since) } },
-        select: { marketId: true, outcome: true, side: true, timestamp: true },
+        select: { marketId: true, marketQuestion: true, outcome: true, side: true, timestamp: true },
       });
       const seen = new Set(
-        existing.map((r) => `${r.marketId}|${r.outcome}|${r.side}|${r.timestamp.getTime()}`)
+        existing.map((r) => seenKey(r.marketId, r.marketQuestion, r.outcome, r.side, r.timestamp.getTime()))
       );
       const activity = await adapter.fetchWalletActivity(
         w.address,
@@ -111,7 +128,19 @@ async function main() {
       for (const t of activity) {
         if (t.timestamp.getTime() < since) continue;
         if (t.side !== "BUY") continue; // copy entries only, not exits
-        const dedupeKey = `${t.marketId}|${t.outcome}|${t.side}|${t.timestamp.getTime()}`;
+        // tuning review #64 Rec 1 (user-approved 2026-10-23): a blank marketId
+        // cannot be scored. Polymarket "AND" parlay legs ship with no slug, so
+        // /markets/slug/ 404s, the legacy ?slug= fallback returns the WHOLE
+        // board, and fetchMarket('') returns payload[0] — the row would be
+        // priced off a DIFFERENT market with no error line. Stamp it
+        // observationOnly here, at intake, so no reader can ever copy it.
+        // Order matters: doing the fetch guard FIRST would zero the drift gate
+        // and start ADMITTING parlays. Intake first, fail-loud second.
+        const isBlankMarket = !t.marketId || t.marketId.trim() === "";
+        // Blank rows also need the question in the key: t.marketId is "" for
+        // every parlay, so two legs with the same outcome/side would collapse
+        // into one `seen` entry and one would be silently dropped.
+        const dedupeKey = seenKey(t.marketId, t.marketQuestion, t.outcome, t.side, t.timestamp.getTime());
         if (seen.has(dedupeKey)) continue;
         try {
           // Detected price: current market price at detection time — COPY set
@@ -119,7 +148,7 @@ async function main() {
           // market read plus its MarketSnapshot write is the per-fill cost that
           // makes a large sweep expensive, and these rows can never be copied.
           let detectedPrice = t.price;
-          if (!w.observationOnly) {
+          if (!w.observationOnly && !isBlankMarket) {
             try {
               const m = await adapter.fetchMarket(t.marketId);
               const p = t.outcome === "NO" ? m.noPrice : m.yesPrice;
@@ -167,11 +196,12 @@ async function main() {
               timestamp: t.timestamp,
               rawTradeJson: "{}",
               isDemo: adapter.isDemo,
-              observationOnly: w.observationOnly,
+              observationOnly: w.observationOnly || isBlankMarket,
             },
           });
           seen.add(dedupeKey);
-          if (w.observationOnly) newObserved++;
+          if (isBlankMarket) blankMarket++;
+          if (w.observationOnly || isBlankMarket) newObserved++;
           else newTrades++;
         } catch (e) {
           // Unique constraint = already seen; anything else is real.
@@ -212,6 +242,12 @@ async function main() {
     `Trade monitor complete: ${newTrades + newObserved} new observed trades ` +
       `(${newTrades} copy-eligible, ${newObserved} observation-only).`
   );
+  if (blankMarket > 0) {
+    log(
+      `[BLANK-MARKET] ${blankMarket} row(s) stored observationOnly — no marketId, so they cannot be ` +
+        `priced or copied (Polymarket AND-parlay legs). Counted, not silent.`
+    );
+  }
   if (sweptObserve.length > 0) {
     const eligible = await observeEligibleCount(adapter.isDemo);
     const cycles = Math.max(1, Math.ceil(eligible / MAX_OBSERVE));
