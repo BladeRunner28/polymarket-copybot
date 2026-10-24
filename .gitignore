@@ -86,3 +86,10 @@ data/kalshi-tape/state.json
 # Macro-lane quotes are tracked too (one row per open market per run, ~3 MB/day): the
 # lane's read needs the quote AT a horizon, so thinning them to settlement-only rows
 # would delete the study. Settled + news files were already tracked.
+
+# Frozen analysis artefacts: 50 files, ~530 MB, last written 2026-10-10.
+# Kept ON DISK (nothing reads them from git); removed from the index so no
+# future clone/backup carries them. Already in history — see the backup-scope
+# card, a history rewrite is the only way to shrink .git and that is a
+# separate, destructive decision.
+data/archive-analysis/
