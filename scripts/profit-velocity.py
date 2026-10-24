@@ -837,9 +837,17 @@ def ladder_effect(c):
     def line(nm, xs):
         cd = sum(l["cd"] for l in xs)
         p = sum(l["pnl"] for l in xs)
+        rate = (1000 * p / cd) if cd else None
+        # A block whose rate is <= 0 does not "need negative capital": it loses money at EVERY
+        # capital level and can never reach $5k/day. Printing 5000/rate here produced
+        # "-39,788 capital for $5k/day" on the TTL<24h block (live, 2026-10-24) -- a number that
+        # reads as a shortcut to the target when it is the opposite. Section X already words this
+        # correctly; X2 now uses the same phrasing so the two halves cannot disagree.
+        need = (f"{5000/(rate/1000):>12,.0f} capital for $5k/day" if rate and rate > 0
+                else f"{'never (rate<=0)':>12}      ")
         print(f"   {nm:34} {len(xs):>5} legs ${sum(l['ntl'] for l in xs):>9,.0f} "
-              f"${p:>+9,.0f} {1000*p/cd if cd else 0:>+7.2f} $/1k-cd "
-              f"{5000/((1000*p/cd)/1000):>12,.0f} capital for $5k/day")
+              f"${p:>+9,.0f} {rate if rate is not None else 0:>+7.2f} $/1k-cd "
+              f"{need}")
     line("baseline (all finished legs)", legs)
     line("  gross block: TTL<24h, all bands", cut)
     line("gross floor applied", keep)
