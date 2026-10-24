@@ -13,6 +13,7 @@ import {
   closePaperTrade,
   winMovePct,
   staleExitDecision,
+  standardStaleExitFires,
 } from "../src/lib/paper";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { didOutcomeWin } from "../src/lib/resolution";
@@ -263,6 +264,29 @@ async function main() {
               rules.staleExitAdverseOnly === 1
                 ? `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% ≤ ${(rules.staleExitAdverseMove * 100).toFixed(0)}% adverse — v53 adverse-only exit`
                 : `stale ${ageHours.toFixed(0)}h, winMove ${(winMove * 100).toFixed(1)}% < ${(rules.staleExitMinMove * 100).toFixed(0)}% — v29 capital recycling`;
+            await withDbRetry(() => closePaperTrade(t.id, price, why), `recycle ${t.id}`);
+            recycled++;
+          }
+        } else if (t.botId === "STANDARD") {
+          // v66 (user-approved 2026-10-23): STANDARD's first recycling rail. One rule
+          // only -- a hard max-age, scoped to positions ENTERED at or above the band
+          // floor. No tier-1 adverse cut: that tier is a C-200 device and applying it
+          // here would import an unmeasured behaviour into a lane that has never been
+          // tested with it.
+          //
+          // The population this releases is the point of the change: open STANDARD was
+          // ~1.07M capital-days (67.1% of all capital-time) earning +1.80 $/1k-cd
+          // against +27.43 finished. Expected value +$68..+$326 on settlement truth.
+          //
+          // Pre-registered refutation, recorded here so the reason travels with the
+          // code: withdraw the rule if the first 20 ORGANIC stopped legs realise worse
+          // than hold by more than 1.0% of notional (that would mean the marks lied),
+          // or if 0.6-0.8 hold-to-settlement turns positive on >=150 new settled legs.
+          const ageHours = (Date.now() - t.openedAt.getTime()) / 3_600_000;
+          if (standardStaleExitFires(ageHours, t.entryPrice, rules)) {
+            const why =
+              `stale ${ageHours.toFixed(0)}h >= ${rules.standardStaleExitHours}h scoped stop ` +
+              `(entry ${t.entryPrice.toFixed(2)} >= ${rules.standardStaleExitBandMin.toFixed(2)}) -- v66`;
             await withDbRetry(() => closePaperTrade(t.id, price, why), `recycle ${t.id}`);
             recycled++;
           }

@@ -96,6 +96,21 @@ export interface Rules {
   // when every old position has drifted ≥5%; the real drag is winners that
   // never resolve. This is the "dead capital" recycle.
   staleExitHardHours: number;
+  // v66 (tuning #2, user-approved 2026-10-23): give STANDARD the stale exit it has
+  // never had, SCOPED to entry >= 0.60. The C-200 max-age above is unconditional and
+  // applies only to BANKROLL_200; STANDARD has had no recycling rail at all, which is
+  // why it parks capital in markets that never resolve (open STANDARD = ~1.07M
+  // capital-days = 67.1% of all capital-time at +1.80 $/1k-capital-day, against
+  // +27.43 finished -- 1/15th the rate).
+  // Why >= 0.60 and nothing else: measured on settlement truth (277 legs, 85 markets
+  // resolved >168h after entry) the >=0.60 stop is +$68..+$326, while the same stop at
+  // 0.20-0.40 DESTROYS $1,064 on 135 legs -- a (1-p)/p payoff cannot be time-stopped.
+  // 0.40-0.60 is not a scope decision: v63 skips that band on STANDARD, so no leg can
+  // reach the exit there. Do NOT widen this downward without a new measurement.
+  // 0 = disabled (the convention for every added rail: land the code, let the RuleSet
+  // version switch it on).
+  standardStaleExitHours: number;
+  standardStaleExitBandMin: number;
   // v34: regulatory boosts are unvalidated (0 resolved boosted trades) — a
   // positive boost may never manufacture a copy in the ≥ highScoreCapMin band
   // (worst historical PnL bucket). The clamp lands boosted signals in the
@@ -321,6 +336,10 @@ export const DEFAULT_RULES: Rules = {
   maxOpenPositions: 100,
   // v64: disabled by default -- same convention as every other added rail.
   standardMaxOpenPositions: 0,
+  // v66: 0 = disabled. 168h matches the C-200 hard max-age that v33 established, and
+  // 0.60 is the measured scope. See the type comment; do not lower the band.
+  standardStaleExitHours: 0,
+  standardStaleExitBandMin: 0.6,
   staleExitHours: 48,
   staleExitMinMove: 0.05,
   // v53: adverse-only tier-1 (live values land in the DB ruleset at activation).

@@ -360,6 +360,38 @@ export interface StaleExitRules {
   staleExitAdverseMove: number;
 }
 
+export interface StandardStaleExitRules {
+  standardStaleExitHours: number;
+  standardStaleExitBandMin: number;
+}
+
+/**
+ * Whether the SCOPED stale exit (v66) fires for an open STANDARD position.
+ *
+ * Deliberately a separate function from staleExitDecision, not another tier inside it:
+ * the C-200 rail is unconditional and has a tier-1 adverse cut, while STANDARD gets
+ * ONE rule -- a hard max-age, and only for positions ENTERED at or above the band
+ * floor. Folding them together would let a future edit to the C-200 tiers silently
+ * change what STANDARD exits on.
+ *
+ * The band floor is an ENTRY-price test, not a current-price test: the measurement is
+ * "positions entered >= 0.60", and using the live mark would let a winner drift into
+ * scope (or a loser out of it) after the fact, which is the lookahead the scope exists
+ * to avoid.
+ *
+ * Disabled by convention: standardStaleExitHours = 0 means never fire.
+ */
+export function standardStaleExitFires(
+  ageHours: number,
+  entryPrice: number,
+  rules: StandardStaleExitRules
+): boolean {
+  const hours = rules.standardStaleExitHours;
+  if (!hours || hours <= 0) return false;
+  if (!Number.isFinite(entryPrice) || entryPrice < rules.standardStaleExitBandMin) return false;
+  return ageHours >= hours;
+}
+
 /**
  * Which stale-exit tier (if any) fires for an open C-200 position.
  *

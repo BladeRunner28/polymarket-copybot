@@ -3468,15 +3468,19 @@
     },
     {
       "id": "profit-stop-060-carry",
-      "column": "Scheduled",
+      "column": "Done",
       "title": "Carry the 2026-10-22 >=0.60 stop, scope unchanged, expected value revised to +$68-326",
-      "note": "APPROVED 2026-10-23, scope unchanged from the 10-22 proposal. Expected value REVISED DOWN on settlement truth (277 settled legs / 85 markets resolving >168 h after entry): >=0.60 is +$68 (4.1% of notional), not the +$326-548 the open-book marks implied. 0.6-0.8 turns NEGATIVE on hold (+6.5% at 80% settled hit); 0.2-0.6 is where it pays (+$371); the <0.20 exemption is confirmed on truth (-$1,669). REFUTATION: withdraw if 0.6-0.8 hold-to-settlement stays positive at >=150 settled legs. DO NOT widen to 0.2-0.4 \u2014 that region has produced three different signs in three days (cuts beat settlement by $258 / open-book stop loses $1,341 / settled-leg stop gains $218) and nothing is proposed there until one population reaches 150 settled legs.",
+      "note": "APPROVED 2026-10-23, scope unchanged from the 10-22 proposal. Expected value REVISED DOWN on settlement truth (277 settled legs / 85 markets resolving >168 h after entry): >=0.60 is +$68 (4.1% of notional), not the +$326-548 the open-book marks implied. 0.6-0.8 turns NEGATIVE on hold (+6.5% at 80% settled hit); 0.2-0.6 is where it pays (+$371); the <0.20 exemption is confirmed on truth (-$1,669). REFUTATION: withdraw if 0.6-0.8 hold-to-settlement stays positive at >=150 settled legs. DO NOT widen to 0.2-0.4 \u2014 that region has produced three different signs in three days (cuts beat settlement by $258 / open-book stop loses $1,341 / settled-leg stop gains $218) and nothing is proposed there until one population reaches 150 settled legs.\n\n--- IMPLEMENTED AND ACTIVATED 2026-10-23 as RuleSet v66. FIRST: the premise had to be checked, and it changed the job. 'Carry' implied an existing STANDARD stale exit to rescope, but there was none \u2014 the v33 hard max-age is gated `botId === \"BANKROLL_200\"` in scripts/update-pnl.ts and no STANDARD rule field existed. So this was a BUILD, not a scope edit. WHAT SHIPPED: roles.ts fields standardStaleExitHours (0 = disabled) + standardStaleExitBandMin (0.60); src/lib/paper.ts standardStaleExitFires() as a SEPARATE function from staleExitDecision (the C-200 rail is unconditional with a tier-1 adverse cut; folding STANDARD into it would let a future C-200 edit silently change what STANDARD exits on); a STANDARD branch in update-pnl.ts; scripts/apply-v66.ts. The band floor is an ENTRY-price test, not a live-mark test \u2014 a mark-based scope would let a winner drift into scope after the fact, which is the lookahead the scope exists to avoid. SCOPE AMBIGUITY RESOLVED BY THE DATA, NOT BY CHOICE: 10-22 said '>=0.60' and also 'exempt <0.40', which leaves 0.40-0.60 undefined. v63 already skips 0.40-0.60 on STANDARD, so no leg can reach the exit there \u2014 the scope is >=0.60 and nothing else. Do not widen downward: 0.20-0.40 destroys $1,064 on 135 legs. POPULATION CHECK BEFORE ACTIVATION: the dry run found 701 open legs / $7,321.20 notional, which is the same 701 / $7,321 the 10-22 study measured at >=0.60 \u2014 the predicate reproduces the measurement. These clear on the next update-pnl cron run (a STOCK clearing, not a flow change). TESTS: tests/standard-stale-exit.test.ts, 13 cases (disabled-by-default, 0/-5 never close, 167.9 vs 168 inclusive, floor 0.60 inclusive, 0.5999 out, the whole cheap band out, NaN out, C-200 untouched). 517/517 pass, tsc clean. REVERT: standardStaleExitHours -> 0. REFUTATION STAYS BINDING: first 20 ORGANIC stopped legs worse than hold by >1.0% of notional, or 0.6-0.8 hold-to-settlement positive on >=150 new settled legs. NOTE: no instrument yet measures refutation (a) \u2014 the stock clear does not count as 'organic', so that reader is still owed.",
       "tags": [
+        "activated",
+        "done",
+        "exit-policy",
         "lane-a",
-        "user-approved",
-        "tuning",
+        "stock-clearing",
         "stop",
-        "exit-policy"
+        "tuning",
+        "user-approved",
+        "v66"
       ]
     },
     {
