@@ -143,6 +143,16 @@ export interface Rules {
   // STANDARD and would double-apply on the C-200 legacy path (the v41
   // neutralization exists to stop exactly that).
   c200LongshotBandFactor: number; // <0.20 entries (default 2.0)
+  // v67 (profit-recs #1, user-approved 2026-10-24): LOWER bound for the long-shot
+  // multiplier. The factor applied to every entry < 0.20 with nothing underneath, so the
+  // ruleset's largest multiplier (3.5x) hit hardest at the smallest prices. Below 0.05:
+  // 66 legs, 33 markets, $1,694, clip $25.66 (largest in the book), avgP 0.034,
+  // settlement hit 0.0% vs a 3.39% break-even, -$1,041 realized (-61%). 0.05-0.20 earns
+  // +98%..+102% on truth and is NOT touched. 0 = no floor (legacy).
+  // NOTE: this factor is BANKROLL_200-only -- mapBankroll200Size is gated
+  // `botId === "BANKROLL_200"` in openPaperTrade, so STANDARD's sub-0.05 legs never
+  // received the 3.5x and are sized by the standard path instead.
+  c200LongshotBandFloor: number;
   c200DeadZoneBandFactor: number; // 0.40–0.60 entries (default 0.25)
   // v38 (Phase A, 2026-08-31): Wang-Transform premium overlay — measurement-
   // first. The calibrated λ̂ table (data/premium-calibration.json, refit
@@ -365,6 +375,8 @@ export const DEFAULT_RULES: Rules = {
   longshotSizeFactor: 1.0,
   // v54: the live C-200 band map (paper.ts mapBankroll200Size owns the tilt).
   c200LongshotBandFactor: 2.0,
+  // v67: 0 = no floor, so a ruleset lacking the field is byte-identical to pre-v67.
+  c200LongshotBandFloor: 0,
   c200DeadZoneBandFactor: 0.25,
   // v38 Phase-A overlay defaults (live values land in the DB ruleset).
   premiumOverlayEnabled: 1,

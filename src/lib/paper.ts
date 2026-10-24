@@ -47,16 +47,26 @@ export function mapBankroll200Size(
   entryPrice: number,
   // v54 (2026-09-15 Rec 1, user-approved): band multipliers are rule fields.
   // Omitted → the shipped constants, byte-identical to pre-v54 behavior.
-  factors: { longshot?: number; deadZone?: number } = {}
+  factors: { longshot?: number; deadZone?: number; longshotFloor?: number } = {}
 ): number {
   const longshot = factors.longshot ?? C200_BAND_DEFAULTS.longshot;
   const deadZone = factors.deadZone ?? C200_BAND_DEFAULTS.deadZone;
+  const longshotFloor = factors.longshotFloor ?? 0; // v67: 0 = no floor (legacy)
+  // v67 (profit-recs #1, user-approved 2026-10-24): the long-shot multiplier needs a
+  // LOWER bound. It was `entryPrice < 0.2` with nothing underneath, so the ruleset's
+  // largest factor (3.5x) applied hardest at the smallest prices -- i.e. the book put its
+  // biggest clip on its longest odds. Measured below 0.05 (66 legs, 33 markets, $1,694):
+  // clip $25.66 (largest in the book), avgP 0.034, settlement hit 0.0% against a 3.39%
+  // break-even, -$1,041 realized (-61%); C-200 alone averaged $47.62 with a $100 max.
+  // The 0.05-0.20 cell earns +98% to +102% on truth and is untouched.
+  // Default 0 => no floor => byte-identical to pre-v67 behaviour, so landing this code
+  // changes nothing until a RuleSet version sets the field.
   const percent = (standardScaleSize - 0.25) / (20.0 - 0.25);
   let size = 0.2 + percent * (20.0 - 0.2);
   // Only apply band multipliers to sane prices (0..1 markets); non-finite or
   // <=0 entries (bad data) fall through at x1.0.
   if (Number.isFinite(entryPrice) && entryPrice > 0) {
-    if (entryPrice < 0.2) size *= longshot; // v51 x1.5 → v54 rule field
+    if (entryPrice < 0.2 && entryPrice >= longshotFloor) size *= longshot; // v51 x1.5 → v54 field → v67 floor
     else if (entryPrice >= 0.6) size *= C200_BAND_DEFAULTS.premium;
     else if (entryPrice >= 0.4) size *= deadZone; // v51 x0.5 → v54 rule field
   }
@@ -111,7 +121,7 @@ export async function openPaperTrade(params: {
   // the legacy BOT_LIMITS $20 cap. Omitted → legacy path, byte-identical.
   kelly?: { maxSizeUsd: number };
   // v54: C-200 band multipliers from the active ruleset (see rules.ts).
-  bandFactors?: { longshot?: number; deadZone?: number };
+  bandFactors?: { longshot?: number; deadZone?: number; longshotFloor?: number };
 }) {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";

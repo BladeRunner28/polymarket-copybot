@@ -865,6 +865,10 @@ async function main() {
               mapBankroll200Size(result.simulatedPositionSize, currentPrice, {
                 longshot: rules.c200LongshotBandFactor,
                 deadZone: rules.c200DeadZoneBandFactor,
+                // v67: the Kelly rail's legacy-equivalent must use the SAME floor, or a
+                // sub-0.05 leg would be railed back up to the 3.5x size it was just
+                // exempted from (applyKellyBandRails does Math.max below 0.20).
+                longshotFloor: rules.c200LongshotBandFloor,
               })
             );
             const railedSize = applyKellyBandRails(kelly.sizeUsd, legacyEquiv, currentPrice);
@@ -1134,6 +1138,7 @@ async function main() {
             bandFactors: {
               longshot: rules.c200LongshotBandFactor,
               deadZone: rules.c200DeadZoneBandFactor,
+              longshotFloor: rules.c200LongshotBandFloor,
             },
           });
 

@@ -3508,6 +3508,19 @@
         "multiple-testing",
         "blocked-on-key"
       ]
+    },
+    {
+      "id": "c200-longshot-band-floor",
+      "column": "Done",
+      "title": "Floor the C-200 long-shot band multiplier at 0.05 (v67)",
+      "note": "IMPLEMENTED AND ACTIVATED 2026-10-24 as RuleSet v67 (profit-recs #1, user-approved). THE DEFECT: mapBankroll200Size applied the long-shot multiplier to `entryPrice < 0.20` with NO lower bound, and applyKellyBandRails then did Math.max below 0.20 so Kelly could not shrink a long-shot back down \u2014 the code was written to protect the ruleset's largest factor (3.5x). Biggest factor, smallest prices: the book put its biggest clip on its longest odds. WHAT SHIPPED: rules.ts c200LongshotBandFloor (0 = no floor, so landing the code changes nothing); paper.ts mapBankroll200Size gates the multiplier on `entryPrice >= longshotFloor`; both score-trades.ts call sites pass it, INCLUDING the Kelly rail's legacy-equivalent \u2014 without that second pass, applyKellyBandRails' Math.max would rail a sub-0.05 leg right back up to the 3.5x size it was just exempted from. scripts/apply-v67.ts. tests/longshot-floor.test.ts, 9 cases (526/526 pass, tsc clean). SCOPE CORRECTION \u2014 the proposal said 'both lanes' and that is wrong. mapBankroll200Size is reached only under `botId === \"BANKROLL_200\"` in openPaperTrade, so STANDARD's sub-0.05 legs never received the 3.5x. Measured decomposition below 0.05 (settled, isDemo=0): C-200 31 legs / $1,500.92 / MAX CLIP $100.00 / avgP 0.0396 vs STANDARD 37 legs / $312.60 / max clip $10.60. So the '$25.66 clip, largest in the book' is a BLENDED average across lanes; the real exposure is C-200's $100 clips at ~4%, and STANDARD's 46 open legs at 0.0029 are $375 total with a $9.40 max clip \u2014 not the problem and never boosted. There is nothing for this floor to do on STANDARD; an admission floor there would be a different, unmeasured rule and was NOT implemented. CURRENT HOLDINGS: C-200 has 0 open legs below 0.05, so this is PREVENTIVE \u2014 no stock clearing, no PnL booked by activating. The proposal's 'removes the $100-at-0.002 exposure' is a capability removal, not a release of existing positions. REVERT: c200LongshotBandFloor -> 0. Refutation stays binding: blocked sub-0.05 candidates win >=3 of 60 forward (>=5%), or 0.05-0.20 truth ROI <0% on a 60d read. NOT DONE (not approved): #2, moving the cell to 0.15-0.20 at 4.5x. SEPARATE PRE-EXISTING ODDITY noticed while verifying, untouched: live c200DeadZoneBandFactor is 0.125 while the code default is 0.25 \u2014 if that is not deliberate it halves the dead-zone size.",
+      "tags": [
+        "done",
+        "v67",
+        "lane-a",
+        "activated",
+        "sizing"
+      ]
     }
   ]
 }
