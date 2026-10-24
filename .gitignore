@@ -93,3 +93,8 @@ data/kalshi-tape/state.json
 # card, a history rewrite is the only way to shrink .git and that is a
 # separate, destructive decision.
 data/archive-analysis/
+
+# Raw archived-CLOB responses for the settlement-truth cache (16MB, regenerable via
+# `python3 scripts/profit-velocity.py --refresh-truth`). The parsed cache
+# data/market-truth-clob.json IS committed so the review re-runs offline.
+data/.clob-truth-raw/

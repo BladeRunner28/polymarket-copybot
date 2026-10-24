@@ -34,14 +34,21 @@ SECTIONS
   X. THE CAPITAL IMPLIED BY $5,000/DAY. Turn the ladder gap into the number that closes it:
      capital needed = target / (measured $ per capital-day), at the best robust bucket.
 """
+import json
+import os
 import sqlite3
+import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 
 DB = "prisma/dev.db"
 ARGS = sys.argv[1:]
 T30 = "--t30" in ARGS
+TRUTH_REFRESH = "--refresh-truth" in ARGS
+TRUTH_RAW_DIR = os.path.join("data", ".clob-truth-raw")
 BANDS = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.0001)]
 NAMES = ["<0.20", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0"]
 
@@ -855,6 +862,632 @@ def ladder_effect(c):
     line("marginal floor applied (on top of v63)", keep_m)
 
 
+# ---------------------------------------------------------------- AA..AD
+# SETTLEMENT TRUTH AND EXIT ALPHA
+#
+# Why this exists: 74% of the finished book's notional leaves through the early-exit path
+# (status='closed'), and that path has only ever been judged against its own marks. Nothing
+# in this repo has compared an exit price to what the market actually SETTLED at, so
+# "the exits are fine" has never been a measurement -- it has been an assumption. A closed
+# leg and a resolved leg never co-occur on the same (market, outcome) in STANDARD (0 markets
+# out of 2,305), so there is no within-market control available and the counterfactual must
+# come from an external settlement record.
+#
+# Truth source: archived CLOB /markets/<conditionId> -> tokens[].winner, keyless, cached in
+# data/market-truth-clob.json so the section re-runs offline. The cache is committed; the
+# fetched raw responses are not. Coverage and mapping accuracy are PRINTED, not assumed --
+# a truth join that silently drops half the book is the same failure as an instrument that
+# cannot fail.
+#
+# Cost basis: simulatedPositionSize = dollars at risk (never shares). For a BUY at p with
+# dollars at risk n, a settlement worth s realises n*(s/p - 1); an early exit at c realises
+# n*(c/p - 1). Both identities were verified against realizedPnl before this section was
+# written (max abs error $0.005, i.e. the rounding of the position size).
+
+TRUTH_CACHE = "data/market-truth-clob.json"
+
+
+def _norm_outcome(s):
+    return (s or "").strip().upper().replace("-", " ").replace("_", " ")
+
+
+def market_condition_ids(c):
+    """marketId -> conditionId, one indexed lookup per market (MarketSnapshot has 15.9M rows)."""
+    markets = [r[0] for r in c.execute(
+        """SELECT DISTINCT marketId FROM PaperTrade
+           WHERE isDemo=0 AND status IN ('closed','resolved')""")]
+    out = {}
+    for m in markets:
+        r = c.execute(
+            """SELECT conditionId FROM MarketSnapshot
+               WHERE marketId=? AND conditionId IS NOT NULL LIMIT 1""", (m,)).fetchone()
+        if r and r[0]:
+            out[m] = r[0]
+    return out
+
+
+def _fetch_one(cid):
+    """One archived market -> {'tokens': [[name, winner]], 'end': iso} or None."""
+    path = os.path.join(TRUTH_RAW_DIR, cid + ".json")
+    for attempt in range(3):
+        if not os.path.exists(path) or os.path.getsize(path) < 40:
+            subprocess.run(["curl", "-s", "--max-time", "25",
+                            "https://clob.polymarket.com/markets/" + cid, "-o", path],
+                           check=False)
+        try:
+            d = json.load(open(path))
+            toks = [[t.get("outcome"), bool(t.get("winner"))] for t in d.get("tokens", [])]
+            if toks and any(t[1] for t in toks):
+                return cid, {"tokens": toks, "end": d.get("end_date_iso"),
+                             "closed": bool(d.get("closed"))}
+            if toks:
+                # Market exists but has no winner yet -> not settled, cache as such.
+                return cid, {"tokens": toks, "end": d.get("end_date_iso"),
+                             "closed": bool(d.get("closed")), "unsettled": True}
+        except Exception:
+            time.sleep(0.4 * (attempt + 1))
+    return cid, None
+
+
+def build_truth(c, refresh=False):
+    """Cached settlement truth for every market the finished book touches."""
+    cache = {"markets": {}}
+    if os.path.exists(TRUTH_CACHE):
+        try:
+            cache = json.load(open(TRUTH_CACHE))
+        except Exception:
+            cache = {"markets": {}}
+    old = cache.get("markets", {})
+    m2c = market_condition_ids(c)
+    want = sorted(set(m2c.values()))
+    have = {k for k, v in old.items() if v and not v.get("unsettled")}
+    if refresh:
+        missing = want
+    else:
+        missing = [cid for cid in want if cid not in have]
+    print(f"\n   truth cache: {len(want)} distinct markets in the finished book, "
+          f"{len(want) - len(missing)} settled already cached, fetching {len(missing)}")
+    if missing:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for cid, rec in ex.map(_fetch_one, missing):
+                if rec:
+                    old[cid] = rec
+    cache = {"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+             "source": "https://clob.polymarket.com/markets/<conditionId> tokens[].winner",
+             "markets": old}
+    with open(TRUTH_CACHE, "w") as f:
+        json.dump(cache, f, indent=0, sort_keys=True)
+    return cache, m2c
+
+
+def truth_of(cache, cid, outcome, stats):
+    """Settlement value (1.0 / 0.0) for OUR side, or None. Name match first, index fallback."""
+    rec = cache["markets"].get(cid) if cid else None
+    if not rec or rec.get("unsettled"):
+        stats["no_record"] += 1
+        return None
+    toks = rec.get("tokens") or []
+    n = _norm_outcome(outcome)
+    for name, win in toks:
+        if _norm_outcome(name) == n:
+            stats["name_match"] += 1
+            return 1.0 if win else 0.0
+    if len(toks) == 2 and n in ("YES", "NO"):
+        i = 0 if n == "YES" else 1
+        stats["index_fallback"] += 1
+        return 1.0 if toks[i][1] else 0.0
+    stats["no_match"] += 1
+    return None
+
+
+def load_closed(c, since_ms=0, bot=None):
+    sql = """SELECT p.id, p.botId, p.marketId, p.outcome, p.entryPrice px, p.currentPrice cur,
+                    p.simulatedPositionSize ntl, p.realizedPnl pnl, p.openedAt, p.closedAt
+             FROM PaperTrade p
+             WHERE p.isDemo=0 AND p.status='closed' AND p.realizedPnl IS NOT NULL
+               AND p.openedAt >= ?"""
+    params = [since_ms]
+    if bot:
+        sql += " AND p.botId=?"
+        params.append(bot)
+    out = []
+    for r in c.execute(sql, params):
+        if not r["px"] or r["px"] <= 0 or not r["ntl"] or r["ntl"] <= 0:
+            continue
+        end = r["closedAt"] or r["openedAt"]
+        out.append({"id": r["id"], "bot": r["botId"], "market": r["marketId"],
+                    "outcome": r["outcome"], "px": r["px"], "cur": r["cur"],
+                    "ntl": r["ntl"], "pnl": r["pnl"], "band": band_of(r["px"]),
+                    "days": max((end - r["openedAt"]) / 86_400_000.0, 0.02),
+                    "ms": r["openedAt"]})
+    return out
+
+
+def _boot_sum(legs, key, reps=1500, seed=41):
+    """Market-clustered bootstrap CI on sum(legs[key]) -- dollars, not a ratio."""
+    if not legs:
+        return (0.0, 0.0)
+    by = {}
+    for l in legs:
+        by.setdefault(l["market"], []).append(l)
+    keys = list(by)
+    if len(keys) < 8:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    vals = []
+    for _ in range(reps):
+        pick = rng.integers(0, len(keys), len(keys))
+        vals.append(sum(l[key] for i in pick for l in by[keys[i]]))
+    return (float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5)))
+
+
+def calibration_report(c):
+    """AA. Realised hit rate vs the price we paid -- the edge in probability points.
+
+    The payoff identity ROI = (hit - p)/p is exact under this book's settlement maths, so
+    every dollar of realised edge is (hit - p) amplified by 1/p. That means a band's ROI
+    can be large with no probability edge at all (cheap legs) and small with a real one
+    (expensive legs). This table separates the two, which no ROI table in this repo does.
+    """
+    print("\n" + "=" * 100)
+    print("AA. CALIBRATION -- realised hit rate vs entry price, i.e. the edge in probability points")
+    print("=" * 100)
+    print("   ROI% = (hit - p)/p exactly; 'pp' = hit - p. A band can print a big ROI on a")
+    print("   negative pp edge (1/p amplification) -- that is the number this table exists to expose.")
+    print(f"   {'lane':10} {'band':8} {'legs':>5} {'notional':>9} {'avgP':>6} {'hit%':>6} "
+          f"{'pp':>7} {'pp CI':>16} {'ROI%':>7} {'implied':>8} {'$/pp':>9} {'pnl':>9}")
+    for bot in ("STANDARD", "BANKROLL_200", "ALL"):
+        for nm in NAMES:
+            rows = c.execute(
+                """SELECT entryPrice px, simulatedPositionSize ntl, realizedPnl pnl, marketId m
+                   FROM PaperTrade WHERE isDemo=0 AND status='resolved' AND realizedPnl IS NOT NULL
+                     AND entryPrice>=? AND entryPrice<?""" +
+                ("" if bot == "ALL" else " AND botId=?"),
+                ([BANDS[NAMES.index(nm)][0], BANDS[NAMES.index(nm)][1]] +
+                 ([] if bot == "ALL" else [bot]))).fetchall()
+            legs = [{"px": r["px"], "ntl": r["ntl"], "pnl": r["pnl"], "m": r["m"],
+                     "hit": 1.0 if r["pnl"] > 0 else 0.0, "pp": (1.0 if r["pnl"] > 0 else 0.0) - r["px"]}
+                    for r in rows if r["px"] and r["px"] > 0 and r["ntl"] and r["ntl"] > 0]
+            if len(legs) < 20:
+                continue
+            ntl = sum(l["ntl"] for l in legs)
+            pnl = sum(l["pnl"] for l in legs)
+            avgp = sum(l["px"] * l["ntl"] for l in legs) / ntl
+            hit = sum(l["hit"] * l["ntl"] for l in legs) / ntl
+            pp = hit - avgp
+            # market-clustered bootstrap of the notional-weighted pp edge
+            by = {}
+            for l in legs:
+                by.setdefault(l["m"], []).append(l)
+            keys = list(by)
+            rng = np.random.default_rng(11)
+            vals = []
+            for _ in range(1200):
+                pick = rng.integers(0, len(keys), len(keys))
+                s = [l for i in pick for l in by[keys[i]]]
+                n_ = sum(x["ntl"] for x in s)
+                if n_:
+                    vals.append(sum(x["hit"] * x["ntl"] for x in s) / n_
+                                - sum(x["px"] * x["ntl"] for x in s) / n_)
+            lo, hi = (np.percentile(vals, 2.5), np.percentile(vals, 97.5)) if vals else (np.nan, np.nan)
+            # dollars of notional per 1pp of edge -- the amplification axis
+            per_pp = ntl / 100.0 * 100.0 / (avgp * 100)
+            print(f"   {bot[:10]:10} {nm:8} {len(legs):>5} {ntl:>9,.0f} {avgp:>6.3f} "
+                  f"{100*hit:>6.1f} {100*pp:>+7.2f} [{100*lo:>+6.2f},{100*hi:>+6.2f}] "
+                  f"{100*pnl/ntl:>+7.1f} {100*pp/avgp:>+8.1f} {per_pp:>9,.0f} {pnl:>+9,.0f}")
+
+
+def exit_alpha_report(c, since_label="all-time", since_ms=0):
+    """AB. CLOSED legs vs settlement truth: did the exit beat holding to resolution?"""
+    print("\n" + "=" * 100)
+    print(f"AB. EXIT ALPHA -- every closed leg re-priced at settlement ({since_label})")
+    print("=" * 100)
+    cache, m2c = build_truth(c, refresh=TRUTH_REFRESH)
+    for bot in ("STANDARD", "BANKROLL_200"):
+        legs = load_closed(c, since_ms, bot)
+        stats = {"name_match": 0, "index_fallback": 0, "no_match": 0, "no_record": 0}
+        for l in legs:
+            s = truth_of(cache, m2c.get(l["market"]), l["outcome"], stats)
+            l["settle"] = s
+            if s is None:
+                continue
+            l["hold_pnl"] = l["ntl"] * (s / l["px"] - 1.0)
+            l["dlt"] = l["pnl"] - l["hold_pnl"]          # >0: the exit beat holding
+            l["dlt_pp"] = 100 * l["dlt"] / l["ntl"]
+        cov = [l for l in legs if l.get("settle") is not None]
+        print(f"\n   {bot}: {len(legs)} closed legs, {len(cov)} priced at settlement "
+              f"({100*len(cov)/len(legs) if legs else 0:.0f}% coverage; "
+              f"name-match {stats['name_match']}, index fallback {stats['index_fallback']}, "
+              f"no-match {stats['no_match']}, no record {stats['no_record']})")
+        if not cov:
+            continue
+        ntl = sum(l["ntl"] for l in cov)
+        act = sum(l["pnl"] for l in cov)
+        hold = sum(l["hold_pnl"] for l in cov)
+        print(f"   exit as executed: {len(cov):>5} legs ${ntl:>8,.0f} ${act:>+8,.0f} "
+              f"({100*act/ntl:>+6.1f}%)   hold to settlement: ${hold:>+8,.0f} "
+              f"({100*hold/ntl:>+6.1f}%)   exit alpha ${act-hold:>+8,.0f} "
+              f"({100*(act-hold)/ntl:>+6.2f}% of notional)")
+        ex = sorted(cov, key=lambda l: -l["dlt"])[10:]
+        lo, hi = _boot_sum(cov, "dlt")
+        print(f"   exit alpha CI (market-clustered) [${lo:+,.0f}, ${hi:+,.0f}]   "
+              f"ex-top-10 ${sum(l['dlt'] for l in ex):+,.0f} on ${sum(l['ntl'] for l in ex):,.0f}")
+        print(f"\n   {'band':8} {'legs':>5} {'notional':>9} {'exitROI%':>9} {'holdROI%':>9} "
+              f"{'alpha$':>8} {'alpha%':>7} {'win%exit':>8} {'win%hold':>8} {'medExit':>7} {'medSettle':>9}")
+        for nm in NAMES:
+            b = [l for l in cov if l["band"] == nm]
+            if len(b) < 10:
+                continue
+            bn = sum(l["ntl"] for l in b)
+            a = sum(l["pnl"] for l in b)
+            h = sum(l["hold_pnl"] for l in b)
+            print(f"   {nm:8} {len(b):>5} {bn:>9,.0f} {100*a/bn:>+9.1f} {100*h/bn:>+9.1f} "
+                  f"{a-h:>+8,.0f} {100*(a-h)/bn:>+7.2f} "
+                  f"{100*sum(1 for l in b if l['cur']>l['px'])/len(b):>7.0f}% "
+                  f"{100*sum(l['settle'] for l in b)/len(b):>7.0f}% "
+                  f"{np.median([l['cur'] for l in b]):>7.3f} "
+                  f"{np.mean([l['settle'] for l in b]):>9.3f}")
+        # The mechanism split: did we sell strength or cut weakness?
+        print(f"\n   mechanism split (exit price vs entry price)")
+        print(f"   {'side':22} {'legs':>5} {'notional':>9} {'exitROI%':>9} {'holdROI%':>9} "
+              f"{'alpha$':>8} {'alpha%':>7} {'medMove':>8}")
+        for label, sel in (("sold into strength", lambda l: l["cur"] > l["px"] + 1e-9),
+                           ("cut into weakness", lambda l: l["cur"] < l["px"] - 1e-9),
+                           ("flat", lambda l: abs(l["cur"] - l["px"]) <= 1e-9)):
+            b = [l for l in cov if sel(l)]
+            if not b:
+                continue
+            bn = sum(l["ntl"] for l in b)
+            a = sum(l["pnl"] for l in b)
+            h = sum(l["hold_pnl"] for l in b)
+            print(f"   {label:22} {len(b):>5} {bn:>9,.0f} {100*a/bn:>+9.1f} {100*h/bn:>+9.1f} "
+                  f"{a-h:>+8,.0f} {100*(a-h)/bn:>+7.2f} "
+                  f"{np.median([l['cur']-l['px'] for l in b]):>+8.3f}")
+        # Capital-time released by exiting, so the alpha can be priced against the book's rate.
+        ends = {}
+        for l in cov:
+            rec = cache["markets"].get(m2c.get(l["market"]))
+            if rec and rec.get("end"):
+                try:
+                    ends[l["market"]] = time.mktime(time.strptime(rec["end"][:19], "%Y-%m-%dT%H:%M:%S")) * 1000
+                except Exception:
+                    pass
+        rel = [l for l in cov if l["market"] in ends
+               and (ends[l["market"]] - l["ms"]) / 86_400_000.0 > l["days"]]
+        if rel:
+            rel_days = sum(l["ntl"] * ((ends[l["market"]] - l["ms"]) / 86_400_000.0 - l["days"])
+                           for l in rel)
+            rel_alpha = sum(l["dlt"] for l in rel)
+            print(f"\n   capital-time: {len(rel)} exits released {rel_days:,.0f} capital-days "
+                  f"(scheduled end vs exit time) for an exit alpha of ${rel_alpha:+,.0f} "
+                  f"-> ${1000*rel_alpha/rel_days if rel_days else 0:+,.0f} per 1k capital-day released")
+            print(f"   finished-book benchmark is +27.43 $/1k-cd (section T): releasing a day of capital")
+            print(f"   is worth ~$27 per $1,000 of it, so an alpha below that per released capital-day")
+            print(f"   means the exit was the better use of the money even if it sold a winner.")
+
+
+# ---------------------------------------------------------------- AC
+def high_price_audit(c):
+    """AC. The expensive half of the book: is the edge at 0.60-1.00 real, and where is the volume?
+
+    Standing baseline says '64.4% of acted trades sit above 0.50, where edge is negative'. The
+    calibration table (AA) does not support that as a book-level statement: at 0.60-1.00 the
+    C-200 lane shows a positive, CI-excluding-zero pp edge while STANDARD shows ~zero. So the
+    claim is either lane-specific or dead. This tests it four ways before anything is proposed
+    on it: market/wallet concentration, ex-top-N, month stability, and a first-fill dedupe
+    (the basis v63 was challenged on and upheld).
+    """
+    print("\n" + "=" * 100)
+    print("AC. HIGH-PRICE BLOCK AUDIT -- 0.60-1.00 by lane, and the volume that sits there")
+    print("=" * 100)
+    rows = c.execute(
+        """SELECT botId, marketId, walletAddress, entryPrice px, simulatedPositionSize ntl,
+                  realizedPnl pnl, openedAt
+           FROM PaperTrade WHERE isDemo=0 AND status='resolved' AND realizedPnl IS NOT NULL""").fetchall()
+    legs = [{"bot": r["botId"], "m": r["marketId"], "w": r["walletAddress"], "px": r["px"],
+             "ntl": r["ntl"], "pnl": r["pnl"], "ms": r["openedAt"],
+             "hit": 1.0 if r["pnl"] > 0 else 0.0}
+            for r in rows if r["px"] and r["px"] > 0 and r["ntl"] and r["ntl"] > 0]
+    for bot in ("STANDARD", "BANKROLL_200"):
+        for lo, hi, nm in ((0.60, 0.80, "0.6-0.8"), (0.80, 1.0001, "0.8-1.0")):
+            s = [l for l in legs if l["bot"] == bot and lo <= l["px"] < hi]
+            if len(s) < 10:
+                continue
+            ntl = sum(l["ntl"] for l in s)
+            pnl = sum(l["pnl"] for l in s)
+            markets = len({l["m"] for l in s})
+            wallets = len({l["w"] for l in s})
+            avgp = sum(l["px"] * l["ntl"] for l in s) / ntl
+            hit = sum(l["hit"] * l["ntl"] for l in s) / ntl
+            ex10 = sorted(s, key=lambda l: -l["pnl"])[10:]
+            n10 = sum(l["ntl"] for l in ex10)
+            first = {}
+            for l in sorted(s, key=lambda l: l["ms"]):
+                first.setdefault((l["m"], l["w"]), l)
+            f = list(first.values())
+            fn = sum(l["ntl"] for l in f)
+            print(f"\n   {bot} {nm}: {len(s)} legs / {markets} markets / {wallets} wallets, ${ntl:,.0f}")
+            print(f"     pp edge {100*(hit-avgp):+.2f}   ROI {100*pnl/ntl:+.1f}%   "
+                  f"ex-top-10 {100*sum(l['pnl'] for l in ex10)/n10:+.1f}% on ${n10:,.0f}   "
+                  f"first-fill {len(f)} legs {100*sum(l['pnl'] for l in f)/fn:+.1f}%")
+            mon = {}
+            for l in s:
+                mon.setdefault(time.strftime("%Y-%m", time.gmtime(l["ms"] / 1000)), []).append(l)
+            seq = [f"{m}:n{len(v)}/{100*sum(x['pnl'] for x in v)/sum(x['ntl'] for x in v):+.0f}%"
+                   for m, v in sorted(mon.items())]
+            print("     months " + "  ".join(seq))
+    closed = c.execute(
+        """SELECT botId b, count(*) n, sum(simulatedPositionSize) ntl, sum(realizedPnl) pnl
+           FROM PaperTrade WHERE isDemo=0 AND status='closed' AND realizedPnl IS NOT NULL
+             AND entryPrice >= 0.60 GROUP BY botId""").fetchall()
+    print(f"\n   volume in the same price region that left via the early-exit path "
+          f"(judged in AB, counted here):")
+    for r in closed:
+        print(f"     {r['b']:12} {r['n']:>5} legs ${r['ntl']:>8,.0f} {100*r['pnl']/r['ntl']:>+6.1f}%")
+    print(f"\n   allocation: notional per 1pp of measured pp edge (resolved legs)")
+    print(f"   {'lane':12} {'band':8} {'notional':>9} {'pp':>7} {'$/1pp':>10}  verdict")
+    for bot in ("STANDARD", "BANKROLL_200"):
+        for lo, hi, nm in ((0.0, 0.2, "<0.20"), (0.2, 0.4, "0.2-0.4"), (0.4, 0.6, "0.4-0.6"),
+                           (0.6, 0.8, "0.6-0.8"), (0.8, 1.0001, "0.8-1.0")):
+            s = [l for l in legs if l["bot"] == bot and lo <= l["px"] < hi]
+            if len(s) < 10:
+                continue
+            ntl = sum(l["ntl"] for l in s)
+            avgp = sum(l["px"] * l["ntl"] for l in s) / ntl
+            pp = sum(l["hit"] * l["ntl"] for l in s) / ntl - avgp
+            per = f"{ntl/(100*pp):,.0f}" if pp > 1e-6 else "n/a"
+            verdict = ("edge, under-allocated" if pp > 0.03 and ntl < 3000
+                       else "edge" if pp > 0.03
+                       else "no edge, over-allocated" if ntl > 8000 else "no edge")
+            print(f"   {bot:12} {nm:8} {ntl:>9,.0f} {100*pp:>+7.2f} {per:>10}  {verdict}")
+
+
+# ---------------------------------------------------------------- AD
+def truth_bands(c, since_label="all-time", since_ms=0):
+    """AD. Band ROI on SETTLEMENT TRUTH, over every leg -- no exit-path survivorship.
+
+    The reason this table, and not the ROI table, is the load-bearing one: legs split by how
+    they ended. 'resolved' legs are the ones whose market reached resolution; 'closed' legs are
+    the ones whose market went dead and were expired at the last mark. Conditioning a band's
+    edge on either half is a selection on the exit path, and the two halves disagree in sign in
+    three of five STANDARD bands. So every leg is re-valued at what its market actually settled
+    at, which is the only basis that is independent of both our exit rules and our data gaps.
+
+    Validation is built in: for RESOLVED legs the truth PnL must equal realizedPnl by identity
+    (both are n*(s/p-1)), and the max absolute difference is printed. If that number is not
+    ~0, the truth join is wrong and the table is not readable.
+    """
+    print("\n" + "=" * 100)
+    print(f"AD. BAND EDGE ON SETTLEMENT TRUTH -- every leg, both exit paths ({since_label})")
+    print("=" * 100)
+    cache, m2c = build_truth(c)
+    rows = c.execute(
+        """SELECT botId, marketId, walletAddress, outcome, entryPrice px,
+                  simulatedPositionSize ntl, realizedPnl pnl, status, openedAt
+           FROM PaperTrade WHERE isDemo=0 AND status IN ('closed','resolved')
+             AND realizedPnl IS NOT NULL AND openedAt >= ?""", (since_ms,)).fetchall()
+    stats = {"name_match": 0, "index_fallback": 0, "no_match": 0, "no_record": 0}
+    legs = []
+    for r in rows:
+        if not r["px"] or r["px"] <= 0 or not r["ntl"] or r["ntl"] <= 0:
+            continue
+        s = truth_of(cache, m2c.get(r["marketId"]), r["outcome"], stats)
+        if s is None:
+            continue
+        legs.append({"bot": r["botId"], "m": r["marketId"], "w": r["walletAddress"],
+                     "px": r["px"], "ntl": r["ntl"], "band": band_of(r["px"]),
+                     "settle": s, "hit": s, "ms": r["openedAt"],
+                     "tp": r["ntl"] * (s / r["px"] - 1.0), "pnl": r["pnl"],
+                     "status": r["status"]})
+    res = [l for l in legs if l["status"] == "resolved"]
+    err = max((abs(l["tp"] - l["pnl"]) for l in res), default=0.0)
+    print(f"   truth join: {len(legs)} of {len(rows)} legs priced "
+          f"({100*len(legs)/len(rows):.1f}%) -- name-match {stats['name_match']}, "
+          f"index fallback {stats['index_fallback']}, no-match {stats['no_match']}, "
+          f"no record {stats['no_record']}")
+    print(f"   VALIDATION: max |truth PnL - realizedPnl| over {len(res)} resolved legs = "
+          f"${err:.3f} (must be ~0 for this table to be readable)")
+    print(f"\n   {'lane':12} {'band':8} {'legs':>5} {'mkts':>5} {'notional':>9} {'avgP':>6} "
+          f"{'hit%':>6} {'pp':>7} {'truthROI%':>9} {'CI':>16} {'ex10%':>7} {'ex3mk%':>7}")
+    for bot in ("STANDARD", "BANKROLL_200", "ALL"):
+        for nm in NAMES:
+            b = [l for l in legs if l["band"] == nm and (bot == "ALL" or l["bot"] == bot)]
+            if len(b) < 15:
+                continue
+            ntl = sum(l["ntl"] for l in b)
+            tp = sum(l["tp"] for l in b)
+            avgp = sum(l["px"] * l["ntl"] for l in b) / ntl
+            hit = sum(l["hit"] * l["ntl"] for l in b) / ntl
+            lo, hi = boot_roi([{"marketId": l["m"], "ntl": l["ntl"], "pnl": l["tp"]} for l in b])
+            e10 = sorted(b, key=lambda l: -l["tp"])[10:]
+            n10 = sum(l["ntl"] for l in e10)
+            bym = {}
+            for l in b:
+                d = bym.setdefault(l["m"], [0.0, 0.0]); d[0] += l["tp"]; d[1] += l["ntl"]
+            top3 = {k for k, _ in sorted(bym.items(), key=lambda kv: -kv[1][0])[:3]}
+            keep = [l for l in b if l["m"] not in top3]
+            kn = sum(l["ntl"] for l in keep)
+            print(f"   {bot[:12]:12} {nm:8} {len(b):>5} {len(bym):>5} {ntl:>9,.0f} {avgp:>6.3f} "
+                  f"{100*hit:>6.1f} {100*(hit-avgp):>+7.2f} {100*tp/ntl:>+9.1f} "
+                  f"[{100*lo:>+6.1f},{100*hi:>+6.1f}] "
+                  f"{100*sum(l['tp'] for l in e10)/n10:>+7.1f} "
+                  f"{100*sum(l['tp'] for l in keep)/kn if kn else 0:>+7.1f}")
+    # The allocation read: what the size factors actually are, next to the measured edge.
+    print(f"\n   lane bands, the live size factor, and the measured truth edge "
+          f"(all-time, legs>=15)")
+    print(f"   {'lane':12} {'band':8} {'live factor':>12} {'clip$':>7} {'pp':>7} {'truthROI%':>9} {'verdict':>26}")
+    for bot in ("STANDARD", "BANKROLL_200"):
+        for nm in NAMES:
+            b = [l for l in legs if l["band"] == nm and l["bot"] == bot]
+            if len(b) < 15:
+                continue
+            ntl = sum(l["ntl"] for l in b)
+            avgp = sum(l["px"] * l["ntl"] for l in b) / ntl
+            pp = sum(l["hit"] * l["ntl"] for l in b) / ntl - avgp
+            tp = sum(l["tp"] for l in b)
+            if bot == "BANKROLL_200":
+                fac = {"<0.20": "3.5 (longshot)", "0.2-0.4": "1.0", "0.4-0.6": "0.125 (skip)",
+                       "0.6-0.8": "0.5 (halved)", "0.8-1.0": "1.0"}[nm]
+            else:
+                fac = {"<0.20": "1.0", "0.2-0.4": "1.0", "0.4-0.6": "skipped (v63)",
+                       "0.6-0.8": "1.0", "0.8-1.0": "1.0"}[nm]
+            print(f"   {bot[:12]:12} {nm:8} {fac:>12} {ntl/len(b):>7.2f} {100*pp:>+7.2f} "
+                  f"{100*tp/ntl:>+9.1f}")
+
+
+# ---------------------------------------------------------------- AE
+SUB_BANDS = [(0.0, 0.05, "0.00-0.05"), (0.05, 0.10, "0.05-0.10"), (0.10, 0.15, "0.10-0.15"),
+             (0.15, 0.20, "0.15-0.20")]
+
+
+def cheap_tail_decomposition(c):
+    """AE. The <0.20 band is not one bet: 0.00-0.05 and 0.05-0.20 behave oppositely.
+
+    Why it matters for sizing rather than for a gate: the live C-200 map applies its LARGEST
+    factor (c200LongshotBandFactor, 3.5x, paper.ts mapBankroll200Size) to everything below
+    0.20 with no lower bound, and applyKellyBandRails FLOORS Kelly at that size ("must never
+    shrink the one proven winner"). So the deepest longshots in the book get the biggest clips
+    and the code is written to keep it that way. If the edge is not there, the factor is a
+    sizing error the rails actively defend.
+    """
+    print("\n" + "=" * 100)
+    print("AE. CHEAP-TAIL DECOMPOSITION -- 0.00-0.05 vs 0.05-0.20, on settlement truth")
+    print("=" * 100)
+    cache, m2c = build_truth(c)
+    rows = c.execute(
+        """SELECT botId, marketId, walletAddress, outcome, entryPrice px,
+                  simulatedPositionSize ntl, realizedPnl pnl, status
+           FROM PaperTrade WHERE isDemo=0 AND status IN ('closed','resolved')
+             AND realizedPnl IS NOT NULL AND entryPrice < 0.20""").fetchall()
+    stats = {"name_match": 0, "index_fallback": 0, "no_match": 0, "no_record": 0}
+    legs = []
+    for r in rows:
+        if not r["px"] or r["px"] <= 0 or not r["ntl"] or r["ntl"] <= 0:
+            continue
+        s = truth_of(cache, m2c.get(r["marketId"]), r["outcome"], stats)
+        if s is None:
+            continue
+        legs.append({"bot": r["botId"], "m": r["marketId"], "w": r["walletAddress"],
+                     "px": r["px"], "ntl": r["ntl"], "hit": s, "pnl": r["pnl"],
+                     "tp": r["ntl"] * (s / r["px"] - 1.0), "status": r["status"]})
+    print(f"   {'sub-band':10} {'legs':>5} {'mkts':>5} {'notional':>9} {'clip':>6} {'avgP':>6} "
+          f"{'hit%':>6} {'pp':>7} {'truthROI%':>9} {'ex10%':>7} {'ex3mk%':>7} {'REALIZED$':>9}")
+    for lo, hi, nm in SUB_BANDS:
+        b = [l for l in legs if lo <= l["px"] < hi]
+        if len(b) < 10:
+            continue
+        ntl = sum(l["ntl"] for l in b)
+        tp = sum(l["tp"] for l in b)
+        hit = sum(l["hit"] * l["ntl"] for l in b) / ntl
+        px = sum(l["px"] * l["ntl"] for l in b) / ntl
+        e10 = sorted(b, key=lambda l: -l["tp"])[10:]
+        n10 = sum(l["ntl"] for l in e10)
+        bym = {}
+        for l in b:
+            bym.setdefault(l["m"], []).append(l)
+        top3 = {k for k, _ in sorted(bym.items(), key=lambda kv: -sum(x["tp"] for x in kv[1]))[:3]}
+        keep = [l for l in b if l["m"] not in top3]
+        kn = sum(l["ntl"] for l in keep)
+        print(f"   {nm:10} {len(b):>5} {len(bym):>5} {ntl:>9,.0f} {ntl/len(b):>6.2f} {px:>6.3f} "
+              f"{100*hit:>6.1f} {100*(hit-px):>+7.2f} {100*tp/ntl:>+9.1f} "
+              f"{100*sum(l['tp'] for l in e10)/n10:>+7.1f} "
+              f"{100*sum(l['tp'] for l in keep)/kn if kn else 0:>+7.1f} "
+              f"{sum(l['pnl'] for l in b):>+9,.0f}")
+    # Who owns the sub-0.05 region, and at what clip -- this is the size-factor question.
+    print(f"\n   sub-0.05 by lane: clip vs the lane's own band factor")
+    for bot in ("STANDARD", "BANKROLL_200"):
+        b = [l for l in legs if l["bot"] == bot and l["px"] < 0.05]
+        if not b:
+            continue
+        ntl = sum(l["ntl"] for l in b)
+        pk = [l for l in legs if l["bot"] == bot and 0.05 <= l["px"] < 0.20]
+        pn = sum(l["ntl"] for l in pk)
+        print(f"   {bot:12} <0.05: {len(b):>3} legs ${ntl:>6,.0f} clip ${ntl/len(b):>6.2f} "
+              f"settle-hit {100*sum(l['hit'] for l in b)/len(b):>5.1f}% "
+              f"REALIZED ${sum(l['pnl'] for l in b):>+7,.0f} ({100*sum(l['pnl'] for l in b)/ntl:>+6.1f}%)"
+              f"   |   0.05-0.20: {len(pk):>3} legs clip ${pn/len(pk):>6.2f}")
+    # Break-even hit rate is the price; print the gap that matters.
+    print(f"\n   break-even hit rate = the price paid. Sub-0.05 requires "
+          f"{100*sum(l['px']*l['ntl'] for l in legs if l['px']<0.05)/sum(l['ntl'] for l in legs if l['px']<0.05):.2f}% accuracy; "
+          f"realised settlement hit is "
+          f"{100*sum(l['hit']*l['ntl'] for l in legs if l['px']<0.05)/sum(l['ntl'] for l in legs if l['px']<0.05):.2f}%.")
+
+
+def cheap_tail_fill_probe(c, limit=40):
+    """AF. Fill headroom in the cheap tail, from live order books (Lane B, read-only).
+
+    The standing caveat is that fillability of thin books is unmodelled and is the dominant
+    risk in every cheap-tail result. This is the first measurement of it: for open positions
+    below 0.20, how much notional can be bought within 1c / 2c / 5c of the best ask? That
+    number, divided by the clip, is the clip multiplier the book can actually carry.
+    """
+    print("\n" + "=" * 100)
+    print("AF. CHEAP-TAIL FILL HEADROOM -- live order books for open positions < 0.20")
+    print("=" * 100)
+    rows = c.execute(
+        """SELECT DISTINCT marketId, outcome, entryPrice px, simulatedPositionSize ntl
+           FROM PaperTrade WHERE isDemo=0 AND status='open' AND entryPrice < 0.20
+           ORDER BY entryPrice LIMIT ?""", (limit,)).fetchall()
+    m2c = market_condition_ids(c)
+    out = []
+    for r in rows:
+        cid = m2c.get(r["marketId"])
+        if not cid:
+            continue
+        if not os.path.exists(os.path.join(TRUTH_RAW_DIR, cid + ".json")):
+            subprocess.run(["curl", "-s", "--max-time", "20",
+                            "https://clob.polymarket.com/markets/" + cid,
+                            "-o", os.path.join(TRUTH_RAW_DIR, cid + ".json")], check=False)
+        try:
+            d = json.load(open(os.path.join(TRUTH_RAW_DIR, cid + ".json")))
+        except Exception:
+            continue
+        toks = [(t.get("outcome"), t.get("token_id")) for t in d.get("tokens", [])]
+        match = [t for t in toks if _norm_outcome(t[0]) == _norm_outcome(r["outcome"])]
+        if not match or not match[0][1]:
+            continue
+        bk = subprocess.run(["curl", "-s", "--max-time", "20",
+                             "https://clob.polymarket.com/book?token_id=" + match[0][1]],
+                            capture_output=True, text=True).stdout
+        try:
+            b = json.loads(bk)
+            asks = sorted([[float(a["price"]), float(a["size"])] for a in b.get("asks", [])])
+        except Exception:
+            continue
+        if not asks:
+            continue
+        best = asks[0][0]
+
+        def depth(lim):
+            return sum(p * s for p, s in asks if p <= best + lim)
+        out.append({"market": r["marketId"], "px": r["px"], "clip": r["ntl"],
+                    "best_ask": best, "d1": depth(0.01), "d2": depth(0.02), "d5": depth(0.05)})
+    if not out:
+        print("   no live books resolved -- probe skipped")
+        return
+    print(f"   {len(out)} open cheap positions with a live book")
+    for k, lab in (("d1", "+1c"), ("d2", "+2c"), ("d5", "+5c")):
+        vals = sorted(x[k] for x in out)
+        med = np.median(vals)
+        mult = [x[k] / x["clip"] for x in out if x["clip"] > 0]
+        print(f"   depth within {lab}: median ${med:>8,.0f}  p10 ${np.percentile(vals,10):>7,.0f} "
+              f"p90 ${np.percentile(vals,90):>9,.0f}  -> clip multiplier median x{np.median(mult):>5.1f}"
+              f"  (min x{min(mult):.2f})")
+    thin = [x for x in out if x["d2"] < 2 * x["clip"]]
+    print(f"   books where 2x the current clip would NOT fill within +2c: "
+          f"{len(thin)}/{len(out)} ({100*len(thin)/len(out):.0f}%)")
+    thin10 = [x for x in out if x["d2"] < 10 * x["clip"]]
+    print(f"   books that cannot carry 10x the current clip within +2c: "
+          f"{len(thin10)}/{len(out)} ({100*len(thin10)/len(out):.0f}%)")
+    print(f"   NOTE: this is depth at ONE instant for one side of the book. It bounds the clip,")
+    print(f"   it does not model queue position, adverse selection, or the fact that we are")
+    print(f"   buying at the ask immediately after a whale prints -- the exact moment the book")
+    print(f"   is thinnest on the side we need.")
+    with open("data/cheap-tail-fill-probe.json", "w") as f:
+        json.dump({"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                   "rows": out}, f, indent=1)
+
+
 def main():
     c = con()
     legs = load_finished(c)
@@ -873,6 +1506,14 @@ def main():
     ttl_by_lane(c)
     ttl_robustness(c)
     ladder_effect(c)
+    calibration_report(c)
+    exit_alpha_report(c)
+    exit_alpha_report(c, "last 90d", int((time.time() - 90 * 86400) * 1000))
+    high_price_audit(c)
+    truth_bands(c)
+    truth_bands(c, "last 90d", int((time.time() - 90 * 86400) * 1000))
+    cheap_tail_decomposition(c)
+    cheap_tail_fill_probe(c)
 
 
 if __name__ == "__main__":

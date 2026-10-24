@@ -1,45 +1,45 @@
-loaded 11495 finished real legs (all-time), 3742 markets
+loaded 12199 finished real legs (all-time), 3971 markets
 
 ====================================================================================================
 T. EDGE PER CAPITAL-DAY -- all-time, finished legs, cost = dollars at risk
 ====================================================================================================
    $/1k-cd = dollars earned per $1,000 of capital held one day. ROI% = per dollar risked.
    lane       band       legs  notional       pnl    ROI%  medD  $/1k-cd  CI low   CI hi  shCD% ex10 ROI% ex10 $/1k
-   STANDARD   <0.20       492     5,713    +4,953   +86.7   3.5   +76.66  +12.89 +155.80  12.3%     +55.8    +49.83
-   STANDARD   0.2-0.4    1175    14,102    +1,160    +8.2   1.0   +20.86  -42.47  +83.81  10.6%      +4.9    +12.64
-   STANDARD   0.4-0.6    3665    46,196    +3,109    +6.7   1.1   +27.48  -92.62 +100.48  21.5%      +6.2    +25.27
-   STANDARD   0.6-0.8    1537    18,238    +1,235    +6.8   1.5   +14.09   -4.02  +30.98  16.7%      +6.2    +12.78
-   STANDARD   0.8-1.0    2119    19,765      -897    -4.5   4.2    -4.39  -11.19   +1.28  38.9%      -4.8     -4.62
-   BANKROLL_2 <0.20       259     7,563    +6,088   +80.5   1.0  +334.80  +95.08 +634.08  41.9%      -6.2    -27.45
-   BANKROLL_2 0.2-0.4     538     5,253      +263    +5.0   1.0   +27.58  -77.84 +129.12  22.0%      -5.9    -33.80
+   STANDARD   <0.20       492     5,713    +4,953   +86.7   3.5   +76.66  +12.89 +155.80   5.7%     +55.8    +49.83
+   STANDARD   0.2-0.4    1175    14,102    +1,160    +8.2   1.0   +20.86  -42.47  +83.81   4.9%      +4.9    +12.64
+   STANDARD   0.4-0.6    3665    46,196    +3,109    +6.7   1.1   +27.48  -92.62 +100.48  10.0%      +6.2    +25.27
+   STANDARD   0.6-0.8    1674    19,927      +880    +4.4   1.7    +4.23   -4.47  +16.28  18.4%      +3.9     +3.66
+   STANDARD   0.8-1.0    2684    25,415      -885    -3.5  10.7    -1.29   -3.43   +0.37  60.9%      -3.7     -1.35
+   BANKROLL_2 <0.20       260     7,583    +6,068   +80.0   1.0  +333.61  +96.33 +643.22  41.9%      -6.5    -28.74
+   BANKROLL_2 0.2-0.4     539     5,263      +283    +5.4   1.0   +29.64  -79.79 +125.35  22.0%      -5.4    -31.40
    BANKROLL_2 0.4-0.6    1053     4,355      -320    -7.3   1.0   -44.92 -143.13  +51.74  16.4%     -10.3    -62.35
    BANKROLL_2 0.6-0.8     496     2,391        +4    +0.2   1.0    +0.89  -46.40  +44.91  11.4%      -1.7     -8.16
    BANKROLL_2 0.8-1.0     161       807        +2    +0.2   1.8    +0.55  -25.99  +17.58   8.4%      -1.3     -2.66
-   ALL                  11495   124,384   +15,598   +12.5   1.1   +27.43                 100.0%      +7.4    +16.06
+   ALL                  12199   131,753   +15,255   +11.6   1.3   +13.00                 100.0%      +6.7     +7.47
 
-   ranking by ROI%:        <0.20(+83.2) > 0.2-0.4(+7.4) > 0.6-0.8(+6.0) > 0.4-0.6(+5.5) > 0.8-1.0(-4.4)
-   ranking by $/capital-day: <0.20(+133.35) > 0.4-0.6(+23.19) > 0.2-0.4(+21.85) > 0.6-0.8(+13.39) > 0.8-1.0(-4.31)
+   ranking by ROI%:        <0.20(+82.9) > 0.2-0.4(+7.5) > 0.4-0.6(+5.5) > 0.6-0.8(+4.0) > 0.8-1.0(-3.4)
+   ranking by $/capital-day: <0.20(+133.10) > 0.4-0.6(+23.19) > 0.2-0.4(+22.15) > 0.6-0.8(+4.15) > 0.8-1.0(-1.28)
 
    holding-time cohorts (all lanes) -- same capital, different patience
    cohort      legs  notional       pnl    ROI%  $/1k-cd
-   <1d         1043    12,596    +1,096    +8.7  +173.46
-   1-3d        6708    72,243    -4,365    -6.0   -48.06
+   <1d         1045    12,634    +1,084    +8.6  +171.10
+   1-3d        6709    72,253    -4,345    -6.0   -47.82
    3-7d        2097    22,889   +12,460   +54.4  +131.47
    7-14d        748     7,895    +4,087   +51.8   +50.27
    14-30d       489     4,550      +269    +5.9    +2.88
-   >30d         410     4,211    +2,051   +48.7   +10.17
+   >30d        1111    11,532    +1,700   +14.7    +2.11
 
 ====================================================================================================
 U. CAPITAL-DAY AUDIT -- where capital-time is spent, and what it returns
 ====================================================================================================
-   finished book : 11495 legs  $  124,384 notional      568,546 capdays  $  +15,598  -> +27.43 $/1k-cd
-   open STANDARD :  1255 legs  $   13,422 notional    1,071,506 capdays  $   +1,934  ->  +1.80 $/1k-cd   (median age 92d)
-   open BANKROLL_:     2 legs  $       15 notional           18 capdays  $       -0  ->  -4.98 $/1k-cd   (median age 1d)
+   finished book : 12199 legs  $  131,753 notional    1,173,334 capdays  $  +15,255  -> +13.00 $/1k-cd
+   open STANDARD :   556 legs  $    6,137 notional      478,435 capdays  $   +2,296  ->  +4.80 $/1k-cd   (median age 84d)
+   open BANKROLL_:     2 legs  $       14 notional           18 capdays  $       -0  ->  -6.56 $/1k-cd   (median age 1d)
    NOTE: open-book PnL is an unrealised mark, so its $/capday is not a realised return.
 
    capital-time split (realised legs vs open book)
-   STANDARD   finished      525,124  open    1,071,506  open share of capital-time  67.1%
-   BANKROLL_2 finished       43,422  open           18  open share of capital-time   0.0%
+   STANDARD   finished    1,129,889  open      478,435  open share of capital-time  29.7%
+   BANKROLL_2 finished       43,445  open           18  open share of capital-time   0.0%
 
 ====================================================================================================
 V. GROUND-TRUTH 168h STOP REPLAY -- settled legs only (hold arm = realised outcome)
@@ -72,36 +72,36 @@ W. SIZING HEADROOM -- who is pinned at a cap, and what scaling the open lane imp
    active ruleset v?: standardMaxEntryPrice=0.85, maxEntryPrice=0.95, c200LongshotBandFactor=3.5
      maxOpenPositions = 225
    STANDARD     principal $11,092.91  cash $ 7,122.25  clip $0.25-$20.00  realised $9,487.34
-   BANKROLL_200 principal $ 1,900.00  cash $ 7,923.00  clip $0.10-$100.00  realised $6,037.94
+   BANKROLL_200 principal $ 1,900.00  cash $ 7,924.19  clip $0.10-$100.00  realised $6,038.15
    ML_LANE      principal $ 2,500.00  cash $ 2,500.00  clip $0.10-$100.00  realised $    0.00
 
    realised clip (dollars at risk per leg) by lane
-   STANDARD   n= 8988 median $  11.00 p90 $  18.00 max $  20.00
-   BANKROLL_2 n= 2507 median $   4.99 p90 $  10.00 max $ 100.00
+   STANDARD   n= 9690 median $  10.80 p90 $  18.00 max $  20.00
+   BANKROLL_2 n= 2509 median $   4.99 p90 $  10.00 max $ 100.00
 
    scale shadow -- what 1x / 3x / 8x the clip would have returned (linear in stake)
    lane        mult       pnl  ex-top10 ex-top10 ROI% $/1k-cd x10
-   STANDARD      1x    +9,560    +7,720          +7.4     +147.62
-   STANDARD      3x   +28,680   +23,160          +7.4     +442.85
-   STANDARD      8x   +76,480   +61,761          +7.4    +1180.93
-   BANKROLL_2    1x    +6,038      -473          -2.4     -116.35
-   BANKROLL_2    3x   +18,114    -1,418          -2.4     -349.04
-   BANKROLL_2    8x   +48,304    -3,782          -2.4     -930.76
+   STANDARD      1x    +9,217    +7,377          +6.6      +65.41
+   STANDARD      3x   +27,651   +22,131          +6.6     +196.24
+   STANDARD      8x   +73,736   +59,017          +6.6     +523.32
+   BANKROLL_2    1x    +6,038      -473          -2.4     -116.23
+   BANKROLL_2    3x   +18,114    -1,418          -2.4     -348.68
+   BANKROLL_2    8x   +48,305    -3,780          -2.4     -929.81
 
 ====================================================================================================
 X. THE CAPITAL IMPLIED BY $5,000/DAY -- the ladder as a turnover equation
 ====================================================================================================
    PnL/day = capital x ($ per capital-day). Solve for capital at the measured rate.
    bucket                        $/1k-cd capdays/leg  capital for $5k/day
-   all lanes, all bands           +27.43        49.5 $            182,251
-   <0.20 (all lanes)             +133.35       110.3 $             37,496
-   0.2-0.4 (all lanes)            +21.85        38.0 $            228,843
+   all lanes, all bands           +13.00        96.2 $            384,571
+   <0.20 (all lanes)             +133.10       110.1 $             37,566
+   0.2-0.4 (all lanes)            +22.15        38.0 $            225,704
    0.4-0.6 (all lanes)            +23.19        25.5 $            215,595
-   0.6-0.8 (all lanes)            +13.39        45.5 $            373,456
-   0.8-1.0 (all lanes)             -4.31        91.1      never (rate<=0)
+   0.6-0.8 (all lanes)             +4.15        98.2 $          1,204,444
+   0.8-1.0 (all lanes)             -1.28       243.2      never (rate<=0)
 
-   best robust bucket (ex-top-10 ROI > 0): <0.20 at +133.35 $/1k-cd, ex-top-10 ROI +36.2%
-   capital needed to earn $5,000/day there: $37,496
+   best robust bucket (ex-top-10 ROI > 0): <0.20 at +133.10 $/1k-cd, ex-top-10 ROI +36.0%
+   capital needed to earn $5,000/day there: $37,566
 
 ====================================================================================================
 Y. DEDUPE-BASIS AUDIT -- 0.40-0.60, the band a live rule (v63) is skipping
@@ -116,14 +116,14 @@ Y. DEDUPE-BASIS AUDIT -- 0.40-0.60, the band a live rule (v63) is skipping
    all-time  top markets by PnL: will-spain $+6,700, will-argen $+599, mlb-min-kc $+337, wnba-las-a $+307, wta-kornee $+277
    all-time  adds = 66% of the band's notional, +13.53% on those adds
 
-   window 90d: 1006 distinct bets, 2076 legs
+   window 90d: 993 distinct bets, 2032 legs
              basis                          n   notional       pnl      ROI
-   90d       first fill only (v63 basis)  1006 $   13,589 $    -885   -6.51% [ -13.3,   +0.6]
-   90d       repeat fills (adds)         1070 $   13,846 $  -2,143  -15.48% [ -36.1,   +6.0]
-   90d       ALL legs (capital basis)    2076 $   27,434 $  -3,028  -11.04% [ -23.4,   +1.5]
-   90d       ALL legs ex-top-10          2066 $   27,255 $  -3,284  -12.05%
+   90d       first fill only (v63 basis)   993 $   13,432 $    -882   -6.57% [ -13.5,   +0.5]
+   90d       repeat fills (adds)         1039 $   13,465 $  -2,134  -15.85% [ -36.7,   +6.2]
+   90d       ALL legs (capital basis)    2032 $   26,896 $  -3,016  -11.21% [ -23.4,   +1.5]
+   90d       ALL legs ex-top-10          2022 $   26,717 $  -3,272  -12.25%
    90d       top markets by PnL: mlb-min-kc $+337, wnba-las-a $+307, mlb-cws-tb $+265, cs2-prv-10 $+250, dota2-flc- $+218
-   90d       adds = 50% of the band's notional, -15.48% on those adds
+   90d       adds = 50% of the band's notional, -15.85% on those adds
 
 ====================================================================================================
 Z. TIME-TO-RESOLUTION AT ENTRY -- the one maturity variable a rule can act on
@@ -131,49 +131,49 @@ Z. TIME-TO-RESOLUTION AT ENTRY -- the one maturity variable a rule can act on
    TTL = hours remaining at entry (last snapshot within 15min of the fill).
    Realised holding time is post-treatment and cannot be gated; TTL can.
 
-   window all-time: 11335 legs with TTL ($122,901)
+   window all-time: 12035 legs with TTL ($130,217)
    TTL        legs  notional  shNtl%       pnl    ROI%               CI medHold  $/1k-cd ex10 ROI%
-   <6h        1844    20,773   16.9%    -1,529    -7.4 [ -22.7, +11.3]     1.0   -81.59     -19.2
-   6-24h      2965    32,490   26.4%    -1,857    -5.7 [ -17.0,  +8.0]     1.0   -54.52     -13.5
-   1-3d       1732    18,403   15.0%    +1,324    +7.2 [  -6.8, +23.7]     1.7   +37.34      -4.6
-   3-7d       2110    22,543   18.3%   +10,461   +46.4 [ +11.8, +61.8]     3.9  +127.23     +42.7
-   7-30d      1357    15,316   12.5%    +3,134   +20.5 [  -5.6, +54.2]     1.1   +31.39      -2.8
-   30-90d      462     4,735    3.9%    +2,191   +46.3 [  +4.2, +97.5]    35.6   +12.36     +14.5
-   >90d        865     8,642    7.0%    +1,795   +20.8 [  -2.8, +57.6]    10.9   +15.83     +12.9
-   <24h       4809    53,263   43.3%    -3,386    -6.4 [ -15.9,  +4.0]
-   <72h       6541    71,666   58.3%    -2,062    -2.9 [ -12.0,  +5.7]
-   >=72h      4794    51,236   41.7%   +17,581   +34.3 [ +12.6, +50.2]
-   >=7d       2684    28,693   23.3%    +7,120   +24.8 [  +4.5, +46.6]
+   <6h        1845    20,793   16.0%    -1,549    -7.4 [ -23.0, +10.7]     1.0   -82.64     -19.2
+   6-24h      2966    32,508   25.0%    -1,849    -5.7 [ -17.6,  +7.5]     1.0   -54.29     -13.5
+   1-3d       1733    18,413   14.1%    +1,344    +7.3 [  -6.4, +22.2]     1.7   +37.89      -4.5
+   3-7d       2110    22,543   17.3%   +10,461   +46.4 [ +11.8, +61.8]     3.9  +127.23     +42.7
+   7-30d      1363    15,379   11.8%    +3,132   +20.4 [  -4.8, +53.8]     1.1   +30.09      -2.8
+   30-90d      566     6,095    4.7%    +1,724   +28.3 [  -7.1, +75.0]    41.2    +6.61      +3.2
+   >90d       1452    14,487   11.1%    +1,916   +13.2 [  -1.8, +35.5]    11.4    +3.05      +8.5
+   <24h       4811    53,301   40.9%    -3,398    -6.4 [ -16.7,  +3.3]
+   <72h       6544    71,714   55.1%    -2,054    -2.9 [ -11.2,  +6.8]
+   >=72h      5491    58,503   44.9%   +17,232   +29.5 [ +10.9, +44.7]
+   >=7d       3381    35,960   27.6%    +6,771   +18.8 [  +2.5, +37.7]
 
-   window 90d: 7059 legs with TTL ($79,945)
+   window 90d: 7195 legs with TTL ($82,021)
    TTL        legs  notional  shNtl%       pnl    ROI%               CI medHold  $/1k-cd ex10 ROI%
-   <6h        1368    15,727   19.7%      -270    -1.7 [ -21.6, +19.7]     1.0   -19.67     -17.3
-   6-24h      2525    28,338   35.4%    -1,384    -4.9 [ -17.8, +11.1]     1.0   -48.21     -13.8
-   1-3d       1321    14,410   18.0%    +1,086    +7.5 [  -9.5, +26.7]     1.7   +39.21      -7.6
-   3-7d        437     4,849    6.1%      +687   +14.2 [  -9.2, +39.0]     1.1   +40.58      -0.3
-   7-30d       977    11,502   14.4%    +2,960   +25.7 [  -9.5, +68.2]     1.0   +55.73      -4.2
-   30-90d      310     3,343    4.2%    +2,011   +60.1 [  +2.9,+129.2]    31.4   +20.38     +15.2
-   >90d        121     1,775    2.2%    +1,586   +89.4 [  +3.6,+224.1]     7.0   +60.55     +56.7
-   <24h       3893    44,065   55.1%    -1,654    -3.8 [ -15.7,  +9.1]
-   <72h       5214    58,475   73.1%      -568    -1.0 [ -10.9, +10.4]
-   >=72h      1845    21,470   26.9%    +7,244   +33.7 [  +8.5, +66.0]
-   >=7d       1408    16,620   20.8%    +6,557   +39.5 [  +6.3, +75.9]
+   <6h        1325    15,252   18.6%      -314    -2.1 [ -21.3, +21.1]     1.0   -23.69     -18.1
+   6-24h      2510    28,177   34.4%    -1,326    -4.7 [ -17.5,  +9.4]     1.0   -46.49     -13.7
+   1-3d       1322    14,420   17.6%    +1,106    +7.7 [  -9.3, +27.1]     1.7   +39.91      -7.4
+   3-7d        421     4,725    5.8%      +766   +16.2 [  -6.1, +40.5]     1.1   +45.67      +1.4
+   7-30d       960    11,309   13.8%    +3,063   +27.1 [  -7.1, +70.7]     1.0   +55.08      -3.3
+   30-90d      411     4,684    5.7%    +1,536   +32.8 [ -13.3, +97.3]    35.7    +8.48      -0.0
+   >90d        246     3,455    4.2%    +1,625   +47.0 [  +2.3,+118.8]    48.2   +13.11     +28.6
+   <24h       3835    43,429   52.9%    -1,640    -3.8 [ -15.3,  +9.5]
+   <72h       5157    57,849   70.5%      -534    -0.9 [ -11.6,  +9.4]
+   >=72h      2038    24,172   29.5%    +6,990   +28.9 [  +4.1, +57.0]
+   >=7d       1617    19,447   23.7%    +6,224   +32.0 [  +3.5, +67.6]
 
    lane split, all-time (each cell = n / $pnl / ROI%)
    lane                       <24h                1-3d                3-7d               7-30d               >=30d
-   STANDARD      3395/ -5,464/-13.0%   1100/   +134/ +1.0%   2029/+10,545/+48.2%   1162/ +1,247/ +9.5%   1164/ +3,007/+26.3%
-   BANKROLL_20   1414/ +2,079/+18.7%    632/ +1,190/+27.6%     81/    -84/-12.6%    195/ +1,887/+85.7%    163/   +979/+50.6%
+   STANDARD      3396/ -5,457/-12.9%   1100/   +134/ +1.0%   2029/+10,545/+48.2%   1168/ +1,244/ +9.4%   1855/ +2,660/+14.3%
+   BANKROLL_20   1415/ +2,059/+18.4%    633/ +1,210/+28.0%     81/    -84/-12.6%    195/ +1,887/+85.7%    163/   +979/+50.6%
 
    Z1. band x TTL (all-time, all lanes) -- cell = n / ROI% / ex-top10 ROI%
    band                        <24h                   1-3d                   3-7d                  7-30d                  >=30d
-   <0.20       298/ +15.5/ -53.9    86/+116.4/ -15.4    99/+186.1/+113.9   112/+109.0/ -57.4   155/+160.8/+106.8
-   0.2-0.4     933/  -0.5/  -4.8   279/ -22.3/ -37.3   192/ +63.9/ +51.9   198/ +25.9/  +8.5   107/ +33.5/  +0.8
+   <0.20       299/ +15.1/ -54.0    86/+116.4/ -15.4    99/+186.1/+113.9   112/+109.0/ -57.4   155/+160.8/+106.8
+   0.2-0.4     933/  -0.5/  -4.8   280/ -21.6/ -36.5   192/ +63.9/ +51.9   198/ +25.9/  +8.5   107/ +33.5/  +0.8
    0.4-0.6    2207/ -19.4/ -20.7   634/  +0.1/  -3.6  1120/ +56.8/ +56.0   611/  -1.1/  -3.9   128/  -9.0/ -20.8
-   0.6-0.8     924/  +0.6/  -0.7   422/  +2.1/  -0.6   291/ +14.3/ +12.5   128/ +11.7/  +6.0   234/ +16.4/ +14.0
-   0.8-1.0     447/  +3.8/  +2.9   311/  -0.4/  -2.0   408/ -19.3/ -20.7   308/  +3.5/  +2.7   703/  -7.5/  -8.1
+   0.6-0.8     925/  +0.7/  -0.6   422/  +2.1/  -0.6   291/ +14.3/ +12.5   128/ +11.7/  +6.0   370/  +0.7/  -1.3
+   0.8-1.0     447/  +3.8/  +2.9   311/  -0.4/  -2.0   408/ -19.3/ -20.7   314/  +3.3/  +2.6  1258/  -3.8/  -4.1
 
    Z2. category x TTL (all-time) -- cell = n / ROI%
-   COVERAGE: 0/11335 legs have a MarketSnapshot.category (0.0%) -- the column is populated on a handful of rows, so category attribution is NOT measurable from this table and no cell below is usable
+   COVERAGE: 0/12035 legs have a MarketSnapshot.category (0.0%) -- the column is populated on a handful of rows, so category attribution is NOT measurable from this table and no cell below is usable
    (skipped: an attribution table computed on <50% coverage is an instrument defect, not a finding)
 
 ====================================================================================================
@@ -182,63 +182,63 @@ Z3. THE SHORT-TTL BLOCK BY ADMISSION PATH -- named lane vs regular funnel
 
    window all-time
    cohort                             n  notional       pnl    ROI% ex10 ROI%  $/1k-cd
-   BANKROLL TTL<24h                1414    11,142    +2,079   +18.7     -16.0  +221.56
-   BANKROLL TTL 24-72h              632     4,314    +1,190   +27.6     -15.2  +157.43
+   BANKROLL TTL<24h                1415    11,162    +2,059   +18.4     -16.1  +219.31
+   BANKROLL TTL 24-72h              633     4,324    +1,210   +28.0     -14.7  +159.71
    BANKROLL TTL 72h-7d               81       666       -84   -12.6     -32.9   -52.18
    BANKROLL TTL>=7d                 358     4,139    +2,867   +69.3     -14.5  +123.56
-   STANDARD TTL<24h                3395    42,121    -5,464   -13.0     -15.0  -125.87
+   STANDARD TTL<24h                3396    42,139    -5,457   -12.9     -15.0  -125.67
    STANDARD TTL 24-72h             1100    14,088      +134    +1.0      -6.2    +4.80
    STANDARD TTL 72h-7d             2029    21,876   +10,545   +48.2     +44.4  +130.81
-   STANDARD TTL>=7d                2326    24,554    +4,254   +17.3     +11.0   +11.58
+   STANDARD TTL>=7d                3023    31,821    +3,905   +12.3      +7.4    +4.03
    marginal cost of a TTL floor (STANDARD)     n  notional       pnl    ROI%
      block TTL < 6h                1433    17,217    -2,539   -14.7
-     block TTL < 12h               2362    28,992    -3,594   -12.4
-     block TTL < 24h               3395    42,121    -5,464   -13.0
-     block TTL < 48h               4262    52,902    -4,890    -9.2
-     block TTL < 72h               4495    56,209    -5,330    -9.5
-     block TTL < 168h              6524    78,086    +5,215    +6.7
+     block TTL < 12h               2363    29,010    -3,587   -12.4
+     block TTL < 24h               3396    42,139    -5,457   -12.9
+     block TTL < 48h               4263    52,920    -4,882    -9.2
+     block TTL < 72h               4496    56,227    -5,323    -9.5
+     block TTL < 168h              6525    78,104    +5,222    +6.7
 
    window 90d
    cohort                             n  notional       pnl    ROI% ex10 ROI%  $/1k-cd
-   BANKROLL TTL<24h                1361    10,824    +2,269   +21.0     -14.6  +250.63
-   BANKROLL TTL 24-72h              624     4,264    +1,240   +29.1     -14.2  +166.46
-   BANKROLL TTL 72h-7d               76       637       -75   -11.8     -33.1   -47.70
-   BANKROLL TTL>=7d                 345     4,071    +2,885   +70.9     -14.2  +134.97
-   STANDARD TTL<24h                2532    33,241    -3,923   -11.8     -14.4  -117.48
+   BANKROLL TTL<24h                1358    10,821    +2,260   +20.9     -14.7  +250.15
+   BANKROLL TTL 24-72h              625     4,274    +1,261   +29.5     -13.7  +168.74
+   BANKROLL TTL 72h-7d               72       621       -62   -10.0     -31.6   -39.67
+   BANKROLL TTL>=7d                 338     4,027    +2,914   +72.4     -13.6  +138.81
+   STANDARD TTL<24h                2477    32,608    -3,900   -12.0     -14.6  -119.14
    STANDARD TTL 24-72h              697    10,146      -155    -1.5     -11.6    -7.65
-   STANDARD TTL 72h-7d              361     4,212      +763   +18.1      +1.7   +49.66
-   STANDARD TTL>=7d                1063    12,549    +3,672   +29.3     +17.4   +23.45
+   STANDARD TTL 72h-7d              349     4,104      +828   +20.2      +3.4   +54.44
+   STANDARD TTL>=7d                1279    15,420    +3,310   +21.5     +11.7    +9.74
    marginal cost of a TTL floor (STANDARD)     n  notional       pnl    ROI%
-     block TTL < 6h                 983    12,324    -1,384   -11.2
-     block TTL < 12h               1758    22,519    -2,246   -10.0
-     block TTL < 24h               2532    33,241    -3,923   -11.8
-     block TTL < 48h               3075    41,020    -3,311    -8.1
-     block TTL < 72h               3229    43,387    -4,078    -9.4
-     block TTL < 168h              3590    47,600    -3,316    -7.0
+     block TTL < 6h                 942    11,846    -1,425   -12.0
+     block TTL < 12h               1705    21,912    -2,249   -10.3
+     block TTL < 24h               2477    32,608    -3,900   -12.0
+     block TTL < 48h               3020    40,387    -3,288    -8.1
+     block TTL < 72h               3174    42,754    -4,055    -9.5
+     block TTL < 168h              3523    46,858    -3,227    -6.9
 
 ====================================================================================================
 Z4. ROBUSTNESS OF THE STANDARD TTL<24h FINDING
 ====================================================================================================
-   short block: 3395 legs $42,121 $-5,464 (-13.0%) CI [-21.8,-4.0]
-   rest       : 5455 legs $60,519 $+14,932 (+24.7%)
+   short block: 3396 legs $42,139 $-5,457 (-12.9%) CI [-22.2,-3.1]
+   rest       : 6152 legs $67,786 $+14,583 (+21.5%)
 
    (b) inside each band (short TTL<24h vs rest), and the MARGINAL value given v63
-   -- window all-time: 3395 short legs $42,121 $-5,464 | 5455 rest $+14,932
+   -- window all-time: 3396 short legs $42,139 $-5,457 | 6152 rest $+14,583
    band      short n short $pnl short ROI%  rest n  rest $pnl rest ROI%
    <0.20         167     -1,288      -60.4     324     +6,249    +175.0
    0.2-0.4       619       -269       -3.5     552     +1,432     +22.8
    0.4-0.6      1554     -4,162      -20.5    2110     +7,282     +28.1
-   0.6-0.8       653       +113       +1.4     851       +995     +10.1
-   0.8-1.0       402       +141       +3.7    1618     -1,026      -6.9
-   marginal value of the floor ON TOP OF v63 (bands v63 leaves open): 1841 legs $21,824 -> $-1,303 (-6.0%) CI [-18.3,+6.7]
-   -- window 90d: 2532 short legs $33,241 $-3,923 | 2121 rest $+4,280
+   0.6-0.8       654       +121       +1.5     987       +632      +5.5
+   0.8-1.0       402       +141       +3.7    2179     -1,012      -4.9
+   marginal value of the floor ON TOP OF v63 (bands v63 leaves open): 1842 legs $21,842 -> $-1,295 (-5.9%) CI [-17.8,+7.2]
+   -- window 90d: 2477 short legs $32,608 $-3,900 | 2325 rest $+3,983
    band      short n short $pnl short ROI%  rest n  rest $pnl rest ROI%
-   <0.20         133     -1,107      -60.7     223     +3,654    +137.2
-   0.2-0.4       502       -369       -5.7     334     +1,096     +26.9
-   0.4-0.6      1236     -2,395      -14.5     839       -621      -5.7
-   0.6-0.8       524       -151       -2.2     393       +254      +4.8
-   0.8-1.0       137        +99       +6.2     332       -103      -2.6
-   marginal value of the floor ON TOP OF v63 (bands v63 leaves open): 1296 legs $16,707 -> $-1,528 (-9.1%) CI [-23.3,+6.5]
+   <0.20         128     -1,056      -59.6     223     +3,654    +137.2
+   0.2-0.4       492       -253       -4.0     322     +1,122     +28.3
+   0.4-0.6      1204     -2,526      -15.6     827       -478      -4.5
+   0.6-0.8       516       -165       -2.5     471       -203      -3.2
+   0.8-1.0       137        +99       +6.2     482       -112      -1.9
+   marginal value of the floor ON TOP OF v63 (bands v63 leaves open): 1273 legs $16,449 -> $-1,375 (-8.4%) CI [-22.9,+8.9]
 
    (c) largest markets by PnL inside the short block (both signs)
    ucl-liv-atm-2026-09-09-liv         n=  38 $    684 $    -684
@@ -251,7 +251,7 @@ Z4. ROBUSTNESS OF THE STANDARD TTL<24h FINDING
    wnba-las-atl-2026-08-03            n=  23 $    267 $    +307
    mlb-sea-bos-2026-09-01-total-7pt5  n=  14 $    252 $    +362
    elc-sto-nor-2026-09-01-sto         n=  13 $    234 $    +587
-   short block ex-top-5-loss-markets: $-3,332 on $39,987
+   short block ex-top-5-loss-markets: $-3,325 on $40,005
 
    (c2) wallet concentration inside the short block
    0xb0c85813a7a4 n= 129 $  2,297 ( 5.5% of short notional) $      -4
@@ -259,20 +259,286 @@ Z4. ROBUSTNESS OF THE STANDARD TTL<24h FINDING
    0x03805a13a0b3 n= 230 $  1,928 ( 4.6% of short notional) $      +4
    0xc5187cb66969 n= 115 $  1,846 ( 4.4% of short notional) $    -429
    0x4a3f86ed9ce6 n= 154 $  1,768 ( 4.2% of short notional) $     +57
-   short block ex-top-3-wallets: $-5,185 on $35,780 (-14.5%)
+   short block ex-top-3-wallets: $-5,177 on $35,798 (-14.5%)
 
    (d) month by month (STANDARD, short vs rest) -- one bad fortnight cannot carry it
    month    short n short $pnl short ROI%  rest n  rest $pnl rest ROI%
-   2026-07     1217     -3,129      -24.2    3559    +12,827     +35.6
-   2026-08     1716     -1,038       -5.0    1550     +2,425     +13.3
-   2026-09      380     -1,434      -21.0     326       -204      -3.5
-   2026-10       82       +137       +9.3      20       -116     -32.2
+   2026-07     1217     -3,129      -24.2    4027    +12,912     +32.1
+   2026-08     1716     -1,038       -5.0    1766     +1,961      +9.3
+   2026-09      380     -1,434      -21.0     339       -173      -2.8
+   2026-10       83       +145       +9.7      20       -116     -32.2
 
 ====================================================================================================
 X2. BOOK-LEVEL EFFECT OF A 24h TTL FLOOR ON STANDARD
 ====================================================================================================
-   baseline (all finished legs)       11495 legs $  124,384 $  +15,598  +27.43 $/1k-cd      182,251 capital for $5k/day
-     gross block: TTL<24h, all bands   3395 legs $   42,121 $   -5,464 -125.87 $/1k-cd      -39,725 capital for $5k/day
-   gross floor applied                 8100 legs $   82,263 $  +21,062  +40.11 $/1k-cd      124,663 capital for $5k/day
-     marginal block: TTL<24h, bands v63  1841 legs $   21,824 $   -1,303  -56.36 $/1k-cd      -88,708 capital for $5k/day
-   marginal floor applied (on top of v63)  9654 legs $  102,560 $  +16,901  +30.99 $/1k-cd      161,366 capital for $5k/day
+   baseline (all finished legs)       12199 legs $  131,753 $  +15,255  +13.00 $/1k-cd      384,571 capital for $5k/day
+     gross block: TTL<24h, all bands   3396 legs $   42,139 $   -5,457 -125.67 $/1k-cd never (rate<=0)      
+   gross floor applied                 8803 legs $   89,614 $  +20,712  +18.33 $/1k-cd      272,770 capital for $5k/day
+     marginal block: TTL<24h, bands v63  1842 legs $   21,842 $   -1,295  -56.02 $/1k-cd never (rate<=0)      
+   marginal floor applied (on top of v63) 10357 legs $  109,911 $  +16,550  +14.39 $/1k-cd      347,491 capital for $5k/day
+
+====================================================================================================
+AA. CALIBRATION -- realised hit rate vs entry price, i.e. the edge in probability points
+====================================================================================================
+   ROI% = (hit - p)/p exactly; 'pp' = hit - p. A band can print a big ROI on a
+   negative pp edge (1/p amplification) -- that is the number this table exists to expose.
+   lane       band      legs  notional   avgP   hit%      pp            pp CI    ROI%  implied      $/pp       pnl
+   STANDARD   <0.20      138     1,878  0.110   27.4  +16.41 [ -1.14,+35.73]  +116.0   +149.7       171    +2,180
+   STANDARD   0.2-0.4    194     3,125  0.308   34.1   +3.33 [-12.14,+20.33]    +4.2    +10.8       101      +131
+   STANDARD   0.4-0.6   1427    19,513  0.540   71.1  +17.17 [-16.71,+30.72]   +26.9    +31.8       362    +5,249
+   STANDARD   0.6-0.8    339     5,390  0.685   72.7   +4.20 [ -4.01,+11.39]    +5.9     +6.1        79      +315
+   STANDARD   0.8-1.0    223     3,021  0.892   87.0   -2.18 [-12.69, +5.84]    -2.0     -2.4        34       -61
+   BANKROLL_2 <0.20       81     2,612  0.110   24.0  +13.05 [ +1.65,+27.30]  +111.5   +118.8       238    +2,912
+   BANKROLL_2 0.2-0.4    195     2,101  0.303   38.5   +8.17 [ -0.01,+17.63]   +25.2    +27.0        69      +530
+   BANKROLL_2 0.4-0.6    379     1,008  0.497   59.3   +9.58 [ -2.32,+20.29]   +17.1    +19.3        20      +172
+   BANKROLL_2 0.6-0.8    203       885  0.690   86.0  +17.02 [ +9.73,+22.84]   +25.1    +24.7        13      +222
+   BANKROLL_2 0.8-1.0     38       185  0.879   97.3   +9.42 [ +3.63,+13.27]   +10.8    +10.7         2       +20
+   ALL        <0.20      219     4,491  0.110   25.4  +14.45 [ +3.61,+25.76]  +113.4   +131.7       409    +5,092
+   ALL        0.2-0.4    389     5,227  0.306   35.9   +5.28 [ -4.61,+16.96]   +12.7    +17.2       171      +662
+   ALL        0.4-0.6   1806    20,520  0.538   70.6  +16.80 [-14.99,+30.07]   +26.4    +31.3       382    +5,422
+   ALL        0.6-0.8    542     6,275  0.685   74.5   +6.01 [ -1.29,+11.89]    +8.6     +8.8        92      +537
+   ALL        0.8-1.0    261     3,206  0.892   87.6   -1.51 [-10.58, +5.84]    -1.3     -1.7        36       -41
+
+====================================================================================================
+AB. EXIT ALPHA -- every closed leg re-priced at settlement (all-time)
+====================================================================================================
+
+   truth cache: 3970 distinct markets in the finished book, 3681 settled already cached, fetching 289
+
+   STANDARD: 7369 closed legs, 6503 priced at settlement (88% coverage; name-match 6503, index fallback 0, no-match 30, no record 836)
+   exit as executed:  6503 legs $  69,123 $  +1,904 (  +2.8%)   hold to settlement: $  +1,694 (  +2.5%)   exit alpha $    +211 ( +0.30% of notional)
+   exit alpha CI (market-clustered) [$-3,231, $+3,658]   ex-top-10 $-236 on $68,974
+
+   band      legs  notional  exitROI%  holdROI%   alpha$  alpha% win%exit win%hold medExit medSettle
+   <0.20      348     3,746     +74.8     +66.8     +300   +8.01      22%      22%   0.001     0.216
+   0.2-0.4    974    10,903      +9.5      +6.3     +356   +3.27      41%      36%   0.001     0.359
+   0.4-0.6   2172    25,874      -7.7      -4.8     -763   -2.95      48%      48%   0.362     0.481
+   0.6-0.8   1124    11,976      +7.5      +4.7     +338   +2.82      74%      73%   1.000     0.735
+   0.8-1.0   1885    16,623      -5.0      -4.9      -21   -0.12      89%      89%   1.000     0.894
+
+   mechanism split (exit price vs entry price)
+   side                    legs  notional  exitROI%  holdROI%   alpha$  alpha%  medMove
+   sold into strength      4024    40,652     +68.3     +51.7   +6,768  +16.65   +0.246
+   cut into weakness       2427    27,946     -92.6     -69.6   -6,417  -22.96   -0.424
+   flat                      52       525      +0.0     +26.7     -140  -26.72   +0.000
+
+   capital-time: 2275 exits released 703,524 capital-days (scheduled end vs exit time) for an exit alpha of $+1,583 -> $+2 per 1k capital-day released
+   finished-book benchmark is +27.43 $/1k-cd (section T): releasing a day of capital
+   is worth ~$27 per $1,000 of it, so an alpha below that per released capital-day
+   means the exit was the better use of the money even if it sold a winner.
+
+   BANKROLL_200: 1613 closed legs, 1466 priced at settlement (91% coverage; name-match 1466, index fallback 0, no-match 13, no record 134)
+   exit as executed:  1466 legs $  11,893 $  +1,340 ( +11.3%)   hold to settlement: $    +201 (  +1.7%)   exit alpha $  +1,139 ( +9.58% of notional)
+   exit alpha CI (market-clustered) [$-221, $+2,498]   ex-top-10 $+241 on $11,163
+
+   band      legs  notional  exitROI%  holdROI%   alpha$  alpha% win%exit win%hold medExit medSettle
+   <0.20      147     3,965     +59.5     +29.8   +1,177  +29.69      19%      16%   0.035     0.156
+   0.2-0.4    302     2,855     -12.8     -12.6       -8   -0.27      25%      31%   0.085     0.311
+   0.4-0.6    634     3,137     -13.1     -10.8      -71   -2.27      41%      42%   0.345     0.423
+   0.6-0.8    276     1,409     -15.8     -16.9      +16   +1.16      46%      58%   0.635     0.576
+   0.8-1.0    107       527      -3.8      -8.4      +24   +4.59      78%      81%   0.970     0.813
+
+   mechanism split (exit price vs entry price)
+   side                    legs  notional  exitROI%  holdROI%   alpha$  alpha%  medMove
+   sold into strength       570     3,765    +178.4    +152.9     +962  +25.55   +0.343
+   cut into weakness        868     7,770     -69.2     -71.7     +191   +2.46   -0.289
+   flat                      28       357      +0.0      +4.0      -14   -3.96   +0.000
+
+   capital-time: 510 exits released 72,487 capital-days (scheduled end vs exit time) for an exit alpha of $+372 -> $+5 per 1k capital-day released
+   finished-book benchmark is +27.43 $/1k-cd (section T): releasing a day of capital
+   is worth ~$27 per $1,000 of it, so an alpha below that per released capital-day
+   means the exit was the better use of the money even if it sold a winner.
+
+====================================================================================================
+AB. EXIT ALPHA -- every closed leg re-priced at settlement (last 90d)
+====================================================================================================
+
+   truth cache: 3970 distinct markets in the finished book, 3681 settled already cached, fetching 289
+
+   STANDARD: 3526 closed legs, 3261 priced at settlement (92% coverage; name-match 3261, index fallback 0, no-match 6, no record 259)
+   exit as executed:  3261 legs $  38,336 $    -214 (  -0.6%)   hold to settlement: $    -759 (  -2.0%)   exit alpha $    +544 ( +1.42% of notional)
+   exit alpha CI (market-clustered) [$-2,482, $+3,637]   ex-top-10 $+97 on $38,187
+
+   band      legs  notional  exitROI%  holdROI%   alpha$  alpha% win%exit win%hold medExit medSettle
+   <0.20      222     2,610     +12.3      +4.6     +202   +7.72      14%      12%   0.001     0.122
+   0.2-0.4    633     7,328      +8.3      +8.9      -46   -0.63      40%      37%   0.001     0.368
+   0.4-0.6   1518    18,427      -6.1      -8.6     +454   +2.46      49%      45%   0.440     0.455
+   0.6-0.8    590     6,857      -1.3      -0.5      -50   -0.72      68%      69%   1.000     0.693
+   0.8-1.0    298     3,113      +2.2      +2.7      -15   -0.48      90%      91%   1.000     0.913
+
+   mechanism split (exit price vs entry price)
+   side                    legs  notional  exitROI%  holdROI%   alpha$  alpha%  medMove
+   sold into strength      1696    19,448     +87.7     +62.2   +4,974  +25.58   +0.375
+   cut into weakness       1556    18,785     -92.0     -68.3   -4,447  -23.67   -0.411
+   flat                       9       103      +0.0     -17.1      +18  +17.06   +0.000
+
+   capital-time: 942 exits released 114,336 capital-days (scheduled end vs exit time) for an exit alpha of $+1,375 -> $+12 per 1k capital-day released
+   finished-book benchmark is +27.43 $/1k-cd (section T): releasing a day of capital
+   is worth ~$27 per $1,000 of it, so an alpha below that per released capital-day
+   means the exit was the better use of the money even if it sold a winner.
+
+   BANKROLL_200: 1520 closed legs, 1397 priced at settlement (92% coverage; name-match 1397, index fallback 0, no-match 0, no record 123)
+   exit as executed:  1397 legs $  11,490 $  +1,590 ( +13.8%)   hold to settlement: $    +466 (  +4.1%)   exit alpha $  +1,124 ( +9.79% of notional)
+   exit alpha CI (market-clustered) [$-293, $+2,469]   ex-top-10 $+227 on $10,760
+
+   band      legs  notional  exitROI%  holdROI%   alpha$  alpha% win%exit win%hold medExit medSettle
+   <0.20      146     3,961     +59.7     +30.0   +1,177  +29.72      19%      16%   0.035     0.158
+   0.2-0.4    275     2,699      -9.1      -8.7      -11   -0.39      27%      33%   0.135     0.335
+   0.4-0.6    603     2,945     -11.2      -8.4      -83   -2.83      42%      43%   0.355     0.431
+   0.6-0.8    268     1,367     -13.6     -14.8      +17   +1.23      47%      59%   0.647     0.590
+   0.8-1.0    105       518      -2.2      -6.8      +24   +4.67      79%      83%   0.971     0.829
+
+   mechanism split (exit price vs entry price)
+   side                    legs  notional  exitROI%  holdROI%   alpha$  alpha%  medMove
+   sold into strength       558     3,694    +179.8    +154.3     +944  +25.55   +0.343
+   cut into weakness        811     7,439     -67.9     -70.5     +195   +2.62   -0.284
+   flat                      28       357      +0.0      +4.0      -14   -3.96   +0.000
+
+   capital-time: 493 exits released 71,878 capital-days (scheduled end vs exit time) for an exit alpha of $+370 -> $+5 per 1k capital-day released
+   finished-book benchmark is +27.43 $/1k-cd (section T): releasing a day of capital
+   is worth ~$27 per $1,000 of it, so an alpha below that per released capital-day
+   means the exit was the better use of the money even if it sold a winner.
+
+====================================================================================================
+AC. HIGH-PRICE BLOCK AUDIT -- 0.60-1.00 by lane, and the volume that sits there
+====================================================================================================
+
+   STANDARD 0.6-0.8: 339 legs / 211 markets / 29 wallets, $5,390
+     pp edge +4.20   ROI +5.9%   ex-top-10 +3.8% on $5,210   first-fill 239 legs +3.6%
+     months 2026-07:n44/+54%  2026-08:n127/+4%  2026-09:n160/-1%  2026-10:n8/+13%
+
+   STANDARD 0.8-1.0: 223 legs / 104 markets / 16 wallets, $3,021
+     pp edge -2.18   ROI -2.0%   ex-top-10 -3.7% on $2,841   first-fill 127 legs -2.7%
+     months 2026-07:n18/+10%  2026-08:n152/-3%  2026-09:n51/-3%  2026-10:n2/+20%
+
+   BANKROLL_200 0.6-0.8: 203 legs / 180 markets / 32 wallets, $885
+     pp edge +17.02   ROI +25.1%   ex-top-10 +22.4% on $807   first-fill 188 legs +26.0%
+     months 2026-07:n4/+57%  2026-08:n38/+25%  2026-09:n117/+27%  2026-10:n44/+10%
+
+   BANKROLL_200 0.8-1.0: 38 legs / 28 markets / 7 wallets, $185
+     pp edge +9.42   ROI +10.8%   ex-top-10 +7.3% on $135   first-fill 31 legs +10.7%
+     months 2026-08:n29/+10%  2026-09:n9/+13%
+
+   volume in the same price region that left via the early-exit path (judged in AB, counted here):
+     BANKROLL_200   416 legs $   2,128  -11.1%
+     STANDARD      3796 legs $  36,932   -0.7%
+
+   allocation: notional per 1pp of measured pp edge (resolved legs)
+   lane         band      notional      pp      $/1pp  verdict
+   STANDARD     <0.20        1,878  +16.41        114  edge, under-allocated
+   STANDARD     0.2-0.4      3,125   +3.33        938  edge
+   STANDARD     0.4-0.6     19,513  +17.17      1,136  edge
+   STANDARD     0.6-0.8      5,390   +4.20      1,283  edge
+   STANDARD     0.8-1.0      3,021   -2.18        n/a  no edge
+   BANKROLL_200 <0.20        2,612  +13.05        200  edge, under-allocated
+   BANKROLL_200 0.2-0.4      2,101   +8.17        257  edge, under-allocated
+   BANKROLL_200 0.4-0.6      1,008   +9.58        105  edge, under-allocated
+   BANKROLL_200 0.6-0.8        885  +17.02         52  edge, under-allocated
+   BANKROLL_200 0.8-1.0        185   +9.42         20  edge, under-allocated
+
+====================================================================================================
+AD. BAND EDGE ON SETTLEMENT TRUTH -- every leg, both exit paths (all-time)
+====================================================================================================
+
+   truth cache: 3970 distinct markets in the finished book, 3681 settled already cached, fetching 289
+   truth join: 11146 of 12199 legs priced (91.4%) -- name-match 11146, index fallback 0, no-match 43, no record 1010
+   VALIDATION: max |truth PnL - realizedPnl| over 3177 resolved legs = $0.005 (must be ~0 for this table to be readable)
+
+   lane         band      legs  mkts  notional   avgP   hit%      pp truthROI%               CI   ex10%  ex3mk%
+   STANDARD     <0.20      486   194     5,624  0.116   22.9  +11.28     +83.2 [  +7.3,+172.1]   +51.7   +20.9
+   STANDARD     0.2-0.4   1168   378    14,029  0.310   35.2   +4.21      +5.8 [ -16.2, +29.8]    +2.5    -5.7
+   STANDARD     0.4-0.6   3561  1013    44,984  0.514   58.0   +6.62      +9.8 [ -14.9, +30.5]    +9.3    -9.9
+   STANDARD     0.6-0.8   1463   574    17,366  0.685   72.3   +3.79      +5.1 [  -4.8, +13.8]    +4.4    +0.3
+   STANDARD     0.8-1.0   2108   643    19,644  0.934   89.4   -3.99      -4.4 [ -11.2,  +1.3]    -4.7    -5.5
+   BANKROLL_200 <0.20      228   181     6,577  0.096   17.5   +7.94     +62.3 [  -8.2,+144.1]   -37.1    +8.0
+   BANKROLL_200 0.2-0.4    497   350     4,956  0.300   32.4   +2.45      +3.4 [ -17.3, +25.6]   -10.2    -5.1
+   BANKROLL_200 0.4-0.6   1011   650     4,135  0.493   47.7   -1.66      -3.8 [ -20.3, +14.1]    -6.9   -12.4
+   BANKROLL_200 0.6-0.8    479   370     2,294  0.692   68.4   -0.73      -0.7 [ -10.4,  +9.2]    -2.9    -4.0
+   BANKROLL_200 0.8-1.0    145    87       712  0.888   85.9   -2.86      -3.4 [ -15.4,  +6.6]    -5.8    -6.0
+   ALL          <0.20      714   314    12,201  0.105   20.0   +9.48     +71.9 [ +11.5,+137.5]   +21.6   +31.6
+   ALL          0.2-0.4   1665   619    18,984  0.307   34.5   +3.75      +5.2 [ -13.5, +26.0]    +1.6    -3.2
+   ALL          0.4-0.6   4572  1456    49,119  0.513   57.2   +5.92      +8.7 [ -14.6, +30.6]    +8.2    -9.2
+   ALL          0.6-0.8   1942   852    19,660  0.686   71.8   +3.26      +4.4 [  -4.7, +12.0]    +3.8    +0.1
+   ALL          0.8-1.0   2253   682    20,356  0.932   89.2   -3.95      -4.4 [ -11.1,  +1.2]    -4.7    -5.4
+
+   lane bands, the live size factor, and the measured truth edge (all-time, legs>=15)
+   lane         band      live factor   clip$      pp truthROI%                    verdict
+   STANDARD     <0.20             1.0   11.57  +11.28     +83.2
+   STANDARD     0.2-0.4           1.0   12.01   +4.21      +5.8
+   STANDARD     0.4-0.6  skipped (v63)   12.63   +6.62      +9.8
+   STANDARD     0.6-0.8           1.0   11.87   +3.79      +5.1
+   STANDARD     0.8-1.0           1.0    9.32   -3.99      -4.4
+   BANKROLL_200 <0.20    3.5 (longshot)   28.85   +7.94     +62.3
+   BANKROLL_200 0.2-0.4           1.0    9.97   +2.45      +3.4
+   BANKROLL_200 0.4-0.6  0.125 (skip)    4.09   -1.66      -3.8
+   BANKROLL_200 0.6-0.8  0.5 (halved)    4.79   -0.73      -0.7
+   BANKROLL_200 0.8-1.0           1.0    4.91   -2.86      -3.4
+
+====================================================================================================
+AD. BAND EDGE ON SETTLEMENT TRUTH -- every leg, both exit paths (last 90d)
+====================================================================================================
+
+   truth cache: 3970 distinct markets in the finished book, 3681 settled already cached, fetching 289
+   truth join: 6852 of 7266 legs priced (94.3%) -- name-match 6852, index fallback 0, no-match 6, no record 408
+   VALIDATION: max |truth PnL - realizedPnl| over 2194 resolved legs = $0.005 (must be ~0 for this table to be readable)
+
+   lane         band      legs  mkts  notional   avgP   hit%      pp truthROI%               CI   ex10%  ex3mk%
+   STANDARD     <0.20      347   156     4,365  0.116   20.3   +8.68     +55.5 [ -21.7,+134.7]   +14.2    -8.3
+   STANDARD     0.2-0.4    811   311    10,296  0.314   36.3   +4.88      +8.8 [ -17.0, +37.1]    +4.3    -4.7
+   STANDARD     0.4-0.6   1989   843    26,429  0.492   43.5   -5.64     -12.0 [ -24.8,  +1.1]   -13.0   -16.1
+   STANDARD     0.6-0.8    906   453    11,990  0.682   69.4   +1.20      +1.1 [  -9.1, +10.3]    +0.2    -1.4
+   STANDARD     0.8-1.0    508   239     6,017  0.891   89.3   +0.24      +0.3 [  -6.1,  +5.8]    -0.5    -1.1
+   BANKROLL_200 <0.20      227   180     6,573  0.096   17.5   +7.95     +62.4 [ -10.0,+147.7]   -37.0    +8.1
+   BANKROLL_200 0.2-0.4    470   344     4,800  0.302   33.3   +3.12      +6.1 [ -15.5, +29.4]    -7.9    -2.6
+   BANKROLL_200 0.4-0.6    980   637     3,943  0.492   48.7   -0.52      -1.6 [ -18.6, +17.4]    -4.8   -10.6
+   BANKROLL_200 0.6-0.8    471   369     2,252  0.691   69.5   +0.38      +0.9 [  -9.1, +10.4]    -1.3    -2.4
+   BANKROLL_200 0.8-1.0    143    86       703  0.888   87.0   -1.80      -2.2 [ -14.2,  +7.8]    -4.5    -4.6
+   ALL          <0.20      574   276    10,938  0.104   18.6   +8.24     +59.6 [  -1.1,+123.0]    +2.3   +16.1
+   ALL          0.2-0.4   1281   552    15,097  0.310   35.3   +4.32      +8.0 [ -12.0, +30.0]    +3.5    -1.5
+   ALL          0.4-0.6   2969  1286    30,372  0.492   44.2   -4.98     -10.6 [ -23.6,  +2.1]   -11.5   -15.1
+   ALL          0.6-0.8   1377   731    14,242  0.684   69.5   +1.07      +1.1 [  -8.1,  +9.4]    +0.3    -1.3
+   ALL          0.8-1.0    651   278     6,721  0.890   89.1   +0.03      +0.0 [  -6.5,  +5.8]    -0.7    -1.2
+
+   lane bands, the live size factor, and the measured truth edge (all-time, legs>=15)
+   lane         band      live factor   clip$      pp truthROI%                    verdict
+   STANDARD     <0.20             1.0   12.58   +8.68     +55.5
+   STANDARD     0.2-0.4           1.0   12.70   +4.88      +8.8
+   STANDARD     0.4-0.6  skipped (v63)   13.29   -5.64     -12.0
+   STANDARD     0.6-0.8           1.0   13.23   +1.20      +1.1
+   STANDARD     0.8-1.0           1.0   11.84   +0.24      +0.3
+   BANKROLL_200 <0.20    3.5 (longshot)   28.96   +7.95     +62.4
+   BANKROLL_200 0.2-0.4           1.0   10.21   +3.12      +6.1
+   BANKROLL_200 0.4-0.6  0.125 (skip)    4.02   -0.52      -1.6
+   BANKROLL_200 0.6-0.8  0.5 (halved)    4.78   +0.38      +0.9
+   BANKROLL_200 0.8-1.0           1.0    4.92   -1.80      -2.2
+
+====================================================================================================
+AE. CHEAP-TAIL DECOMPOSITION -- 0.00-0.05 vs 0.05-0.20, on settlement truth
+====================================================================================================
+
+   truth cache: 3970 distinct markets in the finished book, 3681 settled already cached, fetching 289
+   sub-band    legs  mkts  notional   clip   avgP   hit%      pp truthROI%   ex10%  ex3mk% REALIZED$
+   0.00-0.05     66    33     1,694  25.66  0.034    0.0   -3.39    -100.0  -100.0  -100.0    -1,041
+   0.05-0.10    253   131     4,469  17.66  0.072   14.5   +7.27     +98.7   -11.3   +13.8    +5,491
+   0.10-0.15    155    84     2,754  17.77  0.126   25.3  +12.68     +98.0   +10.9    +0.3    +2,626
+   0.15-0.20    240   105     3,285  13.69  0.169   33.4  +16.43    +102.2   +49.9   +30.5    +3,175
+
+   sub-0.05 by lane: clip vs the lane's own band factor
+   STANDARD     <0.05:  37 legs $   313 clip $  8.45 settle-hit   0.0% REALIZED $   -183 ( -58.5%)   |   0.05-0.20: 449 legs clip $ 11.83
+   BANKROLL_200 <0.05:  29 legs $ 1,381 clip $ 47.62 settle-hit   0.0% REALIZED $   -858 ( -62.1%)   |   0.05-0.20: 199 legs clip $ 26.11
+
+   break-even hit rate = the price paid. Sub-0.05 requires 3.39% accuracy; realised settlement hit is 0.00%.
+
+====================================================================================================
+AF. CHEAP-TAIL FILL HEADROOM -- live order books for open positions < 0.20
+====================================================================================================
+   22 open cheap positions with a live book
+   depth within +1c: median $     128  p10 $     17 p90 $    4,283  -> clip multiplier median x 10.8  (min x0.72)
+   depth within +2c: median $   1,881  p10 $     21 p90 $    8,073  -> clip multiplier median x229.5  (min x0.72)
+   depth within +5c: median $   6,085  p10 $     98 p90 $   34,365  -> clip multiplier median x629.9  (min x7.00)
+   books where 2x the current clip would NOT fill within +2c: 2/22 (9%)
+   books that cannot carry 10x the current clip within +2c: 6/22 (27%)
+   NOTE: this is depth at ONE instant for one side of the book. It bounds the clip,
+   it does not model queue position, adverse selection, or the fact that we are
+   buying at the ask immediately after a whale prints -- the exact moment the book
+   is thinnest on the side we need.
