@@ -1,40 +1,179 @@
 {
-  "built_at": "2026-10-23T01:18:37.881809+00:00",
-  "status": "NOT_YET",
-  "observations": 330,
-  "distinct_markets": 101,
-  "settled_observations": 256,
-  "settled_markets": 81,
+  "built_at": "2026-10-24T01:18:20.393279+00:00",
+  "status": "NOT_ESTABLISHED",
+  "observations": 464,
+  "distinct_markets": 139,
+  "settled_observations": 362,
+  "settled_markets": 109,
   "by_day": {
     "2026-10-21": 144,
     "2026-10-22": 136,
-    "2026-10-23": 50
+    "2026-10-23": 116,
+    "2026-10-24": 68
   },
-  "baseline_roi_net_pct": -4.097,
+  "baseline_roi_net_pct": -2.856,
   "buckets": 5,
   "settlement": {
     "source": "venue (clob tokens[].winner)",
-    "venue_settled_markets": 81,
-    "venue_settled_observations": 256,
-    "snapshot_settled_markets": 1,
-    "snapshot_settled_observations": 2,
-    "decisive_overlap": 1,
+    "venue_settled_markets": 109,
+    "venue_settled_observations": 362,
+    "snapshot_settled_markets": 3,
+    "snapshot_settled_observations": 6,
+    "decisive_overlap": 2,
     "agreement_pct": 100.0,
     "disagreements": [],
     "market_state": {
-      "from_cache": 76,
-      "not_closed_yet": 20,
+      "from_cache": 104,
+      "not_closed_yet": 30,
       "resolved_now": 5
     },
     "cache": "data/ml/settlement-cache.json"
   },
   "tables": {
-    "p_profit": [],
-    "ev": [],
-    "roi_reg": []
+    "p_profit": [
+      {
+        "bucket": 1,
+        "n": 73,
+        "markets": 45,
+        "win_rate": 32.88,
+        "roi_net_pct": 1.887,
+        "ci_lo": -41.886,
+        "ci_hi": 50.796
+      },
+      {
+        "bucket": 2,
+        "n": 72,
+        "markets": 46,
+        "win_rate": 52.78,
+        "roi_net_pct": 13.186,
+        "ci_lo": -18.137,
+        "ci_hi": 39.748
+      },
+      {
+        "bucket": 3,
+        "n": 72,
+        "markets": 23,
+        "win_rate": 50.0,
+        "roi_net_pct": -4.897,
+        "ci_lo": -14.68,
+        "ci_hi": 5.021
+      },
+      {
+        "bucket": 4,
+        "n": 72,
+        "markets": 47,
+        "win_rate": 44.44,
+        "roi_net_pct": -22.641,
+        "ci_lo": -47.847,
+        "ci_hi": 0.609
+      },
+      {
+        "bucket": 5,
+        "n": 73,
+        "markets": 45,
+        "win_rate": 69.86,
+        "roi_net_pct": -1.895,
+        "ci_lo": -25.705,
+        "ci_hi": 15.517
+      }
+    ],
+    "ev": [
+      {
+        "bucket": 1,
+        "n": 73,
+        "markets": 44,
+        "win_rate": 38.36,
+        "roi_net_pct": 12.579,
+        "ci_lo": -27.719,
+        "ci_hi": 61.173
+      },
+      {
+        "bucket": 2,
+        "n": 72,
+        "markets": 45,
+        "win_rate": 44.44,
+        "roi_net_pct": -4.752,
+        "ci_lo": -36.389,
+        "ci_hi": 23.636
+      },
+      {
+        "bucket": 3,
+        "n": 72,
+        "markets": 26,
+        "win_rate": 52.78,
+        "roi_net_pct": 1.572,
+        "ci_lo": -14.669,
+        "ci_hi": 18.249
+      },
+      {
+        "bucket": 4,
+        "n": 72,
+        "markets": 48,
+        "win_rate": 45.83,
+        "roi_net_pct": -19.885,
+        "ci_lo": -44.012,
+        "ci_hi": 6.303
+      },
+      {
+        "bucket": 5,
+        "n": 73,
+        "markets": 44,
+        "win_rate": 68.49,
+        "roi_net_pct": -3.993,
+        "ci_lo": -24.39,
+        "ci_hi": 16.134
+      }
+    ],
+    "roi_reg": [
+      {
+        "bucket": 1,
+        "n": 73,
+        "markets": 45,
+        "win_rate": 38.36,
+        "roi_net_pct": 11.13,
+        "ci_lo": -29.419,
+        "ci_hi": 57.194
+      },
+      {
+        "bucket": 2,
+        "n": 72,
+        "markets": 45,
+        "win_rate": 48.61,
+        "roi_net_pct": 5.245,
+        "ci_lo": -25.014,
+        "ci_hi": 34.873
+      },
+      {
+        "bucket": 3,
+        "n": 72,
+        "markets": 31,
+        "win_rate": 50.0,
+        "roi_net_pct": -9.787,
+        "ci_lo": -25.688,
+        "ci_hi": 6.31
+      },
+      {
+        "bucket": 4,
+        "n": 72,
+        "markets": 45,
+        "win_rate": 62.5,
+        "roi_net_pct": -5.806,
+        "ci_lo": -28.402,
+        "ci_hi": 16.396
+      },
+      {
+        "bucket": 5,
+        "n": 73,
+        "markets": 44,
+        "win_rate": 50.68,
+        "roi_net_pct": -15.087,
+        "ci_lo": -39.856,
+        "ci_hi": 9.995
+      }
+    ]
   },
-  "nominal_tests": 0,
-  "expected_hits_by_chance": 0.0,
+  "nominal_tests": 15,
+  "expected_hits_by_chance": 0.75,
   "hits": [],
   "established": false,
   "note": "Observe-only: the lane rates candidates and records them; it opens no positions."

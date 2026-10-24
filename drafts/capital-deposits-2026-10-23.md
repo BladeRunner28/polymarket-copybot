@@ -1,21 +1,21 @@
 # Capital report — daily deposits into Total Capital (2026-10-23)
 
-**Definitions.** *Total Capital (live)* = principal $1900.00 + realized $6037.94 + open mark-to-market -$0.08 = **$7937.86** — the Overview's own stat, so it moves with marks and can fall without a trade closing. *Daily deposit* = the capital added on a local calendar day = that day's **booked** PnL (finished trades, booked at `closedAt ?? resolvedAt`) + any **ledger injection**. This report and the chart on `/capital` are the same `src/lib/capital.ts` series.
+**Definitions.** *Total Capital (live)* = principal $1900.00 + realized $6017.94 + open mark-to-market -$0.88 = **$7917.06** — the Overview's own stat, so it moves with marks and can fall without a trade closing. *Daily deposit* = the capital added on a local calendar day = that day's **booked** PnL (finished trades, booked at `closedAt ?? resolvedAt`) + any **ledger injection**. This report and the chart on `/capital` are the same `src/lib/capital.ts` series.
 
 ## Window
 
 - Window: **2026-09-24 → 2026-10-23** (30 local days)
 - Opening booked capital: **$4300.26** (`opening` ledger entry $1900.00 dated 2026-07-22)
-- Deposits in window: **+$3637.68** = booked +$3637.68 + injected +$0.00
-- Closing booked capital: **$7937.94** · peak close $7970.17 on 2026-10-18
-- Up days 15 · down days 14 · flat 1 · longest up-run 4 (current 2)
-- Open positions excluded from every row: notional $14.94, unrealized -$0.08
+- Deposits in window: **+$3617.68** = booked +$3617.68 + injected +$0.00
+- Closing booked capital: **$7917.94** · peak close $7970.17 on 2026-10-18
+- Up days 14 · down days 15 · flat 1 · longest up-run 4 (current 0)
+- Open positions excluded from every row: notional $23.93, unrealized -$0.88
 
 ## Daily deposits (same numbers as the /capital chart)
 
 | day | deposit | booked | closing |
 |---|---|---|---|
-| 2026-10-23 | +$16.21 | +$16.21 | $7937.94 |
+| 2026-10-23 | -$3.79 | -$3.79 | $7917.94 |
 | 2026-10-22 | +$101.24 | +$101.24 | $7921.73 |
 | 2026-10-21 | -$22.03 | -$22.03 | $7820.49 |
 | 2026-10-20 | -$127.65 | -$127.65 | $7842.52 |
@@ -45,7 +45,7 @@
 | 2026-09-26 | -$45.40 | -$45.40 | $4030.67 |
 | 2026-09-25 | -$185.54 | -$185.54 | $4076.07 |
 | 2026-09-24 | -$38.65 | -$38.65 | $4261.61 |
-| **total** | **+$3637.68** | **+$3637.68** | **$7937.94** |
+| **total** | **+$3617.68** | **+$3617.68** | **$7917.94** |
 
 ## Best / worst days
 

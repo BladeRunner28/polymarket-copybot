@@ -273,6 +273,34 @@
    "status": "audited",
    "url": "https://github.com/bennyjo/phil",
    "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-10-23 08:23 CDT",
+    "state": "pending"
+   },
+   "audited": "2026-10-23 08:23 CDT",
+   "claimed": "2026-10-23 08:20 CDT",
+   "claimed_ts": 1792761632.777018,
+   "discovered": "2026-10-23 08:20 CDT",
+   "id": "xyonium/reach-mcp",
+   "license": "MIT",
+   "note": "\u4e00\u6b21\u67e5\u8be2\u6a2a\u8de8 33 \u4e2d\u82f1\u6587\u4fe1\u606f\u6e90 \u2014\u2014 \u793e\u5a92\uff08\u5168\u7f51\u641c\u7d22\u3001\u5c0f\u7ea2\u4e66\u3001\u5fae\u535a\u3001\u77e5\u4e4e\u3001\u8c46\u74e3\u3001\u5934\u6761\u3001linux.do\u3001B\u7ad9\u3001X\u3001Reddit\u3001Instagram\u3001Threads\u3001TikTo",
+   "pushed": "2026-10-23",
+   "recommendation": {
+    "decision_rule": "read-only: after 14 daily runs (by 2026-11-06) read data/cache/research-recon/factsheet-status.jsonl; if >=1 block was gated_off or void-with-rows in those runs while the same run fact sheet carried no line about it, promote the typed states into the fact sheet header; else drop",
+    "effort": "~2h (classifier + sidecar logging; no fact-sheet change, no live path, no dependency)",
+    "reversibility": "delete the sidecar write and the JSONL file; nothing in a decision path reads them",
+    "text": "Add a typed per-block input-health classifier (ok|no_results|rate_limited|gated_off|void + notice) with a JSONL sidecar to scripts/research-collect.py, extending card fact-sheet-collector-truth; fact-sheet text unchanged in stage 0"
+   },
+   "report": "drafts/asset-audit-reach-mcp-20261023.md",
+   "source": "radar-seed",
+   "stars": 8,
+   "status": "audited",
+   "url": "https://github.com/xyonium/reach-mcp",
+   "verdict": "watch"
   }
  ],
  "version": 1
