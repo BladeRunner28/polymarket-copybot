@@ -1,8 +1,9 @@
 {
-  "generated_at": "2026-10-24T02:58:42Z",
+  "generated_at": "2026-10-24T03:04:53Z",
   "approval_date": "2026-10-23",
-  "shadow_days": 14,
-  "days_elapsed": 1.12,
+  "window": "n-driven (no calendar deadline)",
+  "superseded_shadow_days": 14,
+  "days_elapsed": 1.13,
   "bot": "STANDARD",
   "rule": {
     "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
@@ -14,7 +15,8 @@
     ],
     "min_settled_legs": 150,
     "refute_if_band_roi_at_or_above": 0.03,
-    "decision": "flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs"
+    "decision": "n-driven: flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs",
+    "calendar_deadline": "none -- the original 14-day clause was unmeetable at 4.29 band openings/day and is retired, not reinterpreted"
   },
   "bands": {
     "at_risk_2_24h": {
@@ -46,10 +48,12 @@
     }
   },
   "opened_legs_in_band": 2,
-  "openings_per_day": 1.78,
+  "trailing_rate_window_days": 14,
+  "trailing_openings_per_day": 4.29,
+  "projected_days_to_n": 35,
   "unclassified_ttr": 0,
   "verdict": "ACCUMULATING",
-  "reason": "1 of 150 settled band legs (from 2 opened); 149 to go (~84 days at the current 1.8 OPENINGS/day; settlement lag not included) -- the 14-day window CANNOT reach n=150 at this throughput, so the day-14 trigger in the approved rule is unmeetable",
+  "reason": "1 of 150 settled band legs (from 2 opened); 149 to go (~35 days at the trailing-14d rate of 4.29 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven",
   "not_yet_evaluable": [
     "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
     "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"

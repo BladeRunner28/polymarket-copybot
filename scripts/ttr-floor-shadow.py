@@ -5,11 +5,17 @@ APPROVED 2026-10-23 (Lane A). This script does NOT change any rule. It measures 
 population the new floor WOULD block, so the 14-day flip decision is made on forward
 data instead of the in-sample read that proposed it.
 
-THE DECISION, pre-registered before any forward data existed:
+THE DECISION -- n-DRIVEN (user chose option A, 2026-10-23):
   At n >= 150 settled legs in the at-risk band, FLIP LIVE unless the band's net ROI
   is >= +3.0%. A band that returns +3% or better is profitable work we would be
   throwing away, so "shadow >= +3%" is the REFUTATION, not the pass.
-  Otherwise HOLD until n or the window is reached.
+
+  THERE IS NO CALENDAR DEADLINE. The rule as first drafted said "shadow 14 days, flip
+  unless >= +3% on >=150 blocked legs", and that was internally inconsistent: measured
+  at 4.29 band openings/day, fourteen days yields ~60 settled legs, not 150. The two
+  halves could never both be satisfied, so a day-14 run would have recorded a NULL
+  where a decision had been promised. The day-14 clause is RETIRED, not reinterpreted:
+  n is the sole trigger and the ETA printed below is information, not a deadline.
 
   REFUTATION (any one):
     (a) band net ROI >= +3.0% at n >= 150 settled legs          -> do not flip
@@ -48,7 +54,14 @@ DB = os.path.join(ROOT, "prisma", "dev.db")
 OUT = os.path.join(ROOT, "data", "ttr-floor-shadow.json")
 
 APPROVAL_DATE = "2026-10-23"
-SHADOW_DAYS = 14
+# Retired as a decision trigger on 2026-10-23 (option A): kept only so the reason is
+# legible next to the number that killed it.
+SHADOW_DAYS_SUPERSEDED = 14
+# Throughput is measured over a fixed TRAILING window, not over days-since-approval.
+# On a cohort a day old the since-approval rate is a 2-leg sample (1.8/day) and would
+# project ~84 days against a true ~35 -- a projection is the one number a reader will
+# act on, so it must not be driven by the youngest possible sample.
+RATE_WINDOW_DAYS = 14
 BOT = "STANDARD"
 BAND_LO_H = 2.0        # live floor today
 BAND_HI_H = 24.0       # proposed floor
@@ -167,6 +180,24 @@ def main():
 
     b, o, u = stats(band), stats(over), stats(under)
 
+    # Trailing-window throughput: how fast the band accrues, measured on a window wide
+    # enough not to be a handful of legs. Deliberately independent of APPROVAL_DATE.
+    rate_since = int((time.time() - RATE_WINDOW_DAYS * 86_400) * 1000)
+    rate_rows = c.execute(
+        """SELECT marketId, entryPrice AS px, openedAt
+           FROM PaperTrade
+           WHERE isDemo=0 AND botId=? AND openedAt >= ?""",
+        (BOT, rate_since),
+    ).fetchall()
+    trailing_band = 0
+    for r in rate_rows:
+        if not r["px"] or r["px"] <= 0:
+            continue
+        ttl = ttr_at_entry(r["marketId"], r["openedAt"])
+        if ttl is not None and BAND_LO_H <= ttl < BAND_HI_H:
+            trailing_band += 1
+    trailing_rate = trailing_band / float(RATE_WINDOW_DAYS)
+
     # legs opened in the band -- settled or not. The settled subset above is the
     # sample; this is the rate the sample accrues at. MUST be computed before the
     # decision block, which divides by it (and must be OPENINGS, not settlements:
@@ -202,23 +233,26 @@ def main():
             why = "band net ROI %+.2f%% < +3.0%% at n=%d" % (roi * 100, b["legs"])
     else:
         need = MIN_LEGS - b["legs"]
-        rate = opened_band / days_elapsed if days_elapsed > 0 else 0
+        rate = trailing_rate
         eta = (need / rate) if rate > 0 else None
         why = ("%d of %d settled band legs (from %d opened); %d to go"
                % (b["legs"], MIN_LEGS, opened_band, need))
         if eta is not None:
-            why += " (~%.0f days at the current %.1f OPENINGS/day; settlement lag not included)" % (eta, rate)
-            if days_elapsed < SHADOW_DAYS and eta > (SHADOW_DAYS - days_elapsed):
-                why += (" -- the %d-day window CANNOT reach n=%d at this throughput, so the "
-                        "day-%d trigger in the approved rule is unmeetable"
-                        % (SHADOW_DAYS, MIN_LEGS, SHADOW_DAYS))
-        if days_elapsed >= SHADOW_DAYS:
-            why += "; %d-day window has elapsed -- n floor not met, so the answer is a recorded NULL" % SHADOW_DAYS
+            why += (" (~%.0f days at the trailing-%dd rate of %.2f band openings/day; "
+                    "settlement lag not included)" % (eta, RATE_WINDOW_DAYS, rate))
+            why += (" -- the original 14-day clause could not have reached n=%d at this rate, "
+                    "which is why the window is n-driven" % MIN_LEGS)
+        # No calendar deadline: ACCUMULATING simply persists until n is reached. The
+        # superseded 14-day figure is mentioned only if it elapses, as context.
+        if days_elapsed >= SHADOW_DAYS_SUPERSEDED:
+            why += ("; the originally-drafted %d-day deadline has elapsed but is RETIRED -- n is "
+                    "the only trigger" % SHADOW_DAYS_SUPERSEDED)
 
     out = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "approval_date": APPROVAL_DATE,
-        "shadow_days": SHADOW_DAYS,
+        "window": "n-driven (no calendar deadline)",
+        "superseded_shadow_days": SHADOW_DAYS_SUPERSEDED,
         "days_elapsed": round(days_elapsed, 2),
         "bot": BOT,
         "rule": {
@@ -228,7 +262,8 @@ def main():
             "at_risk_band_h": [BAND_LO_H, BAND_HI_H],
             "min_settled_legs": MIN_LEGS,
             "refute_if_band_roi_at_or_above": REFUTE_ROI,
-            "decision": "flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs",
+            "decision": "n-driven: flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs",
+            "calendar_deadline": "none -- the original 14-day clause was unmeetable at 4.29 band openings/day and is retired, not reinterpreted",
         },
         "bands": {
             "at_risk_2_24h": b,
@@ -236,7 +271,9 @@ def main():
             "under_live_floor_lt_2h": u,
         },
         "opened_legs_in_band": opened_band,
-        "openings_per_day": round(opened_band / days_elapsed, 2) if days_elapsed > 0 else None,
+        "trailing_rate_window_days": RATE_WINDOW_DAYS,
+        "trailing_openings_per_day": round(trailing_rate, 2),
+        "projected_days_to_n": (round((MIN_LEGS - b["legs"]) / trailing_rate) if trailing_rate > 0 else None),
         "unclassified_ttr": unknown,
         "verdict": verdict,
         "reason": why,
@@ -272,8 +309,8 @@ def main():
     if u["legs"]:
         print("  BELOW LIVE FLOOR : %4d legs  <-- should be impossible under a 2h floor; investigate"
               % u["legs"])
-    print("  opened in band   : %4d legs (settled + still open) -> %.2f openings/day"
-          % (opened_band, (opened_band / days_elapsed) if days_elapsed > 0 else 0.0))
+    print("  opened in band   : %4d legs (settled + still open) -> %.2f openings/day (trailing %dd)"
+          % (opened_band, trailing_rate, RATE_WINDOW_DAYS))
     if unknown:
         print("  unclassified TTR : %4d legs (no snapshot at entry+15m)" % unknown)
     print()
