@@ -1796,16 +1796,19 @@
     {
       "id": "git-backup-large-artifact-policy",
       "title": "POLICY \u2014 what should the nightly git backup do with large derived artifacts? (exclude / LFS / external store)",
-      "column": "Backlog",
+      "column": "In Progress",
       "effort": "~1 h (ignore-by-class rule, or git-lfs install + migrate)",
       "dates": "Parked 2026-09-28 (follow-up from the #38 rec 1 root cause; NOT part of that approval)",
       "gate": "Decide and apply one option; verification = the next 3 nightly backups all log \u2705 with no \u26a0\ufe0f AND `du -sh .git` stops growing ~50 MB per night.",
-      "note": "CONTEXT: the 09-26 backup failure was one instance of a class \u2014 the nightly snapshot commits whatever changed under `data/`, and `.git` is already 564 MB while the largest TRACKED artifacts are a 51 MB smoke parquet and two ~30 MB fill-hazard CSVs (the 137 MB extract is ignored as of this fix). GitHub hard-fails any single file >100 MB, so the next large artifact breaks the backup the same way. OPTIONS (recommended first): (a) EXCLUDE derived binaries by class and keep a size budget \u2014 0 new dependencies, the guard now in place enforces it, no source is lost; (b) git-lfs for the parquet/CSV extracts \u2014 git-lfs is NOT installed and the job would need `git lfs` handling (1 GB free storage); (c) move large extracts to an external volume/object store and back up a manifest. Also worth folding in: the job is `deliver: discord` yet its alerts land in the Home channel, not this thread \u2014 the 09-26/09-27 failures WERE delivered and were still missed for two days.",
+      "note": "APPROVED 2026-10-23. DONE (commit 1735a1a): untracked data/archive-analysis \u2014 50 frozen parquet/JSON artefacts, ~530 MB, last written 2026-10-10, read from disk and never from git; kept on disk, added to .gitignore. STILL OPEN AND NOT MINE TO DECIDE: the actual nightly growth driver is the append-only tapes that git re-commits WHOLE every run \u2014 jev-shadow 33M (38 commits), kalshi-macro-quotes 33M, ml/decisions.csv 31M (31M), drift-shadow 19M (38), lowconf-shadow 14M (35) ~= 130 MB of new blobs/night. kalshi-tape-capture-live carries an explicit tracked-artifacts / user-override decision ('the only irreversible asset in the company'), so reversing it is the user's call and was NOT done. Also open: dropping the 337 MB of .venv-ml blobs from history needs a rewrite (destructive, needs a verified bundle first). CORRECTION to the 10-23 self-audit: it described the parquet as 'tracked-but-ignored' \u2014 they were tracked and NOT ignored, and they are not the growth driver.",
       "tags": [
-        "tuning-38",
-        "infra",
+        "backup",
         "git",
-        "policy"
+        "infra",
+        "partial",
+        "policy",
+        "tuning-38",
+        "user-override"
       ]
     },
     {
@@ -3011,17 +3014,19 @@
     {
       "id": "data-api-v2-migration",
       "title": "Polymarket Data API v1 retires 2026-10-24 \u2014 migrate the read adapter (leaderboard / positions / closed-positions / activity) to /v2",
-      "column": "Scheduled",
+      "column": "Done",
       "effort": "~2-3h (pagination rewrite + field map + dual-read verify)",
       "dates": "Probe run 2026-10-17 \u00b7 HARD DEADLINE 2026-10-24",
       "gate": "VERIFY: (a) a frozen-sample parity probe reads both versions within the same minute for >=25 wallets and >=20 conditions and shows >=99% row/field parity (same id set, same order, same pnl/volume/vol to the cent, same pagination coverage); (b) after cutover, one full 24h cycle shows monitor parity against the v1 baseline (same copies/decisions, 0 new failures, 0 v1 route strings left under src/ and scripts/). FAILS IF: the cutover ships without (a), or v1 dies before a full v2 cycle is verified.",
-      "note": "READ-ONLY PARITY PROBE DONE 2026-10-17 (approved). Primary source: Polymarket migration guide states 'Data API v1 is retired on October 24, 2026'. Probe: scripts/data-api-v2-parity-probe.py -> data/data-api-v2-parity.json. FINDING: values are EXACTLY equal (closed-positions realizedPnl deltas 0.0 on 5/5 matched rows; leaderboard pnl identical 5/5; activity usdcSize == usdc_size) \u2014 this is a SHAPE/PAGINATION migration, not a data-semantics one. FOUR HARD BLOCKERS, each verified by live HTTP: (1) v2 REJECTS offset \u2014 \"'offset' is not a query param on this API: pages are cursor-only, pass 'cursor' from a prior response's next_cursor\" (HTTP 400 invalid_request) => the adapter's offset walkers must become cursor loops; (2) sort enums renamed \u2014 'invalid position sortBy: CURRENT' / 'REALIZEDPNL'; v2 accepts CURRENT_VALUE | PRICE | TOKENS | UNREALIZED_PNL | REALIZED_PNL, so sortBy=CURRENT -> sort_by=CURRENT_VALUE and REALIZEDPNL -> REALIZED_PNL; (3) LEADERBOARD WALLET KEY CHANGED: v2 has NO proxy_wallet field on /v2/leaderboard \u2014 the address is `user_id` (v1 proxyWallet -> v2 user_id), plus vol->volume, userName->user_name, verifiedBadge->verified, xUsername->x_username; (4) /closed-positions is FOLDED into /v2/positions?status=CLOSED (row grows to 36 fields; realizedPnl->realized_pnl, conditionId->condition_id, asset->token_id, avgPrice->avg_price, curPrice->current_price, proxyWallet->proxy_wallet, outcomeIndex->outcome_index). Envelope: every v2 read = {data, pagination}, misses are data:null/[] not errors, errors carry code/parameter/retryable/trace_id, load = 429 + Retry-After. /v1/accounting/snapshot has NO v2 counterpart and is NOT retired (we do not call it). NEXT: implementation awaited OWNER GO (code change to the live read path). Verify plan = dual-read v1 vs v2 for one full monitor/leaderboard/scan-wallets cycle and diff wallet sets + realized PnL sums before cutting v1. DRAFT: drafts/data-api-v2-migration-20261017.md",
+      "note": "LABEL REPAIR 2026-10-23: this card still read 'Scheduled' + tag 'unapproved' while the work had shipped. apiV2() has defaulted to v2 since 2026-10-19 (src/lib/adapters/polymarket.ts:127-129) and .env sets no DATA_API_VERSION, so the 06:00 scan:leaderboard runs on v2. Verified again 2026-10-23: v1 and v2 both return 200 today (v1's last day), so tomorrow's cutover needs no action. RESIDUAL, not fixed: the documented rollback lever (DATA_API_VERSION=v1) dies with v1 \u2014 during an incident do NOT reach for it; the comment at :110-118 should be retired.",
       "tags": [
-        "venue",
+        "adapter",
         "api",
         "deadline",
-        "adapter",
-        "unapproved"
+        "done",
+        "label-repair",
+        "unapproved",
+        "venue"
       ]
     },
     {
@@ -3426,6 +3431,73 @@
         "scope"
       ],
       "note": "SCOPED 2026-10-22, no code written. Doc: drafts/kalshi-ml-lane-scope-20261022.md. CORRECTION OF RECORD: earlier briefs said Kalshi had no lane; the accurate statement is that no ml-* script READS Kalshi. Six Kalshi cron jobs run (shadow 15m, shadow-report 18:30, venue-shadow 15m, tape 15m, macro 60m, pm-pair 15m) with 195MB tape since 2026-10-12, kalshi-macro-quotes 75,278 quotes / 336 markets / 9.7d across 6 macro families, macro-settled 14 rows carrying venue truth (result + expiration_value), venue-shadow 721 resolved pairs, and 92 Kalshi PaperTrade legs (+$27.82). 'No wallets' was never a blocker - the ML lane is market-only by construction. OPTIONS: K1 Kalshi-only model = blocked on CALENDAR not code (tape 10d vs Polymarket's 99,561 rows/29,686 markets; comparable ~2027-01), do not build now. K2 cross-venue mispricing PM-vs-Kalshi = recommended, ~3.5 dev-days, uses data on disk, and is the only lane where Kalshi adds information rather than another book to lose on. K3 macro calibration already runs with its own pre-registered bar (n>=20 settled/family at >=24h and <=6h) at 14 settled - a wait, not a build. K2 PRE-REGISTRATION: median executable edge must exceed round-trip fees AND >=30% of pairs clear fees AND survive ex-top-10 AND survive excluding pairs above median venue_skew_ms. REFUTATION: if median edge is inside the fee band, <30% clear, edge is carried by <10 pairs, the skew control kills it, or the Step 0 zero-PnL question shows the pairs never measured what they appear to, the lane closes. Kalshi fee model must be verified against the venue, not reused from the Polymarket adapter. NEXT: K1 vs K2 decision + Step 0 authorisation.\n\n--- K2 MEASURED 2026-10-22 AND REFUTED ON BOTH FORMS (user authorised 'Step 0, then K2'). (A) ARB FORM, on the structurally-paired source data/kalshi-pm-btc-pair-*.jsonl (17,937 rows / 801 windows, BTC 15m up-down, both venues, per-venue fee laws, venue_skew_ms): median net cost of a COMPLETE pair = A -0.1222 (n=15,834; mean -0.1072; p90 -0.0127; net-positive 0.59%) and B -0.1232 (n=16,185; p90 -0.0108; net-positive 0.78%). Skew control: medians identical either side of median skew (-0.1217 vs -0.1223; -0.1242 vs -0.1216), so latency does not create it. Fails the pre-registered rule twice: median edge far outside the fee band, net-positive share ~0.6% vs a >=30% bar. MY OWN INFERENCE CORRECTED: I read the ~12% pair cost as a ~12pp probability disagreement; it is not - pair cost sums two ASKS and includes both spreads, and measured mid-vs-mid the venues agree at median 0.0000. (B) INFORMATIONAL FORM (the one an ML lane would use), 801 windows / 470 labelled (331 dropped for ambiguous final price), base 49.4% UP: AUC P(UP) Polymarket 0.9418 (n=450) vs Kalshi 0.9436 (n=470); 5-fold CV logit PM-only 0.9394, PM+Kalshi 0.9401 (+0.0007), Kalshi-only 0.9365; disagreement median 0.0000 (p10 -0.07, p90 +0.06), 18.2% of observations differ by >1 fee. Kalshi adds +0.0007 AUC over Polymarket alone = nothing; the pre-registered refutation said 'Kalshi adds no independent edge and the lane closes' and it closes. Absolute AUCs are optimistic (mid-window features vs last-observation labels) but the comparison is fair and is the finding. WHAT SURVIVES: K1 still calendar-gated (do not build before ~2027-01); K3 macro calibration still at 14 settled of its n>=20/family bar. REOPENING K2 REQUIRES A NEW HYPOTHESIS - best candidate is Kalshi's event-driven macro families (KXFED, KXCPI, KXPAYROLLS: 75,278 quotes already on disk with venue-truth labels), not 15-minute BTC coin-flips. Test script: /tmp/prndiag/kalshi-information-test.py."
+    },
+    {
+      "id": "blank-market-intake-exclusion",
+      "column": "Done",
+      "title": "tuning #64 Rec 1 \u2014 exclude blank-marketId (AND-parlay) rows at intake, fail loud in fetchMarket",
+      "note": "APPROVED + IMPLEMENTED + VERIFIED 2026-10-23 (commit 35e42c0). Order was the finding: intake stamps observationOnly=1 + a counted [BLANK-MARKET] line FIRST, fetchMarket's blank-id guard SECOND \u2014 a guard alone zeroes the drift gate and would start ADMITTING parlays. Also fixed the dedupe key (marketId is '' for every parlay leg, so distinct legs collapsed; seenKey() substitutes the question and is now the single definition shared by the DB seed and the loop). VERIFIED on a live run: 156 new rows, 27 blank, 27/27 observationOnly=1, 0 copy-eligible, 24 new MarketSnapshots with 0 blank \u2014 the foreign-price snapshot artifact is gone from new data. Baseline it stops: 2,621 blank ObservedTrade rows/24h (33,886 all-time), 24,923 blank MarketSnapshots. Open residual needing a migration: @@unique(walletAddress, marketId, outcome, side, timestamp) has no marketQuestion, so a multi-leg parlay filling in one second loses all but one leg; observability only, since these rows can no longer be copied.",
+      "tags": [
+        "done",
+        "lane-b",
+        "instrument",
+        "intake",
+        "parlay",
+        "verified-live"
+      ]
+    },
+    {
+      "id": "profit-floor-ttr-24h-standard",
+      "column": "In Progress",
+      "title": "STANDARD minTimeToResolutionHours 2 -> 24 (APPROVED 2026-10-23; shadow 14 d, then flip unless shadow >= +3% on >=150 blocked legs)",
+      "note": "APPROVED 2026-10-23 as proposed by profit-recs (commit 656017b, scripts/profit-velocity.py). PRE-REGISTERED RULE, unchanged: build the shadow, run 14 days, then flip live UNLESS the shadow shows >= +3% on >=150 blocked legs. Founding measurement: STANDARD buys 38% of legs (40% of finished notional) in markets resolving within 24 h and that block returns -13.0% on 3,395 legs CI [-21.8,-4.0]; >24 h earns +24.7% on $60,519. Marginal, on the bands v63 still leaves open: -$1,303 all-time (-6.0%) and -$1,528 over 90d (-9.1%) \u2014 only the marginal number is a decision. Expected: book +27.43 -> +30.99 $/1k-capital-day; implied capital for $5k/day $182k -> $161k. REFUTATION: shadow >= +3%; OR the flat 0.6-1.0 cells widen to >= +10% on 150 forward legs; OR 3-7d ex-top-10 falls below 0% on 60d. C-200's short-TTR lane self-rescues at src/lib/scoring/trade.ts:239-247 and is untouched. NOTE the code default is already 12 (src/lib/rules.ts:286); the live RuleSet is the outlier at 2. STATUS: shadow not yet built \u2014 next build in this lane.",
+      "tags": [
+        "lane-a",
+        "user-approved",
+        "tuning",
+        "ttr",
+        "shadow",
+        "preregistered"
+      ]
+    },
+    {
+      "id": "profit-stop-060-carry",
+      "column": "Scheduled",
+      "title": "Carry the 2026-10-22 >=0.60 stop, scope unchanged, expected value revised to +$68-326",
+      "note": "APPROVED 2026-10-23, scope unchanged from the 10-22 proposal. Expected value REVISED DOWN on settlement truth (277 settled legs / 85 markets resolving >168 h after entry): >=0.60 is +$68 (4.1% of notional), not the +$326-548 the open-book marks implied. 0.6-0.8 turns NEGATIVE on hold (+6.5% at 80% settled hit); 0.2-0.6 is where it pays (+$371); the <0.20 exemption is confirmed on truth (-$1,669). REFUTATION: withdraw if 0.6-0.8 hold-to-settlement stays positive at >=150 settled legs. DO NOT widen to 0.2-0.4 \u2014 that region has produced three different signs in three days (cuts beat settlement by $258 / open-book stop loses $1,341 / settled-leg stop gains $218) and nothing is proposed there until one population reaches 150 settled legs.",
+      "tags": [
+        "lane-a",
+        "user-approved",
+        "tuning",
+        "stop",
+        "exit-policy"
+      ]
+    },
+    {
+      "id": "research-source-print-notional",
+      "column": "Scheduled",
+      "title": "Measure source-print notional as an admission feature (APPROVED 2026-10-23; decision 2026-11-06)",
+      "note": "APPROVED 2026-10-23 (research-daily REC 1). Read-only, ~2 h, zero live-lane risk. HYPOTHESIS: a C-200 leg copied from a source fill >=$250 notional returns materially less per leg than one from a small print, after wallet, entry-band, TTR and era controls. TODAY'S READ: <$250 = $5.22/leg (n=1,161) vs >=$250 = $0.33/leg (n=159) since 09-04; 30 d $4.43 (n=441) vs -$0.97 (n=89); spans 78 wallets, largest 12% of the big bucket. DECISION RULE: if the controlled gap (small - big) is >= $1.50/leg with 2SE below the gap at n >= 60 big-print legs by 2026-11-06, add sourcePrintNotional (or print/liquidity) as a scored admission term, shadow-only first; else record it as a liquidity/era proxy and drop the axis. Per standing rule: measure BEFORE touching scoring.",
+      "tags": [
+        "research",
+        "measurement",
+        "approved",
+        "admission",
+        "preregistered"
+      ]
+    },
+    {
+      "id": "research-repo-approvals-20261023",
+      "column": "Scheduled",
+      "title": "Repo approvals granted 2026-10-23: crowdintel wallet FDR + tradememory deflated Sharpe (vike blocked on key)",
+      "note": "APPROVED 2026-10-23 by the user ('All approved'). crowdintel-xyz/polymarket-agent-kit -> q-gated wallet ranking with event-clustered n + BH-FDR; gate: >=30% of track wallets below q=0.10 (or n_eff<8) ==> propose q-gated shadow ranking, else drop. ~0.5 d. mnemox-ai/tradememory-protocol -> deflated-Sharpe correction on the rule-selection stats; gate: p >= 0.05 or INSUFFICIENT_DATA ==> ladder claims carry a selection caveat; ~2 h. vike-io/vike-data-cli -> APPROVED but still BLOCKED ON USER: needs the vendor key, which this agent will not handle; see vike-l2-prerecorder-window.",
+      "tags": [
+        "research",
+        "approved",
+        "wallet-selection",
+        "multiple-testing",
+        "blocked-on-key"
+      ]
     }
   ]
 }
