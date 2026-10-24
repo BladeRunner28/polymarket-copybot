@@ -110,6 +110,28 @@ async function main() {
     for (const f of fallback) pending.push(f);
   }
   for (const w of watchPool) pending.push(w);
+
+  // tuning #65 Rec 1 (user-approved 2026-10-24): a blank marketId can NEVER be reviewed.
+  // Polymarket's AND-parlay legs carry no slug, so /markets/slug/ 404s and this loop used
+  // to push one bare `: clob 404` per row into `failures` -- 38 of them per night. The
+  // multi-line Failures block that produced then evicted this run's OWN summary out of
+  // `copybot-eod.sh`'s `tail -5`, so the EOD log lost `Outcome review complete` while the
+  // review had actually run (115 labels at 22:01). Drop them here, count them loudly, and
+  // never let them in the loop.
+  //
+  // This is the same class the 10-23 intake fix (Rec 1 of tuning #64) stopped at the
+  // SOURCE; these 38 are the historical rows already in the table, which that fix cannot
+  // retro-edit. Both are needed: intake stops new ones, this stops the existing ones from
+  // poisoning every night's log.
+  const blankPending = pending.filter((d) => !d.marketId || d.marketId.trim() === "");
+  if (blankPending.length > 0) {
+    log(
+      `[BLANK-REVIEW] skipped ${blankPending.length} decision(s) with no marketId -- unreviewable ` +
+        `(AND-parlay rows); counted, not silent.`
+    );
+    pending = pending.filter((d) => d.marketId && d.marketId.trim() !== "");
+  }
+
   log(
     `Reviewing ${pending.length} decisions (${settledCandidates} pending rows have a settled leg; ` +
       `${watchCandidates} watchlist rows in the 2h–30d window, taking the ${watchPool.length} oldest).`
@@ -183,7 +205,14 @@ async function main() {
   }
 
   log(`Outcome review complete: ${reviewed} decisions judged.`);
-  if (failures.length) logError(`Failures (${failures.length}):\n` + failures.slice(0, 5).join("\n"));
+  // ONE line, always. A multi-line block printed AFTER the summary is what `tail -5` cuts
+  // first, so the run looked like it never reported. Keep the count, the first five, and an
+  // explicit elision marker on the same line.
+  if (failures.length) {
+    const shown = failures.slice(0, 5).join(" | ");
+    const more = failures.length > 5 ? ` | +${failures.length - 5} more` : "";
+    logError(`Failures (${failures.length}): ${shown}${more}`);
+  }
 }
 
 main()
