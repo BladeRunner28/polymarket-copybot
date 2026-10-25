@@ -83,6 +83,20 @@ def cluster_ci(pairs, iters=1200, seed=7):
             float(means[int(0.025 * len(means))]), float(means[int(0.975 * len(means))]))
 
 
+def independent(rows):
+    """Collapse repeat snapshots of the same position to one row per outcome.
+
+    The shadow instrument writes a candidate row every monitor cycle, so a single
+    position can appear 5-6x. Row counts overstate the evidence base: n rows is not
+    n independent observations, and the nearest-reachable tables are priced off that
+    count. One row per (market, outcome), earliest snapshot kept.
+    """
+    seen = {}
+    for r in sorted(rows, key=lambda r: r.get("ts") or ""):
+        seen.setdefault((r["market"], r.get("outcome")), r)
+    return list(seen.values())
+
+
 def summarise(rows, label, indent="  "):
     if not rows:
         print(f"{indent}{label:<40} n=0")
@@ -139,7 +153,8 @@ def main():
         direction = "favourable" if p < we - 1e-12 else ("adverse" if p > we + 1e-12 else "flat")
         kinds = sorted({kind_of(k) for k in (c.get("otherRiskKinds") or [])})
         kinds = [k for k in kinds if k != "drift"]
-        built.append({"market": c.get("marketId"), "net": net, "dir": direction, "kinds": kinds})
+        built.append({"market": c.get("marketId"), "outcome": c.get("outcome"), "net": net,
+                      "dir": direction, "kinds": kinds, "ts": c.get("ts") or ""})
 
     out = {"instrumentRows": instrument_rows, "settled": settled}
 
@@ -192,6 +207,17 @@ def main():
     out["nearestReachable"] = {}
     for k, rows in sorted(single.items(), key=lambda kv: -len(kv[1])):
         s = summarise(rows, f"drift + {k}")
+        if s:
+            ind = independent(rows)
+            s["independentOutcomes"] = len(ind)
+            if len(ind) != len(rows):
+                si = summarise(ind, f"  same, 1 row per outcome", indent="    ")
+                for key in ("n", "net", "lo", "hi"):
+                    s[f"ind_{key}"] = si[key] if si else None
+                s["independentMarkets"] = len({r["market"] for r in ind})
+                if not args.json:
+                    print(f"    => {len(rows):,} rows are {len(ind):,} independent outcomes "
+                          f"across {s['independentMarkets']:,} markets; n>=100 rule applies to the latter")
         out["nearestReachable"][k] = s
 
     if not args.json:
