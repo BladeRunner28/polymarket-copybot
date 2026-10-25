@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-10-25T11:52:56Z",
+  "mode": "calibration-replay",
+  "approval_date": "2020-01-01",
+  "window": "n-driven (no calendar deadline)",
+  "superseded_shadow_days": 14,
+  "days_elapsed": 2489.5,
+  "bot": "STANDARD",
+  "rule": {
+    "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
+    "live_floor_h": 2.0,
+    "proposed_floor_h": 24.0,
+    "at_risk_band_h": [
+      2.0,
+      24.0
+    ],
+    "min_settled_legs": 150,
+    "refute_if_band_roi_at_or_above": 0.03,
+    "decision": "n-driven: flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs",
+    "calendar_deadline": "none -- the original 14-day clause was unmeetable at 4.29 band openings/day and is retired, not reinterpreted"
+  },
+  "bands": {
+    "at_risk_2_24h": {
+      "legs": 3405,
+      "markets": 1271,
+      "notional": 42234.6,
+      "pnl": -5399.31,
+      "roi": -0.12784091716270438,
+      "resolved_legs": 656,
+      "resolved_roi": -0.09025364581420116
+    },
+    "kept_24h_plus": {
+      "legs": 6146,
+      "markets": 1651,
+      "notional": 67744.6,
+      "pnl": 14499.58,
+      "roi": 0.21403300041627787,
+      "resolved_legs": 1667,
+      "resolved_roi": 0.3971195558654975
+    },
+    "under_live_floor_lt_2h": {
+      "legs": 0,
+      "markets": 0,
+      "notional": 0.0,
+      "pnl": 0.0,
+      "roi": null,
+      "resolved_legs": 0,
+      "resolved_roi": null
+    }
+  },
+  "opened_legs_in_band": 3405,
+  "trailing_rate_window_days": 14,
+  "trailing_openings_per_day": 4.21,
+  "projected_days_to_n": -772,
+  "unclassified_ttr": 142,
+  "verdict": "FLIP",
+  "reason": "band net ROI -12.78% < +3.0% at n=3405",
+  "not_yet_evaluable": [
+    "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
+    "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"
+  ],
+  "note": "Read-only shadow. Changing the floor is Lane A and still needs the user."
+}

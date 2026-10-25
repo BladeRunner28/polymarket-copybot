@@ -52,8 +52,17 @@ from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB = os.path.join(ROOT, "prisma", "dev.db")
 OUT = os.path.join(ROOT, "data", "ttr-floor-shadow.json")
+# A calibration replay (--since older than approval, or a different --band-lo) must NOT
+# overwrite the forward-shadow artifact: the replay reports an IN-SAMPLE verdict (e.g.
+# "FLIP" on 3,386 historical legs) which is exactly what the forward artifact is supposed
+# to stay ignorant of until n=150 is reached out of sample. The docstring below invites
+# the replay, so leaving both modes on one path means following the documentation poisons
+# the number the flip decision will be read off. Calibration writes its own file.
+CAL_OUT = os.path.join(ROOT, "data", "ttr-floor-shadow-calibration.json")
 
 APPROVAL_DATE = "2026-10-23"
+CANONICAL_APPROVAL_DATE = "2026-10-23"   # the forward shadow's true start
+CANONICAL_BAND_LO_H = 2.0                # the live floor at approval
 # Retired as a decision trigger on 2026-10-23 (option A): kept only so the reason is
 # legible next to the number that killed it.
 SHADOW_DAYS_SUPERSEDED = 14
@@ -81,6 +90,11 @@ def main():
     # band over all history must reproduce the study that proposed the change
     # (the <24h block, -13.0% on 3,395 legs). A shadow that cannot reproduce the
     # measurement it is shadowing is an instrument defect, not a result.
+    # Replay on 2026-10-25 (entry-time TTR axis, see ttr_at_entry): -12.78% on
+    # 3,405 legs / 1,271 markets, resolved-only -9.03%. The 3,405 vs 3,395 gap is the
+    # 13 floor-legal legs the stale axis had pushed below 2h, plus legs rescued from
+    # just above 24h when the snapshot preceded entry. Same answer, honest boundaries.
+    # Such a replay writes CAL_OUT, never the forward artifact -- see CAL_OUT.
     quiet = "--quiet" in sys.argv
     for i, a in enumerate(sys.argv):
         if a != "--quiet" and a == "--since" and i + 1 < len(sys.argv):
@@ -90,6 +104,8 @@ def main():
 
     if not os.path.exists(DB):
         sys.exit("no database at %s" % DB)
+    calibration = (APPROVAL_DATE != CANONICAL_APPROVAL_DATE) or (BAND_LO_H != CANONICAL_BAND_LO_H)
+    out_path = CAL_OUT if calibration else OUT
     c = sqlite3.connect(DB)
     c.row_factory = sqlite3.Row
     since = ms(APPROVAL_DATE)
@@ -119,17 +135,31 @@ def main():
     cache = {}
 
     def ttr_at_entry(market_id, opened_at):
-        """Last MarketSnapshot at or before entry+15min -- same as profit-velocity.py."""
+        """Last MarketSnapshot at or before entry+15min -- same snapshot as profit-velocity.py,
+        but its TTR is re-based onto the ENTRY instant.
+
+        The snapshot is taken at or before entry+15min, so its timeToResolution is already
+        0-15 minutes STALE, and time-to-resolution only falls. A leg entered with 2.05h left
+        reads 1.80h at the snapshot. The floor is evaluated at entry, so the elapsed
+        snapshot->entry lag is added back. Before this correction the report printed
+        "BELOW LIVE FLOOR : 13 legs <-- should be impossible under a 2h floor"; every one of
+        those 13 had snapshot TTR 1.75-1.94h and entry TTR 2.02-2.17h, i.e. floor-legal legs
+        pushed out of the at-risk band by the instrument's own staleness.
+        """
         key = (market_id, opened_at // 3_600_000)
         if key in cache:
             return cache[key]
         s = c.execute(
-            """SELECT timeToResolution FROM MarketSnapshot
+            """SELECT timeToResolution, collectedAt FROM MarketSnapshot
                WHERE marketId=? AND collectedAt<=? AND timeToResolution IS NOT NULL
                ORDER BY collectedAt DESC LIMIT 1""",
             (market_id, opened_at + 900_000),
         ).fetchone()
-        cache[key] = s[0] if s else None
+        if s is None:
+            cache[key] = None
+        else:
+            lag_h = (s[1] - opened_at) / 3_600_000.0
+            cache[key] = s[0] + lag_h
         return cache[key]
 
     band = []          # 2..24h -- what the new floor would block
@@ -250,6 +280,7 @@ def main():
 
     out = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "mode": "calibration-replay" if calibration else "forward",
         "approval_date": APPROVAL_DATE,
         "window": "n-driven (no calendar deadline)",
         "superseded_shadow_days": SHADOW_DAYS_SUPERSEDED,
@@ -284,7 +315,7 @@ def main():
         "note": "Read-only shadow. Changing the floor is Lane A and still needs the user.",
     }
 
-    with open(OUT, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(out, f, indent=2)
 
     # --- report ---------------------------------------------------------------
@@ -296,6 +327,12 @@ def main():
         return
 
     print("TTR floor shadow -- STANDARD, %.2f days since approval (%s)" % (days_elapsed, APPROVAL_DATE))
+    if calibration:
+        print()
+        print("  *** CALIBRATION REPLAY (--since %s, --band-lo %.2f): this is an IN-SAMPLE read,"
+              % (APPROVAL_DATE, BAND_LO_H))
+        print("  *** not the forward shadow. Written to %s;" % os.path.basename(out_path))
+        print("  *** the live artifact %s was NOT touched." % os.path.basename(OUT))
     print()
     print("  at risk  [2,24)h : %4d legs / %3d mkts  ntl $%9.2f  pnl $%9.2f  ROI %s"
           % (b["legs"], b["markets"], b["notional"], b["pnl"],
@@ -317,7 +354,7 @@ def main():
     print("  VERDICT: %s -- %s" % (verdict, why))
     print()
     print("  not yet evaluable: refutation (b) flat 0.6-1.0 cells >= +10%; (c) 3-7d ex-top-10 < 0%")
-    print("  wrote %s" % OUT)
+    print("  wrote %s" % out_path)
 
 
 if __name__ == "__main__":
