@@ -44,6 +44,32 @@ export function lowConfBandOf(price: number): string {
   return "other";
 }
 
+/**
+ * Finer PRICE split inside the coarse bands (2026-10-25 C-200 daily report).
+ *
+ * WHY: the headline `wouldHavePnl` is 97% one population — tickets priced below
+ * 0.05, where a $10 stake wins ~$200-1000. Those entries were BANNED at admission
+ * by RuleSet v67 (`c200LongshotBandFloor` 0.05, 2026-10-24), so they are no longer
+ * tradable, yet the coarse "0-0.2" row lumps them in with 0.05-0.20 and reads as
+ * "long-shots pay, lower the floor". Measured 2026-10-25: sub-0.05 priced 617 rows
+ * = +$540,380 of the $554,735 headline; 0.05-0.20 priced 861 rows = +$14,355.
+ * Additive only — every pre-existing field is computed exactly as before.
+ */
+export const LOWCONF_PRICE_BAND_EDGES: ReadonlyArray<[number, number]> = [
+  [0, 0.05],
+  [0.05, 0.1],
+  [0.1, 0.2],
+  [0.2, 0.4],
+  [0.4, 0.6],
+  [0.6, 0.8],
+  [0.8, 1.01],
+];
+
+export function lowConfPriceBandOf(price: number): string {
+  for (const [lo, hi] of LOWCONF_PRICE_BAND_EDGES) if (price >= lo && price < hi) return `${lo}-${hi}`;
+  return "other";
+}
+
 /** Confidence bucket, so the read can ask "what if the bar were 0.6 instead of 0.7?" */
 export function confidenceBucket(rawConfidence: number): string {
   if (rawConfidence >= 0.7) return ">=0.70";
@@ -124,6 +150,8 @@ export interface LowConfSummary {
   confidenceOnlyCandidates: number;
   stakeUsd: number;
   byBand: Record<string, { n: number; marked: number; wouldHavePnl: number }>;
+  /** Price sub-split inside the coarse bands — separates the v67-banned sub-0.05 tail. */
+  byPriceBand: Record<string, { n: number; marked: number; wouldHavePnl: number }>;
   byConfidenceBucket: Record<string, { n: number; marked: number; wouldHavePnl: number }>;
   /** The counterfactual the gate question actually needs: confidence-only rejects. */
   confidenceOnly: { n: number; marked: number; wouldHavePnl: number; avgPnlPerTrade: number | null };
@@ -138,6 +166,7 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
     if (r.type === "resolve") resolves.set(`${r.marketId}|${r.outcome}`, Number(r.value));
   }
   const byBand: LowConfSummary["byBand"] = {};
+  const byPriceBand: LowConfSummary["byPriceBand"] = {};
   const byBucket: LowConfSummary["byConfidenceBucket"] = {};
   let marked = 0;
   let wins = 0;
@@ -150,8 +179,11 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
     const band = String(c.band ?? lowConfBandOf(Number(c.currentPrice)));
     const bucket = String(c.confidenceBucket ?? confidenceBucket(Number(c.rawConfidence)));
     const b = (byBand[band] ??= { n: 0, marked: 0, wouldHavePnl: 0 });
+    const priceBand = lowConfPriceBandOf(Number(c.currentPrice));
+    const p = (byPriceBand[priceBand] ??= { n: 0, marked: 0, wouldHavePnl: 0 });
     const k = (byBucket[bucket] ??= { n: 0, marked: 0, wouldHavePnl: 0 });
     b.n++;
+    p.n++;
     k.n++;
     const only = c.confidenceOnly === true;
     if (only) onlyN++;
@@ -164,6 +196,8 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
     pnl += rowPnl;
     b.marked++;
     b.wouldHavePnl += rowPnl;
+    p.marked++;
+    p.wouldHavePnl += rowPnl;
     k.marked++;
     k.wouldHavePnl += rowPnl;
     if (only) {
@@ -188,6 +222,7 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
     confidenceOnlyCandidates: onlyN,
     stakeUsd: LOWCONF_SHADOW_STAKE_USD,
     byBand: round(byBand),
+    byPriceBand: round(byPriceBand),
     byConfidenceBucket: round(byBucket),
     confidenceOnly: {
       n: onlyN,
