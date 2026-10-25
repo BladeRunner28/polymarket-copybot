@@ -1488,8 +1488,587 @@ def cheap_tail_fill_probe(c, limit=40):
                    "rows": out}, f, indent=1)
 
 
+# ---------------------------------------------------------------- AH
+def active_rules(c):
+    """The ruleset actually in force, read off the active RuleSet row (read-only)."""
+    r = c.execute("SELECT version, rulesJson FROM RuleSet WHERE active=1 "
+                  "ORDER BY version DESC LIMIT 1").fetchone()
+    if not r:
+        return (None, {})
+    try:
+        return (r["version"], json.loads(r["rulesJson"]))
+    except Exception:
+        return (r["version"], {})
+
+
+def load_bets(c, since_ms=0, bot=None):
+    """Finished legs carrying (market, outcome) so they can be aggregated into BETS.
+
+    A bet is (marketId, outcome) -- the unit a per-market ceiling actually caps. Every
+    sizing number in this repo is per LEG; the question here is what the per-BET total is,
+    because 63 legs on one outcome is one position, not 63 decisions.
+    """
+    sql = """SELECT botId, walletAddress AS wallet, marketId, outcome, entryPrice AS px,
+                    simulatedPositionSize AS ntl, realizedPnl AS pnl, openedAt
+             FROM PaperTrade
+             WHERE isDemo=0 AND status IN ('closed','resolved') AND realizedPnl IS NOT NULL
+               AND openedAt >= ?"""
+    params = [since_ms]
+    if bot:
+        sql += " AND botId=?"
+        params.append(bot)
+    out = []
+    for r in c.execute(sql, params).fetchall():
+        if not r["px"] or r["px"] <= 0 or not r["ntl"] or r["ntl"] <= 0:
+            continue
+        out.append({"bot": r["botId"], "wallet": r["wallet"], "market": r["marketId"],
+                    "outcome": r["outcome"], "px": r["px"], "ntl": r["ntl"],
+                    "pnl": r["pnl"], "ms": r["openedAt"]})
+    return out
+
+
+def apply_bet_cap(legs, cap):
+    """Chronologically truncate each bet at `cap` dollars.
+
+    Paper PnL is linear in notional at a fixed entry price, so a partial last leg is
+    scaled proportionally -- that is exact for this book, not an approximation.
+    Returns (kept_legs, dropped_notional, n_partial).
+    """
+    by = {}
+    for l in legs:
+        by.setdefault((l["market"], l["outcome"]), []).append(l)
+    kept, dropped, npartial = [], 0.0, 0
+    for _, bet in by.items():
+        bet.sort(key=lambda l: l["ms"])
+        run = 0.0
+        for l in bet:
+            room = cap - run
+            if room <= 1e-9:
+                dropped += l["ntl"]
+                continue
+            if l["ntl"] <= room + 1e-9:
+                kept.append(dict(l))
+                run += l["ntl"]
+            else:
+                frac = room / l["ntl"]
+                k = dict(l)
+                k["ntl"] = room
+                k["pnl"] = l["pnl"] * frac
+                kept.append(k)
+                dropped += l["ntl"] - room
+                npartial += 1
+                run = cap
+    return kept, dropped, npartial
+
+
+def marginal_bet_dollars(legs, threshold):
+    """The dollars a bet accumulated ABOVE `threshold` -- the marginal, not the first, fill.
+
+    This is the honest test of a concentration cap: a cap costs money only if the dollars
+    it removes are profitable. Averaging the whole bet hides that, because the first fill
+    and the 40th fill are different decisions made at different information sets.
+    """
+    by = {}
+    for l in legs:
+        by.setdefault((l["market"], l["outcome"]), []).append(l)
+    marg = []
+    for _, bet in by.items():
+        bet.sort(key=lambda l: l["ms"])
+        run = 0.0
+        for l in bet:
+            before = run
+            run += l["ntl"]
+            over = max(0.0, run - max(threshold, before))
+            if over <= 1e-9:
+                continue
+            frac = over / l["ntl"]
+            marg.append({"market": l["market"], "ntl": over, "pnl": l["pnl"] * frac})
+    return marg
+
+
+def boot_pair(a, b, key_a, key_b, reps=1500, seed=71):
+    """Market-clustered bootstrap CI of (sum key_a - sum key_b) over paired leg lists."""
+    by = {}
+    for tag, legs, key in (("a", a, key_a), ("b", b, key_b)):
+        for l in legs:
+            d = by.setdefault(l["market"], {"a": 0.0, "b": 0.0})
+            d[tag] += l[key]
+    keys = list(by)
+    if len(keys) < 8:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    vals = []
+    for _ in range(reps):
+        pick = rng.integers(0, len(keys), len(keys))
+        vals.append(sum(by[keys[i]]["a"] - by[keys[i]]["b"] for i in pick))
+    return (np.percentile(vals, 2.5), np.percentile(vals, 97.5))
+
+
+def boot_ratio(items, reps=1500, seed=73):
+    """Market-clustered bootstrap CI of sum(pnl)/sum(ntl) as a percent.
+
+    Resamples MARKETS, so both numerator and denominator move -- dividing a PnL CI by a
+    fixed notional (the lazy version) understates the interval whenever the big-PnL markets
+    are also the big-notional markets, which is exactly this book.
+    """
+    by = {}
+    for x in items:
+        d = by.setdefault(x["market"], [0.0, 0.0])
+        d[0] += x["pnl"]
+        d[1] += x["ntl"]
+    keys = list(by)
+    if len(keys) < 8:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    vals = []
+    for _ in range(reps):
+        pick = rng.integers(0, len(keys), len(keys))
+        p = sum(by[keys[i]][0] for i in pick)
+        n = sum(by[keys[i]][1] for i in pick)
+        if n:
+            vals.append(100 * p / n)
+    if not vals:
+        return (float("nan"), float("nan"))
+    return (np.percentile(vals, 2.5), np.percentile(vals, 97.5))
+
+
+def concentration_shadow(c):
+    print("\n" + "=" * 100)
+    print("AH. CONCENTRATION RAILS ON THE LANE THAT CARRIES THE BOOK")
+    print("=" * 100)
+    ver, rules = active_rules(c)
+    print(f"   active ruleset: v{ver}")
+    for k in ("maxMarketNotionalPctOfCap", "maxMarketLegsPerMarketId",
+              "maxWalletNotionalPctOfCap", "walletCapBasis", "maxOpenPositions",
+              "standardMaxOpenPositions", "minTimeToResolutionHours",
+              "standardSkipBandRange", "c200LongshotBandFloor"):
+        if k in rules:
+            print(f"     {k:34} = {rules[k]}")
+    print("   NOTE: the v55 per-market and v58 per-wallet rails are guarded "
+          "botId===\"BANKROLL_200\" (v63 commit aace3b5 enumerates the scoping gaps).")
+    print("   STANDARD carries the book. Read the two fields above as C-200-ONLY.")
+
+    # ---- open book: is the exposure per BET or per LEG?
+    print("\n   (1) OPEN BOOK: legs vs BETS (a bet = marketId + outcome)")
+    rows = c.execute(
+        """SELECT botId, marketId, outcome, COUNT(*) n, SUM(simulatedPositionSize) ntl,
+                  MIN(openedAt) mn, MAX(openedAt) mx
+           FROM PaperTrade WHERE isDemo=0 AND status='open'
+           GROUP BY botId, marketId, outcome""").fetchall()
+    per_bot = {}
+    for r in rows:
+        d = per_bot.setdefault(r["botId"], {"bets": 0, "legs": 0, "ntl": 0.0, "big": []})
+        d["bets"] += 1
+        d["legs"] += r["n"]
+        d["ntl"] += r["ntl"] or 0
+        d["big"].append((r["ntl"] or 0, r["n"], r["marketId"], r["outcome"],
+                         (r["mx"] - r["mn"]) / 86_400_000.0))
+    for bot, d in sorted(per_bot.items(), key=lambda kv: -kv[1]["ntl"]):
+        print(f"   {bot:12} bets {d['bets']:>4}  legs {d['legs']:>4}  "
+              f"$ {d['ntl']:>8,.0f}  legs/bet {d['legs']/max(d['bets'],1):>4.1f}  "
+              f"$/bet {d['ntl']/max(d['bets'],1):>7.2f}")
+        d["big"].sort(reverse=True)
+        top = d["big"][:5]
+        for ntl, n, mkt, out, span in top:
+            print(f"        ${ntl:>7,.2f}  {n:>3} legs  span {span:>6.1f}d  "
+                  f"{out[:4]:4} {mkt[:58]}")
+        share = sum(x[0] for x in top) / d["ntl"] if d["ntl"] else 0
+        print(f"        top-5 bets = {100*share:.0f}% of that lane's open notional")
+
+    # ---- finished book: what do accumulation dollars earn?
+    for label, since in (("all-time", 0),
+                         ("90d", int((time.time() - 90 * 86400) * 1000)),
+                         ("30d", int((time.time() - 30 * 86400) * 1000))):
+        legs = load_bets(c, since)
+        if not legs:
+            continue
+        print(f"\n   (2) MARGINAL BET DOLLARS -- {label} (all lanes, cost = dollars at risk)")
+        print(f"   {'threshold':>9} {'bets>thr':>8} {'marg ntl':>9} {'marg pnl':>9} "
+              f"{'marg ROI%':>9} {'CI low':>8} {'CI hi':>8}")
+        for thr in (25, 50, 100, 150, 200, 400):
+            m = marginal_bet_dollars(legs, thr)
+            if not m:
+                continue
+            ntl = sum(x["ntl"] for x in m)
+            pnl = sum(x["pnl"] for x in m)
+            lo, hi = boot_ratio(m)
+            print(f"   {('$'+str(thr)):>9} {len({x['market'] for x in m}):>8} "
+                  f"{ntl:>9,.0f} {pnl:>+9,.0f} "
+                  f"{100*pnl/ntl if ntl else 0:>+9.1f} "
+                  f"{lo:>+8.1f} {hi:>+8.1f}")
+            # ex-top-5 markets: is the marginal result one market wearing a cohort's clothes?
+            by_m = {}
+            for x in m:
+                by_m.setdefault(x["market"], [0.0, 0.0])
+                by_m[x["market"]][0] += x["pnl"]
+                by_m[x["market"]][1] += x["ntl"]
+            ranked = sorted(by_m.items(), key=lambda kv: -kv[1][0])[5:]
+            n5 = sum(v[1] for _, v in ranked)
+            p5 = sum(v[0] for _, v in ranked)
+            print(f"   {'':>9} ex-top-5 markets: {n5:>9,.0f} {p5:>+9,.0f} "
+                  f"{100*p5/n5 if n5 else 0:>+9.1f}")
+        print(f"        (bets>thr counted as distinct MARKETS holding marginal dollars)")
+
+    # ---- the cap ladder: what a per-bet ceiling would have produced
+    for label, since in (("all-time", 0),
+                         ("90d", int((time.time() - 90 * 86400) * 1000))):
+        legs = load_bets(c, since)
+        if not legs:
+            continue
+        print(f"\n   (3) PER-BET CAP LADDER -- {label}, all lanes")
+        print(f"   {'cap':>6} {'legs kept':>9} {'notional':>9} {'pnl':>9} {'ROI%':>7} "
+              f"{'dPnL vs none':>12} {'CI low':>8} {'CI hi':>8} {'drop $':>8}")
+        base_pnl = sum(l["pnl"] for l in legs)
+        base_ntl = sum(l["ntl"] for l in legs)
+        print(f"   {'none':>6} {len(legs):>9} {base_ntl:>9,.0f} {base_pnl:>+9,.0f} "
+              f"{100*base_pnl/base_ntl:>+7.1f} {'-':>12} {'-':>8} {'-':>8} {0:>8,.0f}")
+        for cap in (25, 50, 100, 150, 200, 400):
+            kept, dropped, npart = apply_bet_cap(legs, cap)
+            pnl = sum(l["pnl"] for l in kept)
+            ntl = sum(l["ntl"] for l in kept)
+            lo, hi = boot_pair([], legs_by_market_pnl(legs, kept), "pnl", "pnl")
+            print(f"   {('$'+str(cap)):>6} {len(kept):>9} {ntl:>9,.0f} {pnl:>+9,.0f} "
+                  f"{100*pnl/ntl:>+7.1f} {pnl-base_pnl:>+12,.0f} "
+                  f"{lo:>+8,.0f} {hi:>+8,.0f} {dropped:>8,.0f}")
+
+    # ---- the refutation check: does the cap touch the one leg that made the book?
+    print("\n   (4) THE ONE LEG THAT MADE THE BOOK -- does any cap reach it?")
+    top = c.execute(
+        """SELECT p.id, p.botId, p.walletAddress, p.marketId, p.outcome, p.entryPrice,
+                  p.simulatedPositionSize ntl, p.realizedPnl pnl, p.openedAt
+           FROM PaperTrade p WHERE p.isDemo=0 AND p.realizedPnl IS NOT NULL
+           ORDER BY p.realizedPnl DESC LIMIT 3""").fetchall()
+    for r in top:
+        agg = c.execute(
+            """SELECT COUNT(*) n, SUM(simulatedPositionSize) ntl, SUM(realizedPnl) pnl
+               FROM PaperTrade WHERE isDemo=0 AND marketId=? AND outcome=? AND botId=?""",
+            (r["marketId"], r["outcome"], r["botId"])).fetchone()
+        print(f"   leg {r['id'][:10]} {r['botId']:12} pnl ${r['pnl']:>+9,.2f} "
+              f"ntl ${r['ntl']:>7,.2f} | its BET: {agg['n']} legs "
+              f"${agg['ntl'] or 0:>8,.2f} pnl ${agg['pnl'] or 0:>+9,.2f} "
+              f"-> a $100 bet-cap {'WOULD' if (agg['ntl'] or 0) > 100 else 'would NOT'} bind")
+
+    # ---- per-wallet mirror
+    print("\n   (5) PER-WALLET CONCENTRATION -- open book, all lanes")
+    wr = c.execute(
+        """SELECT walletAddress w, COUNT(DISTINCT marketId||outcome) bets, COUNT(*) legs,
+                  SUM(simulatedPositionSize) ntl
+           FROM PaperTrade WHERE isDemo=0 AND status='open' GROUP BY 1
+           ORDER BY ntl DESC LIMIT 8""").fetchall()
+    tot = c.execute("""SELECT SUM(simulatedPositionSize) FROM PaperTrade
+                       WHERE isDemo=0 AND status='open'""").fetchone()[0] or 0
+    for r in wr:
+        print(f"   {r['w'][:14]:14} bets {r['bets']:>4} legs {r['legs']:>4} "
+              f"${r['ntl'] or 0:>8,.2f}  {100*(r['ntl'] or 0)/tot:>5.1f}% of open")
+
+
+def legs_by_market_pnl(legs, kept):
+    """Legs NOT kept, as a zero-notional marker per market -- the paired bootstrap arm.
+
+    Returning the dropped legs with their PnL intact lets boot_pair compute
+    kept-minus-dropped per market, which is the delta the cap buys.
+    """
+    idx = {(l["market"], l["outcome"], l["ms"], round(l["ntl"], 8)) for l in kept}
+    return [l for l in legs
+            if (l["market"], l["outcome"], l["ms"], round(l["ntl"], 8)) not in idx]
+
+
+def skip_range(rules, key):
+    """Parse a "lo-hi" band-skip field into (lo, hi) floats, or None."""
+    v = (rules or {}).get(key) or ""
+    if not isinstance(v, str) or "-" not in v:
+        return None
+    try:
+        lo, hi = v.split("-", 1)
+        return (float(lo), float(hi))
+    except Exception:
+        return None
+
+
+def in_range(px, rng):
+    return bool(rng) and rng[0] <= px < rng[1]
+
+
+def ttl_floor_ladder(c):
+    """AI. Is the <24h TTL loss ADDITIVE to the v63 band skip, or already covered by it?
+
+    The whole TTL gate is only worth activating if the cohort it blocks still loses money
+    after the live band skip removes 0.4-0.6. If the <24h loss lives inside 0.4-0.6, then
+    v63 already bought it and raising minTimeToResolutionHours is a no-op dressed as a fix.
+    That is the hygiene test this section exists to run, and it is run before any proposal.
+    """
+    print("\n" + "=" * 100)
+    print("AI. TTL FLOOR LADDER -- net of the live band skip (the gate's own hygiene test)")
+    print("=" * 100)
+    ver, rules = active_rules(c)
+    std_skip = skip_range(rules, "standardSkipBandRange")
+    c200_skip = skip_range(rules, "c200SkipBandRange")
+    live_floor = rules.get("minTimeToResolutionHours")
+    print(f"   active v{ver}: minTimeToResolutionHours={live_floor}  "
+          f"standardSkipBandRange={rules.get('standardSkipBandRange')!r}  "
+          f"c200SkipBandRange={rules.get('c200SkipBandRange')!r}")
+
+    for label, since in (("all-time", 0),
+                         ("90d", int((time.time() - 90 * 86400) * 1000)),
+                         ("30d", int((time.time() - 30 * 86400) * 1000))):
+        legs = ttl_edges(c, since)
+        if not legs:
+            continue
+        # Apply the LIVE skip exactly as the scorer would: STANDARD drops 0.4-0.6, C-200
+        # drops its own range. Legs a live rule already refuses can never be blocked by a
+        # TTL floor, so including them would credit the floor with v63's work.
+        live = [l for l in legs
+                if not (l["bot"] == "STANDARD" and in_range(l["px"], std_skip))
+                and not (l["bot"] == "BANKROLL_200" and in_range(l["px"], c200_skip))]
+        print(f"\n   {label}: {len(legs)} TTL legs -> {len(live)} survive the live band skip "
+              f"({len(legs)-len(live)} already refused)")
+        print(f"   {'floor':>6} {'blocked n':>9} {'blk ntl':>8} {'blk pnl':>8} {'blk ROI%':>8} "
+              f"{'CI low':>7} {'CI hi':>7} {'ex10':>7} {'blk $/1k-cd':>11}")
+        for floor in (2, 12, 24, 48, 72, 168):
+            blk = [l for l in live if l["ttl"] < floor]
+            if len(blk) < 5:
+                continue
+            ntl = sum(l["ntl"] for l in blk)
+            pnl = sum(l["pnl"] for l in blk)
+            lo, hi = boot_ratio(blk)
+            ex = roi(ex_top(blk, 10)) if len(blk) > 12 else float("nan")
+            tag = "LIVE" if floor == live_floor else ""
+            print(f"   {floor:>4}h{tag:1} {len(blk):>9} {ntl:>8,.0f} {pnl:>+8,.0f} "
+                  f"{100*pnl/ntl if ntl else 0:>+8.1f} {lo:>+7.1f} {hi:>+7.1f} "
+                  f"{ex:>+7.1f} {usd_per_1k_cd(blk):>+11.2f}")
+        print(f"   {'':>6} {'kept n':>9} {'kept ntl':>8} {'kept pnl':>8} {'kept ROI%':>8} "
+              f"{'CI low':>7} {'CI hi':>7} {'ex10':>7} {'kept $/1k-cd':>11}")
+        for floor in (2, 12, 24, 48, 72, 168):
+            kp = [l for l in live if l["ttl"] >= floor]
+            if len(kp) < 5:
+                continue
+            ntl = sum(l["ntl"] for l in kp)
+            pnl = sum(l["pnl"] for l in kp)
+            lo, hi = boot_ratio(kp)
+            ex = roi(ex_top(kp, 10)) if len(kp) > 12 else float("nan")
+            print(f"   {floor:>6}h {len(kp):>9} {ntl:>8,.0f} {pnl:>+8,.0f} "
+                  f"{100*pnl/ntl if ntl else 0:>+8.1f} {lo:>+7.1f} {hi:>+7.1f} "
+                  f"{ex:>+7.1f} {usd_per_1k_cd(kp):>+11.2f}")
+
+    # The overlap that decides it: how much of the <24h loss sits in the band v63 kills?
+    print("\n   OVERLAP -- where the <24h TTL dollars and losses actually live (all-time)")
+    legs = ttl_edges(c, 0)
+    short = [l for l in legs if l["ttl"] < 24]
+    tot_ntl = sum(l["ntl"] for l in legs)
+    print(f"   <24h TTL: {len(short)} legs, ${sum(l['ntl'] for l in short):,.0f} "
+          f"({100*sum(l['ntl'] for l in short)/tot_ntl:.1f}% of TTL-joined notional), "
+          f"pnl ${sum(l['pnl'] for l in short):+,.0f}")
+    for nm, lo_, hi_ in zip(NAMES, *zip(*BANDS)):
+        sub = [l for l in short if band_of(l["px"]) == nm]
+        if not sub:
+            continue
+        ntl = sum(l["ntl"] for l in sub)
+        pnl = sum(l["pnl"] for l in sub)
+        print(f"     {nm:9} {len(sub):>5} legs ${ntl:>7,.0f} pnl ${pnl:>+8,.0f} "
+              f"ROI {100*pnl/ntl if ntl else 0:>+7.1f}%"
+              f"{'   <- v63 refuses this band on STANDARD' if nm == '0.4-0.6' else ''}")
+    # And the same cut for STANDARD only, which is the lane the floor would bind on.
+    sshort = [l for l in short if l["bot"] == "STANDARD"]
+    s0 = [l for l in sshort if band_of(l["px"]) != "0.4-0.6"]
+    for nm, grp in (("<24h STANDARD all bands", sshort),
+                    ("<24h STANDARD ex-0.4-0.6", s0)):
+        ntl = sum(l["ntl"] for l in grp)
+        pnl = sum(l["pnl"] for l in grp)
+        lo, hi = boot_ratio(grp)
+        print(f"     {nm:26} {len(grp):>5} legs ${ntl:>7,.0f} pnl ${pnl:>+8,.0f} "
+              f"ROI {100*pnl/ntl if ntl else 0:>+7.1f}% CI [{lo:+.1f},{hi:+.1f}]")
+
+
+def ttl_shadow_reconciliation(c):
+    """AK. Reconcile the PENDING floor's evidence with the live band skip.
+
+    data/ttr-floor-shadow-calibration.json justifies the approved 2h->24h floor with
+    "-12.78% on 3,405 legs". scripts/ttr-floor-shadow.py selects that band on TTL ALONE
+    (no price filter), so it counts STANDARD legs in 0.4-0.6 -- the band v63 began
+    refusing on 2026-10-20, three days before the floor was approved. This replays the
+    identical cohort and then removes the legs v63 refuses, on the same axis.
+    """
+    print("\n" + "=" * 100)
+    print("AK. THE PENDING 2h->24h FLOOR: same cohort, with and without the v63 band skip")
+    print("=" * 100)
+    ver, rules = active_rules(c)
+    std_skip = skip_range(rules, "standardSkipBandRange")
+    legs = [l for l in ttl_edges(c, 0) if l["bot"] == "STANDARD"]
+    band = [l for l in legs if 2.0 <= l["ttl"] < 24.0]
+    print(f"   cohort = STANDARD, entry TTL in [2,24)h, all-time -- exactly the shadow's band")
+    print(f"   live standardSkipBandRange = {rules.get('standardSkipBandRange')!r} (v63, 2026-10-20)")
+    for nm, grp in (("as the shadow measures it", band),
+                    ("net of the v63 band skip", [l for l in band
+                                                  if not in_range(l["px"], std_skip)]),
+                    ("the legs v63 already refuses", [l for l in band
+                                                      if in_range(l["px"], std_skip)])):
+        if not grp:
+            print(f"   {nm:28} (empty)")
+            continue
+        ntl = sum(l["ntl"] for l in grp)
+        pnl = sum(l["pnl"] for l in grp)
+        lo, hi = boot_ratio(grp)
+        ex = roi(ex_top(grp, 10)) if len(grp) > 12 else float("nan")
+        print(f"   {nm:28} {len(grp):>5} legs ${ntl:>8,.0f} pnl ${pnl:>+8,.0f} "
+              f"ROI {100*pnl/ntl:>+7.1f}% CI [{lo:+.1f},{hi:+.1f}] ex10 {ex:+.1f}% "
+              f"$/1k-cd {usd_per_1k_cd(grp):>+8.2f}")
+    print("   DECISION RULE ON THE CARD: 'flip unless shadow >= +3% on >=150 blocked legs'.")
+    print("   The row above that excludes v63's band is the one the floor would actually bind on.")
+    # The same two rows on the live-leaning windows.
+    for label, since in (("90d", int((time.time() - 90 * 86400) * 1000)),
+                         ("30d", int((time.time() - 30 * 86400) * 1000))):
+        lg = [l for l in ttl_edges(c, since) if l["bot"] == "STANDARD"]
+        b2 = [l for l in lg if 2.0 <= l["ttl"] < 24.0]
+        net = [l for l in b2 if not in_range(l["px"], std_skip)]
+        if not net:
+            continue
+        n0, p0 = sum(l["ntl"] for l in b2), sum(l["pnl"] for l in b2)
+        n1, p1 = sum(l["ntl"] for l in net), sum(l["pnl"] for l in net)
+        lo, hi = boot_ratio(net)
+        print(f"   {label:>4}: raw {len(b2):>5} ${n0:>7,.0f} {100*p0/n0 if n0 else 0:>+7.1f}%"
+              f"   net-of-skip {len(net):>5} ${n1:>7,.0f} {100*p1/n1 if n1 else 0:>+7.1f}%"
+              f" CI [{lo:+.1f},{hi:+.1f}]")
+
+
+def ttl_sizing_shadow(c):
+    """AJ. STANDARD sizes flat across a TTL axis whose ROI ranges 9x. What would sizing it do?
+
+    The standing sizing finding is that STANDARD sizes flat across BANDS within 26%. The
+    same blindness exists on TTL, which no size rule has ever touched. Reported two ways:
+      (a) notional-neutral  -- same dollars deployed, moved between cohorts. The reallocation.
+      (b) as-specified      -- the schedule applied literally, total exposure scales. The bet.
+    and both on ROI (per dollar) and $/1k-cd (per capital-day), because they disagree.
+    """
+    print("\n" + "=" * 100)
+    print("AJ. TTL-AWARE SIZING ON STANDARD -- realised shadow, notional-neutral and as-specified")
+    print("=" * 100)
+    ver, rules = active_rules(c)
+    if not rules.get("standardMaxEntryPrice"):
+        print("   (ruleset has no standardMaxEntryPrice field; sizing shadow runs unfiltered)")
+    std_skip = skip_range(rules, "standardSkipBandRange")
+
+    def bucket(ttl):
+        return 0 if ttl < 24 else (1 if ttl < 72 else 2)
+
+    def run(legs, schedule, neutral, clamp=True):
+        tot0 = sum(l["ntl"] for l in legs)
+        scaled = []
+        for l in legs:
+            w = schedule[bucket(l["ttl"])]
+            new = l["ntl"] * w
+            if clamp:
+                # BOT_LIMITS.STANDARD is {min: 0.25, max: 20.00} (src/lib/safety.ts:19) and
+                # clampPaperSize applies it AFTER any size factor, so a schedule that asks for
+                # more than $20/leg does not book. Simulating without this clamp would quote an
+                # effect the code cannot produce.
+                new = min(20.0, max(0.25, new))
+            f = (new / l["ntl"]) if l["ntl"] else 1.0
+            k = dict(l)
+            k["ntl"] = new
+            k["pnl"] = l["pnl"] * f
+            scaled.append(k)
+        if neutral:
+            tot1 = sum(k["ntl"] for k in scaled)
+            f = tot0 / tot1 if tot1 else 1.0
+            for k in scaled:
+                k["ntl"] *= f
+                k["pnl"] *= f
+        return scaled
+
+    for label, since in (("all-time", 0),
+                         ("90d", int((time.time() - 90 * 86400) * 1000))):
+        legs = [l for l in ttl_edges(c, since)
+                if l["bot"] == "STANDARD" and not in_range(l["px"], std_skip)]
+        if not legs:
+            continue
+        print(f"\n   {label}: {len(legs)} STANDARD legs net of the v63 skip, ${sum(l['ntl'] for l in legs):,.0f}")
+        print(f"   realised clip by TTL cohort -- is STANDARD sizing TTL-blind?")
+        for nm, lo_, hi_ in (("<24h", 0, 24), ("24-72h", 24, 72), (">=72h", 72, 10**9)):
+            g = [l for l in legs if lo_ <= l["ttl"] < hi_]
+            if not g:
+                continue
+            print(f"     {nm:7} {len(g):>5} legs  median clip ${np.median([l['ntl'] for l in g]):>6.2f}"
+                  f"  p90 ${np.percentile([l['ntl'] for l in g], 90):>6.2f}"
+                  f"  ROI {roi(g):>+7.1f}%  $/1k-cd {usd_per_1k_cd(g):>+8.2f}")
+        base = run(legs, (1, 1, 1), False)
+        print(f"   {'schedule':34} {'notional':>9} {'pnl':>9} {'ROI%':>7} {'$/1k-cd':>8} "
+              f"{'dPnL CI low':>12} {'CI hi':>9}")
+        b_pnl = sum(l["pnl"] for l in base)
+        print(f"   {'flat (live)':34} {sum(l['ntl'] for l in base):>9,.0f} {b_pnl:>+9,.0f} "
+              f"{roi(base):>+7.1f} {usd_per_1k_cd(base):>+8.2f} {'-':>12} {'-':>9}")
+        for nm, sch in (("mild  0.5/1.0/1.5", (0.5, 1.0, 1.5)),
+                        ("strong 0.25/1.0/2.0", (0.25, 1.0, 2.0)),
+                        ("inverse 2.0/1.0/0.5", (2.0, 1.0, 0.5))):
+            for neutral in (True, False):
+                g = run(legs, sch, neutral)
+                lo, hi = boot_pair(g, base, "pnl", "pnl")
+                tag = f"{nm} {'(neutral)' if neutral else '(as-is)':10}"
+                print(f"   {tag:34} {sum(l['ntl'] for l in g):>9,.0f} "
+                      f"{sum(l['pnl'] for l in g):>+9,.0f} {roi(g):>+7.1f} "
+                      f"{usd_per_1k_cd(g):>+8.2f} {lo:>+12,.0f} {hi:>+9,.0f}")
+        print("   'inverse' is the falsification arm: if short TTL were the good cohort, the")
+        print("   inverse schedule would win. It is the control, not a proposal.")
+
+        # --- hygiene: is the improvement one market, and where does the up-weight land?
+        strong = run(legs, (0.25, 1.0, 2.0), True)
+        print(f"\n   ex-top-N on the strong schedule vs flat (notional-neutral):")
+        for k in (1, 3, 5, 10):
+            a = roi(ex_top(strong, k))
+            b = roi(ex_top(base, k))
+            print(f"     ex-top-{k:<2} strong {a:>+7.1f}%   flat {b:>+7.1f}%   delta {a-b:>+7.1f}pp")
+        by_m = {}
+        for l in strong:
+            by_m.setdefault(l["market"], 0.0)
+            by_m[l["market"]] += l["pnl"]
+        topm = sorted(by_m.items(), key=lambda kv: -kv[1])[:5]
+        print(f"   top-5 markets under the strong schedule: "
+              + ", ".join(f"{k[:26]} ${v:+,.0f}" for k, v in topm))
+        # delta notional by TTL cohort: who gets the freed dollars
+        print(f"   notional moved (notional-neutral, so it nets to zero):")
+        for nm, lo_, hi_ in (("<24h", 0, 24), ("24-72h", 24, 72), (">=72h", 72, 10**9)):
+            g0 = [l for l in base if lo_ <= l["ttl"] < hi_]
+            g1 = [l for l in strong if lo_ <= l["ttl"] < hi_]
+            d = sum(l["ntl"] for l in g1) - sum(l["ntl"] for l in g0)
+            print(f"     {nm:7} ${sum(l['ntl'] for l in g0):>8,.0f} -> "
+                  f"${sum(l['ntl'] for l in g1):>8,.0f}  ({d:>+8,.0f})")
+        # FILLABILITY: how much entry slippage kills the up-weighted cohort's edge?
+        g72 = [l for l in legs if l["ttl"] >= 72]
+        if g72:
+            avgp = sum(l["px"] * l["ntl"] for l in g72) / sum(l["ntl"] for l in g72)
+            r = roi(g72) / 100.0
+            medclip = np.median([l["ntl"] for l in g72])
+            print(f"   FILLABILITY, >=72h cohort: ntl-wtd entry price {avgp:.3f}, "
+                  f"ROI {100*r:+.1f}%, median clip ${medclip:.2f}")
+            print(f"     BREAKEVEN ENTRY SLIPPAGE = {100*r}% x {avgp:.3f} = "
+                  f"{100*r*avgp:.2f} cents per share -- the up-weight doubles the clip, so "
+                  f"the fill can worsen by {100*r*avgp:.2f}c before the cohort's edge is gone.")
+            print(f"     (doubling the clip needs ${medclip*2:,.2f} of depth at the ask in that market)")
+            print(f"   >=72h cohort by entry band -- is the up-weight funding cheap longshots?")
+            print(f"     {'band':9} {'legs':>5} {'notional':>9} {'pnl':>8} {'ROI%':>7} {'ex10':>7} {'$/1k-cd':>8}")
+            for nm in NAMES:
+                gb = [l for l in g72 if band_of(l["px"]) == nm]
+                if not gb:
+                    continue
+                ntl_b = sum(l["ntl"] for l in gb)
+                pnl_b = sum(l["pnl"] for l in gb)
+                exb = roi(ex_top(gb, 10)) if len(gb) > 12 else float("nan")
+                print(f"     {nm:9} {len(gb):>5} {ntl_b:>9,.0f} {pnl_b:>+8,.0f} "
+                      f"{100*pnl_b/ntl_b if ntl_b else 0:>+7.1f} {exb:>+7.1f} "
+                      f"{usd_per_1k_cd(gb):>+8.2f}")
+
+
 def main():
     c = con()
+    if "--only-ah" in ARGS:
+        concentration_shadow(c)
+        return
+    if "--only-ai" in ARGS:
+        ttl_floor_ladder(c)
+        return
+    if "--only-ak" in ARGS:
+        ttl_shadow_reconciliation(c)
+        ttl_sizing_shadow(c)
+        return
     legs = load_finished(c)
     print(f"loaded {len(legs)} finished real legs (all-time), "
           f"{len({l['market'] for l in legs})} markets")
@@ -1513,6 +2092,12 @@ def main():
     truth_bands(c)
     truth_bands(c, "last 90d", int((time.time() - 90 * 86400) * 1000))
     cheap_tail_decomposition(c)
+    # 2026-10-25: the concentration and maturity sections. In the DEFAULT run on purpose --
+    # a review whose numbers only exist behind a flag is unreproducible by the next reader.
+    concentration_shadow(c)
+    ttl_floor_ladder(c)
+    ttl_shadow_reconciliation(c)
+    ttl_sizing_shadow(c)
     cheap_tail_fill_probe(c)
 
 
