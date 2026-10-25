@@ -1,26 +1,26 @@
 {
- "generatedAt": "2026-10-23T10:41:08.122355Z",
+ "generatedAt": "2026-10-24T10:41:27.299446Z",
  "sources": {
   "marketCandidates": {
    "path": "data/ml/market-candidates.parquet",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-10-23T10:40:49.558255Z",
+   "mtimeZ": "2026-10-24T10:41:08.693879Z",
    "ageHours": 0.0
   },
   "paperTrades": {
    "path": "prisma/dev.db",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-10-23T10:30:52.044019Z",
-   "ageHours": 0.2
+   "mtimeZ": "2026-10-24T10:32:44.273796Z",
+   "ageHours": 0.1
   },
   "predictionsTest": {
    "path": "data/ml/predictions_test.parquet",
    "role": "study",
    "exists": true,
    "mtimeZ": "2026-10-19T08:54:09.889491Z",
-   "ageHours": 97.8
+   "ageHours": 121.8
   }
  },
  "lane": {
@@ -164,29 +164,29 @@
  "veto": {
   "available": true,
   "baseline": {
-   "legs": 826,
-   "notionalUsd": 8297.55,
-   "pnlUsd": 43.38,
-   "roiPct": 0.52
+   "legs": 831,
+   "notionalUsd": 8364.75,
+   "pnlUsd": 46.52,
+   "roiPct": 0.56
   },
   "sweep": [
    {
     "threshold": -0.05,
-    "legs": 812,
-    "pnlUsd": 25.84,
-    "roiPct": 0.32
+    "legs": 815,
+    "pnlUsd": 29.54,
+    "roiPct": 0.36
    },
    {
     "threshold": -0.02,
-    "legs": 749,
-    "pnlUsd": -21.28,
-    "roiPct": -0.29
+    "legs": 750,
+    "pnlUsd": -17.78,
+    "roiPct": -0.24
    },
    {
     "threshold": 0.0,
-    "legs": 666,
-    "pnlUsd": 138.12,
-    "roiPct": 2.07
+    "legs": 667,
+    "pnlUsd": 141.62,
+    "roiPct": 2.12
    },
    {
     "threshold": 0.02,
@@ -208,37 +208,37 @@
     "quartile": 1,
     "evLo": -0.077,
     "evHi": 0.005,
-    "legs": 207,
-    "roiPct": 3.93,
-    "ciLoPct": -12.05,
-    "ciHiPct": 22.1
+    "legs": 208,
+    "roiPct": 4.3,
+    "ciLoPct": -12.04,
+    "ciHiPct": 20.49
    },
    {
     "quartile": 2,
     "evLo": 0.005,
-    "evHi": 0.029,
-    "legs": 206,
-    "roiPct": -4.42,
-    "ciLoPct": -17.61,
-    "ciHiPct": 9.98
+    "evHi": 0.028,
+    "legs": 208,
+    "roiPct": -5.27,
+    "ciLoPct": -18.5,
+    "ciHiPct": 8.52
    },
    {
     "quartile": 3,
-    "evLo": 0.029,
+    "evLo": 0.028,
     "evHi": 0.051,
-    "legs": 206,
-    "roiPct": -5.16,
-    "ciLoPct": -18.7,
-    "ciHiPct": 8.93
+    "legs": 208,
+    "roiPct": -3.85,
+    "ciLoPct": -18.55,
+    "ciHiPct": 11.44
    },
    {
     "quartile": 4,
     "evLo": 0.051,
     "evHi": 0.227,
-    "legs": 207,
-    "roiPct": 11.61,
-    "ciLoPct": -6.16,
-    "ciHiPct": 31.03
+    "legs": 208,
+    "roiPct": 11.48,
+    "ciLoPct": -4.92,
+    "ciHiPct": 28.99
    }
   ],
   "byBand": [
@@ -264,8 +264,8 @@
    },
    {
     "band": "0.8-1.0",
-    "legs": 40,
-    "roiPct": -0.6
+    "legs": 45,
+    "roiPct": 0.2
    }
   ],
   "justified": false

@@ -301,6 +301,38 @@
    "status": "audited",
    "url": "https://github.com/xyonium/reach-mcp",
    "verdict": "watch"
+  },
+  {
+   "audited": "2026-10-24 08:26 CDT",
+   "claimed": "2026-10-24 08:20 CDT",
+   "claimed_ts": 1792848033.2242382,
+   "discovered": "2026-10-24 08:20 CDT",
+   "id": "arnaudknobloch/awesome-polymarket",
+   "license": "CC0-1.0",
+   "note": "Docs-only CC0 list (2 .md, no code); 'every link checked' falsified by its own CI: 37/49 runs red, last scheduled run 2026-10-19 dead-links softdevfz/polymarket-kalshi-price-gaps (still listed, still 404), 7 PRs admin-merged 2026-10-24 over red checks; 6/25 GitHub entries from one \u26050-8 account. Triaged 115 entries / 25 repos: 7 known, 18 new, 3 alive+licensed+\u2605>=5, 1 queued (pm-hftbacktest). Fee c",
+   "pushed": "2026-10-24",
+   "report": "drafts/asset-audit-awesome-polymarket-20261024.md",
+   "source": "radar-seed",
+   "stars": 5,
+   "status": "audited",
+   "url": "https://github.com/arnaudknobloch/awesome-polymarket",
+   "verdict": "drop"
+  },
+  {
+   "audited": "2026-10-24 12:24 CDT",
+   "claimed": "2026-10-24 12:20 CDT",
+   "claimed_ts": 1792862433.291209,
+   "discovered": "2026-10-24 08:26 CDT",
+   "id": "mileswangs/pm-hftbacktest",
+   "license": "MIT",
+   "note": "no port: its Polymarket delta is a binary fee model (verified exact vs the current published p*(1-p) table, and our price-edge.ts already implements the same law) plus a pmdata.dev loader. Engine = upstream nkaz001/hftbacktest. Only consumer would be phase-d2-fill-model, whose decisive input (trade-at-level flow) we do not capture, and whose question c200-intent-printthrough-check already answered",
+   "pushed": "2026-10-22",
+   "report": "drafts/asset-audit-pm-hftbacktest-20261024.md",
+   "source": "assets-audit: awesome-polymarket 2026-10-24",
+   "stars": 126,
+   "status": "audited",
+   "url": "https://github.com/mileswangs/pm-hftbacktest",
+   "verdict": "watch"
   }
  ],
  "version": 1
