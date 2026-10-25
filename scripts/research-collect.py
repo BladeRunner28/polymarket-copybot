@@ -122,13 +122,54 @@ def bot_facts(db: str, days: int) -> list[str]:
                 f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
                 f"WHERE {status_ok} AND realizedPnl IS NOT NULL").fetchone()
             out.append(f"- settled trades (all time): {tot[0]}, realized **${tot[1] or 0:,.2f}**")
+            # 2026-10-25 REC 1 (user-approved): these windows were anchored on the OPEN clock
+            # with no isDemo filter, under a label that says "realized". A trade opened 6 days
+            # ago and settled today is NOT in an opened-window read of the last 24h, and a trade
+            # opened 40 days ago and closed today is in no window at all -- so the line measured
+            # cohort OPENINGS while claiming settlement. Measured at the fix: the opened basis
+            # read n=44 / -$110.93 for 7d where the settled basis read n=768 / +$174.81. The sign
+            # differs, so this was not a rounding issue. Basis is now printed on every line.
+            scol = None
+            if "closedAt" in cols and "resolvedAt" in cols:
+                scol = "COALESCE(closedAt, resolvedAt)"
+            elif "closedAt" in cols:
+                scol = "closedAt"
+            elif "resolvedAt" in cols:
+                scol = "resolvedAt"
+            demo_ok = " AND isDemo=0" if "isDemo" in cols else ""
+            if scol:
+                out.append(f"  basis: SETTLED clock ({scol}), isDemo=0 -- realized in the window")
+                for d in (1, 7, 30):
+                    r = cur.execute(
+                        f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                        f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} AND {scol} >= ?",
+                        (ms(now - timedelta(days=d)),)).fetchone()
+                    out.append(f"  - last {d}d: n={r[0]}, realized ${r[1] or 0:,.2f}")
+                # A single day carrying >=100 closures is a STOCK CLEAR, not trading, and it
+                # dominates any window it lands in. v66's stale exit closed 701 C-200 legs on
+                # 2026-10-24 (booked -$350.52); this grouped read lands 708 / -$487.04 because
+                # the settled clock also picks up that date's 7 natural resolutions. Either way
+                # the 7d window reads n=768 / +$174.81 WITH it and n=60 / +$661.85 WITHOUT it --
+                # quote the ex-stock-clear figure when the question is "how is trading doing".
+                for d_, n_, pnl_ in cur.execute(
+                    f"SELECT date({scol}/1000,'unixepoch','-5 hours') dd, COUNT(*), "
+                    f"ROUND(SUM(realizedPnl),2) FROM PaperTrade WHERE {status_ok} "
+                    f"AND realizedPnl IS NOT NULL{demo_ok} AND {scol} >= ? GROUP BY dd "
+                    f"HAVING COUNT(*) >= 100 ORDER BY 2 DESC",
+                    (ms(now - timedelta(days=30)),)).fetchall():
+                    out.append(
+                        f"    [bulk-close day {d_}: n={n_}, ${pnl_ or 0:,.2f} -- stock clear, not "
+                        f"flow; exclude it when reading a window as trading]")
             if tcol:
+                out.append(
+                    f"  basis: OPENED clock ({tcol}), LEGACY -- cohort openings, "
+                    f"not a settlement read; kept so the change is diffable")
                 for d in (1, 7, 30):
                     r = cur.execute(
                         f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
                         f"WHERE {status_ok} AND realizedPnl IS NOT NULL AND {tcol} >= ?",
                         (ms(now - timedelta(days=d)),)).fetchone()
-                    out.append(f"  - last {d}d: n={r[0]}, realized ${r[1] or 0:,.2f}")
+                    out.append(f"  - last {d}d opened: n={r[0]}, realized ${r[1] or 0:,.2f}")
             scols = [c for c in ("simulatedPositionSize", "size", "stakeUsd") if c in cols]
             sizecol = scols[0] if scols else None
             op = cur.execute(
@@ -168,10 +209,22 @@ def bot_facts(db: str, days: int) -> list[str]:
                     # Now: count EVERY entry of risksJson, fall back to reasonsJson when empty.
                     from collections import Counter
                     sel = [c for c in ("risksJson", "reasonsJson") if c in cols]
+                    # 2026-10-25 REC 1: two defects in one query. (1) No ORDER BY, so
+                    # LIMIT 400 took an ARBITRARY slice of the window -- not reproducible
+                    # between runs. (2) It counted every risksJson ENTRY, and one decision can
+                    # carry several, so the sums could be entry-level while the row count was
+                    # decision-level. HONEST NOTE: the entry-vs-decision inflation did NOT
+                    # reproduce on 2026-10-25 -- the top five tags came out identical at both
+                    # levels (139/92/92/92/81), i.e. no decision in the slice carried a tag
+                    # twice. What IS real is that this is a 400-row slice of 1,817 skips with
+                    # per-VALUE tags ("confidence 0.45 ..." vs "confidence 0.52 ..."), so its
+                    # counts are slice-local and must never be read as a gate census. Both
+                    # levels are printed and labelled so neither can be mistaken for one.
                     blob = cur.execute(
                         f"SELECT {', '.join(sel)} FROM DecisionJournal WHERE {wcol} >= ? "
-                        f"AND decision='skip' LIMIT 400", (since,)).fetchall()
+                        f"AND decision='skip' ORDER BY {wcol} DESC LIMIT 400", (since,)).fetchall()
                     cnt: Counter = Counter()
+                    dec_cnt: Counter = Counter()
                     bare = 0
                     for row in blob:
                         items = []
@@ -188,11 +241,20 @@ def bot_facts(db: str, days: int) -> list[str]:
                         if not items:
                             bare += 1
                             continue
+                        seen_here = set()
                         for tag in items:
-                            cnt[str(tag)[:70]] += 1
+                            key = str(tag)[:70]
+                            cnt[key] += 1
+                            if key not in seen_here:
+                                dec_cnt[key] += 1
+                                seen_here.add(key)
                     out.append(
-                        f"- skip reasons (every entry of risksJson, reasonsJson fallback; "
-                        f"{len(blob)} rows, {bare} empty): "
+                        f"- skip reasons DECISION-level (one count per skipped decision; "
+                        f"{len(blob)} rows newest-first, {bare} empty): "
+                        + (", ".join(f"{k} x{v}" for k, v in dec_cnt.most_common(5)) or "(none parsed)"))
+                    out.append(
+                        f"- skip reasons ENTRY-level (every risksJson entry -- a decision can "
+                        f"carry several, so these SUMS exceed the row count): "
                         + (", ".join(f"{k} x{v}" for k, v in cnt.most_common(5)) or "(none parsed)"))
                     # `outcome` lives on ObservedTrade, NOT on DecisionJournal — querying it bare
                     # raised `no such column: outcome` on every run and the except below swallowed
