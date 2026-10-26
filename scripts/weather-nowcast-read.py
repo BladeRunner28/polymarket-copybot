@@ -357,6 +357,36 @@ def main() -> int:
         br_m = sum((mkt.get(b, 0) - (1 if b == rk else 0)) ** 2 for b in grid)
         br_e = sum((ens.get(b, 0) - (1 if b == rk else 0)) ** 2 for b in grid)
         scored[venue].append((day, ll_m, ll_e, br_m, br_e))
+
+    # --- [WX2-FLOOR SHADOW] 2026-10-26 -------------------------------------------------
+    # The pre-registered floor (MIN_DAYS distinct settled days per venue) is counted on the
+    # CALENDAR basis: settled[venue] = [d for d in od if d < today_et]. But the loop above can
+    # only score a day once the venue actually RETURNS its resolution, and a late-cycle bracket
+    # resolves hours after its cycle day ends -- so the floor can read 20 while fewer than 20
+    # days are genuinely scoreable, i.e. the gate could clear a day early.
+    # This block prints BOTH bases and changes nothing: the verdict below still uses the
+    # calendar count, exactly as frozen on 2026-10-12. Flipping the basis is Lane A and needs
+    # an explicit yes after three runs of this shadow agree.
+    floor_shadow = {}
+    for venue in ("kalshi", "polymarket"):
+        cal = set(settled.get(venue, []))
+        ver = {d for d, *_ in scored.get(venue, [])}
+        floor_shadow[venue] = {
+            "calendar_settled_days": len(cal),
+            "resolution_verified_days": len(ver),
+            "delta": len(cal - ver),
+            "unverified_days": sorted(cal - ver),
+        }
+    print(f"  [WX2-FLOOR SHADOW] floor={MIN_DAYS} settled days; VERDICT STILL USES THE CALENDAR BASIS (unchanged)")
+    for venue in ("kalshi", "polymarket"):
+        fs_ = floor_shadow[venue]
+        early = fs_["calendar_settled_days"] >= MIN_DAYS > fs_["resolution_verified_days"]
+        print(f"    {venue:<11} calendar={fs_['calendar_settled_days']:<3} "
+              f"resolution-verified={fs_['resolution_verified_days']:<3} delta={fs_['delta']}"
+              + ("   <-- FLOOR COULD CLEAR EARLY ON THE VERIFIED BASIS" if early else ""))
+        if fs_["unverified_days"]:
+            print(f"                unverified: {fs_['unverified_days']}")
+
     for venue in ("kalshi", "polymarket"):
         s = scored[venue]
         days = len({d for d, *_ in s})
@@ -377,6 +407,10 @@ def main() -> int:
         q2[venue] = {"n": len(s), "days": days, "logloss_delta": m_ll, "logloss_ci": [lo_ll, hi_ll],
                      "brier_delta": m_br, "brier_ci": [lo_br, hi_br], "verdict": verdict}
     out["q2"] = q2
+    # 2026-10-26: calendar-basis vs resolution-verified settled-day counts. The verdict block
+    # below still reads the CALENDAR count; this key exists so the two bases can be compared
+    # across runs (and by the dashboard) before anyone changes which one the gate uses.
+    out["floor_shadow"] = floor_shadow
 
     # ---------------- diagnostic 2: is the dead-bracket route ABSENT or just THIN?
     # The pre-registration's size floor (S >= 50) is only meaningful if the harvestable route exists
