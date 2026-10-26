@@ -52,18 +52,57 @@ async function main() {
   // recency; fall back to the broad pending set (also by recency) so
   // watchlist/skip rows still accrue hypothetical labels.
   const REVIEW_TAKE = Number(process.env.REVIEW_TAKE ?? 300);
-  const settledLegWhere = {
+  // tuning review #66 Rec 1 (user-approved 2026-10-26): page RESOLVED legs first.
+  //
+  // The old selection ordered by createdAt desc over legs with status in
+  // ["resolved","closed"] and took 300. v66's 701-leg stale exit (2026-10-24) flipped
+  // ~700 STANDARD legs to `closed` -- an EARLY EXIT, not a natural settlement -- so those
+  // decisions entered the window on a leg whose market had never resolved. 297 of the
+  // newest 300 were that cohort (233 of them at the 02:06 tick), and a decision whose
+  // market has not resolved cannot be judged. Labels fell 115/night -> 3 while **901
+  // decisions that DO hold a resolved leg sat stranded behind them**.
+  //
+  // Two pages instead: resolved first (the judgeable population), early-closed second and
+  // CAPPED, so an exit wave can never own the head of the queue again. Early-closed rows
+  // still accrue labels -- they are simply no longer allowed to crowd out rows that can
+  // actually be judged. The `[REVIEW-POOL]` line prints both, so the next starvation is
+  // visible in one grep instead of inferred from a falling label count seven days later.
+  const baseWhere = {
     outcomeReviews: { none: { finalOutcome: { not: null } } },
     ...(adapter.isDemo ? {} : { isDemo: false }),
-    paperTrades: { some: { status: { in: ["resolved", "closed"] } } },
   };
-  let pending = await prisma.decisionJournal.findMany({
-    where: settledLegWhere,
+  const resolvedLegWhere = { ...baseWhere, paperTrades: { some: { status: "resolved" } } };
+  const closedOnlyWhere = {
+    ...baseWhere,
+    paperTrades: { some: { status: "closed" }, none: { status: "resolved" } },
+  };
+  const CLOSED_TAKE = Number(process.env.REVIEW_CLOSED_TAKE ?? 50);
+
+  const resolvedPool = await prisma.decisionJournal.findMany({
+    where: resolvedLegWhere,
     include: { observedTrade: true, paperTrades: true },
     orderBy: { createdAt: "desc" },
     take: REVIEW_TAKE,
   });
-  const settledCandidates = await prisma.decisionJournal.count({ where: settledLegWhere });
+  const settledCandidates = await prisma.decisionJournal.count({ where: resolvedLegWhere });
+  // Only spend the second page if the first did not fill -- a healthy resolved pool means
+  // the early-closed rows never enter the window at all.
+  const closedPool =
+    resolvedPool.length < REVIEW_TAKE
+      ? await prisma.decisionJournal.findMany({
+          where: closedOnlyWhere,
+          include: { observedTrade: true, paperTrades: true },
+          orderBy: { createdAt: "desc" },
+          take: Math.min(CLOSED_TAKE, REVIEW_TAKE - resolvedPool.length),
+        })
+      : [];
+  const closedCandidates = await prisma.decisionJournal.count({ where: closedOnlyWhere });
+  let pending = [...resolvedPool, ...closedPool];
+  log(
+    `[REVIEW-POOL] resolved-leg pool: ${resolvedPool.length}/${REVIEW_TAKE} taken ` +
+      `(${settledCandidates} candidates awaiting review); early-closed pool: ` +
+      `${closedPool.length}/${CLOSED_TAKE} taken (${closedCandidates} candidates)`,
+  );
 
   // 2026-09-17 tuning review #28 rec 1 (user-approved): price the GATE's cost.
   // `watchlist` decisions never open a leg (the risk gates fire before booking),
@@ -133,7 +172,8 @@ async function main() {
   }
 
   log(
-    `Reviewing ${pending.length} decisions (${settledCandidates} pending rows have a settled leg; ` +
+    `Reviewing ${pending.length} decisions (${settledCandidates} pending rows hold a RESOLVED leg; ` +
+      `${closedCandidates} hold only an early-closed leg; ` +
       `${watchCandidates} watchlist rows in the 2h–30d window, taking the ${watchPool.length} oldest).`
   );
 
