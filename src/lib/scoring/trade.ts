@@ -72,7 +72,22 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
   const reasons: string[] = [];
   const risks: string[] = [];
 
-  const drift = Math.abs(input.currentPrice - input.walletEntryPrice);
+  // Drift is SIGNED (Lane A, approved 2026-10-26). Positive = the price moved AGAINST us
+  // since the wallet's own entry, so we would pay MORE for the same position ("chasing").
+  // Negative = the price fell, so we pay LESS for the same position — strictly better.
+  //
+  // The gate used to take Math.abs, which cannot tell a discount from a chase, so it
+  // rejected bargains under the same "(too late)" rule as chasing. Measured on
+  // data/drift-shadow.jsonl (settled, ex-$0.10-dust, deduped per wallet/market/outcome,
+  // market-clustered CIs): FAVOURABLE n=4,303 net +31.9%, ADVERSE n=4,021 net -19.0%,
+  // all-blocked +7.3% — the blend that hid the split. By magnitude the two halves are
+  // OPPOSITE, not symmetric: adverse >=0.05 is -32.5% (n=2,434, rightly blocked) while
+  // favourable >=0.05 is median +43.4% / trimmed +53.9%, top-10 legs only 7% of total.
+  const driftSigned = input.currentPrice - input.walletEntryPrice;
+  /** How far the price moved AGAINST us. A favourable move is 0, never adverse. */
+  const adverseDrift = Math.max(0, driftSigned);
+  /** Magnitude, kept for reporting and for the legacy absolute readings. */
+  const drift = Math.abs(driftSigned);
   const spread = input.spread ?? 0.1; // unknown spread treated as bad
   const liquidity = input.liquidity ?? 0;
   const ttr = input.timeToResolutionHours;
@@ -85,7 +100,9 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     ttr !== undefined &&
     ttr >= rules.shortTtrMinHours &&
     ttr <= rules.shortTtrMaxHours &&
-    drift <= rules.shortTtrMaxDrift;
+    // A favourable (cheaper) move cannot disqualify the lane — same sign defect as the
+    // main gate. 2026-10-26.
+    adverseDrift <= rules.shortTtrMaxDrift;
 
   // --- Hard gates (rules) -> skip ---
   const hardSkips: string[] = [];
@@ -98,9 +115,11 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
   // v57 change A: the tolerance is price-RELATIVE in the long-shot band, where a
   // flat 0.4¢ is 2–8% of price instead of 0.7%. longshotDriftPct 0 = legacy.
   const driftTolerance = effectiveDriftTolerance(rules, input.currentPrice);
-  if (drift > driftTolerance)
+  // Only a move AGAINST us is "too late". A price that fell since the wallet's entry is
+  // the same position cheaper, so it is never skipped for drift (2026-10-26, Lane A).
+  if (adverseDrift > driftTolerance)
     hardSkips.push(
-      `price drifted ${drift.toFixed(3)} since entry > max ${driftTolerance.toFixed(4)} (too late)`
+      `price drifted ${adverseDrift.toFixed(3)} against us since entry > max ${driftTolerance.toFixed(4)} (too late)`
     );
   if (ttr !== undefined && ttr < rules.minTimeToResolutionHours)
     hardSkips.push(`resolves in ${ttr.toFixed(1)}h < min ${rules.minTimeToResolutionHours}h`);
@@ -135,7 +154,15 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
     input.tradeSize > rules.whaleSizeUsd
       ? Math.min(categoryFitScore, rules.whaleCategoryFitCap)
       : categoryFitScore;
-  const entryTimingScore = clamp(100 - (drift / Math.max(rules.maxPriceDrift, 0.001)) * 80);
+  // Directional (2026-10-26). This term carries weight 0.2 in copyScore, so the old
+  // absolute form zeroed it for ANY drift >=0.005 and a cheaper entry then failed
+  // minCopyScore on the strength of being cheap. Measured: fixing the skip alone
+  // recovers only $1,375 of the $4,819 available because the score still vetoes;
+  // fixing this term recovers +$3,443 more (ex-top-10 +$2,816 over 1,206 legs).
+  // A favourable move scores as PERFECT timing; only adverse drift decays the score.
+  const entryTimingScore = clamp(
+    driftSigned <= 0 ? 100 : 100 - (driftSigned / Math.max(rules.maxPriceDrift, 0.001)) * 80
+  );
   const spreadScore = clamp(100 - (spread / Math.max(rules.maxSpread, 0.001)) * 70);
   const liquidityScore = clamp((liquidity / (rules.minLiquidity * 5)) * 100);
   // Thesis clarity: prices near 0.5 = genuinely uncertain market where a
@@ -188,7 +215,9 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
   if (input.tradeSize && input.tradeSize > 10000) {
     reasons.push("Whale-Wake Front-Run: Deploying Maker limit order slightly ahead of flow");
   }
-  if (ttr !== undefined && ttr > 168 && drift > 0.02) {
+  // Directional (2026-10-26): only a move AGAINST us reads as momentum-chasing. A
+  // cheaper entry is the same thesis at a better price, not a trend signal.
+  if (ttr !== undefined && ttr > 168 && adverseDrift > 0.02) {
     reasons.push("Trend Following: Early macro signal gaining momentum");
   } else if (ttr !== undefined && ttr < 48 && input.currentPrice > 0.80) {
     risks.push("Mean Reversion Risk: High risk of late correction on expensive outcome");
@@ -268,7 +297,10 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
   // v29: late entries can't masquerade as high confidence — scores in the
   // capped band with drift beyond the strict ceiling are rejected. Lane-
   // eligible signals are exempt: the short-TTR lane has its own drift window.
-  if (copyScore >= rules.highScoreCapMin && drift > rules.highScoreMaxDrift && !laneEligible) {
+  // Directional (2026-10-26). This ceiling is the SECOND gate the favourable cohort hit:
+  // even with the skip fixed, a cheap entry with a high score was still rejected here as
+  // a "late entry". Only adverse drift can make an entry late.
+  if (copyScore >= rules.highScoreCapMin && adverseDrift > rules.highScoreMaxDrift && !laneEligible) {
     return {
       decision: "skip",
       copyScore: Math.round(copyScore * 10) / 10,
@@ -278,7 +310,7 @@ export function scoreTrade(input: TradeScoreInput, rules: Rules): TradeScoreResu
       simulatedPositionSize: null,
       reasons: [],
       risks: [
-        `score ${copyScore.toFixed(0)} ≥ ${rules.highScoreCapMin} but drift ${drift.toFixed(3)} > ${rules.highScoreMaxDrift} — late entry`,
+        `score ${copyScore.toFixed(0)} ≥ ${rules.highScoreCapMin} but drift ${adverseDrift.toFixed(3)} against us > ${rules.highScoreMaxDrift} — late entry`,
       ],
       breakdown,
     };
