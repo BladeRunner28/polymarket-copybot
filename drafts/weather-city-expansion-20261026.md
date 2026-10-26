@@ -135,9 +135,9 @@ Probed live 2026-10-26. This is the honest reason the set splits the way it does
 | Tokyo | `KXHIGHTRJTT` / station `RJTT` (Haneda) — series exists, **0 open / 0 settled** | open ✓ | PM-only |
 | London | `KXHIGHTEGLL` / `EGLL` (Heathrow) — **0 open / 0 settled** | open ✓ | PM-only |
 | Paris | `KXHIGHTLFPG` / `LFPG` (CDG) — **0 open / 0 settled** | open ✓ | PM-only |
-| Munich | **no Kalshi series at all** (searched 15,396) | open ✓ | PM-only |
+| Munich | **no temperature series** (0 hits for 'munich'/'munchen' across 15,396 series; the 19 'germany' hits are macro/sports — GDP, CPI, GfK, BBL spread) | open ✓ | PM-only |
 | Berlin | `KXHIGHTEDDB` / `EDDB` (Brandenburg) — **0 open / 0 settled** | **not open today** | **nothing tradeable today** |
-| Rome | **no Kalshi series at all** | **not open today** | **nothing tradeable today** |
+| Rome | **no temperature series** (11 'rome' hits are all substring false positives — Chrome acquisition, Jerome Powell, Romeo streams — plus Italy macro/Serie A; none are weather) | **not open today** | **nothing tradeable today** |
 
 **What this means for sequencing:**
 
@@ -151,6 +151,12 @@ Probed live 2026-10-26. This is the honest reason the set splits the way it does
 - **Berlin and Rome are deferred, not dropped.** Nothing is open today; a city with no live cycle cannot
   be sampled and pre-registering it now would register a population that does not exist. Re-probe when a
   cycle lists. Note Rome additionally has **no Kalshi series**, so it is PM-or-nothing permanently.
+
+**Imprecision corrected 2026-10-26, worth recording because a later reader will grep for it:** the first
+draft said Munich and Rome have "no Kalshi series at all." Precisely, they have **no temperature series** —
+the series catalogue does return 11 substring hits for `rome` and 19 for `germany`, none of them weather.
+Anyone re-checking with a naive grep will find those and conclude this document was wrong; it is the
+matches that are wrong, not the absence. Match on the SERIES TITLE, never on the ticker substring.
 
 **Deliberately not assumed:** that the international `KXHIGHT*` series will trade. Their existence in the
 series catalogue with zero markets means the family is *defined* but not *listed*. A future listing is a
