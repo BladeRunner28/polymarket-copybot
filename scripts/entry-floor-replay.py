@@ -84,6 +84,34 @@ def now_ms() -> int:
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
 
+def last_read_at() -> tuple[datetime | None, dict | None]:
+    """Timestamp (and payload) of the newest line in the series, or (None, None)."""
+    if not OUT.exists():
+        return None, None
+    last = None
+    with OUT.open(encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                last = line
+    if not last:
+        return None, None
+    try:
+        rec = json.loads(last)
+        ts = str(rec.get("ranAt") or "")
+        return datetime.fromisoformat(ts.replace("Z", "+00:00")), rec
+    except (json.JSONDecodeError, ValueError):
+        return None, None
+
+
+def staleness_hours() -> float | None:
+    """Age of the newest read, in hours (None when the series is empty/unparsable)."""
+    ts, _ = last_read_at()
+    if ts is None:
+        return None
+    return (datetime.now(timezone.utc) - ts).total_seconds() / 3600.0
+
+
 def read_resolutions() -> tuple[dict[str, float], dict[str, int]]:
     """Union of the shadow markers' `resolve` rows: (marketId|outcome) -> 1/0."""
     values: dict[str, float] = {}
@@ -287,6 +315,23 @@ def main() -> int:
     if not DB.exists():
         print(f"DB not found: {DB}", file=sys.stderr)
         return 1
+
+    # --if-stale-hours N: skip the append when the series already has a read younger than N.
+    # Exists so a daily collector can own this read without the Monday weekly job (same
+    # wrapper) double-appending the same day. 0 (default) = always append.
+    if_stale = 0.0
+    args = sys.argv[1:]
+    for i, a in enumerate(args):
+        if a == "--if-stale-hours" and i + 1 < len(args):
+            if_stale = float(args[i + 1])
+        elif a.startswith("--if-stale-hours="):
+            if_stale = float(a.split("=", 1)[1])
+    age = staleness_hours()
+    if if_stale > 0 and age is not None and age < if_stale:
+        print(f"entry-floor prereg: newest read is {age:.1f}h old (< {if_stale:g}h) — not re-appending")
+        return 0
+
+    prior_ts, prior_rec = last_read_at()
     conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
     try:
         cells = settled_cells(conn)
@@ -294,10 +339,14 @@ def main() -> int:
     finally:
         conn.close()
     v = verdict(cells, cf)
+    days_since_gate = (datetime.now(timezone.utc).date()
+                       - datetime.fromisoformat(GATE_DATE).date()).days
     read = {
         "read": "entry-floor-prereg",
         "preRegisteredAt": PRE_REGISTERED_AT,
         "gateDate": GATE_DATE,
+        "daysSinceGate": days_since_gate,
+        "priorReadAt": prior_ts.isoformat(timespec="seconds") if prior_ts else None,
         "ranAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "cells": cells,
         "c200Legs": sum(c["lifetime"]["n"] for k, c in cells.items() if k != ">0.20"),
@@ -324,11 +373,25 @@ def main() -> int:
         print(f"    {label:>10} signals={b['signals']:>4} resolved={b['resolved']:>4} wins={b['wins']:>3} "
               f"net=${b['net']:>9,.2f} exDust=${b['netExDust']:>9,.2f} best=${b['best']:>8,.2f}")
     print(f"\n=== VERDICT: {v['state']} — {v['note']} ===")
+    # Anchored to the pre-registered date, not to "now": a gate that quietly goes unread is
+    # the failure mode this line exists to make impossible to miss (2026-10-26 self-audit:
+    # the series held ONE read, taken on registration day, and the gate date 2026-10-24
+    # passed with nothing scheduled to read it).
+    print(f"  gate date {GATE_DATE} = {days_since_gate}d ago · prior read "
+          f"{read['priorReadAt'] or 'none'} ({prior_rec.get('verdict', {}).get('state') if prior_rec else '-'})")
+    if days_since_gate >= 0 and (prior_ts is None
+                                 or prior_ts.date().isoformat() < GATE_DATE):
+        print(f"  !! GATE WAS UNREAD: no read of this series exists on/after {GATE_DATE} "
+              f"before this one — the 'series answers the gate date' claim was not true")
     print(f"  gateA n {v['gateA_n']['value']}/{v['gateA_n']['need']} pass={v['gateA_n']['pass']} · "
           f"gateA roi {v['gateA_roi']['value']} pass={v['gateA_roi']['pass']} · "
           f"gateB resolved {v['gateB_resolved']['value']}/{v['gateB_resolved']['need']} pass={v['gateB_resolved']['pass']} · "
           f"gateB net ${v['gateB_net']['value']} pass={v['gateB_net']['pass']}")
-    print(f"  appended -> {OUT.relative_to(REPO)}")
+    try:
+        shown = OUT.relative_to(REPO)
+    except ValueError:  # OUT outside the repo (tests/fixtures) — print the real path, don't crash after the append
+        shown = OUT
+    print(f"  appended -> {shown}")
     return 0
 
 

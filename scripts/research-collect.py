@@ -406,6 +406,8 @@ REDDIT_RETRY_S = 30.0    # one backoff retry before declaring a feed failed
 REDDIT_TTL_H = 26.0      # fetch each feed at most once per day, regardless of run cadence
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache" / "research-recon"
 YIELD_LOG = Path(__file__).resolve().parent.parent / "data" / "radar-yield.jsonl"
+REPO_DIR = Path(__file__).resolve().parent.parent
+ENTRY_FLOOR_SERIES = REPO_DIR / "data" / "entry-floor-read.jsonl"
 
 # The one definition of "usable" (REC 1's decision rule depends on it being stable, so it is defined
 # here and never re-defined in the analysis script).
@@ -553,6 +555,72 @@ def reddit_recon() -> list[str]:
 
 
 # ---------------------------------------------------------------- main
+def prereg_reads() -> list[str]:
+    """Status of the pre-registered reads whose gate dates are already in the past.
+
+    WHY THIS EXISTS (2026-10-26, self-audit Lane B). `scripts/entry-floor-replay.py` was
+    pre-registered 2026-10-17 with a hard gate date (2026-10-24) and its draft promised that
+    "2026-10-24 is answered by a series, not an impression". No job ran it: the series held
+    exactly ONE line, written on registration day with state PENDING_DATE, and the gate date
+    passed two days earlier with nothing reading it. An unread gate is indistinguishable from
+    a pending one, so the read is now taken here — the daily research run is the job that
+    approved it (REC 1) and its fact sheet is where the gate has to be visible.
+    """
+    out: list[str] = []
+    try:
+        p = subprocess.run(
+            [sys.executable, str(REPO_DIR / "scripts" / "entry-floor-replay.py"),
+             "--if-stale-hours", "12"],
+            cwd=str(REPO_DIR), capture_output=True, text=True, timeout=180,
+        )
+        note = (p.stdout or p.stderr or "").strip().splitlines()
+        if p.returncode != 0:
+            return [f"- **SOURCE FAILED — entry-floor prereg read**: exit {p.returncode} "
+                    f"{(note[-1] if note else 'no output')[:200]}"]
+    except (OSError, subprocess.SubprocessError) as e:
+        return [f"- **SOURCE FAILED — entry-floor prereg read**: {type(e).__name__}: {e}"]
+
+    # Always report the state from the SERIES (not from this run's stdout), so a skipped
+    # append still shows the gate. State, gate date, n-vs-needed and the age of the read are
+    # all that is printed: the numbers belong to the instrument, not to a summary of it.
+    try:
+        last = None
+        if ENTRY_FLOOR_SERIES.exists():
+            for line in ENTRY_FLOOR_SERIES.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.strip():
+                    last = line
+        rec = json.loads(last) if last else None
+    except (OSError, json.JSONDecodeError) as e:
+        return [f"- **SOURCE FAILED — entry-floor prereg series**: {type(e).__name__}: {e}"]
+    if rec is None:
+        return ["- entry-floor prereg: series is EMPTY — the read has never run (no gate can be read)"]
+
+    v = rec.get("verdict", {})
+    ran = str(rec.get("ranAt") or "")
+    age_d = ""
+    try:
+        at = datetime.fromisoformat(ran.replace("Z", "+00:00"))
+        age_d = f", read {(datetime.now(timezone.utc) - at).total_seconds() / 86400:.1f}d ago"
+    except ValueError:
+        pass
+    gate = str(rec.get("gateDate") or "?")
+    gate_days = rec.get("daysSinceGate")
+    gate_txt = f"gate {gate}" + (f" = {gate_days}d ago" if isinstance(gate_days, int) else "")
+    ga, gb = v.get("gateA_n", {}), v.get("gateB_net", {})
+    out.append(
+        f"- **Entry-floor prereg** ({gate_txt}{age_d}): **{v.get('state', '?')}** — "
+        f"gate A n={ga.get('value')}/{ga.get('need')} "
+        f"ROI={v.get('gateA_roi', {}).get('value')} (need {v.get('gateA_roi', {}).get('need')}) · "
+        f"gate B net=${gb.get('value')} across {v.get('gateB_resolved', {}).get('value')} resolved "
+        f"(need >= $25 / 30). Series: `data/entry-floor-read.jsonl`."
+    )
+    out.append(
+        "- A `PENDING_DATE` line older than the gate date is NOT a pending gate — it is an "
+        "unread one. Quote the newest state with its `gateDate` and `ranAt`, never the state alone."
+    )
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default="prisma/dev.db")
@@ -560,6 +628,8 @@ def main() -> int:
     ap.add_argument("--skip-venues", action="store_true")
     ap.add_argument("--skip-recon", action="store_true",
                     help="skip the GitHub/Reddit reconnaissance blocks")
+    ap.add_argument("--skip-prereg", action="store_true",
+                    help="skip the pre-registered-read status block (does not take the read)")
     a = ap.parse_args()
 
     lines: list[str] = []
@@ -571,6 +641,9 @@ def main() -> int:
     lines.append("")
     lines.append("## Our measured state")
     lines += bot_facts(a.db, a.days)
+    lines.append("")
+    lines.append("## Pre-registered reads (gate status)")
+    lines += (["- (skipped by flag)"] if a.skip_prereg else prereg_reads())
     lines.append("")
     lines.append("## Venue snapshots (keyless, best-effort)")
     if a.skip_venues:

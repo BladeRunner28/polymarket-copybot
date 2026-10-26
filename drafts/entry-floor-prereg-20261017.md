@@ -1,6 +1,10 @@
 # Pre-registered read — C-200 sub-$0.05 entry floor
 
-**Status: PRE-REGISTERED, GATE PENDING (2026-10-24).** Read #1 taken 2026-10-17 (day 0).
+**Status: GATE DATE PASSED (2026-10-24) — READ #2 TAKEN 2026-10-26, VERDICT `INSUFFICIENT_N` (n=31/60).**
+The gate date passed **unread**: this instrument was not on cron, and the series held exactly one line
+(the 2026-10-17 registration-day read) until 2026-10-26. It is now taken by `scripts/research-collect.py`
+(daily fact sheet, `--if-stale-hours 12`) and every read records `gateDate`/`daysSinceGate`/`priorReadAt`.
+Read #1 taken 2026-10-17 (day 0) · read #2 2026-10-26 (gate date +2d).
 Instrument: `scripts/entry-floor-replay.py` · series: `data/entry-floor-read.jsonl` · approved from
 copybot-research-daily REC 1.
 
@@ -46,6 +50,27 @@ The edge is **monotone in the wrong direction at the bottom**: it peaks in **0.0
 - Band detail: `<0.05` 20 signals/12 resolved/**1 win**, net **+$102.22** (best single win **$212.22** =
   21× on the clip) · `0.05–0.10` +$785.24 (6 wins/14) · `0.10–0.15` +$449.06 (7/13) · `0.15–0.20` +$147.14 (5/13).
 
+## Read #2 — 2026-10-26 (gate date +2d), the first read on/after the gate
+
+| Cell | n | Net PnL | ROI | Win rate | Resolved-only n / ROI |
+|---|---|---|---|---|---|
+| `<0.05` | 31 | **−$828.20** | **−55.2 %** | 19.4 % | 6 / **−100 %** (0 of 6) |
+| 0.05–0.10 | 100 | +$4,464.56 | **+144.1 %** | 30.0 % | 35 / +192.6 % |
+| 0.10–0.15 | 71 | +$1,161.68 | +69.6 % | 31.0 % | 25 / +76.7 % |
+| 0.15–0.20 | 64 | +$1,119.97 | +76.4 % | 25.0 % | 21 / +73.3 % |
+| `≥0.20` (reference) | 2,259 | −$65.35 | −0.5 % | 49.8 % | 823 / +21.6 % |
+
+**Verdict `INSUFFICIENT_N` — gate A n=31/60; gate B resolved 55/30 and net +$5,250.66 both pass.**
+Per the registered rule ("if either fails: record the null and drop the card") the answer this gate can
+give is a **null**, and the n gate cannot move: the `<0.05` cell held **31 settled legs on 2026-10-17 and
+still holds 31 on 2026-10-26** — nine days, zero new settled sub-$0.05 C-200 legs. The population the gate
+is counting has stopped flowing, so "reach 60" is not a matter of waiting. Recording the null is a rule
+decision (Lane A), not an instrument one, and is left to the owner.
+
+Read #2 counterfactual: 66 deduped signals, 55 resolved (83.3 %), dust-inclusive **+$5,250.66**,
+ex-dust (<$0.10) **+$279.14 on 37**, and the single best win $3,323.33 = **63.3 % of the whole net** —
+so gate (b) still passes only because of one dust-sized ticket, exactly as finding 1 predicted.
+
 ## Three findings that matter more than the numbers
 
 **1. Gate (b) is not a discriminating gate.** It passes on both bases — dust-inclusive (+$1,483) and
@@ -86,6 +111,10 @@ merit.
 
 - Readings are appended by the instrument each time it runs, so 2026-10-24 is answered by a **series**, not
   an impression. Verdict states: `PENDING_DATE` → `INSUFFICIENT_N` → `PROPOSE_FLOOR_0.05` / `NULL_DROP`.
-- Today: **PENDING_DATE** — gate (a) ROI already passes (−55.2 %), gate (a) n is **31/60**, gate (b)
-  resolved 52/30 and net +$1,483 both pass.
+  **That sentence was false between 2026-10-17 and 2026-10-26** — nothing ran the instrument, so the
+  series was one point and the gate date passed unread. Fixed 2026-10-26; the read now runs in the daily
+  fact sheet and any read taken after the gate date prints `GATE WAS UNREAD` if no prior read exists on
+  or after it.
+- Latest read: **`INSUFFICIENT_N`** (2026-10-26) — gate (a) ROI passes (−55.2 %) but n is **31/60** and
+  static since 10-17; gate (b) passes on a single dust ticket (63.3 % of its net).
 - **No rule, size, threshold, config or live-lane change was made.** Read-only throughout.
