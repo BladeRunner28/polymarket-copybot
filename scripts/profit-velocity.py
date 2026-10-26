@@ -2057,6 +2057,286 @@ def ttl_sizing_shadow(c):
                       f"{usd_per_1k_cd(gb):>+8.2f}")
 
 
+def fill_reality(c):
+    """§AL — C-200 fill reality: what the lane would OWN, not what it books.
+
+    2026-10-26.  The lane books one PaperTrade per dispatched intent, at
+    `intent - credit(band)`.  The price half of that model was corrected on
+    2026-10-10 (rust-sidecar `maker_credit()`, credit 0.02 -> 0.02 x measured
+    reach share).  The VOLUME half — that the leg exists at all — was never
+    corrected: booking assumes p(fill) = 1.
+
+    Measured here, from the pre-registered print-through instrument
+    (data/c200-printthrough.jsonl, latest snapshot) joined to realised legs:
+      AL.1  coverage / anchor / spread, so the rate can be read anchor-aware
+      AL.2  p(level reachable) by horizon and by band, dollar-weighted
+      AL.3  the four arms on ONE population: booked / at-mid / at-ask
+      AL.4  the rest-depth frontier: fill% x ROI|fill = E[PnL] per INTENDED copy
+      AL.5  pre- vs post-2026-10-10 (did the credit fix land, and what is left)
+      AL.6  wallet concentration of the post-fix book
+      AL.7  entry-sensitivity ladder on the whole maker era (break-even slippage)
+
+    METHOD, and the one thing that must not be misread: a reprice to a worse
+    entry uses fixed DOLLARS at risk (`simulatedPositionSize` semantics), so
+    `shares = size / entry` and the settlement price is recovered as
+    `exit = entry + pnl / shares`.  The PnL delta is therefore exact for a
+    buy-and-hold leg, not an approximation of `0.02 x shares`.
+
+    READ-ONLY.  No rule, size, gate or booked figure moves.
+    """
+    PT = os.path.join("data", "c200-printthrough.jsonl")
+    if not os.path.exists(PT):
+        print("\n§AL  fill reality: SKIPPED (no data/c200-printthrough.jsonl — run "
+              "`python3 scripts/c200-printthrough.py` first)")
+        return
+    last = None
+    with open(PT) as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                o = json.loads(line)
+            except Exception:
+                continue
+            if "summary" in o and o.get("summary", {}).get("bookAnalysable") is not None:
+                last = o
+    if not last:
+        print("\n§AL  fill reality: SKIPPED (no analysable snapshot in the artifact)")
+        return
+    legs = last["legs"]
+    s = last["summary"]
+    book = [l for l in legs if (l.get("book") or {}).get("minAsk") is not None]
+    tape = [l for l in legs if l.get("reached60") is not None and not l.get("tapeSilent")]
+    ids = [l["intentId"] for l in legs]
+    q = ",".join("?" * len(ids))
+    rows = c.execute(
+        f"""SELECT fi.id AS id, p.realizedPnl AS pnl, p.simulatedPositionSize AS sz,
+                   p.entryPrice AS e, p.openedAt AS t, p.walletAddress AS w, p.status AS st
+            FROM FillIntent fi JOIN PaperTrade p ON p.id = fi.paperTradeId
+            WHERE fi.id IN ({q})""", ids).fetchall()
+    by = {r["id"]: r for r in rows}
+    settled = {k: v for k, v in by.items()
+               if v["st"] in ("closed", "resolved") and v["pnl"] is not None and v["e"]}
+
+    print(f"\n§AL  C-200 FILL REALITY — what the lane would own (cost = dollars at risk)")
+    print(f"     artifact: {len(legs)} dispatched intents in the latest snapshot "
+          f"(book-analysable {len(book)}, tape-analysable {len(tape)}, "
+          f"settled+linked {len(settled)})")
+
+    # ---- AL.1 anchor / spread / lag
+    lags = [l["detectLagS"] for l in legs if l.get("detectLagS") is not None]
+    spreads = []
+    for l in book:
+        qq = (l["book"] or {}).get("quoteAtCoverStart") or {}
+        if qq.get("ask") and qq.get("bid"):
+            spreads.append(qq["ask"] - qq["bid"])
+    if lags:
+        print(f"   AL.1 anchor: intent==detection MID {s['anchorIsMid']}/{len(legs)}, "
+              f"==wallet print {s['anchorIsWalletPrint']}/{len(legs)}; "
+              f"level (mid - 2c) sits BELOW the first covered best bid on "
+              f"{s['levelBelowCoverStartBid']}/{len(book)}")
+        print(f"        detection lag median {np.median(lags)/60:.1f} min; "
+              f"cover-start spread median {np.median(spreads):.3f} "
+              f"(p75 {np.percentile(spreads, 75):.3f})" if spreads else "")
+
+    # ---- AL.2 reach
+    if tape:
+        r5 = sum(1 for l in tape if l["reached5"])
+        r60 = sum(1 for l in tape if l["reached60"])
+        print(f"   AL.2 p(reachable) 5m tape {r5}/{len(tape)} = {100*r5/len(tape):.1f}% "
+              f"(bar {100*s['bar5m']:.1f}%)  |  1h tape {r60}/{len(tape)} = "
+              f"{100*r60/len(tape):.1f}% (bar {100*s['bar1h']:.1f}%)")
+    if book:
+        rb = sum(1 for l in book if l["book"]["askAtLevel"])
+        print(f"        1h own L2 book {rb}/{len(book)} = {100*rb/len(book):.1f}% "
+              f"(independent instrument)")
+        ntl = sum((l.get("sizeUsd") or 0) for l in book)
+        ntl_hit = sum((l.get("sizeUsd") or 0) for l in book if l["book"]["askAtLevel"])
+        print(f"        dollar-weighted reach {100*ntl_hit/max(ntl, 1e-9):.1f}% "
+              f"— booking assumes 100%: the flat-2c model books "
+              f"{ntl/max(ntl_hit, 1e-9):.1f}x the dollars a resting bid would own")
+        print(f"        by band (book, 1h):")
+        for lo, hi in ((0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 1.01)):
+            g = [l for l in book if lo <= l["intentPrice"] < hi]
+            if not g:
+                continue
+            h = sum(1 for l in g if l["book"]["askAtLevel"])
+            gs = sum((l.get("sizeUsd") or 0) for l in g)
+            gh = sum((l.get("sizeUsd") or 0) for l in g if l["book"]["askAtLevel"])
+            print(f"          [{lo:.1f},{hi:.2f}) n={len(g):3d} reach {100*h/len(g):5.1f}%  "
+                  f"dollar-wtd {100*gh/max(gs, 1e-9):5.1f}%  notional ${gs:8.2f}")
+        # AL.2b — the LIVE model: since 2026-10-10 the sidecar rests at
+        # 2c x reach-share(band), i.e. ~0.06-0.46c, not 2c. Reach at THAT depth is
+        # the number that describes the lane as it runs today.
+        WEIGHTS = ((0.00, 0.10, 0.028), (0.10, 0.20, 0.084), (0.20, 0.40, 0.229),
+                   (0.40, 0.60, 0.188), (0.60, 1.01, 0.185))
+
+        def live_credit(px):
+            for lo, hi, w in WEIGHTS:
+                if lo <= px < hi:
+                    return 0.02 * w
+            return 0.02 * 0.185
+
+        hit = [l for l in book if l["book"]["minAsk"] <= l["intentPrice"] - live_credit(l["intentPrice"]) + 1e-9]
+        ntl_hit = sum((l.get("sizeUsd") or 0) for l in hit)
+        print(f"        LIVE MODEL (credit = 2c x measured share, ~0.06-0.46c): reach "
+              f"{len(hit)}/{len(book)} = {100*len(hit)/len(book):.1f}%, dollar-weighted "
+              f"{100*ntl_hit/max(ntl, 1e-9):.1f}% -> booking books "
+              f"{ntl/max(ntl_hit, 1e-9):.1f}x the positions a resting bid would own")
+
+    # ---- shared reprice helper
+    def pnl_at(r, entry_new):
+        """realised PnL on the same leg if entered at entry_new (fixed $ at risk)."""
+        e0, sz, p = r["e"], r["sz"], r["pnl"]
+        sh = sz / e0
+        return (sz / entry_new) * ((e0 + p / sh) - entry_new)
+
+    def arms(sel, label):
+        t = {"booked": 0.0, "mid": 0.0, "ask": 0.0}
+        nt = 0.0
+        rows_sum = []
+        for l in sel:
+            r = settled.get(l["intentId"])
+            qq = (l.get("book") or {}).get("quoteAtCoverStart") or {}
+            if not r or not qq.get("ask") or not qq.get("bid"):
+                continue
+            nt += r["sz"]
+            t["booked"] += r["pnl"]
+            t["mid"] += pnl_at(r, max(0.01, l["intentPrice"]))
+            t["ask"] += pnl_at(r, min(0.999, qq["ask"]))
+            rows_sum.append((r["pnl"], pnl_at(r, max(0.01, l["intentPrice"])),
+                             pnl_at(r, min(0.999, qq["ask"])), r["sz"]))
+        if not rows_sum:
+            print(f"   {label:34} (no settled leg with a quote)")
+            return
+        line = f"   {label:34} n={len(rows_sum):4d} ${nt:8.2f}"
+        for k in ("booked", "mid", "ask"):
+            line += f"  {k} {100*t[k]/nt:+7.1f}%"
+        print(line)
+        if len(rows_sum) >= 5:
+            for j, k in enumerate(("booked", "mid", "ask")):
+                v = sorted((x[j] for x in rows_sum), reverse=True)
+                print(f"        {k:7} ex-top-1 ${sum(v[1:]):+8.2f}  ex-top-3 "
+                      f"${sum(v[3:]):+8.2f}  ex-top-10 ${sum(v[10:]):+8.2f}")
+
+    # ---- AL.3 arms
+    print(f"   AL.3 four arms on ONE population (settled legs with a saved quote).")
+    print(f"        'ask' = best ask at L2 coverage start (~0.2 min post-dispatch): the "
+          f"taker price.")
+    arms(legs, "all settled")
+    arms([l for l in legs if (l.get("book") or {}).get("coverStartMs")
+          and (l["book"]["coverStartMs"] - l["dispatchedAt"]) <= 60000],
+         "coverage <=1min post-dispatch")
+    for lo, hi in ((0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 1.01)):
+        arms([l for l in legs if lo <= l["intentPrice"] < hi], f"band [{lo:.1f},{hi:.1f})")
+    arms([l for l in tape if l["reached60"] is True], "tape REACHED (a maker fill)")
+    arms([l for l in tape if l["reached60"] is False], "tape NOT reached")
+
+    # ---- AL.4 the depth frontier
+    print(f"   AL.4 rest-depth frontier — where to park the bid. E[PnL] per INTENDED "
+          f"copy = p(fill) x ROI|fill.")
+    print(f"        {'credit':>7} {'fill%':>7} {'n':>4} {'ROI|fill':>9} {'E[PnL]/copy':>12} "
+          f"{'ex-top2 ROI|fill':>17}")
+    pool = [l for l in book if l["intentId"] in settled]
+    for cr in (0.0, 0.005, 0.01, 0.02, 0.03):
+        filled = [l for l in pool if l["book"]["minAsk"] <= l["intentPrice"] - cr + 1e-9]
+        if not filled:
+            continue
+        vals = [pnl_at(settled[l["intentId"]], max(0.01, l["intentPrice"] - cr)) for l in filled]
+        szs = [settled[l["intentId"]]["sz"] for l in filled]
+        ntl_f = sum(szs)
+        pn = sum(vals)
+        pfill = len(filled) / len(pool)
+        ex2 = ""
+        if len(vals) > 3:
+            keep = sorted(range(len(vals)), key=lambda i: -vals[i])[2:]
+            ex2 = f"{100*sum(vals[i] for i in keep)/max(sum(szs[i] for i in keep),1e-9):+16.1f}%"
+        print(f"        {cr*100:6.1f}c {100*pfill:6.1f}% {len(filled):4d} "
+              f"{100*pn/ntl_f:+8.1f}% {100*pfill*pn/ntl_f:+11.1f}% {ex2:>17}")
+    print(f"        NOTE: every conditional column here is carried by <=3 legs — ex-top-2 "
+          f"is negative at every depth. The FILL RATE is the only column this n can "
+          f"estimate; the conditional RETURN cannot be estimated from a book whose "
+          f"sample is chosen by its own fill rule.")
+
+    # ---- AL.5 pre/post the 2026-10-10 credit fix
+    CUT = 1791676800000  # 2026-10-10 00:00 UTC, the maker_credit() switch
+    print(f"   AL.5 pre- vs post-2026-10-10 (the measured-credit fix landed on the price, "
+          f"not the volume). All settled C-200 legs, DB basis:")
+    for lab, lo, hi in (("pre-fix ", 0, CUT), ("post-fix", CUT, 10**15)):
+        g = c.execute(
+            """SELECT COUNT(*) n, SUM(simulatedPositionSize) sz, SUM(realizedPnl) pnl
+               FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0
+                 AND openedAt >= ? AND openedAt < ? AND status IN ('closed','resolved')
+                 AND realizedPnl IS NOT NULL""", (lo, hi)).fetchone()
+        if not g or not g["n"]:
+            continue
+        print(f"        {lab} n={g['n']:4d} notional ${g['sz']:8.2f} booked "
+              f"{100*g['pnl']/g['sz']:+7.1f}%")
+    # median credit actually booked, by era, straight from the DB
+    mc = c.execute(
+        """SELECT CASE WHEN openedAt >= ? THEN 'post' ELSE 'pre' END AS era,
+                  COUNT(*) AS n, AVG(100.0*(intentPrice - entryPrice)) AS mean_c,
+                  MIN(100.0*(intentPrice - entryPrice)) AS min_c,
+                  MAX(100.0*(intentPrice - entryPrice)) AS max_c
+           FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0 AND intentPrice IS NOT NULL
+           GROUP BY 1""", (CUT,)).fetchall()
+    for r in mc:
+        print(f"        credit booked, {r['era']}-fix: n={r['n']:4d} mean {r['mean_c']:.2f}c "
+              f"range [{r['min_c']:.2f},{r['max_c']:.2f}] "
+              f"(flat model was 2.00c everywhere)")
+
+    # ---- AL.6 wallet concentration
+    print(f"   AL.6 who carries it (settled, realised):")
+    for lab, lo in (("post-fix", CUT), ("maker era", 1787798400000)):
+        g = c.execute(
+            """SELECT walletAddress w, COUNT(*) n, SUM(simulatedPositionSize) sz,
+                      SUM(realizedPnl) pnl
+               FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0
+                 AND openedAt >= ? AND status IN ('closed','resolved') AND realizedPnl IS NOT NULL
+               GROUP BY 1 ORDER BY pnl DESC""", (lo,)).fetchall()
+        if not g:
+            continue
+        tot = sum(r["pnl"] for r in g)
+        nt = sum(r["sz"] for r in g)
+        pos = sum(1 for r in g if r["pnl"] > 0)
+        top = g[0]
+        ex1 = tot - top["pnl"]
+        print(f"        {lab:9} wallets {len(g):3d} ({pos} positive) n={sum(r['n'] for r in g):4d} "
+              f"${nt:8.2f} pnl ${tot:+8.2f} ({100*tot/nt:+6.1f}%) | top wallet "
+              f"{top['w'][:10]}… ${top['pnl']:+.2f} -> ex-top-1 ${ex1:+.2f} "
+              f"({100*ex1/max(nt-top['sz'],1e-9):+.1f}%)")
+
+    # ---- AL.7 entry-sensitivity on the whole maker era
+    era = c.execute(
+        """SELECT entryPrice e, simulatedPositionSize sz, realizedPnl pnl
+           FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0
+             AND openedAt >= 1787798400000 AND status IN ('closed','resolved')
+             AND realizedPnl IS NOT NULL AND entryPrice > 0""").fetchall()
+    if era:
+        nt = sum(r["sz"] for r in era)
+        base = sum(r["pnl"] for r in era)
+        print(f"   AL.7 entry-sensitivity, maker era (openedAt >= 2026-08-28, settled): "
+              f"n={len(era)} ${nt:,.2f} booked {base:+,.2f} ({100*base/nt:+.1f}%)")
+        for d in (0.005, 0.01, 0.02, 0.03, 0.05):
+            v = sum(pnl_at({"e": r["e"], "sz": r["sz"], "pnl": r["pnl"]},
+                           min(0.999, r["e"] + d)) for r in era)
+            print(f"        entry +{d*100:.1f}c  ${v:+10,.2f}  ({100*v/nt:+6.1f}%)  "
+                  f"drag {v-base:+,.2f}")
+        # break-even offset
+        lo_, hi_ = 0.0, 1.0
+        for _ in range(40):
+            mid = (lo_ + hi_) / 2
+            v = sum(pnl_at({"e": r["e"], "sz": r["sz"], "pnl": r["pnl"]},
+                           min(0.999, r["e"] + mid)) for r in era)
+            if v > 0:
+                lo_ = mid
+            else:
+                hi_ = mid
+        print(f"        BREAK-EVEN entry slippage {100*lo_:.2f}c/share — the whole era's "
+              f"edge is that many cents wide")
+
+
 def main():
     c = con()
     if "--only-ah" in ARGS:
@@ -2068,6 +2348,9 @@ def main():
     if "--only-ak" in ARGS:
         ttl_shadow_reconciliation(c)
         ttl_sizing_shadow(c)
+        return
+    if "--only-al" in ARGS:
+        fill_reality(c)
         return
     legs = load_finished(c)
     print(f"loaded {len(legs)} finished real legs (all-time), "
@@ -2099,6 +2382,8 @@ def main():
     ttl_shadow_reconciliation(c)
     ttl_sizing_shadow(c)
     cheap_tail_fill_probe(c)
+    # 2026-10-26: fill reality (§AL). Default run for the same reason as above.
+    fill_reality(c)
 
 
 if __name__ == "__main__":
