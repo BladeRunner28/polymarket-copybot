@@ -1,108 +1,79 @@
-# Pre-registration — fee/fill calibration against the chain-derived aggressor archive
+# SUPERSEDED — the fee-incidence question was already answered 2026-09-25
 
-**Status:** proposed, nothing adopted, no code run. Read-only instrument.
-**Written:** 2026-10-26. **Decision read:** 2026-11-09 (two weeks, allows the slice pull + one re-read).
-**Owner approval:** required before any pull exceeds a 2 GB slice.
-
----
-
-## 0. Correction to my own recommendation, first
-
-I told you item (1) was "fix the L2 trade-print branch — code, hours not dollars." **That was wrong,
-and I verified it before building anything.** `scripts/record-l2.ts` already carries the fix: its header
-(line 17-19) documents that an earlier version waited for an `{event:"trade"}` message that never
-arrives, which is why the corpus held zero print lines in 36,042 files, and it now writes `book`,
-`price_change` (as `pc`) and `last_trade_price` (as `ltp`) lines explicitly labelled as **not a fill
-tape**. Measured now:
-
-- `data/l2/` — 44,432 files, **books only**, zero trade prints. That is by design: the market channel
-  does not send prints at any event name.
-- `data/l2-events/` — **954 files**, `price_change` events carrying `price`/`side`/`size`/`bestBid`/
-  `bestAsk` on every quote change (76,221 lines in the newest file alone). This is better than I implied.
-- `scripts/c200-printthrough.py` and `scripts/fill-vs-intent.ts` **already join** the public trade tape
-  to dispatch windows, and that join already produced the 5 % / 19 % reach rates that killed the
-  74 % / 81 % archive prior.
-
-So there is no repair to take. What follows is the question that is genuinely open.
+**Written:** 2026-10-26. **Superseded the same day, before any pull.** Nothing was downloaded, nothing
+was run, no rule touched. Kept as a **correction trail**, not a plan. Read `bt-fee-maker-calibration`
+and `bt-hist-archive-pull` instead.
 
 ---
 
-## 1. Hypothesis
+## 1. What I got wrong
 
-Our fee model charges **taker fees on all flow**. The venue's law is settled from its own docs —
-`fee = C × rate × p × (1 − p)`, **takers only, makers never charged** — and our `takerFeePerShare`
-implements it exactly (verified to −$27.05 on 12,710 legs). What has never been measured is the
-**share of our flow that is actually taker**, because the CLOB exposes only `maker_base_fee` /
-`taker_base_fee` (both `1000`) and every archive-era read has had to assume all-taker.
+I pre-registered a study to measure "the maker/taker split of our flow" from `TimeSeventeen/Polymarket-v1`,
+on two premises: that the **aggressor field had never been measured**, and that the archive still had to
+be **pulled in a ≤2 GB slice**. Both are false, and both were checkable with one grep of
+`data/roadmap.json` — exactly the rule the skill states:
 
-`TimeSeventeen/Polymarket-v1` carries **1,201,580,990 `orderfilled` rows (27.4 GB) with 100 %
-ground-truth aggressor direction derived from the chain** — the maker/taker field we upper-bounded.
-If the true maker share of flow at our price/size band is material, our archive-era fee drag is
-overstated by that share, and every archive-based ROI (including the fee-sign-flip residual and the
-C-200 maker-fill assumption) carries the error.
+> *"Grep `data/roadmap.json` for the class BEFORE designing anything here. A design written without
+> reading them re-proposes settled questions and misses numbers the board already paid for."*
 
-**Boundary, load-bearing:** the archive's coverage **ends 2026-04-28**, and our first paper trade is
-**2026-06-18**. It therefore cannot speak to our present fills. It calibrates the **law's incidence**
-(maker share, by band) and the **category assignment**, never our current execution.
+I wrote that rule down and then broke it. Recording the failure rather than deleting the file.
 
-## 2. Measurement
+**Premise 1 — "never measured". FALSE.** `bt-fee-maker-calibration` (Done, measured 2026-09-25):
 
-1. Pull a **bounded slice** of `orderfilled` (≤2 GB; filter to the price bands and market types we
-   trade, then expand only if the slice's per-band row counts clear n≥50,000 each). Do not pull 27.4 GB
-   speculatively.
-2. Compute, per price band (`<0.20`, `0.20-0.40`, `0.40-0.60`, `0.60-0.80`, `0.80-1.00`) and per size
-   bucket matched to our clips ($8–50, $50–100, $100+):
-   - **maker share of volume and of trade count**, with a day-clustered bootstrap CI;
-   - implied fee under (a) all-taker — today's assumption — and (b) the observed mix.
-3. Re-price the archive-era C-200 book under (b) with the existing
-   `scripts/c200-fee-reprice-archive.py` (do not write a new re-pricer).
-4. Independently verify the **category rate assignment** against the archive's own market metadata: we
-   already know `categoryFeeRate` in `src/lib/scoring/price-edge.ts:65-74` has **no geopolitics-0
-   branch** and falls through to 0.05. The archive can say how much flow that touches.
+> **MAKER/TAKER SPLIT** — the aggressor is a **SELLER in 83.6 % of 2026-era fills** (74.6–89.4 % by band;
+> buyers cross only 16.4 %), so the resting BID is the side that gets filled in this venue.
 
-## 3. Decision rule
+That is a decisive answer to the question my proposal was going to open — it just answers it "83.6 %
+taker-side", which my `≥10 % maker share` decision rule would have read as **REFUTED**. The same card
+also carries the maker-fill hazard over 783,342,642 fills: P(print at ≤ p − 0.02 within horizon) =
+**71.1 % / 76.1 % / 77.6 %** at 5 m / 30 m / 1 h, and **74.3 % / 81.1 %** weighted by C-200's entry mix.
 
-Adopt a maker-branch fee change **iff all three** hold:
+**Premise 2 — "needs pulling". FALSE.** `bt-hist-archive-pull` (Done) already landed it:
+**`/Volumes/Storage/pm-data/polymarket-v1` — 49 GB, 2,152 parquet** (plus `quant-bench`, 0.60 GB /
+1,417 parquet), manifests versioned into `data/archive-manifests/`. Re-verified on disk 2026-10-26.
+Note the path: **`pm-data/`**, which is a *different* archive from the 50 GB / 49,484-parquet
+Jon-Becker set at `prediction-market-data/` on the same volume. Both are present; do not conflate them.
 
-- observed maker share of our-sized flow is **≥ 10 %** in at least one band (day-clustered CI lower
-  bound > 5 %), **and**
-- re-pricing the archive-era book under the observed mix moves it by **≥ $100** (materiality), **and**
-- the geopolitics-0 correction is confirmed to touch **≥ 0.5 %** of archive notional or is explicitly
-  waived as immaterial.
+**What that card already settles, which my prereg re-proposed:**
 
-Otherwise: record **NO-CHANGE** and close the card as verified, quoting the measured maker share.
+- **Fee law (archive era):** taker BUY `fee = (base/1e4) × shares × min(p,1−p)`, base 1000 → 0.10,
+  matching to 1e−6 on 95–99 % of rows in every band of both months tested. Makers pay $0.
+- **Schedule change:** the *current* published schedule is `shares × 0.05 × p(1−p)` — ~4× cheaper at mid
+  than the archive era. So the archive calibrates **structure and attribution, never today's rate**; our
+  2026-09-09 model already matches the current schedule, and the real defect was the ledger booking
+  **zero** fees, not a wrong coefficient.
+- **Unexplained and correctly left alone:** taker SELL fits `0.10 × shares × min(p,1−p)/p`. The card
+  flags this asymmetry as unexplained and explicitly declines to build on it. **Do not resurrect it as a
+  finding.**
 
-## 4. Refutation (outcome that proves the hypothesis wrong)
+## 2. The one part that still stands — a correction of my own advice
 
-- Maker share **< 5 %** in every band → our all-taker assumption was correct, the fee model needs no
-  branch, and this closes permanently. This is the most likely outcome and it is a **useful** result.
-- Re-pricing moves the book **< $100** → the incidence question is immaterial regardless of share.
-- The slice's band composition cannot be matched to ours (different market types / era) → the archive
-  cannot answer the question for this stack; record **UNTRANSFERABLE** and stop. Do not substitute our
-  own era as a proxy — that is what the all-taker assumption already is.
+Unrelated to the duplicate, and worth keeping. I told you the next step was *"fix the L2 trade-print
+branch — code, hours not dollars."* **That was wrong, and I verified it before building anything.**
 
-## 5. Cost, reversibility, and what this does NOT do
+- `scripts/record-l2.ts` **already carries the fix**; its header documents that an earlier version waited
+  for an `{event:"trade"}` message that never arrives, which is why the corpus held zero print lines
+  across 36,042 files. It now writes `book`, `price_change` (as `pc`) and `last_trade_price` (as `ltp`),
+  the latter explicitly labelled **not a fill tape**.
+- `data/l2/` — 44,432 files, **books only**. By design: the market channel sends no prints at any event name.
+- `data/l2-events/` — **954 files** of `price_change` events carrying `price`/`side`/`size`/`bestBid`/
+  `bestAsk` on every quote change (76,221 lines in the newest file alone). Better than I had implied.
+- `scripts/c200-printthrough.py` and `scripts/fill-vs-intent.ts` **already join** the public tape to
+  dispatch windows, and that join produced the 5 % / 19 % reach rates which killed the 74 % / 81 % prior.
 
-- **Cost:** one slice pull (~1-2 h) + ~2 h analysis. Storage goes to `/Volumes/Storage` (427 GB free),
-  never beside the live DB.
-- **Reversibility:** read-only. Nothing in the live path reads it; the deliverable is a `drafts/` write-up
-  plus a card. A fee change would be a separate Lane A proposal with its own before/after.
-- **Does NOT:** shorten the ML gate (that needs n≥400 forward settled legs), improve AUC (the market-only
-  lane is closed at −29.84 % expected OOS), or speak to current-era fills. **It is a fee-incidence and
-  category-assignment study, not an edge study.** Quoting it as evidence for an ML feature would be a
-  category error.
+**There is no repair to take.** The remaining gap is not a missing branch: our **booking** assumes
+p(fill) = 1, which is `c200-maker-fill-assumption` — a Lane A question, already carded and already
+shipped in its measured per-band-credit form.
 
----
+## 3. What is actually open on this axis
 
-## 6. Why this and not the alternatives
-
-| candidate | scale | why not / why now |
+| card | state | what it still needs |
 |---|---|---|
-| `SII-WANGZJ/Polymarket_data` | 232.5 GB | does not fit beside the live DB + L2 growth; take `markets.parquet` only if ever needed |
-| `Karmane/...enriched` | ~28k rows | gated, and regenerable from `gamma /markets/keyset` in minutes |
-| `jdkatz21/Prediction_Markets_Public` | — | licence `null`, ships no `data/` tree |
-| `lycheedata` | paid | never subscribe on a third party's recommendation |
-| `Jon-Becker/prediction-market-analysis` | **already on disk**, 50 GB / 49,484 parquet | ✅ free substrate for price history — but it has **no aggressor field**, so it cannot answer this question |
+| `c200-maker-fill-assumption` | Scheduled, shipped 2026-10-10 | measured per-band credit live; the **booking** question (book only what a resting bid owns) is the open Lane A call |
+| `ml-u1-conditional-fill-model` | In Progress | forward arm read done: reachable ~1 leg in 5 (tape 18/339 = 5 % within 5 min), not 3 in 4 |
+| `paper-ledger-fee-fidelity` | Backlog | the live gate's fee rate is a slug-keyword proxy; the venue publishes `feeType` + `feeSchedule.rate` and **18/40 markets (45 %) disagree** |
+| `kalshi-maker-read-prereg` | Scheduled, approved 2026-10-12 | Kalshi maker multiplier is 0 on standard series; the read itself is what is outstanding |
+| `vike-l2-prerecorder-window` | Backlog, **blocked on the user** | vendor key — never handled here; the user pulls and hands over the parquet |
 
-The decisive column is the aggressor field: only the TimeSeventeen archive has it, and it is the only
-unknown standing between us and an exact rather than upper-bounded fee model.
+**Verdict: nothing to approve in this file.** The question closed 2026-09-25 with a better answer than
+my proposal could have produced, because it came from **1.2 B fills on disk** rather than a 2 GB slice.
