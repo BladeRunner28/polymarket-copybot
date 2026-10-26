@@ -1,42 +1,38 @@
 {
-  "generatedAt": "2026-10-25T02:26:13.314Z",
-  "candidates": 36926,
-  "marked": 31556,
-  "awaitingResolution": 5370,
-  "wins": 17345,
-  "winRate": 0.5496577512992775,
-  "wouldHavePnl": 789238.42,
-  "avgPnlPerTrade": 25.01,
-  "avgPnlPerTradeExDust": 0.31,
-  "dustExcluded": 2414,
+  "generatedAt": "2026-10-26T02:37:11.311Z",
+  "candidates": 38025,
+  "marked": 32954,
+  "awaitingResolution": 5071,
+  "wins": 17789,
+  "winRate": 0.539813072768101,
+  "wouldHavePnl": 786542.02,
+  "avgPnlPerTrade": 23.87,
+  "avgPnlPerTradeExDust": 0.19,
+  "dustExcluded": 2455,
   "dustMinEntryPrice": 0.1,
-  "avgPnlPerTradeExDustLast7dCohort": -0.71,
-  "cohort7dMarked": 2523,
-  "totalMarked": 31556,
+  "avgPnlPerTradeExDustLast7dCohort": -1.06,
+  "cohort7dMarked": 3307,
+  "totalMarked": 32954,
   "stakeUsd": 10,
   "firstCandidateAt": "2026-09-17T05:13:10.255Z",
-  "lastCandidateAt": "2026-10-25T02:07:52.353Z",
-  "signals": 10469,
-  "signalsSettled": 8584,
-  "avgPnlPerTradeExDustPerSignal": 0.88,
-  "dustExcludedPerSignal": 527,
-  "avgPnlPerTradeExDustLast7dCohortPerSignal": 1.43,
-  "cohort7dMarkedPerSignal": 450,
-  "rawConfidenceRows": 9914,
+  "lastCandidateAt": "2026-10-26T02:08:51.112Z",
+  "signals": 10623,
+  "signalsSettled": 8773,
+  "avgPnlPerTradeExDustPerSignal": 0.87,
+  "dustExcludedPerSignal": 539,
+  "avgPnlPerTradeExDustLast7dCohortPerSignal": 1.33,
+  "cohort7dMarkedPerSignal": 532,
+  "rawConfidenceRows": 11013,
   "decayBar": {
     "thresholdUsd": 0.5,
     "daysRequired": 7,
-    "consecutiveDaysAtOrBelow": 20,
-    "cohort7d": -0.71,
-    "cohort7dMarked": 2523,
+    "consecutiveDaysAtOrBelow": 21,
+    "cohort7d": -1.06,
+    "cohort7dMarked": 3307,
     "cohortAtOrBelow": true,
     "tripped": true,
-    "seriesDays": 36,
+    "seriesDays": 37,
     "recent": [
-      {
-        "day": "2026-10-19",
-        "avgPnlPerTradeExDust": 0.33
-      },
       {
         "day": "2026-10-20",
         "avgPnlPerTradeExDust": 0.31
@@ -59,7 +55,11 @@
       },
       {
         "day": "2026-10-25",
-        "avgPnlPerTradeExDust": 0.31
+        "avgPnlPerTradeExDust": 0.25
+      },
+      {
+        "day": "2026-10-26",
+        "avgPnlPerTradeExDust": 0.19
       }
     ],
     "rule": "PRE-REGISTERED 2026-09-20 (tuning #31 rec 2): if avgPnlPerTradeExDust <= $0.5 for 7 consecutive days AND the trailing-7d cohort mean is also <= that bar (the cumulative mean drifts mechanically as settled rows accumulate, so it alone must not trip the bar), a maxPriceDrift/longshotDriftPct relaxation is brought forward, attributed by ruleSetVersion (v55-v59 sub-windows), never as one total. Until then maxPriceDrift keeps its value."
@@ -68,16 +68,12 @@
     "thresholdUsd": 0.5,
     "daysRequired": 7,
     "consecutiveDaysAtOrBelow": 0,
-    "cohort7d": 1.43,
-    "cohort7dMarked": 450,
+    "cohort7d": 1.33,
+    "cohort7dMarked": 532,
     "cohortAtOrBelow": false,
     "tripped": false,
-    "seriesDays": 15,
+    "seriesDays": 16,
     "recent": [
-      {
-        "day": "2026-10-19",
-        "avgPnlPerTradeExDust": 0.86
-      },
       {
         "day": "2026-10-20",
         "avgPnlPerTradeExDust": 0.86
@@ -100,7 +96,11 @@
       },
       {
         "day": "2026-10-25",
-        "avgPnlPerTradeExDust": 0.88
+        "avgPnlPerTradeExDust": 0.87
+      },
+      {
+        "day": "2026-10-26",
+        "avgPnlPerTradeExDust": 0.87
       }
     ],
     "basis": "per_signal (one row per marketId|outcome|wallet, earliest poll)",

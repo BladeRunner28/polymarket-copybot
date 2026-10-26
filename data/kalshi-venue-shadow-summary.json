@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-25T03:17:33.666Z",
+  "asOf": "2026-10-26T03:17:34.197Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1290,
-    "inWindow": 895,
+    "copiesSeen": 1298,
+    "inWindow": 903,
     "withKalshiQuote": 2,
     "crossListRate": 0.002,
     "staleSkips": 395,
-    "quoteFailures": 799,
-    "unverifiedMatches": 94,
+    "quoteFailures": 805,
+    "unverifiedMatches": 96,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 90,
+      "low_match_score_0.67": 92,
       "low_match_score_0.60": 3
     }
   },
@@ -55,26 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Will Côte d'Ivoire win on 2026-10-03?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.51,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Will Germany win on 2026-10-04?",
-      "ticker": "KXANYDEMWINTEXAS-26NOV03",
-      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.999,
-      "pmEntry": 0.495,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Navy vs. Air Force: O/U 63.5",
       "ticker": "KXSCOTUSCASE-DEPPRU28",
@@ -452,6 +432,26 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.7212999999999999,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will AC Horsens win on 2026-10-25?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.6113,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will FC Twente win on 2026-10-25?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.31042,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
