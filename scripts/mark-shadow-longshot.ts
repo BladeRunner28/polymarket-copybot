@@ -483,10 +483,13 @@ async function main() {
     .join(" | ");
   log(
     `shadow-lowconf: +${lResolved} marked this run (backlog ${lPending.size}). ` +
-      `Confidence-gate counterfactual: ${lSummary.candidates} rejected (` +
+      `Confidence-gate counterfactual: ${lSummary.candidates} rejected rows (` +
       `${lSummary.confidenceOnlyCandidates} blocked by confidence ALONE), ` +
-      `${lSummary.marked} settled, $${lSummary.wouldHavePnl.toFixed(2)} @ $${lSummary.stakeUsd}/trade ` +
-      `(${lSummary.avgPnlPerTrade === null ? "—" : "$" + lSummary.avgPnlPerTrade.toFixed(2)}/trade; ` +
+      `${lSummary.marked} marked rows on ${lSummary.basis.markets} markets ` +
+      `(${lSummary.basis.signals} copy signals), ` +
+      `$${lSummary.wouldHavePnl.toFixed(2)} at $${lSummary.stakeUsd}/ticket ROW-LEVEL ` +
+      `(one ticket per market|outcome|wallet: $${lSummary.basis.wouldHavePnlPerSignal.toFixed(2)}) ` +
+      `(${lSummary.avgPnlPerTrade === null ? "—" : "$" + lSummary.avgPnlPerTrade.toFixed(2)}/row; ` +
       `confidence-only $${lSummary.confidenceOnly.wouldHavePnl.toFixed(2)} on ${lSummary.confidenceOnly.marked} settled) | ${bucketLine}. ` +
       `Summary: ${LOWCONF_SHADOW_SUMMARY_FILE}`
   );
