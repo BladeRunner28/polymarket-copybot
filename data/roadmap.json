@@ -3545,6 +3545,34 @@
         "tooling-radar",
         "asset-queue"
       ]
+    },
+    {
+      "id": "timeseventeen-fee-incidence-prereg",
+      "column": "Scheduled",
+      "title": "Fee INCIDENCE from the chain-derived aggressor archive (TimeSeventeen/Polymarket-v1)",
+      "note": "PRE-REGISTERED 2026-10-26, nothing pulled. drafts/timeseventeen-fee-fill-prereg-20261026.md. THE QUESTION: our fee model charges taker fees on ALL flow. The law is settled from the venue's own docs (fee = C*rate*p*(1-p), takers only, makers never charged) and our takerFeePerShare implements it exactly (-$27.05 on 12,710 legs). What was NEVER measured is the share of flow that is actually taker, because the CLOB exposes only maker_base_fee/taker_base_fee (both 1000) and every archive-era read had to assume all-taker. TimeSeventeen/Polymarket-v1 carries 1,201,580,990 orderfilled rows (27.4 GB) with 100% ground-truth aggressor direction from the chain -- exactly that field. BOUNDARY (load-bearing): coverage ENDS 2026-04-28 and our first paper trade is 2026-06-18, so it CANNOT speak to current fills. It calibrates law incidence and category assignment, never our execution. ADOPT iff maker share >=10% of our-sized flow in some band (CI lower >5%) AND re-pricing the archive-era book moves it >=$100 AND the geopolitics-0 gap in categoryFeeRate (price-edge.ts:65-74) touches >=0.5% of archive notional or is waived. REFUTED if maker share <5% in every band (our all-taker assumption was right -- the most likely outcome and a useful one) or the re-price moves <$100. Slice pull <=2GB to /Volumes/Storage. Read-only.",
+      "tags": [
+        "prereg",
+        "fees",
+        "fill",
+        "read-only",
+        "awaiting-approval",
+        "2026-10-26"
+      ]
+    },
+    {
+      "id": "weather-city-dfw-set1",
+      "column": "Scheduled",
+      "title": "Weather Set 1 city 2: Dallas/Fort Worth (DFW) \u2014 then LA/Seattle as Set 2",
+      "note": "PREP COMPLETE 2026-10-26, nothing sampled. drafts/weather-city-expansion-20261026.md. IDENTIFIED ON BOTH VENUES, no blocking field: Kalshi KXHIGHTDAL / station CLIDFW / The Weather Company daily summary / degF (settled expiration_value 82.00); Polymarket highest-temperature-in-dallas-on-<month>-<day>-<year> / station KDAL DALLAS LOVE FIELD / hourly routine METAR remark in tenths of degC with SPECI excluded. THE KEY FINDING: PM settles Dallas on KDAL, NOT KDFW -- the obvious guess is wrong, and assuming it would have repeated exactly the error the NYC prereg was amended to prevent (PM KLGA vs Kalshi CLINYC). Two airports, two products, two unit systems, two publishers for one city on one day: that is why venues are never pooled. WORK: parameterize weather-nowcast-sampler.py (currently hardcodes SERIES=KXHIGHNY, LGA=KLGA) into a city table -- NEVER copy-paste per city. Then run weather-oracle-reconcile.py for DFW before sampling. GATE TO SET 2 (all three): DFW completes one full in-window sample cycle; the reconcile harness reproduces both venues' oracle for 5 consecutive days with zero wrong-product/wrong-station mismatches; and the one parameterized path leaves NYC's output byte-identical (if NYC moved, the refactor broke the established city). SET 2 MEASURED AVAILABILITY today: LA (KXHIGHLAX/CLILAX) and Seattle (KXHIGHTSEA/CLISEA) are the ONLY two-venue cities -> do them first, they are the real test that the pattern generalises. Tokyo/London/Paris have Kalshi series but 0 open AND 0 settled -> PM-only. Munich has NO Kalshi series -> PM-only, and it IS open on PM. Berlin and Rome have nothing open on PM today -> DEFERRED, re-probe when a cycle lists; Rome additionally has no Kalshi series at all. STOP RULE: if LA/Seattle need city-specific code branches, stop at two cities -- ten bespoke instruments is the outcome this gate prevents.",
+      "tags": [
+        "prereg",
+        "weather",
+        "set1",
+        "dfw",
+        "set2-gated",
+        "2026-10-26"
+      ]
     }
   ],
   "dates": {}
