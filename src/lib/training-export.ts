@@ -36,8 +36,13 @@ export function eraOf(ruleSetVersion: number | null | undefined): string {
 export interface FeeInput {
   entryPrice: number;
   sizeUsd: number;
-  /** Question text + market id; the fee category is keyword-inferred (there is no fee column). */
+  /** Question text + market id; used ONLY when no venue rate is supplied. */
   feeText: string | null | undefined;
+  /**
+   * The venue's own published rate for this market (`feeSchedule.rate`), when captured.
+   * Lane A, approved 2026-10-26: prefer this over the keyword proxy whenever it exists.
+   */
+  feeRateTruth?: number | null;
   status: string;
   /** PaperTrade.currentPrice — the exit mark, only meaningful for an early exit. */
   currentPrice: number | null | undefined;
@@ -45,6 +50,8 @@ export interface FeeInput {
 
 export interface FeeDecomposition {
   feeRate: number;
+  /** Which basis produced `feeRate` — the venue's published rate, or our text proxy. */
+  feeRateSource: "venue" | "proxy";
   shares: number;
   exitPrice: number | null;
   feeEntryUsd: number;
@@ -56,7 +63,18 @@ export interface FeeDecomposition {
  * an early exit (`closed` with a usable mark) carries an exit fee.
  */
 export function feeDecomposition(input: FeeInput): FeeDecomposition {
-  const rate = categoryFeeRate(input.feeText);
+  // Lane A (approved 2026-10-26). `categoryFeeRate` infers the rate from TEXT because
+  // MarketSnapshot.category is null on every row, while the venue publishes structured truth
+  // per market (`feeType` + `feeSchedule.rate`) and scripts/capture-fee-schedules.ts already
+  // records it. Measured on the live export: truth existed for 8 of 3,987 markets and 3 of
+  // those 8 DISAGREED with the proxy -- a real but partial correction, so `feeRateSource`
+  // states the basis on every row rather than hiding the mix behind one blended column.
+  const truth =
+    typeof input.feeRateTruth === "number" && Number.isFinite(input.feeRateTruth)
+      ? input.feeRateTruth
+      : null;
+  const rate = truth === null ? categoryFeeRate(input.feeText) : truth;
+  const feeRateSource: "venue" | "proxy" = truth === null ? "proxy" : "venue";
   const shares = input.sizeUsd / input.entryPrice;
   const exitPrice =
     input.status === "closed" &&
@@ -67,6 +85,7 @@ export function feeDecomposition(input: FeeInput): FeeDecomposition {
       : null;
   return {
     feeRate: rate,
+    feeRateSource,
     shares,
     exitPrice,
     feeEntryUsd: shares * takerFeePerShare(input.entryPrice, rate),

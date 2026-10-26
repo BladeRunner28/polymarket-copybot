@@ -71,6 +71,8 @@ interface ExportRow {
   entry_price: number;
   exit_price: number | null;
   fee_rate: number;
+  /** 'venue' when the rate came from the venue's own feeSchedule.rate, 'proxy' when keyword-inferred. */
+  fee_rate_source: "venue" | "proxy";
   fee_entry_usd: number;
   fee_exit_usd: number;
   detected_price: number | null;
@@ -104,7 +106,7 @@ const COLUMNS: (keyof ExportRow)[] = [
   "review_id", "decision_id", "paper_trade_id", "bot_id", "venue", "wallet", "market_id", "outcome",
   "decision", "status", "rule_set_version", "era", "decision_at", "terminal_at", "horizon_to_resolution_hours",
   "pnl_net_entry", "y_net_entry", "pnl_gross", "pnl_net_full", "entry_price", "exit_price",
-  "fee_rate", "fee_entry_usd", "fee_exit_usd",
+  "fee_rate", "fee_rate_source", "fee_entry_usd", "fee_exit_usd",
   "detected_price", "wallet_entry_price", "size_usd", "observed_size_usd",
   "raw_spread", "raw_liquidity", "raw_volume",
   "wallet_quality_score", "category_fit_score", "entry_timing_score",
@@ -137,6 +139,7 @@ function targetSums(rawRows: any[]): { rows: number; gross: number; netEntry: nu
       entryPrice: Number(r.entryPrice),
       sizeUsd: Number(r.simulatedPositionSize ?? 10),
       feeText: `${r.marketQuestion ?? ""} ${r.marketId ?? ""}`,
+      feeRateTruth: feeRateTruthMap().get(String(r.marketId)) ?? null,
       status: String(r.status),
       currentPrice: num(r.currentPrice),
     });
@@ -153,6 +156,42 @@ function targetSums(rawRows: any[]): { rows: number; gross: number; netEntry: nu
  * trade id. Absent file = every sentiment column null (the export must still run — the chain
  * order is features → export, and a missing corpus is data, not a crash).
  */
+/**
+ * The venue's own published fee rate, keyed by market slug, where we have captured it.
+ * `categoryFeeRate` infers the rate from TEXT because MarketSnapshot.category is null on every
+ * row; the venue publishes `feeType` + `feeSchedule.rate` per market and
+ * scripts/capture-fee-schedules.ts already records them to data/fee-schedules.jsonl.
+ * Lane A, approved 2026-10-26. Coverage is the open gap: truth exists for 8 of the export's
+ * 3,987 markets (3 of those 8 disagree with the proxy), so every row now declares its basis
+ * via `fee_rate_source` instead of blending both into one unlabelled column.
+ */
+function loadFeeRateTruth(path: string): Map<string, number> {
+  const out = new Map<string, number>();
+  if (!fs.existsSync(path)) {
+    console.log(`  fee-rate truth: ${path} not found — every row falls back to the proxy`);
+    return out;
+  }
+  for (const line of fs.readFileSync(path, "utf8").split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const o = JSON.parse(t) as { slug?: unknown; resolvedRate?: unknown; feeSchedule?: { rate?: unknown } };
+      const rate = o.resolvedRate ?? o.feeSchedule?.rate;
+      if (o.slug && typeof rate === "number" && Number.isFinite(rate)) out.set(String(o.slug), rate);
+    } catch {
+      /* skip a malformed line rather than failing the export */
+    }
+  }
+  return out;
+}
+
+let FEE_RATE_TRUTH: Map<string, number> | null = null;
+/** Memoised so `targetSums()` and `main()` share one read of the venue truth file. */
+function feeRateTruthMap(): Map<string, number> {
+  if (FEE_RATE_TRUTH === null) FEE_RATE_TRUTH = loadFeeRateTruth("data/fee-schedules.jsonl");
+  return FEE_RATE_TRUTH;
+}
+
 function loadSentimentFeatures(path: string): Map<string, { n: string; dSigned: string; d50: string }> {
   const m = new Map<string, { n: string; dSigned: string; d50: string }>();
   if (!fs.existsSync(path)) {
@@ -178,6 +217,11 @@ async function main() {
   console.log("Exporting ML training data (magnitude target, decision-book source)...");
   const started = Date.now();
   const sentimentByTrade = loadSentimentFeatures("data/sentiment-features.csv");
+  const feeTruth = feeRateTruthMap();
+  console.log(
+    `  fee-rate truth: ${feeTruth.size} markets carry the venue's own feeSchedule.rate ` +
+      `(rows without it fall back to the keyword proxy and are labelled fee_rate_source=proxy)`,
+  );
 
   const raw = await prisma.$queryRaw<any[]>(Prisma.sql`
     SELECT pt.id AS paperTradeId, pt.botId, pt.venue, pt.walletAddress, pt.marketId, pt.outcome,
@@ -229,6 +273,7 @@ async function main() {
       entryPrice: entry,
       sizeUsd: size,
       feeText: `${r.marketQuestion ?? ""} ${r.marketId ?? ""}`,
+      feeRateTruth: feeRateTruthMap().get(String(r.marketId)) ?? null,
       status: String(r.status),
       currentPrice: num(r.currentPrice),
     });
@@ -267,6 +312,7 @@ async function main() {
       entry_price: round4(entry),
       exit_price: fees.exitPrice === null ? null : round4(fees.exitPrice),
       fee_rate: fees.feeRate,
+      fee_rate_source: fees.feeRateSource,
       fee_entry_usd: round4(fees.feeEntryUsd),
       fee_exit_usd: round4(fees.feeExitUsd),
       detected_price: num(r.detectedPrice),
