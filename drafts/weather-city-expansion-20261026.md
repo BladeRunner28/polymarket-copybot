@@ -158,6 +158,20 @@ the series catalogue does return 11 substring hits for `rome` and 19 for `german
 Anyone re-checking with a naive grep will find those and conclude this document was wrong; it is the
 matches that are wrong, not the absence. Match on the SERIES TITLE, never on the ticker substring.
 
+**How to tell "nothing is listed" from "the call failed" — measured 2026-10-26, keep this.** A probe batch
+run during this work returned **0 events for ALL TEN cities including NYC**, which cannot be true: NYC is
+demonstrably open. The batch had failed (11 gamma calls in a tight loop) and a catch-all `except: print(0)`
+rendered the failure as "nothing listed" — an empty sample read as a clean one. The discriminator is the RAW
+BYTE COUNT, not the event count:
+
+- **HTTP 200 + 3 bytes (`[]`)** -> genuinely no event: **Berlin, Rome** (re-confirmed twice).
+- **HTTP 200 + ~87-91 KB** -> a real event payload: **NYC, Dallas, LA, Seattle, Tokyo, London, Paris, Munich**
+  (1 event each, all re-confirmed).
+
+Any re-probe of these cities must print the status code and byte size beside the count, because a zero from a
+failed request and a zero from an empty listing look identical in the parsed form. Treat 0 bytes / non-200 /
+parse error as **PROBE-FAILED**, never as absence.
+
 **Deliberately not assumed:** that the international `KXHIGHT*` series will trade. Their existence in the
 series catalogue with zero markets means the family is *defined* but not *listed*. A future listing is a
 new fact to re-probe, not a plan to schedule.
