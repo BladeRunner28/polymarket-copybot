@@ -76,10 +76,19 @@ def parse_ts(value) -> datetime | None:
         return None
 
 
-def fmt(ts: datetime | None, tzname: str = "CDT") -> str:
+def fmt(ts: datetime | None, tzname: str | None = None) -> str:
+    """Local wall time plus ITS OWN zone abbreviation.
+
+    The label used to be the literal "CDT" for every alert, all year. America/Chicago is
+    CST from 2026-11-01, so from that date every line would have read e.g. "04:30 CDT"
+    for 10:30Z — an hour wrong for anyone converting back to UTC (measured: fmt of
+    2026-12-15T10:30Z printed '2026-12-15 04:30 CDT'). %Z takes the abbreviation from the
+    same astimezone() conversion as the hour, so the two can no longer disagree.
+    """
     if ts is None:
         return "never"
-    return ts.astimezone().strftime("%Y-%m-%d %H:%M") + f" {tzname}"
+    local = ts.astimezone()
+    return local.strftime("%Y-%m-%d %H:%M ") + (tzname or local.strftime("%Z") or "local")
 
 
 STRONG = ("referenceerror", "typeerror", "syntaxerror", "rangeerror", "error:", "cannot access",
