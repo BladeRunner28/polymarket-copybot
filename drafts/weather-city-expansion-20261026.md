@@ -199,3 +199,50 @@ new fact to re-probe, not a plan to schedule.
 - If LA/Seattle fail to reproduce the NYC design on the parameterized path — i.e. the code needs
   city-specific branches — **stop at two cities.** The pattern did not generalise, and ten cities of
   bespoke instruments is the outcome this gate exists to prevent.
+
+---
+
+## 6. IMPLEMENTED 2026-10-27 — Set 1 code work, and the three gate conditions
+
+**What changed.** `scripts/weather-nowcast-sampler.py` is now driven by a `CITIES` table (`--city nyc|dfw`,
+default `nyc`), and `scripts/weather-oracle-reconcile.py` takes the same `--city`. One parameterised path;
+no per-city copy. A city's identity is its own **artifact file** — `data/weather-nowcast-samples.jsonl`
+(NYC, untouched) and `data/weather-nowcast-samples-dfw.jsonl` (new) — so **no row gained a city field**,
+which is what makes the byte-identity gate below meaningful.
+
+**Gate condition 3 — NYC byte-identical: MET, mechanically.** `scripts/weather-sampler-city-equivalence.py`
+runs the PRE-change sampler out of git at a pinned instant while recording every URL it fetches, then
+replays that recording into the new path. A URL the old sampler never asked for is a hard failure, so a
+moved station, series, slug prefix or timezone cannot pass on two live snapshots that happen to agree.
+
+```
+old run: urls=64   new run: replayed=64  cache_misses=0
+rows=37  bytes_at_ref=23728  bytes_now=23728  stdout_match=True  urls_added=0  urls_dropped=0
+PASS
+```
+
+**Gate condition 2 — reconcile: MET, far past the 5-day bar.** `--city dfw`, run 2026-10-27:
+
+- Kalshi `KXHIGHTDAL` vs GHCN-Daily DFW airport: **396/396 brackets** on **66/66 event days**
+  (408 settled markets since 2026-08-19; 2 days have no GHCN observation and are excluded, never
+  counted as matches; max consecutive reconciled run **66**).
+- Polymarket "highest temperature in Dallas" vs hourly METAR @ **KDAL**: **55/55 days**
+  (25 Oct + 30 Sep 2026).
+- Controls, same population, same code: wrong **station** (hourly DFW airport) **37/55**;
+  wrong **product** (GHCN daily at DFW) **17/53**. The correct-oracle result is therefore not
+  "any nearby thermometer" — it is the station *and* the product, which is the whole point of §0.
+
+**Gate condition 1 — one full in-window DFW sample cycle: OPEN, and calendar-bound.** The hourly wrapper
+(`scripts/cron-scripts/copybot-weather-nowcast.sh`) now loops `nyc dfw` with a **per-city** freshness check
+(`scripts/weather-nowcast-freshness.py`), so a healthy NYC cannot hide a dead DFW. First three ticks:
+121 rows, 0 errors, 12 Kalshi + 22 PM brackets each, dead-bracket flags computed on each venue's own
+station (obs keys `kdal`/`kalshi_dfw`, labels `KDAL`/`DFWairport/DFWproxy`). A cycle completes when a
+DFW day settles with brackets sampled across its window — time, not code.
+
+**Nothing in the live path moved:** no rule, size, gate, threshold or venue decision. Both scripts are
+read-only; the Kalshi side stays paper regardless (no key).
+
+**Rollback:** revert the five files (sampler, reconcile, freshness, wrapper, equivalence gate) and delete
+`data/weather-nowcast-samples-dfw.jsonl`. NYC's artifact is byte-untouched, so **nothing already
+accumulated is voided** by this change — which is only true because the table replacement was proven
+byte-identical rather than eyeballed.

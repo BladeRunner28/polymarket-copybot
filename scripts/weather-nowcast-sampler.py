@@ -14,6 +14,18 @@ Nothing here trades, sizes, or writes anywhere but that JSONL. No keys are used 
 and Polymarket Gamma/CLOB are public). Silent on success — stdout is an observability channel, not a
 log (the wrapper's watchdog contract).
 
+CITY TABLE (added 2026-10-27, card weather-city-dfw-set1)
+--------------------------------------------------------
+ONE parameterised path, never a copy per city. `--city` selects a row of CITIES below; every city writes
+its OWN file, so a city's identity is the ARTIFACT PATH and no city field is added to a row. That is
+deliberate: NYC's rows are a frozen pre-registered sample, and scripts/weather-sampler-city-equivalence.py
+gates that the NYC row bytes did not move when the table was introduced.
+
+Each city carries TWO oracles, because the two venues settle the same city on different stations and
+different products (probed, not assumed): PM settles NYC on KLGA from hourly routine METAR, Kalshi on
+CLINYC from a TWC daily summary; PM settles Dallas on KDAL (Love Field) while Kalshi uses CLIDFW (DFW
+airport). Never pool venues, never share a station across them.
+
 PRICE PRIMITIVES (do not change these semantics — a change voids the accumulated sample)
 --------------------------------------------------------------------------------------
 Binary mirror:  yes_ask = 1 - no_bid  and  no_ask = 1 - yes_bid.
@@ -53,8 +65,48 @@ IEM = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
 NWS = "https://api.weather.gov"
 ET = ZoneInfo("America/New_York")
 UA = {"User-Agent": "copybot-weather-nowcast/1.0 (read-only measurement)"}
-SERIES = "KXHIGHNY"
-LGA = "KLGA"
+CITIES = {
+    # NYC — the established city. Every field below IS the pre-2026-10-27 hardcode, byte for byte:
+    # data/weather-nowcast-samples.jsonl is the frozen wx2 sample, so this row may not move without
+    # failing scripts/weather-sampler-city-equivalence.py.
+    "nyc": {
+        "kalshi_series": "KXHIGHNY",
+        "kalshi_iem_station": "NYC",          # IEM ASOS id for Central Park — PROXY for the venue's CLINYC/TWC product
+        "pm_iem_station": "LGA",              # IEM ASOS id for LaGuardia — the PM settlement station
+        "nws_station": "KLGA",
+        "pm_slug_prefix": "highest-temperature-in-nyc",
+        "tz": "America/New_York",
+        "lat": "40.7769", "lon": "-73.8740",
+        "hour_field": "et_hour",              # legacy key: NYC local IS ET and the frozen sample must not move
+        "obs_keys": ("klga", "kalshi_cp"),    # legacy context keys, same reason
+        "kalshi_dead_label": "CentralPark/NYC",
+        "pm_dead_label": "KLGA",
+        "out": "data/weather-nowcast-samples.jsonl",
+        "basis_pm": "hourly METAR @ KLGA (IEM ASOS report_type=3)",
+        "basis_kalshi": "hourly METAR @ Central Park/NYC (IEM ASOS report_type=3),"
+                        " proxy for the CLINYC/TWC product",
+    },
+    # DFW — card weather-city-dfw-set1. Two airports, two products: PM = KDAL Love Field, hourly routine
+    # METAR, tenths of a degC, SPECI excluded; Kalshi = CLIDFW, The Weather Company DAILY summary, degF.
+    # Identification probed live 2026-10-26 (drafts/weather-city-expansion-20261026.md).
+    "dfw": {
+        "kalshi_series": "KXHIGHTDAL",
+        "kalshi_iem_station": "DFW",          # IEM ASOS id for DFW airport — PROXY for CLIDFW/TWC
+        "pm_iem_station": "DAL",              # IEM ASOS id for Love Field — the PM settlement station
+        "nws_station": "KDAL",
+        "pm_slug_prefix": "highest-temperature-in-dallas",
+        "tz": "America/Chicago",
+        "lat": "32.8471", "lon": "-96.8517",
+        "hour_field": "hour_local",           # DFW local civil hour (CT); this city's buckets use it
+        "obs_keys": ("kdal", "kalshi_dfw"),
+        "kalshi_dead_label": "DFWairport/DFWproxy",
+        "pm_dead_label": "KDAL",
+        "out": "data/weather-nowcast-samples-dfw.jsonl",
+        "basis_pm": "hourly METAR @ KDAL Love Field (IEM ASOS report_type=3)",
+        "basis_kalshi": "hourly METAR @ DFW airport (IEM ASOS report_type=3),"
+                        " proxy for the CLIDFW/TWC daily-summary product",
+    },
+}
 # pinned laws (pre-registration); recorded on every row so a later re-read cannot mis-price
 KALSHI_TAKER = "0.07*P*(1-P)"
 KALSHI_MAKER = "0"
@@ -83,14 +135,14 @@ def fnum(x):
 
 
 # ---------------------------------------------------------------- physical state
-def hourly_state(station: str, cycle_day: str):
+def hourly_state(station: str, cycle_day: str, tz_name: str):
     """Daily MAX so far from routine hourly METAR at `station` — the pinned oracle product.
     Station matters: Polymarket settles on KLGA, Kalshi on CLINYC (Central Park). Measuring one
     venue's deadness on the other's series flags live brackets dead (observed 2026-10-12:
     KXHIGHNY-26OCT12 B69.5 bid 0.99 while the LGA series read max-so-far 71)."""
     y, m, d = (int(v) for v in cycle_day.split("-"))
     url = (f"{IEM}?station={station}&data=tmpf&year1={y}&month1={m}&day1={d}"
-           f"&year2={y}&month2={m}&day2={d}&tz=America%2FNew_York&format=onlycomma&latlon=no"
+           f"&year2={y}&month2={m}&day2={d}&tz={tz_name.replace('/', '%2F')}&format=onlycomma&latlon=no"
            f"&missing=M&trace=T&direct=no&report_type=3")
     txt = get(url).decode("utf-8", "replace")
     vals = []
@@ -105,10 +157,10 @@ def hourly_state(station: str, cycle_day: str):
             "obs_first": vals[0][0], "obs_last": vals[-1][0], "obs_last_F": vals[-1][1]}
 
 
-def nws_latest_context():
-    """Recent KLGA observations (context only — NOT the deadness basis)."""
+def nws_latest_context(station: str):
+    """Recent observations at the city's PM settlement station (context only — NOT the deadness basis)."""
     try:
-        f = jget(f"{NWS}/stations/{LGA}/observations?limit=6")["features"]
+        f = jget(f"{NWS}/stations/{station}/observations?limit=6")["features"]
     except Exception:
         return []
     out = []
@@ -119,10 +171,10 @@ def nws_latest_context():
     return out
 
 
-def ensemble_for(cycle_day: str):
+def ensemble_for(cycle_day: str, lat: str, lon: str, tz_name: str):
     """31-member GFS ensemble daily max, per member — the ensemble-implied distribution."""
-    url = ("https://ensemble-api.open-meteo.com/v1/ensemble?latitude=40.7769&longitude=-73.8740"
-           "&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=America%2FNew_York"
+    url = (f"https://ensemble-api.open-meteo.com/v1/ensemble?latitude={lat}&longitude={lon}"
+           f"&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone={tz_name.replace('/', '%2F')}"
            "&forecast_days=3&models=gfs_seamless")
     try:
         d = jget(url)
@@ -139,10 +191,10 @@ def ensemble_for(cycle_day: str):
             "mean": round(sum(members) / len(members), 2) if members else None}
 
 
-def forecast_for(cycle_day: str):
+def forecast_for(cycle_day: str, lat: str, lon: str, tz_name: str):
     try:
-        d = jget("https://api.open-meteo.com/v1/forecast?latitude=40.7769&longitude=-73.8740"
-                 "&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=America%2FNew_York"
+        d = jget(f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+                 f"&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone={tz_name.replace('/', '%2F')}"
                  "&forecast_days=3")
         return d["daily"]["temperature_2m_max"][d["daily"]["time"].index(cycle_day)]
     except Exception:
@@ -150,8 +202,8 @@ def forecast_for(cycle_day: str):
 
 
 # ---------------------------------------------------------------- venue books
-def kalshi_cycles() -> list:
-    mk = jget(f"{KALSHI}/markets?series_ticker={SERIES}&status=open&limit=200")["markets"]
+def kalshi_cycles(series: str) -> list:
+    mk = jget(f"{KALSHI}/markets?series_ticker={series}&status=open&limit=200")["markets"]
     groups: dict = {}
     for m in mk:
         groups.setdefault(m["event_ticker"], []).append(m)
@@ -203,11 +255,11 @@ def kalshi_book(ticker: str):
     }
 
 
-def pm_event_for(cycle_day: str):
+def pm_event_for(cycle_day: str, slug_prefix: str):
     y, m, d = (int(v) for v in cycle_day.split("-"))
     months = ["january", "february", "march", "april", "may", "june",
               "july", "august", "september", "october", "november", "december"]
-    slug = f"highest-temperature-in-nyc-on-{months[m-1]}-{d}-{y}"
+    slug = f"{slug_prefix}-on-{months[m-1]}-{d}-{y}"
     try:
         d0 = jget(f"{GAMMA}/events?slug={slug}")
     except Exception:
@@ -290,18 +342,25 @@ def pm_books(market: dict):
 # ---------------------------------------------------------------- main
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--out", default=None, help="output JSONL (default: the selected CITY's own file)")
+    ap.add_argument("--city", default="nyc", choices=sorted(CITIES),
+                    help="city key from the CITY TABLE (default nyc — the frozen wx2 sample)")
     ap.add_argument("--now", default=None, help="ISO timestamp override (testing)")
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args()
 
-    now = datetime.fromisoformat(a.now).astimezone(ET) if a.now else datetime.now(ET)
+    city = CITIES[a.city]
+    HK = city["hour_field"]          # this city's own hour field name (et_hour legacy for NYC)
+    tz = ZoneInfo(city["tz"])
+    obs_pm_key, obs_kalshi_key = city["obs_keys"]
+
+    now = datetime.fromisoformat(a.now).astimezone(tz) if a.now else datetime.now(tz)
     ts = now.astimezone(timezone.utc).isoformat(timespec="seconds")
     et_hour = round(now.hour + now.minute / 60.0, 3)
     today = now.strftime("%Y-%m-%d")
     cycles = [today, (now + timedelta(days=1)).strftime("%Y-%m-%d")]
 
-    rows, coverage = [], {"kind": "coverage", "ts": ts, "et_hour": et_hour,
+    rows, coverage = [], {"kind": "coverage", "ts": ts, HK: et_hour,
                           "kalshi_cycles": 0, "kalshi_brackets": 0, "pm_cycles": 0, "pm_brackets": 0,
                           "errors": [], "dropped": []}
 
@@ -309,21 +368,22 @@ def main() -> int:
     ctx = {}
     for day in cycles:
         if day == today:
-            obs = {"klga": hourly_state("LGA", day), "kalshi_cp": hourly_state("NYC", day)}
+            obs = {obs_pm_key: hourly_state(city["pm_iem_station"], day, city["tz"]),
+                   obs_kalshi_key: hourly_state(city["kalshi_iem_station"], day, city["tz"])}
         else:
-            obs = {"klga": None, "kalshi_cp": None}
-        ens = ensemble_for(day)
-        ctx[day] = {"kind": "context", "ts": ts, "cycle_day": day, "et_hour": et_hour,
-                    "obs": obs, "ensemble": ens, "forecast_F": forecast_for(day),
-                    "nws_recent": nws_latest_context(),
-                    "basis": {"polymarket": "hourly METAR @ KLGA (IEM ASOS report_type=3)",
-                              "kalshi": "hourly METAR @ Central Park/NYC (IEM ASOS report_type=3),"
-                                        " proxy for the CLINYC/TWC product"}}
+            obs = {obs_pm_key: None, obs_kalshi_key: None}
+        ens = ensemble_for(day, city["lat"], city["lon"], city["tz"])
+        ctx[day] = {"kind": "context", "ts": ts, "cycle_day": day, HK: et_hour,
+                    "obs": obs, "ensemble": ens,
+                    "forecast_F": forecast_for(day, city["lat"], city["lon"], city["tz"]),
+                    "nws_recent": nws_latest_context(city["nws_station"]),
+                    "basis": {"polymarket": city["basis_pm"],
+                              "kalshi": city["basis_kalshi"]}}
         rows.append(ctx[day])
 
     def dead_basis(venue: str):
         day = today
-        key = "klga" if venue == "polymarket" else "kalshi_cp"
+        key = obs_pm_key if venue == "polymarket" else obs_kalshi_key
         st = ((ctx.get(day) or {}).get("obs") or {}).get(key) or {}
         return st.get("max_so_far_F"), key
 
@@ -336,7 +396,7 @@ def main() -> int:
 
     # ---- Kalshi
     try:
-        for c in kalshi_cycles():
+        for c in kalshi_cycles(city["kalshi_series"]):
             et = c["event_ticker"]
             day = kalshi_cycle_day(et)
             if day not in cycles:
@@ -349,10 +409,10 @@ def main() -> int:
                 except Exception as exc:  # noqa: BLE001
                     coverage["errors"].append(f"kalshi book {m['ticker']}: {str(exc)[:80]}")
                     continue
-                row = {"kind": "bracket", "venue": "kalshi", "ts": ts, "cycle_day": day, "et_hour": et_hour,
+                row = {"kind": "bracket", "venue": "kalshi", "ts": ts, "cycle_day": day, HK: et_hour,
                        "instrument": m["ticker"], "event_ticker": et, "label": m.get("yes_sub_title"),
                        "bracket_low": lo, "bracket_high": hi, "strike_type": m.get("strike_type"),
-                       "dead": is_dead("kalshi", hi, day), "dead_basis_station": "CentralPark/NYC",
+                       "dead": is_dead("kalshi", hi, day), "dead_basis_station": city["kalshi_dead_label"],
                        "yes_bid": bk["yes_bid"], "yes_ask": bk["yes_ask"],
                        "no_bid": bk["no_bid"], "no_ask": bk["no_ask"],
                        "size_yes_bid": bk["size_yes_bid"], "size_no_bid": bk["size_no_bid"],
@@ -365,7 +425,7 @@ def main() -> int:
     # ---- Polymarket
     for day in cycles:
         try:
-            e = pm_event_for(day)
+            e = pm_event_for(day, city["pm_slug_prefix"])
         except Exception as exc:  # noqa: BLE001
             coverage["errors"].append(f"pm event {day}: {str(exc)[:100]}")
             continue
@@ -382,10 +442,10 @@ def main() -> int:
                 coverage["errors"].append(f"pm book {m.get('slug')}: {str(exc)[:80]}")
                 continue
             rows.append({"kind": "bracket", "venue": "polymarket", "ts": ts, "cycle_day": day,
-                         "et_hour": et_hour, "instrument": m.get("slug"), "event_slug": e.get("slug"),
+                         HK: et_hour, "instrument": m.get("slug"), "event_slug": e.get("slug"),
                          "label": m.get("groupItemTitle"), "bracket_low": lo, "bracket_high": hi,
                          "strike_type": "range", "dead": is_dead("polymarket", hi, day),
-                         "dead_basis_station": "KLGA",
+                         "dead_basis_station": city["pm_dead_label"],
                          "yes_bid": bk["yes_bid"], "yes_ask": bk["yes_ask"],
                          "no_bid": bk["no_bid"], "no_ask": bk["no_ask"],
                          "size_yes_bid": bk["size_yes_bid"], "size_no_bid": bk["size_no_bid"],
@@ -394,19 +454,19 @@ def main() -> int:
             coverage["pm_brackets"] += 1
 
     if coverage["kalshi_brackets"] == 0 and coverage["pm_brackets"] == 0:
-        print(f"🟠 weather-nowcast: no brackets captured this tick ({ts}) — errors={coverage['errors'][:2]}")
+        print(f"🟠 weather-nowcast[{a.city}]: no brackets captured this tick ({ts}) — errors={coverage['errors'][:2]}")
         return 0
 
     rows.append(coverage)
-    path = Path(a.out)
+    path = Path(a.out) if a.out else (ROOT / city["out"])
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as fh:
         for r in rows:
             fh.write(json.dumps(r, separators=(",", ":")) + "\n")
     if a.verbose:
         dead = [r for r in rows if r.get("kind") == "bracket" and r.get("dead")]
-        print(f"{ts} rows={len(rows)} kalshi={coverage['kalshi_brackets']} pm={coverage['pm_brackets']} "
-              f"dead={len(dead)} errors={len(coverage['errors'])}")
+        print(f"{ts} city={a.city} rows={len(rows)} kalshi={coverage['kalshi_brackets']} "
+              f"pm={coverage['pm_brackets']} dead={len(dead)} errors={len(coverage['errors'])}")
         for r in dead[:6]:
             print(f"   DEAD {r['venue']:<10} {str(r['label']):<14} last={r['bracket_low']}-{r['bracket_high']} "
                   f"yb={r['yes_bid']} ya={r['yes_ask']} nb={r['no_bid']} na={r['no_ask']}")
