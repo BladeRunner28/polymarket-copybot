@@ -50,6 +50,16 @@ type Art = {
     justified?: boolean;
   };
   v63Corroboration: { band: string; heldOutRoiPct: number | null; heldOutLegs: number | null; note: string };
+  walletArm?: {
+    arms: { key: string; label: string; ablated?: string; auc?: number; brier?: number; promotable?: boolean; error?: string;
+            models?: { model: string; auc: number; brier: number; promotable?: boolean }[] }[];
+    meta: { label?: string; boundary?: string; builtAt?: string; rows?: { train: number; test: number; purged: number };
+            barAuc?: number; barBrier?: number };
+    trainer?: string;
+    excluded?: { column: string; why: string }[];
+    headline?: string;
+    note?: string;
+  };
 };
 
 function load(): Art | null {
@@ -366,6 +376,47 @@ export default async function MlPage() {
           formatY={(y: number) => `${y.toFixed(0)}%`}
         />
       </Card>
+
+      {a.walletArm && (
+        <Card title="Wallet features ARE in the training — what ablating them costs">
+          <p className="text-sm font-medium">{a.walletArm.headline}</p>
+          <p className="text-dim text-xs mt-1">
+            {a.walletArm.trainer} · label {a.walletArm.meta.label} · frozen boundary {String(a.walletArm.meta.boundary).slice(0, 10)}
+            {a.walletArm.meta.rows ? ` · train ${a.walletArm.meta.rows.train.toLocaleString()} / test ${a.walletArm.meta.rows.test.toLocaleString()} / purged ${a.walletArm.meta.rows.purged.toLocaleString()}` : ""}
+            {a.walletArm.meta.builtAt ? ` · built ${a.walletArm.meta.builtAt.slice(0, 10)}` : ""}
+          </p>
+          <div className="mt-3 space-y-1 text-sm">
+            <div className="flex justify-between border-b border-white/10 pb-1 text-dim">
+              <span>price-only bar (logistic on logit_yes)</span>
+              <span>AUC {a.walletArm.meta.barAuc?.toFixed(4)} · Brier {a.walletArm.meta.barBrier?.toFixed(4)}</span>
+            </div>
+            {a.walletArm.arms.map((arm) => (
+              <div key={arm.key} className="flex justify-between">
+                <span>
+                  {arm.label}
+                  {arm.promotable ? <span className="text-pos"> · clears bar</span> : null}
+                </span>
+                <span>
+                  AUC {arm.auc?.toFixed(4)} · Brier {arm.brier?.toFixed(4)}
+                </span>
+              </div>
+            ))}
+          </div>
+          {a.walletArm.excluded?.length ? (
+            <div className="mt-4">
+              <p className="text-dim text-xs uppercase tracking-wide">Deliberately excluded from the model</p>
+              <ul className="mt-1 space-y-1 text-sm">
+                {a.walletArm.excluded.map((x) => (
+                  <li key={x.column}>
+                    <code className="text-xs">{x.column}</code> — <span className="text-dim">{x.why}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <p className="text-dim text-sm mt-3">{a.walletArm.note}</p>
+        </Card>
+      )}
 
       <Card title={`Market-only band economics — ${a.marketOnly.gated.toLocaleString()} gated of ${a.marketOnly.candidates.toLocaleString()} candidates`}>
         <div className="overflow-x-auto">

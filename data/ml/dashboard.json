@@ -1,26 +1,26 @@
 {
- "generatedAt": "2026-10-27T09:06:48.492539Z",
+ "generatedAt": "2026-10-27T09:09:58.666530Z",
  "sources": {
   "marketCandidates": {
    "path": "data/ml/market-candidates.parquet",
    "role": "rolling",
    "exists": true,
    "mtimeZ": "2026-10-26T10:41:09.384491Z",
-   "ageHours": 22.4
+   "ageHours": 22.5
   },
   "paperTrades": {
    "path": "prisma/dev.db",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-10-27T08:56:52.221765Z",
-   "ageHours": 0.2
+   "mtimeZ": "2026-10-27T09:07:48.310744Z",
+   "ageHours": 0.0
   },
   "predictionsTest": {
    "path": "data/ml/predictions_test.parquet",
    "role": "study",
    "exists": true,
    "mtimeZ": "2026-10-19T08:54:09.889491Z",
-   "ageHours": 192.2
+   "ageHours": 192.3
   }
  },
  "lane": {
@@ -269,6 +269,107 @@
    }
   ],
   "justified": false
+ },
+ "walletArm": {
+  "arms": [
+   {
+    "key": "full",
+    "label": "all wallet features",
+    "ablated": "",
+    "auc": 0.768,
+    "brier": 0.1902,
+    "promotable": true,
+    "models": [
+     {
+      "model": "logistic_anchor",
+      "auc": 0.768,
+      "brier": 0.1902,
+      "promotable": true
+     },
+     {
+      "model": "lightgbm",
+      "auc": 0.7678,
+      "brier": 0.1912,
+      "promotable": true
+     }
+    ]
+   },
+   {
+    "key": "noWalletEntryPrice",
+    "label": "-wallet_entry_price",
+    "ablated": "wallet_entry_price",
+    "auc": 0.7673,
+    "brier": 0.1904,
+    "promotable": true,
+    "models": [
+     {
+      "model": "logistic_anchor",
+      "auc": 0.7673,
+      "brier": 0.1904,
+      "promotable": true
+     },
+     {
+      "model": "lightgbm",
+      "auc": 0.7609,
+      "brier": 0.1938,
+      "promotable": true
+     }
+    ]
+   },
+   {
+    "key": "noWalletEntryPriceNoDrift",
+    "label": "-wallet_entry_price -price_drift",
+    "ablated": "wallet_entry_price,price_drift",
+    "auc": 0.7368,
+    "brier": 0.2008,
+    "promotable": true,
+    "models": [
+     {
+      "model": "logistic_anchor",
+      "auc": 0.7368,
+      "brier": 0.2008,
+      "promotable": true
+     },
+     {
+      "model": "lightgbm",
+      "auc": 0.7367,
+      "brier": 0.2018,
+      "promotable": true
+     }
+    ]
+   }
+  ],
+  "meta": {
+   "label": "y_side_win",
+   "boundary": "2026-08-21T00:00:00+00:00",
+   "builtAt": "2026-10-19T08:54:09Z",
+   "rows": {
+    "train": 6517,
+    "test": 13776,
+    "purged": 495,
+    "train_markets": 4975,
+    "test_markets": 9178
+   },
+   "barAuc": 0.7077,
+   "barBrier": 0.2203
+  },
+  "trainer": "scripts/ml-train.py",
+  "excluded": [
+   {
+    "column": "wallet_entry_price",
+    "why": "the price the WALLET paid -- not a price we can obtain, so a model leaning on it answers 'would this have won at a price we could not get'"
+   },
+   {
+    "column": "price_drift",
+    "why": "drift measured off that same non-tradeable anchor; dropping it costs the most AUC of any single ablation but the arm still clears the bar"
+   },
+   {
+    "column": "horizon_hours",
+    "why": "computed from a FUTURE terminal crossing -- a label leak wearing a timing costume"
+   }
+  ],
+  "headline": "wallet features are IN the training and carry the lift: the price-only bar is AUC 0.7077, the executable wallet arm 0.7368",
+  "note": "This is a DIFFERENT instrument from the market-only entry arm in the verdict card. Market-only ENTRY (a candidate generator choosing its own entries) loses money and is closed; the wallet-conditioned CLASSIFIER clears its bar. Do not read one as the other."
  },
  "v63Corroboration": {
   "band": "0.4-0.6",

@@ -208,6 +208,69 @@ def source_freshness():
     return out
 
 
+def wallet_arm():
+    """The WALLET-conditioned classifier, and what ablating its wallet columns costs.
+
+    This exists because the page previously showed only the market-only ENTRY arm, and a reader
+    reasonably concluded wallet data had been excluded from training. It has not: scripts/ml-train.py
+    trains on copy_score, adjusted_copy_score, confidence, wallet_quality, roi, consistency,
+    copyability, category_fit, entry_timing, wallet_entry_price and price_drift. Three committed
+    reports are read here so the figures cannot drift from the runs that produced them.
+    """
+    reports = (("full", "data/ml/train-report.json", "all wallet features"),
+               ("noWalletEntryPrice", "data/ml/train-report_wallet_entry_price.json", "-wallet_entry_price"),
+               ("noWalletEntryPriceNoDrift", "data/ml/train-report_wallet_entry_price_price_drift.json",
+                "-wallet_entry_price -price_drift"))
+    arms, meta = [], {}
+    for key, path, label in reports:
+        try:
+            with open(path) as f:
+                d = json.load(f)
+        except Exception as e:
+            arms.append({"key": key, "label": label, "error": str(e)[:120]})
+            continue
+        meta.setdefault("label", d.get("label"))
+        meta.setdefault("boundary", d.get("boundary"))
+        meta.setdefault("builtAt", d.get("built_at"))
+        meta.setdefault("rows", d.get("rows"))
+        bar = d.get("bar") or {}
+        meta["barAuc"], meta["barBrier"] = bar.get("auc"), bar.get("brier")
+        ms = d.get("models") or {}
+        verdict = d.get("verdict") or {}
+        rows = []
+        for name in ("logistic_anchor", "lightgbm"):
+            m = ms.get(name) or {}
+            if m:
+                rows.append({"model": name, "auc": m.get("auc"), "brier": m.get("brier"),
+                             "promotable": (verdict.get(name) or {}).get("PROMOTABLE")})
+        best = max(rows, key=lambda r: r.get("auc") or 0) if rows else {}
+        arms.append({"key": key, "label": label, "ablated": d.get("ablated") or "",
+                     "auc": best.get("auc"), "brier": best.get("brier"),
+                     "promotable": best.get("promotable"), "models": rows})
+    full = next((a for a in arms if a["key"] == "full"), {})
+    exec_arm = next((a for a in arms if a["key"] == "noWalletEntryPriceNoDrift"), {})
+    return {
+        "arms": arms,
+        "meta": meta,
+        "trainer": "scripts/ml-train.py",
+        "excluded": [
+            {"column": "wallet_entry_price",
+             "why": "the price the WALLET paid -- not a price we can obtain, so a model leaning on it "
+                    "answers 'would this have won at a price we could not get'"},
+            {"column": "price_drift",
+             "why": "drift measured off that same non-tradeable anchor; dropping it costs the most AUC "
+                    "of any single ablation but the arm still clears the bar"},
+            {"column": "horizon_hours",
+             "why": "computed from a FUTURE terminal crossing -- a label leak wearing a timing costume"},
+        ],
+        "headline": ("wallet features are IN the training and carry the lift: the price-only bar is "
+                     f"AUC {meta.get('barAuc')}, the executable wallet arm {exec_arm.get('auc')}"),
+        "note": ("This is a DIFFERENT instrument from the market-only entry arm in the verdict card. "
+                 "Market-only ENTRY (a candidate generator choosing its own entries) loses money and is "
+                 "closed; the wallet-conditioned CLASSIFIER clears its bar. Do not read one as the other."),
+    }
+
+
 def main():
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -219,10 +282,13 @@ def main():
             # string said "6 direction changes" while the sweep actually produced 2.
             # WORDING (2026-10-26): "With the wallet signal removed" read as a CHANGELOG entry -- as if a
             # wallet feature had been deleted from the bot -- and the user asked why the page said we removed
-            # it. Nothing was removed. The ML lane is market-only BY CONSTRUCTION and never had wallet data;
-            # the phrase describes the counterfactual ARM of a measurement (the same trades with wallet
-            # selection stripped out). Say "arm"/"counterfactual" explicitly so the sentence cannot be read
-            # as a product change.
+            # it. Nothing was removed. CORRECTION: my first attempt at this comment claimed "the ML lane is
+            # market-only by construction and never had wallet data" -- that is FALSE, and it contradicted
+            # line 193 of this same file ("ml-train.py, the WALLET-conditioned model"). The classifier trains
+            # on eleven wallet-derived columns and is 100% populated on them; see wallet_arm() below. The
+            # phrase describes the counterfactual ARM of a measurement (the same trades with wallet selection
+            # stripped out), which is a different instrument from the classifier. Say "arm"/"counterfactual"
+            # explicitly so the sentence cannot be read as a product change.
             "detail": ("In the market-only arm -- the same traded bands with wallet selection stripped out, so "
                        "only market features are used -- the <0.20 band returns -50.64% net of ask+fee. "
                        "The only naively-positive band (0.8-1.0, +0.77%) dies at 1.5x the quoted premium, "
@@ -236,6 +302,7 @@ def main():
         "marketOnly": market_only(),
         "nearCertainty": near_certainty(),
         "veto": veto(),
+        "walletArm": wallet_arm(),
     }
     # 0.4-0.6 corroboration comes from the joined held-out legs, so read it off the veto block
     vb = {b["band"]: b for b in payload["veto"].get("byBand", [])}
@@ -254,6 +321,8 @@ def main():
     print(f"  near-certainty sub-bands: {len(payload['nearCertainty']['subbands'])}")
     print(f"  veto justified: {payload['veto'].get('justified')} (flips {payload['veto'].get('flips')})")
     print(f"  v63 held-out 0.4-0.6: {payload['v63Corroboration']['heldOutRoiPct']}%")
+    wa = payload["walletArm"]
+    print(f"  wallet arm: {wa['headline']}")
     return 0
 
 
