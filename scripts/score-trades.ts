@@ -1140,6 +1140,18 @@ async function main() {
               deadZone: rules.c200DeadZoneBandFactor,
               longshotFloor: rules.c200LongshotBandFloor,
             },
+            // v68: STANDARD maturity schedule (ruleset-driven; every factor 1.0 = disabled and
+            // byte-identical). `ttr` is the hours-remaining-at-entry already computed above for the
+            // wallet-cap shadow, so this adds no new data dependency and no lookahead. openPaperTrade
+            // ignores both fields for C-200.
+            maturityTtrHours: ttr,
+            maturityFactors: {
+              short: rules.standardMaturityFactorShort,
+              medium: rules.standardMaturityFactorMedium,
+              long: rules.standardMaturityFactorLong,
+              shortHours: rules.standardMaturityShortHours,
+              longHours: rules.standardMaturityLongHours,
+            },
           });
 
           // v52 sweep-dedup (option A): this open copy is now the coalescing

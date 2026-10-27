@@ -154,6 +154,19 @@ export interface Rules {
   // received the 3.5x and are sized by the standard path instead.
   c200LongshotBandFloor: number;
   c200DeadZoneBandFactor: number; // 0.40–0.60 entries (default 0.25)
+  // v68 (2026-10-27, user-approved "approve standard-maturity-size-factor"): STANDARD sizes
+  // FLAT across an axis whose realised ROI spans 9x -- <24h -6.0%, 24-72h +2.0%, >=72h +21.4%
+  // -- because the two band factors on its path were neutralised to 1.0 by v41 and Kelly is
+  // C-200-only, so STANDARD books the same clip everywhere. These five fields are the maturity
+  // schedule, keyed on time-to-resolution AT ENTRY (the only maturity variable a rule can act on
+  // before the trade; realised holding time is post-treatment and cannot be gated).
+  // ALL DEFAULTS ARE 1.0 == disabled, so a ruleset without these fields is byte-identical to v67.
+  // STANDARD-only: the C-200 path never reads them (see paper.ts).
+  standardMaturityFactorShort: number; // ttr <  standardMaturityShortHours
+  standardMaturityShortHours: number; // default 24
+  standardMaturityFactorMedium: number; // shortHours .. longHours
+  standardMaturityLongHours: number; // default 72
+  standardMaturityFactorLong: number; // ttr >= standardMaturityLongHours
   // v38 (Phase A, 2026-08-31): Wang-Transform premium overlay — measurement-
   // first. The calibrated λ̂ table (data/premium-calibration.json, refit
   // biweekly on the 1st & 15th) quantifies the systematic risk premium at entry per price band.
@@ -377,6 +390,14 @@ export const DEFAULT_RULES: Rules = {
   c200LongshotBandFactor: 2.0,
   // v67: 0 = no floor, so a ruleset lacking the field is byte-identical to pre-v67.
   c200LongshotBandFloor: 0,
+  // v68: maturity schedule, DISABLED by default (every factor 1.0). The live values
+  // (0.5 / 1.0 / 1.5) land in the DB ruleset via scripts/apply-v68.ts, never in the code default,
+  // so an un-migrated environment and a revert both behave exactly like v67.
+  standardMaturityFactorShort: 1.0,
+  standardMaturityShortHours: 24,
+  standardMaturityFactorMedium: 1.0,
+  standardMaturityLongHours: 72,
+  standardMaturityFactorLong: 1.0,
   c200DeadZoneBandFactor: 0.25,
   // v38 Phase-A overlay defaults (live values land in the DB ruleset).
   premiumOverlayEnabled: 1,

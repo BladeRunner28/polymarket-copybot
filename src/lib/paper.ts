@@ -8,6 +8,7 @@
 
 import { prisma } from "./db";
 import { assertPaperOnly, clampPaperSize, checkCircuitBreaker } from "./safety";
+import { applyMaturitySizeFactor, type MaturityFactors } from "./maturity-size";
 import { recordFillIntent, stampIntentLink } from "./fill-intent";
 
 export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: number): number {
@@ -122,6 +123,11 @@ export async function openPaperTrade(params: {
   kelly?: { maxSizeUsd: number };
   // v54: C-200 band multipliers from the active ruleset (see rules.ts).
   bandFactors?: { longshot?: number; deadZone?: number; longshotFloor?: number };
+  // v68: STANDARD maturity schedule. ttrHours is time-to-resolution AT ENTRY (hours remaining,
+  // decision-time variable — never the realised holding time). Both omitted => no change, which
+  // is what every non-STANDARD caller and every pre-v68 caller does.
+  maturityTtrHours?: number | null;
+  maturityFactors?: MaturityFactors | null;
 }) {
   assertPaperOnly("openPaperTrade");
   const botId = params.botId ?? "STANDARD";
@@ -135,6 +141,13 @@ export async function openPaperTrade(params: {
     // v41: calibration-band mapping + overall cap raise ($10 -> $20). Bypassed
     // for Kelly-sized copies (v49) — no double sizing with the sizer.
     size = mapBankroll200Size(size, params.entryPrice, params.bandFactors);
+  } else if (botId !== "BANKROLL_200") {
+    // v68: STANDARD maturity schedule, applied BEFORE clampPaperSize on purpose. The shadow that
+    // justified it clamped at BOT_LIMITS.STANDARD {0.25, 20.00} before quoting +$4,397/90d, so the
+    // clamp must stay downstream or the effect would be overstated: an $18 leg at 1.5x books $20,
+    // not $27. C-200 is excluded — its size is the band map / Kelly on a different axis, and
+    // applying both would double-size exactly the way v49's Kelly bypass exists to prevent.
+    size = applyMaturitySizeFactor(size, params.maturityTtrHours, params.maturityFactors);
   }
 
   // Ensure absolute bounds enforcement. Kelly-sized copies clamp at the
