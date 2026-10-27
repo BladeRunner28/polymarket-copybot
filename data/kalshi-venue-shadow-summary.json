@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-26T03:17:34.197Z",
+  "asOf": "2026-10-27T03:17:34.923Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,16 +12,16 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1298,
-    "inWindow": 903,
+    "copiesSeen": 1311,
+    "inWindow": 916,
     "withKalshiQuote": 2,
     "crossListRate": 0.002,
     "staleSkips": 395,
-    "quoteFailures": 805,
-    "unverifiedMatches": 96,
+    "quoteFailures": 816,
+    "unverifiedMatches": 98,
     "rejectionReasons": {
       "pre_guard_quote": 1,
-      "low_match_score_0.67": 92,
+      "low_match_score_0.67": 94,
       "low_match_score_0.60": 3
     }
   },
@@ -55,26 +55,6 @@
     ]
   },
   "matchAudit": [
-    {
-      "question": "Navy vs. Air Force: O/U 63.5",
-      "ticker": "KXSCOTUSCASE-DEPPRU28",
-      "matchedTitle": "Will SCOTUS bar the immediate NEPA challenge to the Air Force’s Guam hazardous-waste permi",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.12,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
-    {
-      "question": "Alabama vs. Mississippi State: 1H O/U 30.5",
-      "ticker": "KXLOCALLAW-ALSNAP-27JUL01",
-      "matchedTitle": "Will Alabama cut its state grocery tax again?",
-      "score": 0.6666666666666666,
-      "kalshiEntry": 0.99,
-      "pmEntry": 0.49,
-      "verified": false,
-      "reason": "low_match_score_0.67"
-    },
     {
       "question": "Will SD Eibar win on 2026-10-03?",
       "ticker": "KXANYDEMWINTEXAS-26NOV03",
@@ -452,6 +432,26 @@
       "score": 0.6666666666666666,
       "kalshiEntry": 0.999,
       "pmEntry": 0.31042,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will Burgos CF win on 2026-10-26?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.7413,
+      "verified": false,
+      "reason": "low_match_score_0.67"
+    },
+    {
+      "question": "Will CA Mineiro win on 2026-10-26?",
+      "ticker": "KXANYDEMWINTEXAS-26NOV03",
+      "matchedTitle": "Will Democrats win any statewide election in Texas in 2026? (Blexas)",
+      "score": 0.6666666666666666,
+      "kalshiEntry": 0.999,
+      "pmEntry": 0.07443999999999999,
       "verified": false,
       "reason": "low_match_score_0.67"
     }
