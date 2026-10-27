@@ -3612,16 +3612,16 @@
     {
       "id": "standard-maturity-size-factor",
       "title": "STANDARD maturity size factor (10-25 \u00a7AJ) \u2014 awaiting approve/kill; fillability now measured",
-      "column": "Backlog",
+      "column": "Done",
       "effort": "~2h to apply once approved",
       "dates": "Proposed 2026-10-25, carded 2026-10-27",
-      "note": "This proposal has never had a roadmap card; it has lived only in drafts/profit-recs-20261025.md. Notional-neutral 0.5/1.0/1.5 on STANDARD entry TTL: +$5,028 all-time / +$4,397 per 90d, CI [+1,778,+8,628] / [+1,018,+8,275] \u2014 the only CI-positive sizing change in the book; the inverse schedule loses $6,939, and ex-top-10 improves +10.1pp. Its one unmeasured input was depth at 0.6-0.85 (\u00a7AN, 2026-10-27): 12 live books, 12/12 absorb 2x and 4x the doubled clip within +2c, median +2c depth $4,317 = 200x the $21.60 clip, against a 17.0c/share break-even slippage. Verdict: depth is not the binding constraint; the decision is now on edge alone. Lane A \u2014 approve or kill, do not re-derive.",
+      "note": "This proposal has never had a roadmap card; it has lived only in drafts/profit-recs-20261025.md. Notional-neutral 0.5/1.0/1.5 on STANDARD entry TTL: +$5,028 all-time / +$4,397 per 90d, CI [+1,778,+8,628] / [+1,018,+8,275] \u2014 the only CI-positive sizing change in the book; the inverse schedule loses $6,939, and ex-top-10 improves +10.1pp. Its one unmeasured input was depth at 0.6-0.85 (\u00a7AN, 2026-10-27): 12 live books, 12/12 absorb 2x and 4x the doubled clip within +2c, median +2c depth $4,317 = 200x the $21.60 clip, against a 17.0c/share break-even slippage. Verdict: depth is not the binding constraint; the decision is now on edge alone. Lane A \u2014 approve or kill, do not re-derive.\n\nSHIPPED 2026-10-27 \u2014 commit fd4d604, RuleSet v68. Approved by the user in-thread (\"approve standard-maturity-size-factor\").\n  standardMaturityFactorShort 0.5 / Medium 1.0 / Long 1.5 at hours 24 / 72. STANDARD only.\n  Files: src/lib/maturity-size.ts (pure schedule), rules.ts (5 fields, defaults 1.0=disabled), paper.ts\n  (applies BEFORE clampPaperSize), score-trades.ts (passes the existing ttr), apply-v68.ts, 8 tests.\n  tsc clean, 578/578 across 55 files.\n\nGAP THE APPROVAL ALERT FLAGGED, now recorded ON THIS CARD instead of only in the draft (that gap was\nreal: the note carried no decision rule and no refutation, both lived in drafts/profit-recs-20261025.md\n\u00a7AJ, and the sized-book leg count was not stated):\n  DECISION RULE -- >=72h ROI beats <24h by >=5pp on BOTH all-time and 90d; ex-top-10 on the sized book\n    beats flat by >=3pp; inverse control not positive. All three held.\n  REFUTATION on 150 forward STANDARD legs, revert on ANY one:\n    (a) >=72h ex-top-10 ROI < 0%, or (b) <24h ROI >= +3%, or (c) median post-factor <24h clip < $2.00.\n  POPULATION: 9,787 settled STANDARD legs ($112,544.20 notional), 4,759 opened in the last 90d; 469 open\n    legs ($5,126.60, median clip $10.00) at activation.\n  ROLLBACK: the three factors -> 1.0. No code change, no redeploy.\n\nCLAMP CHECK done before shipping (would otherwise have overstated the effect): BOT_LIMITS.STANDARD is\n{0.25, 20.00} and clampPaperSize runs AFTER the factor, so 1.5x on $18 books $20 not $27. profit-velocity.py\n\u00a7AJ applies that exact clamp before quoting, so +$4,397/90d is clamp-aware. Live median clip is $10.00, so\n1.5x books $15 and the cap binds only on the largest legs. Verified on the live ruleset: $10 -> $5/$10/$15\nat 5h/48h/200h; $18 -> $9/$18/$20.\n\nHONEST LIMITS: the headline CI spans zero except the 90d sized-book window (hence a forward refutation\nrather than a permanent commitment); a leg whose TTL cannot be resolved books UNCHANGED and the shadow\nDROPS those legs, so the live book sizes a slightly larger population than the measurement covered; nothing\nalready open is resized or closed and no PnL is booked by activating.",
       "tags": [
         "sizing",
         "standard",
         "lane-a",
-        "awaiting-approval",
-        "profit-review"
+        "profit-review",
+        "shipped-2026-10-27"
       ]
     },
     {
