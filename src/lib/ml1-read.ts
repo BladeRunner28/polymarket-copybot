@@ -127,7 +127,14 @@ export function loadTrainingData(): (Leg & { yOutcome: number | null })[] {
     for (const k of fKeys) f[k] = opt(r, k);
     return {
       at: Date.parse(r[col("decision_at")]),
-      readyAt: null, // the export does not carry a terminal stamp; purge is n/a (reported)
+      // The export DOES carry the terminal stamp (`terminal_at`, 100% populated since 9468900) and
+      // it is the purge key. Hard-coding null made `purged` a structural zero: a train row whose
+      // label only became knowable after the boundary kept feeding the future into the fit. Read it.
+      readyAt: (() => {
+        const i = header.indexOf("terminal_at");
+        const p = i < 0 || !r[i] ? Number.NaN : Date.parse(r[i]);
+        return Number.isFinite(p) ? p : null;
+      })(),
       market: r[col("market_id")],
       wallet: r[col("wallet")],
       era: r[col("era")],

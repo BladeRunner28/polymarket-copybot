@@ -1,0 +1,270 @@
+{
+  "generatedAt": "2026-10-27T14:04:29.023Z",
+  "inForceBar": {
+    "auc": 0.729,
+    "brier": 0.212,
+    "comparator": "price-only (entry_price)"
+  },
+  "slack": {
+    "auc": 0.0005,
+    "brier": 0.0005
+  },
+  "boundary": "2026-08-21T00:00:00.000Z",
+  "recordedBarPopulationRead": {
+    "auc": 0.7285,
+    "brier": 0.2115,
+    "testN": 1055,
+    "asOf": "2026-09-13"
+  },
+  "slackReproducesInForceBar": true,
+  "driftOnBarPopulationSinceRecording": {
+    "auc": 0.0007286007634215164,
+    "brier": -0.00046868231132107807
+  },
+  "barPopulation": {
+    "label": "data/decision-dataset.csv",
+    "role": "the population the 0.729/0.212 constants were MEASURED on — this block is the drift block",
+    "provenance": "data/decision-dataset.csv | boundary 2026-08-21T00:00:00.000Z | train n=2308 | test n=1060 | eras train [pre-kelly-v1-48:2308] test [pre-kelly-v1-48:754,kelly-window-v49-57:306] | eras on both sides: pre-kelly-v1-48 | purged 148 train rows labelled after the boundary",
+    "priceOnly": {
+      "auc": 0.7292286007634216,
+      "brier": 0.21103131768867892
+    },
+    "inForceBar": {
+      "auc": 0.729,
+      "brier": 0.212,
+      "comparator": "price-only (entry_price)"
+    },
+    "demandedMargin": {
+      "auc": -0.00022860076342157143,
+      "brier": 0.0009686823113210785
+    },
+    "restatedBar": {
+      "auc": 0.7297286007634215,
+      "brier": 0.21153131768867892
+    },
+    "arms": [
+      {
+        "arm": "entry_price",
+        "auc": 0.7292286007634216,
+        "brier": 0.21103131768867892,
+        "inForce": {
+          "auc": true,
+          "brier": true
+        },
+        "restated": {
+          "auc": false,
+          "brier": true,
+          "both": false
+        }
+      },
+      {
+        "arm": "detected_price",
+        "auc": 0.7264149593426131,
+        "brier": 0.21293871933962216,
+        "inForce": {
+          "auc": false,
+          "brier": false
+        },
+        "restated": {
+          "auc": false,
+          "brier": false,
+          "both": false
+        }
+      },
+      {
+        "arm": "copy_score",
+        "auc": 0.48271211421988974,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      },
+      {
+        "arm": "wallet_quality_score",
+        "auc": 0.5137444505260598,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      },
+      {
+        "arm": "entry_timing_score",
+        "auc": 0.55739256111129,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      },
+      {
+        "arm": "thesis_score",
+        "auc": 0.4007695032035803,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      }
+    ],
+    "eras": [
+      {
+        "era": "kelly-window-v49-57",
+        "n": 306,
+        "priceAuc": 0.6265239305561539
+      },
+      {
+        "era": "pre-kelly-v1-48",
+        "n": 754,
+        "priceAuc": 0.75920245398773
+      }
+    ]
+  },
+  "fitPopulation": {
+    "label": "training_data.csv",
+    "role": "the file the ML-1 fit actually uses — this block is the population the absolute bar is now applied to",
+    "provenance": "training_data.csv | boundary 2026-08-21T00:00:00.000Z | train n=2300 | test n=2650 | eras train [pre-kelly-v1-48:2300] test [pre-kelly-v1-48:965,exposure-v58plus:844,kelly-window-v49-57:841] | eras on both sides: pre-kelly-v1-48 | purged 467 train rows labelled after the boundary",
+    "priceOnly": {
+      "auc": 0.7094611074639385,
+      "brier": 0.21960201439622723
+    },
+    "inForceBar": {
+      "auc": 0.729,
+      "brier": 0.212,
+      "comparator": "price-only (entry_price)"
+    },
+    "demandedMargin": {
+      "auc": 0.019538892536061447,
+      "brier": -0.007602014396227236
+    },
+    "restatedBar": {
+      "auc": 0.7099611074639385,
+      "brier": 0.22010201439622723
+    },
+    "arms": [
+      {
+        "arm": "entry_price",
+        "auc": 0.7094611074639385,
+        "brier": 0.21960201439622723,
+        "inForce": {
+          "auc": false,
+          "brier": false
+        },
+        "restated": {
+          "auc": false,
+          "brier": true,
+          "both": false
+        }
+      },
+      {
+        "arm": "detected_price",
+        "auc": 0.7083586925798275,
+        "brier": 0.22064970094339711,
+        "inForce": {
+          "auc": false,
+          "brier": false
+        },
+        "restated": {
+          "auc": false,
+          "brier": false,
+          "both": false
+        }
+      },
+      {
+        "arm": "copy_score",
+        "auc": 0.5130369321808268,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      },
+      {
+        "arm": "wallet_quality_score",
+        "auc": 0.5099260079873078,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      },
+      {
+        "arm": "entry_timing_score",
+        "auc": 0.5489048794609479,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      },
+      {
+        "arm": "thesis_score",
+        "auc": 0.4612883978882871,
+        "brier": null,
+        "inForce": {
+          "auc": false,
+          "brier": null
+        },
+        "restated": {
+          "auc": false,
+          "brier": null,
+          "both": null
+        }
+      }
+    ],
+    "eras": [
+      {
+        "era": "exposure-v58plus",
+        "n": 844,
+        "priceAuc": 0.6728761059389863
+      },
+      {
+        "era": "kelly-window-v49-57",
+        "n": 841,
+        "priceAuc": 0.6741019632822987
+      },
+      {
+        "era": "pre-kelly-v1-48",
+        "n": 965,
+        "priceAuc": 0.738505039489191
+      }
+    ]
+  },
+  "note": "Read-only. The restated bar is NOT in force; BAR in src/lib/ml1-read.ts is unchanged. Proposal on card ml1-price-baseline-drift (awaiting-approval)."
+}

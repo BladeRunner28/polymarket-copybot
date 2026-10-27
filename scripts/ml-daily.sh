@@ -41,6 +41,13 @@ step "export-training"   npx tsx scripts/export-training-data.ts
 step "ml1-fit"           npx tsx scripts/ml1-fit-candidate.ts
 step "ml1-gate"          npx tsx scripts/ml1-gate-read.ts
 
+# The promotion bar's own basis, re-derived on the file the fit actually uses (card
+# ml1-price-baseline-drift). Read-only: it writes data/ml1-bar-restatement.json and never
+# touches BAR, so a fresh number here cannot change what the gate enforces. It exits 1 only
+# when its slack derivation fails to reproduce the in-force constants -- i.e. when the
+# evidence itself has gone bad, which is exactly the failure that must not be silent.
+step "ml1-bar-restatement" npx tsx scripts/ml1-bar-restatement.ts
+
 # The /ml page reads data/ml/dashboard.json. Nothing refreshed it on a schedule before this, so
 # it sat two days stale while this job still reported ok -- the page kept showing 10-20 numbers as
 # if current. It only reads committed artefacts, so it runs LAST, after the export above has
