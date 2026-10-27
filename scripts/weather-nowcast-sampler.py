@@ -457,6 +457,30 @@ def main() -> int:
         print(f"🟠 weather-nowcast[{a.city}]: no brackets captured this tick ({ts}) — errors={coverage['errors'][:2]}")
         return 0
 
+    # A ONE-VENUE outage must be as loud as a two-venue one. Before 2026-10-27 the gate
+    # above (BOTH counts zero) was the only one, so a tick where one venue raised and
+    # captured nothing still wrote its coverage row, printed nothing, and left the
+    # artifact's newest row fresh — the wrapper's freshness check then reported healthy.
+    # Measured live: 2026-10-22T07:32:32Z, coverage row `kalshi_brackets:0, pm_brackets:22,
+    # errors:["kalshi pass: HTTP Error 503: Service Unavailable"]`; the log line for that
+    # tick is `[nyc] ` and nothing was delivered — an hour of Kalshi book data lost silently.
+    # Latent for the second city too (a DFW Polymarket slug break would hide behind a
+    # healthy Kalshi); 13/13 DFW ticks have been healthy so far, so not yet observed there.
+    venue_dead = []
+    for venue, n_key, c_key, err_prefix in (
+        ("kalshi", "kalshi_brackets", "kalshi_cycles", "kalshi"),
+        ("polymarket", "pm_brackets", "pm_cycles", "pm "),
+    ):
+        errs = [e for e in coverage["errors"] if e.startswith(err_prefix)]
+        if coverage[n_key] == 0 and (coverage[c_key] > 0 or errs):
+            venue_dead.append(
+                f"{venue} captured 0 brackets over {coverage[c_key]} cycle(s)"
+                + (f" — {errs[0]}" if errs else "")
+            )
+    if venue_dead:
+        print(f"🟠 weather-nowcast[{a.city}]: " + "; ".join(venue_dead) + f" at {ts}"
+              + " — the other venue wrote, so the artifact stays fresh and this tick would look healthy")
+
     rows.append(coverage)
     path = Path(a.out) if a.out else (ROOT / city["out"])
     path.parent.mkdir(parents=True, exist_ok=True)
