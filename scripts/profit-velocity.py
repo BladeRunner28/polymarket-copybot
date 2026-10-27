@@ -2337,10 +2337,631 @@ def fill_reality(c):
               f"edge is that many cents wide")
 
 
+# ---------------------------------------------------------------- AM
+# THE DECLINED-SIGNAL COUNTERFACTUAL — what did the trades we REFUSED pay?
+#
+# WHY THIS EXISTS. Every section above measures the book the bot OWNS. The bot refuses
+# ~99% of the signals it sees, and that refused population has no PaperTrade row, so no
+# review has ever priced it -- "the gates earn their keep" has been an assumption in every
+# write-up since 2026-09. ObservedTrade holds it: every print by a tracked wallet, copied
+# or not, with the wallet's own entry price (`walletEntryPrice`). Joined to settlement
+# truth (archived CLOB tokens[].winner) that gives the one comparison a copybot can make
+# about its own admission filter and never has: for the SAME wallets, did the bets we
+# refused pay more or less than the bets we took?
+#
+# CONTRACTS (each one exists because breaking it flips the answer -- see AM.3)
+#   1. FIRST PRINT per (wallet, market, outcome). A wallet's later adds are not decisions
+#      we saw at detection time, and counting them gives whichever arm the wallet added to
+#      more often a price-averaging advantage. Restricted to first prints, the copied arm
+#      averages 13.3 prints/bet vs 6.9 for the declined arm, so this is not hypothetical.
+#   2. Return = settle value at the WALLET's entry price, held to settlement. That is not
+#      our exit policy; it is the only measure both arms share, and the comparable statistic
+#      is the RANK between arms, not the level (our book books its own exits -- §T).
+#   3. Cost basis: price is a price. Any dollar figure below is #bets x a stated clip.
+#   4. Market-clustered everywhere. The paired delta resamples only markets that contain
+#      BOTH arms, so the market's outcome cannot drive it.
+#   5. Coverage is printed. Truth only exists for markets the book touched, so the
+#      declined arm measured here is "declined bets inside markets we were active in",
+#      NOT the whole declined pool. That is the honest scope of every number in AM.2-AM.4.
+AM_TRUTH = "data/market-truth-clob.json"
+
+
+def _am_norm(s):
+    return (s or "").strip().upper().replace("-", " ").replace("_", " ")
+
+
+def _am_settle(cache, cid, outcome):
+    """Settlement value for OUR side: 1.0 / 0.0, or None when the record is absent."""
+    rec = cache.get(cid) if cid else None
+    if not rec or rec.get("unsettled"):
+        return None
+    toks = rec.get("tokens") or []
+    if not toks or not any(t[1] for t in toks):
+        return None
+    n = _am_norm(outcome)
+    for name, win in toks:
+        if _am_norm(name) == n:
+            return 1.0 if win else 0.0
+    if len(toks) == 2 and n in ("YES", "NO"):
+        return 1.0 if toks[0 if n == "YES" else 1][1] else 0.0
+    return None
+
+
+def _am_bets(c):
+    """First print per (wallet, market, outcome), flagged copied vs declined.
+
+    `copied` = a PaperTrade exists for the exact (wallet, market, outcome) triple. That is
+    the bet we took. Everything else by the same wallets is the bet we refused.
+    """
+    c.executescript("""
+        DROP TABLE IF EXISTS tmp_am_obs;
+        CREATE TEMP TABLE tmp_am_obs AS
+          SELECT walletAddress w, marketId m, outcome oc, walletEntryPrice px, timestamp ts,
+                 conditionId cid
+          FROM ObservedTrade
+          WHERE observationOnly=0 AND isDemo=0
+            AND walletEntryPrice>0.0001 AND walletEntryPrice<0.9999;
+        CREATE INDEX tmp_am_obs_k ON tmp_am_obs(w,m,oc);
+        CREATE INDEX tmp_am_obs_m ON tmp_am_obs(m);
+        DROP TABLE IF EXISTS tmp_am_leg;
+        CREATE TEMP TABLE tmp_am_leg AS
+          SELECT DISTINCT walletAddress w, marketId m, outcome oc FROM PaperTrade WHERE isDemo=0;
+        CREATE INDEX tmp_am_leg_k ON tmp_am_leg(w,m,oc);
+    """)
+    rows = c.execute("""
+        SELECT f.w, f.m, f.oc, f.px, f.ts, f.cid, f.n, f.n_all,
+          CASE WHEN EXISTS (SELECT 1 FROM tmp_am_leg l WHERE l.w=f.w AND l.m=f.m AND l.oc=f.oc)
+               THEN 1 ELSE 0 END copied
+        FROM (SELECT w, m, oc, MIN(ts) ts, COUNT(*) n_all,
+                     MIN(CASE WHEN ts=mn THEN px END) px, MIN(cid) cid, MAX(mn) mn, COUNT(*) n
+              FROM (SELECT t.*, MIN(ts) OVER (PARTITION BY w,m,oc) mn FROM tmp_am_obs t)
+              GROUP BY w, m, oc) f
+    """).fetchall()
+    return [dict(r) for r in rows]
+
+
+def _am_boot_paired(items, metric, reps=1500, seed=97):
+    """Market-clustered CI of mean(metric|declined) - mean(metric|copied), both-arm markets."""
+    by = {}
+    for x in items:
+        d = by.setdefault(x["market"], {"c": [], "s": []})
+        d["c" if x["copied"] else "s"].append(metric(x))
+    keys = [k for k in by if by[k]["c"] and by[k]["s"]]
+    if len(keys) < 10:
+        return (float("nan"), float("nan")), len(keys)
+    rng = np.random.default_rng(seed)
+    vals = []
+    for _ in range(reps):
+        pick = rng.integers(0, len(keys), len(keys))
+        cc = [v for i in pick for v in by[keys[i]]["c"]]
+        ss = [v for i in pick for v in by[keys[i]]["s"]]
+        vals.append(100 * (np.mean(ss) - np.mean(cc)))
+    return (np.percentile(vals, 2.5), np.percentile(vals, 97.5)), len(keys)
+
+
+def _am_boot_mean(items, metric, reps=1500, seed=98):
+    """Market-clustered CI of a mean over one arm."""
+    by = {}
+    for x in items:
+        by.setdefault(x["market"], []).append(metric(x))
+    keys = list(by)
+    if len(keys) < 8:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    vals = []
+    for _ in range(reps):
+        pick = rng.integers(0, len(keys), len(keys))
+        vals.append(100 * np.mean([v for i in pick for v in by[keys[i]]]))
+    return (np.percentile(vals, 2.5), np.percentile(vals, 97.5))
+
+
+def declared_flow(c):
+    print("\n" + "=" * 100)
+    print("AM. THE DECLINED-SIGNAL COUNTERFACTUAL — what the refused bets actually paid")
+    print("=" * 100)
+    now = time.time() * 1000
+
+    # ---- AM.1 the week that just happened, and what carried it
+    print("   AM.1 LAST-7D REALISED BRIDGE (end = resolvedAt or closedAt; cost = dollars at risk)")
+    rows = c.execute(
+        """SELECT botId, marketId, entryPrice px, simulatedPositionSize ntl, realizedPnl pnl,
+                  COALESCE(resolvedAt, closedAt) end
+           FROM PaperTrade
+           WHERE isDemo=0 AND status IN ('closed','resolved') AND realizedPnl IS NOT NULL""").fetchall()
+    wk = [dict(r) for r in rows if (r["end"] or 0) >= now - 7 * 86_400_000]
+    tot = sum(r["pnl"] for r in wk)
+    print(f"   7d: {len(wk)} legs, ${sum(r['ntl'] for r in wk):,.0f} notional, ${tot:+,.2f} realised")
+    for bot in ("STANDARD", "BANKROLL_200"):
+        b = [r for r in wk if r["botId"] == bot]
+        if not b:
+            continue
+        print(f"     {bot[:12]:12} {len(b):>4} legs ${sum(r['ntl'] for r in b):>8,.0f} "
+              f"${sum(r['pnl'] for r in b):>+9,.2f}  {100*sum(r['pnl'] for r in b)/sum(r['ntl'] for r in b):>+7.1f}%")
+    bym = {}
+    for r in wk:
+        d = bym.setdefault(r["marketId"], [0, 0.0, 0.0])
+        d[0] += 1
+        d[1] += r["ntl"]
+        d[2] += r["pnl"]
+    ranked = sorted(bym.items(), key=lambda kv: kv[1][2])
+    if tot < 0 and ranked:
+        print(f"   the loss is not spread: worst market = {100*ranked[0][1][2]/tot:.0f}% of it, "
+              f"worst 3 = {100*sum(v[2] for _, v in ranked[:3])/tot:.0f}%")
+        for m, (n, ntl, p) in ranked[:3]:
+            print(f"     ${p:>+8,.2f}  {n:>3} legs  ${ntl:>7,.0f}  {m[:52]}")
+    # the accumulation behind the worst market, over its whole life
+    if ranked:
+        worst = ranked[0][0]
+        life = [dict(r) for r in c.execute(
+            """SELECT botId, walletAddress, entryPrice px, simulatedPositionSize ntl,
+                      realizedPnl pnl, openedAt FROM PaperTrade WHERE isDemo=0 AND marketId=?""",
+            (worst,)).fetchall()]
+        if life:
+            span = (max(r["openedAt"] for r in life) - min(r["openedAt"] for r in life)) / 86_400_000.0
+            print(f"   its whole life: {len(life)} legs, ${sum(r['ntl'] for r in life):,.0f} notional, "
+                  f"{len({r['walletAddress'] for r in life})} wallets, {span:.0f}d span, "
+                  f"${sum((r['pnl'] or 0) for r in life):+,.2f} — at a median clip of "
+                  f"${np.median([r['ntl'] for r in life]):.2f}/leg")
+            print(f"     leg rails read: maxMarketLegsPerMarketId / maxMarketNotionalPctOfCap are "
+                  f"v55/v58 C-200-only (see §AH), so STANDARD has no per-market ceiling of either kind")
+
+    # ---- AM.2 copied vs declined, first print per bet
+    print("\n   AM.2 COPIED vs DECLINED — same wallets, one row per BET (first print only)")
+    try:
+        cache = json.load(open(AM_TRUTH)).get("markets", {})
+    except Exception as e:
+        print(f"   SKIPPED: cannot read {AM_TRUTH} ({e})")
+        return
+    bets = _am_bets(c)
+    items = []
+    for b in bets:
+        s = _am_settle(cache, b["cid"], b["oc"])
+        if s is None:
+            continue
+        items.append({"wallet": b["w"], "market": b["m"], "px": b["px"], "copied": b["copied"],
+                      "n": b["n"], "s": s, "rx": s / b["px"] - 1.0, "band": band_of(b["px"]),
+                      "ts": b["ts"], "edge": s - b["px"]})
+    if not items:
+        print("   SKIPPED: no bets with settlement truth")
+        return
+    mrk = len({x["market"] for x in items})
+    print(f"   {len(items):,} bets with settlement truth in {mrk:,} markets "
+          f"(truth cache: {len(cache):,} markets). SCOPE: markets the book traded — not the "
+          f"whole declined pool.")
+    print(f"   window {time.strftime('%Y-%m-%d', time.localtime(min(x['ts'] for x in items)/1000))} "
+          f"-> {time.strftime('%Y-%m-%d', time.localtime(max(x['ts'] for x in items)/1000))}")
+    print(f"   {'arm':9} {'bets':>6} {'markets':>8} {'mean rx':>9} {'med rx':>8} {'win%':>6} "
+          f"{'mean px':>8} {'edge pp':>8} {'prints/bet':>10}")
+    for lab, flag in (("copied", 1), ("declined", 0)):
+        arm = [x for x in items if x["copied"] == flag]
+        if not arm:
+            continue
+        print(f"   {lab:9} {len(arm):>6} {len({x['market'] for x in arm}):>8} "
+              f"{100*np.mean([x['rx'] for x in arm]):>+8.1f}% "
+              f"{100*np.median([x['rx'] for x in arm]):>+7.1f}% "
+              f"{100*np.mean([x['s'] for x in arm]):>5.1f}% "
+              f"{np.mean([x['px'] for x in arm]):>8.3f} "
+              f"{100*np.mean([x['edge'] for x in arm]):>+7.1f} "
+              f"{np.mean([x['n'] for x in arm]):>10.2f}")
+
+    print(f"\n   by band (copied | declined):")
+    print(f"   {'band':8} {'n_c':>5} {'rx_c':>8} {'edge_c':>7} {'n_d':>5} {'rx_d':>8} "
+          f"{'edge_d':>7} {'d_edge CI':>17}")
+    for nm in NAMES:
+        a = [x for x in items if x["band"] == nm and x["copied"]]
+        d = [x for x in items if x["band"] == nm and not x["copied"]]
+        if len(a) < 20 or len(d) < 20:
+            print(f"   {nm:8} {len(a):>5} {'-':>8} {'-':>7} {len(d):>5} {'-':>8} {'-':>7} "
+                  f"{'n<20':>17}")
+            continue
+        (lo_, hi_), nk = _am_boot_paired([x for x in items if x["band"] == nm],
+                                         lambda x: x["edge"], reps=800, seed=101)
+        print(f"   {nm:8} {len(a):>5} {100*np.mean([x['rx'] for x in a]):>+7.1f}% "
+              f"{100*np.mean([x['edge'] for x in a]):>+6.1f} "
+              f"{len(d):>5} {100*np.mean([x['rx'] for x in d]):>+7.1f}% "
+              f"{100*np.mean([x['edge'] for x in d]):>+6.1f} "
+              f"  [{lo_:>+5.1f},{hi_:>+5.1f}] n={nk}")
+
+    (lo_, hi_), nk = _am_boot_paired(items, lambda x: x["edge"])
+    print(f"\n   paired delta on calibration edge (declined − copied), both-arm markets: "
+          f"[{lo_:+.1f}, {hi_:+.1f}] pp over {nk} markets")
+    lo2, hi2 = _am_boot_mean([x for x in items if not x["copied"]], lambda x: x["edge"])
+    print(f"   DECLINED arm's own edge, market-clustered: "
+          f"{100*np.mean([x['edge'] for x in items if not x['copied']]):+.1f}pp "
+          f"[{lo2:+.1f}, {hi2:+.1f}] on {sum(1 for x in items if not x['copied'])} bets")
+    lo3, hi3 = _am_boot_mean([x for x in items if not x["copied"] and x["px"] < 0.8],
+                             lambda x: x["edge"])
+    dsub = [x for x in items if not x["copied"] and x["px"] < 0.8]
+    print(f"   declined AND entry <0.80: {len(dsub)} bets, edge "
+          f"{100*np.mean([x['edge'] for x in dsub]):+.1f}pp [{lo3:+.1f}, {hi3:+.1f}]")
+
+    # ---- AM.3 the defect this section almost shipped
+    print("\n   AM.3 THE CHECK THAT FLIPS THE SIGN — every print vs first print")
+    print("   Counting EVERY print gives whichever arm the wallet kept adding to a price-averaging")
+    print("   advantage, and it reverses the result: the refused bets look better than the taken")
+    print("   ones. One row per BET removes it. Both versions printed, so nobody quotes the wrong")
+    print("   one, and every number in this review is the first-print version.")
+    every = [dict(r) for r in c.execute("""
+        SELECT t.w, t.m, t.oc, t.px, t.cid,
+          CASE WHEN EXISTS (SELECT 1 FROM tmp_am_leg l WHERE l.w=t.w AND l.m=t.m AND l.oc=t.oc)
+               THEN 1 ELSE 0 END copied
+        FROM tmp_am_obs t""").fetchall()]
+    for lab, build in (("every print", None), ("first print", items)):
+        src = []
+        if build is not None:
+            src = build
+        else:
+            for b in every:
+                s = _am_settle(cache, b["cid"], b["oc"])
+                if s is None:
+                    continue
+                src.append({"market": b["m"], "px": b["px"], "copied": b["copied"],
+                            "rx": s / b["px"] - 1.0, "edge": s - b["px"]})
+        for flag, nm in ((1, "copied"), (0, "declined")):
+            arm = [x for x in src if x["copied"] == flag]
+            if not arm:
+                continue
+            print(f"     {lab:12} {nm:9} n={len(arm):>6} mean rx="
+                  f"{100*np.mean([x['rx'] for x in arm]):>+7.1f}% "
+                  f"edge={100*np.mean([x['edge'] for x in arm]):>+5.1f}pp")
+
+    # ---- AM.4 what a floor-size admission would have carried
+    print("\n   AM.4 FLOW: how much of the declined pool is reachable per week, and at what clip")
+    cut = now - 14 * 86_400_000
+    rec = [x for x in items if x["ts"] >= cut and not x["copied"]]
+    cop = [x for x in items if x["ts"] >= cut and x["copied"]]
+    print(f"   14d: {len(rec)} declined bets vs {len(cop)} copied bets "
+          f"(ratio {len(rec)/max(len(cop),1):.1f}:1) in truth-covered active markets")
+    for clip in (1.0, 2.5, 5.0):
+        for nm, arm in (("all", rec), ("px<0.80", [x for x in rec if x["px"] < 0.8])):
+            if not arm:
+                continue
+            settle_pnl = sum(clip * x["rx"] for x in arm)
+            print(f"     clip ${clip:>4.2f} {nm:9}: {len(arm):>4} bets, ${len(arm)*clip:>7,.0f} "
+                  f"deployed -> ${settle_pnl:>+8,.2f} at settlement (mean rx "
+                  f"{100*np.mean([x['rx'] for x in arm]):+.1f}%)")
+    print("   NOTE: settlement-basis PnL is an upper bound -- it charges no spread and assumes")
+    print("   every print was fillable at the wallet's price. Break-even slippage on the")
+    print("   declined <0.80 arm is its edge per share, printed above.")
+
+    # ---- AM.5 the top band on a SECOND instrument, and the gate that already bites
+    print("\n   AM.5 THE 0.80-0.85 REGION — first instrument (our booked PnL) vs second")
+    print("   instrument (the same wallets' settlement truth). 10-22 rejected cutting 0.80-0.95")
+    print("   on ONE instrument whose CI was [-8.3,+2.1]. A second, independent population is")
+    print("   the only thing that can settle it, so here it is, with each arm's own CI.")
+    print(f"   {'arm':9} {'bets':>6} {'edge pp':>8} {'CI low':>8} {'CI hi':>8}")
+    for nm, arm in (("copied", [x for x in items if x["copied"] and x["px"] >= 0.8]),
+                    ("declined", [x for x in items if not x["copied"] and x["px"] >= 0.8]),
+                    ("both", [x for x in items if x["px"] >= 0.8])):
+        if len(arm) < 30:
+            print(f"   {nm:9} {len(arm):>6}  n<30")
+            continue
+        lo4, hi4 = _am_boot_mean(arm, lambda x: x["edge"])
+        print(f"   {nm:9} {len(arm):>6} {100*np.mean([x['edge'] for x in arm]):>+7.1f} "
+              f"{lo4:>+8.1f} {hi4:>+8.1f}")
+    # ours, sub-band, on booked PnL -- the cost basis is dollars at risk
+    print(f"\n   our own book in the same region (cost = dollars at risk):")
+    print(f"   {'sub-band':10} {'legs':>5} {'ntl':>9} {'pnl':>9} {'ROI%':>7} {'medD':>6} {'win%':>6} "
+          f"{'capital-days':>12} {'$/1k-cd':>8}")
+    booked = [dict(r) for r in c.execute(
+        """SELECT botId, entryPrice px, simulatedPositionSize ntl, realizedPnl pnl, openedAt,
+                  COALESCE(resolvedAt, closedAt) end
+           FROM PaperTrade WHERE isDemo=0 AND status IN ('closed','resolved')
+             AND realizedPnl IS NOT NULL AND entryPrice >= 0.8""").fetchall()]
+    for lo_, hi_, nm in ((0.8, 0.85, "0.80-0.85"), (0.85, 1.0001, "0.85+")):
+        b = [r for r in booked if lo_ <= r["px"] < hi_]
+        if not b:
+            continue
+        ntl = sum(r["ntl"] for r in b)
+        cd = sum(r["ntl"] * max((r["end"] - r["openedAt"]) / 86_400_000.0, 0.05) for r in b)
+        print(f"   {nm:10} {len(b):>5} {ntl:>9,.0f} {sum(r['pnl'] for r in b):>+9,.0f} "
+              f"{100*sum(r['pnl'] for r in b)/ntl:>+7.1f} "
+              f"{np.median([(r['end']-r['openedAt'])/86_400_000.0 for r in b]):>6.1f} "
+              f"{100*np.mean([1 if r['pnl'] > 0 else 0 for r in b]):>5.1f}% {cd:>12,.0f} "
+              f"{1000*sum(r['pnl'] for r in b)/cd:>+8.2f}")
+    ver, rules = active_rules(c)
+    print(f"   live gate: standardMaxEntryPrice={rules.get('standardMaxEntryPrice')} "
+          f"(v{ver}) — so the reachable top band is 0.80 to that ceiling, not to 1.00")
+    era = [r for r in booked if r["openedAt"] >= time.mktime(time.strptime("2026-09-15", "%Y-%m-%d")) * 1000]
+    if era:
+        ntl = sum(r["ntl"] for r in era)
+        print(f"   since 2026-09-15: {len(era)} legs ${ntl:,.0f} "
+              f"{sum(r['pnl'] for r in era):+,.2f} ({100*sum(r['pnl'] for r in era)/ntl:+.1f}%) "
+              f"— {100*len(era)/max(len(booked),1):.0f}% of all-time >=0.80 legs")
+
+    # ---- AM.6 the risk that produced this week: CONCURRENT notional in one market
+    print("\n   AM.6 PEAK CONCURRENT NOTIONAL PER MARKET — the rail that does not exist on STANDARD")
+    print("   A leg cap bounds the COUNT; what eats a week is the DOLLAR total held at once. Peak")
+    print("   concurrency is the running sum of open notional in one market at its highest point.")
+    legs = [dict(r) for r in c.execute(
+        """SELECT botId, walletAddress, marketId, entryPrice px, simulatedPositionSize ntl,
+                  realizedPnl pnl, openedAt, COALESCE(resolvedAt, closedAt) end
+           FROM PaperTrade WHERE isDemo=0 AND status IN ('closed','resolved')
+             AND realizedPnl IS NOT NULL""").fetchall()]
+    bym = {}
+    for r in legs:
+        if not r["end"]:
+            continue
+        bym.setdefault(r["marketId"], []).append(r)
+    peak = {}
+    for m, ls in bym.items():
+        ev = []
+        for r in ls:
+            ev.append((r["openedAt"], 1, r["ntl"]))
+            ev.append((r["end"], 0, -r["ntl"]))
+        ev.sort()
+        run = 0.0
+        pk = 0.0
+        for _, _, d in ev:
+            run += d
+            pk = max(pk, run)
+        peak[m] = pk
+    print(f"   {len(peak):,} markets. distribution of peak concurrent notional per market:")
+    tot_pnl = sum(r["pnl"] for r in legs)
+    print(f"   {'peak $':>14} {'markets':>8} {'legs':>6} {'notional':>10} {'pnl':>10} {'ROI%':>7} "
+          f"{'share of book PnL':>18}")
+    for lo_, hi_, nm in ((0, 25, "0-25"), (25, 50, "25-50"), (50, 100, "50-100"),
+                         (100, 200, "100-200"), (200, 400, "200-400"), (400, 10**9, "400+")):
+        ms = [m for m, p in peak.items() if lo_ <= p < hi_]
+        sub = [r for m in ms for r in bym[m]]
+        if not sub:
+            continue
+        ntl = sum(r["ntl"] for r in sub)
+        p = sum(r["pnl"] for r in sub)
+        print(f"   {nm:>14} {len(ms):>8} {len(sub):>6} {ntl:>10,.0f} {p:>+10,.0f} "
+              f"{100*p/ntl if ntl else 0:>+7.1f} {100*p/tot_pnl if tot_pnl else 0:>17.1f}%")
+    # the cap shadow: decline legs opened while the market's running notional is already >= cap
+    principal = {r["botId"]: r["principal"] for r in c.execute("SELECT botId, principal FROM BotBankroll")}
+    std_principal = principal.get("STANDARD", 11092.91)
+    print(f"\n   cap shadow — a leg is declined when its market already holds >= cap of concurrent")
+    print(f"   notional (STANDARD principal ${std_principal:,.0f}):")
+    print(f"   {'cap':>10} {'% principal':>12} {'legs kept':>10} {'notional':>10} {'pnl':>10} "
+          f"{'dPnL vs none':>13} {'CI low':>8} {'CI hi':>8}")
+    for cap, pct_lab in ((std_principal * 0.01, "1%"), (std_principal * 0.02, "2%"),
+                         (std_principal * 0.05, "5%"), (std_principal * 0.10, "10%")):
+        kept_ids, dropped_ids = set(), set()
+        for m, ls in bym.items():
+            ls2 = sorted(ls, key=lambda r: r["openedAt"])
+            open_legs = []  # (end, ntl)
+            for r in ls2:
+                open_legs = [o for o in open_legs if o[0] > r["openedAt"]]
+                if sum(o[1] for o in open_legs) >= cap:
+                    dropped_ids.add(id(r))
+                    continue
+                kept_ids.add(id(r))
+                open_legs.append((r["end"], r["ntl"]))
+        kept_l = [r for r in legs if id(r) in kept_ids]
+        drop_l = [r for r in legs if id(r) in dropped_ids]
+        d_pnl = -sum((r["pnl"] or 0) for r in drop_l)
+        # clustered bootstrap on the DELTA the cap imposes (negative = the cap costs money)
+        demit = {}
+        for r in drop_l:
+            demit.setdefault(r["marketId"], []).append(r["pnl"] or 0)
+        keys = list(demit)
+        lo_ci = hi_ci = float("nan")
+        if len(keys) >= 8:
+            rng = np.random.default_rng(61)
+            vals = []
+            for _ in range(1200):
+                pick = rng.integers(0, len(keys), len(keys))
+                vals.append(-sum(v for i in pick for v in demit[keys[i]]))
+            lo_ci, hi_ci = np.percentile(vals, 2.5), np.percentile(vals, 97.5)
+        ci_txt = (f"{lo_ci:>+8,.0f} {hi_ci:>+8,.0f}" if np.isfinite(lo_ci)
+                  else f"{'n/a':>8} {'n/a':>8}")
+        print(f"   ${cap:>9,.0f} {pct_lab:>12} {len(kept_l):>10} "
+              f"{sum(r['ntl'] for r in kept_l):>10,.0f} {sum(r['pnl'] for r in kept_l):>+10,.0f} "
+              f"{d_pnl:>+13,.0f} {ci_txt}   ({len(drop_l)} legs declined in {len(keys)} markets)")
+    print("   the CI is on the PnL DELTA from imposing the cap (negative = the cap costs money).")
+    print("   CI centred on zero = the capped dollars were worth nothing; CI entirely below zero")
+    print("   = the cap destroys edge and must not ship. 'n/a' = fewer than 8 markets bind, so a")
+    print("   market-clustered interval is not estimable at that cap.")
+
+    # ---- AM.7 the price axis, sized: the axis that predicts, on the lane that ignores it
+    print("\n   AM.7 STANDARD SIZED BY PRICE BAND — the axis with measured predictive power")
+    print("   AM.2 says the band predicts (cheap +6pp, top −4pp) and the admission stack does not.")
+    print("   STANDARD has never sized on either. Realised shadow: every leg's notional multiplied")
+    print("   by its band factor, PnL scaled linearly (fixed entry/exit => PnL ∝ dollars at risk),")
+    print("   clamped to BOT_LIMITS.STANDARD {0.25, 20.00} because clampPaperSize runs after any")
+    print("   factor. Reported notional-neutral (the reallocation) and as-specified (the bet).")
+    ver, rules = active_rules(c)
+    std_skip = skip_range(rules, "standardSkipBandRange")
+    F = {"<0.20": 0, "0.2-0.4": 1, "0.4-0.6": 2, "0.6-0.8": 3, "0.8-1.0": 4}
+
+    def run_band(legs, sch, neutral):
+        tot0 = sum(l["ntl"] for l in legs)
+        out = []
+        for l in legs:
+            w = sch[F[l["band"]]]
+            new = min(20.0, max(0.25, l["ntl"] * w))
+            f = (new / l["ntl"]) if l["ntl"] else 1.0
+            k = dict(l)
+            k["ntl"] = new
+            k["pnl"] = l["pnl"] * f
+            out.append(k)
+        if neutral:
+            tot1 = sum(k["ntl"] for k in out)
+            f = (tot0 / tot1) if tot1 else 1.0
+            for k in out:
+                k["ntl"] *= f
+                k["pnl"] *= f
+        return out
+
+    for label, since in (("all-time", 0), ("90d", int((time.time() - 90 * 86_400) * 1000)),
+                         ("live-era >=2026-09-15", int(time.mktime(time.strptime("2026-09-15", "%Y-%m-%d")) * 1000))):
+        legs = [l for l in load_finished(c, since)
+                if l["bot"] == "STANDARD" and not in_range(l["px"], std_skip) and l["band"]]
+        if not legs:
+            continue
+        # the 0.85 ceiling is live, so legs above it are history the gate no longer admits.
+        # Quoting them as upside would be quoting a band we cannot enter.
+        reachable = [l for l in legs if l["px"] < float(rules.get("standardMaxEntryPrice") or 1.0)]
+        print(f"\n   {label}: {len(legs)} STANDARD legs net of the live band skip "
+              f"({std_skip or 'none'}), ${sum(l['ntl'] for l in legs):,.0f}"
+              f"  |  {len(reachable)} of them below the live "
+              f"{rules.get('standardMaxEntryPrice')} entry ceiling "
+              f"(${sum(l['ntl'] for l in reachable):,.0f})")
+        print(f"   is STANDARD price-blind?  {'band':8} {'legs':>5} {'med clip':>9} {'ROI%':>7} "
+              f"{'$/1k-cd':>8} {'shCD%':>6}")
+        tot_cd = sum(l["cd"] for l in legs)
+        for nm in NAMES:
+            b = [l for l in legs if l["band"] == nm]
+            if not b:
+                continue
+            print(f"   {'':24} {nm:8} {len(b):>5} ${np.median([l['ntl'] for l in b]):>8.2f} "
+                  f"{roi(b):>+7.1f} {usd_per_1k_cd(b):>+8.2f} "
+                  f"{100*sum(l['cd'] for l in b)/tot_cd:>5.1f}%")
+        base = run_band(legs, (1, 1, 1, 1, 1), False)
+        b_pnl = sum(l["pnl"] for l in base)
+        print(f"   {'schedule':30} {'notional':>9} {'pnl':>9} {'ROI%':>7} {'$/1k-cd':>8} "
+              f"{'dPnL':>9} {'CI low':>9} {'CI hi':>9}")
+        print(f"   {'flat (live)':30} {sum(l['ntl'] for l in base):>9,.0f} {b_pnl:>+9,.0f} "
+              f"{roi(base):>+7.1f} {usd_per_1k_cd(base):>+8.2f} {'-':>9} {'-':>9} {'-':>9}")
+        for nm, sch in (("mild 1.5/1.25/.75/.6/.4", (1.5, 1.25, 0.75, 0.6, 0.4)),
+                        ("strong 2.0/1.5/.5/.4/.2", (2.0, 1.5, 0.5, 0.4, 0.2)),
+                        ("inverse .67/.8/1.33/1.67/2.5", (0.67, 0.8, 1.33, 1.67, 2.5))):
+            for neutral in (True, False):
+                g = run_band(legs, sch, neutral)
+                lo_, hi_ = boot_pair(g, base, "pnl", "pnl")
+                ex_base = roi(ex_top(base))
+                ex_g = roi(ex_top(g))
+                print(f"   {nm + (' (neutral)' if neutral else ' (as-is)'):30} "
+                      f"{sum(l['ntl'] for l in g):>9,.0f} {sum(l['pnl'] for l in g):>+9,.0f} "
+                      f"{roi(g):>+7.1f} {usd_per_1k_cd(g):>+8.2f} "
+                      f"{sum(l['pnl'] for l in g)-b_pnl:>+9,.0f} {lo_:>+9,.0f} {hi_:>+9,.0f}"
+                      f"  ex-top-10 ROI {ex_base:+.1f}->{ex_g:+.1f}")
+        print("   the inverse arm is the control: if up-weighting the TOP band also 'works', the")
+        print("   schedule is measuring noise. If it loses, the ordering is doing the work.")
+        # the same shadow restricted to legs the live ceiling still admits
+        rb = run_band(reachable, (1, 1, 1, 1, 1), False)
+        rbp = sum(l["pnl"] for l in rb)
+        print(f"   below the live ceiling only: flat +{rbp:,.0f} on "
+              f"${sum(l['ntl'] for l in rb):,.0f}")
+        for nm, sch in (("mild", (1.5, 1.25, 0.75, 0.6, 0.4)),
+                        ("strong", (2.0, 1.5, 0.5, 0.4, 0.2)),
+                        ("inverse", (0.67, 0.8, 1.33, 1.67, 2.5))):
+            g = run_band(reachable, sch, True)
+            lo_, hi_ = boot_pair(g, rb, "pnl", "pnl")
+            print(f"     {nm:8} (neutral) dPnL {sum(l['pnl'] for l in g)-rbp:>+8,.0f} "
+                  f"CI [{lo_:>+7,.0f}, {hi_:>+7,.0f}]  ROI {roi(rb):+.1f}->{roi(g):+.1f} "
+                  f"ex-top-10 {roi(ex_top(rb)):+.1f}->{roi(ex_top(g)):+.1f}")
+
+
+def mid_band_depth_probe(c, limit=140):
+    """AN. Fill headroom at 0.60-0.85 -- the input the pending maturity factor never had.
+
+    §AJ's maturity size factor (2026-10-25, +$4,397/90d) sends extra notional to legs entered
+    with >=72h to resolution, whose notional-weighted entry price is 0.605. Its own fillability
+    note says depth at 0.6-0.85 is UNMEASURED. §AF measured it only for open positions <0.20.
+    This closes that hole on live books, read-only, cached so the section re-runs offline.
+
+    Sample: markets our tracked wallets were printing in at 0.60-0.85 in the last 3 days --
+    i.e. the population a double clip would land in, not a random market sample. Depth is
+    measured at ONE instant on the ask side, which is the optimistic side of the question:
+    we buy at the ask immediately after a whale prints, the moment those books are thinnest.
+    """
+    print("\n" + "=" * 100)
+    print("AN. MID-BAND FILL HEADROOM (0.60-0.85) — the unmeasured input to the pending maturity factor")
+    print("=" * 100)
+    CACHE = "data/mid-band-depth-probe.json"
+    rows = c.execute(
+        """SELECT marketId m, conditionId cid, COUNT(*) n, AVG(detectedPrice) px
+           FROM ObservedTrade
+           WHERE observationOnly=0 AND isDemo=0 AND conditionId IS NOT NULL
+             AND detectedPrice BETWEEN 0.60 AND 0.85 AND timestamp >= ?
+           GROUP BY marketId, conditionId ORDER BY n DESC LIMIT ?""",
+        (int((time.time() - 3 * 86_400) * 1000), limit)).fetchall()
+    seen = set()
+    if os.path.exists(CACHE):
+        try:
+            seen = {r["market"] for r in json.load(open(CACHE)).get("rows", [])}
+        except Exception:
+            seen = set()
+    print(f"   {len(rows)} candidate markets (0.60-0.85, last 3d), {len(seen)} already cached")
+
+    def tokens(cid):
+        p = os.path.join(TRUTH_RAW_DIR, cid + ".json")
+        if not os.path.exists(p) or os.path.getsize(p) < 40:
+            subprocess.run(["curl", "-s", "--max-time", "20",
+                            "https://clob.polymarket.com/markets/" + cid, "-o", p], check=False)
+        try:
+            return [(t.get("outcome"), t.get("token_id"))
+                    for t in json.load(open(p)).get("tokens", [])]
+        except Exception:
+            return []
+
+    def one(r):
+        if r["m"] in seen:
+            return None
+        for _name, tid in tokens(r["cid"]):
+            if not tid:
+                continue
+            out = subprocess.run(["curl", "-s", "--max-time", "20",
+                                  "https://clob.polymarket.com/book?token_id=" + tid],
+                                 capture_output=True, text=True).stdout
+            try:
+                asks = sorted([[float(a["price"]), float(a["size"])]
+                               for a in json.loads(out).get("asks", [])])
+            except Exception:
+                continue
+            if not asks or not (0.55 <= asks[0][0] <= 0.90):
+                continue
+            ba = asks[0][0]
+
+            def dep(lim):
+                return sum(p * s for p, s in asks if p <= ba + lim)
+            return {"market": r["m"], "best_ask": ba,
+                    "d1": dep(0.01), "d2": dep(0.02), "d5": dep(0.05)}
+        return None
+
+    fresh = []
+    todo = [r for r in rows if r["m"] not in seen]
+    if todo:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for o in ex.map(one, todo):
+                if o:
+                    fresh.append(o)
+    allr = []
+    if os.path.exists(CACHE):
+        try:
+            allr = json.load(open(CACHE)).get("rows", [])
+        except Exception:
+            allr = []
+    allr = allr + fresh
+    with open(CACHE, "w") as f:
+        json.dump({"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                   "source": "https://clob.polymarket.com/book?token_id=", "rows": allr}, f, indent=1)
+    print(f"   {len(fresh)} new books resolved this run, {len(allr)} in the cache "
+          f"(best-ask range "
+          f"{min([x['best_ask'] for x in allr], default=0):.2f}-"
+          f"{max([x['best_ask'] for x in allr], default=0):.2f})")
+    if not allr:
+        print("   SKIPPED: no live books resolved")
+        return
+    for k, lab in (("d1", "+1c"), ("d2", "+2c"), ("d5", "+5c")):
+        v = [x[k] for x in allr]
+        print(f"   depth within {lab}: p10 ${np.percentile(v,10):>8,.0f}  median "
+              f"${np.median(v):>9,.0f}  p90 ${np.percentile(v,90):>9,.0f}")
+    for clip, lab in ((21.6, "2x the >=72h median clip ($10.80)"),
+                      (43.2, "4x that clip")):
+        ok = [x for x in allr if x["d2"] >= clip]
+        print(f"   books absorbing {lab} within +2c: {len(ok)}/{len(allr)} "
+              f"= {100*len(ok)/len(allr):.0f}%")
+    print("   BREAK-EVEN SLIPPAGE for the cohort (§AJ) is 17.0c/share, so the depth question is")
+    print("   not just 'does it fill' but 'does it fill before we have paid 17c'. At these depths")
+    print(f"   the median book carries {np.median([x['d2'] for x in allr])/21.6:,.0f}x the doubled clip at +2c.")
+    print("   CAVEATS, stated: n is small, one instant, ask side only, and the sample is markets")
+    print("   at 0.60-0.85 TODAY -- a market that has already re-priced is not the same book as")
+    print("   the one we would hit at the moment of a copy. This bounds the depth question; it")
+    print("   does not model queue position or the print-time squeeze.")
+
+
 def main():
     c = con()
     if "--only-ah" in ARGS:
         concentration_shadow(c)
+        return
+    if "--only-an-depth" in ARGS:
+        mid_band_depth_probe(c)
         return
     if "--only-ai" in ARGS:
         ttl_floor_ladder(c)
@@ -2351,6 +2972,9 @@ def main():
         return
     if "--only-al" in ARGS:
         fill_reality(c)
+        return
+    if "--only-am" in ARGS:
+        declared_flow(c)
         return
     legs = load_finished(c)
     print(f"loaded {len(legs)} finished real legs (all-time), "
@@ -2384,6 +3008,10 @@ def main():
     cheap_tail_fill_probe(c)
     # 2026-10-26: fill reality (§AL). Default run for the same reason as above.
     fill_reality(c)
+    # 2026-10-27: the declined-signal counterfactual (§AM). Default run, same reason.
+    declared_flow(c)
+    # 2026-10-27: mid-band depth (§AN). Cached; first run fetches, later runs are offline.
+    mid_band_depth_probe(c)
 
 
 if __name__ == "__main__":
