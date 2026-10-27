@@ -1,32 +1,32 @@
 {
- "generatedAt": "2026-10-26T10:41:27.877196Z",
+ "generatedAt": "2026-10-27T09:06:48.492539Z",
  "sources": {
   "marketCandidates": {
    "path": "data/ml/market-candidates.parquet",
    "role": "rolling",
    "exists": true,
    "mtimeZ": "2026-10-26T10:41:09.384491Z",
-   "ageHours": 0.0
+   "ageHours": 22.4
   },
   "paperTrades": {
    "path": "prisma/dev.db",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-10-26T10:34:47.987421Z",
-   "ageHours": 0.1
+   "mtimeZ": "2026-10-27T08:56:52.221765Z",
+   "ageHours": 0.2
   },
   "predictionsTest": {
    "path": "data/ml/predictions_test.parquet",
    "role": "study",
    "exists": true,
    "mtimeZ": "2026-10-19T08:54:09.889491Z",
-   "ageHours": 169.8
+   "ageHours": 192.2
   }
  },
  "lane": {
   "state": "CLOSED",
   "headline": "Market-only prediction does not pay",
-  "detail": "With the wallet signal removed, the <0.20 band returns -50.64% net of ask+fee. The only naively-positive band (0.8-1.0, +0.77%) dies at 1.5x the quoted premium, has a geometric mean of -20.4%, and yields $0.0055 per $20 leg per capital-day against C-200's $0.3818. The model-as-veto is not established either: every EV quartile CI spans zero and the sweep reverses direction.",
+  "detail": "In the market-only arm -- the same traded bands with wallet selection stripped out, so only market features are used -- the <0.20 band returns -50.64% net of ask+fee. The only naively-positive band (0.8-1.0, +0.77%) dies at 1.5x the quoted premium, has a geometric mean of -20.4%, and yields $0.0055 per $20 leg per capital-day against C-200's $0.3818. The model-as-veto is not established either: every EV quartile CI spans zero and the sweep reverses direction.",
   "alphaSource": "wallet-conditioned selection, not price prediction"
  },
  "contrast": {

@@ -217,7 +217,14 @@ def main():
             "headline": "Market-only prediction does not pay",
             # NOTE: never hardcode a count that the script can compute -- an earlier draft of this
             # string said "6 direction changes" while the sweep actually produced 2.
-            "detail": ("With the wallet signal removed, the <0.20 band returns -50.64% net of ask+fee. "
+            # WORDING (2026-10-26): "With the wallet signal removed" read as a CHANGELOG entry -- as if a
+            # wallet feature had been deleted from the bot -- and the user asked why the page said we removed
+            # it. Nothing was removed. The ML lane is market-only BY CONSTRUCTION and never had wallet data;
+            # the phrase describes the counterfactual ARM of a measurement (the same trades with wallet
+            # selection stripped out). Say "arm"/"counterfactual" explicitly so the sentence cannot be read
+            # as a product change.
+            "detail": ("In the market-only arm -- the same traded bands with wallet selection stripped out, so "
+                       "only market features are used -- the <0.20 band returns -50.64% net of ask+fee. "
                        "The only naively-positive band (0.8-1.0, +0.77%) dies at 1.5x the quoted premium, "
                        "has a geometric mean of -20.4%, and yields $0.0055 per $20 leg per capital-day "
                        "against C-200's $0.3818. The model-as-veto is not established either: every EV "
