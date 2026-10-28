@@ -929,8 +929,37 @@ def _fetch_one(cid):
     return cid, None
 
 
+def _truth_record_is_stale(rec):
+    """Should this unsettled cache record be re-fetched off the wire?
+
+    Yes when it has no end date, or its scheduled end is in the past (a market that was
+    open when first seen is exactly the one that settles later and never gets re-read).
+    A genuinely far-future market stays cached: no reason to re-poll a 2027 election.
+    """
+    if not rec or not rec.get("unsettled"):
+        return False
+    end = rec.get("end")
+    if not end:
+        return True
+    try:
+        end_ms = time.mktime(time.strptime(end[:19], "%Y-%m-%dT%H:%M:%S")) * 1000
+    except Exception:
+        return True
+    return end_ms <= time.time() * 1000
+
+
 def build_truth(c, refresh=False):
-    """Cached settlement truth for every market the finished book touches."""
+    """Cached settlement truth for every market the finished book touches.
+
+    2026-10-28 (Lane B repair): a market first seen while OPEN was cached as
+    `{"unsettled": true}` and NEVER re-checked, because `_fetch_one` returns the raw file
+    without hitting the wire when it exists. The cache therefore froze its own coverage at
+    the moment each market was first looked at -- precisely the recently-settled markets
+    every truth-based section (§AB exit alpha, §AD truth bands, §AM declined arm) needs.
+    Measured today: 269 of 4,005 cached markets were frozen `unsettled`; re-fetching the
+    248 disposed-cohort markets resolved 21 of them. Fix: any unsettled record whose
+    scheduled end has PASSED (or whose end is missing) is re-fetched, raw file and all.
+    """
     cache = {"markets": {}}
     if os.path.exists(TRUTH_CACHE):
         try:
@@ -942,14 +971,19 @@ def build_truth(c, refresh=False):
     want = sorted(set(m2c.values()))
     have = {k for k, v in old.items() if v and not v.get("unsettled")}
     if refresh:
-        missing = want
+        stale = want
     else:
-        missing = [cid for cid in want if cid not in have]
+        stale = [cid for cid in want
+                 if cid not in have and _truth_record_is_stale(old.get(cid))]
     print(f"\n   truth cache: {len(want)} distinct markets in the finished book, "
-          f"{len(want) - len(missing)} settled already cached, fetching {len(missing)}")
-    if missing:
+          f"{len(want) - len(stale)} settled already cached, fetching {len(stale)}")
+    if stale:
+        for cid in stale:
+            p = os.path.join(TRUTH_RAW_DIR, cid + ".json")
+            if os.path.exists(p):
+                os.remove(p)
         with ThreadPoolExecutor(max_workers=8) as ex:
-            for cid, rec in ex.map(_fetch_one, missing):
+            for cid, rec in ex.map(_fetch_one, stale):
                 if rec:
                     old[cid] = rec
     cache = {"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

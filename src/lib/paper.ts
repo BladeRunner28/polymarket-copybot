@@ -10,6 +10,7 @@ import { prisma } from "./db";
 import { assertPaperOnly, clampPaperSize, checkCircuitBreaker } from "./safety";
 import { applyMaturitySizeFactor, type MaturityFactors } from "./maturity-size";
 import { recordFillIntent, stampIntentLink } from "./fill-intent";
+import { appendCloseReason } from "./close-log";
 
 export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: number): number {
   if (entryPrice <= 0) return 0;
@@ -439,14 +440,28 @@ export function staleExitDecision(
   return tier1Fires ? "tier1" : "none";
 }
 
-/** Close a paper trade early at the current market price (rule-driven exit). */
-export async function closePaperTrade(tradeId: string, exitPrice: number, _reason: string) {
+/**
+ * Close a paper trade early at the current market price (rule-driven exit).
+ */
+export async function closePaperTrade(tradeId: string, exitPrice: number, reason: string) {
   assertPaperOnly("closePaperTrade");
   assertWritableInputs("closePaperTrade", tradeId, exitPrice);
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status !== "open") return trade;
   const pnl = computePnl(trade.entryPrice, exitPrice, trade.simulatedPositionSize);
   const payout = trade.simulatedPositionSize + pnl;
+  appendCloseReason({
+    id: tradeId,
+    botId: trade.botId,
+    marketId: trade.marketId,
+    outcome: trade.outcome,
+    entryPrice: trade.entryPrice,
+    exitPrice,
+    sizeUsd: trade.simulatedPositionSize,
+    pnl,
+    ageHours: Math.round((Date.now() - trade.openedAt.getTime()) / 3_600_000),
+    reason,
+  });
 
   return prisma.$transaction(async (tx) => {
     if (trade.botId !== "STANDARD") {

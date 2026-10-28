@@ -3682,6 +3682,30 @@
         "observability"
       ],
       "note": "Lane B (a printed number whose basis lies by omission), covered by the user's standing Lane B approval.\nWHY: on 2026-10-27 the user read a win-rate drop as a profitability collapse. It was neither \u2014 win rate fell 71.7%->54.3%->44.6%->41.2% by entry month while ROI went +16.7%/+1.5%/+12.6%/+17.4% and October is the best ROI month on record, because avg win rose $6.67->$23.30 faster than avg loss rose -$9.05->-$12.80. Win rate alone cannot distinguish that from a collapse, in EITHER direction.\nFIX: every daily block printing a win rate also prints average win, average loss and ROI on the SAME population, clock and level. One line, no new computation. Not yet done \u2014 the daily report generator was not located in the first pass (win-rate print sites are spread across score-trades/scan-wallets/etc rather than one reporter), so this needs a survey of the EOD path before editing."
+    },
+    {
+      "id": "v66-cap-pressure-gate",
+      "column": "Scheduled",
+      "priority": "high",
+      "title": "v66: fire the STANDARD stale exit on cap pressure, not on the calendar",
+      "tags": [
+        "awaiting-approval",
+        "prereg",
+        "lane-a"
+      ],
+      "note": "PROPOSED 2026-10-28 (profit review), nothing applied. Measurement: scripts/profit-exits.py (committed same commit), \u00a7AO.1-AO.10.\nWHY: v66's only function is protecting standardMaxOpenPositions = 1,300 legs -- STANDARD has NO notional cap (maxGrossExposureUsd is C-200-only, score-trades.ts:198/625; open notional $5,125 = 5.1x that base is the proof), so the 'capital-days released' justification (604,756) has no economic content for this lane. What it bought: 701 slots worth $117.97 if every slot were refilled at the ex-outlier per-leg rate ($0.168/leg), $2.69 actually earned (16 legs refilled in 4.2 days = 2.3% of the release). What it paid: exit alpha -$831.70 (-48.36% of notional) on the 167 priced legs, of which $807.01 is ONE market; ex-10-extreme-markets alpha is -$0.39.\nTRIGGER WAS NOT REAL: 44 slots of headroom at the sweep, but the book was already shrinking 4.73 legs/day (30d pre-sweep: 133 opens vs 275 resolutions); the no-sweep book would be 1,003 legs today (297 headroom). 27.5% of swept notional had end dates within 7d.\nGATE: fire only if (headroom < 15% of standardMaxOpenPositions) AND (trailing-7d opens > resolutions). 90-day backtest: 92 scope-days, gate allows 50 (54%) -- all in the Jul-Aug growth regime (1,500-1,970 legs, +300..+1,000 net/week); last 30 days 0/30, including the sweep day.\nDECISION RULE: ship when unit-tested (refuses at headroom >=15% or net growth <=0) AND a 14-day shadow permits >=1 fire in the growth regime and 0 in the current one AND the leg cap blocks 0 copies on suppressed days.\nREFUTATION: if the '[STANDARD] open-position cap' block counter reaches >=20 copies on gate-suppressed days in the 30 days after shipping, slot pressure was real -> revert.\nCOST 2h. Open band question deliberately NOT bundled here: the 0.60-0.80 loss is 2 markets (Bolsonaro -$807.01, Yamal -$41.87) on 64 priced legs; verdict needs >=150 priced legs across >=40 markets."
+    },
+    {
+      "id": "close-reason-sidecar",
+      "column": "Done",
+      "priority": "medium",
+      "title": "Early-exit reasons persisted to a sidecar ledger (v66's refutation was uncomputable)",
+      "tags": [
+        "lane-b",
+        "instrument",
+        "shipped"
+      ],
+      "note": "DONE 2026-10-28 (Lane B, profit review). closePaperTrade(tradeId, exitPrice, _reason) received the reason and discarded it, so a v66 stale stop, a dead-slug 404 expiry and a C-200 recycle are all status='closed'. v66's pre-registered refutation ('first 20 ORGANIC stopped legs realise worse than hold by >1% of notional', read due 2026-10-31) had no denominator; the 2026-10-24 sweep was only separable because it was one timestamp and the only non-404 close STANDARD had ever taken.\nFIX: src/lib/close-log.ts (append-only data/close-reasons.jsonl: id, bot, market, entry, exit, size, pnl, ageHours, reason, at) called best-effort from closePaperTrade; no schema change, no prisma write, failures swallowed. tests/close-log.test.ts (3 tests) pins verbatim reason, ordering, never-throw. 606/606 vitest pass, tsc --noEmit clean.\nALSO: scripts/profit-velocity.py build_truth froze any market first seen unresolved (269 of 4,005 cached markets); unsettled records past their end date are now re-fetched."
     }
   ],
   "dates": {}
