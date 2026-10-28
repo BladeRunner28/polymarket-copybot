@@ -167,6 +167,12 @@ export interface Rules {
   standardMaturityFactorMedium: number; // shortHours .. longHours
   standardMaturityLongHours: number; // default 72
   standardMaturityFactorLong: number; // ttr >= standardMaturityLongHours
+  // v69 (2026-10-27, approved): optional 4th bucket for very long-dated legs. v68 put 3-7d, 7-30d and
+  // >30d all at 1.5x, but they measure +46.8% / +19.9% / +12.8% and >30d earns +$2.88 per
+  // $1k-capital-day against 3-7d's +$127.85 (median hold 36.7 days). Default hugeHours = 1e9 makes the
+  // bucket INERT, so a ruleset without these fields is byte-identical to v68.
+  standardMaturityHugeHours: number; // default 1e9 = inert
+  standardMaturityFactorHuge: number; // factor for ttr >= hugeHours
   // v38 (Phase A, 2026-08-31): Wang-Transform premium overlay — measurement-
   // first. The calibrated λ̂ table (data/premium-calibration.json, refit
   // biweekly on the 1st & 15th) quantifies the systematic risk premium at entry per price band.
@@ -398,6 +404,10 @@ export const DEFAULT_RULES: Rules = {
   standardMaturityFactorMedium: 1.0,
   standardMaturityLongHours: 72,
   standardMaturityFactorLong: 1.0,
+  // v69: inert by default — 1e9 hours is longer than any market's life, so the 4th bucket never fires
+  // until a ruleset sets a real bound.
+  standardMaturityHugeHours: 1e9,
+  standardMaturityFactorHuge: 1.0,
   c200DeadZoneBandFactor: 0.25,
   // v38 Phase-A overlay defaults (live values land in the DB ruleset).
   premiumOverlayEnabled: 1,

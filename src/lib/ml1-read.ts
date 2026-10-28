@@ -30,8 +30,39 @@ import { eraOf } from "./training-export";
 
 /** The frozen boundary the bar names. A gate that moves its holdout is not a gate. */
 export const BOUNDARY = Date.parse("2026-08-21T00:00:00Z");
-/** The bar, verbatim from the card. */
-export const BAR = { auc: 0.729, brier: 0.212, comparator: "price-only (entry_price)" };
+/**
+ * THE BAR — RESTATED 2026-10-27 (Lane A, approved: "approve ml1-price-baseline-drift").
+ *
+ * The old form was `AUC >= 0.729 AND Brier <= 0.212` as ABSOLUTE constants. Those were measured
+ * 2026-09-13 on data/decision-dataset.csv, where price read 0.7285 / 0.2115 — i.e. 0.729/0.212 IS
+ * price rounded to 3dp. They were then applied to the population the fit actually uses
+ * (training_data.csv), where price reads 0.7095 / 0.2196. The consequence was not a strict gate but
+ * an IMPOSSIBLE one: it demanded +0.0195 AUC of headroom AND a Brier ceiling 0.0076 BELOW price's own
+ * Brier. No candidate could ever clear it, so the gate stopped being falsifiable — it could not fail,
+ * which is the same defect as a probe that cannot fail.
+ *
+ * The restated form keeps the ORIGINAL STRICTNESS (the same 0.0005 tolerance) and states it against
+ * the comparator the bar names, computed on the SAME scored rows the arm is judged on:
+ *     AUC >= price_auc + 0.0005   AND   Brier <= price_brier + 0.0005
+ * with the market-clustered CI on ΔAUC still required to exclude 0 (unchanged).
+ *
+ * This promotes nothing. On 2026-10-27 every stored score sits BELOW price on the fit population
+ * (copy_score 0.5130, wallet_quality 0.5099, entry_timing 0.5489, thesis 0.4613 vs price 0.7095), so
+ * the restatement changes which numbers get PRINTED as a pass/fail verdict, not what the bot decides.
+ *
+ * `auc`/`brier` are retained as a REFERENCE LINE only — printed beside every read so the historical
+ * 2026-09-13 measurement stays visible and comparable. They are not enforcement.
+ */
+export const BAR = {
+  auc: 0.729,
+  brier: 0.212,
+  /** The tolerance the absolute form always carried, now applied to the comparator. */
+  margin: 0.0005,
+  comparator: "price-only (entry_price)",
+  form: "relative" as const,
+  /** The population the absolute constants were measured on, kept so the drift is auditable. */
+  measuredOn: "data/decision-dataset.csv 2026-09-13 (price 0.7285 / 0.2115)",
+};
 
 export type Leg = {
   at: number;
@@ -207,8 +238,14 @@ export function readArms(
       { iters, seed: 20261011 }
     );
 
-    const clearsAuc = a >= BAR.auc;
-    const clearsBrier = probability ? b <= BAR.brier : null;
+    // Relative bar (2026-10-27): the comparator is recomputed on THIS arm's scored rows, so an arm
+    // that scores a different subset is not measured against a baseline from a different population.
+    const compAuc = auc(scored.map((l) => l.price), scored.map((l) => l.y));
+    const compBrier = brier(scored.map((l) => l.price), scored.map((l) => l.y));
+    const aucBar = compAuc + BAR.margin;
+    const brierBar = compBrier + BAR.margin;
+    const clearsAuc = a >= aucBar;
+    const clearsBrier = probability ? b <= brierBar : null;
     rows.push({
       arm: name,
       n: scored.length,
@@ -220,6 +257,13 @@ export function readArms(
       pGreater: delta.pGreater,
       clearsAucBar: clearsAuc,
       clearsBrierBar: clearsBrier,
+      // audit trail for the restated bar: what the comparator read HERE, and the resulting bar
+      comparatorAuc: compAuc,
+      comparatorBrier: compBrier,
+      aucBar,
+      brierBar,
+      barForm: BAR.form,
+      barMargin: BAR.margin,
       topTercileMeanPnl: money.point,
       topTercileVsCopyAllCi: [money.low, money.high],
       topTercileN: selectBy(scored, get).length,

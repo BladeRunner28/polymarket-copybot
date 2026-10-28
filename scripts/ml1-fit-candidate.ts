@@ -188,7 +188,10 @@ function main() {
     return i >= 0 ? Number(process.argv[i + 1]) : 2000;
   })();
   console.log("ML-1 candidate fit — a pre-registered family judged by the same harness as the static arms");
-  console.log(`  bar (restated 2026-10-11): AUC >= ${BAR.auc} AND Brier <= ${BAR.brier} vs price-only, frozen time-ordered holdout`);
+  console.log(
+    `  bar (RESTATED 2026-10-27, relative): AUC >= price + ${BAR.margin} AND Brier <= price + ${BAR.margin} ` +
+      `on the same scored rows, CI on dAUC excluding 0; [reference only: absolute ${BAR.auc}/${BAR.brier}]`
+  );
   console.log(`  frozen boundary: ${new Date(BOUNDARY).toISOString()} | bootstrap ${iters} iters, seed 20261011, clustered by market_id`);
   console.log("  candidates: C0 price-only (anchor) | C1 price+stored | C2 price+exec | C3 combined");
 

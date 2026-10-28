@@ -51,7 +51,11 @@ function main() {
     return i >= 0 ? Number(process.argv[i + 1]) : 2000;
   })();
   console.log("ML-1 promotion-gate read (comparators + calibration; nothing is trained or promoted)");
-  console.log(`  bar (restated 2026-10-11): AUC >= ${BAR.auc} AND Brier <= ${BAR.brier} vs price-only on a frozen time-ordered holdout`);
+  console.log(
+    `  bar (RESTATED 2026-10-27, relative): AUC >= price + ${BAR.margin} AND Brier <= price + ${BAR.margin}, ` +
+      `computed on the same scored rows, market-clustered CI on dAUC excluding 0; ` +
+      `[reference only: the old absolute ${BAR.auc}/${BAR.brier} was measured on ${BAR.measuredOn}]`
+  );
   console.log(`  frozen boundary: ${new Date(BOUNDARY).toISOString()} | bootstrap ${iters} iters, seed 20261011, clustered by market_id`);
 
   const artifact: Record<string, unknown> = { bar: BAR, iters, boundary: new Date(BOUNDARY).toISOString() };

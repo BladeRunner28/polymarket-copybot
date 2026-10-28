@@ -42,7 +42,29 @@ export type MaturityFactors = {
   long: number;
   shortHours: number;
   longHours: number;
+  /**
+   * v69 (2026-10-27, approved "approve standard-maturity-168h-split"): an OPTIONAL fourth bucket for
+   * very long-dated legs. Omitted => inert, and the schedule behaves exactly as v68 did, which is why
+   * every existing caller and test keeps working unchanged.
+   *
+   * WHY: v68 put 3-7d, 7-30d and >30d in ONE 1.5x bucket, but they measure +46.8%, +19.9% and +12.8%,
+   * and >30d earns +$2.88 per $1k-capital-day against 3-7d's +$127.85 because the capital sits a
+   * median 36.7 days. 1.5x on a leg that holds for five weeks is not the same trade as 1.5x on one
+   * that holds four days.
+   */
+  huge?: number;
+  hugeHours?: number;
 };
+
+/** Resolve whether the 4th bucket is in play: a finite bound strictly beyond longHours and a usable factor. */
+function hugeActive(f: MaturityFactors): boolean {
+  return (
+    Number.isFinite(f.hugeHours) &&
+    Number.isFinite(f.huge) &&
+    (f.hugeHours as number) > f.longHours &&
+    (f.huge as number) > 0
+  );
+}
 
 /**
  * Apply the maturity factor to a STANDARD entry size.
@@ -68,13 +90,21 @@ export function applyMaturitySizeFactor(
   for (const v of [f.short, f.medium, f.long]) {
     if (!Number.isFinite(v) || !(v > 0)) return sizeUsd;
   }
-  // Disabled: all three at 1.0 is the legacy path and must not even bucket the leg.
-  if (f.short === 1 && f.medium === 1 && f.long === 1) return sizeUsd;
+  const useHuge = hugeActive(f);
+  // Disabled: every ACTIVE factor at 1.0 is the legacy path and must not even bucket the leg.
+  if (f.short === 1 && f.medium === 1 && f.long === 1 && (!useHuge || f.huge === 1)) return sizeUsd;
   if (ttrHours === null || ttrHours === undefined) return sizeUsd;
   const ttl = Number(ttrHours);
   if (!Number.isFinite(ttl) || ttl < 0) return sizeUsd;
 
-  const w = ttl < f.shortHours ? f.short : ttl < f.longHours ? f.medium : f.long;
+  const w =
+    ttl < f.shortHours
+      ? f.short
+      : ttl < f.longHours
+        ? f.medium
+        : useHuge && ttl >= (f.hugeHours as number)
+          ? (f.huge as number)
+          : f.long;
   return sizeUsd * w;
 }
 
@@ -82,9 +112,12 @@ export function applyMaturitySizeFactor(
 export function maturityBucket(
   ttrHours: number | null | undefined,
   f: MaturityFactors
-): "short" | "medium" | "long" | "unknown" {
+): "short" | "medium" | "long" | "huge" | "unknown" {
   if (ttrHours === null || ttrHours === undefined) return "unknown";
   const ttl = Number(ttrHours);
   if (!Number.isFinite(ttl) || ttl < 0) return "unknown";
-  return ttl < f.shortHours ? "short" : ttl < f.longHours ? "medium" : "long";
+  if (ttl < f.shortHours) return "short";
+  if (ttl < f.longHours) return "medium";
+  if (hugeActive(f) && ttl >= (f.hugeHours as number)) return "huge";
+  return "long";
 }

@@ -74,6 +74,35 @@ describe("v68 maturity size factor", () => {
     expect(applyMaturitySizeFactor(0, 5, LIVE)).toBe(0);
   });
 
+  it("v69: the 4th bucket is INERT while hugeHours keeps its 1e9 default", () => {
+    const live69: MaturityFactors = { ...LIVE, hugeHours: 1e9, huge: 1.0 };
+    for (const ttl of [200, 5_000, 100_000]) {
+      expect(applyMaturitySizeFactor(10, ttl, live69)).toBeCloseTo(applyMaturitySizeFactor(10, ttl, LIVE), 10);
+    }
+    expect(maturityBucket(5_000, live69)).toBe("long");
+  });
+
+  it("v69: splits >=168h off the long bucket once a real bound is set", () => {
+    const split: MaturityFactors = { ...LIVE, hugeHours: 168, huge: 1.0 };
+    expect(applyMaturitySizeFactor(10, 100, split)).toBeCloseTo(15, 10); // 72-168h keeps 1.5x
+    expect(applyMaturitySizeFactor(10, 167.9, split)).toBeCloseTo(15, 10);
+    expect(applyMaturitySizeFactor(10, 168, split)).toBeCloseTo(10, 10); // >=168h back to 1.0x
+    expect(applyMaturitySizeFactor(10, 900, split)).toBeCloseTo(10, 10);
+    expect(maturityBucket(167.9, split)).toBe("long");
+    expect(maturityBucket(168, split)).toBe("huge");
+  });
+
+  it("v69: a nonsense huge bound is ignored rather than silently zeroing the clip", () => {
+    // hugeHours must be STRICTLY beyond longHours; otherwise it is not a distinct bucket.
+    const bad: MaturityFactors = { ...LIVE, hugeHours: 72, huge: 0.1 };
+    expect(applyMaturitySizeFactor(10, 200, bad)).toBeCloseTo(15, 10); // falls through to long
+    const reversed: MaturityFactors = { ...LIVE, hugeHours: 24, huge: 0.1 };
+    expect(applyMaturitySizeFactor(10, 200, reversed)).toBeCloseTo(15, 10);
+    const zero: MaturityFactors = { ...LIVE, hugeHours: 168, huge: 0 };
+    expect(applyMaturitySizeFactor(10, 200, zero)).toBeCloseTo(15, 10);
+    expect(maturityBucket(200, bad)).toBe("long");
+  });
+
   it("does not double-apply the $20 cap — that is clampPaperSize's job, one layer down", () => {
     // 18 x 1.5 = 27 here; the live path then clamps to 20. If this helper clamped too, the shadow
     // (which clamped once) and the code would disagree and the quoted effect would be overstated.

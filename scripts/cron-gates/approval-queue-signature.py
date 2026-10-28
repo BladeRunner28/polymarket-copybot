@@ -52,7 +52,16 @@ def main() -> int:
     items = []
     for c in d.get("cards", []):
         tags = [str(t) for t in (c.get("tags") or [])]
-        if "awaiting-approval" in tags:
+        # 2026-10-27 (user-approved): key on `lane-a` as well, because the tag-only rule made a Lane A
+        # proposal invisible when it was tagged `lane-a`/`proposed` but not `awaiting-approval` --
+        # standard-band-size-shadow sat in that state. A Lane A item cannot hide from the operator again.
+        # A card that is NOT actually awaiting a decision is filtered out by its column below, so this
+        # widens WHO is visible without turning the gate into a noise source.
+        # `no-resurface` outranks visibility: sizing-rails-dead-and-inverse was explicitly told not to
+        # be re-surfaced. It stays on the board but never pings again.
+        if "no-resurface" in tags:
+            continue
+        if "awaiting-approval" in tags or ("lane-a" in tags and str(c.get("column")) != "Done"):
             items.append((str(c.get("id", "")), str(c.get("title", ""))[:110]))
 
     if not items:

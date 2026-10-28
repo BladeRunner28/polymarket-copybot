@@ -1151,6 +1151,9 @@ async function main() {
               long: rules.standardMaturityFactorLong,
               shortHours: rules.standardMaturityShortHours,
               longHours: rules.standardMaturityLongHours,
+              // v69: optional 4th bucket (inert while standardMaturityHugeHours stays at its 1e9 default)
+              hugeHours: rules.standardMaturityHugeHours,
+              huge: rules.standardMaturityFactorHuge,
             },
           });
 
