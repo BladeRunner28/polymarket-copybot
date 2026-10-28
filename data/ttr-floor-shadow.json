@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-10-26T12:20:34Z",
+  "generated_at": "2026-10-27T12:20:34Z",
   "mode": "forward",
   "approval_date": "2026-10-23",
   "window": "n-driven (no calendar deadline)",
   "superseded_shadow_days": 14,
-  "days_elapsed": 3.51,
+  "days_elapsed": 4.51,
   "bot": "STANDARD",
   "rule": {
     "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
@@ -21,22 +21,22 @@
   },
   "bands": {
     "at_risk_2_24h": {
-      "legs": 4,
-      "markets": 4,
-      "notional": 72.0,
-      "pnl": -18.99,
-      "roi": -0.26375,
-      "resolved_legs": 4,
-      "resolved_roi": -0.26375
+      "legs": 8,
+      "markets": 8,
+      "notional": 144.0,
+      "pnl": -90.99,
+      "roi": -0.631875,
+      "resolved_legs": 8,
+      "resolved_roi": -0.631875
     },
     "kept_24h_plus": {
-      "legs": 1,
-      "markets": 1,
-      "notional": 18.0,
-      "pnl": 52.59,
-      "roi": 2.921666666666667,
-      "resolved_legs": 1,
-      "resolved_roi": 2.921666666666667
+      "legs": 2,
+      "markets": 2,
+      "notional": 36.0,
+      "pnl": 34.59,
+      "roi": 0.9608333333333334,
+      "resolved_legs": 2,
+      "resolved_roi": 0.9608333333333334
     },
     "under_live_floor_lt_2h": {
       "legs": 0,
@@ -48,13 +48,13 @@
       "resolved_roi": null
     }
   },
-  "opened_legs_in_band": 4,
+  "opened_legs_in_band": 10,
   "trailing_rate_window_days": 14,
-  "trailing_openings_per_day": 3.93,
-  "projected_days_to_n": 37,
+  "trailing_openings_per_day": 4.36,
+  "projected_days_to_n": 33,
   "unclassified_ttr": 0,
   "verdict": "ACCUMULATING",
-  "reason": "4 of 150 settled band legs (from 4 opened); 146 to go (~37 days at the trailing-14d rate of 3.93 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven",
+  "reason": "8 of 150 settled band legs (from 10 opened); 142 to go (~33 days at the trailing-14d rate of 4.36 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven",
   "not_yet_evaluable": [
     "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
     "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"
