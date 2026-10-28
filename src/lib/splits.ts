@@ -120,6 +120,110 @@ export type TimeSplit<T> = {
 };
 
 /**
+ * ERA-STRATIFIED HOLDOUT — approved 2026-10-28 ("All 5 are approved"), card `ml1-fit-population-gaps`
+ * claim (2), option (a) of its own recommendation.
+ *
+ * THE PROBLEM IT SOLVES: the ML-1 gate cuts at a frozen calendar date (2026-08-21). Measured 2026-10-26,
+ * that date puts 100% of the train window in ONE regime (pre-kelly-v1-48) while the test window spans
+ * three (pre-kelly 960 / kelly-window 841 / exposure-v58plus 826) — so a fit that has only ever seen
+ * regime 1 is scored across regimes 1-3, and "weak model" is indistinguishable from "never saw this
+ * regime". That is the leading explanation for in-sample AUC 0.744 landing at 0.68-0.70 OOS.
+ *
+ * THIS SPLIT cuts on REGIME instead of on an arbitrary date: hold out the named era(s) as the test set.
+ * It is still strictly forward in time — `eraOf` keys on ruleSetVersion, which only ever increases, so
+ * the held-out era is chronologically after the train eras by construction. The difference is that the
+ * test set is a REGIME rather than a slice, which is the thing a promotion bar should be forward about.
+ *
+ * THE PURGE MATTERS MORE HERE, NOT LESS: eras partition when a leg was OPENED, not when it SETTLED. A
+ * long-dated regime-2 leg can resolve well inside regime 3, so any train row whose label only became
+ * knowable at/after the first test row is dropped exactly as in the time-ordered split.
+ *
+ * TRADE-OFF, stated rather than hidden: this trains on everything before the held-out era, which is MORE
+ * data than a date cut gives (good), but the comparison to the old bar is no longer apples-to-apples
+ * because the test population changes. Both are therefore reported side by side, never merged.
+ */
+export function eraStratifiedHoldout<T>(
+  rows: readonly T[],
+  opts: {
+    at: (r: T) => number;
+    era: (r: T) => string | null;
+    labelReadyAt?: (r: T) => number | null;
+    /** The era name(s) composing the TEST set. Everything else is train. */
+    holdoutEras: readonly string[];
+    design?: string;
+    purge?: boolean;
+  }
+): TimeSplit<T> {
+  const purge = opts.purge ?? true;
+  const design = opts.design ?? "era-stratified holdout";
+  if (rows.length === 0) throw new Error("eraStratifiedHoldout: no rows");
+  if (opts.holdoutEras.length === 0) throw new Error("eraStratifiedHoldout: holdoutEras is empty");
+
+  const held = new Set(opts.holdoutEras);
+  const isTest = (r: T) => held.has(opts.era(r) ?? "unknown");
+
+  const test = rows.filter(isTest);
+  const trainAll = rows.filter((r) => !isTest(r));
+  if (test.length === 0) {
+    throw new Error(
+      `eraStratifiedHoldout: no row falls in the held-out era(s) ${opts.holdoutEras.join(", ")} — ` +
+        `refusing to report an empty test set as a result`
+    );
+  }
+  if (trainAll.length === 0) {
+    throw new Error(`eraStratifiedHoldout: holding out ${opts.holdoutEras.join(", ")} leaves no train rows`);
+  }
+
+  // The boundary is the FIRST test timestamp: labels knowable at or after it cannot inform the fit.
+  const boundary = Math.min(...test.map(opts.at));
+
+  let dropped = 0;
+  const train: T[] = [];
+  for (const r of trainAll) {
+    const ready = opts.labelReadyAt?.(r);
+    if (purge && opts.labelReadyAt && ready !== null && ready !== undefined && ready >= boundary) {
+      dropped += 1;
+      continue;
+    }
+    train.push(r);
+  }
+  if (train.length === 0) {
+    throw new Error("eraStratifiedHoldout: the purge removed every train row — the eras are not separable");
+  }
+
+  const count = (xs: readonly T[]) => {
+    const m: Record<string, number> = {};
+    for (const r of xs) {
+      const e = opts.era(r) ?? "unknown";
+      m[e] = (m[e] ?? 0) + 1;
+    }
+    return m;
+  };
+  const eraTrain = count(train);
+  const eraTest = count(test);
+  const overlapEras = Object.keys(eraTrain).filter((e) => e in eraTest).sort();
+  const tiedAtBoundary = test.filter((r) => opts.at(r) === boundary).length;
+
+  return {
+    train,
+    test,
+    boundary,
+    trainN: train.length,
+    testN: test.length,
+    tiedAtBoundary,
+    purged: dropped,
+    eraTrain,
+    eraTest,
+    overlapEras,
+    provenance:
+      `${design}: test = era(s) [${opts.holdoutEras.join(", ")}] (n=${test.length}), ` +
+      `train = all other eras BEFORE ${new Date(boundary).toISOString()} minus ${dropped} purged label-tails ` +
+      `(n=${train.length}); held-out regime is later by ruleSetVersion by construction; ` +
+      `overlapping eras ${overlapEras.length ? `[${overlapEras.join(", ")}]` : "none (clean regime cut)"}`,
+  };
+}
+
+/**
  * Time-ordered holdout. Sort by `at`, cut once, optionally purge train rows whose
  * label only became knowable inside the test window.
  *

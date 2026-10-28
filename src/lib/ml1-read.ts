@@ -24,7 +24,7 @@
  */
 
 import * as fs from "fs";
-import { timeOrderedHoldout, eraGroups } from "./splits";
+import { timeOrderedHoldout, eraStratifiedHoldout, eraGroups } from "./splits";
 import { auc, brier, clusteredBootstrapDelta, constantBrier, mean } from "./metrics";
 import { eraOf } from "./training-export";
 
@@ -239,21 +239,36 @@ export function eraAucRead(
     .sort((a, b) => a.era.localeCompare(b.era));
 }
 
+/** The era held out by the era-stratified split. Named once so the gate and the read cannot disagree. */
+export const ERA_HOLDOUT = ["exposure-v58plus"] as const;
+
+export type SplitMode = "time" | "era";
+
 export function readArms(
   legs: Leg[],
   label: string,
   iters: number,
   artifact: Record<string, unknown>,
-  candidates: CandidateSpec[] = []
+  candidates: CandidateSpec[] = [],
+  splitMode: SplitMode = "time"
 ) {
   const usable = legs.filter((l) => Number.isFinite(l.pnlNetEntry) && Number.isFinite(l.price) && Number.isFinite(l.at));
-  const split = timeOrderedHoldout(usable, {
-    at: (l) => l.at,
-    era: (l) => l.era,
-    labelReadyAt: (l) => l.readyAt,
-    boundary: BOUNDARY,
-    design: `${label} — frozen time-ordered holdout`,
-  });
+  const split =
+    splitMode === "era"
+      ? eraStratifiedHoldout(usable, {
+          at: (l) => l.at,
+          era: (l) => l.era,
+          labelReadyAt: (l) => l.readyAt,
+          holdoutEras: ERA_HOLDOUT,
+          design: `${label} — era-stratified holdout`,
+        })
+      : timeOrderedHoldout(usable, {
+          at: (l) => l.at,
+          era: (l) => l.era,
+          labelReadyAt: (l) => l.readyAt,
+          boundary: BOUNDARY,
+          design: `${label} — frozen time-ordered holdout`,
+        });
   const test = split.test;
   const labels = test.map((l) => l.y);
 
@@ -416,7 +431,8 @@ export function readArms(
 
   artifact[label] = {
     provenance: split.provenance,
-    boundary: new Date(BOUNDARY).toISOString(),
+    boundary: new Date(split.boundary).toISOString(),
+    splitMode,
     trainN: split.trainN,
     testN: split.testN,
     purged: split.purged,
