@@ -481,6 +481,25 @@ export async function getActiveRules(): Promise<{ rules: Rules; version: number;
   return { rules: parsed, version: active.version, id: active.id };
 }
 
+/**
+ * 2026-10-28 (self-audit): one rule change is one DECISION, and every field it touches carries the SAME
+ * reason. The writer used to join one reason per field, so a 5-field change stored its reason five times
+ * and the EOD report printed it five times: v68's "Rule changes" bullet was 2,096 characters, about a
+ * third of the whole message, of the same sentence. Measured on RuleChange: v68 x5, v69 x2, v66 x2 —
+ * 4 of 68 rows affected. Dedupes identical values in first-seen order; distinct reasons are all kept.
+ */
+export function dedupeProposalText(values: (string | null | undefined)[]): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of values) {
+    const k = (v ?? "").trim();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(k);
+  }
+  return out.join(" | ");
+}
+
 export interface RuleChangeProposal {
   field: keyof Rules;
   newValue: number | string | string[];
@@ -518,8 +537,8 @@ export async function applyRuleChanges(
         oldRuleSetId: oldId,
         newRuleSetId: ns.id,
         changedBy,
-        reason: proposals.map((p) => p.reason).join(" | "),
-        evidenceSummary: proposals.map((p) => p.evidence).join(" | "),
+        reason: dedupeProposalText(proposals.map((p) => p.reason)),
+        evidenceSummary: dedupeProposalText(proposals.map((p) => p.evidence)),
         beforeJson: JSON.stringify(before),
         afterJson: JSON.stringify(after),
       },
