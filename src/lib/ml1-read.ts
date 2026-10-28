@@ -182,6 +182,63 @@ export function loadTrainingData(): (Leg & { yOutcome: number | null })[] {
 
 export const fmt = (v: number, d = 4) => (Number.isNaN(v) || v === null ? "n/a" : v.toFixed(d));
 
+/** The era composition of a TRAIN window, as measured — never assumed. */
+export type TrainEraMix = { era: string; n: number; share: number };
+
+/**
+ * TRAIN era mix (card `ml1-fit-population-gaps`, claim (2)). A fitted arm inherits whatever
+ * window it was given, so the window's era composition belongs in the gate output: a fit whose
+ * train is 100% one era is a regime-1 model wearing the clothes of a general one, and the only
+ * way to see that in the printed verdict is to print the mix.
+ */
+export function trainEraMix(train: readonly Leg[]): TrainEraMix[] {
+  const counts = new Map<string, number>();
+  for (const l of train) {
+    const e = l.era ?? "unknown";
+    counts.set(e, (counts.get(e) ?? 0) + 1);
+  }
+  const total = train.length || 1;
+  return [...counts.entries()]
+    .map(([era, n]) => ({ era, n, share: n / total }))
+    .sort((a, b) => a.era.localeCompare(b.era));
+}
+
+export type EraAucRow = { era: string; n: number; auc: number; usable: boolean; seenInTrain: boolean };
+
+/**
+ * Test AUC WITHIN each era for one ranker. Same rows, same level (leg), same clock as the pooled
+ * read — just stratified, so an arm whose pooled AUC is one era's edge cannot hide behind it.
+ * `seenInTrain` is the honest flag: on a single-era train window every held-out era is unseen,
+ * and an arm scored there is extrapolating, not generalising.
+ */
+export function eraAucRead(
+  test: readonly Leg[],
+  get: (l: Leg) => number,
+  trainEras: ReadonlySet<string>,
+  minN = 30
+): EraAucRow[] {
+  const byEra = new Map<string, Leg[]>();
+  for (const l of test) {
+    if (!Number.isFinite(get(l))) continue;
+    const e = l.era ?? "unknown";
+    const arr = byEra.get(e) ?? [];
+    arr.push(l);
+    byEra.set(e, arr);
+  }
+  return [...byEra.entries()]
+    .map(([era, list]) => {
+      const usable = list.length >= minN && new Set(list.map((l) => l.y)).size > 1;
+      return {
+        era,
+        n: list.length,
+        auc: usable ? auc(list.map(get), list.map((l) => l.y)) : Number.NaN,
+        usable,
+        seenInTrain: trainEras.has(era),
+      };
+    })
+    .sort((a, b) => a.era.localeCompare(b.era));
+}
+
 export function readArms(
   legs: Leg[],
   label: string,
@@ -203,6 +260,26 @@ export function readArms(
   console.log(`\n### ${label}`);
   console.log(`  ${split.provenance}`);
   console.log(`  test base rate ${fmt(mean(labels))} | constant-predictor Brier ${fmt(constantBrier(labels))} | markets ${new Set(test.map((l) => l.market)).size}`);
+
+  // TRAIN ERA MIX — claim (2) of card `ml1-fit-population-gaps`. Reporting only: the boundary,
+  // the split and every bar stay exactly where they were. What changes is that the gate now SAYS
+  // which era(s) the fit was allowed to see, instead of leaving it to a roadmap note.
+  const trainMix = trainEraMix(split.train);
+  const trainEras = new Set(trainMix.map((e) => e.era));
+  const testUnseen = test.filter((l) => !trainEras.has(l.era ?? "unknown"));
+  console.log(
+    `  TRAIN eras (n=${split.train.length}): ` +
+      (trainMix.length
+        ? trainMix.map((e) => `${e.era} ${e.n} (${(e.share * 100).toFixed(1)}%)`).join(" | ")
+        : "none — empty train window")
+  );
+  if (trainMix.length === 1 && testUnseen.length > 0) {
+    console.log(
+      `  ^ TRAIN IS SINGLE-ERA (${trainMix[0].era} only). Fitted arms below saw NO row from ` +
+        `${testUnseen.length} of ${test.length} test legs: their pooled AUC is extrapolation across eras,` +
+        ` and the 'forward-era' number on each arm is that read isolated.`
+    );
+  }
 
   const priceAuc = auc(test.map((l) => l.price), labels);
   const priceBrier = brier(test.map((l) => l.price), labels);
@@ -246,6 +323,13 @@ export function readArms(
     const brierBar = compBrier + BAR.margin;
     const clearsAuc = a >= aucBar;
     const clearsBrier = probability ? b <= brierBar : null;
+    // Per-era AUC on THIS arm's own scored rows (reporting only). The pooled number is kept as-is.
+    const perEra = eraAucRead(scored, get, trainEras);
+    const unseenScored = scored.filter((l) => !trainEras.has(l.era ?? "unknown"));
+    const unseenUsable = unseenScored.length >= 30 && new Set(unseenScored.map((l) => l.y)).size > 1;
+    const unseenAuc = unseenUsable ? auc(unseenScored.map(get), unseenScored.map((l) => l.y)) : Number.NaN;
+    const unseenPriceAuc = unseenUsable ? auc(unseenScored.map((l) => l.price), unseenScored.map((l) => l.y)) : Number.NaN;
+
     rows.push({
       arm: name,
       n: scored.length,
@@ -267,6 +351,10 @@ export function readArms(
       topTercileMeanPnl: money.point,
       topTercileVsCopyAllCi: [money.low, money.high],
       topTercileN: selectBy(scored, get).length,
+      eraAuc: perEra,
+      unseenEraN: unseenScored.length,
+      unseenEraAuc: Number.isNaN(unseenAuc) ? null : unseenAuc,
+      unseenEraPriceAuc: Number.isNaN(unseenPriceAuc) ? null : unseenPriceAuc,
       ...extra,
     });
     console.log(
@@ -275,6 +363,21 @@ export function readArms(
         ` | ΔAUC vs price ${fmt(delta.point, 4)} CI [${fmt(delta.low)}, ${fmt(delta.high)}] P(>) ${fmt(delta.pGreater, 3)}` +
         ` | topTercile $/leg ${fmt(money.point, 2)} vs copy-all, CI [${fmt(money.low, 2)}, ${fmt(money.high, 2)}]`
     );
+    if (perEra.length > 1) {
+      console.log(
+        `  ${"".padEnd(22)} AUC by era: ` +
+          perEra
+            .map((e) => `${e.seenInTrain ? "" : "*"}${e.era} ${fmt(e.auc)} (n=${e.n})`)
+            .join(" | ") +
+          `   [* = era absent from train]`
+      );
+    }
+    if (unseenUsable) {
+      console.log(
+        `  ${"".padEnd(22)} forward-era (unseen in train) n=${unseenScored.length} AUC ${fmt(unseenAuc)}` +
+          ` vs price ${fmt(unseenPriceAuc)} (Δ ${fmt(unseenAuc - unseenPriceAuc, 4)})`
+      );
+    }
   };
 
   const armList: { name: string; get: (l: Leg) => number; probability: boolean }[] = [
@@ -300,13 +403,13 @@ export function readArms(
   // Per-era read — criterion (d) of the pre-registered shadow read, applied to AUC:
   // a sign that only holds in one era is not a signal, it is a policy artifact.
   const eras = eraGroups(test, (l) => l.era);
-  const eraRows: { era: string; n: number; priceAuc: number; priceAucUsable: boolean }[] = [];
+  const eraRows: { era: string; n: number; priceAuc: number; priceAucUsable: boolean; seenInTrain: boolean }[] = [];
   for (const [era, list] of [...eras.entries()].sort()) {
     const eLabels = list.map((l) => l.y);
     const eAuc = list.length >= 30 ? auc(list.map((l) => l.price), eLabels) : Number.NaN;
-    eraRows.push({ era, n: list.length, priceAuc: eAuc, priceAucUsable: !Number.isNaN(eAuc) });
+    eraRows.push({ era, n: list.length, priceAuc: eAuc, priceAucUsable: !Number.isNaN(eAuc), seenInTrain: trainEras.has(era) });
     console.log(
-      `    era ${era.padEnd(20)} n=${String(list.length).padStart(4)} price-only AUC ${fmt(eAuc)}` +
+      `    era ${(trainEras.has(era) ? "" : "*")}${era.padEnd(19)} n=${String(list.length).padStart(4)} price-only AUC ${fmt(eAuc)}` +
         (Number.isNaN(eAuc) ? " (too few rows or one class — not read)" : "")
     );
   }
@@ -323,6 +426,9 @@ export function readArms(
     priceOnly: { auc: priceAuc, brier: priceBrier },
     arms: rows,
     eraRead: eraRows,
+    trainEraMix: trainMix,
+    trainEraCount: trainMix.length,
+    testUnseenEraN: testUnseen.length,
   };
 
   // Returned so a caller can put an EXTRA read on exactly these rows instead of
