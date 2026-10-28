@@ -13,6 +13,7 @@ Rules this enforces (see the polymarket-copybot-ops skill):
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import sys
 import time
@@ -76,8 +77,16 @@ def main() -> int:
 
     bak = ROADMAP.with_name(f"roadmap.json.bak-{reason}-{time.strftime('%Y%m%d-%H%M%S')}")
     shutil.copy2(ROADMAP, bak)
+    # FORMAT-PRESERVING WRITE (fixed 2026-10-27). This used to hardcode indent=1 and
+    # ensure_ascii=False, but data/roadmap.json is indent=2 with \uXXXX escapes: every run
+    # rewrote all 743 KB, so a two-card edit arrived as a 7,292-line diff that hid the actual
+    # change from review. Match the file's own formatting instead of imposing one.
+    raw = ROADMAP.read_text()
+    m = re.search(r'\n( +)"', raw)
+    indent = len(m.group(1)) if m else 2
+    trailing = "\n" if raw.endswith("\n") else ""
     tmp = ROADMAP.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(d, indent=1, ensure_ascii=False) + "\n")
+    tmp.write_text(json.dumps(d, indent=indent, ensure_ascii=True) + trailing)
     tmp.replace(ROADMAP)
 
     back = load()
