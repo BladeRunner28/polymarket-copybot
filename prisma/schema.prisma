@@ -195,6 +195,17 @@ model PaperTrade {
   unrealizedPnl         Float     @default(0)
   realizedPnl           Float?
   status                String    @default("open") // open | closed | resolved
+  // FILL-AWARE BOOKING (approved 2026-10-27, floor waived; "All 5 are approved" 2026-10-28).
+  // `fillStatus` is the resolver's verdict on whether the maker level was ever REACHABLE:
+  //   "filled" | "unfilled" | NULL = not yet resolved.
+  // NULL is load-bearing and must never be read as "unfilled": the resolver returns basis
+  // "unresolved" when it holds no book window and the tape is silent, and 26.4% of intents sit
+  // there. Those legs book exactly as before (p(fill)=1), which makes the flip CONSERVATIVE —
+  // an un-stamped leg keeps its optimistic number rather than being written to zero.
+  // Nothing reads these unless FILL_AWARE_BOOKING=1; default 0 keeps the old book byte-identical.
+  fillStatus            String?
+  fillBasis             String? // book-window | tape-lower-bound | tape-flat | unresolved
+  fillResolvedAt        DateTime?
   isDemo                Boolean   @default(false)
   openedAt              DateTime  @default(now())
   closedAt              DateTime?

@@ -12,6 +12,36 @@ import { applyMaturitySizeFactor, type MaturityFactors } from "./maturity-size";
 import { recordFillIntent, stampIntentLink } from "./fill-intent";
 import { appendCloseReason } from "./close-log";
 
+/**
+ * FILL-AWARE BOOKING — approved 2026-10-27 ("I approve your recommendations") and re-affirmed
+ * 2026-10-28 ("All 5 are approved"). The resolver's >=80% coverage floor is WAIVED.
+ *
+ * The C-200 lane hands the Rust sidecar `max(0.01, price - 0.02)` and then books every leg at
+ * `p(fill) = 1`. That is not a modelling choice, it is a fiction with a measured size: 61% of booked
+ * C-200 PnL ($802.73 of $1,313.66) sits on legs that never filled, and the booked-vs-fill-aware ratio
+ * is 2.87x.
+ *
+ * WHY WAIVING THE FLOOR IS SAFE — the misspecification is ONE-SIDED. `fillStatus` is only stamped
+ * when the resolver holds positive evidence:
+ *   "filled"   -> book window showed the level reachable, or the tape cleared it under the flat model
+ *   "unfilled" -> book window showed it NOT reachable, or the tape proved the deeper level never printed
+ *   NULL       -> "unresolved": no book window AND silent tape. 26.4% of intents sit here today.
+ * An unresolved leg books exactly as it did before (p(fill)=1, the optimistic number). So flipping
+ * this can only REMOVE PnL that provably never existed; it can never manufacture a worse book from
+ * ignorance. That is why the 80% floor protects against nothing here, and why a partially-resolved
+ * book is still strictly more truthful than an un-resolved one.
+ */
+export function fillAwareBookingEnabled(): boolean {
+  return process.env.FILL_AWARE_BOOKING === "1";
+}
+
+/** Booked PnL for one leg. Unstamped legs pass through untouched — see the note above. */
+export function bookedPnl(leg: { fillStatus?: string | null }, pnl: number): number {
+  if (!fillAwareBookingEnabled()) return pnl;
+  if (leg.fillStatus === "unfilled") return 0;
+  return pnl;
+}
+
 export function computePnl(entryPrice: number, currentPrice: number, sizeUsd: number): number {
   if (entryPrice <= 0) return 0;
   const shares = sizeUsd / entryPrice;
@@ -315,7 +345,7 @@ export async function updatePaperTradePrice(tradeId: string, currentOutcomePrice
   assertWritableInputs("updatePaperTradePrice", tradeId, currentOutcomePrice);
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status !== "open") return trade;
-  const pnl = computePnl(trade.entryPrice, currentOutcomePrice, trade.simulatedPositionSize);
+  const pnl = bookedPnl(trade, computePnl(trade.entryPrice, currentOutcomePrice, trade.simulatedPositionSize));
   const [updated] = await prisma.$transaction([
     prisma.paperTrade.update({
       where: { id: tradeId },
@@ -336,7 +366,7 @@ export async function resolvePaperTrade(tradeId: string, won: boolean) {
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status === "resolved") return trade;
   const finalPrice = won ? 1 : 0;
-  const pnl = computePnl(trade.entryPrice, finalPrice, trade.simulatedPositionSize);
+  const pnl = bookedPnl(trade, computePnl(trade.entryPrice, finalPrice, trade.simulatedPositionSize));
   const payout = trade.simulatedPositionSize + pnl;
 
   return prisma.$transaction(async (tx) => {
@@ -448,7 +478,7 @@ export async function closePaperTrade(tradeId: string, exitPrice: number, reason
   assertWritableInputs("closePaperTrade", tradeId, exitPrice);
   const trade = await prisma.paperTrade.findUniqueOrThrow({ where: { id: tradeId } });
   if (trade.status !== "open") return trade;
-  const pnl = computePnl(trade.entryPrice, exitPrice, trade.simulatedPositionSize);
+  const pnl = bookedPnl(trade, computePnl(trade.entryPrice, exitPrice, trade.simulatedPositionSize));
   const payout = trade.simulatedPositionSize + pnl;
   appendCloseReason({
     id: tradeId,
