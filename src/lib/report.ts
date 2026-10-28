@@ -195,6 +195,72 @@ function localDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+export type Payoff = {
+  n: number;
+  wins: number;
+  winRate: number;
+  avgWin: number;
+  avgLoss: number;
+  roi: number;
+  cost: number;
+  since: Date | null;
+};
+
+/**
+ * 2026-10-28 (self-audit, prereg Part C): the EOD report printed "Win Rate: 63.5%" with no
+ * population, no clock and no payoff companions, directly under a header that says the report covers
+ * one calendar day — so a LIFETIME figure read as today's. That is the exact reporting defect that
+ * turned a deliberate shift toward higher-payoff positions into "a large drop in wins": win rate fell
+ * 71.7% (Jul) -> 41.2% (Oct) while ROI rose to the best month in the series, because average win went
+ * $6.67 -> $23.30 against average loss -$9.05 -> -$12.80.
+ *
+ * So the win rate and its companions come from ONE function on ONE population (settled `closed`+
+ * `resolved` rows, isDemo=false) at ONE level (the trade). It cannot drift from what it is printed
+ * beside, because the printed win rate IS this function's output.
+ */
+export function payoffStats(
+  rows: { realizedPnl: number | null; simulatedPositionSize: number; closedAt: Date | null; resolvedAt: Date | null }[]
+): Payoff {
+  const wins = rows.filter((t) => (t.realizedPnl ?? 0) > 0);
+  const nonWins = rows.filter((t) => (t.realizedPnl ?? 0) <= 0);
+  const pnl = rows.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
+  const cost = rows.reduce((a, t) => a + (t.simulatedPositionSize ?? 0), 0);
+  let since: Date | null = null;
+  for (const t of rows) {
+    const d = t.closedAt ?? t.resolvedAt;
+    if (d && (!since || d < since)) since = d;
+  }
+  return {
+    n: rows.length,
+    wins: wins.length,
+    winRate: rows.length ? wins.length / rows.length : 0,
+    avgWin: wins.length ? wins.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) / wins.length : 0,
+    avgLoss: nonWins.length ? nonWins.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) / nonWins.length : 0,
+    roi: cost ? (100 * pnl) / cost : 0,
+    cost,
+    since,
+  };
+}
+
+/** The basis line that must accompany every printed win rate (prereg Part C). */
+export function winRateLine(p: Payoff, openCount: number): string {
+  const pct = (p.winRate * 100).toFixed(1);
+  return `• Win Rate: ${pct}% (LIFETIME settled, n=${p.n}) | Open Positions: ${openCount}`;
+}
+
+/** Payoff companions on the SAME population, clock and level as the win rate above it. */
+export function payoffLine(p: Payoff): string {
+  if (!p.n) return `  ↳ payoff: no settled legs yet — win rate is undefined here, not 0%`;
+  const f = (n: number) => `${n >= 0 ? "+" : "-"}$${Math.abs(n).toFixed(2)}`;
+  const since = p.since ? ` since ${localDate(p.since)}` : "";
+  return (
+    `  ↳ payoff on those ${p.n.toLocaleString()} settled legs${since}: ` +
+    `avg win ${f(p.avgWin)} / avg loss ${f(p.avgLoss)} / ROI ${p.roi >= 0 ? "+" : ""}${p.roi.toFixed(1)}% ` +
+    `on $${Math.round(p.cost).toLocaleString()} cost — win rate alone cannot separate payoff from ` +
+    `decay; these three can`
+  );
+}
+
 export async function generateDailyReport(
   opts: { dryRun?: boolean } = {}
 ): Promise<{ id: string; summary: string; sent: boolean }> {
@@ -211,7 +277,11 @@ export async function generateDailyReport(
 
   const [openTrades, finishedFetched, decisionsToday, ruleChangesToday, allFinished, bankrolls] =
     await Promise.all([
-      prisma.paperTrade.findMany({ where: { status: "open" } }),
+      // 2026-10-28 (self-audit): isDemo=false. Without it the printed "Open Positions" counted 18
+      // seeded demo rows (487 shown, 469 real), and any demo row would have entered lifetime PnL and
+      // win rate. Every other read script in the repo already scopes on isDemo=0; the EOD report was
+      // the only instrument that did not.
+      prisma.paperTrade.findMany({ where: { status: "open", isDemo: false } }),
       // Fetched from tailStart so one query serves both the reported day and the
       // carry-over slice; bucketing happens in JS because Prisma cannot express
       // `closedAt ?? resolvedAt` in a where clause.
@@ -234,7 +304,7 @@ export async function generateDailyReport(
       // closedAt (resolvedAt NULL), so a resolved-only filter overstated C-200
       // EOD net worth (~$960: its closed-at-a-loss early exits were missing)
       // and understated STANDARD (~$1,082: its closed winners were missing).
-      prisma.paperTrade.findMany({ where: { status: { in: ["resolved", "closed"] } } }),
+      prisma.paperTrade.findMany({ where: { status: { in: ["resolved", "closed"] }, isDemo: false } }),
       prisma.botBankroll.findMany(),
     ]);
 
@@ -259,17 +329,17 @@ export async function generateDailyReport(
   const stdTotalPnl =
     stdFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
     standardOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
-  const stdWinRate = stdFinished.length
-    ? stdFinished.filter((t) => (t.realizedPnl ?? 0) > 0).length / stdFinished.length
-    : 0;
+  const stdPayoff = payoffStats(stdFinished);
+  const cmpPayoff = payoffStats(cmpFinished);
+  // Win rate and its companions now share one source, so the printed rate cannot drift from the
+  // payoff printed beside it (prereg Part C, 2026-10-28).
+  const stdWinRate = stdPayoff.winRate;
 
   const cmpPnlToday = cmpResolvedToday.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const cmpTotalPnl =
     cmpFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
     compoundOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
-  const cmpWinRate = cmpFinished.length
-    ? cmpFinished.filter((t) => (t.realizedPnl ?? 0) > 0).length / cmpFinished.length
-    : 0;
+  const cmpWinRate = cmpPayoff.winRate;
 
   // Tail totals reported separately so the two bots' day figures stay clean.
   const tailCmp = tailRows.filter((t) => t.botId === "BANKROLL_200").reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
@@ -365,7 +435,8 @@ export async function generateDailyReport(
     ``, 
     `**🤖 STANDARD Bot (Infinite Pool):**`,
     `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)}`,
-    `• Win Rate: ${(stdWinRate * 100).toFixed(1)}% | Open Positions: ${standardOpen.length}`,
+    winRateLine(stdPayoff, standardOpen.length),
+    payoffLine(stdPayoff),
     sizingRangeLine("STANDARD", sizingRanges),
     `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmt(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
     largestStack && largestStackShare > 0.5
@@ -374,7 +445,8 @@ export async function generateDailyReport(
     ``,
     `**⚖️ BANKROLL_200 Bot (Compounding Pool):**`,
     `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)}`,
-    `• Win Rate: ${(cmpWinRate * 100).toFixed(1)}% | Open Positions: ${compoundOpen.length}`,
+    winRateLine(cmpPayoff, compoundOpen.length),
+    payoffLine(cmpPayoff),
     sizingRangeLine("BANKROLL_200", sizingRanges),
     `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
     ledgerNote,
