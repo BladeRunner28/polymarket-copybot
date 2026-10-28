@@ -32,7 +32,15 @@ import { appendCloseReason } from "./close-log";
  * book is still strictly more truthful than an un-resolved one.
  */
 export function fillAwareBookingEnabled(): boolean {
-  return process.env.FILL_AWARE_BOOKING === "1";
+  // DEFAULT ON since 2026-10-28. The approved flip is implemented as the CODE default rather than an
+  // env var set at the call sites, because nothing in this repo loads .env automatically (no dotenv
+  // import anywhere) and the three PnL-writing sites are reached from several entrypoints -- the hourly
+  // update-pnl cron, score-trades, and the EOD report. Setting a var in one of those shells would flip
+  // MARKS on one process and SETTLEMENTS on another, producing a book internally inconsistent about
+  // whether a leg was ever a position. A code default cannot be partially applied.
+  // Opt out with FILL_AWARE_BOOKING=0 (also accepts "false"/"off") to restore p(fill)=1 exactly.
+  const v = (process.env.FILL_AWARE_BOOKING ?? "").trim().toLowerCase();
+  return !(v === "0" || v === "false" || v === "off");
 }
 
 /** Booked PnL for one leg. Unstamped legs pass through untouched — see the note above. */

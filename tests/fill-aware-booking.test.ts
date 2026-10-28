@@ -16,19 +16,22 @@ afterEach(() => {
 });
 
 describe("fill-aware booking", () => {
-  it("is OFF unless the env flag is exactly '1'", () => {
+  it("is ON by default and opts out only on an explicit falsy token", () => {
+    // Default ON so the flip cannot be partially applied across entrypoints -- see the note in paper.ts.
     delete process.env.FILL_AWARE_BOOKING;
-    expect(fillAwareBookingEnabled()).toBe(false);
-    for (const v of ["0", "true", "yes", "", "2"]) {
-      process.env.FILL_AWARE_BOOKING = v;
-      expect(fillAwareBookingEnabled(), `FILL_AWARE_BOOKING=${JSON.stringify(v)} must not enable it`).toBe(false);
-    }
-    process.env.FILL_AWARE_BOOKING = "1";
     expect(fillAwareBookingEnabled()).toBe(true);
+    for (const v of ["0", "false", "off", "FALSE", " off "]) {
+      process.env.FILL_AWARE_BOOKING = v;
+      expect(fillAwareBookingEnabled(), `FILL_AWARE_BOOKING=${JSON.stringify(v)} must DISABLE it`).toBe(false);
+    }
+    for (const v of ["1", "true", "on", "yes", "", "  "]) {
+      process.env.FILL_AWARE_BOOKING = v;
+      expect(fillAwareBookingEnabled(), `FILL_AWARE_BOOKING=${JSON.stringify(v)} must leave it ON`).toBe(true);
+    }
   });
 
   it("with the flag OFF, every leg books exactly as before regardless of fillStatus", () => {
-    delete process.env.FILL_AWARE_BOOKING;
+    process.env.FILL_AWARE_BOOKING = "0";
     for (const s of ["filled", "unfilled", null, undefined]) {
       expect(bookedPnl({ fillStatus: s as string | null }, 12.34)).toBe(12.34);
       expect(bookedPnl({ fillStatus: s as string | null }, -18)).toBe(-18);
