@@ -56,8 +56,19 @@ def load_roadmap():
 
 
 def board_tasks():
-    """Read the kanban board. Retried once: WAL can refuse a read while the dispatcher holds the shm."""
-    sql = "SELECT id, title, status, idempotency_key FROM tasks"
+    """Read the kanban board. Retried once: WAL can refuse a read while the dispatcher holds the shm.
+
+    Selects `body`/`created_by` and an `open_parents` count because a card created by a WORKER as a
+    child of its own card carries no roadmap idempotency key -- the roadmap loop below cannot see it,
+    so without this it would sit blocked forever with nobody to promote it. That is the exact shape of
+    t_d9736b86 (created by its parent, parent finished, fully specced, never promoted).
+    """
+    sql = """
+        SELECT t.id, t.title, t.status, t.idempotency_key, t.created_by, t.body,
+               (SELECT COUNT(*) FROM task_links l JOIN tasks p ON p.id = l.parent_id
+                 WHERE l.child_id = t.id AND p.status NOT IN ('done')) AS open_parents
+        FROM tasks t
+    """
     last = None
     for attempt in range(2):
         for mode in (["-readonly"], []):
@@ -79,6 +90,34 @@ def board_tasks():
     # A failed read must NOT look like an empty board -- that would re-promote every card at once.
     print("BOARD-READ-FAILED: %s" % last, file=sys.stderr)
     sys.exit(2)
+
+
+def stranded_lane_b(tasks):
+    """Blocked cards a WORKER created that are safe to run, but which nothing will ever promote.
+
+    Conditions are deliberately narrow. The body must carry the Lane B banner the feeder itself writes
+    (and NOT the Lane A one, and not an awaiting-approval instruction); the creator must not be the
+    operator or the feeder; and every parent must be `done`, so a child never starts before the work
+    it depends on has finished. Lane A card bodies fail the marker test, so those still wait for the
+    operator -- which is the whole point.
+    """
+    out = []
+    for t in tasks:
+        if t.get("status") != "blocked":
+            continue
+        if t.get("idempotency_key"):
+            continue  # roadmap-fed; the roadmap loop owns it
+        if t.get("open_parents"):
+            continue
+        body = t.get("body") or ""
+        if "LANE B" not in body:
+            continue
+        if "LANE A" in body or "awaiting-approval" in body:
+            continue
+        if (t.get("created_by") or "") in ("user", "backlog-feeder"):
+            continue
+        out.append(t)
+    return out
 
 
 def tags_of(card):
@@ -204,6 +243,29 @@ def main():
 
     room = min(args.max_promote, args.max_active - len(active))
 
+    # 0. Stranded worker-created Lane B children FIRST. These are continuations of work that was
+    #    already approved and already started by a parent card, and no other code path will ever
+    #    promote them: they carry no roadmap key, so the roadmap loop cannot see them. Ordering them
+    #    ahead of fresh roadmap cards also keeps a multi-stage measurement from stalling mid-way.
+    promoted_stranded = 0
+    for t in stranded_lane_b(tasks):
+        if promoted_stranded >= room:
+            break
+        title = (t.get("title") or "")[:100]
+        if args.dry_run:
+            report("WOULD PROMOTE (stranded) %s %s" % (t["id"], title))
+        else:
+            p = subprocess.run(
+                ["hermes", "kanban", "--board", "medusa", "promote", t["id"]],
+                capture_output=True, text=True,
+            )
+            if p.returncode != 0:
+                report("   UNBLOCK FAILED (%s): %s" % (t["id"], (p.stderr or p.stdout).strip()[:200]))
+                continue
+            report("PROMOTED (stranded) %s -> dispatchable\n   %s" % (t["id"], title))
+        promoted_stranded += 1
+    room -= promoted_stranded
+
     # Lane B first, always. Lane A only once no Lane B work is queued or running.
     lane_b_active = [
         t for t in active
@@ -221,12 +283,15 @@ def main():
             picks.append((c, "a"))
 
     if not picks:
-        if not lane_b_drained:
-            say("Lane B still active (%d) -- Lane A not fed yet, by design." % len(lane_b_active))
-        elif bucket["b"]:
-            say("nothing to promote (room=0)")
-        elif not args.lane_a:
-            say("Lane B drained and no Lane A feeding requested (--lane-a to allow).")
+        if not promoted_stranded:
+            if not lane_b_drained:
+                say("Lane B still active (%d) -- Lane A not fed yet, by design." % len(lane_b_active))
+            elif bucket["b"]:
+                say("nothing to promote (room=0)")
+            elif not args.lane_a:
+                say("Lane B drained and no Lane A feeding requested (--lane-a to allow).")
+            else:
+                say("nothing to promote")
         return 0
 
     say()
