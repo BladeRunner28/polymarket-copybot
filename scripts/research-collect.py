@@ -36,6 +36,13 @@ CST = timezone(timedelta(hours=-5))
 UA = {"User-Agent": "polyhydra-research/1.0"}
 TIMEOUT = 20
 
+# 2026-10-24 (local/CST) is a STOCK CLEAR, not a trading day: v66's stale exit force-closed the
+# C-200 book in one pass, so 708 settlements of -$487.04 land on that single date. One such day
+# dominates any window it falls in (it is 82% of the 7d sample) and can invert the sign of the
+# per-leg read, so both settled windows also print an ex-stock-clear companion line. Kept as a
+# named constant rather than a SQL literal: every number below must be able to state its basis.
+STOCK_CLEAR_DATE = "2026-10-24"
+
 
 # ---------------------------------------------------------------- helpers
 def now_cst() -> datetime:
@@ -80,6 +87,15 @@ def fetch_text(url: str) -> tuple[str | None, str]:
 
 def ms(dt: datetime) -> int:
     return int(dt.timestamp() * 1000)
+
+
+def per_leg(n: int | None, pnl: float | None) -> str:
+    """Per-settlement PnL, the figure a window read has to compare across samples of
+    different size (a 708-leg stock clear and a 154-leg week are not the same population).
+    n=0 prints 'n/a' rather than a division by zero that would poison the fact sheet."""
+    if not n:
+        return "$n/a"
+    return f"${(pnl or 0) / n:,.2f}"
 
 
 # ---------------------------------------------------------------- our bot
@@ -145,6 +161,21 @@ def bot_facts(db: str, days: int) -> list[str]:
                         f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} AND {scol} >= ?",
                         (ms(now - timedelta(days=d)),)).fetchone()
                     out.append(f"  - last {d}d: n={r[0]}, realized ${r[1] or 0:,.2f}")
+                    # Companion line on the same clock/basis, one non-trading day excluded --
+                    # deliberately alongside the blended line, not replacing it: the blended
+                    # figure is what actually settled, the ex-clear figure is what trading did.
+                    if d in (7, 30):
+                        ex = cur.execute(
+                            f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                            f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
+                            f"AND {scol} >= ? "
+                            f"AND date({scol}/1000,'unixepoch','-5 hours') <> ?",
+                            (ms(now - timedelta(days=d)), STOCK_CLEAR_DATE)).fetchone()
+                        out.append(
+                            f"    last {d}d EX-STOCK-CLEAR ({STOCK_CLEAR_DATE} excluded): "
+                            f"n={ex[0]}, realized ${ex[1] or 0:,.2f}, "
+                            f"{per_leg(ex[0], ex[1])}/leg "
+                            f"[blended {per_leg(r[0], r[1])}/leg]")
                 # A single day carrying >=100 closures is a STOCK CLEAR, not trading, and it
                 # dominates any window it lands in. v66's stale exit closed 701 C-200 legs on
                 # 2026-10-24 (booked -$350.52); this grouped read lands 708 / -$487.04 because
