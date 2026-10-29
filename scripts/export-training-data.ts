@@ -388,17 +388,36 @@ async function main() {
   try {
     const m = JSON.parse(fs.readFileSync("data/decision-dataset.manifest.json", "utf8"));
     const asOf = Date.parse(m.generated_at);
-    const asOfSums = targetSums(
+
+    // SCOPE THE COMPARISON TO ROWS THE FROZEN MANIFEST CAN STILL ADJUDICATE (tuning #70 Rec 2, option (b)).
+    // The manifest was built entirely on the keyword PROXY fee. The approved fee-truth change (38f8762)
+    // then stamped `fee_rate_source=venue` on a growing minority of rows, so any truth-bearing row now
+    // disagrees with the frozen baseline BY CONSTRUCTION — which made this check unfalsifiable: it had
+    // printed `1 check(s) DRIFTED` on three consecutive EODs (10-26/27/28) at a magnitude of $0.0496 on
+    // $168.56, i.e. noise between two correct numbers. A check that cannot pass is the same defect class
+    // as a probe that cannot fail.
+    // Fix: keep the frozen baseline, reconcile only the proxy rows (which is what it measured), and
+    // report the truth-bearing rows SEPARATELY so their movement stays visible instead of silently
+    // disabling the check. Regenerating the manifest (option (a)) was rejected — it moves the baseline.
+    const truthMap = feeRateTruthMap();
+    const isTruthRow = (r: any) => (truthMap.get(String(r.marketId)) ?? null) !== null;
+    const dedupAsOf = dedupeFirstPerPosition(
       raw.filter((r) => {
         const t = num(r.terminalAt);
         return t !== null && t <= asOf;
       }),
     );
+    const proxyDedup = dedupAsOf.filter((r) => !isTruthRow(r));
+    const truthDedup = dedupAsOf.filter(isTruthRow);
+    const asOfSums = targetSums(proxyDedup);
+    const truthSums = targetSums(truthDedup);
+    // `rows` compares like with like: the manifest counted every position, so subtract the truth-bearing
+    // positions it could not have priced on the proxy.
     const checks: [string, number, number][] = [
-      ["rows", Number(m.rows_emitted), asOfSums.rows],
-      ["pnl_gross", m.pnl_gross, asOfSums.gross],
-      ["pnl_net_entry", m.pnl_net_entry, asOfSums.netEntry],
-      ["pnl_net_full", m.pnl_net_full, asOfSums.netFull],
+      ["rows", Number(m.rows_emitted) - truthSums.rows, asOfSums.rows],
+      ["pnl_gross", m.pnl_gross - truthSums.gross, asOfSums.gross],
+      ["pnl_net_entry", m.pnl_net_entry - truthSums.netEntry, asOfSums.netEntry],
+      ["pnl_net_full", m.pnl_net_full - truthSums.netFull, asOfSums.netFull],
     ];
     console.log(`Reconcile vs data/decision-dataset.manifest.json (generated ${String(m.generated_at).slice(0, 10)}, span ${m.first_day}..${m.last_day}, raw ${m.rows_raw} -> ${m.rows_emitted}):`);
     let drift = 0;
@@ -408,9 +427,14 @@ async function main() {
       const show = (v: number) => (k === "rows" ? String(v) : `$${v}`);
       console.log(`  ${k}: dataset ${show(want)} vs export ${show(got)} ${ok ? "OK" : "DRIFT"}`);
     }
+    // Truth-bearing rows are REPORTED, never reconciled against a proxy-only baseline.
+    console.log(
+      `  proxy-only scope: ${asOfSums.rows} positions reconciled | truth-bearing (fee_rate_source=venue, ` +
+        `excluded from the check): ${truthSums.rows} positions, $${truthSums.gross} gross`,
+    );
     console.log(drift === 0
-      ? `  reconciliation: IDENTICAL on the state that dataset saw — today's file adds ${out.length - asOfSums.rows} positions settled since ${String(m.generated_at).slice(0, 10)}`
-      : `  reconciliation: ${drift} check(s) DRIFTED — the fee/target math disagrees with the frozen dataset; investigate before using the target`);
+      ? `  reconciliation: IDENTICAL on the proxy rows the frozen dataset could price — today's file adds ${out.length - asOfSums.rows - truthSums.rows} positions settled since ${String(m.generated_at).slice(0, 10)}`
+      : `  reconciliation: ${drift} check(s) DRIFTED on the proxy rows — the fee/target math disagrees with the frozen dataset; investigate before using the target`);
   } catch {
     console.log("Reconcile: data/decision-dataset.manifest.json not readable — skipped");
   }
