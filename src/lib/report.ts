@@ -28,6 +28,7 @@ import { computeBenchmarks } from "./benchmarks";
 import { computeEdgeCostSnapshot, edgeCostLines } from "./copy-cost";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
+import { dedupeProposalText } from "./rules";
 import * as fs from "fs";
 import { join } from "path";
 
@@ -195,6 +196,32 @@ function localDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * Local HH:MM. A count that is only true up to the moment it ran has to say so — the report's
+ * header names a calendar day (00:00 → 24:00), and the 22:00 run can never contain the last two
+ * hours of it. Measured 2026-10-28: the day closed with 1,011 decisions but the 22:00 report could
+ * only see 976 of them, with nothing on the line to say which window the number described.
+ */
+function localHm(d: Date): string {
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+/**
+ * One rule decision, one sentence — on the READ side.
+ *
+ * The writer stopped storing a reason once per field it touched on 2026-10-28 (05836b2), but the
+ * rows written before that still hold the repeats, and this report trusts whatever string it finds.
+ * Live: v69 stored its reason twice (583 chars), v68 five times (1,477), v29 twenty (2,577). The
+ * 10-28 report printed v69's sentence in the "Rule changes" bullet AND again in "Top lesson" —
+ * 1,166 of ~4,100 characters — because both lines read `c.reason` verbatim.
+ *
+ * Collapse exact duplicate " | "-separated segments here rather than rewriting history: every
+ * distinct reason survives, in first-seen order, and the text itself is untouched.
+ */
+export function oneReason(reason: string): string {
+  return dedupeProposalText(String(reason ?? "").split(" | "));
+}
+
 export type Payoff = {
   n: number;
   wins: number;
@@ -268,6 +295,9 @@ export async function generateDailyReport(
   const dayOffset = reportDayOffset(now);
   const { start: dayStart, end: dayEnd } = dayWindow(dayOffset, now);
   const date = localDate(dayStart);
+  // False on the normal 22:00 run: the reported day still has its last hours to come, so every
+  // count scoped to [dayStart, dayEnd) is a partial day and says so on the line.
+  const dayElapsed = now >= dayEnd;
 
   // Carry-over slice of the previous day that ran after its own report:
   // [previous report, dayStart). No previous report ⇒ nothing to carry.
@@ -294,9 +324,20 @@ export async function generateDailyReport(
           OR: [{ resolvedAt: { gte: tailStart } }, { closedAt: { gte: tailStart } }],
         },
       }),
-      prisma.decisionJournal.findMany({ where: { createdAt: { gte: dayStart } } }),
+      // 2026-10-29 (self-audit): the day's own CEILING. Both of these reads carried `gte: dayStart`
+      // alone, so "today" was really "midnight onward": a run after midnight swept the next day's
+      // rows into the reported day, and the same rows were then counted AGAIN in their own day's
+      // report. Measured on the 10-28 dry run at 06:50 on 10-29: "Signals today: 1071 (copy 16 /
+      // watch 0 / skip 1055)" against 1011 decisions that actually fall inside 10-28 (copy 11 /
+      // watch 0 / skip 1000) — 60 phantom rows, all of 10-29. The catch-up chain
+      // (copybot-eod-catchup.sh) re-runs report:daily by design, so this was not hypothetical.
+      // isDemo: false on the journal for the same reason the open-position read needed it — 24
+      // seeded demo decisions exist and none of them are signals we acted on.
+      prisma.decisionJournal.findMany({
+        where: { createdAt: { gte: dayStart, lt: dayEnd }, isDemo: false },
+      }),
       prisma.ruleChange.findMany({
-        where: { createdAt: { gte: dayStart } },
+        where: { createdAt: { gte: dayStart, lt: dayEnd } },
         include: { newRuleSet: true },
       }),
       // v52 (tuning review #19 rec 3, user-approved 2026-09-08): lifetime
@@ -405,7 +446,7 @@ export async function generateDailyReport(
   const worstWallets = walletsSorted.slice(-3).reverse().map(([a, p]) => ({ address: a, pnl: p }));
 
   const bench = await computeBenchmarks();
-  const beatBlind = bench.botFiltered.avgPnl > bench.blindCopy.avgPnl;
+  const beatBlind = bench.botFiltered.roi > bench.blindCopy.roi;
 
   // polycopy-edge-cost-pair (2026-09-23): the report quoted realized PnL as if
   // our modelled fill were free. It is not — the booked entry is a QUOTE read at
@@ -418,12 +459,14 @@ export async function generateDailyReport(
 
   const lesson =
     ruleChangesToday.length > 0
-      ? ruleChangesToday[0].reason
+      ? oneReason(ruleChangesToday[0].reason)
       : bench.avoidedLosers > bench.missedWinners
         ? "Filtering is avoiding more losers than it misses winners — filters are earning their keep"
         : "Watch for missed winners — filters may be too strict";
 
   const fmt = (n: number) => `${n >= 0 ? "+" : ""}$${n.toFixed(2)}`;
+  // A stake is not a signed number: `fmt` would print "$121,712.42 staked" as "+$121712.42 staked".
+  const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   // Derived, not hardcoded (2026-10-21 self-audit — see observedSizingRanges).
   const sizingRanges = await observedSizingRanges(now);
@@ -453,11 +496,11 @@ export async function generateDailyReport(
     ...(edgeBlock.length ? [``, ...edgeBlock] : []),
     ``,
     `**System Activity:**`,
-    `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})`,
+    `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})${dayElapsed ? "" : ` — counted 00:00→${localHm(now)} local; the rest of the day is not in this count`}`,
     best ? `• Best trade: ${short(best.walletAddress)} ${fmt(best.realizedPnl ?? 0)} on ${best.marketId}` : `• Best trade: none resolved today`,
-    `• Bot vs blind copy: ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} (bot avg ${fmt(bench.botFiltered.avgPnl)}/trade vs blind ${fmt(bench.blindCopy.avgPnl)}/trade)`,
+    `• Bot vs blind copy: ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} per dollar staked — bot ${(bench.botFiltered.roi * 100).toFixed(2)}% of ${usd(bench.botFiltered.totalCost)} staked (n=${bench.botFiltered.resolvedCount} settled legs, ${fmt(bench.botFiltered.avgPnl)}/trade) vs blind ${(bench.blindCopy.roi * 100).toFixed(2)}% of ${usd(bench.blindCopy.totalCost)} (n=${bench.blindCopy.resolvedCount} flat-$10 hypotheticals = ${(100 * bench.blindCopy.resolvedCount / Math.max(1, bench.blindCopy.count)).toFixed(1)}% of ${bench.blindCopy.count} signals — the reviewed ones, not all of them)`,
     ruleChangesToday.length
-      ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${c.reason}`).join("; ")}`
+      ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${oneReason(c.reason)}`).join("; ")}`
       : `• Rule changes: none`,
     `• Top lesson: ${lesson}`,
     walletScan,

@@ -16,6 +16,15 @@ export interface BenchmarkBucket {
   totalPnl: number;
   winRate: number;
   avgPnl: number;
+  /**
+   * 2026-10-29 (self-audit): Σ stake (USD) on the resolved rows — the denominator that `avgPnl`
+   * is silent about. The EOD line used to compare "$/trade" between a bucket sized at whatever
+   * each leg was worth and a hypothetical bucket at a flat $10, and printed the verdict as if the
+   * two averages shared a unit.
+   */
+  totalCost: number;
+  /** totalPnl / totalCost — the only unit both buckets can be compared in. */
+  roi: number;
 }
 
 export interface BenchmarkReport {
@@ -31,9 +40,12 @@ export interface BenchmarkReport {
 
 const HYPOTHETICAL_SIZE = 10;
 
-function bucket(label: string, rows: { pnl: number | null }[], totalCount: number): BenchmarkBucket {
-  const resolved = rows.filter((r) => r.pnl !== null) as { pnl: number }[];
+type BucketRow = { pnl: number | null; cost?: number | null };
+
+export function benchmarkBucket(label: string, rows: BucketRow[], totalCount: number): BenchmarkBucket {
+  const resolved = rows.filter((r) => r.pnl !== null) as { pnl: number; cost?: number | null }[];
   const total = resolved.reduce((a, r) => a + r.pnl, 0);
+  const cost = resolved.reduce((a, r) => a + (r.cost ?? 0), 0);
   const wins = resolved.filter((r) => r.pnl > 0).length;
   return {
     label,
@@ -42,6 +54,8 @@ function bucket(label: string, rows: { pnl: number | null }[], totalCount: numbe
     totalPnl: Math.round(total * 100) / 100,
     winRate: resolved.length ? Math.round((wins / resolved.length) * 1000) / 1000 : 0,
     avgPnl: resolved.length ? Math.round((total / resolved.length) * 100) / 100 : 0,
+    totalCost: Math.round(cost * 100) / 100,
+    roi: cost > 0 ? Math.round((total / cost) * 10000) / 10000 : 0,
   };
 }
 
@@ -66,14 +80,14 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   const isCopy = (d: { decision: string }) => d.decision === "paper_copy";
   const isWatch = (d: { decision: string }) => d.decision === "watchlist";
 
-  const copyRows: { pnl: number | null }[] = copies.map((c) => ({ pnl: c.realizedPnl }));
+  const copyRows: BucketRow[] = copies.map((c) => ({ pnl: c.realizedPnl, cost: c.sizeUsd }));
   // Blind copy = every observed signal, no filtering: the reviewed rows carry
   // the only non-null values, everything else is a null row for the count.
-  const blindRows: { pnl: number | null }[] = hypoRows.map((h) => ({ pnl: h.pnl }));
-  const watchRows: { pnl: number | null }[] = hypoRows.filter(isWatch).map((h) => ({ pnl: h.pnl }));
-  const skipRows: { pnl: number | null }[] = hypoRows
+  const blindRows: BucketRow[] = hypoRows.map((h) => ({ pnl: h.pnl, cost: HYPOTHETICAL_SIZE }));
+  const watchRows: BucketRow[] = hypoRows.filter(isWatch).map((h) => ({ pnl: h.pnl, cost: HYPOTHETICAL_SIZE }));
+  const skipRows: BucketRow[] = hypoRows
     .filter((h) => !isCopy(h) && !isWatch(h))
-    .map((h) => ({ pnl: h.pnl }));
+    .map((h) => ({ pnl: h.pnl, cost: HYPOTHETICAL_SIZE }));
 
   let missedWinners = 0;
   let avoidedLosers = 0;
@@ -93,10 +107,10 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   }
 
   return {
-    botFiltered: bucket("Bot-filtered paper trades", copyRows, counts.paperCopy),
-    blindCopy: bucket("Blind leaderboard copy", blindRows, counts.total),
-    watchlist: bucket("Watchlist (not copied)", watchRows, counts.watchlist),
-    skipped: bucket("Skipped", skipRows, counts.skipped),
+    botFiltered: benchmarkBucket("Bot-filtered paper trades", copyRows, counts.paperCopy),
+    blindCopy: benchmarkBucket("Blind leaderboard copy", blindRows, counts.total),
+    watchlist: benchmarkBucket("Watchlist (not copied)", watchRows, counts.watchlist),
+    skipped: benchmarkBucket("Skipped", skipRows, counts.skipped),
     missedWinners,
     avoidedLosers,
     badCopies,

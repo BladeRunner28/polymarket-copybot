@@ -94,17 +94,25 @@ export async function reviewedDecisions(): Promise<ReviewedDecision[]> {
   return out;
 }
 
-export type CopyDecision = { createdAt: Date; realizedPnl: number | null };
+export type CopyDecision = { createdAt: Date; realizedPnl: number | null; sizeUsd: number | null };
 
 /**
  * paper_copy decisions with the realized PnL of their first paper trade
  * (`paperTrades[0]`), left as Prisma ordered it.
+ *
+ * `sizeUsd` is that same trade's `simulatedPositionSize` (USD — see schema): the stake the PnL
+ * above was earned on. Without it a bucket can only report $/trade, which is not comparable to a
+ * flat-stake hypothetical.
  */
 export async function copyDecisions(): Promise<CopyDecision[]> {
   const rows = await prisma.decisionJournal.findMany({
     where: { decision: "paper_copy" },
     orderBy: { createdAt: "asc" },
-    select: { createdAt: true, paperTrades: { select: { realizedPnl: true } } },
+    select: { createdAt: true, paperTrades: { select: { realizedPnl: true, simulatedPositionSize: true } } },
   });
-  return rows.map((d) => ({ createdAt: d.createdAt, realizedPnl: d.paperTrades[0]?.realizedPnl ?? null }));
+  return rows.map((d) => ({
+    createdAt: d.createdAt,
+    realizedPnl: d.paperTrades[0]?.realizedPnl ?? null,
+    sizeUsd: d.paperTrades[0]?.simulatedPositionSize ?? null,
+  }));
 }
