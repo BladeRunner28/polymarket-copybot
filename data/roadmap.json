@@ -3757,6 +3757,58 @@
         "measured-2026-10-29"
       ],
       "note": "Tuning #70 Rec 2 applied 2026-10-29 (option (b)): scripts/export-training-data.ts now reconciles\nONLY fee_rate_source=proxy rows against the frozen manifest and reports truth-bearing rows separately.\n\nRESULT: the fix is correct in principle but does NOT reach the rec's own verify criterion (`IDENTICAL`).\n  rows          dataset 3512        vs export 3512         OK\n  pnl_gross     dataset $1065.75    vs export $1065.75     OK\n  pnl_net_entry dataset $295.9495   vs export $295.9433    OK (delta $0.0062, inside the 0.02 tolerance)\n  pnl_net_full  dataset $167.4681   vs export $167.4185    **DRIFT ($0.0496)**\n  proxy-only scope: 3512 positions reconciled | truth-bearing excluded: 4 positions, $2.14 gross\n\nTHE REVIEW'S CAUSAL CLAIM IS REFUTED. It attributed the drift to the approved fee-truth change (38f8762,\nfee_rate_source=venue on 32 of 5,437 rows). But only 4 truth-bearing positions fall inside the manifest's\nas-of window ($2.14 gross), and EXCLUDING THEM LEAVES THE DRIFT UNCHANGED at exactly $0.0496. Fee-truth is\nnot the cause.\n\nWHERE THE DRIFT IS: entirely in pnl_net_full, i.e. the EXIT-side fee leg (rows, gross and net_entry all\nmatch). net_full = net_entry - exit fee, and net_entry already differs by $0.0062, so roughly $0.043 sits\nin the exit fee of early-CLOSED positions, which is computed from PaperTrade.currentPrice. 7,702 positions\nin the window are status='closed' vs 2,017 'resolved'. The reading that fits: one or a few early-closed\npositions had currentPrice rewritten after 2026-09-13 (reprice/settlement-fix passes do this), so the\nexport's arithmetic is unchanged and the DATA moved. The check's message (\"the fee/target math disagrees\nwith the frozen dataset\") names the wrong suspect.\n\nTHE ACTUAL DEFECT, which scoping cannot fix: the manifest stores SUMS ONLY. A sum-only baseline can report\n\"drift\" but can never report WHERE, so every future drift is unlocalisable by construction and the only\nremedies are to ignore it or to regenerate the baseline (option (a), which Rec 2 explicitly rejected\nbecause it moves the frozen reference). Post-hoc localisation is impossible: the pre-change currentPrice is\nnot stored anywhere.\n\nNEXT STEP (not applied \u2014 flagged for a decision, because it changes the manifest's SHAPE, not just code):\nadd a per-position checksum to data/decision-dataset.manifest.json \u2014 a sorted list of\n(paper_trade_id, rounded exit-fee) or a hash over it \u2014 so the next drift names the positions that moved\ninstead of the whole file. That keeps the frozen baseline intact and makes the check localisable.\nDo NOT close this card on the scoping fix alone; the verify criterion was IDENTICAL and it is DRIFTED."
+    },
+    {
+      "id": "ml-feed-bookmaker-odds-recording",
+      "title": "ML feed REC 2 \u2014 record bookmaker consensus odds forward (no history exists to buy)",
+      "column": "Backlog",
+      "effort": "~1 day + paid tier",
+      "note": "DECISION NEEDED (paid dependency + coverage fit). Lead: OddsRelay r/datasets post 2026-10-29, sample on HF, CC BY 4.0, 15,820 matched pre-match prices, 60+ UK/Irish books incl. Betfair/Smarkets/Matchbook/BETDAQ lays. VENDOR STATES: 'no history or closing prices, in the sample or in the feed. Pre-match only.' So the sample is USELESS as training data and there is no backfill \u2014 the corpus can only be built forward, at the speed of settlement. COVERAGE MISMATCH: UK/Irish football/tennis/horse racing/darts vs our overwhelmingly US sports + politics + crypto book; horse racing and darts have no Polymarket listing. DECISION RULE: record 60 days pre-match consensus implied prob for markets on BOTH venues; adopt only if consensus-vs-Polymarket gap predicts settlement direction >=55% on >=200 paired obs. REFUTED IF <=52%, or paired markets <100 (then drop rather than extend). Lane A.",
+      "tags": [
+        "lane-a",
+        "ml",
+        "decision",
+        "feeds"
+      ]
+    },
+    {
+      "id": "ml-feed-news-corpus-structure",
+      "title": "ML feed REC 3 \u2014 news text stored as-of decision time (CC BY 4.0 split only)",
+      "column": "Backlog",
+      "effort": "~1 day",
+      "note": "DECISION NEEDED on the NC carve-out. SuperAGI/llm-vs-prediction-markets-news (read 2026-10-29): the exact news text each model saw at each forecast moment, price-blind, 5,317 texts from Common Crawl News, keyed by SHA-256 with article URL/site/capture time. dnakhla/us-news-headlines-enriched (CC BY 4.0, 100K-1M rows) as bulk corpus. VALUE IS THE SHAPE: our data/ml/decisions.parquet stores decisions but not the news text as it stood at decision time; checksum-keyed text with a capture timestamp makes news features leak-free by construction. LANDMINE: window_a/ (1,141 rows) is CC BY-NC-SA 4.0 = NonCommercial; a lane that trades real money is commercial use, so window_a must be excluded from anything feeding the live lane. DECISION RULE: train headline->event-type classifier on the CC BY 4.0 split only; add features only if era-split AUC beats price-only 0.6704 by >=0.01 OOS. REFUTED IF delta <=0, or improvement vanishes when retrained on a later era.",
+      "tags": [
+        "lane-a",
+        "ml",
+        "decision",
+        "feeds"
+      ]
+    },
+    {
+      "id": "ml-feed-openmeteo-previous-runs",
+      "title": "ML feed REC 1 \u2014 Open-Meteo previous-runs NWP as leak-free weather substrate",
+      "column": "Backlog",
+      "effort": "~half day",
+      "note": "Evidence: openthomas/weather-forecasts (MIT, read 2026-10-29) runs a whole weather desk on Open-Meteo previous-runs: 29,022 as-of daily extremes from 7 NWP models at leads 0-5 plus ACIS/NWS-CLI settlements, 5,600 own GraphCast/Pangu rows, GenCast spread, NBM/GFS-MOS baselines. METHOD the transferable asset: previous-runs returns the forecast AS ISSUED at a given lead, which is the look-ahead fix for weather in one keyless API call. DECISION RULE: add NWP lead-0..2 daily extreme as a wx2 feature; ship only if settlement-direction accuracy improves >=5pp over baseline on >=20 settled days, time-ordered out-of-sample split. REFUTED IF delta <2pp or sign flips across halves. Lane A: propose only, do not add the feature to the live lane.",
+      "tags": [
+        "lane-a",
+        "ml",
+        "measurement",
+        "feeds"
+      ]
+    },
+    {
+      "id": "ml-feed-recorder-audit-external-pm",
+      "title": "ML feed REC 4 \u2014 audit our recorder against external prediction-market corpora",
+      "column": "Backlog",
+      "effort": "~half day",
+      "note": "Lane B instrument, no change to decisions. Candidate corpora (all read 2026-10-29): manja316/crypto-prediction-market-signals (CC BY 4.0, 15-min BTC/ETH/SOL OHLCV + funding + open interest + 99 Polymarket crypto markets, auto-updating), iiiitips/prediction-market-pro-stats, thomaswmitch/kalshi-prediction-markets-betting (MIT), lowskillcoding/pdata-prediction-markets. These CANNOT be features \u2014 they contain the venue probabilities we predict from = leakage. Use them to audit our own booked numbers, which already show export drift $0.0496 in pnl_net_full traced to exit-side currentPrice recomputation on 7,702 early-closed positions. Orthogonal columns worth taking: funding rates and open interest. DECISION RULE: replicate our settled PnL on their overlapping markets; investigate the recorder if the two differ >2% on >=100 overlapping markets. REFUTED IF <=0.5% on >=100, then the instrument retires.",
+      "tags": [
+        "measurement",
+        "lane-b",
+        "ml",
+        "feeds"
+      ]
     }
   ],
   "dates": {}

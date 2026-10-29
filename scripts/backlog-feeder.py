@@ -135,7 +135,17 @@ def classify(card):
         # cannot choose, so promoting them unattended just burns a lane and produces a comment. Park
         # them for the operator instead.
         blob = ("%s %s" % (card.get("title") or "", card.get("note") or "")).lower()
-        if "decision" in blob or "needs a call from" in blob:
+        # Match decision-SEEKING language, not any occurrence of the word "decision". The old substring
+        # test also fired on "decision rule" and "DECISION RULE:" -- which is exactly how this repo writes
+        # every pre-registered card. The effect was that any properly-written Lane B instrument got parked
+        # as an operator decision and never dispatched: the tag said lane-b, the classifier said decision,
+        # and the card sat there. Measured 2026-10-29 on ml-feed-recorder-audit-external-pm.
+        DECISION_SEEKING = (
+            "decision needed", "decision required", "needs a call from", "needs your call",
+            "awaiting decision", "park or fund", "(decision)", "decide whether", "decide if",
+            "choose between", "your call on", "operator must choose",
+        )
+        if any(k in blob for k in DECISION_SEEKING):
             return "decision"
         return "b"
     if "awaiting-approval" in tags:
