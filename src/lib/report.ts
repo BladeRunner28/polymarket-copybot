@@ -24,7 +24,7 @@
  */
 
 import { prisma } from "./db";
-import { computeBenchmarks } from "./benchmarks";
+import { computeBenchmarks, beatBlindOnMatchedBasis } from "./benchmarks";
 import { computeEdgeCostSnapshot, edgeCostLines } from "./copy-cost";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
@@ -446,7 +446,12 @@ export async function generateDailyReport(
   const worstWallets = walletsSorted.slice(-3).reverse().map(([a, p]) => ({ address: a, pnl: p }));
 
   const bench = await computeBenchmarks();
-  const beatBlind = bench.botFiltered.roi > bench.blindCopy.roi;
+  // MATCHED BASIS (2026-10-29, label-integrity-bot-vs-blind-bases): the verdict compares
+  // like with like -- the copy decisions priced hold-to-resolution (OUTCOME) against blind
+  // copy on the same formula and the same flat stake. The exit book is printed below,
+  // labelled, and is NOT part of this verdict: it answers a different question (what our
+  // exits earned).
+  const beatBlind = beatBlindOnMatchedBasis(bench);
 
   // polycopy-edge-cost-pair (2026-09-23): the report quoted realized PnL as if
   // our modelled fill were free. It is not — the booked entry is a QUOTE read at
@@ -498,7 +503,8 @@ export async function generateDailyReport(
     `**System Activity:**`,
     `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})${dayElapsed ? "" : ` — counted 00:00→${localHm(now)} local; the rest of the day is not in this count`}`,
     best ? `• Best trade: ${short(best.walletAddress)} ${fmt(best.realizedPnl ?? 0)} on ${best.marketId}` : `• Best trade: none resolved today`,
-    `• Bot vs blind copy: ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} per dollar staked — bot ${(bench.botFiltered.roi * 100).toFixed(2)}% of ${usd(bench.botFiltered.totalCost)} staked (n=${bench.botFiltered.resolvedCount} settled legs, ${fmt(bench.botFiltered.avgPnl)}/trade) vs blind ${(bench.blindCopy.roi * 100).toFixed(2)}% of ${usd(bench.blindCopy.totalCost)} (n=${bench.blindCopy.resolvedCount} flat-$10 hypotheticals = ${(100 * bench.blindCopy.resolvedCount / Math.max(1, bench.blindCopy.count)).toFixed(1)}% of ${bench.blindCopy.count} signals — the reviewed ones, not all of them)`,
+    `• Bot vs blind copy (matched basis: hold to resolution, flat $10 both sides): ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} per dollar staked — copied decisions ${(bench.botFilteredOutcome.roi * 100).toFixed(2)}% of ${usd(bench.botFilteredOutcome.totalCost)} (n=${bench.botFilteredOutcome.resolvedCount} reviewed copies of ${bench.botFilteredOutcome.count}; unreviewed copies are not imputed) vs blind ${(bench.blindCopy.roi * 100).toFixed(2)}% of ${usd(bench.blindCopy.totalCost)} (n=${bench.blindCopy.resolvedCount} of ${bench.blindCopy.count} signals — the reviewed ones)`,
+    `• Book on its own basis (EXIT: early exits count, own stake): ${(bench.botFiltered.roi * 100).toFixed(2)}% of ${usd(bench.botFiltered.totalCost)} staked, n=${bench.botFiltered.resolvedCount} settled legs — NOT comparable to the blind arm above`,
     ruleChangesToday.length
       ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${oneReason(c.reason)}`).join("; ")}`
       : `• Rule changes: none`,

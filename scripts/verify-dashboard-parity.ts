@@ -70,6 +70,8 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
   const watchRows: { pnl: number | null; cost?: number | null }[] = [];
   const skipRows: { pnl: number | null; cost?: number | null }[] = [];
   const blindRows: { pnl: number | null; cost?: number | null }[] = [];
+  // matched-basis arm (2026-10-29): copies priced like the blind arm (hold to resolution, flat $10)
+  const outRows: { pnl: number | null; cost?: number | null }[] = [];
   let missedWinners = 0, avoidedLosers = 0, badCopies = 0, goodSkips = 0;
   for (const d of decisions) {
     const review = d.outcomeReviews.find((r) => r.finalOutcome !== null);
@@ -85,6 +87,7 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
     if (d.decision === "paper_copy") {
       const pnl = d.paperTrades[0]?.realizedPnl ?? null;
       copyRows.push({ pnl, cost: d.paperTrades[0]?.simulatedPositionSize ?? null });
+      outRows.push({ pnl: hypoPnl, cost: HYP });
       if (pnl !== null && pnl < 0) badCopies++;
     } else if (d.decision === "watchlist") {
       watchRows.push({ pnl: hypoPnl, cost: HYP });
@@ -112,6 +115,7 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
   };
   return {
     botFiltered: bucket("Bot-filtered paper trades", copyRows),
+    botFilteredOutcome: bucket("Bot copy decisions, hold to resolution", outRows),
     blindCopy: bucket("Blind leaderboard copy", blindRows),
     watchlist: bucket("Watchlist (not copied)", watchRows),
     skipped: bucket("Skipped", skipRows),
@@ -237,7 +241,7 @@ async function main() {
 
   console.log("\n== 2. computeBenchmarks: old full-scan vs new narrow reads ==");
   const [oldB, newB] = await Promise.all([oldBenchmarks(), computeBenchmarks()]);
-  for (const k of ["botFiltered", "blindCopy", "watchlist", "skipped"] as const) {
+  for (const k of ["botFiltered", "botFilteredOutcome", "blindCopy", "watchlist", "skipped"] as const) {
     const a = oldB[k], b = newB[k];
     const same = a.count === b.count && a.resolvedCount === b.resolvedCount &&
       Math.abs(a.totalPnl - b.totalPnl) < 1e-9 && a.winRate === b.winRate && a.avgPnl === b.avgPnl &&

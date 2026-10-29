@@ -17,6 +17,7 @@
 
 import { prisma } from "./db";
 import { researchCategoryFor } from "./research-categories";
+import { didOutcomeWin } from "./resolution";
 
 export const INSIDER_WEIGHTS = {
   winRate: 0.1,
@@ -59,6 +60,8 @@ export interface InsiderScoreResult {
   flagged: boolean;
   watch: boolean;
   nResolved: number;
+  /** Legs whose MARKET OUTCOME is known -- the population the probability arms read. */
+  nOutcomeKnown: number;
   components: InsiderComponents;
 }
 
@@ -70,7 +73,7 @@ export async function computeInsiderScore(
 
   const resolved = await prisma.paperTrade.findMany({
     where: { walletAddress, status: { in: ["closed", "resolved"] }, isDemo: false },
-    select: { entryPrice: true, realizedPnl: true, openedAt: true, resolvedAt: true, marketId: true, outcome: true },
+    select: { id: true, entryPrice: true, realizedPnl: true, openedAt: true, resolvedAt: true, marketId: true, outcome: true },
     orderBy: { resolvedAt: "asc" },
   });
   const nResolved = resolved.length;
@@ -92,23 +95,51 @@ export async function computeInsiderScore(
   const categoryOf = (t: { marketQuestion: string }): string | undefined => researchCategoryFor(t.marketQuestion);
 
   // --- Components ---
-  const wins = resolved.filter((t) => (t.realizedPnl ?? 0) > 0).length;
-  const winRate = wins / nResolved;
+  // PROBABILITY ARMS ON THE MARKET'S OUTCOME (fixed 2026-10-29, label-integrity-probability-arms).
+  // winRate / brier / entryResolutionEdge are P(win) quantities. They were built on
+  // `(realizedPnl ?? 0) > 0`, which is OUR EXIT SIGN: a leg sold at a profit on a token that
+  // later lost scored as a win, and the exit policy is one of the things under test. They now
+  // read the market outcome (OutcomeReview.finalOutcome vs the token we hold) and legs whose
+  // outcome is unknown are EXCLUDED, never counted as losses. Everything priced in dollars
+  // (roi, drawdown) stays on realizedPnl and keeps its own basis.
+  const rowOutcome = new Map(resolved.map((t) => [t.id, t.outcome] as const));
+  const settleWin = new Map<string, boolean>();
+  {
+    const ids = resolved.map((t) => t.id);
+    for (let i = 0; i < ids.length; i += 400) {
+      const rows = await prisma.outcomeReview.findMany({
+        where: { paperTradeId: { in: ids.slice(i, i + 400) }, finalOutcome: { not: null } },
+        orderBy: { createdAt: "asc" },
+        select: { paperTradeId: true, finalOutcome: true },
+      });
+      for (const r of rows) {
+        if (!r.paperTradeId || !r.finalOutcome) continue;
+        const won = didOutcomeWin(rowOutcome.get(r.paperTradeId), { winningLabel: r.finalOutcome });
+        if (won !== null) settleWin.set(r.paperTradeId, won);
+      }
+    }
+  }
+  const known = resolved.filter((t) => settleWin.has(t.id));
+  const nOutcomeKnown = known.length;
+  const wins = known.filter((t) => settleWin.get(t.id)).length;
+  const winRate = nOutcomeKnown > 0 ? wins / nOutcomeKnown : 0;
 
-  // Brier: per trade, (won − p)² → 0 perfect, 1 worst; component = 1 − brier.
-  const brier = resolved.reduce((a, t) => {
-    const p = Math.min(0.99, Math.max(0.01, t.entryPrice));
-    const won = (t.realizedPnl ?? 0) > 0 ? 1 : 0;
-    return a + (won - p) * (won - p);
-  }, 0) / nResolved;
+  // Brier: per leg, (won - p)^2 -> 0 perfect, 1 worst; component = 1 - brier.
+  const brier =
+    nOutcomeKnown > 0
+      ? known.reduce((a, t) => {
+          const p = Math.min(0.99, Math.max(0.01, t.entryPrice));
+          const won = settleWin.get(t.id) ? 1 : 0;
+          return a + (won - p) * (won - p);
+        }, 0) / nOutcomeKnown
+      : 0;
   const brierComponent = 1 - brier;
 
-  // Entry-vs-resolution edge: mean |won − p| (edge captured per contract).
+  // Entry-vs-resolution edge: mean |won - p| (edge captured per contract).
   const entryEdge =
-    resolved.reduce((a, t) => {
-      const won = (t.realizedPnl ?? 0) > 0 ? 1 : 0;
-      return a + Math.abs(won - t.entryPrice);
-    }, 0) / nResolved;
+    nOutcomeKnown > 0
+      ? known.reduce((a, t) => a + Math.abs((settleWin.get(t.id) ? 1 : 0) - t.entryPrice), 0) / nOutcomeKnown
+      : 0;
 
   // Timing alpha: wallet's stored averageEntryTiming (0 = very early, 1 = at
   // resolution) inverted — entering early on winners is the insider signature.
@@ -220,5 +251,5 @@ export async function computeInsiderScore(
   const watch = score >= WATCH_THRESHOLD && nResolved >= WATCH_MIN_TRADES;
   const flagged = score >= FLAGGED_THRESHOLD && nResolved >= FLAGGED_MIN_TRADES;
 
-  return { walletAddress, score, flagged, watch, nResolved, components };
+  return { walletAddress, score, flagged, watch, nResolved, nOutcomeKnown, components };
 }

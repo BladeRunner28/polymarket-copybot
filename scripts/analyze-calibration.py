@@ -5,6 +5,11 @@ excess-return pattern, MIT).
 
 For each entry-price band and each hour-of-day (ET), computes:
   win_rate, excess_return (win_rate - mean entry price), z-stat (two-sided),
+  p-value, N, and realized PnL -- computed TWICE, on two named bases:
+    EXIT basis    (realizedPnl > 0): the book. Depends on the exit policy under test.
+    OUTCOME basis (did the token win): OutcomeReview.finalOutcome vs the trade outcome.
+  The excess-return framing below is a CALIBRATION quantity, so the OUTCOME arm is the
+  one it describes; the EXIT arm is the book and is not a probability read.
   p-value, N, and realized PnL.
 
 Excess-return framing: a binary contract bought at price p pays $1 on win, so
@@ -26,6 +31,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sqlite3
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -54,6 +60,17 @@ def finish_time_ms(row) -> int:
         except ValueError:
             return 0
     return int(v or 0)
+
+
+def dnorm(value) -> str:
+    """Comparison key for a token label: alphanumerics only, uppercased.
+
+    Same contract as normalizeOutcomeLabel in src/lib/resolution.ts: the venue writes
+    "Yes"/"No", dev.db stores "YES"/"NO", and team markets carry real names.
+    """
+    return re.sub(r"[^A-Za-z0-9]", "", value or "").upper()
+
+
 
 
 def band_stats(rows):
@@ -86,6 +103,7 @@ def main():
                          "keep first entry). Duplicates are pseudo-replication — they inflate N and every z-stat "
                          "(all-time C-200: 1,473 rows vs 785 decisions). Default OFF so mid-window comparisons "
                          "stay on the raw sample; writes a -deduped file suffix.")
+    ap.add_argument("--out", default=None, help="write the artifact here instead of the canonical path (a probe run must not overwrite a published file)")
     args = ap.parse_args()
 
     since_ms = None
@@ -101,7 +119,7 @@ def main():
     # v48 (2026-09-04 daily report, approved): exclude the phantom-priced
     # legacy Kalshi leg until kalshi-reprice-92 lands — its 0.52-stub rows
     # distorted the 23:00 ET hour stats (85% of that "drain" was Kalshi).
-    sql = """SELECT entryPrice, realizedPnl, openedAt, marketId, outcome FROM PaperTrade
+    sql = """SELECT id, entryPrice, realizedPnl, openedAt, marketId, outcome FROM PaperTrade
           WHERE botId=? AND status IN ('resolved','closed')
             AND realizedPnl IS NOT NULL AND isDemo=0
             AND venue != 'Kalshi'"""
@@ -110,6 +128,31 @@ def main():
         sql += " AND openedAt >= ?"
         params.append(since_ms)
     rows = con.execute(sql, params).fetchall()
+
+
+
+    # SETTLEMENT BASIS (2026-10-29, label-integrity-probability-arms).
+    # This script declares a PROBABILITY quantity (excess_return = win_rate - mean
+    # entry price, the calibration edge of a binary contract) and then computed
+    # `won` from OUR EXIT SIGN (`pnl > 0`), i.e. from the exit policy under test.
+    # Both arms are now computed on the same population and printed side by side:
+    #   EXIT    = realizedPnl > 0            (the book; every leg)
+    #   OUTCOME = did this token actually win (OutcomeReview.finalOutcome vs the
+    #             trade outcome, normalised) -- only on settlement-knowable legs.
+    # The OUTCOME arm is the one the declared metric is about; its cost is
+    # coverage, which is printed with it and never extrapolated.
+    settlement: dict = {}
+    if rows:
+        ids = [r[0] for r in rows]
+        for i in range(0, len(ids), 400):
+            chunk = ids[i : i + 400]
+            q = (
+                "SELECT paperTradeId, finalOutcome FROM OutcomeReview "
+                "WHERE paperTradeId IN (%s) ORDER BY createdAt" % ",".join("?" * len(chunk))
+            )
+            for ptid, final in con.execute(q, chunk):
+                if ptid and final:
+                    settlement[ptid] = final  # last review wins (ORDER BY createdAt ASC)
     con.close()
 
     deduped_from = None
@@ -118,29 +161,60 @@ def main():
         # are one DECISION repeated: keeping them counts the same bet N times and
         # inflates the z-stat. Keep the first entry per position.
         seen: dict = {}
-        for r in sorted(rows, key=lambda x: finish_time_ms(x[2])):
-            seen.setdefault(f"{r[3]}|{r[4]}", r)
+        # indices are (id, entryPrice, realizedPnl, openedAt, marketId, outcome)
+        for r in sorted(rows, key=lambda x: finish_time_ms(x[3])):
+            seen.setdefault(f"{r[4]}|{r[5]}", r)
         deduped_from = len(rows)
         rows = list(seen.values())
 
     et = ZoneInfo("America/New_York")
     by_band = defaultdict(list)
     by_hour = defaultdict(list)
-    for p, pnl, opened, _mid, _oc in rows:
-        won = pnl > 0
+    by_band_out = defaultdict(list)
+    by_hour_out = defaultdict(list)
+    outcome_unknown = 0
+    for tid, p, pnl, opened, _mid, outcome in rows:
+        won = pnl > 0  # EXIT basis
         by_band[None].append((p, won, pnl))
         for lo, hi in BANDS:
             if lo <= p < hi:
                 by_band[(lo, hi)].append((p, won, pnl))
         ms = finish_time_ms(opened)
+        hour = None
         if ms:
-            h = datetime.fromtimestamp(ms / 1000, tz=timezone.utc).astimezone(et).hour
-            by_hour[h].append((p, won, pnl))
+            hour = datetime.fromtimestamp(ms / 1000, tz=timezone.utc).astimezone(et).hour
+            by_hour[hour].append((p, won, pnl))
+        # OUTCOME basis: the winning token label the review recorded, compared to the
+        # token we bought. Anything else (no review, empty label) is UNKNOWN and stays
+        # out of the probability arm instead of being counted as a loss.
+        final = settlement.get(tid)
+        won_out = None
+        if final:
+            won_out = dnorm(final) == dnorm(outcome)
+        if won_out is None:
+            outcome_unknown += 1
+        else:
+            by_band_out[None].append((p, won_out, pnl))
+            for lo, hi in BANDS:
+                if lo <= p < hi:
+                    by_band_out[(lo, hi)].append((p, won_out, pnl))
+            if hour is not None:
+                by_hour_out[hour].append((p, won_out, pnl))
 
     bands_out = []
     lines = []
     all_rows = by_band.pop(None)
-    total = band_stats(all_rows)
+    all_rows_out = by_band_out.pop(None)
+    total = band_stats(all_rows)  # EXIT basis
+    total_out = band_stats(all_rows_out)  # OUTCOME basis
+    t_n = total_out["n"]
+    t_wr = total_out["winRate"]
+    t_ex = total_out["excessReturn"]
+    t_z = total_out["z"]
+    t_pnl = total_out["realizedPnl"]
+    out_lines = [
+        f"  ALL:  N={t_n:>5}  win%={t_wr*100:5.1f}  excess={t_ex:+.4f}  (z={t_z:+.2f})  PnL=${t_pnl:+.2f}"
+    ]
     lines.append(
         f"  ALL:  N={total['n']:>5}  win%={total['winRate']*100:5.1f}  "
         f"excess={total['excessReturn']:+.4f}  (z={total['z']:+.2f})  PnL=${total['realizedPnl']:+.2f}"
@@ -149,6 +223,21 @@ def main():
         b = by_band.get((lo, hi), [])
         s = band_stats(b)
         s["band"] = f"{lo:.2f}-{hi:.2f}"
+        s["basis"] = "exit"
+        s_out = band_stats(by_band_out.get((lo, hi), []))
+        s_out["band"] = s["band"]
+        s_out["basis"] = "outcome"
+        s["outcome"] = s_out
+        o_n = s_out["n"]
+        o_wr = s_out["winRate"]
+        o_ex = s_out["excessReturn"]
+        o_z = s_out["z"]
+        o_p = s_out["p"]
+        o_pnl = s_out["realizedPnl"]
+        out_lines.append(
+            f"  entry {lo:.2f}-{hi:.2f}: N={o_n:>5}  win%={o_wr*100:5.1f}  excess={o_ex:+.4f}  "
+            f"(z={o_z:+.2f}, p={o_p:.4f})  PnL=${o_pnl:+.2f}" + (" **" if s_out["significant"] else "")
+        )
         bands_out.append(s)
         flag = " **" if s["significant"] else ""
         lines.append(
@@ -164,6 +253,11 @@ def main():
         if s["n"] == 0:
             continue
         s["hour"] = h
+        s["basis"] = "exit"
+        s_out = band_stats(by_hour_out.get(h, []))
+        s_out["hour"] = h
+        s_out["basis"] = "outcome"
+        s["outcome"] = s_out
         hours_out.append(s)
         flag = " **" if s["significant"] else ""
         hlines.append(
@@ -179,6 +273,15 @@ def main():
         "dedupedFromRows": deduped_from,
         "method": "excess return = win_rate - mean entry price; se=sqrt(wr(1-wr)/N); |z|>=2 significant (port of jon-becker/prediction-market-analysis, MIT)",
         "total": total,
+        "totalOutcome": total_out,
+        "outcomeCoverage": round(total_out["n"] / max(len(rows), 1), 4),
+        "outcomeUnknownLegs": outcome_unknown,
+        "labelBasis": {
+            "arm_total_bands_hours": "EXIT = realizedPnl > 0 (the book, every finished leg)",
+            "arm_totalOutcome_band_outcome": "OUTCOME = OutcomeReview.finalOutcome vs the trade outcome (settlement-knowable legs only)",
+            "why": "the declared quantity (excess_return = win_rate - mean entry price) is a calibration read, so it belongs on the OUTCOME arm; until 2026-10-29 it was computed on the exit sign -- the exit policy under test",
+            "rule": "an unknown outcome is excluded, never counted as a loss",
+        },
         "bands": bands_out,
         "hours": hours_out,
     }
@@ -197,6 +300,8 @@ def main():
         if args.dedupe:
             parts.append("deduped")
         write_path = os.path.join(ROOT, "data", "-".join(parts) + ".json")
+    if args.out:
+        write_path = args.out  # explicit probe path wins; canonical file untouched
     with open(write_path, "w") as f:
         json.dump(out, f, indent=2)
 
@@ -208,7 +313,11 @@ def main():
     print("\n".join(lines))
     print("Returns by hour (ET):")
     print("\n".join(hlines))
-    print(f"\nWrote {OUT}")
+    cov = out["outcomeCoverage"]
+    print(f"  coverage {t_n}/{len(rows)} legs = {cov*100:.1f}% settlement-knowable; {outcome_unknown} excluded (unknown is never a loss)")
+    print("OUTCOME basis (did the token win; settlement-knowable legs only):")
+    print("\n".join(out_lines))
+    print(f"\nWrote {write_path}")
 
 
 if __name__ == "__main__":

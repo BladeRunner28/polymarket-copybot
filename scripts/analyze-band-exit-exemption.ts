@@ -36,7 +36,7 @@
  */
 
 import { prisma } from "../src/lib/db";
-import { settlementValue } from "../src/lib/resolution";
+import { settlementValue, didOutcomeWin } from "../src/lib/resolution";
 import { getAdapter } from "../src/lib/adapters";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { log } from "../src/lib/redact";
@@ -92,7 +92,9 @@ async function main() {
   const bandMin = Number(arg("band-min", "0")); // 0 = legacy lower bound
   const since = arg("since", undefined);
   const sinceMs = since ? new Date(`${since}T00:00:00-04:00`).getTime() : null;
-  const OUT = outputPath(bandMin, bandMax, since);
+  // --out lets a PROBE run price the same population without rewriting a published
+  // artifact (the six shipped band-exit files are quoted by other cards).
+  const OUT = arg("out", outputPath(bandMin, bandMax, since))!;
 
   const trades = await prisma.paperTrade.findMany({
     where: {
@@ -115,6 +117,21 @@ async function main() {
     return true;
   });
 
+  // Settlement labels for rows the market adapter cannot price (offline/archived markets):
+  // OutcomeReview already records the winning token, so a probe run needs no network.
+  const reviews = new Map<string, string>();
+  {
+    const ids = trades.map((t) => t.id);
+    for (let i = 0; i < ids.length; i += 400) {
+      const rows = await prisma.outcomeReview.findMany({
+        where: { paperTradeId: { in: ids.slice(i, i + 400) }, finalOutcome: { not: null } },
+        orderBy: { createdAt: "asc" },
+        select: { paperTradeId: true, finalOutcome: true },
+      });
+      for (const r of rows) if (r.paperTradeId && r.finalOutcome) reviews.set(r.paperTradeId, r.finalOutcome);
+    }
+  }
+
   const marks = readMarks();
   const adapter = getAdapter();
   const resolutionCache = new Map<string, number | undefined>();
@@ -134,54 +151,77 @@ async function main() {
     const mark = marks.get(t.id);
     const cfPnl = (value: number) => Math.round(((value - t.entryPrice) / t.entryPrice) * stake * 100) / 100;
 
-    // Settlement value: own resolution for `resolved` rows, else the market's.
+    // Settlement value: the MARKET's own outcome, for every row including `resolved`.
+    //
+    // FIXED 2026-10-29 (label-integrity-band-exit-settlement). This branch used to read
+    //   settlement = (t.realizedPnl ?? 0) > 0 ? 1 : 0   // labelled "own-resolution"
+    // for rows with status="resolved", i.e. it let OUR EXIT SIGN stand in for the market's
+    // outcome on precisely the rows whose realizedPnl IS the exit decision, and then
+    // printed the result in a column called settlement. Same defect class as the casing bug
+    // fixed 2026-10-10. The basis is now stated and derived, not asserted.
+    // MEASURED (C-200, all-time, level=leg, dev.db read 2026-10-29): of the 811 resolved
+    // tickets that carry an OutcomeReview, the exit sign and the market outcome agree on 808.
+    // The 3 that disagree are all booked at realizedPnl == 0.00 and all settled on the winning
+    // side - exactly the rows where a PnL sign cannot speak. So the live distortion is 0.37%
+    // of resolved tickets today, not the 7.4% the label audit reports for the book overall: that
+    // 7.4% lives on `closed` rows (123 of 562 here), which this branch never reached because
+    // they already took the market path. Fixing it removes a path that lies by construction
+    // (it would mislabel any resolved row carrying a non-settlement PnL) rather than a
+    // distortion that is currently large.
+    //
+    // Resolution order: the market itself (adapter / event fallback) -> the review record
+    // already in the DB (OutcomeReview.finalOutcome, no network) -> exit-recovery final mark.
+    // An undetermined outcome stays UNDEFINED (never a loss); settlementSource says which.
     let settlement: number | undefined;
     let settlementSource = "none";
-    if (t.status === "resolved") {
-      settlement = (t.realizedPnl ?? 0) > 0 ? 1 : 0;
-      settlementSource = "own-resolution";
-    } else {
-      if (!resolutionCache.has(t.marketId)) {
-        let v: number | undefined;
-        try {
-          const m = await adapter.fetchMarket(t.marketId);
-          // settlementValue compares the venue's own label ("Under", "No") to the
-          // stored (uppercased) outcome through the normalised compare. The old
-          // raw `m.winningOutcome === t.outcome` never matched a label-cased
-          // market, so every settled one was valued 0 — a phantom loss (same
-          // class as outcome-casing-mismatch); undefined now means "leave it
-          // unpriced" instead of "lost".
-          //
-          // NOTE (2026-10-10, option B approved in-thread): the SIX SHIPPED
-          // `data/band-exit-exemption*.json` outputs still carry the PRE-fix
-          // values (106 of 107 market-settlement rows valued 0) and are
-          // DELIBERATELY not regenerated — regenerating moves a published
-          // number (the `exit-exemption-20-40-decision` card's
-          // "settle −$333.83 (n=41)"). Re-run only under that card's own
-          // approval:
-          //   DATABASE_URL="file:./dev.db?immutable=1" npx tsx scripts/analyze-band-exit-exemption.ts --band-min 0.20 --band-max 0.40
-          if (m.resolved) {
-            v = settlementValue(t.outcome, {
-              winningLabel: m.winningLabel ?? m.winningOutcome,
-              yesPrice: m.yesPrice,
-            });
-          }
-        } catch {
-          /* fall through */
+    if (!resolutionCache.has(t.marketId)) {
+      let v: number | undefined;
+      try {
+        const m = await adapter.fetchMarket(t.marketId);
+        // settlementValue compares the venue's own label ("Under", "No") to the
+        // stored (uppercased) outcome through the normalised compare. The old
+        // raw `m.winningOutcome === t.outcome` never matched a label-cased
+        // market, so every settled one was valued 0 - a phantom loss (same
+        // class as outcome-casing-mismatch); undefined now means "leave it
+        // unpriced" instead of "lost".
+        //
+        // NOTE (2026-10-10, option B approved in-thread): the SIX SHIPPED
+        // `data/band-exit-exemption*.json` outputs still carry the PRE-fix
+        // values (106 of 107 market-settlement rows valued 0) and are
+        // DELIBERATELY not regenerated - regenerating moves a published
+        // number (the `exit-exemption-20-40-decision` card's
+        // "settle -$333.83 (n=41)"). Re-run only under that card's own
+        // approval:
+        //   DATABASE_URL="file:./dev.db?immutable=1" npx tsx scripts/analyze-band-exit-exemption.ts --band-min 0.20 --band-max 0.40
+        if (m.resolved) {
+          v = settlementValue(t.outcome, {
+            winningLabel: m.winningLabel ?? m.winningOutcome,
+            yesPrice: m.yesPrice,
+          });
         }
-        if (v === undefined) {
-          try {
-            const ev = await fetchEventResolution(t.marketId);
-            if (ev) v = settlementValue(t.outcome, { winningLabel: ev });
-          } catch {
-            /* leave undefined */
-          }
-        }
-        resolutionCache.set(t.marketId, v);
+      } catch {
+        /* fall through */
       }
-      settlement = resolutionCache.get(t.marketId);
-      if (settlement !== undefined) settlementSource = "market-settlement";
-      else if (mark?.has("final")) {
+      if (v === undefined) {
+        try {
+          const ev = await fetchEventResolution(t.marketId);
+          if (ev) v = settlementValue(t.outcome, { winningLabel: ev });
+        } catch {
+          /* leave undefined */
+        }
+      }
+      resolutionCache.set(t.marketId, v);
+    }
+    settlement = resolutionCache.get(t.marketId);
+    if (settlement !== undefined) {
+      settlementSource = "market-settlement";
+    } else {
+      const final = reviews.get(t.id);
+      const won = final ? didOutcomeWin(t.outcome, { winningLabel: final }) : null;
+      if (won !== null) {
+        settlement = won ? 1 : 0;
+        settlementSource = "outcome-review";
+      } else if (mark?.has("final")) {
         settlement = mark.get("final");
         settlementSource = "exit-recovery:final";
       }

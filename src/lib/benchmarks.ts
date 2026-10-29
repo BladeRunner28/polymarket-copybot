@@ -29,6 +29,18 @@ export interface BenchmarkBucket {
 
 export interface BenchmarkReport {
   botFiltered: BenchmarkBucket;
+  /**
+   * The SAME question as `blindCopy`, on the same formula and the same flat $10 stake:
+   * the decisions we copied, priced hold-to-resolution at the signal price. This is the
+   * only pair that can be compared to the blind arm — `botFiltered` above is our EXIT
+   * book (early exits included, own stake) and answers a different question.
+   *
+   * 2026-10-29 (label-integrity-bot-vs-blind-bases): the verdict used to be printed from
+   * `botFiltered.roi > blindCopy.roi`, i.e. an EXIT number against an OUTCOME number, on
+   * legs where the two labels disagree 7.7% of the time. The verdict now comes from this
+   * matched pair; the exit book is still published, labelled, beside it.
+   */
+  botFilteredOutcome: BenchmarkBucket;
   blindCopy: BenchmarkBucket;
   watchlist: BenchmarkBucket;
   skipped: BenchmarkBucket;
@@ -57,6 +69,16 @@ export function benchmarkBucket(label: string, rows: BucketRow[], totalCount: nu
     totalCost: Math.round(cost * 100) / 100,
     roi: cost > 0 ? Math.round((total / cost) * 10000) / 10000 : 0,
   };
+}
+
+/**
+ * The bot-vs-blind verdict, computed on the only pair that shares a basis.
+ *
+ * 2026-10-29: kept as a function so a caller cannot pick `botFiltered` (EXIT, own stake)
+ * against `blindCopy` (OUTCOME, flat $10) and call the difference merit.
+ */
+export function beatBlindOnMatchedBasis(r: Pick<BenchmarkReport, "botFilteredOutcome" | "blindCopy">): boolean {
+  return r.botFilteredOutcome.roi > r.blindCopy.roi;
 }
 
 export async function computeBenchmarks(): Promise<BenchmarkReport> {
@@ -89,6 +111,11 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
     .filter((h) => !isCopy(h) && !isWatch(h))
     .map((h) => ({ pnl: h.pnl, cost: HYPOTHETICAL_SIZE }));
 
+  // MATCHED-BASIS ARM (2026-10-29): the copy decisions that carry a review, priced exactly
+  // like the blind arm — hold to resolution at the signal price, flat $10. Coverage is the
+  // reviewed share of copies, printed with it; no unreviewed copy is imputed.
+  const outRows: BucketRow[] = hypoRows.filter(isCopy).map((h) => ({ pnl: h.pnl, cost: HYPOTHETICAL_SIZE }));
+
   let missedWinners = 0;
   let avoidedLosers = 0;
   let badCopies = 0;
@@ -108,6 +135,7 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
 
   return {
     botFiltered: benchmarkBucket("Bot-filtered paper trades", copyRows, counts.paperCopy),
+    botFilteredOutcome: benchmarkBucket("Bot copy decisions, hold to resolution", outRows, counts.paperCopy),
     blindCopy: benchmarkBucket("Blind leaderboard copy", blindRows, counts.total),
     watchlist: benchmarkBucket("Watchlist (not copied)", watchRows, counts.watchlist),
     skipped: benchmarkBucket("Skipped", skipRows, counts.skipped),
