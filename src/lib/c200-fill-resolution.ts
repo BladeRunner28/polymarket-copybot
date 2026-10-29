@@ -35,12 +35,20 @@
  *   "flat"  entry = intent − 0.02                (the model until 2026-10-10)
  *   "live"  entry = intent − 0.02 × measuredFillShare(intent)  (the model that runs now)
  * The sidecar clamps the entry at 0.01; `levelFor` mirrors that clamp exactly.
+ *
+ * A THIRD MODE, FOR A LANE THAT APPLIES NO CREDIT AT ALL
+ *   "none"  entry = intent                        (STANDARD: no fill model whatsoever)
+ * Added for the STANDARD fill booth (scripts/standard-fill-stamp.ts, card `t_7560e0d0`)
+ * so that lane is resolved by THIS resolver rather than a fork of it: with zero credit
+ * the level IS the price the lane booked, so `resolveFill` answers exactly the
+ * STANDARD question — "was the booked price reachable in the evidence we hold". It is
+ * additive: every existing mode returns byte-identical values.
  */
 
 import { MAKER_IMPROVEMENT_USD, measuredFillShare } from "./copy-cost";
 
-/** Which credit the sidecar applied when it booked the leg. */
-export type CreditMode = "live" | "flat";
+/** Which credit the sidecar applied when it booked the leg ("none" = STANDARD). */
+export type CreditMode = "live" | "flat" | "none";
 
 /** The flat model's improvement, mirrored from rust-sidecar/src/main.rs. */
 export const FLAT_CREDIT_USD = MAKER_IMPROVEMENT_USD;
@@ -53,6 +61,7 @@ export const MIN_BOOKED_ENTRY = 0.01;
 
 /** The credit the sidecar books for an intent at `intentPrice` under `mode`. */
 export function creditUsdFor(intentPrice: number, mode: CreditMode): number {
+  if (mode === "none") return 0;
   if (mode === "flat") return FLAT_CREDIT_USD;
   if (!Number.isFinite(intentPrice) || intentPrice <= 0) return 0;
   return FLAT_CREDIT_USD * measuredFillShare(intentPrice);
