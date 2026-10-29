@@ -4,7 +4,9 @@
  * class would be worth.
  *
  * WHY A FETCH IS NEEDED AT ALL: a wallet's per-category win rate is derived from
- * its resolved ACTIVITY SAMPLE (`WalletActivityTrade.won`) at scan time and is
+ * its resolved ACTIVITY SAMPLE (`pnl > 0` inside scoreWallet — NOT from
+ * `WalletActivityTrade.won`, which no scoring arm reads; corrected 2026-10-29 by
+ * label-integrity-wallet-win-filter) at scan time and is
  * never stored, so the token-vs-class comparison cannot be reconstructed from
  * SQLite. This script runs the SAME adapter call the scanner runs
  * (fetchWalletActivity, 30d) and records the bucket maps for three keys —

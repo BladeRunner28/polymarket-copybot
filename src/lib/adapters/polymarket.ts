@@ -17,7 +17,7 @@ import {
   WalletActivityTrade,
   WalletDepth,
 } from "../types";
-import { didOutcomeWin, normalizeOutcomeLabel } from "../resolution";
+import { didOutcomeWin, normalizeOutcomeLabel, settledWinFromMark } from "../resolution";
 import { measureDepth } from "../scoring/wallet-depth";
 import { classifyMarketCategory } from "../market-category";
 import { gammaProvenance, laggedDataApiProvenance, withProvenance } from "../provenance";
@@ -328,7 +328,13 @@ export class PolymarketAdapter implements DataAdapter {
             size: sizeUsd,
             timestamp: new Date(), // positions API has no timestamps; scoring doesn't use them
             resolved: true,
-            won: (num(row.curPrice) ?? 0) > 0.5 || realizedPnl > 0,
+            // LABEL BASIS (label-integrity-wallet-win-filter, Lane B): a MARK
+            // inside the terminal band is not an outcome and realizedPnl>0 is
+            // our EXIT, so `won` is stated only when the mark is terminal and
+            // is absent otherwise. `resolved` is deliberately left alone — it
+            // is the scoring POPULATION, and changing it would change what the
+            // bot admits (Lane A, separate approval).
+            won: settledWinFromMark(num(row.curPrice)) ?? undefined,
             pnl: realizedPnl,
             raw: row,
           },
