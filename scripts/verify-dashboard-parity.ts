@@ -33,14 +33,43 @@ function check(label: string, ok: boolean, detail = "") {
 
 // ───────────────────────── OLD implementations ─────────────────────────
 
+/**
+ * The OLD full-scan read, paged.
+ *
+ * 2026-10-29 (self-audit): this harness could not run at all. A single unpaged
+ * `findMany({ include: { observedTrade, paperTrades, outcomeReviews } })` over the whole journal
+ * dies in the query engine once the table passes ~300k rows —
+ * `Failed to convert rust \`String\` into napi \`string\`` (GenericFailure). DecisionJournal holds
+ * 351,277 rows today (measured: take=300,000 ok, take=400,000 fails), so every check after the
+ * first one threw and the parity certificate for the narrow-read refactor (05f379e) has been
+ * silently unenforced. Paging by id keeps the SAME row set — the arithmetic below is
+ * order-independent — without ever asking the driver for one 350k-row result set.
+ */
+const PARITY_PAGE = 20_000;
+
+async function scanDecisionsOldWay() {
+  const out: Awaited<ReturnType<typeof prisma.decisionJournal.findMany<{ include: { observedTrade: true; paperTrades: true; outcomeReviews: true } }>>> = [];
+  let cursor: string | undefined;
+  for (;;) {
+    const page = await prisma.decisionJournal.findMany({
+      take: PARITY_PAGE,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      orderBy: { id: "asc" },
+      include: { observedTrade: true, paperTrades: true, outcomeReviews: true },
+    });
+    out.push(...page);
+    if (page.length < PARITY_PAGE) break;
+    cursor = page[page.length - 1].id;
+  }
+  return out;
+}
+
 async function oldBenchmarks(): Promise<BenchmarkReport> {
-  const decisions = await prisma.decisionJournal.findMany({
-    include: { observedTrade: true, paperTrades: true, outcomeReviews: true },
-  });
-  const copyRows: { pnl: number | null }[] = [];
-  const watchRows: { pnl: number | null }[] = [];
-  const skipRows: { pnl: number | null }[] = [];
-  const blindRows: { pnl: number | null }[] = [];
+  const decisions = await scanDecisionsOldWay();
+  const copyRows: { pnl: number | null; cost?: number | null }[] = [];
+  const watchRows: { pnl: number | null; cost?: number | null }[] = [];
+  const skipRows: { pnl: number | null; cost?: number | null }[] = [];
+  const blindRows: { pnl: number | null; cost?: number | null }[] = [];
   let missedWinners = 0, avoidedLosers = 0, badCopies = 0, goodSkips = 0;
   for (const d of decisions) {
     const review = d.outcomeReviews.find((r) => r.finalOutcome !== null);
@@ -52,30 +81,33 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
       const won = normalizeOutcomeLabel(review.finalOutcome) === normalizeOutcomeLabel(d.observedTrade.outcome);
       hypoPnl = computePnl(entry, won ? 1 : 0, HYP);
     }
-    blindRows.push({ pnl: hypoPnl });
+    blindRows.push({ pnl: hypoPnl, cost: HYP });
     if (d.decision === "paper_copy") {
       const pnl = d.paperTrades[0]?.realizedPnl ?? null;
-      copyRows.push({ pnl });
+      copyRows.push({ pnl, cost: d.paperTrades[0]?.simulatedPositionSize ?? null });
       if (pnl !== null && pnl < 0) badCopies++;
     } else if (d.decision === "watchlist") {
-      watchRows.push({ pnl: hypoPnl });
+      watchRows.push({ pnl: hypoPnl, cost: HYP });
       if (hypoPnl !== null && hypoPnl > 0) missedWinners++;
       if (hypoPnl !== null && hypoPnl < 0) avoidedLosers++;
     } else {
-      skipRows.push({ pnl: hypoPnl });
+      skipRows.push({ pnl: hypoPnl, cost: HYP });
       if (hypoPnl !== null && hypoPnl > 0) missedWinners++;
       if (hypoPnl !== null && hypoPnl < 0) { avoidedLosers++; goodSkips++; }
     }
   }
-  const bucket = (label: string, rows: { pnl: number | null }[]) => {
-    const resolved = rows.filter((r) => r.pnl !== null) as { pnl: number }[];
+  const bucket = (label: string, rows: { pnl: number | null; cost?: number | null }[]) => {
+    const resolved = rows.filter((r) => r.pnl !== null) as { pnl: number; cost?: number | null }[];
     const total = resolved.reduce((a, r) => a + r.pnl, 0);
+    const cost = resolved.reduce((a, r) => a + (r.cost ?? 0), 0);
     const wins = resolved.filter((r) => r.pnl > 0).length;
     return {
       label, count: rows.length, resolvedCount: resolved.length,
       totalPnl: Math.round(total * 100) / 100,
       winRate: resolved.length ? Math.round((wins / resolved.length) * 1000) / 1000 : 0,
       avgPnl: resolved.length ? Math.round((total / resolved.length) * 100) / 100 : 0,
+      totalCost: Math.round(cost * 100) / 100,
+      roi: cost > 0 ? Math.round((total / cost) * 10000) / 10000 : 0,
     };
   };
   return {
@@ -87,12 +119,9 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
   };
 }
 
-/** Analytics funnel + benchmark cumulative curves, old full-scan way. */
+/** Analytics funnel + benchmark cumulative curves, old full-scan way (paged — see scanDecisionsOldWay). */
 async function oldAnalytics() {
-  const decisions = await prisma.decisionJournal.findMany({
-    include: { observedTrade: true, paperTrades: true, outcomeReviews: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const decisions = await scanDecisionsOldWay();
   const funnel = new Map<string, number>();
   for (const d of decisions) funnel.set(d.decision, (funnel.get(d.decision) ?? 0) + 1);
 
@@ -211,7 +240,8 @@ async function main() {
   for (const k of ["botFiltered", "blindCopy", "watchlist", "skipped"] as const) {
     const a = oldB[k], b = newB[k];
     const same = a.count === b.count && a.resolvedCount === b.resolvedCount &&
-      Math.abs(a.totalPnl - b.totalPnl) < 1e-9 && a.winRate === b.winRate && a.avgPnl === b.avgPnl;
+      Math.abs(a.totalPnl - b.totalPnl) < 1e-9 && a.winRate === b.winRate && a.avgPnl === b.avgPnl &&
+      Math.abs(a.totalCost - b.totalCost) < 1e-6 && a.roi === b.roi;
     check(`${k}: count=${b.count} resolved=${b.resolvedCount} total=${b.totalPnl} winRate=${b.winRate} avg=${b.avgPnl}`, same,
       same ? "" : `old: count=${a.count} resolved=${a.resolvedCount} total=${a.totalPnl} winRate=${a.winRate} avg=${a.avgPnl}`);
   }
