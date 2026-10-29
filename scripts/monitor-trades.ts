@@ -6,6 +6,7 @@
 import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { log, logError } from "../src/lib/redact";
+import { appendSellPrint } from "../src/lib/sell-log";
 import {
   MAX_OBSERVE,
   MAX_TRACKED,
@@ -127,7 +128,23 @@ async function main() {
       );
       for (const t of activity) {
         if (t.timestamp.getTime() < since) continue;
-        if (t.side !== "BUY") continue; // copy entries only, not exits
+        if (t.side !== "BUY") {
+          // 2026-10-29 (Lane B, instrument): keep the print, copy nothing. The exit side of
+          // the flow is the only thesis-linked signal the book could have, and it was being
+          // dropped with no record (ObservedTrade: 4,660,889 BUY vs 10 SELL). Append-only
+          // sidecar, no prisma write, no scoring input -- see src/lib/sell-log.ts.
+          appendSellPrint({
+            walletAddress: w.address,
+            marketId: t.marketId,
+            outcome: t.outcome,
+            side: t.side,
+            price: t.price,
+            size: t.size,
+            printTs: t.timestamp.getTime(),
+            observationOnly: w.observationOnly,
+          });
+          continue; // copy entries only, not exits
+        }
         // tuning review #64 Rec 1 (user-approved 2026-10-23): a blank marketId
         // cannot be scored. Polymarket "AND" parlay legs ship with no slug, so
         // /markets/slug/ 404s, the legacy ?slug= fallback returns the WHOLE

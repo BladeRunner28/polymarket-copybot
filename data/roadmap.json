@@ -3709,6 +3709,41 @@
     "shipped"
    ],
    "note": "DONE 2026-10-28 (Lane B, profit review). closePaperTrade(tradeId, exitPrice, _reason) received the reason and discarded it, so a v66 stale stop, a dead-slug 404 expiry and a C-200 recycle are all status='closed'. v66's pre-registered refutation ('first 20 ORGANIC stopped legs realise worse than hold by >1% of notional', read due 2026-10-31) had no denominator; the 2026-10-24 sweep was only separable because it was one timestamp and the only non-404 close STANDARD had ever taken.\nFIX: src/lib/close-log.ts (append-only data/close-reasons.jsonl: id, bot, market, entry, exit, size, pnl, ageHours, reason, at) called best-effort from closePaperTrade; no schema change, no prisma write, failures swallowed. tests/close-log.test.ts (3 tests) pins verbatim reason, ordering, never-throw. 606/606 vitest pass, tsc --noEmit clean.\nALSO: scripts/profit-velocity.py build_truth froze any market first seen unresolved (269 of 4,005 cached markets); unsettled records past their end date are now re-fetched."
+  },
+  {
+   "id": "standard-fill-aware-booking",
+   "column": "Scheduled",
+   "priority": "high",
+   "title": "STANDARD fill-aware booking — 1c of entry is 62% of the 90d profit (10-29 profit review, Lane A)",
+   "effort": "~2h (resolver exists)",
+   "dates": "Proposed 2026-10-29",
+   "note": "PROPOSED, NOTHING APPLIED. C-200 got fill-aware booking on 2026-10-28 (c6222f7); STANDARD, 72% of the book's notional, still books every entry at the mid.\nWHY TODAY: scripts/profit-sellside.py SS.8 prices the lever on the book itself -- 1c better entry on every settled leg = +$1,439.33 on the last 90d settled notional ($28,882) = 5.0% of notional, +$1,891.61 all-time (4.5%). The 90d realised result it would re-price is +$2,329.01 = +8.1%. One cent is 62% of the entire 90d profit. The same run measures the finished book at $11.14 per $1k-capital-day, which implies $448,858 of open capital for $5,000/day at the current edge -- 87x the $5,155 deployed.\nCONTEXT (new, same run): the entry is the ONLY variable left. Marks for our own outcome are flat at every horizon -- +2.5h median +0.0pp on 12,254 legs (99.3% coverage), +24h +0.2pp, +168h +0.5pp -- and flat in EVERY decision-lag bucket from <5min to >4h. Settled ROI by lag RISES with lateness (+21.1% at <5min -> +60.4% at 1-4h), so a fast lane buys nothing.\nDECISION RULE: adopt when, over >=300 forward legs, the resolver-stamped entry is worse than the booked mid by a median >=0.5c AND the re-booked 90d ROI falls >=1.0pp.\nREFUTATION: if stamped fills come back within +/-0.3c of the mid on >=300 legs, the entry-price thesis is worthless at STANDARD sizes, the 5.0%-of-notional number is a fiction, and the question closes for the quarter (the highest-EV item then becomes capital, not execution).",
+   "tags": [
+    "sizing",
+    "execution",
+    "fillability",
+    "standard",
+    "lane-a",
+    "proposed",
+    "profit-review"
+   ]
+  },
+  {
+   "id": "v66-retire-calendar-trigger",
+   "column": "Scheduled",
+   "priority": "high",
+   "title": "v66: RETIRE the STANDARD calendar stale exit (supersedes the 10-28 cap-pressure gate)",
+   "effort": "~0.5h",
+   "dates": "Proposed 2026-10-29 (supersedes v66-cap-pressure-gate)",
+   "note": "PROPOSED, NOTHING APPLIED. Supersedes the 2026-10-28 v66-cap-pressure-gate proposal: gating the rail assumed it had value in the growth regime. Today's data says it has no value at any horizon.\nMEASUREMENT (scripts/profit-sellside.py SS.5, this commit): paired hold-vs-exit on settled legs, market-clustered CIs -- exit at +2.5h = -$10,169.65 (1,371 markets), exit at +24h = -$7,681.84 (788 markets); hold at +25.0% on $41,792 settled vs +3.8% on $92,149 early-closed. Marks for our own outcome: +0.0pp median at +2.5h across 12,254 legs, flat in every lag bucket.\nSCOPE TODAY: standardStaleExitHours 168, standardStaleExitBandMin 0.60 -> 12 open STANDARD legs / $112.60 in scope (the 10-24 sweep cleared the aged book). The rail has fired once ever.\nWHY DELETE, NOT GATE: the rail's only function is protecting standardMaxOpenPositions = 1,300, which has not bound since the sweep (44 slots headroom then, 297 in the no-sweep counterfactual, book shrinking -4.73 legs/day); slot value is $0.168/leg ex-outlier.\nDECISION RULE: delete the `t.botId === 'STANDARD'` branch (update-pnl.ts:270-292) when the predicate has fired zero times on organic flow in the prior 14 days AND the open in-scope population is <20 legs. Both hold today.\nREFUTATION: if within 30 days the '[STANDARD] open-position cap' skip counter reaches >=20 copies blocked, slot pressure was real and the rail returns -- as the cap-pressure gate, not the calendar. Counted from DecisionJournal.\nKeep standardStaleExitFires exported and unit-tested so the gate can reuse it.",
+   "tags": [
+    "exit",
+    "standard",
+    "lane-a",
+    "prereg",
+    "awaiting-approval",
+    "profit-review"
+   ]
   }
  ],
  "dates": {}
