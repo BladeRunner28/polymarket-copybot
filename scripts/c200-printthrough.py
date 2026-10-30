@@ -270,6 +270,7 @@ def pick_l2_asset(candidates: list[str], token: str | None, intent: float) -> tu
 def l2_scan(asset_id: str | None, t0_ms: int, level: float, horizon_ms: int = H60 * 1000) -> dict:
     """Best-ask crossing test over the covered part of the window, with coverage accounting."""
     out: dict = {"assetId": asset_id, "coverStartMs": None, "coverEndMs": None, "snapsInWindow": 0,
+                 "snapsIn5m": 0,
                  "minAsk": None, "askAtLevel": None, "quoteAtCoverStart": None,
                  "levelVsCoverStartAsk": None, "levelVsCoverStartBid": None}
     if not asset_id:
@@ -295,6 +296,8 @@ def l2_scan(asset_id: str | None, t0_ms: int, level: float, horizon_ms: int = H6
                 nearest = (ts, float(o["asks"][0][0]), float(o["bids"][0][0]))
             if t0_ms <= ts <= t0_ms + horizon_ms:
                 out["snapsInWindow"] += 1
+                if ts <= t0_ms + H5 * 1000:
+                    out["snapsIn5m"] += 1
                 ask = float(o["asks"][0][0])
                 out["minAsk"] = ask if out["minAsk"] is None else min(out["minAsk"], ask)
     if out["minAsk"] is not None:
@@ -376,11 +379,21 @@ def analyse(leg: dict, tape: list[dict], amap: dict[str, list[str]]) -> dict:
     return r
 
 
+def _q(vals: list[float], q: float) -> float | None:
+    """Nearest-rank quantile on a sorted copy (small n; no interpolation to defend)."""
+    if not vals:
+        return None
+    s = sorted(vals)
+    return s[min(len(s) - 1, int(q * len(s)))]
+
+
 # ------------------------------------------------------------------ report
 def summarise(res: list[dict]) -> dict:
     tape_l = [r for r in res if r.get("reached5") is not None and not r.get("tapeSilent")]
     silent = [r for r in res if r.get("tapeSilent")]
     book_l = [r for r in res if (r.get("book") or {}).get("askAtLevel") is not None]
+    lags = [round((r["book"]["coverStartMs"] - r["dispatchedAt"]) / 60000, 1)
+            for r in book_l if r["book"].get("coverStartMs")]
     return {
         "legs": len(res), "tapeAnalysable": len(tape_l), "tapeSilent": len(silent),
         "bookAnalysable": len(book_l),
@@ -392,8 +405,23 @@ def summarise(res: list[dict]) -> dict:
         "anchorIsWalletPrint": sum(1 for r in res if r.get("anchorIsWalletPrint")),
         "levelBelowCoverStartBid": sum(1 for r in book_l
                                       if (r["book"].get("levelVsCoverStartBid") or 0) < 0),
-        "l2StartLagMin": [round((r["book"]["coverStartMs"] - r["dispatchedAt"]) / 60000, 1)
-                          for r in book_l if r["book"].get("coverStartMs")],
+        "l2StartLagMin": lags,
+        # Coverage must be COUNTED, not asserted: the old line hard-coded "AFTER dispatch"
+        # and "NO coverage on any leg", which is false in both directions on this population
+        # (2026-10-30: 98/529 legs open the book BEFORE the dispatch, 525/529 within the
+        # 5-min horizon, 4 only after it). Basis: first snapshot in our 5s L2 file for the
+        # resolved token vs FillIntent.dispatchedAt; level = one row per dispatched intent.
+        "l2LagN": len(lags),
+        "l2LagP10": _q(lags, 0.10), "l2LagMedian": _q(lags, 0.50), "l2LagP90": _q(lags, 0.90),
+        "l2LagBeforeDispatch": sum(1 for x in lags if x < 0),
+        "l2LagCovered5": sum(1 for x in lags if x <= 5),
+        "l2LagPast5": sum(1 for x in lags if x > 5),
+        "l2SnapsInWindow": sum(1 for r in book_l if (r["book"].get("snapsInWindow") or 0) > 0),
+        # Direct count of snaps INSIDE the 5-min horizon — the inference "book open within 5 min
+        # therefore covers the 5-min window" is only true if snaps exist there (a file can open
+        # days early and have a gap). Denominator = legs with an L2 asset resolved at all.
+        "l2BookResolved": sum(1 for r in res if (r.get("book") or {}).get("assetId")),
+        "l2SnapsIn5m": sum(1 for r in res if (r.get("book") or {}).get("snapsIn5m", 0) > 0),
         "bar5m": BAR_5M, "bar1h": BAR_60M, "barDrift": BAR_DRIFT,
     }
 
@@ -418,9 +446,13 @@ def render(res: list[dict], s: dict) -> list[str]:
         f"[printthrough] ANCHOR: intent == detection mid {s['anchorIsMid']}/{s['legs']} · "
         f"intent == the copied wallet's own print {s['anchorIsWalletPrint']}/{s['legs']} · "
         f"level sits BELOW the first covered best bid on {s['levelBelowCoverStartBid']}/{s['bookAnalysable']}",
-        f"[printthrough] COVERAGE: our L2 book starts "
-        f"{'/'.join(str(x) for x in s['l2StartLagMin'])} min AFTER dispatch -> the 5-min horizon has "
-        f"NO in-house book coverage on any leg",
+        f"[printthrough] COVERAGE (basis: first snapshot in our 5s L2 file for the resolved token "
+        f"vs dispatchedAt, n={s['l2LagN']} legs): p10 {s['l2LagP10']} / p50 {s['l2LagMedian']} / "
+        f"p90 {s['l2LagP90']} min — the book is already open at the dispatch on "
+        f"{s['l2LagBeforeDispatch']} legs, opens within the 5-min horizon on "
+        f"{s['l2LagCovered5']}/{s['l2LagN']}, and only after it on {s['l2LagPast5']}; "
+        f"a snapshot actually exists inside the 5-min window on {s['l2SnapsIn5m']}/{s['l2BookResolved']} "
+        f"legs and inside the 1 h window on {s['l2SnapsInWindow']}/{s['bookAnalysable']}",
     ]
     for r in res:
         b = r.get("book") or {}
@@ -434,8 +466,9 @@ def render(res: list[dict], s: dict) -> list[str]:
             f"[printthrough]   {r['marketId']} {r['outcome']}: intent {r['intentPrice']:.3f} (wallet print "
             f"{r['walletPrintPrice']}) level {r['level']:.3f} | tape prints 5m/1h {r['prints5']}/{r['prints60']}"
             f"{' (SILENT)' if r.get('tapeSilent') else ''} reached 5m={r['reached5']} 1h={r['reached60']} "
-            f"({touch}) | book min ask {b.get('minAsk')} over {b.get('snapsInWindow')} snaps from +{lag:.1f}min"
-            f" (bid {q.get('bid')}/ask {q.get('ask')}) reachable={b.get('askAtLevel')} | "
+            f"({touch}) | book min ask {b.get('minAsk')} over {b.get('snapsInWindow')} snaps "
+            f"({b.get('snapsIn5m')} of them inside 5m), book open {lag:+.1f} min vs dispatch"
+            f" (nearest snap bid {q.get('bid')}/ask {q.get('ask')}) reachable={b.get('askAtLevel')} | "
             f"drift 1h {r.get('driftVsAnchor')}"
         )
     if dr or dn:
@@ -450,12 +483,18 @@ def render(res: list[dict], s: dict) -> list[str]:
 
 def markdown(res: list[dict], s: dict) -> str:
     body = "\n".join(render(res, s))
+    # "not reachable on any leg" was hard-coded from the 2026-09-26 n=6 read (0/6). On the current
+    # population the same counts contradict the sentence, so state the reach itself and let the
+    # archive bar do the comparing: 90/529 book, 89/515 tape as of 2026-10-30.
+    _ba, _bt = s["bookAskAtLevel"], s["bookAnalysable"]
+    _ta, _tt = s["reached60"], s["tapeAnalysable"]
     established = (
-        f"- **ESTABLISHED:** the level (intent - $0.02) was **not reachable** on any of the {s['legs']} measured "
-        f"legs in the hour after dispatch — {s['bookAskAtLevel']}/{s['bookAnalysable']} on our own L2 book "
-        f"(best ask at or below the level) and {s['reached60']}/{s['tapeAnalysable']} on the public tape where the "
-        f"tape had prints. The archive's base rate (74.3% within 5 min / 81.1% within 1 h at C-200's price mix) "
-        f"does not show up on this sample."
+        f"- **ESTABLISHED (what the counts say):** the level (intent - $0.02) was reachable within an hour "
+        f"of dispatch on {_ba}/{_bt} legs on our own L2 book "
+        f"(best ask at or below the level) and on {_ta}/{_tt} on the public tape where the tape had prints. "
+        f"The archive's base rate (74.3% within 5 min / 81.1% within 1 h at C-200's price mix) does not show "
+        f"up on this sample — but the rate is {'zero' if _ba == 0 else 'non-zero'}, so read this as "
+        f"{'nothing was reachable' if _ba == 0 else 'a much thinner reach than the archive, not an empty one'}."
     )
     mechanical = (
         f"- **ESTABLISHED, and the mechanical reason to expect a gap:** the intent price is the detection "
@@ -467,19 +506,24 @@ def markdown(res: list[dict], s: dict) -> str:
     )
     not_est = (
         f"- **NOT ESTABLISHED:** the number the card's gate asks for. n={s['legs']}, {s['tapeSilent']} of them "
-        f"tape-silent, and our own book never covers the first "
-        f"{min(s['l2StartLagMin']) if s['l2StartLagMin'] else '?'}-"
-        f"{max(s['l2StartLagMin']) if s['l2StartLagMin'] else '?'} min after a dispatch, so the 5-minute horizon "
-        f"has no in-house coverage at all. Read this as a direction plus a data-availability finding, not a rate."
+        f"tape-silent, and our own book opens a median of {s['l2LagMedian']} min after a dispatch "
+        f"(p10 {s['l2LagP10']}, p90 {s['l2LagP90']}; already open at the dispatch on "
+        f"{s['l2LagBeforeDispatch']}/{s['l2LagN']} legs), with a snapshot actually inside the 5-min "
+        f"window on {s['l2SnapsIn5m']}/{s['l2BookResolved']} legs and a book opening later than the "
+        f"5-min mark on {s['l2LagPast5']}. "
+        f"This instrument runs the book test over a 1 h horizon only — it does not compute a 5-min book "
+        f"reach. Read this as a direction plus a tape-coverage finding, not a rate."
     )
     blockers = (
-        "- **BLOCKERS before this can decide anything:** (1) the L2 recorder's universe refresh admits a market "
-        "only after a copy exists, so coverage always starts AFTER the dispatch — subscribing at copy time is the "
-        "fix (observability change, not approved); (2) the public tape is thin on these markets (2-50 rows for the "
-        "whole market); (3) n. The gate stands: >=50 measured legs, then the share vs 74.3%."
+        "- **BLOCKERS before this can decide anything:** (1) the L2 corpus opens a median +0.2 min after "
+        "the dispatch on this population (at/before the dispatch on 98/529 legs, within the 5-min horizon "
+        "on 525/529) — so the 2026-09-26 read's \"coverage always starts AFTER the dispatch\" holds on that "
+        "n=6 sample and NOT here; the residual gap is the 4 legs that open later than +5 min, plus the fact "
+        "that no 5-min book reach is computed at all; (2) the public tape is thin on these markets (2-50 "
+        "rows for the whole market); (3) n. The gate stands: >=50 measured legs, then the share vs 74.3%."
     )
     return "\n".join([
-        "# C-200 intent print-through — first read",
+        "# C-200 intent print-through — cumulative read",
         "",
         f"Generated {time.strftime('%Y-%m-%d %H:%M %Z')} by `scripts/c200-printthrough.py` "
         "(measurement only — nothing in the trade path reads this). Card: `c200-intent-printthrough-check`.",
@@ -488,7 +532,7 @@ def markdown(res: list[dict], s: dict) -> str:
         body,
         "```",
         "",
-        "## What this first read does and does not establish",
+        "## What this read does and does not establish",
         "",
         established,
         mechanical,

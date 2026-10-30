@@ -1,5 +1,13 @@
 # C-200 intent print-through — first read
 
+> **SUPERSEDED 2026-10-30 — read `drafts/c200-printthrough-20261030` instead.** This n=6 draft
+> asserted "our L2 book starts 8.6/7.7/5.6/4.6/2.7/2.7 min AFTER dispatch → the 5-min horizon has
+> NO in-house book coverage on any leg". Re-measured on the full 530-leg population the same
+> instrument reports the book open at p50 **+0.2 min** (already open at the dispatch on 98/529 legs)
+> with a snapshot inside the 5-min window on **525/530** legs — every number below is from the
+> n=6 sample and none of the coverage sentence survived it. The three-figure headline is here for
+> provenance only.
+
 Generated 2026-09-26 01:17 CDT by `scripts/c200-printthrough.py` (measurement only — nothing in the trade path reads this). Card: `c200-intent-printthrough-check`.
 
 ```
