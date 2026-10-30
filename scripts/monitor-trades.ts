@@ -7,6 +7,7 @@ import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { log, logError } from "../src/lib/redact";
 import { appendSellPrint } from "../src/lib/sell-log";
+import { fillIdentityKey } from "../src/lib/outcome-identity";
 import {
   MAX_OBSERVE,
   MAX_TRACKED,
@@ -90,16 +91,15 @@ async function main() {
       // for the missing slug. This function must stay the only place the shape
       // is defined, or the seed and the loop drift apart and every existing
       // blank row is re-attempted each cycle.
-      const seenKey = (
-        marketId: string,
-        question: string,
-        outcome: string,
-        side: string,
-        ts: number
-      ) =>
-        marketId && marketId.trim() !== ""
-          ? `${marketId}|${outcome}|${side}|${ts}`
-          : `blank:${question}|${outcome}|${side}|${ts}`;
+      //
+      // 2026-10-29 (Lane B, data-api-v2-outcome-normalisation): the SHAPE now
+      // lives in src/lib/outcome-identity.ts, and the outcome participates as an
+      // IDENTITY (letters+digits, uppercased) rather than as raw venue text. The
+      // venue respells a token across fetches (measured: 14 twin pairs, e.g.
+      // PORTLAND FIRE / PORTLANDFIRE), and text-keyed dedupe would store the same
+      // fill twice under two spellings at one timestamp. Zero rows change today.
+      const seenKey = (marketId: string, question: string, outcome: string, side: string, ts: number) =>
+        fillIdentityKey({ marketId, marketQuestion: question, outcome, side, ts });
       const existing = await prisma.observedTrade.findMany({
         where: { walletAddress: w.address, timestamp: { gte: new Date(since) } },
         select: { marketId: true, marketQuestion: true, outcome: true, side: true, timestamp: true },

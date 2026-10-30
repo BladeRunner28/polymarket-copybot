@@ -37,6 +37,7 @@
  */
 
 import { prisma } from "./db";
+import { positionIdentityKey } from "./outcome-identity";
 
 /** One deduped paper leg, with the two quantities every downstream number is built from. */
 export interface LaneLeg {
@@ -75,7 +76,7 @@ export function dedupeFirstLeg<T extends { walletAddress: string; marketId: stri
   const seen = new Set<string>();
   const out: T[] = [];
   for (const r of rows) {
-    const k = `${r.walletAddress}|${r.marketId}|${r.outcome}`;
+    const k = positionIdentityKey(r.walletAddress, r.marketId, r.outcome);
     if (seen.has(k)) continue;
     seen.add(k);
     out.push(r);

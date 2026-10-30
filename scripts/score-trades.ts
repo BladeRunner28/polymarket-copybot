@@ -18,6 +18,7 @@ import { applyBandSizeFactor, isInBandRange } from "../src/lib/band-size";
 import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
 import { appendLowConfShadow } from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
+import { positionIdentityKey } from "../src/lib/outcome-identity";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
 import * as fs from "fs";
@@ -333,7 +334,7 @@ async function main() {
     select: { walletAddress: true, marketId: true, outcome: true },
   });
   const openCopyKeys = new Set(
-    openCopyRows.map((p) => `${p.walletAddress}|${p.marketId}|${p.outcome}`)
+    openCopyRows.map((p) => positionIdentityKey(p.walletAddress, p.marketId, p.outcome))
   );
   let deduped = 0;
 
@@ -346,7 +347,7 @@ async function main() {
   for (const t of unscored) {
     // v52 sweep-dedup guard (option A): collapse fills of a (wallet, market,
     // outcome) that already has an OPEN copy — cadence-agnostic by design.
-    const dupKey = `${t.walletAddress}|${t.marketId}|${t.outcome}`;
+    const dupKey = positionIdentityKey(t.walletAddress, t.marketId, t.outcome);
     if (openCopyKeys.has(dupKey)) {
       deduped++;
       log(
