@@ -333,6 +333,34 @@
    "status": "audited",
    "url": "https://github.com/mileswangs/pm-hftbacktest",
    "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-10-29 08:24 CDT",
+    "state": "pending"
+   },
+   "audited": "2026-10-29 08:24 CDT",
+   "claimed": "2026-10-29 08:20 CDT",
+   "claimed_ts": 1793280035.871424,
+   "discovered": "2026-10-29 08:20 CDT",
+   "id": "lein3000zzz/polythought-go",
+   "license": "NOASSERTION",
+   "note": "Self-hosted workflow automation for Polymarket: build workflows on a canvas or in TypeSc",
+   "pushed": "2026-10-29",
+   "recommendation": {
+    "decision_rule": "If VWAP premium over intentPrice is <= 2c on >=50% of joined C-200 BUY legs with an L2 snapshot <60s after dispatch (n>=150), open a maker-vs-taker entry before/after comparison as a v-next lane-A proposal; else close the taker arm permanently and record the maker convention as defended on cost.",
+    "effort": "~2h, read-only, artifact only",
+    "reversibility": "Delete the artifact and the proposed card; nothing in the trade path is touched.",
+    "text": "Reimplement the donor's ~55-line book-walk taker fill (services/trading/paper.go fill()) as a read-only replay over data/l2/ to price a marketable FAK entry at dispatch on booked C-200 legs \u2014 touches no live lane; pre-registers a NEW card c200-marketable-entry-cost."
+   },
+   "report": "drafts/asset-audit-polythought-go-20261029.md",
+   "source": "radar-seed",
+   "stars": 10,
+   "status": "audited",
+   "url": "https://github.com/lein3000zzz/polythought-go",
+   "verdict": "watch"
   }
  ],
  "version": 1

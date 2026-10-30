@@ -1,0 +1,164 @@
+{
+ "card": "t_4d29ae55",
+ "read_at": "2026-10-29T22:15:19.071885+00:00",
+ "window": {
+  "start_utc": "2026-09-29T22:15:19.071000+00:00",
+  "end_utc": "2026-10-29T22:15:19.071000+00:00",
+  "days": 30
+ },
+ "label_basis": "venue settled outcomePrices per TOKEN (closed markets only); no realizedPnl, no wallet-fill proxy",
+ "near_certainty_rows": 1983,
+ "tables": {
+  "A1 all near-certainty rows, both ends": {
+   "SECOND_LABEL": {
+    "sibling": 398,
+    "neither": 70
+   },
+   "FIRST_LABEL": {
+    "consistent": 519,
+    "neither": 82
+   },
+   "YES_NO": {
+    "unsettled": 551,
+    "neither": 67,
+    "consistent": 198
+   },
+   "NO_LABELS(0)": {
+    "unsettled": 98
+   }
+  },
+  "A2 cheap side (mark < 0.05) - the card's cohort": {
+   "FIRST_LABEL": {
+    "consistent": 264,
+    "neither": 70
+   },
+   "YES_NO": {
+    "unsettled": 536,
+    "neither": 59,
+    "consistent": 184
+   },
+   "SECOND_LABEL": {
+    "neither": 23,
+    "sibling": 209
+   },
+   "NO_LABELS(0)": {
+    "unsettled": 98
+   }
+  },
+  "A3 rich side (mark > 0.95)": {
+   "SECOND_LABEL": {
+    "sibling": 189,
+    "neither": 46
+   },
+   "FIRST_LABEL": {
+    "consistent": 255,
+    "neither": 9
+   },
+   "YES_NO": {
+    "neither": 7,
+    "unsettled": 15,
+    "consistent": 14
+   }
+  },
+  "A1s STRICT: decisions stamped AFTER the market closed": {
+   "SECOND_LABEL": {
+    "sibling": 359
+   },
+   "FIRST_LABEL": {
+    "consistent": 371
+   },
+   "YES_NO": {
+    "consistent": 172
+   }
+  },
+  "A2s STRICT cheap side": {
+   "FIRST_LABEL": {
+    "consistent": 159
+   },
+   "SECOND_LABEL": {
+    "sibling": 202
+   },
+   "YES_NO": {
+    "consistent": 163
+   }
+  },
+  "A3s STRICT rich side": {
+   "SECOND_LABEL": {
+    "sibling": 157
+   },
+   "FIRST_LABEL": {
+    "consistent": 212
+   },
+   "YES_NO": {
+    "consistent": 9
+   }
+  }
+ },
+ "card_populations": {
+  "cheap_side_rows": {
+   "n": 1443,
+   "consistent": 448,
+   "unsettled": 634,
+   "neither": 152,
+   "sibling": 209
+  },
+  "below_tick_floor_rows": {
+   "n": 521,
+   "consistent": 319,
+   "sibling": 202
+  },
+  "below_tick_floor_all_exactly_zero": 521,
+  "below_tick_floor_on_a_market_already_closed_at_decision": 521
+ },
+ "blast_radius": {
+  "scored_decisions_by_token_position": {
+   "YES_NO": 15504,
+   "SECOND_LABEL": 11194,
+   "FIRST_LABEL": 9833,
+   "NO_LABELS(0)": 98
+  },
+  "scored_decisions_on_a_second_listed_token": 11194,
+  "second_token_decision_mix": {
+   "skip": 11140,
+   "paper_copy": 54
+  },
+  "drift_rejections": 21896,
+  "drift_rejections_on_a_second_listed_token": 10061
+ },
+ "book": {
+  "legs_by_token_position": {
+   "FIRST_LABEL": 294,
+   "YES_NO": 226,
+   "SECOND_LABEL": 65
+  },
+  "legs_on_a_second_listed_token": 65,
+  "their_realized_pnl": 1290.89,
+  "booked_vs_venue_outcome_disagreements": 6
+ },
+ "options": {
+  "a_no_data_guard": {
+   "rows_relabelled": 521,
+   "of_those_correct_zero_reads": 319,
+   "of_those_inverted_reads": 202,
+   "admissions_changed": 0,
+   "note": "the guard cannot tell a token that LOST (0.000 is its price) from a token read upside-down (0.000 is its sibling's price)"
+  },
+  "b_refetch_before_scoring": {
+   "rows_on_a_market_closed_at_decision": 521,
+   "rows_that_a_refetch_could_change": 0,
+   "note": "a closed market's outcomePrices are frozen 0/1, and the re-fetch runs the same three lines, so it re-reads the same slot"
+  },
+  "c_leave_alone": {
+   "near_certainty_admissions_changed": 0,
+   "note": "the clause is symmetric, so a sub-0.05 mark on a second token is a >=0.95 market read upside-down and the same clause rejects it from the other end"
+  },
+  "d_label_matched_price": {
+   "cohort_rows_affected": 232,
+   "cohort_rows_still_rejected_after_repricing": 232,
+   "scored_decisions_repriced": 11194,
+   "drift_rejections_whose_sign_flips": 10061,
+   "book_legs_entered_on_the_complement": 65,
+   "entry_error_rule": "booked entry is off by (1 - 2*p_true): ~0 at 0.50, ~0.8 at 0.90"
+  }
+ }
+}
