@@ -16,6 +16,18 @@
  * counterfactual about the CAP, not a strategy backtest. PnL for a leg is its
  * realizedPnl when finished, else its unrealizedPnl at run time.
  *
+ * READ THIS BEFORE QUOTING THE TOKEN ARM (2026-10-30, slug-cap-token-granularity):
+ * this instrument replays the legs AS BOOKED, so it is structurally blind to the
+ * legs the cap itself refused — a blocked leg never becomes a PaperTrade, and a
+ * decision that the cap refused can never appear in this replay's population. On
+ * the 30d window ending 2026-10-30 it prints 0 token-basis blocks while the
+ * journal recorded 105 refusals on the same days, so its incumbent arm is a LOWER
+ * BOUND ON BOOKED LEGS, not a statement of what the rail did. The journal count
+ * for the same window is printed beside it for exactly that reason. The direct
+ * measurement of what the rail refused lives in scripts/slug-cap-blocked-legs.ts
+ * (which is also where the counter-basis defect — the bucket counts refused
+ * ATTEMPTS, not open positions — is measured).
+ *
  *   npx tsx scripts/replay-slug-cap-basis.ts --days 30 --cap 15
  */
 
@@ -121,6 +133,17 @@ async function main() {
       `${legs.filter((l) => l.settled).length} settled, ${legs.filter((l) => !l.settled).length} still open (valued at their mark)`
   );
 
+  // Cross-check: refusals the rail actually made. A replay over BOOKED legs cannot
+  // reproduce these (the refused leg was never booked), so print both numbers
+  // instead of letting the replay's silence read as "the rail is idle".
+  const refused = await prisma.decisionJournal.count({
+    where: { isDemo: false, createdAt: { gte: since }, risksJson: { contains: "v45 market-slug cap" } },
+  });
+  console.log(
+    `journal refusals in the same ${days}d window: ${refused} decisions — invisible to this replay by construction ` +
+      `(a refused leg is never booked); use scripts/slug-cap-blocked-legs.ts to price them`
+  );
+
   const out: Record<string, unknown> = { generatedAt: new Date().toISOString(), days, cap, legs: legs.length, bases: {} };
   for (const basis of ["token", "fine", "coarse"] as Basis[]) {
     const { blocked, counts } = replay(legs, basis, cap);
@@ -159,7 +182,8 @@ async function main() {
   fs.writeFileSync(OUT, JSON.stringify(out, null, 2));
   console.log(`\nwrote ${OUT}`);
   console.log("READ: a basis that blocks LOSERS is protecting the lane; one that blocks WINNERS is starving it. The");
-  console.log("token basis is production today; the others are counterfactuals, not proposals.");
+  console.log("token basis is production today; the others are counterfactuals, not proposals. CAVEAT: the token arm");
+  console.log("only sees booked legs — if the journal refusal count above is not ~0, read the token arm as a LOWER BOUND.");
 }
 
 main()

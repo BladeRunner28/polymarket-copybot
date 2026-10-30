@@ -1,113 +1,70 @@
 {
-  "generatedAt": "2026-09-23T20:50:21.505Z",
+  "generatedAt": "2026-10-30T14:06:55.655Z",
   "days": 30,
   "cap": 15,
-  "legs": 1160,
+  "legs": 441,
   "bases": {
     "token": {
-      "blockedLegs": 83,
-      "blockedPnl": 152.24,
-      "blockedWinners": 51,
-      "blockedLosers": 32,
-      "byBucket": {
-        "epl": {
-          "legs": 12,
-          "pnl": 89.4
-        },
-        "highest": {
-          "legs": 71,
-          "pnl": 62.84
-        }
-      },
+      "blockedLegs": 0,
+      "blockedPnl": 0,
+      "blockedWinners": 0,
+      "blockedLosers": 0,
+      "byBucket": {},
       "openAtEnd": {
-        "unl": 8,
-        "mlb": 6,
-        "russia": 5,
-        "spider": 1,
-        "what": 1,
-        "(unknown)": 1,
-        "parana": 1,
-        "best": 1
+        "ufc": 2,
+        "atp": 2,
+        "will": 1,
+        "dota2": 0,
+        "r6siege": 0,
+        "unl": 0,
+        "(unknown)": 0,
+        "wnba": 0
       }
     },
     "fine": {
-      "blockedLegs": 261,
-      "blockedPnl": -87.04,
-      "blockedWinners": 138,
-      "blockedLosers": 123,
+      "blockedLegs": 21,
+      "blockedPnl": -53.27,
+      "blockedWinners": 10,
+      "blockedLosers": 11,
       "byBucket": {
-        "football-epl": {
-          "legs": 12,
-          "pnl": 89.4
-        },
         "other": {
-          "legs": 69,
-          "pnl": -270.44
-        },
-        "politics-elections": {
-          "legs": 5,
-          "pnl": 26.73
-        },
-        "weather-temp": {
-          "legs": 173,
-          "pnl": 76.83
-        },
-        "culture-media": {
-          "legs": 2,
-          "pnl": -9.56
+          "legs": 21,
+          "pnl": -53.27
         }
       },
       "openAtEnd": {
-        "other": 9,
-        "baseball-mlb": 6,
-        "politics-elections": 5,
-        "esports-lol": 1,
-        "crypto-btc": 1,
-        "tech-ai": 1,
-        "football-epl": 0,
-        "tech-corp": 0
+        "combat-ufc": 2,
+        "tennis": 2,
+        "other": 1,
+        "esports-dota": 0,
+        "esports-lol": 0,
+        "basketball-nba": 0,
+        "hockey-nhl": 0,
+        "baseball-mlb": 0
       }
     },
     "coarse": {
-      "blockedLegs": 325,
-      "blockedPnl": -170.11,
-      "blockedWinners": 163,
-      "blockedLosers": 162,
+      "blockedLegs": 41,
+      "blockedPnl": -17.67,
+      "blockedWinners": 20,
+      "blockedLosers": 21,
       "byBucket": {
-        "sports": {
-          "legs": 37,
-          "pnl": 52.89
-        },
-        "esports": {
-          "legs": 17,
-          "pnl": -82.76
-        },
         "other": {
-          "legs": 69,
-          "pnl": -270.44
+          "legs": 21,
+          "pnl": -53.27
         },
-        "politics": {
-          "legs": 27,
-          "pnl": 62.93
-        },
-        "weather": {
-          "legs": 173,
-          "pnl": 76.83
-        },
-        "culture": {
-          "legs": 2,
-          "pnl": -9.56
+        "sports": {
+          "legs": 20,
+          "pnl": 35.6
         }
       },
       "openAtEnd": {
-        "other": 9,
-        "sports": 6,
-        "politics": 1,
-        "tech": 1,
-        "esports": 1,
-        "crypto": 1,
-        "culture": 0,
-        "weather": 0
+        "sports": 4,
+        "other": 1,
+        "esports": 0,
+        "politics": 0,
+        "weather": 0,
+        "crypto": 0
       }
     }
   }
