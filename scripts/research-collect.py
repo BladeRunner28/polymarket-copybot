@@ -203,11 +203,16 @@ def bot_facts(db: str, days: int) -> list[str]:
                     out.append(f"  - last {d}d opened: n={r[0]}, realized ${r[1] or 0:,.2f}")
             scols = [c for c in ("simulatedPositionSize", "size", "stakeUsd") if c in cols]
             sizecol = scols[0] if scols else None
+            # 2026-10-31: the open-position line was the ONE quoted figure with no isDemo
+            # filter. At the fix, 487 open / $5,285.98 included 18 demo STANDARD legs /
+            # $165.60, so the line overstated the real book against every other line here
+            # (which are all isDemo=0). Demo rows never settle, so they inflate "at risk"
+            # permanently and can never wash out of the read.
             op = cur.execute(
                 f"SELECT COUNT(*), ROUND(SUM(COALESCE({sizecol},0)),2) FROM PaperTrade "
-                f"WHERE status='open'" if sizecol else
+                f"WHERE status='open'{demo_ok}" if sizecol else
                 "SELECT COUNT(*), 0 FROM PaperTrade WHERE status='open'").fetchone()
-            out.append(f"- open positions: {op[0]}, at risk ${op[1] or 0:,.2f}")
+            out.append(f"- open positions (isDemo=0): {op[0]}, at risk ${op[1] or 0:,.2f}")
             if "botId" in cols:
                 for bot, in cur.execute("SELECT DISTINCT botId FROM PaperTrade WHERE botId IS NOT NULL").fetchall():
                     r = cur.execute(
