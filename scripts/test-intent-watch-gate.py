@@ -101,9 +101,17 @@ assert w.l2_coverage_gate(intents, st) == []
 print("  (alerted offenders are skipped on the next tick)  OK")
 
 print("\n=== recorder_alive branches ===")
+# NOTE: `w.ROOT` is the TEMP tree above, not the live repo -- this line used to read "live system"
+# and assert up is True while there was no log file in that tree at all. It only passed because the
+# missing-log exception was swallowed into `return True`, i.e. the fixture was asserting the bug.
+# Give the temp tree a fresh heartbeat log so the healthy branch is exercised for real.
+os.makedirs(os.path.join(root, "logs"), exist_ok=True)
+HEARTBEAT = os.path.join(root, "logs", "record-l2.log")
+with open(HEARTBEAT, "w") as fh:
+    fh.write("[l2] heartbeat conns=1 open=1\n")
 up, why = w.recorder_alive()
-print(f"  live system: up={up} why={why!r}")
-assert up is True
+print(f"  fresh beat : up={up} why={why!r}")
+assert up is True and why == ""
 
 real_run, real_mtime = subprocess.run, os.path.getmtime
 
@@ -123,6 +131,48 @@ up, why = w.recorder_alive()
 print(f"  stale beat : up={up} why={why!r}")
 assert up is False and "not been written for" in why
 
+# The two branches that used to read HEALTHY. up is None ("unverifiable"), never True:
+# the caller pops its recorderDown alarm on True, so True here erased a live alarm.
+def _timeout(*a, **k):
+    raise subprocess.TimeoutExpired(cmd="pgrep", timeout=15)
+
+
+subprocess.run = _timeout
+up, why = w.recorder_alive()
+print(f"  pgrep fails: up={up} why={why!r}")
+assert up is None and "process check itself failed" in why
+
+
+class Alive:
+    stdout = "12345\n"
+
+
+subprocess.run = lambda *a, **k: Alive()
+
+
+def _missing(p):
+    raise FileNotFoundError(2, "No such file or directory", p)
+
+
+os.path.getmtime = _missing
+up, why = w.recorder_alive()
+print(f"  no logfile : up={up} why={why!r}")
+assert up is None and "heartbeat log" in why
+
+# ...and the caller must not clear the alarm on None. Replay stanza 8's three-way rule.
+for _up, _flag_before, _expect_pop in ((None, True, False), (True, True, True)):
+    flags = {"recorderDown": True} if _flag_before else {}
+    if _up is True:
+        flags.pop("recorderDown", None)
+        flags.pop("recorderUnknown", None)
+    elif _up is False:
+        flags["recorderDown"] = True
+    else:
+        flags.setdefault("recorderUnknown", True)
+    assert (not flags.get("recorderDown")) == _expect_pop, (_up, flags)
+print("  caller rule: alarm survives an unverifiable check, clears only on a real True  OK")
+
 os.path.getmtime = real_mtime
+subprocess.run = real_run
 print("\nALL FIXTURE ASSERTIONS PASSED")
 shutil.rmtree(root)

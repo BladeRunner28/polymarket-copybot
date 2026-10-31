@@ -63,7 +63,8 @@ FLOOR_MS = 1790397194000
 # measured is being exempted by this floor.
 L2_FIX_MS = 1790411386000        # 2026-09-26 03:29:46 CDT, the real v62 go-live
 L2_LAG_BUDGET_MS = 90_000
-RECORDER_STALE_S = 180           # heartbeat is every 15s; 3 missed beats = stalled sockets/hung process
+RECORDER_STALE_S = 180           # heartbeat is every 15s; 180s = 12 missed beats = stalled sockets/hung process
+                                 # (the docstring/alert used to say "3 missed beats" -- that is 45s, not this limit)
 GATE_LEGS = 50
 DELTA = 0.02
 TOL = 1e-9
@@ -288,30 +289,49 @@ def l2_coverage_gate(intents: list[dict], st: dict) -> list[dict]:
     return out
 
 
-def recorder_alive() -> tuple[bool, str]:
+def recorder_alive() -> tuple[bool | None, str]:
     """Is the L2 recorder running, and is its heartbeat current?
+
+    Three states, because "I could not check" is not the same as "healthy" and is not the
+    same as "down":
+      True  -- process alive and the heartbeat log is fresh
+      False -- DOWN or stalled; the caller must raise the actionable restart alert
+      None  -- UNVERIFIABLE (pgrep itself failed, or the heartbeat log is missing/unreadable)
 
     Both halves matter. The process existing says nothing about whether its sockets are still
     delivering, and the heartbeat (every 15s) is only written by a live process. This check exists
     because the failure that actually happened was silent: the recorder was started by hand from a
     shell on 2026-09-24, died at ~03:19 on 2026-09-26, and the only thing that noticed was a human
     reading the log — L2 coverage simply stopped with no alarm anywhere.
+
+    Why None exists: this used to return True on both exception paths. The caller pops its
+    `recorderDown` flag whenever it sees True, so a failed `pgrep` (15s TimeoutExpired is reachable
+    when the box is loaded) or a missing log file MADE AN ACTIVE ALARM DISAPPEAR while the state was
+    unknown — the exact silent-erasure failure the docstring above is about. Verified 2026-10-31:
+    both branches returned (True, '') before this change.
     """
     try:
         pids = subprocess.run(["pgrep", "-f", "scripts/record-l2.ts"],
                               capture_output=True, text=True, timeout=15).stdout.split()
-    except Exception as e:
-        return True, f"cannot check ({e})"
+    except Exception as e:  # noqa: BLE001 - a broken check must read UNKNOWN, never healthy
+        return None, (f"cannot verify: the process check itself failed "
+                      f"({type(e).__name__}: {e})")
     if not pids:
         return False, "no `tsx scripts/record-l2.ts` process is running"
     log = os.path.join(ROOT, "logs", "record-l2.log")
     try:
         age = time.time() - os.path.getmtime(log)
-        if age > RECORDER_STALE_S:
-            return False, (f"the process is alive but its heartbeat log has not been written for "
-                           f"{int(age)}s ({RECORDER_STALE_S}s = 3 missed beats) — sockets stalled or hung")
-    except Exception:
-        pass
+    except FileNotFoundError:
+        return None, (f"cannot verify: the process is alive but its heartbeat log {log} does not "
+                      f"exist, so no beat can be read (the LaunchAgent always redirects stdout and "
+                      f"stderr there; the 5-min watchdog treats a missing log as wedged)")
+    except Exception as e:  # noqa: BLE001
+        return None, (f"cannot verify: cannot read the heartbeat log {log} "
+                      f"({type(e).__name__}: {e})")
+    if age > RECORDER_STALE_S:
+        return False, (f"the process is alive but its heartbeat log has not been written for "
+                       f"{int(age)}s ({RECORDER_STALE_S}s = {RECORDER_STALE_S // 15} missed 15s "
+                       f"beats) — sockets stalled or hung")
     return True, ""
 
 
@@ -440,18 +460,29 @@ def main() -> int:
     # 8. recorder alive + heartbeat fresh (the failure that actually happened, silently)
     if not a.no_process_check and not a.now_ms:
         up, why = recorder_alive()
-        if up:
+        if up is True:
             st["flags"].pop("recorderDown", None)
-        elif not st["flags"].get("recorderDown"):
-            alerts.append(
-                f"🚨 **L2 recorder is DOWN or stalled** — {why}. Book snapshots and the pinned-market quote tape "
-                f"are NOT being written, so every C-200 window from now on is unmeasurable. Restart it "
-                f"(`cd ~/polymarket-copybot && DATABASE_URL=file:./dev.db node node_modules/tsx/dist/cli.mjs "
-                f"scripts/record-l2.ts >> logs/record-l2.log 2>&1 &`) or, better, load the LaunchAgent written "
-                f"for exactly this: `launchctl bootstrap gui/$(id -u) "
-                f"~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist` (KeepAlive — it was started by "
-                f"hand until now, which is why it could die unnoticed).")
+            st["flags"].pop("recorderUnknown", None)
+        elif up is False:
+            if not st["flags"].get("recorderDown"):
+                alerts.append(
+                    f"🚨 **L2 recorder is DOWN or stalled** — {why}. Book snapshots and the pinned-market quote tape "
+                    f"are NOT being written, so every C-200 window from now on is unmeasurable. Restart it "
+                    f"(`cd ~/polymarket-copybot && DATABASE_URL=file:./dev.db node node_modules/tsx/dist/cli.mjs "
+                    f"scripts/record-l2.ts >> logs/record-l2.log 2>&1 &`) or, better, load the LaunchAgent written "
+                    f"for exactly this: `launchctl bootstrap gui/$(id -u) "
+                    f"~/Library/LaunchAgents/com.xsnyde2.copybot-l2-recorder.plist` (KeepAlive — it was started by "
+                    f"hand until now, which is why it could die unnoticed).")
             st["flags"]["recorderDown"] = True
+        else:
+            # UNKNOWN: do NOT touch recorderDown (a live alarm must survive an unreadable check), and
+            # say so once rather than pretending the recorder is healthy or that it is down.
+            if not st["flags"].get("recorderUnknown"):
+                alerts.append(
+                    f"⚠️ **L2 recorder state UNVERIFIABLE** — {why}. The 15-min and 5-min L2 watchdogs "
+                    f"still probe it independently, but this watcher cannot confirm coverage this tick. "
+                    f"Any C-200 dispatch in the gap is UNMEASURED, not proven good.")
+                st["flags"]["recorderUnknown"] = True
 
     # D: fold the public trade tape into the artifact for freshly closed windows (recorded while the
     # endpoint still has the prints). NOTE the flag: this used to call `--ingest-closed`, which does not
