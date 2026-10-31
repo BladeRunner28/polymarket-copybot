@@ -128,14 +128,31 @@ async function main() {
     writes.push({ id: leg.id, fillStatus: status, fillBasis: v.basis });
   }
 
+  // BASIS line. Everything above counts only legs whose intent is present in the artifact; a leg
+  // whose intent is not in it is never examined, so the per-run coverage figure can read "0.0% of 1"
+  // (or "0 pending") while most of the book carries no stamp at all and keeps booking at p(fill)=1.
+  // Without this denominator the run looks like it describes the book rather than a slice of it.
+  const stampedAll = await prisma.paperTrade.count({
+    where: { botId: "BANKROLL_200", isDemo: false, fillStatus: { not: null } },
+  });
+  const pendingAll = await prisma.paperTrade.count({
+    where: { botId: "BANKROLL_200", isDemo: false, fillStatus: null },
+  });
+  const visiblePending = tally.filled + tally.unfilled + tally.unresolved;
+
   const total = tally.filled + tally.unfilled + tally.unresolved;
   const resolved = total > 0 ? (100 * (tally.filled + tally.unfilled)) / total : 0;
   log("");
-  log("VERDICTS (legs with no stamp yet):");
+  log("VERDICTS (legs with no stamp yet, INSIDE this run's population only):");
   log(`  filled      ${tally.filled.toLocaleString()}`);
   log(`  unfilled    ${tally.unfilled.toLocaleString()}`);
   log(`  unresolved  ${tally.unresolved.toLocaleString()}  (left NULL — books unchanged)`);
   log(`  already stamped ${tally.already.toLocaleString()} · leg row missing ${tally.missing.toLocaleString()}`);
+  log(
+    `  BASIS: C-200 non-demo legs — ${stampedAll.toLocaleString()} stamped, ${pendingAll.toLocaleString()} with NO stamp. ` +
+      `This run could see ${visiblePending.toLocaleString()} of those ${pendingAll.toLocaleString()} (intent present in the artifact); ` +
+      `${(pendingAll - visiblePending).toLocaleString()} are INVISIBLE here and keep booking at p(fill)=1.`
+  );
   // A 0 denominator is NOT 0% coverage. This printed "0.0% of 0" whenever the backlog was empty,
   // i.e. the healthy steady state read as total resolution failure -- and the same 0.0% was printed
   // when every pending leg really was unresolved. Two different facts, one string.
