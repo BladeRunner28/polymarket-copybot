@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-10-30T02:38:06.346Z",
+  "generatedAt": "2026-10-31T02:38:16.541Z",
   "preregistration": "PRE-REGISTERED 2026-10-06: bar = n>=50 resolved legs AND Brier(jev) < Brier(entryPrice) AND AUC(jev) > AUC(entryPrice) AND net-of-fee counterfactual PnL/leg at the gate beats copy-all AND beats copyScore. No promotion of any kind before all four hold.",
-  "candidates": 25161,
+  "candidates": 25837,
   "withModel": 3959,
-  "resolved": 23754,
+  "resolved": 24470,
   "resolvedWithModel": 3959,
   "priceOnly": {
-    "n": 23754,
-    "auc": 0.5274161250557852,
-    "brier": 0.26793428177382594,
-    "logLoss": 0.7476136210266211,
-    "meanPnlPerStake": 0.28545042659890957,
-    "meanPnlPerStakeNetOfFee": 0.2032932904945784
+    "n": 24470,
+    "auc": 0.5252774742039005,
+    "brier": 0.2681236587762767,
+    "logLoss": 0.7475537675506229,
+    "meanPnlPerStake": 0.2641547132306885,
+    "meanPnlPerStakeNetOfFee": 0.18199840264398764
   },
   "jev": {
     "n": 3959,
@@ -22,10 +22,10 @@
     "meanPnlPerStakeNetOfFee": -0.2945037956777035
   },
   "copyScore": {
-    "n": 23754,
-    "auc": 0.6060264717090693,
-    "brier": 5010.114072998118,
-    "logLoss": 6.504701635516131
+    "n": 24470,
+    "auc": 0.5980539783859471,
+    "brier": 5108.3590600734315,
+    "logLoss": 6.608523246658604
   },
   "gate": {
     "threshold": 0.55,

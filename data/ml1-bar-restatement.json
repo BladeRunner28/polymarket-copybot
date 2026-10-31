@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T10:39:08.577Z",
+  "generatedAt": "2026-10-30T10:39:13.095Z",
   "inForceBar": {
     "auc": 0.729,
     "brier": 0.212,
@@ -150,10 +150,10 @@
   "fitPopulation": {
     "label": "training_data.csv",
     "role": "the file the ML-1 fit actually uses — this block is the population the absolute bar is now applied to",
-    "provenance": "training_data.csv | boundary 2026-08-21T00:00:00.000Z | train n=2300 | test n=2671 | eras train [pre-kelly-v1-48:2300] test [pre-kelly-v1-48:965,exposure-v58plus:864,kelly-window-v49-57:842] | eras on both sides: pre-kelly-v1-48 | purged 468 train rows labelled after the boundary",
+    "provenance": "training_data.csv | boundary 2026-08-21T00:00:00.000Z | train n=2300 | test n=2689 | eras train [pre-kelly-v1-48:2300] test [pre-kelly-v1-48:965,exposure-v58plus:881,kelly-window-v49-57:843] | eras on both sides: pre-kelly-v1-48 | purged 468 train rows labelled after the boundary",
     "priceOnly": {
-      "auc": 0.7078383545536552,
-      "brier": 0.2201463722463505
+      "auc": 0.7065424968365256,
+      "brier": 0.22072649674228423
     },
     "inForceBar": {
       "auc": 0.729,
@@ -164,18 +164,18 @@
       "measuredOn": "data/decision-dataset.csv 2026-09-13 (price 0.7285 / 0.2115)"
     },
     "demandedMargin": {
-      "auc": 0.0211616454463448,
-      "brier": -0.008146372246350508
+      "auc": 0.02245750316347439,
+      "brier": -0.008726496742284234
     },
     "restatedBar": {
-      "auc": 0.7083383545536551,
-      "brier": 0.2206463722463505
+      "auc": 0.7070424968365255,
+      "brier": 0.22122649674228423
     },
     "arms": [
       {
         "arm": "entry_price",
-        "auc": 0.7078383545536552,
-        "brier": 0.2201463722463505,
+        "auc": 0.7065424968365256,
+        "brier": 0.22072649674228423,
         "inForce": {
           "auc": false,
           "brier": false
@@ -188,8 +188,8 @@
       },
       {
         "arm": "detected_price",
-        "auc": 0.7067553664151942,
-        "brier": 0.22118293055035662,
+        "auc": 0.7054517485738072,
+        "brier": 0.22175497675715966,
         "inForce": {
           "auc": false,
           "brier": false
@@ -202,7 +202,7 @@
       },
       {
         "arm": "copy_score",
-        "auc": 0.513160788256044,
+        "auc": 0.5126300954633065,
         "brier": null,
         "inForce": {
           "auc": false,
@@ -216,7 +216,7 @@
       },
       {
         "arm": "wallet_quality_score",
-        "auc": 0.5117953424497691,
+        "auc": 0.5133391787033685,
         "brier": null,
         "inForce": {
           "auc": false,
@@ -230,7 +230,7 @@
       },
       {
         "arm": "entry_timing_score",
-        "auc": 0.5509974935037542,
+        "auc": 0.5497526234972805,
         "brier": null,
         "inForce": {
           "auc": false,
@@ -244,7 +244,7 @@
       },
       {
         "arm": "thesis_score",
-        "auc": 0.46181968934705436,
+        "auc": 0.4617546184512205,
         "brier": null,
         "inForce": {
           "auc": false,
@@ -260,13 +260,13 @@
     "eras": [
       {
         "era": "exposure-v58plus",
-        "n": 864,
-        "priceAuc": 0.666612427259439
+        "n": 881,
+        "priceAuc": 0.6613321661626611
       },
       {
         "era": "kelly-window-v49-57",
-        "n": 842,
-        "priceAuc": 0.6744950827672699
+        "n": 843,
+        "priceAuc": 0.6749459248270161
       },
       {
         "era": "pre-kelly-v1-48",
