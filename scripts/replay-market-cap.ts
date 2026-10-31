@@ -10,7 +10,10 @@
  * of this script (so re-run it later for a settled answer).
  *
  * Run: DATABASE_URL="file:./dev.db" npx tsx scripts/replay-market-cap.ts --days 7
- *      ... --pct 0.10 (default) --legs 2 (default) --cap-usd <override>
+ *      ... --pct <frac> --legs <n> --cap-usd <override>
+ *
+ * DEFAULTS = the ACTIVE RuleSet's maxMarketNotionalPctOfCap / maxMarketLegsPerMarketId,
+ * so a bare run replays the rule in force. Override to ask a what-if.
  */
 
 import { prisma } from "../src/lib/db";
@@ -28,8 +31,14 @@ function arg(name: string, def: string): string {
 
 async function main() {
   const days = Number(arg("days", "7"));
-  const pct = Number(arg("pct", "0.10"));
-  const legsMax = Number(arg("legs", "2"));
+  // 2026-10-30 (permarket-legs-rail-finding): the defaults used to be the v55
+  // values (0.10 / 2) and stayed there after v61 raised the notional clause to
+  // 0.20, so a bare run replayed a rule the bot no longer trades. Defaults now
+  // come from the ACTIVE RuleSet; --pct / --legs still override for a what-if.
+  const active = await prisma.ruleSet.findFirst({ where: { active: true }, select: { rulesJson: true } });
+  const liveRules = active ? (JSON.parse(active.rulesJson) as Record<string, unknown>) : {};
+  const pct = Number(arg("pct", String(liveRules.maxMarketNotionalPctOfCap ?? 0.1)));
+  const legsMax = Number(arg("legs", String(liveRules.maxMarketLegsPerMarketId ?? 2)));
   const capOverride = process.argv.includes("--cap-usd") ? Number(arg("cap-usd", "0")) : null;
 
   const bankroll = await prisma.botBankroll.findUnique({ where: { botId: "BANKROLL_200" } });
@@ -105,6 +114,23 @@ async function main() {
     perMarket.set(r.marketId, m);
   }
 
+  // 2026-10-30 (permarket-legs-rail-finding): this instrument is a counterfactual
+  // about legs the rail ALREADY ADMITTED, and it was being read as the rail's
+  // effect. Two basis facts are now printed beside every run so it can no longer
+  // read as complete: a refused leg never becomes a PaperTrade (so the rail's own
+  // refusals are invisible here — 46 leg-clause refusals were journalled in the
+  // last 30d while this replay reported 0 blocked legs), and the leg count starts
+  // fresh at the window edge while the live rail counts OPEN legs whatever their
+  // vintage. The refusal population lives in
+  // `scripts/permarket-cap-blocked-legs.ts`.
+  const journalRefusals = await prisma.decisionJournal.count({
+    where: {
+      isDemo: false,
+      createdAt: { gte: since },
+      risksJson: { contains: "v55 per-market cap" },
+    },
+  });
+
   const totalPnl = keptPnl + blockedPnl;
   const worst = [...perMarket.entries()].sort((a, b) => a[1].pnl - b[1].pnl).slice(0, 5);
   const worstBlocked = [...blockedRows].sort((a, b) => Number(a.pnl) - Number(b.pnl)).slice(0, 5);
@@ -112,6 +138,13 @@ async function main() {
   const out = {
     generatedAt: new Date().toISOString(),
     window: { days, since: since.toISOString() },
+    basis: {
+      population: "C-200 non-demo legs AS BOOKED, opened inside the window",
+      blindness: "cannot see legs the rail refused (a refused leg never becomes a PaperTrade)",
+      window: "leg count starts at 0 at the window edge; the live rail counts OPEN legs whatever their vintage",
+      refusals: "read scripts/permarket-cap-blocked-legs.ts for the rail's own refusal population",
+    },
+    journalRefusalsInWindow: journalRefusals,
     thresholds: { maxMarketLegsPerMarketId: legsMax, maxMarketNotionalPctOfCap: pct, notionalCapUsd: Math.round(notionalCap * 100) / 100, effectiveCapUsd: Math.round(effCap * 100) / 100, netWorth: Math.round(netWorth * 100) / 100, capOverride },
     legs: rows.length,
     blockedLegs,
@@ -133,6 +166,9 @@ async function main() {
     log(`  worst blocked legs:`);
     for (const b of worstBlocked) log(`    ${String(b.marketId).slice(0, 46)} $${Number(b.size).toFixed(2)} -> $${Number(b.pnl).toFixed(2)} (${b.status}) [${b.why}]`);
   }
+  log(
+    `  BASIS: booked legs only, opened inside the window. The journal recorded ${journalRefusals} v55 per-market-cap refusals in the same ${days}d; this replay cannot see any of them. Rail refusals: scripts/permarket-cap-blocked-legs.ts`
+  );
   log(`  wrote ${OUT}`);
   process.exit(0);
 }

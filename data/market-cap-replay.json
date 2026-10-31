@@ -1,75 +1,63 @@
 {
-  "generatedAt": "2026-10-17T12:01:43.289Z",
+  "generatedAt": "2026-10-31T01:04:27.731Z",
   "window": {
     "days": 30,
-    "since": "2026-09-17T12:01:43.283Z"
+    "since": "2026-10-01T01:04:27.691Z"
   },
+  "basis": {
+    "population": "C-200 non-demo legs AS BOOKED, opened inside the window",
+    "blindness": "cannot see legs the rail refused (a refused leg never becomes a PaperTrade)",
+    "window": "leg count starts at 0 at the window edge; the live rail counts OPEN legs whatever their vintage",
+    "refusals": "read scripts/permarket-cap-blocked-legs.ts for the rail's own refusal population"
+  },
+  "journalRefusalsInWindow": 46,
   "thresholds": {
     "maxMarketLegsPerMarketId": 2,
     "maxMarketNotionalPctOfCap": 0.2,
-    "notionalCapUsd": 772.06,
-    "effectiveCapUsd": 3860.32,
-    "netWorth": 7620.65,
+    "notionalCapUsd": 847.25,
+    "effectiveCapUsd": 4236.24,
+    "netWorth": 8372.48,
     "capOverride": null
   },
-  "legs": 694,
-  "blockedLegs": 2,
-  "blockedNotionalUsd": 40,
-  "blockedPnlUsd": -39.91,
-  "bookedPnlUsd": 5167.11,
-  "actualWindowPnlUsd": 5127.2,
-  "deltaUsd": 39.91,
-  "marketsWithMultipleLegs": 48,
+  "legs": 435,
+  "blockedLegs": 0,
+  "blockedNotionalUsd": 0,
+  "blockedPnlUsd": 0,
+  "bookedPnlUsd": 1974.1,
+  "actualWindowPnlUsd": 1974.1,
+  "deltaUsd": 0,
+  "marketsWithMultipleLegs": 20,
   "worstMarketsUnderCap": [
     {
-      "marketId": "bl2-wob-svd-2026-09-18-wob",
+      "marketId": "cfb-mspst-lsu-2026-10-17",
       "legs": 1,
       "notional": 100,
       "pnl": -100
     },
     {
-      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-220-239",
+      "marketId": "elc-wre-pne-2026-10-17-pne",
       "legs": 1,
       "notional": 100,
       "pnl": -100
     },
     {
-      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-200-219",
+      "marketId": "bkcba-nin-bei2-2026-10-17",
       "legs": 1,
       "notional": 100,
       "pnl": -100
     },
     {
-      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-180-199",
+      "marketId": "dota2-synaps-yes-2026-10-20-game1",
       "legs": 1,
       "notional": 100,
       "pnl": -100
     },
     {
-      "marketId": "dota2-xtreme-lgd-2026-09-25-game1",
+      "marketId": "will-lamine-yamal-win-the-2026-ballon-dor",
       "legs": 1,
       "notional": 100,
       "pnl": -100
     }
   ],
-  "blockedSample": [
-    {
-      "marketId": "elon-musk-of-tweets-september-19-september-21-2026-40-64",
-      "outcome": "NO",
-      "entryPrice": 0.06999999999999999,
-      "size": 20,
-      "pnl": -20,
-      "status": "resolved",
-      "why": "leg 3 > 2"
-    },
-    {
-      "marketId": "will-linke-win-less-than-8-of-all-valid-second-votes-mecklenburg-vorpommern",
-      "outcome": "NO",
-      "entryPrice": 0.117,
-      "size": 20,
-      "pnl": -19.91,
-      "status": "closed",
-      "why": "leg 3 > 2"
-    }
-  ]
+  "blockedSample": []
 }
