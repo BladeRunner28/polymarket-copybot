@@ -136,7 +136,14 @@ async function main() {
   log(`  unfilled    ${tally.unfilled.toLocaleString()}`);
   log(`  unresolved  ${tally.unresolved.toLocaleString()}  (left NULL — books unchanged)`);
   log(`  already stamped ${tally.already.toLocaleString()} · leg row missing ${tally.missing.toLocaleString()}`);
-  log(`  => resolution coverage ${resolved.toFixed(1)}% of ${total.toLocaleString()} (floor 80% was WAIVED)`);
+  // A 0 denominator is NOT 0% coverage. This printed "0.0% of 0" whenever the backlog was empty,
+  // i.e. the healthy steady state read as total resolution failure -- and the same 0.0% was printed
+  // when every pending leg really was unresolved. Two different facts, one string.
+  log(
+    total > 0
+      ? `  => resolution coverage ${resolved.toFixed(1)}% of ${total.toLocaleString()} (floor 80% was WAIVED)`
+      : "  => resolution coverage n/a — 0 pending legs (every leg already carries a stamp)"
+  );
   log("");
 
   if (!apply) {
