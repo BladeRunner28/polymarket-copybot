@@ -481,16 +481,24 @@ async function main() {
   const bucketLine = Object.entries(lSummary.byConfidenceBucket)
     .map(([b, v]) => `${b}: ${v.n} (${v.marked} marked, $${v.wouldHavePnl.toFixed(2)})`)
     .join(" | ");
+  // 2026-10-31 (card lowconf-shadow-dust-floor): the headline is the DUST-FLOORED bet basis.
+  // The dust-inclusive row-level total is still printed, but labelled and last: it is ~96%
+  // sub-cent entries that are unexecutable at any size on this venue, so it may not lead.
+  const ld = lSummary.dust;
+  const nMarketsExDust = lSummary.basis.markets - ld.marketsExcluded;
+  const nSignalsExDust = lSummary.basis.signals - ld.signalsExcluded;
   log(
     `shadow-lowconf: +${lResolved} marked this run (backlog ${lPending.size}). ` +
-      `Confidence-gate counterfactual: ${lSummary.candidates} rejected rows (` +
-      `${lSummary.confidenceOnlyCandidates} blocked by confidence ALONE), ` +
-      `${lSummary.marked} marked rows on ${lSummary.basis.markets} markets ` +
-      `(${lSummary.basis.signals} copy signals), ` +
-      `$${lSummary.wouldHavePnl.toFixed(2)} at $${lSummary.stakeUsd}/ticket ROW-LEVEL ` +
-      `(one ticket per market|outcome|wallet: $${lSummary.basis.wouldHavePnlPerSignal.toFixed(2)}) ` +
-      `(${lSummary.avgPnlPerTrade === null ? "—" : "$" + lSummary.avgPnlPerTrade.toFixed(2)}/row; ` +
-      `confidence-only $${lSummary.confidenceOnly.wouldHavePnl.toFixed(2)} on ${lSummary.confidenceOnly.marked} settled) | ${bucketLine}. ` +
+      `Confidence-gate counterfactual, settled rows with entry >= $${ld.minEntryPrice} only: ` +
+      `$${ld.wouldHavePnlOneBetPerMarket.toFixed(2)} on ${nMarketsExDust} markets (BETS: one ticket per market, earliest poll; ` +
+      `ex 10 largest $${ld.wouldHavePnlOneBetPerMarketExTop10.toFixed(2)}), ` +
+      `$${ld.wouldHavePnlPerSignal.toFixed(2)} on ${nSignalsExDust} copy signals (market|outcome|wallet), ` +
+      `$${ld.avgPnlPerTrade === null ? "—" : ld.avgPnlPerTrade.toFixed(2)}/row on ${lSummary.marked - ld.rowsExcluded} rows. ` +
+      `confidence-only: $${lSummary.confidenceOnly.wouldHavePnl.toFixed(2)} on ${lSummary.confidenceOnly.marked} settled ROW-LEVEL (dust-inclusive). ` +
+      `DUST-INCLUSIVE, not the headline: ${lSummary.candidates} rejected polls, ${lSummary.marked} marked, ` +
+      `$${lSummary.wouldHavePnl.toFixed(2)} at $${lSummary.stakeUsd}/ticket ROW-LEVEL, of which $${ld.rowPnlExcluded.toFixed(2)} sits on ` +
+      `${ld.rowsExcluded} rows below $${ld.minEntryPrice} (of these, the sub-${ld.bannedTailMax} tail is ` +
+      `$${ld.bannedTailOneBetPerMarket.toFixed(2)} across ${ld.bannedTailMarkets} markets). Buckets: ${bucketLine}. ` +
       `Summary: ${LOWCONF_SHADOW_SUMMARY_FILE}`
   );
 

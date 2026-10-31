@@ -85,8 +85,13 @@ def main() -> int:
     m = re.search(r'\n( +)"', raw)
     indent = len(m.group(1)) if m else 2
     trailing = "\n" if raw.endswith("\n") else ""
+    # ENCODING is part of the format too (fixed 2026-10-31). The file flipped from \uXXXX
+    # escapes to literal UTF-8 at some point; ensure_ascii=True then re-escaped all 570
+    # em-dashes on the next card edit, and a two-card change arrived as a 704-line diff.
+    # Match whatever the file already does.
+    ensure_ascii = not any(ord(ch) > 127 for ch in raw)
     tmp = ROADMAP.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(d, indent=indent, ensure_ascii=True) + trailing)
+    tmp.write_text(json.dumps(d, indent=indent, ensure_ascii=ensure_ascii) + trailing)
     tmp.replace(ROADMAP)
 
     back = load()

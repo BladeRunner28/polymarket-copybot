@@ -70,6 +70,28 @@ export function lowConfPriceBandOf(price: number): string {
   return "other";
 }
 
+/**
+ * DUST FLOOR for the counterfactual (2026-10-31, card lowconf-shadow-dust-floor).
+ *
+ * A $10 ticket at 0.0005 that settles at 1.0 returns 20,000x, so a handful of sub-cent
+ * rows can own the entire headline — the exact defect tuning #29 rec 1 fixed for the
+ * drift feed (DRIFT_DUST_MIN_ENTRY, 0.10) and never for this lane. Below the floor an
+ * entry is not executable at any sane size on this venue, so those rows answer "would
+ * the gate have made money on a lottery ticket nobody could buy", not "would the refused
+ * copy have paid".
+ *
+ * Default 0.10 matches the drift feed's floor so the two shadows stay comparable; it is
+ * env-overridable and is a MEASUREMENT floor only — no gate, threshold or sizing reads it.
+ */
+export const LOWCONF_DUST_MIN_ENTRY = Number(process.env.LOWCONF_DUST_MIN_ENTRY ?? 0.10);
+
+/**
+ * The slice the v67 admission floor (c200LongshotBandFloor 0.05) already bans. Reported
+ * separately because the 2026-10-26 magnitude correction was stated on this cut
+ * (sub-0.05 = $266,309 of $277,533 per-market), so the two must stay reconcilable.
+ */
+export const LOWCONF_BANNED_TAIL_MAX = 0.05;
+
 /** Confidence bucket, so the read can ask "what if the bar were 0.6 instead of 0.7?" */
 export function confidenceBucket(rawConfidence: number): string {
   if (rawConfidence >= 0.7) return ">=0.70";
@@ -175,6 +197,37 @@ export interface LowConfSummary {
     wouldHavePnlPerSignal: number;
     wouldHavePnlOneBetPerMarket: number;
   };
+  /**
+   * DUST FLOOR (2026-10-31, card lowconf-shadow-dust-floor). Every figure ABOVE this block
+   * is dust-INCLUSIVE and must never be the headline: on the live file entries below
+   * `minEntryPrice` own ~96% of `wouldHavePnl` at the bet basis. This block re-cuts the same
+   * settled rows with those entries removed, at all three levels (row / signal / market),
+   * reports what the floor removed, and prices concentration on the bet basis.
+   */
+  dust: {
+    minEntryPrice: number;
+    bannedTailMax: number;
+    /** Row level — one ticket per POLL (the ticket stream, not the book). */
+    rowsExcluded: number;
+    rowPnlExcluded: number;
+    wouldHavePnl: number;
+    avgPnlPerTrade: number | null;
+    /** Signal level — earliest poll per marketId|outcome|wallet. */
+    signalsExcluded: number;
+    wouldHavePnlPerSignal: number;
+    /** Market level — earliest poll per market (the bet basis). */
+    marketsExcluded: number;
+    wouldHavePnlOneBetPerMarket: number;
+    /** Same market-level total with its ten largest contributors removed. */
+    wouldHavePnlOneBetPerMarketExTop10: number;
+    topMarketId: string | null;
+    topMarketPnl: number;
+    /** topMarketPnl as a share of the ex-dust market-level total (null when that is 0). */
+    topMarketShare: number | null;
+    /** Entries below LOWCONF_BANNED_TAIL_MAX, market level — reconciles the v67-banned tail. */
+    bannedTailMarkets: number;
+    bannedTailOneBetPerMarket: number;
+  };
   firstCandidateAt: string | null;
   lastCandidateAt: string | null;
 }
@@ -197,8 +250,10 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
   // Earliest ticket per market / per copy signal — the LEVEL basis (see LowConfSummary.basis).
   // Signal key and earliest-wins rule copied from shadow-drift.dedupeSignals so both shadow
   // feeds publish one comparable per-signal basis.
-  const firstByMarket = new Map<string, { t: number; pnl: number }>();
-  const firstBySignal = new Map<string, { t: number; pnl: number }>();
+  const firstByMarket = new Map<string, { t: number; pnl: number; entry: number }>();
+  const firstBySignal = new Map<string, { t: number; pnl: number; entry: number }>();
+  let dustRows = 0;
+  let dustRowPnl = 0;
   const markedMarkets = new Set<string>();
   const markedSignals = new Set<string>();
   for (const c of candidates) {
@@ -227,10 +282,14 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
     const stamp = Number.isFinite(at) ? at : Number.POSITIVE_INFINITY;
     const mKey = String(c.marketId);
     const sKey = `${c.marketId}|${c.outcome}|${c.wallet ?? ""}`;
+    if (!(entry >= LOWCONF_DUST_MIN_ENTRY)) {
+      dustRows++;
+      dustRowPnl += rowPnl;
+    }
     const prevM = firstByMarket.get(mKey);
-    if (prevM === undefined || stamp < prevM.t) firstByMarket.set(mKey, { t: stamp, pnl: rowPnl });
+    if (prevM === undefined || stamp < prevM.t) firstByMarket.set(mKey, { t: stamp, pnl: rowPnl, entry });
     const prevS = firstBySignal.get(sKey);
-    if (prevS === undefined || stamp < prevS.t) firstBySignal.set(sKey, { t: stamp, pnl: rowPnl });
+    if (prevS === undefined || stamp < prevS.t) firstBySignal.set(sKey, { t: stamp, pnl: rowPnl, entry });
     b.marked++;
     b.wouldHavePnl += rowPnl;
     p.marked++;
@@ -267,6 +326,35 @@ export function summarizeLowConf(rows: Array<Record<string, unknown>>): LowConfS
       wouldHavePnl: Math.round(onlyPnl * 100) / 100,
       avgPnlPerTrade: onlyMarked ? Math.round((onlyPnl / onlyMarked) * 100) / 100 : null,
     },
+    dust: (() => {
+      const marketRows = [...firstByMarket.entries()].map(([marketId, r]) => ({ marketId, ...r }));
+      const exDustMarkets = marketRows.filter((r) => r.entry >= LOWCONF_DUST_MIN_ENTRY);
+      const marketExDust = exDustMarkets.reduce((s, r) => s + r.pnl, 0);
+      const sortedMarkets = [...exDustMarkets].sort((a, b) => b.pnl - a.pnl);
+      const top10 = sortedMarkets.slice(0, 10).reduce((s, r) => s + r.pnl, 0);
+      const top = sortedMarkets[0];
+      const bannedTail = marketRows.filter((r) => r.entry > 0 && r.entry < LOWCONF_BANNED_TAIL_MAX);
+      const bannedTailPnl = bannedTail.reduce((s, r) => s + r.pnl, 0);
+      const sigExDust = [...firstBySignal.values()].filter((r) => r.entry >= LOWCONF_DUST_MIN_ENTRY);
+      return {
+        minEntryPrice: LOWCONF_DUST_MIN_ENTRY,
+        bannedTailMax: LOWCONF_BANNED_TAIL_MAX,
+        rowsExcluded: dustRows,
+        rowPnlExcluded: Math.round(dustRowPnl * 100) / 100,
+        wouldHavePnl: Math.round((pnl - dustRowPnl) * 100) / 100,
+        avgPnlPerTrade: marked - dustRows ? Math.round(((pnl - dustRowPnl) / (marked - dustRows)) * 100) / 100 : null,
+        signalsExcluded: firstBySignal.size - sigExDust.length,
+        wouldHavePnlPerSignal: Math.round(sigExDust.reduce((s, r) => s + r.pnl, 0) * 100) / 100,
+        marketsExcluded: marketRows.length - exDustMarkets.length,
+        wouldHavePnlOneBetPerMarket: Math.round(marketExDust * 100) / 100,
+        wouldHavePnlOneBetPerMarketExTop10: Math.round((marketExDust - top10) * 100) / 100,
+        topMarketId: top ? top.marketId : null,
+        topMarketPnl: top ? Math.round(top.pnl * 100) / 100 : 0,
+        topMarketShare: top && marketExDust !== 0 ? top.pnl / marketExDust : null,
+        bannedTailMarkets: bannedTail.length,
+        bannedTailOneBetPerMarket: Math.round(bannedTailPnl * 100) / 100,
+      };
+    })(),
     basis: {
       bets: marked,
       signals: markedSignals.size,
