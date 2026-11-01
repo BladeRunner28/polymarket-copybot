@@ -23,6 +23,14 @@ interval schedules only (the copybot core: monitor 10m, update-pnl 60m, watchdog
 5/15m); cron-expression and one-shot schedules are judged on failure_streak alone,
 because guessing a cron's expected gap produces false alarms.
 
+...and PAST DUE: any enabled job whose recorded next_run_at is more than
+PAST_DUE_MIN minutes behind now. This is the one outage class the failure counter
+is structurally blind to — a job the scheduler never dispatches writes no error,
+keeps last_status=ok and failure_streak=0, and a cron-expression job is outside the
+quiet test above. next_run_at is not a guess: the scheduler writes the exact instant
+it intends to fire, so "that instant was 45+ minutes ago and nothing ran" is
+evidence, not a modelled expectation.
+
 READ-ONLY on jobs.json — this script never writes it. Its own state lives beside
 it (~/.hermes/cron/cron-health-watch-state.json), outside every repo, so the
 daily git backup never sees it and a lost state file costs at most one repeat
@@ -54,6 +62,8 @@ ALERT_EVERY = 10        # re-alert when an already-alerted job grows by this man
 REMIND_HOURS = 6        # reminder cadence while a job stays down
 QUIET_FACTOR = 3        # interval job is quiet if now - last_run > factor * interval
 QUIET_GRACE_MIN = 20    # plus this much slack (dispatch lateness measured ~45-60s)
+PAST_DUE_MIN = 45       # a next_run_at this far behind now means the job was not dispatched
+PAST_DUE_LIST = 8       # names quoted per past-due line before collapsing to a count
 ERR_SNIPPET = 220       # chars of the last error kept in the alert
 
 
@@ -190,6 +200,7 @@ def main() -> int:
     recovered: list[str] = []
     still_down: list[str] = []
     quiet: list[str] = []
+    past_due: list[tuple[str, int, str]] = []
 
     for job in jobs:
         if not job.get("enabled"):
@@ -214,7 +225,12 @@ def main() -> int:
                 head = f"🔴 `{name}` — {streak} consecutive failures"
                 detail = f"   ↳ {first_error_line(job.get('last_error'), job)}"
                 when = f"   ↳ last run {fmt(parse_ts(job.get('last_run_at')))} · down since {fmt(parse_ts(since))}" if since else ""
-                rerun = f"   ↳ re-run: `bash ~/.hermes/scripts/{job['script']}`" if job.get("script") else ""
+                if job.get("script"):
+                    scr = str(job["script"])
+                    runner = "python3" if scr.endswith(".py") else "bash"
+                    rerun = f"   ↳ re-run: `{runner} ~/.hermes/scripts/{scr}`"
+                else:
+                    rerun = ""
                 new_lines.append(head)
                 new_lines.append(detail)
                 if rerun:
@@ -224,7 +240,18 @@ def main() -> int:
             else:
                 still_down.append(f"`{name}` ({streak})")
             state[jid] = {
-                "alerted_at": now.isoformat(),
+                # The reminder clock must NOT be reset by a silent tick. It used to be
+                # written as now() on every pass, including the passes that emitted
+                # nothing, so "now - alerted_at >= 6h" was unreachable for any job that
+                # ticks more often than every 6h: a 10-minute job with a live outage
+                # re-read its own alert age as ~10 minutes, forever. Measured before the
+                # fix: a job 5h50m past its alert took a silent tick and its alerted_at
+                # jumped 350 minutes forward (07:03 -> 12:53); the next tick still said
+                # nothing. The only re-alert left was ALERT_EVERY failures, i.e. 10 more
+                # runs — 100 minutes for a 10m job but 10 HOURS for the hourly one and
+                # 10 DAYS for the daily EOD report. Now the stamp only moves when an
+                # alert is actually sent.
+                "alerted_at": now.isoformat() if due else (rec.get("alerted_at") or now.isoformat()),
                 "alerted_streak": streak if due else (alerted_streak or streak),
                 "down_since": rec.get("down_since") or since,
             }
@@ -264,6 +291,29 @@ def main() -> int:
         else:
             state.pop(qkey, None)
 
+        # dispatch check — is the scheduler still PICKING THIS JOB UP? (any schedule kind)
+        # A job that is never dispatched records no failure at all, so the failure counter
+        # and the interval quiet test between them cannot see it: measured on the old
+        # script, an enabled job with next_run_at 3h in the past, last_status=ok and
+        # failure_streak=0 produced "all quiet — 1/1 jobs ok", and a job that had NEVER
+        # run (last_run_at=null, next_run_at 5h past) produced the same line. Job b is the
+        # harder case: the quiet test needs last_run_at, so "never ran" can never be quiet.
+        nxt = parse_ts(job.get("next_run_at"))
+        pkey = f"pastdue:{jid}"
+        late_min = (
+            int((now - nxt).total_seconds() // 60)
+            if nxt is not None and job.get("state") not in ("paused", "completed")
+            else None
+        )
+        if late_min is not None and late_min > PAST_DUE_MIN:
+            prec = state.get(pkey) or {}
+            plast = parse_ts(prec.get("alerted_at"))
+            if plast is None or (now - plast) >= timedelta(hours=REMIND_HOURS):
+                past_due.append((str(name), late_min, str(job.get("state"))))
+                state[pkey] = {"alerted_at": now.isoformat()}
+        else:
+            state.pop(pkey, None)
+
     # persist state before printing, so a delivery failure cannot cause an alert loop
     try:
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -287,6 +337,17 @@ def main() -> int:
         out.extend(recovered)
     if quiet:
         out.extend(quiet)
+    if past_due:
+        past_due.sort(key=lambda x: -x[1])
+        shown = ", ".join(f"`{n}` (+{m}m)" for n, m, _ in past_due[:PAST_DUE_LIST])
+        more = f" … and {len(past_due) - PAST_DUE_LIST} more" if len(past_due) > PAST_DUE_LIST else ""
+        out.append(
+            f"🟠 **{len(past_due)} enabled job(s) PAST DUE** — next_run_at is more than {PAST_DUE_MIN}m "
+            f"behind now and nothing ran, with no failure recorded: {shown}{more}. A job the scheduler never "
+            f"dispatches writes no error and keeps last_status=ok, so this is the one outage class the failure "
+            f"counter cannot see. Check the gateway/scheduler is alive (the copybot interval jobs will also go "
+            f"QUIET, 65m after their last run)."
+        )
     if still_down and new_lines:
         out.append("")
         out.append("Still down (no new alert): " + ", ".join(still_down))
@@ -295,7 +356,24 @@ def main() -> int:
         print("\n".join(out))
     elif "--verbose" in sys.argv:
         ok = sum(1 for j in jobs if str(j.get("last_status")) == "ok")
-        print(f"cron-health-watch: all quiet — {ok}/{len(jobs)} jobs ok, no streak >= {MIN_STREAK}, no quiet jobs.")
+        # This line used to end "... no streak >= 3, no quiet jobs" as a FIXED string, so it said
+        # that while a job sat at 5 consecutive failures inside the reminder window. Measured:
+        # a fixture with failure_streak=5 printed "0/1 jobs ok, no streak >= 3". Count it instead.
+        at_streak = [
+            str(j.get("name") or j.get("id"))
+            for j in jobs
+            if j.get("enabled") and int(j.get("failure_streak") or 0) >= MIN_STREAK
+        ]
+        tail = (
+            f"{len(at_streak)} job(s) at/over {MIN_STREAK} failures inside the {REMIND_HOURS}h reminder window "
+            f"({', '.join(at_streak[:5])}{'…' if len(at_streak) > 5 else ''})"
+            if at_streak
+            else f"no job at or over {MIN_STREAK} failures"
+        )
+        print(
+            f"cron-health-watch: nothing to send — {ok}/{len(jobs)} jobs ok, {tail}, "
+            f"no quiet or past-due jobs."
+        )
     return 0
 
 
