@@ -176,6 +176,27 @@ def bot_facts(db: str, days: int) -> list[str]:
                             f"n={ex[0]}, realized ${ex[1] or 0:,.2f}, "
                             f"{per_leg(ex[0], ex[1])}/leg "
                             f"[blended {per_leg(r[0], r[1])}/leg]")
+                    # 2026-11-01: a per-leg mean summarises a window a handful of legs can set.
+                    # Measured at the fix: the 7d window read +$265.45 net while its top-3 legs
+                    # alone carried +$1,161.20, so the other 201 legs were -$895.75 -- the sign of
+                    # the window and the sign of the flow DISAGREE. Same shape on 10-30 and 10-31
+                    # (ex-top-3 -$956). Print the tail beside the mean so a "how is trading doing"
+                    # answer cannot silently be a tail artifact. Reporting only, no decision path.
+                    legs = cur.execute(
+                        f"SELECT realizedPnl FROM PaperTrade WHERE {status_ok} "
+                        f"AND realizedPnl IS NOT NULL{demo_ok} AND {scol} >= ? "
+                        f"ORDER BY ABS(realizedPnl) DESC", (ms(now - timedelta(days=d)),)).fetchall()
+                    vals = [v[0] or 0 for v in legs]
+                    if vals:
+                        top3 = sum(vals[:3])
+                        abs_sum = sum(abs(v) for v in vals)
+                        ex3 = sum(vals) - top3
+                        share = (100.0 * abs(top3) / abs_sum) if abs_sum else 0.0
+                        agree = "agrees" if (ex3 >= 0) == (sum(vals) >= 0) else "DISAGREES"
+                        out.append(
+                            f"    top-3 legs by |PnL|: ${top3:,.2f} of sum(|leg|) "
+                            f"${abs_sum:,.2f} ({share:.0f}%), ex-top-3 net ${ex3:,.2f} "
+                            f"-- sign {agree} with the window net")
                 # A single day carrying >=100 closures is a STOCK CLEAR, not trading, and it
                 # dominates any window it lands in. v66's stale exit closed 701 C-200 legs on
                 # 2026-10-24 (booked -$350.52); this grouped read lands 708 / -$487.04 because
