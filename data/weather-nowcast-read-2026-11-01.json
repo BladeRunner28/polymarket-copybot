@@ -1,0 +1,183 @@
+{
+ "census": {
+  "runs": 463,
+  "bracket_rows": 14560,
+  "observed_days": {
+   "kalshi": 21,
+   "polymarket": 21
+  },
+  "settled_days": {
+   "kalshi": 20,
+   "polymarket": 20
+  },
+  "samples_by_bucket": {
+   "kalshi": {
+    "18:00+": 702,
+    "<14:00": 1470,
+    "14:00-16:00": 228,
+    "16:00+": 216
+   },
+   "polymarket": {
+    "18:00+": 1287,
+    "<14:00": 2706,
+    "14:00-16:00": 418,
+    "16:00+": 396
+   }
+  },
+  "excluded_days": []
+ },
+ "q1": {
+  "kalshi:16:00+": {
+   "legs": 0,
+   "days": 0,
+   "dead_brackets_seen": 145,
+   "verdict": "INSUFFICIENT SAMPLE"
+  },
+  "kalshi:18:00+": {
+   "legs": 0,
+   "days": 0,
+   "dead_brackets_seen": 111,
+   "verdict": "INSUFFICIENT SAMPLE"
+  },
+  "polymarket:16:00+": {
+   "legs": 4,
+   "days": 2,
+   "mean": 0.001,
+   "ci": [
+    0.001,
+    0.001
+   ],
+   "routes": {
+    "sell_yes": 4
+   },
+   "verdict": "INSUFFICIENT SAMPLE"
+  },
+  "polymarket:18:00+": {
+   "legs": 1,
+   "days": 1,
+   "mean": 0.001,
+   "ci": [
+    NaN,
+    NaN
+   ],
+   "routes": {
+    "sell_yes": 1
+   },
+   "verdict": "INSUFFICIENT SAMPLE"
+  }
+ },
+ "q2": {
+  "kalshi": {
+   "n": 235,
+   "days": 19,
+   "logloss_delta": -2.602425111172705,
+   "logloss_ci": [
+    -4.8121268717046135,
+    -0.8383060156709721
+   ],
+   "brier_delta": -0.4309589263255189,
+   "brier_ci": [
+    -0.7042977284239301,
+    -0.18433058389145804
+   ],
+   "verdict": "INSUFFICIENT SAMPLE"
+  },
+  "polymarket": {
+   "n": 236,
+   "days": 19,
+   "logloss_delta": -0.7151232785957857,
+   "logloss_ci": [
+    -1.6906368917974997,
+    -0.10871934094840405
+   ],
+   "brier_delta": -0.2723436074355122,
+   "brier_ci": [
+    -0.506117588363099,
+    -0.07862926592151337
+   ],
+   "verdict": "INSUFFICIENT SAMPLE"
+  }
+ },
+ "floor_shadow": {
+  "kalshi": {
+   "calendar_settled_days": 20,
+   "resolution_verified_days": 19,
+   "delta": 1,
+   "unverified_days": [
+    "2026-10-12"
+   ]
+  },
+  "polymarket": {
+   "calendar_settled_days": 20,
+   "resolution_verified_days": 19,
+   "delta": 1,
+   "unverified_days": [
+    "2026-10-12"
+   ]
+  }
+ },
+ "dead_bracket_diagnostic": {
+  "kalshi": {
+   "dead_rows": 217,
+   "offer_yes_bid": 37,
+   "offer_no_ask": 37,
+   "offer_mirror_side_only": 217,
+   "route_state": "available",
+   "size_yes_bid": {
+    "n": 37,
+    "min": 1.0,
+    "median": 40.0,
+    "max": 595.0
+   },
+   "size_no_ask": {
+    "n": 37,
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0
+   }
+  },
+  "polymarket": {
+   "dead_rows": 1586,
+   "offer_yes_bid": 26,
+   "offer_no_ask": 26,
+   "offer_mirror_side_only": 1586,
+   "route_state": "available",
+   "size_yes_bid": {
+    "n": 26,
+    "min": 5.07,
+    "median": 340.01,
+    "max": 800.0
+   },
+   "size_no_ask": {
+    "n": 26,
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0
+   }
+  }
+ },
+ "verdict": {
+  "gate": "drafts/weather-nowcast-prereg-20261012.md (frozen 2026-10-12, amended same evening)",
+  "floor_settled_days": 20,
+  "size_floor_contracts": 50,
+  "generated_at": "2026-11-01T10:34:47-05:00",
+  "venues": {
+   "kalshi": {
+    "verdict": "FAIL",
+    "settled_days": 20,
+    "q1_16:00+": "INSUFFICIENT SAMPLE",
+    "q1_18:00+": "INSUFFICIENT SAMPLE",
+    "q2": "INSUFFICIENT SAMPLE",
+    "dead_bracket_route": "available"
+   },
+   "polymarket": {
+    "verdict": "FAIL",
+    "settled_days": 20,
+    "q1_16:00+": "INSUFFICIENT SAMPLE",
+    "q1_18:00+": "INSUFFICIENT SAMPLE",
+    "q2": "INSUFFICIENT SAMPLE",
+    "dead_bracket_route": "available"
+   }
+  }
+ }
+}
