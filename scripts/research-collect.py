@@ -234,12 +234,109 @@ def bot_facts(db: str, days: int) -> list[str]:
                 f"WHERE status='open'{demo_ok}" if sizecol else
                 "SELECT COUNT(*), 0 FROM PaperTrade WHERE status='open'").fetchone()
             out.append(f"- open positions (isDemo=0): {op[0]}, at risk ${op[1] or 0:,.2f}")
+            # 2026-11-01 (fact-sheet-collector-truth item 3): every line above is a BLEND of two
+            # books run by different rules, and the blend answers the wrong question for the
+            # lane that carries the ladder. Measured at the fix (SETTLED clock, isDemo=0): the
+            # 7d blended +$269.87 IS C-200 +$611.85 MINUS STANDARD $341.98, so the blended sign
+            # is positive while one of its own lanes is negative; the 30d blend (+$2,590.27) is
+            # 96% C-200; and the open line (450 legs / $4,981.64) is 97.5% STANDARD book while
+            # the C-200 cap is the number the ladder reads. Print each lane BESIDE the blend --
+            # never instead of it, because what settled really is the sum.
+            if "botId" in cols and scol and sizecol:
+                out.append(
+                    "  per LANE (same settled clock, isDemo=0, booked realizedPnl; the lanes run"
+                    " different rules, so a blended line answers neither):")
+                lane_nets = {}
+                for bot, in cur.execute(
+                        "SELECT DISTINCT botId FROM PaperTrade WHERE botId IS NOT NULL "
+                        "ORDER BY botId").fetchall():
+                    ob = cur.execute(
+                        f"SELECT COUNT(*), ROUND(SUM(COALESCE({sizecol},0)),2) FROM PaperTrade "
+                        f"WHERE status='open'{demo_ok} AND botId=?", (bot,)).fetchone()
+                    parts, nets = [], {}
+                    for d in (1, 7, 30):
+                        rb = cur.execute(
+                            f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                            f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
+                            f"AND botId=? AND {scol} >= ?",
+                            (bot, ms(now - timedelta(days=d)))).fetchone()
+                        nets[d] = rb[1] or 0
+                        seg = f"{d}d n={rb[0]} ${rb[1] or 0:,.2f}"
+                        if d in (7, 30):
+                            exb = cur.execute(
+                                f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                                f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
+                                f"AND botId=? AND {scol} >= ? "
+                                f"AND date({scol}/1000,'unixepoch','-5 hours') <> ?",
+                                (bot, ms(now - timedelta(days=d)), STOCK_CLEAR_DATE)).fetchone()
+                            seg += f", ex-stock-clear n={exb[0]} ${exb[1] or 0:,.2f}"
+                        parts.append(seg)
+                    lane_nets[bot] = nets
+                    out.append(
+                        f"  - {bot}: open {ob[0]} legs / ${ob[1] or 0:,.2f} at risk | settled "
+                        + " | ".join(parts))
+                for d in (7, 30):
+                    bl = cur.execute(
+                        f"SELECT ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                        f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
+                        f"AND {scol} >= ?", (ms(now - timedelta(days=d)),)).fetchone()
+                    bnet = bl[0] or 0
+                    opposing = [b for b, n in lane_nets.items() if n[d] * bnet < 0 and n[d] != 0]
+                    if opposing:
+                        out.append(
+                            f"    ! LANE SIGN DISAGREES at {d}d: blended ${bnet:,.2f} vs "
+                            + ", ".join(f"{b} ${lane_nets[b][d]:,.2f}" for b in sorted(lane_nets))
+                            + " -- do not read the blend as the flow")
+                # Each lane spends a DIFFERENT rail, so open-legs counts are not comparable
+                # between them: C-200 has an equity-linked notional ceiling, STANDARD has a leg
+                # count and no notional ceiling at all. Quote each against its own rail.
+                try:
+                    rules_row = cur.execute(
+                        "SELECT version, rulesJson FROM RuleSet WHERE active=1").fetchone()
+                    rules = json.loads(rules_row[1] or "{}") if rules_row else {}
+                    base = float(rules.get("maxGrossExposureUsd") or 0)
+                    bals = {}
+                    if has(cur, "BotBankroll"):
+                        for b, pr, rp in cur.execute(
+                                "SELECT botId, principal, realizedPnl FROM BotBankroll").fetchall():
+                            bals[b] = (float(pr or 0), float(rp or 0))
+                    pr, rp = bals.get("BANKROLL_200", (0.0, 0.0))
+                    c200_open = cur.execute(
+                        f"SELECT ROUND(SUM(COALESCE({sizecol},0)),2) FROM PaperTrade "
+                        f"WHERE status='open'{demo_ok} AND botId='BANKROLL_200'").fetchone()[0] or 0
+                    if base > 0 and pr > 0:
+                        nw = pr + rp
+                        cap = base + 0.5 * max(0.0, nw - pr)
+                        out.append(
+                            f"  - rail C-200: gross-exposure cap on the REALIZED basis = "
+                            f"${base:,.0f} base + 50% x (net worth ${nw:,.2f} - principal "
+                            f"${pr:,.2f}) = ${cap:,.2f}; open ${c200_open:,.2f} = "
+                            f"{100.0 * c200_open / cap:.1f}%. The ENFORCED ceiling also adds "
+                            f"open MTM (score-trades.ts recomputes it each cycle), so this "
+                            f"figure omits that term.")
+                    else:
+                        out.append(
+                            "  - rail C-200: NOT COMPUTED -- base cap or principal unreadable "
+                            f"(base ${base:,.0f}, principal ${pr:,.2f}); no figure is printed "
+                            "rather than a guessed one")
+                    legs_rail = float(rules.get("standardMaxOpenPositions") or 0)
+                    st_open = cur.execute(
+                        f"SELECT COUNT(*) FROM PaperTrade WHERE status='open'{demo_ok} "
+                        f"AND botId='STANDARD'").fetchone()[0]
+                    if legs_rail > 0:
+                        out.append(
+                            f"  - rail STANDARD: standardMaxOpenPositions={legs_rail:,.0f} legs "
+                            f"(v{rules_row[0]}); open {st_open} = "
+                            f"{100.0 * st_open / legs_rail:.1f}%. STANDARD has no notional cap, "
+                            f"so its at-risk dollars have no ceiling to divide by.")
+                except Exception as e:  # noqa: BLE001
+                    out.append(f"  - rail read FAILED: {e}")
             if "botId" in cols:
                 for bot, in cur.execute("SELECT DISTINCT botId FROM PaperTrade WHERE botId IS NOT NULL").fetchall():
                     r = cur.execute(
                         f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2), "
                         f"ROUND(1.0*SUM(CASE WHEN realizedPnl>0 THEN 1 ELSE 0 END)/COUNT(*),3) "
-                        f"FROM PaperTrade WHERE {status_ok} AND realizedPnl IS NOT NULL AND botId=?",
+                        f"FROM PaperTrade WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} AND botId=?",
                         (bot,)).fetchone()
                     out.append(f"  - {bot}: n={r[0]} realized ${r[1] or 0:,.2f} win={r[2]}")
         except Exception as e:  # noqa: BLE001
