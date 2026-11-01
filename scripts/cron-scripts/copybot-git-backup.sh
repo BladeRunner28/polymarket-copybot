@@ -84,8 +84,27 @@ for repo in "${REPOS[@]}"; do
   fi
 done
 
-if [ "$changed" -eq 0 ] && [ "$failed" -eq 0 ]; then
-  echo "no changes — nothing to back up"
+
+# --- Repo growth budget (kalshi-tape-repo-size-policy, Lane B, 2026-10-31) ----
+# The tape is TRACKED on the user explicit override, so growth cannot be solved by
+# untracking it here (that decision is parked on git-backup-large-artifact-policy).
+# What this adds is a measured ceiling: scripts/repo-growth-budget.ts prints one line
+# when growth is OUTSIDE policy and nothing when it is inside, so the nightly backup is
+# where "tracked is quietly becoming a multi-GB repo" surfaces. Alarm only: it never
+# prunes, untracks or gc-s, and it cannot fail the backup. An unreadable check is NOT
+# reported as clean — rc 0 with no output is the only silent, healthy case.
+growth_out=$(cd /Users/xsnyde2/polymarket-copybot && npx tsx scripts/repo-growth-budget.ts --days 7 --quiet 2>&1)
+growth_rc=$?
+if [ "$growth_rc" -eq 0 ]; then
+  [ -n "$growth_out" ] && echo "$growth_out"
+elif [ "$growth_rc" -eq 1 ]; then
+  if [ -n "$growth_out" ]; then
+    echo "$growth_out"
+  else
+    echo "⚠️  repo growth: check exited 1 with no output — the budget instrument is broken, not clean"
+  fi
+else
+  echo "⚠️  repo growth: check FAILED rc=${growth_rc} — ${growth_out:-no output} (growth is UNMEASURED tonight; do not read that as inside policy)"
 fi
 
 [ "$failed" -eq 0 ] || exit 1

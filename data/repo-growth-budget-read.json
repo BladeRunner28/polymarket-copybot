@@ -1,0 +1,195 @@
+{
+  "generatedAt": "2026-11-01T01:06:33.966Z",
+  "card": "kalshi-tape-repo-size-policy",
+  "basis": {
+    "window": {
+      "start": "2026-10-24",
+      "end": "2026-10-30",
+      "days": 7,
+      "partialDayExcluded": "2026-10-31"
+    },
+    "level": "blob",
+    "clock": "commit dates (UTC) at HEAD when the script ran",
+    "bytes": "on-disk object size of every blob newly added by that day diffs (loose zlib / delta-packed)"
+  },
+  "objectStore": {
+    "gitBytes": 1409452847,
+    "packBytes": 875771904,
+    "looseBytes": 530452480,
+    "looseCount": 2495
+  },
+  "head": {
+    "trackedBytes": 921223938,
+    "files": 1863,
+    "classes": {
+      "code": {
+        "files": 883,
+        "bytes": 13093050
+      },
+      "other": {
+        "files": 281,
+        "bytes": 83696299
+      },
+      "tape-shadow": {
+        "files": 8,
+        "bytes": 92073439
+      },
+      "tape-other": {
+        "files": 52,
+        "bytes": 88645618
+      },
+      "cache": {
+        "files": 104,
+        "bytes": 21311301
+      },
+      "tape-kalshi": {
+        "files": 500,
+        "bytes": 552970522
+      },
+      "orderbook": {
+        "files": 1,
+        "bytes": 2390369
+      },
+      "dataset": {
+        "files": 34,
+        "bytes": 67043340
+      }
+    }
+  },
+  "daily": [
+    {
+      "date": "2026-10-24",
+      "raw": 165738527,
+      "disk": 35201812,
+      "churn": 350713
+    },
+    {
+      "date": "2026-10-25",
+      "raw": 177224594,
+      "disk": 39993309,
+      "churn": 3248
+    },
+    {
+      "date": "2026-10-26",
+      "raw": 213392321,
+      "disk": 46922200,
+      "churn": 6896752
+    },
+    {
+      "date": "2026-10-27",
+      "raw": 189446828,
+      "disk": 40009529,
+      "churn": 990793
+    },
+    {
+      "date": "2026-10-28",
+      "raw": 215919515,
+      "disk": 45784656,
+      "churn": 2624150
+    },
+    {
+      "date": "2026-10-29",
+      "raw": 270421062,
+      "disk": 52840959,
+      "churn": 1787181
+    },
+    {
+      "date": "2026-10-30",
+      "raw": 315704407,
+      "disk": 68343677,
+      "churn": 727075
+    }
+  ],
+  "summary": {
+    "n": 7,
+    "idleDays": 0,
+    "mean": 47013734.571428575,
+    "median": 45784656,
+    "trimmedMean": 45110130.6,
+    "p90": 68343677,
+    "max": 68343677,
+    "exTop1Mean": 43458744.166666664
+  },
+  "summaryRaw": {
+    "n": 7,
+    "idleDays": 0,
+    "mean": 221121036.2857143,
+    "median": 213392321,
+    "trimmedMean": 213280864,
+    "p90": 315704407,
+    "max": 315704407,
+    "exTop1Mean": 205357141.16666666
+  },
+  "churn": {
+    "bytes": 13379912,
+    "rawTotal": 1547847254,
+    "share": 0.008644206956095423
+  },
+  "policy": {
+    "ceilingBytes": 2147483648,
+    "dailyBudgetBytes": 41943040,
+    "alarmDaysToCeiling": 90
+  },
+  "verdict": {
+    "level": "alarm",
+    "reasons": [
+      "median 43.7 MB/day crosses the 2048.0 MB ceiling in 17 days (alarm window 90)",
+      "median 43.7 MB/day is over the 40.0 MB/day budget"
+    ],
+    "daysAtMedian": 17,
+    "daysAtMax": 11,
+    "overBudget": true
+  },
+  "topContributors": [
+    {
+      "path": "data/kalshi-macro-quotes.jsonl",
+      "bytes": 326366913,
+      "share": 0.21045544071479483
+    },
+    {
+      "path": "data/jev-shadow.jsonl",
+      "bytes": 283087865,
+      "share": 0.18254724672284822
+    },
+    {
+      "path": "data/drift-shadow.jsonl",
+      "bytes": 150907901,
+      "share": 0.0973119135158766
+    },
+    {
+      "path": "data/lowconf-shadow.jsonl",
+      "bytes": 108912124,
+      "share": 0.07023122792966571
+    },
+    {
+      "path": "data/c200-printthrough.jsonl",
+      "bytes": 77553009,
+      "share": 0.05000952007611583
+    },
+    {
+      "path": "data/weather-nowcast-samples.jsonl",
+      "bytes": 63371282,
+      "share": 0.040864531760826946
+    },
+    {
+      "path": "data/kalshi-1c-queue/snaps-2026-10-30.jsonl.gz",
+      "bytes": 41300099,
+      "share": 0.02663208245196613
+    },
+    {
+      "path": "data/wallet-sells.jsonl",
+      "bytes": 38175688,
+      "share": 0.02461732768428797
+    },
+    {
+      "path": "data/roadmap.json",
+      "bytes": 31217722,
+      "share": 0.020130531557964473
+    },
+    {
+      "path": "data/longshot-shadow.jsonl",
+      "bytes": 30954663,
+      "share": 0.019960899785950278
+    }
+  ]
+}
