@@ -120,15 +120,19 @@ def dashboard_env_shadow_off() -> bool:
     return False
 
 
-def unrecorded_dispatches(log_path: str, newest_intent_ms: int | None, max_lines: int = 40000) -> int:
+def unrecorded_dispatches(log_path: str, newest_intent_ms: int | None, max_lines: int = 40000) -> int | None:
     """Scorer runs that logged 'Dispatching Execution Intent' AFTER the newest FillIntent row.
 
     The failure signature both shadow writers hide (they are never-throw by design): the copy either
     books without a stamp or the dispatch is logged and nothing is written. Run headers in the log are
     local ISO, so string comparison against the newest intent's local time is the comparison.
+
+    Returns None when the log cannot be read. It used to return 0, which is the same number a healthy
+    tick produces: measured 2026-11-01, a nonexistent path and a directory passed as the log both
+    returned 0 -- i.e. "no unrecorded dispatch found" reported from a file that was never opened.
     """
     if not os.path.exists(log_path):
-        return 0
+        return None
     cutoff = ""
     if newest_intent_ms:
         cutoff = time.strftime("%Y-%m-%dT%H:%M:%S",
@@ -142,7 +146,7 @@ def unrecorded_dispatches(log_path: str, newest_intent_ms: int | None, max_lines
             fh.seek(size - back)
             tail = fh.read().decode("utf-8", "ignore").splitlines()
     except Exception:
-        return 0
+        return None
     for line in tail[-max_lines:]:
         if line.startswith("=== run "):
             run_time = line.split()[2]
@@ -421,13 +425,36 @@ def main() -> int:
 
     # 5. dispatches logged with no intent row (the silent-shadow-write signature)
     newest_intent_ms = None
+    intent_count = None
     try:
-        row = db(a.db).execute("SELECT MAX(dispatchedAt) FROM FillIntent").fetchone()
+        row = db(a.db).execute("SELECT MAX(dispatchedAt), COUNT(*) FROM FillIntent").fetchone()
         newest_intent_ms = row[0] if row else None
+        intent_count = int(row[1]) if row and row[1] is not None else 0
     except Exception:
-        pass
-    miss = unrecorded_dispatches(a.scorer_log, newest_intent_ms)
-    if miss and not st["flags"].get("dispatchUnrecorded"):
+        # intent_count stays None: "could not read the baseline" is NOT "the table is empty".
+        # This used to be a bare `pass`, which left newest_intent_ms None -> empty cutoff -> the
+        # count became every dispatch line in the 4 MB log tail: measured 114 on the live log,
+        # quoted as "114 dispatch(es) after the newest FillIntent (1970-01-01 00:00)".
+        intent_count = None
+    miss = unrecorded_dispatches(a.scorer_log, newest_intent_ms) if intent_count is not None else None
+    if intent_count is None or miss is None:
+        if not st["flags"].get("dispatchUnverifiable"):
+            why = ("the FillIntent baseline query failed, so no dispatch can be dated against it"
+                   if intent_count is None else f"the scorer log could not be read ({a.scorer_log})")
+            alerts.append(
+                f"⚠️ **C-200 dispatch-vs-intent check UNVERIFIABLE** — {why}. This is the check that "
+                f"catches the never-throw shadow writers swallowing an error, and it is blind this tick: "
+                f"treat any C-200 window in the gap as UNMEASURED, not proven good.")
+            st["flags"]["dispatchUnverifiable"] = True
+    elif intent_count == 0 and miss:
+        if not st["flags"].get("dispatchUnrecorded"):
+            alerts.append(
+                f"🚨 **C-200 FillIntent is EMPTY while {miss} dispatch(es) are logged** — the table has 0 "
+                f"rows, so no leg can carry an intent price and the fill shadow is dead outright. The "
+                f"writers are never-throw by design: check `grep -i 'fill-intent' logs/cron/*.log` for the "
+                f"skip warning and whether FILL_INTENT_SHADOW=0 is set in the scorer/dashboard env.")
+            st["flags"]["dispatchUnrecorded"] = True
+    elif intent_count is not None and miss and not st["flags"].get("dispatchUnrecorded"):
         alerts.append(
             f"🚨 **C-200 dispatch logged with NO intent row** — {miss} dispatch(es) in scorer runs after the "
             f"newest FillIntent ({time.strftime('%Y-%m-%d %H:%M', time.localtime((newest_intent_ms or 0) / 1000))}) "
@@ -435,6 +462,14 @@ def main() -> int:
             f"book, only the measurement is missing): check `grep -i 'fill-intent' logs/cron/*.log` for the skip "
             f"warning and whether FILL_INTENT_SHADOW=0 is set in the scorer/dashboard env.")
         st["flags"]["dispatchUnrecorded"] = True
+    elif not miss:
+        # Verified clean this tick — clear both latches so a NEW occurrence can alert again.
+        # Neither latch was ever cleared: one occurrence muted this check for the life of the
+        # state file, however many times the condition came back. (Deliberately `elif not miss`,
+        # not a bare else: while the condition persists and its latch is set, this check must
+        # stay quiet rather than re-alert every 15 minutes.)
+        st["flags"].pop("dispatchUnrecorded", None)
+        st["flags"].pop("dispatchUnverifiable", None)
 
     # 6. revert switch left on
     if not a.no_process_check and not st["flags"].get("shadowOff") and dashboard_env_shadow_off():
