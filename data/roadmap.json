@@ -8,6 +8,33 @@
   ],
   "cards": [
     {
+      "id": "fee-booking-net-ledger",
+      "title": "LANE A PROPOSAL — book the taker fee in the ledger and in the ladder advance (27% of measured edge is unbooked)",
+      "column": "Backlog",
+      "effort": "2h",
+      "dates": "Proposed 2026-11-02 by the profit review (drafts/profit-recs-20261102.md). NOT APPROVED — Lane A: changes the PnL the ladder advances on.",
+      "note": "WHY: `PaperTrade` has no fee column, `src/lib/paper.ts` writes realizedPnl from the price path alone, and `src/lib/copy-cost.ts` says so in its header ('the paper fill crosses no spread and pays no fee'). The only fee-aware gate (`src/lib/scoring/price-edge.ts`) is `status: \"shadow\"` and wired to nothing, so the decision loop AND the scoreboard are both fee-blind. MEASURED (scripts/profit-fee-net.py, read-only, bet-level = first leg per wallet/market/outcome): finished book 4,890 bets / $52,494, gross +8.31% -> net +6.05% (2.25% of notional in fee); STANDARD 3,591 bets / $43,463, +4.16% -> +2.13% and 3.63 -> 1.86 $/1k-capital-day (49% haircut); BANKROLL_200 +28.28% -> +24.93%. Ladder rate 8.52 -> 6.21 $/1k-capital-day = -27.1%, so $500/day needs $80,541 deployed (not $58,693) and $5,000/day needs $805,411 (not $586,932); open notional $4,865 means 16.6x and 166x short. The closed half of the book (3,216 bets, $32,966, 63% of notional) goes +1.86% gross -> -0.21% net on the entry fee ALONE. FEE LAW + RATE ARE NOT IN QUESTION: our 0.05/0.04/0.07 proxy prices the venue's own per-market schedule within 0.5% (scripts/fee-sign-flip-test.py -> data/fee-sign-flip-report.json: $4,996.97 venue vs $5,024.02 proxy on 12,710 legs, 99.68% coverage, 2 sign flips); profit-fee-net.py reproduces $4,996 on the same exit basis, so the two instruments agree on the law and disagree only on the exit side (see fee-exit-basis-instruments). DECISION RULE (pre-registered): adopt when the modelled fee is >=10% of booked PnL (it is 27.1%) AND a 30-day net re-read flips the rung verdict on >=1 day. REFUTATION: if venue-truth pricing puts the finished book's fee below $600 (5% of booked profit), or a 30-day net re-read never flips a rung day, withdraw and keep the fee as a one-line EOD print. COST 2h. NOT DONE: no prisma write, no RuleSet touch, nothing applied.",
+      "tags": [
+        "lane-a",
+        "fee",
+        "accounting",
+        "proposed"
+      ]
+    },
+    {
+      "id": "fee-exit-basis-instruments",
+      "title": "The two fee instruments charge the exit fee as equal to the entry fee — $4,996 vs $3,537 on the same 12,429 legs",
+      "column": "Backlog",
+      "effort": "0.5h",
+      "dates": "Found 2026-11-02 by the profit review; not fixed yet.",
+      "note": "MEASURED (scripts/profit-fee-net.py FN.1, three bases on the identical legs): entry fee only $3,038 = 2.24% of notional; entry + exit at the IMPLIED exit price $3,537 = 2.61%; entry + exit at entry price $4,996 = 3.69%. scripts/c200-fee-reprice-archive.py (`docs taker`, exit=entry) and scripts/fee-sign-flip-test.py (the $5,024/$4,996 pair) are both on the third basis. The fee law is fee = shares*rate*p*(1-p), which goes to ZERO at p->0 and p->1, so charging entry-price fee on a leg that left at 0.02 or 0.90 overstates it; 83.4% of the 8,988 closed legs leave below 0.05 or above 0.80. The implied exit price is exact from the PnL identity: c = p*(1 + realizedPnl/notional). FIX: price the exit at c in both instruments. DECISION RULE: >=10% difference in the fee bill (measured 41.2% vs the two-fee basis, 64.5% vs entry-only). REFUTATION: if closed legs cluster at exits near their entry price, exit~entry is right and the correction is <5% — the measured distribution is bimodal at the extremes, so it is not. Lane B: reporting only.",
+      "tags": [
+        "lane-b",
+        "fee",
+        "instrument"
+      ]
+    },
+    {
       "id": "phase-a",
       "title": "Phase A — Wang premium overlay",
       "column": "Done",
