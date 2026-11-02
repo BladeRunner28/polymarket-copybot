@@ -155,7 +155,7 @@ def main():
 
     n = len(recs)
     y = np.array([r["won"] for r in recs], dtype=float)
-    print(f"N labeled rows with a usable price: {n}  (base win-rate {y.mean():.3f})")
+    print(f"N labeled rows with a usable price: {n}  (base win-rate(outcome) {y.mean():.3f})")
     print(f"distinct markets: {len({r['market'] for r in recs})}  "
           f"distinct wallets: {len({r['wallet'] for r in recs})}")
     print(f"decisions: { {d: sum(1 for r in recs if r['decision'] == d) for d in {r['decision'] for r in recs} } }")
@@ -253,9 +253,9 @@ def main():
                              deciles=buckets)
         extra = f"  Brier={b:.4f}  calib slope={sl:.2f}  intercept={ic:+.2f}" if is_prob else "  (rank score — no Brier/calibration)"
         pf_s = "/".join(f"{v:.2f}" for v in pf)
-        print(f"\n{name}: AUC={a:.3f} [{lo:.3f},{hi:.3f}]  per-fold={pf_s} (mean {np.mean(pf):.3f}){extra}")
+        print(f"\n{name}: AUC(outcome)={a:.3f} [{lo:.3f},{hi:.3f}]  per-fold={pf_s} (mean {np.mean(pf):.3f}){extra}")
         for bk in buckets:
-            print(f"   d{bk['bucket']}: n={bk['n']:>3}  P̂={bk['meanP']:.3f}  win={bk['winRate']:.3f} "
+            print(f"   d{bk['bucket']}: n={bk['n']:>3}  P̂={bk['meanP']:.3f}  win(outcome)={bk['winRate']:.3f} "
                   f"entry={bk['meanEntry']:.3f}  excess={bk['excess']:+.3f}  $-copyPnL={bk['hypoPnl']:+.0f}")
 
     # A. stored composite
@@ -465,7 +465,7 @@ def main():
     print("\n--- supplementary ---")
     print(f"ICC(wallet)={supp['icc_wallet']}  ICC(market)={supp['icc_market']}")
     print(f"mean entry price in label set {supp['mean_entry_price']}")
-    print(f"OOF band-model AUC {auc(y, pred_band):.3f}, wallet-cluster 95% CI {supp['band_model_auc_cluster_ci']}")
+    print(f"OOF band-model AUC(outcome) {auc(y, pred_band):.3f}, wallet-cluster 95% CI {supp['band_model_auc_cluster_ci']}")
     if "loo_ev_gate" in supp:
         print(f"wallet-blocked EV gate: n={supp['loo_ev_gate']['selected']} of {n}, "
               f"per-trade ${supp['loo_ev_gate']['aggregate']['perTrade']:+.2f}, "

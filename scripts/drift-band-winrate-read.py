@@ -191,7 +191,7 @@ def main():
 
     # ---- 3. by ENTRY BAND (no threshold proposed; this only describes the population)
     print("\n== 3. settled drift-blocked signals by ENTRY BAND (per-signal, ex-dust)")
-    print("   band          settled  dust-ex   mean$    se   clustered 95% CI     win%  median entry  markets")
+    print("   band          settled  dust-ex   mean$    se   clustered 95% CI     win%[OUTCOME basis]  median entry  markets")
     band_stats = {}
     for lo_b, hi_b in BANDS:
         b = "%0.2f-%0.2f" % (lo_b, hi_b)
@@ -233,7 +233,7 @@ def main():
                 wins += 1
             n += 1
     labeled_ex = [r for r in labeled if r["entry"] >= DUST_MIN]
-    print("\n== 4. as-of band win rate (>= %d earlier SETTLED priors in the same band; no look-ahead)"
+    print("\n== 4. as-of band win rate [OUTCOME] (>= %d earlier SETTLED priors in the same band; no look-ahead)"
           % MIN_PRIOR)
     print("   settled signals labeled %d | unlabeled (too little prior) %d | ex-dust labeled %d"
           % (len(labeled), unlabeled, len(labeled_ex)))

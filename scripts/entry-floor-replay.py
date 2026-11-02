@@ -357,7 +357,7 @@ def main() -> int:
     with OUT.open("a") as fh:
         fh.write(json.dumps(read, sort_keys=True) + "\n")
 
-    print("=== SETTLED C-200 LEGS BY ENTRY PRICE (lifetime | resolved-only | last 90d) ===")
+    print("=== SETTLED C-200 LEGS BY ENTRY PRICE (lifetime | resolved-only | last 90d; win% = EXIT basis realizedPnl>0) ===")
     for label, c in cells.items():
         lt, ro, w9 = c["lifetime"], c["resolvedOnly"], c["last90d"]
         print(f"  {label:>10}  n={lt['n']:>5} pnl=${lt['pnl']:>10,.2f} roi={lt['roi']:>7} win={lt['winRate']:>6} "

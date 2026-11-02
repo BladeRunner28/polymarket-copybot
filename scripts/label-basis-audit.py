@@ -73,7 +73,7 @@ def show(name, sub):
         return
     ps = [(m if m is not None else e) for _, m, e, _, _, _ in sub]
     ys = [1 if pnl > 0 else 0 for _, _, _, pnl, _, _ in sub]
-    print(f"  {name:32s} {len(sub):6d} {sum(ys)/len(ys):8.3f} {brier(ps, ys):7.4f} {auc(ps, ys):7.4f}")
+    print(f"  {name:32s} {len(sub):6d} {sum(ys)/len(ys):8.3f} {brier(ps, ys):7.4f} {auc(ps, ys):7.4f}   [basis: per-row population]")
 
 
 show("all finished", rows)

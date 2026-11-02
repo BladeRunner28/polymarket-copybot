@@ -66,7 +66,7 @@ function readPopulation(label: string, role: string, legs: Leg[]) {
   console.log(`  role: ${role}`);
   console.log(`  basis: population=acted legs in ${label}, clock=holdout at 2026-08-21T00:00:00Z, level=leg, label=pnl_net_entry>0`);
   console.log(`  ${split.provenance}`);
-  console.log(`  price-only on the test side: AUC ${fmt(price.auc)} | Brier ${fmt(price.brier)} (test n=${test.length}, markets ${new Set(test.map((l) => l.market)).size})`);
+  console.log(`  price-only on the test side [label=EXIT: pnl_net_entry>0]: AUC ${fmt(price.auc)} | Brier ${fmt(price.brier)} (test n=${test.length}, markets ${new Set(test.map((l) => l.market)).size})`);
   console.log(
     `  IN-FORCE bar (AUC>=${BAR.auc}, Brier<=${BAR.brier}) demands of a candidate: ` +
       `${margin.auc >= 0 ? "+" : ""}${fmt(margin.auc)} AUC and ${margin.brier >= 0 ? "+" : ""}${fmt(margin.brier)} Brier vs this price read` +

@@ -83,7 +83,7 @@ def main():
     n = len(recs)
     y = np.array([1.0 if r["pnl"] > 0 else 0.0 for r in recs])
     pnl = np.array([r["pnl"] for r in recs])
-    print(f"N resolved copies: {n}  win-rate(realizedPnl>0) {y.mean():.3f}  "
+    print(f"N resolved copies: {n}  win-rate(EXIT: realizedPnl>0) {y.mean():.3f}  "
           f"mean ${pnl.mean():+.2f}/trade  sd ${pnl.std(ddof=1):.2f}")
     print(f"wallets {len({r['wallet'] for r in recs})}  markets {len({r['market'] for r in recs})}  "
           f"rule sets {sorted({r['rsv'] for r in recs if r['rsv'] is not None})}")
@@ -138,7 +138,7 @@ def main():
                              calib_slope=round(sl, 3), calib_intercept=round(ic, 3),
                              per_fold_auc=pf,
                              per_fold_auc_mean=round(float(np.mean(pf)), 4))
-        print(f"{name}: AUC={a:.3f} per-fold mean={np.mean(pf):.3f} "
+        print(f"{name}: AUC(EXIT)={a:.3f} per-fold mean={np.mean(pf):.3f} "
               f"(min {min(pf):.2f}/max {max(pf):.2f}) Brier={b:.4f} slope={sl:.2f} icpt={ic:+.2f}")
 
     report("A_stored_copyScore", np.array([r["copyScore"] for r in recs]) / 100.0, is_prob=False)

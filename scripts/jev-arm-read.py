@@ -235,9 +235,9 @@ def main() -> int:
     clusters = len({s["cluster"] for s in scored})
     print(LINE)
     print(f"RESOLVED LEGS: {len(scored)} across {clusters} market clusters"
-          f" | base rate (label=1) {pct(sum(y_all) / len(y_all))}"
+          f" | base rate (label=1, OUTCOME) {pct(sum(y_all) / len(y_all))}"
           f" | copy-all net/leg {fmt(statistics.mean([net_pnl(s['price'], s['label']) for s in scored]))}")
-    print(f"PRICE  arm  n={len(scored):5d} AUC {fmt(auc(p_all, y_all))} Brier {fmt(brier(p_all, y_all))} "
+    print(f"PRICE  arm(OUTCOME) n={len(scored):5d} AUC {fmt(auc(p_all, y_all))} Brier {fmt(brier(p_all, y_all))} "
           f"logLoss {fmt(logloss(p_all, y_all))}")
     for name, label in (("leading", "LEADING"), ("blind", "BLIND  ")):
         sub = [s for s in scored if s[name] is not None]
@@ -246,11 +246,11 @@ def main() -> int:
             continue
         ys = [s["label"] for s in sub]
         ps = [s[name] for s in sub]
-        print(f"{label} arm  n={len(sub):5d} AUC {fmt(auc(ps, ys))} Brier {fmt(brier(ps, ys))} "
+        print(f"{label} arm  n={len(sub):5d} AUC(outcome) {fmt(auc(ps, ys))} Brier(outcome) {fmt(brier(ps, ys))} "
               f"logLoss {fmt(logloss(ps, ys))}")
         cs = [(s["copyScore"], s["label"]) for s in sub if isinstance(s.get("copyScore"), (int, float))]
         if cs:
-            print(f"{'':12s}copyScore on those same rows: AUC {fmt(auc([a for a, _ in cs], [b for _, b in cs]))}"
+            print(f"{'':12s}copyScore on those same rows: AUC(outcome) {fmt(auc([a for a, _ in cs], [b for _, b in cs]))}"
                   f" (n={len(cs)})")
 
     # ---- anchoring / belief diagnostics, per arm --------------------------------------------
@@ -284,9 +284,9 @@ def main() -> int:
                 print(LINE)
                 print(f"Δ({arm} - price), same {r['n_legs']} legs / {r['n_clusters']} clusters, "
                       f"{r['n_boot']} bootstraps:")
-                print(f"  ΔAUC   {r['d_auc']:+.4f}  95% CI [{r['auc_ci'][0]:+.4f}, {r['auc_ci'][1]:+.4f}]"
+                print(f"  ΔAUC(outcome)   {r['d_auc']:+.4f}  95% CI [{r['auc_ci'][0]:+.4f}, {r['auc_ci'][1]:+.4f}]"
                       f"  -> {'EXCLUDES 0' if r['auc_excludes_zero'] else 'STRADDLES 0 (noise)'}")
-                print(f"  ΔBrier {r['d_brier']:+.4f}  95% CI [{r['brier_ci'][0]:+.4f}, {r['brier_ci'][1]:+.4f}]"
+                print(f"  ΔBrier(outcome) {r['d_brier']:+.4f}  95% CI [{r['brier_ci'][0]:+.4f}, {r['brier_ci'][1]:+.4f}]"
                       f"  -> {'EXCLUDES 0' if r['brier_excludes_zero'] else 'STRADDLES 0 (noise)'}")
         cells = [{"cluster": s["cluster"], "price": s["price"], "label": s["label"],
                   "arm": s["blind"], "base": s["leading"]} for s in both]
@@ -294,9 +294,9 @@ def main() -> int:
         if "d_auc" in r:
             print(LINE)
             print(f"Δ(blind - leading), the same {r['n_legs']} legs:")
-            print(f"  ΔAUC   {r['d_auc']:+.4f}  95% CI [{r['auc_ci'][0]:+.4f}, {r['auc_ci'][1]:+.4f}]"
+            print(f"  ΔAUC(outcome)   {r['d_auc']:+.4f}  95% CI [{r['auc_ci'][0]:+.4f}, {r['auc_ci'][1]:+.4f}]"
                   f"  -> {'EXCLUDES 0' if r['auc_excludes_zero'] else 'STRADDLES 0 (noise)'}")
-            print(f"  ΔBrier {r['d_brier']:+.4f}  95% CI [{r['brier_ci'][0]:+.4f}, {r['brier_ci'][1]:+.4f}]"
+            print(f"  ΔBrier(outcome) {r['d_brier']:+.4f}  95% CI [{r['brier_ci'][0]:+.4f}, {r['brier_ci'][1]:+.4f}]"
                   f"  -> {'EXCLUDES 0' if r['brier_excludes_zero'] else 'STRADDLES 0 (noise)'}")
 
     # ---- the pre-registered gate's counterfactual, per arm ----------------------------------
@@ -339,7 +339,7 @@ def main() -> int:
                 continue
             sub = [s for s in scored if s["cat"] == cat and s[name] is not None]
             ys = [s["label"] for s in sub]
-            print(f"  {name:8s} {cat[:26]:26s} n={n:4d} AUC {name} {fmt(auc([s[name] for s in sub], ys), 3)} "
+            print(f"  {name:8s} {cat[:26]:26s} n={n:4d} AUC(outcome) {name} {fmt(auc([s[name] for s in sub], ys), 3)} "
                   f"price {fmt(auc([s['price'] for s in sub], ys), 3)}")
             printed = True
         if not printed:

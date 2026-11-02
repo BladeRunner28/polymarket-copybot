@@ -121,8 +121,8 @@ def main():
             "brier_skill_vs_constant": round(1 - br / const_brier, 4) if const_brier else None,
         }
         print(f"\n[{lab}] train n={len(tr):,} base={y_tr.mean():.3f} | test n={len(te):,} base={base:.3f}")
-        print(f"  price-only AUC {auc:.4f}  CI95 [{lo:.4f}, {hi:.4f}] (market-clustered)")
-        print(f"  price-only Brier {br:.4f}  vs constant {const_brier:.4f}  skill {1 - br/const_brier:+.4f}")
+        print(f"  price-only AUC(outcome) {auc:.4f}  CI95 [{lo:.4f}, {hi:.4f}] (market-clustered)")
+        print(f"  price-only Brier(outcome) {br:.4f}  vs constant {const_brier:.4f}  skill {1 - br/const_brier:+.4f}")
 
     # ---------------- parquet out ----------------
     keep = [c for c in (META + NUMERIC + CATEGORICAL + LABELS) if c in df.columns]

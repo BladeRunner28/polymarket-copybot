@@ -112,7 +112,7 @@ cut = int(n * (1 - TEST_FRACTION))
 train, test = rows[:cut], rows[cut:]
 print(f"resolved legs n={n}  train={len(train)}  test={len(test)}")
 print(f"test window: {test[0]['t']} -> {test[-1]['t']}")
-print(f"test base win rate {sum(r['won'] for r in test)/len(test):.4f}  (train {sum(r['won'] for r in train)/len(train):.4f})")
+print(f"test base win rate(EXIT: resolvedAt-only) {sum(r['won'] for r in test)/len(test):.4f}  (train {sum(r['won'] for r in train)/len(train):.4f})")
 
 ys = [r["won"] for r in test]
 edges = [0.1 * i for i in range(1, 10)]
@@ -142,7 +142,7 @@ print(f"\nthin-bucket check: test legs whose (decile,wallet) key was unseen in t
 
 print(f"\n{'arm':34s} {'n':>5s} {'Brier':>8s} {'AUC':>7s}")
 for name, ps in arms.items():
-    print(f"{name:34s} {len(ps):5d} {brier(ps, ys):8.4f} {('%.4f' % auc(ps, ys)) if auc(ps, ys) is not None else '   n/a':>7s}")
+    print(f"{name:34s} [EXIT|resolved-only] {len(ps):5d} {brier(ps, ys):8.4f} {('%.4f' % auc(ps, ys)) if auc(ps, ys) is not None else '   n/a':>7s}")
 
 bm = brier(arms["price_mid (detectedPrice)"], ys)
 bb = brier(arms["price_booked (entryPrice)"], ys)
@@ -150,7 +150,7 @@ print("\ndelta vs price_mid (positive = retrieval is WORSE):")
 for name, ps in arms.items():
     if name.startswith("price"):
         continue
-    print(f"  {name:32s} {brier(ps, ys) - bm:+.4f}")
+    print(f"  {name:32s} {brier(ps, ys) - bm:+.4f} [EXIT|resolved-only]")
 # calibration of the price arm itself, per decile (is price already the base rate?)
 print("\nper-decile base rate in the FULL sample (price is a discretized base rate):")
 for d in range(10):
@@ -199,4 +199,4 @@ for bot,mid,entry,pnl in con.execute(q2):
 print()
 for bot,rows in by.items():
     ps=[p for p,_ in rows]; ys=[y for _,y in rows]
-    print(f"{bot:10s} n={len(rows):5d}  price-mid Brier={brier(ps,ys):.4f}  AUC={auc(ps,ys):.4f}  base win {sum(ys)/len(ys):.3f}")
+    print(f"{bot:10s} n={len(rows):5d}  price-mid Brier(EXIT|resolved-only)={brier(ps,ys):.4f}  AUC={auc(ps,ys):.4f}  base win {sum(ys)/len(ys):.3f}")

@@ -51,7 +51,7 @@ CREATE TABLE resid AS
 SELECT f.addr, f.ts, f.price, f.win, f.band, f.win - b.bwr AS skill
 FROM f JOIN bandwr b USING (band)
 """)
-print("skill defined as win - band_winrate; now persistence", flush=True)
+print("skill defined as win[OUTCOME: olab==wlab] - band_winrate; now persistence", flush=True)
 
 con.sql("""
 CREATE TABLE span AS SELECT addr, (MIN(ts)+MAX(ts))/2 tmid, COUNT(*) n FROM resid GROUP BY 1 HAVING COUNT(*) >= 400

@@ -373,11 +373,11 @@ def main():
               % draws_note())
 
         # ---------- rankers
-        print("\n  RANKERS vs 'leg won' (AUC; 0.50 = no information; entry price is the baseline to beat)")
+        print("\n  RANKERS vs 'leg won' [basis EXIT: pnl>0, NOT the market outcome] (AUC; 0.50 = no information; entry price is the baseline to beat)")
         win = [1 if l["pnl"] > 0 else 0 for l in legs]
         np_, nn_ = sum(win), len(win) - sum(win)
         hw = auc_half(np_, nn_)
-        print("  MDE: with %d winning / %d losing legs this sample excludes any true AUC outside 0.50±%.3f"
+        print("  MDE: with %d winning / %d losing legs this sample excludes any true AUC[EXIT] outside 0.50±%.3f"
               % (np_, nn_, hw))
         feats = [
             ("resolvedTradeCount30d (scan)", lambda l: l["resolved30"]),
@@ -392,7 +392,7 @@ def main():
             pairs = [(get(l), w) for l, w in zip(legs, win) if get(l) is not None]
             if len(pairs) < 50:
                 continue
-            print("    %-30s AUC %.3f [%.3f, %.3f] (n=%d)" % (
+            print("    %-30s AUC[EXIT] %.3f [%.3f, %.3f] (n=%d)" % (
                 label, auc([p[0] for p in pairs], [p[1] for p in pairs]),
                 auc([p[0] for p in pairs], [p[1] for p in pairs]) - hw,
                 auc([p[0] for p in pairs], [p[1] for p in pairs]) + hw, len(pairs)))

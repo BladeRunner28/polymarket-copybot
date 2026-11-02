@@ -392,7 +392,7 @@ def disposal_alpha(c, cohort):
               f"{a - h:>+9.2f} {100 * (a - h) / bn:>+7.2f}% "
               f"{100 * sum(l['settle'] for l in g) / len(g):>9.0f}% "
               f"{median([l['cur'] - l['px'] for l in g]):>+8.3f}   CI [${lo_b:+,.0f}, ${hi_b:+,.0f}]")
-    print(f"   settle win rate on the settled subset: "
+    print(f"   settle win rate [EXIT: realizedPnl>0] on the settled subset: "
           f"{100 * sum(l['settle'] for l in cov) / len(cov):.1f}% vs mean entry price "
           f"{100 * sum(l['px'] for l in cov) / len(cov):.1f}c "
           f"-> calibration edge {100 * (sum(l['settle'] for l in cov) / len(cov) - sum(l['px'] for l in cov) / len(cov)):+.1f}pp")

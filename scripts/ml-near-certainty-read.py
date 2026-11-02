@@ -117,12 +117,12 @@ def main():
     losses = df[df["roi_net"] <= 0]["roi_net"]
     breakeven_wr = (-losses.mean()) / (wins.mean() - losses.mean()) if len(wins) and len(losses) else float("nan")
     print(f"  share of trades losing >=95% : {losers*100:>6.1f}%")
-    print(f"  mean WIN                     : {wins.mean()*100:>6.1f}%  (n={len(wins):,})")
+    print(f"  mean WIN [EXIT: roi_net>0]     : {wins.mean()*100:>6.1f}%  (n={len(wins):,})")
     print(f"  mean LOSS                    : {losses.mean()*100:>6.1f}%  (n={len(losses):,})")
     wr = (df["roi_net"] > 0).mean()
     margin_pp = (wr - breakeven_wr) * 100
-    print(f"  realised win rate            : {wr*100:>6.1f}%")
-    print(f"  breakeven win rate implied   : {breakeven_wr*100:>6.1f}%  (margin {margin_pp:+.1f} pp)")
+    print(f"  realised win rate(EXIT)       : {wr*100:>6.1f}%")
+    print(f"  breakeven win rate implied [threshold, not a measurement; EXIT basis] : {breakeven_wr*100:>6.1f}%  (margin {margin_pp:+.1f} pp)")
     geo = float(np.exp(np.log1p(df["roi_net"].clip(lower=-0.9999)).mean()) - 1)
     print(f"  GEOMETRIC mean per trade     : {geo*100:>6.3f}%   (arithmetic {df['roi_net'].mean()*100:.3f}%)")
     print(f"  -> at this geometry, position size must be small: one loss costs 100% of the leg")

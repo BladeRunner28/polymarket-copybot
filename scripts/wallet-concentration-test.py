@@ -509,12 +509,12 @@ def main():
                 pooled_perm_clusters(ga, gb, fast_mean)))
 
         # ---- does concentration add anything over the scores we already store?
-        print("\n  RANKERS vs 'leg won' (AUC, leg-level; 0.50 = no information). The price baseline and the")
+        print("\n  RANKERS vs 'leg won' [basis EXIT: pnl>0] (AUC, leg-level; 0.50 = no information). The price baseline and the")
         print("  wallet scores we ALREADY select on are the bar — a new feature has to beat them.")
         win = [1 if l["pnl"] > 0 else 0 for l in L]
         np_, nn_ = sum(win), len(win) - sum(win)
         hw = auc_half(np_, nn_)
-        print("  MDE: with %d winning / %d losing legs this sample excludes any true AUC outside 0.50±%.3f"
+        print("  MDE: with %d winning / %d losing legs this sample excludes any true AUC[EXIT] outside 0.50±%.3f"
               % (np_, nn_, hw))
         feats = [
             ("conc fine, last-20 window", lambda l: l["conc"]),
@@ -535,7 +535,7 @@ def main():
             pairs = [(get(l), w) for l, w in zip(L, win) if get(l) is not None]
             if len(pairs) < 50:
                 continue
-            print("    %-28s AUC %.3f [%.3f, %.3f]  (n=%d)" % (
+            print("    %-28s AUC[EXIT] %.3f [%.3f, %.3f]  (n=%d)" % (
                 label, auc([p[0] for p in pairs], [p[1] for p in pairs]),
                 auc([p[0] for p in pairs], [p[1] for p in pairs]) - hw,
                 auc([p[0] for p in pairs], [p[1] for p in pairs]) + hw, len(pairs)))

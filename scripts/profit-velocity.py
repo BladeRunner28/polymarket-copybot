@@ -1064,7 +1064,7 @@ def calibration_report(c):
     (expensive legs). This table separates the two, which no ROI table in this repo does.
     """
     print("\n" + "=" * 100)
-    print("AA. CALIBRATION -- realised hit rate vs entry price, i.e. the edge in probability points")
+    print("AA. CALIBRATION -- realised hit rate [EXIT: realizedPnl>0 on naturally-resolved legs] vs entry price, i.e. the edge in probability points")
     print("=" * 100)
     print("   ROI% = (hit - p)/p exactly; 'pp' = hit - p. A band can print a big ROI on a")
     print("   negative pp edge (1/p amplification) -- that is the number this table exists to expose.")

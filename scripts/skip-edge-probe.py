@@ -233,7 +233,7 @@ def main():
     lo, hi = cluster_boot(E, M)
     print("\n=== SKIP SET (exit-blind, held to resolution) ===")
     print(f"  n={len(E)} markets={len(set(M))} wallets={len({r['wallet'] for r in skip})}")
-    print(f"  win rate {W.mean():.4f} | mean entry {P.mean():.4f}")
+    print(f"  win rate {W.mean():.4f} | mean entry {P.mean():.4f}  [basis OUTCOME proxy]")
     print(f"  mean edge/share {E.mean():+.5f}  95% CI [{lo:+.5f}, {hi:+.5f}] (market-clustered)")
     print(f"  hypothetical ${HYPOTHETICAL_SIZE:.0f}/trade: {HYPOTHETICAL_SIZE*E.mean():+.3f}")
     summary["skip_set"] = {"n": len(E), "win_rate": float(W.mean()), "mean_entry": float(P.mean()),
@@ -248,7 +248,7 @@ def main():
     CP = np.array([e for e, _, _ in copies])
     clo, chi = cluster_boot(C, [m for _, _, m in copies])
     print("\n=== TAKEN SET (copies, status='resolved' — same resolution semantics, early exits excluded) ===")
-    print(f"  n={len(C)}  win rate {np.mean([1.0 if p>0 else 0.0 for _, p, _ in copies]):.4f}  mean entry {CP.mean():.4f}")
+    print(f"  n={len(C)}  win rate {np.mean([1.0 if p>0 else 0.0 for _, p, _ in copies]):.4f}  mean entry {CP.mean():.4f}  [basis EXIT: realizedPnl>0]")
     print(f"  mean edge/share {C.mean():+.5f}  95% CI [{clo:+.5f}, {chi:+.5f}]")
     print("  NOTE: resolved-only is winner-enriched (losers get cut to status='closed'), so this is an upper bound.")
     summary["taken_set"] = {"n": len(C), "edge_per_share": float(C.mean()), "ci": [clo, chi],
@@ -281,7 +281,7 @@ def main():
         if len(sel) < 30:
             continue
         sub = E[sel]; elo, ehi = cluster_boot(sub, [M[i] for i in sel])
-        print(f"  {lbl:20} n={len(sel):>7,} winrate {W[sel].mean():.3f} price {P[sel].mean():.3f} "
+        print(f"  {lbl:20} n={len(sel):>7,} winrate(outcome-proxy) {W[sel].mean():.3f} price {P[sel].mean():.3f} "
               f"edge/sh {sub.mean():+.4f} CI [{elo:+.4f},{ehi:+.4f}] $10 {HYPOTHETICAL_SIZE*sub.mean():+.2f}")
         eras[lbl] = {"n": int(len(sel)), "win_rate": float(W[sel].mean()), "mean_entry": float(P[sel].mean()),
                      "edge_per_share": float(sub.mean()), "ci": [elo, ehi]}
@@ -297,9 +297,9 @@ def main():
         ok = ~np.isnan(v)
         a_ = auc(v[ok], W[ok])
         rankers[k] = a_
-        print(f"  {k:16} AUC {a_:.3f}")
+        print(f"  {k:16} AUC(outcome-proxy) {a_:.3f}")
     price_auc = auc(P, W)
-    print(f"  {'entry_price':16} AUC {price_auc:.3f}  (the market's own probability)")
+    print(f"  {'entry_price':16} AUC(outcome-proxy) {price_auc:.3f}  (the market's own probability)")
     summary["rankers"] = {k: float(v) for k, v in rankers.items()}
     summary["rankers"]["entry_price"] = float(price_auc)
 
@@ -322,7 +322,7 @@ def main():
     if len(sel) >= 30:
         sub = E[sel]; blo, bhi = cluster_boot(sub, [M[i] for i in sel])
         print(f"\n=== the live-regime pocket: v49+ & 0.50-0.65 ===")
-        print(f"  n={len(sel):,} markets={len({M[i] for i in sel}):,} winrate {W[sel].mean():.3f} "
+        print(f"  n={len(sel):,} markets={len({M[i] for i in sel}):,} winrate(outcome-proxy) {W[sel].mean():.3f} "
               f"price {P[sel].mean():.3f} edge/sh {sub.mean():+.4f} CI [{blo:+.4f},{bhi:+.4f}] "
               f"$10 {HYPOTHETICAL_SIZE*sub.mean():+.2f}")
         summary["live_band_pocket"] = {"band": [0.50, 0.65], "n": int(len(sel)),

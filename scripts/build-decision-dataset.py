@@ -269,7 +269,7 @@ def main():
 
     print(f"wrote {os.path.relpath(CSV_OUT, ROOT)}  rows={n} (raw {raw_count}, "
           f"dropped {manifest['dropped_as_duplicate']} dups)")
-    print(f"win_rate={manifest['win_rate']}  per-trade gross ${manifest['per_trade_gross']} "
+    print(f"win_rate[EXIT: y_win=pnl>0]={manifest['win_rate']}  per-trade gross ${manifest['per_trade_gross']} "
           f"net(entry-fee) ${manifest['per_trade_net_entry']} net(full) ${manifest['per_trade_net_full']}")
     print(f"wallets={len(wallets)} markets={len(markets)} days={len(days)} "
           f"({manifest['first_day']} -> {manifest['last_day']}) bots={dict(bots)}")

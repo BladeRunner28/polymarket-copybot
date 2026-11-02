@@ -223,8 +223,8 @@ def render(res):
           f"WALLET-LEVEL ${m['top_tercile_wallet_quality_WALLET_LEVEL']:.3f} "
           f"({res['n_top_wallet_level_wallets']} wallets, n={res['n_top_wallet_level']}) | bottom-tercile "
           f"${m['bottom_tercile_wallet_quality']:.3f} | top-tercile price ${m['top_tercile_entry_price']:.3f}")
-    print(f"AUC {FEATURE} vs net>0 {res['auc_wallet_quality_vs_net']:.4f} | "
-          f"AUC entry_price vs net>0 {res['auc_entry_price_vs_net']:.4f} | win rate (y_win) {res['win_rate_y_win']:.4f}")
+    print(f"AUC(EXIT) {FEATURE} vs net>0 {res['auc_wallet_quality_vs_net']:.4f} | "
+          f"AUC entry_price vs net>0 {res['auc_entry_price_vs_net']:.4f} | win rate (y_win = EXIT: realizedPnl>0) {res['win_rate_y_win']:.4f}")
     for k, v in g.items():
         if isinstance(v, bool):
             continue

@@ -309,7 +309,7 @@ def main():
     pnl_net = np.array([r["pnl_net"] for r in recs])
     wallets = np.array([r["wallet"] for r in recs])
     band_idx = np.array([band_of(r["entry"]) for r in recs])
-    print(f"decisions: {n}  win-rate {y.mean():.4f}  ungated net $/trade {pnl_net.mean():+.4f}")
+    print(f"decisions: {n}  win-rate(EXIT: y_win=pnl>0) {y.mean():.4f}  ungated net $/trade {pnl_net.mean():+.4f}")
 
     designs = {"W_wallet_blocked": folds_wallet(recs), "T_walk_forward": folds_time(recs)}
     results, chosen = {}, None
@@ -329,7 +329,7 @@ def main():
             res = evaluate(f"{dname}__{mname}", p, recs, y, pnl_net, foldset, wallets)
             res["fitted_on_first_fold"] = fitted[0] if fitted else None
             results[f"{dname}__{mname}"] = res
-            print(f"{dname:18s} {mname:14s} AUC={res['auc']:.3f} Brier={res['brier']:.4f} "
+            print(f"{dname:18s} {mname:14s} AUC(exit)={res['auc']:.3f} Brier(exit)={res['brier']:.4f} "
                   f"slope={res['calib_slope']:+.2f} | gate: sel={res['pooled']['share']:.2%} "
                   f"net ${res['pooled']['per_trade_net']} vs ungated ${res['pooled']['ungated_net']} "
                   f"(impr {res['pooled']['improvement']})")

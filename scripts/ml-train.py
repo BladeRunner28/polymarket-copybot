@@ -177,7 +177,7 @@ def main():
         comp[name] = {**score(te[args.label].values, p, const), "n_train": int(len(tr)), "n_test": int(len(te))}
         comp[name]["coef"] = round(float(m.coef_[0][0]), 4)
         comp[name]["intercept"] = round(float(m.intercept_[0]), 4)
-        print(f"  comparator {name:16s} AUC {comp[name]['auc']:.4f}  Brier {comp[name]['brier']:.4f}")
+        print(f"  comparator {name:16s} AUC(outcome) {comp[name]['auc']:.4f}  Brier(outcome) {comp[name]['brier']:.4f}")
 
     # The bar is the STRONGEST price-only frame, not the one I expected to win. Both frames
     # are legitimate price-only models; letting the weaker one be "the bar" would manufacture
@@ -186,7 +186,7 @@ def main():
     BAR_AUC = comp[BAR_NAME]["auc"]
     BAR_BRIER = comp[BAR_NAME]["brier"]
     BAR_FEATURE = "logit_yes" if BAR_NAME == "price_yes_frame" else "logit_side_price"
-    print(f"  BAR = {BAR_NAME} (AUC {BAR_AUC:.4f} / Brier {BAR_BRIER:.4f}) via {BAR_FEATURE}")
+    print(f"  BAR [label y_side_win = OUTCOME] = {BAR_NAME} (AUC {BAR_AUC:.4f} / Brier {BAR_BRIER:.4f}) via {BAR_FEATURE}")
 
     # ---------------- inner time-ordered validation (train window only) ----------------
     tr_sorted = train.sort_values("decided_at")
@@ -211,7 +211,7 @@ def main():
     const_te = float(np.mean((y_te.mean() - y_te) ** 2))
     res_anchor = {**score(y_te, p_anchor, const_te), "n_features": int(Xa_full.shape[1]),
                   "C": best_c, "inner_val_auc_grid": grid}
-    print(f"  logistic anchor      AUC {res_anchor['auc']:.4f}  Brier {res_anchor['brier']:.4f}")
+    print(f"  logistic anchor      AUC(outcome) {res_anchor['auc']:.4f}  Brier {res_anchor['brier']:.4f}")
 
     # ---------------- LightGBM ----------------
     feats_tr = [c for c in NUMERIC + ["logit_side_price"] if c in train.columns]
@@ -247,7 +247,7 @@ def main():
     gbm_full = lgb.train(params, dall, num_boost_round=gbm.best_iteration or 100)
     p_gbm = gbm_full.predict(frame(test))
     res_gbm = {**score(y_te, p_gbm, const_te), "best_iteration": int(gbm.best_iteration)}
-    print(f"  lightgbm             AUC {res_gbm['auc']:.4f}  Brier {res_gbm['brier']:.4f}")
+    print(f"  lightgbm             AUC(outcome) {res_gbm['auc']:.4f}  Brier {res_gbm['brier']:.4f}")
 
     # ---------------- paired clustered deltas ----------------
     # paired comparison on the rows where the BAR is defined (identical resamples for both arms)

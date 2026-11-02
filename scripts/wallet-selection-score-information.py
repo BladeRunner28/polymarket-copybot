@@ -267,7 +267,7 @@ def analyse(lane, legs, scores):
         ql = labels[idx]
         if len(idx) < 5 or ql.sum() == 0 or ql.sum() == len(ql):
             continue
-        print("     q%d  n=%4d  price %.3f-%.3f  win %5.1f%%  realized %10s  AUC(price within) %.3f"
+        print("     q%d  n=%4d  price %.3f-%.3f  win %5.1f%%  realized %10s  AUC(price within) %.3f [basis EXIT: leg pnl>0]"
               % (qi + 1, len(idx), min(legs[i]["price"] for i in idx), max(legs[i]["price"] for i in idx),
                  100.0 * ql.sum() / len(idx), money(sum(legs[i]["pnl"] for i in idx)),
                  auc_np(np.array([legs[i]["price"] for i in idx]), ql)))

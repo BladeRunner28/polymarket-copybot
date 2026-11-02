@@ -103,8 +103,8 @@ def calibrate(bp: pd.DataFrame, args) -> None:
     with open(os.path.join(OUT, "online-report_calibrator.json"), "w") as f:
         json.dump(rep, f, indent=2)
     print(f"  rows streamed {len(ya):,}")
-    print(f"  frozen batch   AUC {rep['frozen_batch']['auc']:.4f}  Brier {raw_b:.4f}")
-    print(f"  + online calib AUC {rep['prequential_calibrated']['auc']:.4f}  Brier {cal_b:.4f} "
+    print(f"  frozen batch   AUC(outcome) {rep['frozen_batch']['auc']:.4f}  Brier(outcome) {raw_b:.4f}")
+    print(f"  + online calib AUC(outcome) {rep['prequential_calibrated']['auc']:.4f}  Brier(outcome) {cal_b:.4f} "
           f"(delta {cal_b - raw_b:+.4f})")
     print(f"  drift alarms: {len(alarms)}")
     for a in alarms[:5]:
@@ -244,9 +244,9 @@ def main():
     with open(os.path.join(OUT, f"online-report_{args.model}.json"), "w") as f:
         json.dump(report, f, indent=2)
 
-    print(f"  prequential AUC {preq_auc:.4f}  Brier {preq_brier:.4f} "
+    print(f"  prequential AUC(outcome) {preq_auc:.4f}  Brier(outcome) {preq_brier:.4f} "
           f"(constant {const_b:.4f}, skill {1 - preq_brier/const_b:+.4f})")
-    print(f"  batch LightGBM on the same rows: AUC {batch_auc} Brier {batch_brier}")
+    print(f"  batch LightGBM on the same rows: AUC(outcome) {batch_auc} Brier(outcome) {batch_brier}")
     print(f"  drift alarms: {len(alarms)}")
     for a in alarms[:5]:
         print(f"    alarm at {a['at']} after {a['rows_seen']:,} rows")

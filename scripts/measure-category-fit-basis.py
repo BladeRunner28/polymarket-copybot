@@ -372,9 +372,9 @@ def main():
         n = len(rows)
         n_pos, n_neg = int(labels.sum()), int(n - labels.sum())
         mde = CONC.auc_half(n_pos, n_neg)
-        print("\n%s — %d legs / %d wallet-lane pairs | win %d (%.1f%%) | MDE ±%.3f"
+        print("\n%s — %d legs / %d wallet-lane pairs | win[EXIT] %d (%.1f%%) | MDE ±%.3f"
               % (lane, n, len({r["wallet"] for r in rows}), n_pos, 100.0 * n_pos / n, mde))
-        print("   %-34s %6s %20s %8s %6s %10s" % ("basis (win rate in leg's bucket)", "AUC",
+        print("   %-34s %6s %20s %8s %6s %10s" % ("basis [EXIT: pnl>0] (win rate in leg's bucket)", "AUC",
                                                   "95% CI (clustered)", "MDE±", "clears", "cov%"))
         res = {}
         for key in list(rows[0]["fits"].keys()):

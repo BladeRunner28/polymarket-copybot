@@ -226,7 +226,7 @@ def main():
                 continue
             gated = h in (pol["blackout_hours_et"] or [])
             status = "ALREADY BLACKED OUT" if gated else "ungated"
-            print(f"   {h:02d}:00 ET  N={s['n']:>4} (raw {raw_s['n']:>4})  win%={s['winRate']*100:5.1f}  "
+            print(f"   {h:02d}:00 ET  N={s['n']:>4} (raw {raw_s['n']:>4})  win%(EXIT)={s['winRate']*100:5.1f}  "
                   f"excess={s['excessReturn']:+.4f} (z={s['z']:+.2f})  PnL=${s['realizedPnl']:+.2f}"
                   f"{' **' if s['significant'] else ''}  [{status}]")
             gates[f"hour_{h:02d}_et"] = {**s, "n_raw": raw_s["n"],
@@ -239,7 +239,7 @@ def main():
                                               and not gated)}
         raw_s = cal.band_stats(by_band[w])
         s = cal.band_stats(by_band_dd[w])
-        print(f"   entry {BAND[0]:.2f}-{BAND[1]:.2f}  N={s['n']:>4} (raw {raw_s['n']:>4})  win%={s['winRate']*100:5.1f}  "
+        print(f"   entry {BAND[0]:.2f}-{BAND[1]:.2f}  N={s['n']:>4} (raw {raw_s['n']:>4})  win%(EXIT)={s['winRate']*100:5.1f}  "
               f"excess={s['excessReturn']:+.4f} (z={s['z']:+.2f})  PnL=${s['realizedPnl']:+.2f}"
               f"{' **' if s['significant'] else ''}")
         gates["band_0.60-0.80"] = {**s, "n_raw": raw_s["n"],

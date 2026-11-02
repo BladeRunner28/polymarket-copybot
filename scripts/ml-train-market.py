@@ -145,7 +145,7 @@ def main():
 
     d = build(pd.read_parquet(args.parquet))
     print("gated + labelled rows: {:,} | markets: {:,}".format(len(d), d["market_id"].nunique()))
-    print("label base rate (net-profitable): {:.3f}".format(d["target"].mean()))
+    print("label base rate (EXIT basis: roi_net>0, net-profitable): {:.3f}".format(d["target"].mean()))
 
     # TIME-ORDERED split.
     days = np.sort(d["day"].unique())
@@ -182,7 +182,7 @@ def main():
         brier = float(brier_score_loss(y_te, p))
         ll = float(log_loss(y_te, np.clip(p, 1e-6, 1 - 1e-6)))
         results[name] = {"auc": round(auc, 4), "brier": round(brier, 4), "logloss": round(ll, 4)}
-        print("{:<9} AUC {:.4f}  Brier {:.4f}  logloss {:.4f}".format(name, auc, brier, ll))
+        print("{:<9} AUC(EXIT) {:.4f}  Brier(EXIT) {:.4f}  logloss {:.4f}".format(name, auc, brier, ll))
         te["p_" + name] = p
         if auc > best_auc:
             best_auc, best_name = auc, name

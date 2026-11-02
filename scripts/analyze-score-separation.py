@@ -233,7 +233,7 @@ def main():
         if not sub:
             continue
         BASE = sum(x["win"] for x in sub) / len(sub)
-        print("\n===== %s: n=%d base win rate %.1f%% mean PnL $%.2f =====" % (
+        print("\n===== %s: n=%d base win rate [EXIT basis] %.1f%% mean PnL $%.2f =====" % (
             group, len(sub), BASE * 100, np.mean([x["pnl"] for x in sub])))
         ranked = []
         for f in FEATURES:
@@ -284,13 +284,13 @@ def main():
         Xtr = np.clip((mat(tr) - mu) / sd, -10.0, 10.0)
         Xte = np.clip((mat(te) - mu) / sd, -10.0, 10.0)
         print("  %s: train n=%d test n=%d  (test base wr %.1f%%)" % (label, len(tr), len(te), yte.mean() * 100))
-        print("   incumbent raw_composite   AUC=%.3f  logloss=%.4f" % (
+        print("   incumbent raw_composite   AUC(exit)=%.3f  logloss=%.4f" % (
             auc(yte, -mat(te)[:, Xcols.index("raw_composite")]), logloss(yte, np.clip(mat(te)[:, Xcols.index("raw_composite")] / 100.0, 1e-3, 1 - 1e-3))))
-        print("   incumbent copyScore       AUC=%.3f" % auc(yte, -mat(te)[:, Xcols.index("copyScore")]))
+        print("   incumbent copyScore       AUC(exit)=%.3f" % auc(yte, -mat(te)[:, Xcols.index("copyScore")]))
         beta = fit_logreg(Xtr, ytr, l2=2.0)
         pte = predict(beta, Xte)
         ptr = predict(beta, Xtr)
-        print("   ridge logistic            AUC=%.3f  logloss=%.4f (train AUC=%.3f, train logloss=%.4f)" % (
+        print("   ridge logistic            AUC(exit)=%.3f  logloss=%.4f (train AUC=%.3f, train logloss=%.4f)" % (
             auc(yte, pte), logloss(yte, pte), auc(ytr, ptr), logloss(ytr, ptr)))
         top = np.argsort(-np.abs(beta[1:]))[:8]
         print("   largest |coef|: %s" % ", ".join("%s %+0.2f" % (Xcols[i], beta[1 + i]) for i in top))

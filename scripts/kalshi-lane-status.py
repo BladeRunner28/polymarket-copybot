@@ -154,7 +154,7 @@ def main():
     print("wrote %s" % OUT)
     print("  arb median net        : %s" % out["arb"]["medianNetAll"])
     print("  net-positive          : %s" % {k: v["netPositivePct"] for k, v in arb.items()})
-    print("  AUC pm/kalshi         : %s / %s  (windows %d, labelled %d)"
+    print("  AUC[OUTCOME: window direction] pm/kalshi: %s / %s  (windows %d, labelled %d)"
           % (out["information"]["aucPm"], out["information"]["aucKalshi"], len(by_window), len(y)))
     print("  disagreement median   : %s | >1 fee %s%%"
           % (out["information"]["disagreementMedian"], out["information"]["disagreementOverOneFeePct"]))
