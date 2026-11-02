@@ -380,6 +380,16 @@ def bot_facts(db: str, days: int) -> list[str]:
                     cnt: Counter = Counter()
                     dec_cnt: Counter = Counter()
                     bare = 0
+                    # 2026-11-02 (Lane B): both levels were printed under a caption that ASSERTED a
+                    # relationship instead of measuring it. Measured on this slice: 916 tag entries
+                    # over 400 skips, 353/400 carry more than one entry -> the ENTRY-level totals do
+                    # exceed the row count, but no tag ever repeats INSIDE one decision, so the
+                    # DECISION-level (dedupe-within-row) view agrees tag-for-tag and the two lines
+                    # read as one population printed twice. Both facts now print from the data; the
+                    # ONLY thing that can make the lists differ is a within-row duplicate, and that
+                    # count prints too. Full-window independent read: scripts/skip-reason-level-read.py.
+                    n_entries = 0
+                    n_dups = 0
                     for row in blob:
                         items = []
                         for raw in row:  # risksJson is first when present
@@ -396,20 +406,31 @@ def bot_facts(db: str, days: int) -> list[str]:
                             bare += 1
                             continue
                         seen_here = set()
+                        n_entries += len(items)
                         for tag in items:
                             key = str(tag)[:70]
                             cnt[key] += 1
                             if key not in seen_here:
                                 dec_cnt[key] += 1
                                 seen_here.add(key)
+                        n_dups += len(items) - len(seen_here)
+                    tagged = len(blob) - bare
                     out.append(
-                        f"- skip reasons DECISION-level (one count per skipped decision; "
-                        f"{len(blob)} rows newest-first, {bare} empty): "
+                        f"- skip reasons DECISION-level (one count per skipped decision PER TAG, so "
+                        f"these counts sum to {sum(dec_cnt.values())} entries, NOT to the "
+                        f"{len(blob)} rows; {len(blob)} rows newest-first, {bare} empty, "
+                        f"{n_dups} within-row duplicate entries): "
                         + (", ".join(f"{k} x{v}" for k, v in dec_cnt.most_common(5)) or "(none parsed)"))
                     out.append(
-                        f"- skip reasons ENTRY-level (every risksJson entry -- a decision can "
-                        f"carry several, so these SUMS exceed the row count): "
+                        f"- skip reasons ENTRY-level (every risksJson entry: {n_entries} entries over "
+                        f"{tagged} tagged rows, "
+                        f"{'above' if n_entries > tagged else 'not above'} the row count; the two "
+                        f"lines differ ONLY where a decision repeats a tag, measured {n_dups} times): "
                         + (", ".join(f"{k} x{v}" for k, v in cnt.most_common(5)) or "(none parsed)"))
+                    out.append(
+                        "- skip reasons by GATE FAMILY (the readable rollup; per-tag keys are "
+                        "per-VALUE, so the lists above mix strength buckets with gates): "
+                        "python3 scripts/skip-reason-level-read.py")
                     # `outcome` lives on ObservedTrade, NOT on DecisionJournal — querying it bare
                     # raised `no such column: outcome` on every run and the except below swallowed
                     # it into a report line, so this counter read "FAILED" for three days (tuning
