@@ -1,26 +1,26 @@
 {
-  "analyzedAt": "2026-10-10T08:21:07.008575+00:00",
-  "overlapDays": 86,
+  "analyzedAt": "2026-11-01T19:30:37.629063+00:00",
+  "overlapDays": 109,
   "allDays": {
     "label": "all days",
-    "n": 86,
-    "meanPnl": 177.95,
-    "medianPnl": 28.49,
-    "correlation": -0.169,
-    "signAgreement": 0.439,
-    "positiveDays": 45,
-    "negativeDays": 41
+    "n": 109,
+    "meanPnl": 141.78,
+    "medianPnl": 15.38,
+    "correlation": -0.072,
+    "signAgreement": 0.451,
+    "positiveDays": 56,
+    "negativeDays": 53
   },
   "retrograde": {
     "label": "retrograde days",
-    "n": 83,
-    "meanPnl": 193.9,
-    "medianPnl": 32.94,
-    "correlation": -0.157,
-    "signAgreement": 0.439,
-    "positiveDays": 44,
-    "negativeDays": 39,
-    "tWelch": 2.04822546256205
+    "n": 106,
+    "meanPnl": 153.25,
+    "medianPnl": 19.7,
+    "correlation": -0.061,
+    "signAgreement": 0.451,
+    "positiveDays": 55,
+    "negativeDays": 51,
+    "tWelch": 2.0020927548791922
   },
   "nonRetrograde": {
     "label": "non-retrograde days",
@@ -29,24 +29,24 @@
   },
   "moonWindows": {
     "label": "new/full moon days",
-    "n": 23,
-    "meanPnl": -2.8,
-    "medianPnl": -34.89,
-    "correlation": -0.154,
-    "signAgreement": 0.455,
-    "positiveDays": 10,
-    "negativeDays": 13,
-    "tWelch": -1.2080878695886703
+    "n": 30,
+    "meanPnl": -64.08,
+    "medianPnl": -46.84,
+    "correlation": 0.062,
+    "signAgreement": 0.538,
+    "positiveDays": 11,
+    "negativeDays": 19,
+    "tWelch": -1.728443529423585
   },
   "nonMoon": {
     "label": "other days",
-    "n": 63,
-    "meanPnl": 243.93,
+    "n": 79,
+    "meanPnl": 219.96,
     "medianPnl": 38.56,
-    "correlation": -0.319,
-    "signAgreement": 0.433,
-    "positiveDays": 35,
-    "negativeDays": 28
+    "correlation": -0.181,
+    "signAgreement": 0.421,
+    "positiveDays": 45,
+    "negativeDays": 34
   },
   "eclipseWindows": {
     "label": "eclipse window days",
@@ -57,18 +57,18 @@
     "signAgreement": 0.6,
     "positiveDays": 4,
     "negativeDays": 6,
-    "tWelch": -2.0679773516918267
+    "tWelch": -2.0246802514739572
   },
   "nonEclipse": {
     "label": "other days",
-    "n": 76,
-    "meanPnl": 227.06,
-    "medianPnl": 35.76,
-    "correlation": -0.234,
-    "signAgreement": 0.417,
-    "positiveDays": 41,
-    "negativeDays": 35
+    "n": 99,
+    "meanPnl": 175.83,
+    "medianPnl": 24.03,
+    "correlation": -0.081,
+    "signAgreement": 0.435,
+    "positiveDays": 52,
+    "negativeDays": 47
   },
-  "corrTStat": -1.57,
-  "verdict": "NO SIGNIFICANT SIGNAL \u2014 corr=-0.169, |t|=1.6 (within noise). Keep accumulating shadow data; do not promote."
+  "corrTStat": -0.75,
+  "verdict": "NO SIGNIFICANT SIGNAL \u2014 corr=-0.072, |t|=0.7 (within noise). Keep accumulating shadow data; do not promote."
 }
