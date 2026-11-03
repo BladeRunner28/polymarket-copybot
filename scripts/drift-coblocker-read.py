@@ -134,6 +134,18 @@ def main():
     if cutoff is not None:
         cands = [r for r in cands if (r.get("ts") or "") >= cutoff.isoformat()[:19]]
 
+    # ERA BOUNDARY (Lane B instrument repair, 2026-11-03). The drift gate became DIRECTIONAL
+    # on 2026-10-26 (commit f61fdbe, user-approved): a price BELOW the wallet's entry is no
+    # longer a block, so such rows can never be appended to this feed again. The FAVOURABLE
+    # arm is therefore STRUCTURALLY empty from that commit on — a zero there is an era
+    # boundary, NOT cohort decay, and must never be reported as the cohort shrinking.
+    fav_all = [r for r in recs
+               if r.get("otherRiskKinds") is not None and r.get("currentPrice") and r.get("walletEntryPrice")
+               and r["currentPrice"] < r["walletEntryPrice"] - 1e-12]
+    last_fav_ts = max((r.get("ts") or "" for r in fav_all), default="")
+    directional_since = "2026-10-26T21:18"  # f61fdbe committed 2026-10-26 16:18 CST
+    fav_arm_dead = not any((r.get("ts") or "") >= directional_since for r in fav_all)
+
     instrument_rows = len(cands)
     settled = 0
     built = []
@@ -189,9 +201,14 @@ def main():
         freq = Counter(k for r in rows for k in r["kinds"])
         if not args.json:
             print(f"\n{d.upper()} ({len(rows):,} settled rows) — co-blockers by frequency:")
+            if d == "favourable" and fav_arm_dead:
+                print("    STRUCTURAL ZERO — the drift gate is DIRECTIONAL since 2026-10-26 (f61fdbe):")
+                print("    below-entry prices are never blocked, so this arm cannot accrue. Not decay.")
+                print(f"    last favourable candidate row on file: {last_fav_ts or 'none'}")
             for k, n in freq.most_common(10):
                 print(f"    {k:<22} {n:>5,}  ({n/max(len(rows),1)*100:.1f}% of cohort)")
         out[d] = {"rows": len(rows), "freq": dict(freq)}
+    out["favourableArm"] = {"structuralZero": fav_arm_dead, "lastRowTs": last_fav_ts}
 
     # NEAREST-REACHABLE: favourable rows with exactly ONE co-blocker kind
     fav = [r for r in built if r["dir"] == "favourable"]
@@ -202,6 +219,10 @@ def main():
     if not args.json:
         print("\nNEAREST-REACHABLE — favourable rows held by exactly ONE other gate:")
         print("  (a bundle of {fix the drift sign + relieve this gate} would admit these)")
+        if fav_arm_dead:
+            print("    FAVOURABLE-ONLY ARM and structurally empty since 2026-10-26 (directional gate):")
+            print("    this table cannot populate from post-change rows. Adverse single-co-blocker")
+            print("    bundles are NOT priced here — they are the sole-blocker count above.")
         if not single:
             print("    none yet")
     out["nearestReachable"] = {}
