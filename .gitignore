@@ -99,3 +99,15 @@ data/archive-analysis/
 # data/market-truth-clob.json IS committed so the review re-runs offline.
 data/.clob-truth-raw/
 data/sellside-m2c.json
+
+# ML data-feed scout HTTP body cache (2026-11-03). scripts/data-feed-scout.py stores one
+# fetched body per source, keyed by sha1(url), TTL 6h, and keeps the stale copy only as a
+# fallback after a FAILED refetch (cached_fetch: fresh -> cache, miss -> fetch, error ->
+# "STALE cache"). Nothing reads it from git and nothing can: it is pure os.path on disk.
+# The scout's first Monday run (2026-11-02 07:00 — job "ML data-feed scout", every monday
+# 7am) put 98 of these into that night's `git add -A` backup: the nightly commit went
+# 120 -> 197 files, of which 86 were this cache, and every one of them churns (all 98
+# showed modified again within hours). That is ~20.7 MB re-committed per night forever,
+# for a directory whose loss costs one refetch. Kept on disk, off the index.
+data/cache/data-feed-scout/
+
