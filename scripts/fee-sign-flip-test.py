@@ -25,17 +25,28 @@ DECISION RULE (pre-registered on the card, unchanged)
   KEEP THE EXISTING MODEL if coverage is high but delta < $25 and nothing flips.
 
 Exit is charged only for status='closed' (a real sell); 'resolved' settles at 0/1 with no trade.
+
+EXIT BASIS — REPAIRED 2026-11-02 (card `fee-exit-basis-instruments`). Both arms used to charge
+the exit fee at the leg's ENTRY price (`cur *= 2.0`), which is the same error on both sides of
+the comparison and still a basis lie in every printed delta. The exit leg is now charged at the
+leg's own exit price (PaperTrade.currentPrice, identity fallback c = p*(1+pnl/size)) through
+scripts/lib/fee_exit.py, and the counts per basis print with the result.
 Nothing is written except data/fee-sign-flip-report.json.
 """
 import argparse
 import json
+import os
 import re
 import sqlite3
+import sys
 import time
 import urllib.error
 import urllib.request
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.fee_exit import ExitBasisTally, leg_fees, resolve_exit_price  # noqa: E402
 
 DB = "prisma/dev.db"
 OUT = "data/fee-sign-flip-report.json"
@@ -81,7 +92,8 @@ def load_legs(db):
     con = sqlite3.connect("file:{}?immutable=1".format(db), uri=True)
     rows = con.execute("""
         SELECT p.botId, p.marketId, p.entryPrice, p.simulatedPositionSize, p.status,
-               p.realizedPnl, o.conditionId, o.marketCategoryFine, o.marketCategoryClass
+               p.realizedPnl, o.conditionId, o.marketCategoryFine, o.marketCategoryClass,
+               p.currentPrice
         FROM PaperTrade p
         JOIN DecisionJournal j ON j.id = p.decisionJournalId
         JOIN ObservedTrade o ON o.id = j.observedTradeId
@@ -162,7 +174,9 @@ def main():
     fee_vals = Counter()
     per_bot = defaultdict(lambda: defaultdict(float))
 
-    for bot, mk, p, size, status, pnl, cid, fine, klass in legs:
+    tally = ExitBasisTally(population="closed legs (status='closed', isDemo=0, with a conditionId)",
+                           clock="whole history in " + args.db, level="leg")
+    for bot, mk, p, size, status, pnl, cid, fine, klass, cur_px in legs:
         if not p or p <= 0 or not size:
             skipped["bad_price"] += 1
             continue
@@ -184,15 +198,27 @@ def main():
         rate = CAT_RATE.get(cat)
         if rate is None:
             rate = CAT_RATE.get(category(mk), DEFAULT_RATE)
-        cur = shares * rate * p * (1 - p)
-
-        # documented rate + documented law for the same category
+        # documented rate for the same category
         dcat = CLASS_MAP.get((klass or "").lower())
         if dcat is None:
             dcat = CLASS_MAP.get(category(mk), "other")
         drate = DOCS_RATE[dcat]
-        ven = shares * drate * p * (1 - p)
-        # keep the old, erroneous min-law value ONLY for the record
+        # exit is a trade at the leg's OWN exit price; resolved settles at 0/1, no exit fee
+        exit_px = None
+        if status == "closed":
+            resolved_exit = resolve_exit_price(cur_px, p, size, pnl)
+            tally.add(resolved_exit)
+            exit_px = resolved_exit["price"]
+        e_cur, x_cur = leg_fees(shares, rate, p, exit_px, status == "closed")
+        e_ven, x_ven = leg_fees(shares, drate, p, exit_px, status == "closed")
+        cur = e_cur + x_cur
+        ven = e_ven + x_ven
+        # the WITHDRAWN basis, entry-priced on both legs, kept for the record only
+        _, x_cur_old = leg_fees(shares, rate, p, p, status == "closed")
+        _, x_ven_old = leg_fees(shares, drate, p, p, status == "closed")
+        agg["fee_current_oldbasis"] += e_cur + x_cur_old
+        agg["fee_venue_oldbasis"] += e_ven + x_ven_old
+        # keep the old, erroneous min-law value ONLY for the record (entry leg only)
         minlaw = shares * drate * min(p, 1 - p)
         agg_by_cat[dcat]["cur"] += cur
         agg_by_cat[dcat]["docs"] += ven
@@ -201,9 +227,6 @@ def main():
         agg_by_cat[dcat]["legs"] += 1
         # what the WRONG min-law would have claimed, for the record only
         agg["fee_minlaw_artifact"] += minlaw
-        if status == "closed":            # early exit is a trade; resolved settles at 0/1
-            cur *= 2.0
-            ven *= 2.0
 
         d = ven - cur
         agg["fee_current"] += cur
@@ -233,6 +256,14 @@ def main():
     print("  fee under venue    : $%.2f" % agg["fee_venue"])
     print("  DELTA (venue-cur)  : $%+.2f" % agg["delta"])
     print("  sign flips in net  : %d" % len(flips))
+    old_cur, old_ven = agg["fee_current_oldbasis"], agg["fee_venue_oldbasis"]
+    print("  fee on the WITHDRAWN basis (exit charged at entry): current $%.2f, venue $%.2f"
+          % (old_cur, old_ven))
+    print("  that basis overstated the fee bill by $%.2f (current) / $%.2f (venue) on the"
+          % (old_cur - agg["fee_current"], old_ven - agg["fee_venue"]))
+    print("  same legs; the fix below attributes the exit to the price it traded at.")
+    print("")
+    print(tally.line())
 
     print("\n=== PER BOT ===")
     for bot, v in sorted(per_bot.items()):
@@ -288,6 +319,17 @@ def main():
         "legs": int(agg["legs"]), "notionalUsd": round(agg["notional"], 2),
         "feeCurrentUsd": round(agg["fee_current"], 2),
         "feeVenueUsd": round(agg["fee_venue"], 2),
+        "exitBasis": {
+            "rule": "exit fee charged at the leg's own exit price",
+            "observedCurrentPrice": tally.counts["observed"],
+            "identityFallback": tally.counts["identity"],
+            "undetermined": tally.counts["undetermined"],
+            "crossChecked": tally.cross_checked,
+            "disagreements": tally.disagreements,
+            "maxAbsDelta": round(tally.max_abs_delta, 4),
+        },
+        "withdrawnBasisFeeCurrentUsd": round(agg["fee_current_oldbasis"], 2),
+        "withdrawnBasisFeeVenueUsd": round(agg["fee_venue_oldbasis"], 2),
         "deltaUsd": round(agg["delta"], 2),
         "signFlips": len(flips),
         "flips": flips[:200],

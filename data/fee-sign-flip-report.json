@@ -1,13 +1,24 @@
 {
-  "builtAt": "2026-10-22T16:58:17Z",
-  "coveragePct": 99.68,
-  "markets": 4040,
-  "marketsWithFee": 4027,
-  "legs": 12710,
-  "notionalUsd": 137379.97,
-  "feeCurrentUsd": 5024.02,
-  "feeVenueUsd": 4996.97,
-  "deltaUsd": -27.05,
+  "builtAt": "2026-11-03T02:07:51Z",
+  "coveragePct": 99.69,
+  "markets": 4130,
+  "marketsWithFee": 4117,
+  "legs": 12849,
+  "notionalUsd": 140210.39,
+  "feeCurrentUsd": 3725.38,
+  "feeVenueUsd": 3698.53,
+  "exitBasis": {
+    "rule": "exit fee charged at the leg's own exit price",
+    "observedCurrentPrice": 8988,
+    "identityFallback": 0,
+    "undetermined": 0,
+    "crossChecked": 8988,
+    "disagreements": 1,
+    "maxAbsDelta": 0.1354
+  },
+  "withdrawnBasisFeeCurrentUsd": 5186.78,
+  "withdrawnBasisFeeVenueUsd": 5159.2,
+  "deltaUsd": -26.85,
   "signFlips": 2,
   "flips": [
     {
@@ -16,10 +27,10 @@
       "price": 0.405,
       "shares": 12.31,
       "pnl": 0.25,
-      "feeCurrent": 0.2374,
-      "feeVenue": 0.2967,
-      "netCurrent": 0.0126,
-      "netVenue": -0.0467
+      "feeCurrent": 0.2391,
+      "feeVenue": 0.2988,
+      "netCurrent": 0.0109,
+      "netVenue": -0.0488
     },
     {
       "bot": "BANKROLL_200",
@@ -34,7 +45,7 @@
     }
   ],
   "baseFeeValues": {
-    "1000.0": 12392,
+    "1000.0": 12531,
     "0.0": 318
   },
   "skipped": {
@@ -42,84 +53,84 @@
   },
   "perBot": {
     "STANDARD": {
-      "legs": 10204,
-      "deltaUsd": -20.87
+      "legs": 10264,
+      "deltaUsd": -16.33
     },
     "BANKROLL_200": {
-      "legs": 2506,
-      "deltaUsd": -6.18
+      "legs": 2585,
+      "deltaUsd": -10.53
     }
   },
   "perCategory": {
     "other": {
-      "legs": 2204,
+      "legs": 2251,
       "rateOurs": 0.05,
       "rateDocs": 0.05,
-      "feeOursUsd": 561.77,
-      "feeDocsUsd": 573.21,
-      "deltaUsd": 11.44
+      "feeOursUsd": 664.09,
+      "feeDocsUsd": 678.59,
+      "deltaUsd": 14.51
     },
     "sports": {
-      "legs": 6848,
+      "legs": 6927,
       "rateOurs": 0.05,
       "rateDocs": 0.05,
-      "feeOursUsd": 1760.11,
-      "feeDocsUsd": 1760.59,
+      "feeOursUsd": 2072.84,
+      "feeDocsUsd": 2073.32,
       "deltaUsd": 0.48
     },
     "economics": {
       "legs": 382,
       "rateOurs": 0.05,
       "rateDocs": 0.05,
-      "feeOursUsd": 74.3,
-      "feeDocsUsd": 74.3,
+      "feeOursUsd": 106.56,
+      "feeDocsUsd": 106.56,
       "deltaUsd": 0.0
     },
     "tech": {
       "legs": 263,
       "rateOurs": 0.05,
       "rateDocs": 0.04,
-      "feeOursUsd": 71.93,
-      "feeDocsUsd": 57.54,
-      "deltaUsd": -14.39
+      "feeOursUsd": 99.3,
+      "feeDocsUsd": 79.44,
+      "deltaUsd": -19.86
     },
     "culture": {
       "legs": 150,
       "rateOurs": 0.05,
       "rateDocs": 0.05,
-      "feeOursUsd": 24.06,
-      "feeDocsUsd": 24.06,
+      "feeOursUsd": 26.64,
+      "feeDocsUsd": 26.64,
       "deltaUsd": 0.0
     },
     "crypto": {
-      "legs": 309,
+      "legs": 313,
       "rateOurs": 0.07,
       "rateDocs": 0.07,
-      "feeOursUsd": 82.45,
-      "feeDocsUsd": 82.45,
+      "feeOursUsd": 142.22,
+      "feeDocsUsd": 142.22,
       "deltaUsd": 0.0
     },
     "weather": {
       "legs": 1481,
       "rateOurs": 0.05,
       "rateDocs": 0.05,
-      "feeOursUsd": 267.55,
-      "feeDocsUsd": 267.55,
+      "feeOursUsd": 283.6,
+      "feeDocsUsd": 283.6,
       "deltaUsd": 0.0
     },
     "politics": {
-      "legs": 1073,
+      "legs": 1082,
       "rateOurs": 0.04,
       "rateDocs": 0.04,
-      "feeOursUsd": 268.33,
-      "feeDocsUsd": 247.96,
-      "deltaUsd": -20.38
+      "feeOursUsd": 330.14,
+      "feeDocsUsd": 308.15,
+      "deltaUsd": -21.98
     }
   },
-  "lawArtifactFeeUsd": 4694.67,
+  "lawArtifactFeeUsd": 4833.13,
   "lawSource": "https://docs.polymarket.com/trading/fees.md \u2014 fee = C x feeRate x p x (1-p); verified against the docs 100-share Crypto table (p=0.50 -> $1.75 = 100*0.07*0.25)",
   "verdict": "ADOPT",
-  "reason": "aggregate delta $-27.05 >= $25 AND 2 leg(s) flip net sign",
+  "reason": "aggregate delta $-26.85 >= $25 AND 2 leg(s) flip net sign",
   "bars": {
     "minCoveragePct": 90.0,
     "minDeltaUsd": 25.0
