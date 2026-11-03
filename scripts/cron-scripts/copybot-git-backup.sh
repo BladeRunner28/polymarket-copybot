@@ -53,6 +53,7 @@ for repo in "${REPOS[@]}"; do
   # so the failure cost two days of backup. Unstage anything that big and SAY SO:
   # the rest of the snapshot still lands and the log names what was left behind.
   oversized=()
+  oversized_paths=()
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     [ -f "$f" ] || continue
@@ -60,10 +61,32 @@ for repo in "${REPOS[@]}"; do
     if [ "$sz" -gt 95000000 ]; then
       git reset -q HEAD -- "$f" 2>/dev/null || git rm -q --cached --ignore-unmatch -- "$f" 2>/dev/null
       oversized+=("$f ($(( sz / 1000000 )) MB)")
+      oversized_paths+=("$f:$sz")
     fi
   done < <(git diff --cached --name-only)
+
+  # Exclusion LEDGER (2026-11-03). Before this, an oversize exclusion was one ⚠️ line and
+  # then "✅ backed up N files" on the very next line: measured 2026-11-02, data/wallet-sells.jsonl
+  # (101 MB) was unstaged and the run still read as a clean backup. The file is a TRACKED tape the
+  # user wants in the repo, its last pushed copy is the 2026-11-01 commit (74.6 MB / 270,809 rows)
+  # while the file on disk is 108.9 MB / 395,616 rows — so from that night on, every night repeats
+  # the exclusion and nothing recorded how many nights. The ledger does: it counts by DATE, drops
+  # an entry that fits again, and errors loudly rather than resetting to night 1. The policy for
+  # large tracked artefacts is the parked card git-backup-large-artifact-policy (Lane A); this only
+  # makes what the guard is already doing visible and dated.
+  incomplete=0
   if [ "${#oversized[@]}" -gt 0 ]; then
     echo "⚠️  ${name}: ${#oversized[@]} file(s) over GitHub's 100 MB limit were left OUT of this commit — ${oversized[*]} (move them off this repo or add a .gitignore rule)"
+    incomplete=1
+    BACKUP_EXCLUSION_LEDGER="$repo/.backup-exclusions.json" \
+      python3 "$(dirname "$0")/../backup-exclusion-ledger.py" --today "$(date +%F)" "${oversized_paths[@]}"
+    if [ $? -ne 0 ]; then
+      echo "⚠️  ${name}: could not record the exclusion ledger — the backup is INCOMPLETE and the record of for how long is UNKNOWN"
+    fi
+  else
+    # nothing over the guard: close any entry whose file is staged again (or was untracked)
+    BACKUP_EXCLUSION_LEDGER="$repo/.backup-exclusions.json" \
+      python3 "$(dirname "$0")/../backup-exclusion-ledger.py" --today "$(date +%F)"
   fi
 
   n_files=$(git diff --cached --name-only | wc -l | tr -d ' ')
@@ -76,7 +99,12 @@ for repo in "${REPOS[@]}"; do
 
   if git push origin "$branch" >/dev/null 2>&1; then
     summary=$(git show --stat --format="%h %s" HEAD | head -1)
-    echo "✅ ${name}: backed up ${n_files} files → GitHub (${summary})"
+    if [ "${incomplete:-0}" -eq 1 ]; then
+      # A push that knowingly left a tracked file behind must not read as "✅ backed up".
+      echo "⚠️  ${name}: pushed ${n_files} files → GitHub (${summary}) — but this backup is INCOMPLETE (${#oversized[@]} file(s) on disk only, see the exclusion line above)"
+    else
+      echo "✅ ${name}: backed up ${n_files} files → GitHub (${summary})"
+    fi
     changed=$((changed + 1))
   else
     echo "❌ ${name}: commit made locally but PUSH FAILED — run: cd ${repo} && git push origin ${branch}"
