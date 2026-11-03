@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-01T13:20:37Z",
+  "generated_at": "2026-11-02T13:20:37Z",
   "mode": "forward",
   "approval_date": "2026-10-23",
   "window": "n-driven (no calendar deadline)",
   "superseded_shadow_days": 14,
-  "days_elapsed": 9.56,
+  "days_elapsed": 10.56,
   "bot": "STANDARD",
   "rule": {
     "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
@@ -21,22 +21,22 @@
   },
   "bands": {
     "at_risk_2_24h": {
-      "legs": 21,
-      "markets": 21,
-      "notional": 279.0,
-      "pnl": -104.41,
-      "roi": -0.3742293906810037,
-      "resolved_legs": 21,
-      "resolved_roi": -0.3742293906810037
+      "legs": 26,
+      "markets": 26,
+      "notional": 324.0,
+      "pnl": -114.04,
+      "roi": -0.35197530864197535,
+      "resolved_legs": 26,
+      "resolved_roi": -0.35197530864197535
     },
     "kept_24h_plus": {
-      "legs": 21,
-      "markets": 17,
-      "notional": 402.78,
-      "pnl": 691.07,
-      "roi": 1.7157505337901582,
-      "resolved_legs": 21,
-      "resolved_roi": 1.7157505337901582
+      "legs": 23,
+      "markets": 19,
+      "notional": 440.78,
+      "pnl": 761.18,
+      "roi": 1.7268932347202683,
+      "resolved_legs": 23,
+      "resolved_roi": 1.7268932347202683
     },
     "under_live_floor_lt_2h": {
       "legs": 0,
@@ -48,13 +48,13 @@
       "resolved_roi": null
     }
   },
-  "opened_legs_in_band": 24,
+  "opened_legs_in_band": 28,
   "trailing_rate_window_days": 14,
-  "trailing_openings_per_day": 2.36,
-  "projected_days_to_n": 55,
+  "trailing_openings_per_day": 2.64,
+  "projected_days_to_n": 47,
   "unclassified_ttr": 0,
   "verdict": "ACCUMULATING",
-  "reason": "21 of 150 settled band legs (from 24 opened); 129 to go (~55 days at the trailing-14d rate of 2.36 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven",
+  "reason": "26 of 150 settled band legs (from 28 opened); 124 to go (~47 days at the trailing-14d rate of 2.64 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven",
   "not_yet_evaluable": [
     "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
     "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"

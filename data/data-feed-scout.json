@@ -1,130 +1,130 @@
 {
-  "generated_at": "2026-10-29T15:55:11",
-  "date": "2026-10-29",
+  "generated_at": "2026-11-02T07:01:38",
+  "date": "2026-11-02",
   "sources": [
     {
       "source": "reddit:r/datasets new",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 61225B",
       "url": "https://www.reddit.com/r/datasets/new/.rss",
       "entries": 25,
       "ok": true
     },
     {
       "source": "reddit:r/datasets top/week",
-      "status": "cache (0.0h old)",
+      "status": "STALE cache (88.1h old) after HTTP 429",
       "url": "https://www.reddit.com/r/datasets/top/.rss?t=week",
       "entries": 21,
       "ok": true
     },
     {
       "source": "reddit:r/datasets search: prediction",
-      "status": "HTTP 200 78690B",
+      "status": "STALE cache (88.1h old) after HTTP 429",
       "url": "https://www.reddit.com/r/datasets/search.rss?q=prediction&restrict_sr=1&sort=new&t=year",
       "entries": 25,
       "ok": true
     },
     {
       "source": "reddit:r/datasets search: sports",
-      "status": "HTTP 429",
+      "status": "HTTP 200 37248B",
       "url": "https://www.reddit.com/r/datasets/search.rss?q=sports&restrict_sr=1&sort=new&t=year",
-      "entries": 0,
-      "ok": false
+      "entries": 16,
+      "ok": true
     },
     {
       "source": "hf:sports results",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 2B",
       "url": "https://huggingface.co/api/datasets?search=sports%20results&limit=12&sort=downloads&direction=-1",
       "entries": 0,
       "ok": true
     },
     {
       "source": "hf:football fixtures",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 1167B",
       "url": "https://huggingface.co/api/datasets?search=football%20fixtures&limit=12&sort=downloads&direction=-1",
       "entries": 1,
       "ok": true
     },
     {
       "source": "hf:injury",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 15058B",
       "url": "https://huggingface.co/api/datasets?search=injury&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:betting odds",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 1104B",
       "url": "https://huggingface.co/api/datasets?search=betting%20odds&limit=12&sort=downloads&direction=-1",
       "entries": 1,
       "ok": true
     },
     {
       "source": "hf:prediction market",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 14719B",
       "url": "https://huggingface.co/api/datasets?search=prediction%20market&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:news headlines",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 12005B",
       "url": "https://huggingface.co/api/datasets?search=news%20headlines&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:event dataset",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 8242B",
       "url": "https://huggingface.co/api/datasets?search=event%20dataset&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:polling",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 2723B",
       "url": "https://huggingface.co/api/datasets?search=polling&limit=12&sort=downloads&direction=-1",
       "entries": 2,
       "ok": true
     },
     {
       "source": "hf:weather forecast",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 11487B",
       "url": "https://huggingface.co/api/datasets?search=weather%20forecast&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:macro economic",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 12067B",
       "url": "https://huggingface.co/api/datasets?search=macro%20economic&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "arxiv:arXiv q-fin.TR",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 2904B",
       "url": "https://rss.arxiv.org/rss/q-fin.TR",
-      "entries": 0,
+      "entries": 1,
       "ok": true
     },
     {
       "source": "arxiv:arXiv stat.ML",
-      "status": "cache (0.1h old)",
+      "status": "HTTP 200 100381B",
       "url": "https://rss.arxiv.org/rss/stat.ML",
-      "entries": 0,
+      "entries": 47,
       "ok": true
     }
   ],
-  "sources_failed": 1,
+  "sources_failed": 0,
   "counts": {
-    "total": 62,
-    "eligible": 8,
-    "review": 21,
-    "ideas_only": 33
+    "total": 95,
+    "eligible": 10,
+    "review": 26,
+    "ideas_only": 59
   },
   "candidates": [
     {
-      "source": "reddit:r/datasets new",
+      "source": "reddit:r/datasets top/week",
       "title": "[dataset] 1,309 viral events with 19,732 dated timeline events (CC BY 4.0)",
       "url": "https://www.reddit.com/r/datasets/comments/1xfammx/dataset_1309_viral_events_with_19732_dated/",
       "date": "2026-10-25",
@@ -139,13 +139,27 @@
       "status": "eligible",
       "licence_basis": "stated in the reddit post \u2014 VERIFY at the primary host",
       "leak_flags": [],
-      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything.",
-      "also_seen_in": [
-        "reddit:r/datasets top/week"
-      ]
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
       "source": "reddit:r/datasets new",
+      "title": "[self-promotion] Fantasy football league outcomes: 26,500 public league IDs + per-league and per-team results from 8 pre-registered studies (code MIT, data CC BY-NC)",
+      "url": "https://www.reddit.com/r/datasets/comments/1xjn1vh/selfpromotion_fantasy_football_league_outcomes/",
+      "date": "2026-10-30",
+      "relevance": 7,
+      "hits": [
+        "football",
+        "headline"
+      ],
+      "licence": "MIT",
+      "licence_class": "permissive",
+      "status": "eligible",
+      "licence_basis": "stated in the reddit post \u2014 VERIFY at the primary host",
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
       "title": "Free sample of UK and Irish bookmaker odds from OddsRelay, with outcomes matched across bookmakers (CSV, JSON)",
       "url": "https://www.reddit.com/r/datasets/comments/1xbu1fz/free_sample_of_uk_and_irish_bookmaker_odds_from/",
       "date": "2026-10-21",
@@ -174,7 +188,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 103,
+      "downloads": 101,
       "gated": false,
       "tags": [
         "license:cc-by-4.0",
@@ -203,7 +217,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 56,
+      "downloads": 65,
       "gated": false,
       "tags": [
         "task_categories:text-classification",
@@ -231,7 +245,7 @@
       "licence": "cc-by-sa-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 7,
+      "downloads": 5,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -250,7 +264,7 @@
       "source": "huggingface",
       "title": "openthomas/weather-forecasts",
       "url": "https://huggingface.co/datasets/openthomas/weather-forecasts",
-      "date": "2026-10-29",
+      "date": "2026-11-02",
       "relevance": 5,
       "hits": [
         "forecasts",
@@ -259,7 +273,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 2088,
+      "downloads": 1858,
       "gated": false,
       "tags": [
         "license:mit",
@@ -275,10 +289,26 @@
       "note": "licence read from the dataset card (never guessed)"
     },
     {
+      "source": "reddit:r/datasets search: sports",
+      "title": "Open dataset: 612 NHL skaters ranked under two fantasy scoring systems -- 2025\u201326",
+      "url": "https://www.reddit.com/r/datasets/comments/1wfcpbu/open_dataset_612_nhl_skaters_ranked_under_two/",
+      "date": "2026-09-13",
+      "relevance": 4,
+      "hits": [
+        "nhl"
+      ],
+      "licence": "CC BY 4.0",
+      "licence_class": "permissive",
+      "status": "eligible",
+      "licence_basis": "stated in the reddit post \u2014 VERIFY at the primary host",
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
       "source": "huggingface",
       "title": "iiiitips/prediction-market-pro-stats",
       "url": "https://huggingface.co/datasets/iiiitips/prediction-market-pro-stats",
-      "date": "2026-10-26",
+      "date": "2026-11-02",
       "relevance": 4,
       "hits": [
         "sports"
@@ -286,7 +316,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 165,
+      "downloads": 134,
       "gated": false,
       "tags": [
         "language:en",
@@ -314,7 +344,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 80,
+      "downloads": 86,
       "gated": false,
       "tags": [
         "task_categories:time-series-forecasting",
@@ -343,7 +373,7 @@
       "licence": "other",
       "licence_class": "other",
       "status": "review",
-      "downloads": 179,
+      "downloads": 219,
       "gated": false,
       "tags": [
         "license:other",
@@ -371,7 +401,7 @@
       "licence": "other",
       "licence_class": "other",
       "status": "review",
-      "downloads": 53,
+      "downloads": 69,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -387,6 +417,38 @@
       "note": "licence read from the dataset card (never guessed)"
     },
     {
+      "source": "reddit:r/datasets new",
+      "title": "[self-promotion] HNMovies: 2,281 films & documentaries extracted from 49.3M Hacker News comments (2006\u20132026, MIT Parquet/JSONL, updated weekly)",
+      "url": "https://www.reddit.com/r/datasets/comments/1xlrho6/selfpromotion_hnmovies_2281_films_documentaries/",
+      "date": "2026-11-02",
+      "relevance": 3,
+      "hits": [
+        "news"
+      ],
+      "licence": "MIT",
+      "licence_class": "permissive",
+      "status": "review",
+      "licence_basis": "stated in the reddit post \u2014 VERIFY at the primary host",
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets new",
+      "title": "Entering all world law into a git repository",
+      "url": "https://www.reddit.com/r/datasets/comments/1xj2qbw/entering_all_world_law_into_a_git_repository/",
+      "date": "2026-10-30",
+      "relevance": 3,
+      "hits": [
+        "news"
+      ],
+      "licence": "CC0",
+      "licence_class": "other",
+      "status": "review",
+      "licence_basis": "stated in the reddit post \u2014 VERIFY at the primary host",
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
       "source": "huggingface",
       "title": "SuperAGI/llm-vs-prediction-markets",
       "url": "https://huggingface.co/datasets/SuperAGI/llm-vs-prediction-markets",
@@ -398,7 +460,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 289,
+      "downloads": 363,
       "gated": false,
       "tags": [
         "license:cc-by-4.0",
@@ -424,7 +486,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 210,
+      "downloads": 214,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -441,33 +503,6 @@
     },
     {
       "source": "huggingface",
-      "title": "thomaswmitch/kalshi-prediction-markets-betting",
-      "url": "https://huggingface.co/datasets/thomaswmitch/kalshi-prediction-markets-betting",
-      "date": "2025-09-19",
-      "relevance": 3,
-      "hits": [
-        "betting"
-      ],
-      "licence": "mit",
-      "licence_class": "permissive",
-      "status": "review",
-      "downloads": 187,
-      "gated": false,
-      "tags": [
-        "task_categories:other",
-        "language:en",
-        "license:mit",
-        "size_categories:1M<n<10M",
-        "format:parquet",
-        "modality:tabular",
-        "modality:text",
-        "library:datasets"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
       "title": "lowskillcoding/pdata-prediction-markets",
       "url": "https://huggingface.co/datasets/lowskillcoding/pdata-prediction-markets",
       "date": "2026-10-07",
@@ -478,7 +513,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 114,
+      "downloads": 123,
       "gated": false,
       "tags": [
         "language:en",
@@ -495,6 +530,33 @@
     },
     {
       "source": "huggingface",
+      "title": "thomaswmitch/kalshi-prediction-markets-betting",
+      "url": "https://huggingface.co/datasets/thomaswmitch/kalshi-prediction-markets-betting",
+      "date": "2025-09-19",
+      "relevance": 3,
+      "hits": [
+        "betting"
+      ],
+      "licence": "mit",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 114,
+      "gated": false,
+      "tags": [
+        "task_categories:other",
+        "language:en",
+        "license:mit",
+        "size_categories:1M<n<10M",
+        "format:parquet",
+        "modality:tabular",
+        "modality:text",
+        "library:datasets"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "bguzzo2k/nyt_100y_news_headlines",
       "url": "https://huggingface.co/datasets/bguzzo2k/nyt_100y_news_headlines",
       "date": "2026-03-22",
@@ -505,7 +567,7 @@
       "licence": "apache-2.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 209,
+      "downloads": 210,
       "gated": false,
       "tags": [
         "language:en",
@@ -532,7 +594,7 @@
       "licence": "bsd-3-clause-clear",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 173,
+      "downloads": 182,
       "gated": false,
       "tags": [
         "license:bsd-3-clause-clear",
@@ -559,7 +621,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 101,
+      "downloads": 114,
       "gated": false,
       "tags": [
         "task_categories:text-classification",
@@ -576,6 +638,33 @@
     },
     {
       "source": "huggingface",
+      "title": "tugrulkaya/turkish-news-headlines",
+      "url": "https://huggingface.co/datasets/tugrulkaya/turkish-news-headlines",
+      "date": "2025-10-25",
+      "relevance": 3,
+      "hits": [
+        "news"
+      ],
+      "licence": "cc-by-4.0",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 51,
+      "gated": false,
+      "tags": [
+        "task_categories:text-classification",
+        "task_ids:multi-class-classification",
+        "multilinguality:monolingual",
+        "language:tr",
+        "license:cc-by-4.0",
+        "size_categories:1K<n<10K",
+        "format:parquet",
+        "modality:tabular"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "labofsahil/github-event-dataset-2019",
       "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2019",
       "date": "2025-02-16",
@@ -586,7 +675,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 1317,
+      "downloads": 1321,
       "gated": false,
       "tags": [
         "license:mit",
@@ -613,7 +702,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 757,
+      "downloads": 646,
       "gated": "auto",
       "tags": [
         "task_categories:audio-classification",
@@ -640,7 +729,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 555,
+      "downloads": 550,
       "gated": false,
       "tags": [
         "license:mit",
@@ -663,7 +752,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 232,
+      "downloads": 247,
       "gated": false,
       "tags": [
         "license:mit",
@@ -674,6 +763,33 @@
         "library:dask",
         "library:mlcroissant",
         "library:polars"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "Sujal08/cip-forecasting-Macroeconomic_Indicators_dataset",
+      "url": "https://huggingface.co/datasets/Sujal08/cip-forecasting-Macroeconomic_Indicators_dataset",
+      "date": "2025-07-18",
+      "relevance": 3,
+      "hits": [
+        "forecasting"
+      ],
+      "licence": "apache-2.0",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 17,
+      "gated": false,
+      "tags": [
+        "license:apache-2.0",
+        "size_categories:n<1K",
+        "format:csv",
+        "modality:tabular",
+        "modality:text",
+        "library:datasets",
+        "library:pandas",
+        "library:mlcroissant"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -698,7 +814,7 @@
       ]
     },
     {
-      "source": "reddit:r/datasets new",
+      "source": "reddit:r/datasets top/week",
       "title": "Open datasets: every open U.S. class-action settlement (288 cases), joined to the defendants' federal lobbying and PAC spending (236 companies) - free, CC-BY",
       "url": "https://www.reddit.com/r/datasets/comments/1xdy1ov/open_datasets_every_open_us_classaction/",
       "date": "2026-10-24",
@@ -711,10 +827,7 @@
       "status": "review",
       "licence_basis": "stated in the reddit post \u2014 VERIFY at the primary host",
       "leak_flags": [],
-      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything.",
-      "also_seen_in": [
-        "reddit:r/datasets top/week"
-      ]
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
       "source": "huggingface",
@@ -730,7 +843,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 182,
+      "downloads": 183,
       "gated": false,
       "tags": [
         "task_categories:text-classification",
@@ -757,7 +870,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 3816,
+      "downloads": 6082,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -786,7 +899,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 67,
+      "downloads": 70,
       "gated": "auto",
       "tags": [
         "task_categories:time-series-forecasting",
@@ -803,6 +916,33 @@
     },
     {
       "source": "huggingface",
+      "title": "opendoc-pakistan/pakistan_macroeconomic_indicators",
+      "url": "https://huggingface.co/datasets/opendoc-pakistan/pakistan_macroeconomic_indicators",
+      "date": "2026-07-05",
+      "relevance": 2,
+      "hits": [
+        "gdp"
+      ],
+      "licence": "cc-by-4.0",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 19,
+      "gated": false,
+      "tags": [
+        "language:en",
+        "language:ur",
+        "license:cc-by-4.0",
+        "size_categories:1K<n<10K",
+        "region:us",
+        "economics",
+        "macroeconomics",
+        "gdp"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "electricsheepafrica/africa-rwanda-macro-economic-aggregates-gdp-national-accounts-2025-b364465a",
       "url": "https://huggingface.co/datasets/electricsheepafrica/africa-rwanda-macro-economic-aggregates-gdp-national-accounts-2025-b364465a",
       "date": "2026-08-11",
@@ -813,7 +953,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 18,
+      "downloads": 11,
       "gated": false,
       "tags": [
         "task_categories:tabular-classification",
@@ -846,26 +986,27 @@
     },
     {
       "source": "huggingface",
-      "title": "THULab/crypto_prediction_market_signals",
-      "url": "https://huggingface.co/datasets/THULab/crypto_prediction_market_signals",
-      "date": "2026-09-17",
+      "title": "mktgap/prediction-market-reference-data",
+      "url": "https://huggingface.co/datasets/mktgap/prediction-market-reference-data",
+      "date": "2026-10-29",
       "relevance": 1,
       "hits": [
-        "timeseries"
+        "resolution"
       ],
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 70,
+      "downloads": 86,
       "gated": false,
       "tags": [
+        "language:en",
+        "language:es",
         "license:cc-by-4.0",
-        "modality:timeseries",
-        "region:us",
-        "tsfile",
-        "timeseries",
-        "format:tsfile",
-        "time-series"
+        "size_categories:1K<n<10K",
+        "format:csv",
+        "modality:text",
+        "library:datasets",
+        "library:pandas"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -910,6 +1051,45 @@
       "leak_flags": [
         "outcome columns present \u2014 check they are labels, not features"
       ],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything.",
+      "also_seen_in": [
+        "reddit:r/datasets search: sports"
+      ]
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "KashRock API is in Public Beta \u2014 normalized player props + DFS + esports + odds (looking for testers)",
+      "url": "https://www.reddit.com/r/datasets/comments/1pn9csp/kashrock_api_is_in_public_beta_normalized_player/",
+      "date": "2025-12-15",
+      "relevance": 10,
+      "hits": [
+        "esports",
+        "event",
+        "odds"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets new",
+      "title": "[self-promotion] 90+ US stock datasets: live prices (nasdaq & nyse), sec filings, financials and earnings, darkpool / insider / politician trades",
+      "url": "https://www.reddit.com/r/datasets/comments/1xiwsoa/selfpromotion_90_us_stock_datasets_live_prices/",
+      "date": "2026-10-29",
+      "relevance": 7,
+      "hits": [
+        "calendar",
+        "news",
+        "social"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
       "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
@@ -942,7 +1122,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 121,
+      "downloads": 125,
       "gated": false,
       "tags": [
         "size_categories:n<1K",
@@ -968,7 +1148,7 @@
       "licence": "cc-by-nc-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 92,
+      "downloads": 100,
       "gated": false,
       "tags": [
         "task_categories:question-answering",
@@ -997,7 +1177,7 @@
       "licence": "cc-by-nc-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 234,
+      "downloads": 243,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -1033,7 +1213,7 @@
       "source": "huggingface",
       "title": "nuuuwan/lk-dmc-weather-forecasts-chunks",
       "url": "https://huggingface.co/datasets/nuuuwan/lk-dmc-weather-forecasts-chunks",
-      "date": "2026-10-29",
+      "date": "2026-11-02",
       "relevance": 5,
       "hits": [
         "forecasts",
@@ -1042,17 +1222,10 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 1673,
+      "downloads": 1892,
       "gated": false,
       "tags": [
-        "size_categories:10K<n<100K",
-        "format:parquet",
-        "modality:tabular",
-        "modality:text",
-        "library:datasets",
-        "library:pandas",
-        "library:polars",
-        "library:mlcroissant"
+        "region:us"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -1061,7 +1234,7 @@
       "source": "huggingface",
       "title": "nuuuwan/lk-dmc-weather-forecasts-docs",
       "url": "https://huggingface.co/datasets/nuuuwan/lk-dmc-weather-forecasts-docs",
-      "date": "2026-10-29",
+      "date": "2026-11-02",
       "relevance": 5,
       "hits": [
         "forecasts",
@@ -1070,16 +1243,9 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 1364,
+      "downloads": 1514,
       "gated": false,
       "tags": [
-        "size_categories:1K<n<10K",
-        "format:parquet",
-        "modality:text",
-        "library:datasets",
-        "library:pandas",
-        "library:polars",
-        "library:mlcroissant",
         "region:us"
       ],
       "leak_flags": [],
@@ -1098,7 +1264,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 179,
+      "downloads": 347,
       "gated": false,
       "tags": [
         "region:us"
@@ -1119,7 +1285,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 115,
+      "downloads": 122,
       "gated": false,
       "tags": [
         "language:en",
@@ -1147,7 +1313,7 @@
       "licence": "cc-by-nc-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 41,
+      "downloads": 47,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -1176,7 +1342,10 @@
       "status": "ideas-only",
       "licence_basis": null,
       "leak_flags": [],
-      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything.",
+      "also_seen_in": [
+        "reddit:r/datasets search: sports"
+      ]
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1186,6 +1355,150 @@
       "relevance": 4,
       "hits": [
         "football"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "What data do you wish was easier to find?",
+      "url": "https://www.reddit.com/r/datasets/comments/1wvu7kq/what_data_do_you_wish_was_easier_to_find/",
+      "date": "2026-10-02",
+      "relevance": 4,
+      "hits": [
+        "sports"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "What would make this video-game location dataset more useful?",
+      "url": "https://www.reddit.com/r/datasets/comments/1visdy0/what_would_make_this_videogame_location_dataset/",
+      "date": "2026-08-08",
+      "relevance": 4,
+      "hits": [
+        "sports"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "[self-promotion] Made a website to visualize Statsbomb Open Data - Feedback Highly Appreciated",
+      "url": "https://www.reddit.com/r/datasets/comments/1sj1ymj/selfpromotion_made_a_website_to_visualize/",
+      "date": "2026-04-12",
+      "relevance": 4,
+      "hits": [
+        "sports"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "Looking for Botola Pro (Morocco) Football API for a Student Project \ud83c\uddf2\ud83c\udde6",
+      "url": "https://www.reddit.com/r/datasets/comments/1sdi621/looking_for_botola_pro_morocco_football_api_for_a/",
+      "date": "2026-04-05",
+      "relevance": 4,
+      "hits": [
+        "football"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "[Dataset] [Soccer] [Sports Data] 10 Year Dataset: Top-5 European Leagues Match and Player Statistics (2015/16\u2013Present)",
+      "url": "https://www.reddit.com/r/datasets/comments/1qyonhf/dataset_soccer_sports_data_10_year_dataset_top5/",
+      "date": "2026-02-07",
+      "relevance": 4,
+      "hits": [
+        "soccer"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "Creating datasets for physical activities, what sensors?",
+      "url": "https://www.reddit.com/r/datasets/comments/1qer6uw/creating_datasets_for_physical_activities_what/",
+      "date": "2026-01-16",
+      "relevance": 4,
+      "hits": [
+        "sports"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "I made a free tool to extract tables from any webpage (Wikipedia, gov sites, etc.)",
+      "url": "https://www.reddit.com/r/datasets/comments/1qe2uyp/i_made_a_free_tool_to_extract_tables_from_any/",
+      "date": "2026-01-16",
+      "relevance": 4,
+      "hits": [
+        "sports"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "I\u2019m trying to \"Moneyball\" US High Schools to see which ones are actually D1 athlete factories. Is there a clean dataset for this?",
+      "url": "https://www.reddit.com/r/datasets/comments/1ps5qjl/im_trying_to_moneyball_us_high_schools_to_see/",
+      "date": "2025-12-21",
+      "relevance": 4,
+      "hits": [
+        "sport"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "(Paid) Need interesting sports, culture and politics datasets for tool I am building",
+      "url": "https://www.reddit.com/r/datasets/comments/1ovgfzl/paid_need_interesting_sports_culture_and_politics/",
+      "date": "2025-11-12",
+      "relevance": 4,
+      "hits": [
+        "sports"
       ],
       "licence": null,
       "licence_class": "none",
@@ -1207,7 +1520,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 77,
+      "downloads": 78,
       "gated": false,
       "tags": [
         "size_categories:1K<n<10K",
@@ -1221,6 +1534,22 @@
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Chronos-2: A foundation model for multivariate time series forecasting",
+      "url": "https://arxiv.org/abs/2610.41956",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 4,
+      "hits": [
+        "forecasting",
+        "time series"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1255,6 +1584,22 @@
       "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
+      "source": "reddit:r/datasets search: sports",
+      "title": "Hyrox publishes mat-level splits for every finisher, and the transition zones are separable from them",
+      "url": "https://www.reddit.com/r/datasets/comments/1vtooy4/hyrox_publishes_matlevel_splits_for_every/",
+      "date": "2026-08-20",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
       "source": "huggingface",
       "title": "lwaekfjlk/prediction-market-news",
       "url": "https://huggingface.co/datasets/lwaekfjlk/prediction-market-news",
@@ -1266,7 +1611,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 742,
+      "downloads": 651,
       "gated": false,
       "tags": [
         "region:us"
@@ -1286,7 +1631,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 181,
+      "downloads": 164,
       "gated": false,
       "tags": [
         "size_categories:10M<n<100M",
@@ -1313,7 +1658,7 @@
       "licence": "cc-by-nc-sa-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 60,
+      "downloads": 71,
       "gated": false,
       "tags": [
         "language:uk",
@@ -1330,6 +1675,33 @@
     },
     {
       "source": "huggingface",
+      "title": "azminetoushikwasi/news-headlines-CC-FF",
+      "url": "https://huggingface.co/datasets/azminetoushikwasi/news-headlines-CC-FF",
+      "date": "2024-07-15",
+      "relevance": 3,
+      "hits": [
+        "news"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "downloads": 58,
+      "gated": false,
+      "tags": [
+        "size_categories:10K<n<100K",
+        "format:parquet",
+        "modality:text",
+        "library:datasets",
+        "library:pandas",
+        "library:mlcroissant",
+        "library:polars",
+        "region:us"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "yunfanlu/RGB-Event-ISP-Dataset",
       "url": "https://huggingface.co/datasets/yunfanlu/RGB-Event-ISP-Dataset",
       "date": "2026-04-27",
@@ -1340,7 +1712,7 @@
       "licence": "cc-by-nc-sa-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 8833,
+      "downloads": 9054,
       "gated": false,
       "tags": [
         "license:cc-by-nc-sa-4.0",
@@ -1367,7 +1739,7 @@
       "licence": "cc-by-nc-sa-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 1504,
+      "downloads": 1465,
       "gated": false,
       "tags": [
         "license:cc-by-nc-sa-4.0",
@@ -1391,7 +1763,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 384,
+      "downloads": 401,
       "gated": false,
       "tags": [
         "size_categories:1B<n<10B",
@@ -1418,7 +1790,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 351,
+      "downloads": 355,
       "gated": false,
       "tags": [
         "size_categories:100M<n<1B",
@@ -1428,33 +1800,6 @@
         "library:dask",
         "library:mlcroissant",
         "library:polars",
-        "region:us"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
-      "title": "labofsahil/github-event-dataset-2022",
-      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2022",
-      "date": "2025-11-04",
-      "relevance": 3,
-      "hits": [
-        "event"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "downloads": 262,
-      "gated": false,
-      "tags": [
-        "size_categories:1B<n<10B",
-        "format:parquet",
-        "modality:text",
-        "library:datasets",
-        "library:dask",
-        "library:polars",
-        "library:mlcroissant",
         "region:us"
       ],
       "leak_flags": [],
@@ -1472,7 +1817,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 238,
+      "downloads": 273,
       "gated": false,
       "tags": [
         "size_categories:1B<n<10B",
@@ -1489,9 +1834,9 @@
     },
     {
       "source": "huggingface",
-      "title": "labofsahil/github-event-dataset-2020",
-      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2020",
-      "date": "2025-10-22",
+      "title": "labofsahil/github-event-dataset-2022",
+      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2022",
+      "date": "2025-11-04",
       "relevance": 3,
       "hits": [
         "event"
@@ -1499,20 +1844,62 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 150,
+      "downloads": 272,
       "gated": false,
       "tags": [
-        "size_categories:100M<n<1B",
+        "size_categories:1B<n<10B",
         "format:parquet",
         "modality:text",
         "library:datasets",
         "library:dask",
-        "library:mlcroissant",
         "library:polars",
+        "library:mlcroissant",
         "region:us"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "labofsahil/github-event-dataset-2025",
+      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2025",
+      "date": "2026-01-14",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "downloads": 162,
+      "gated": false,
+      "tags": [
+        "size_categories:1B<n<10B",
+        "format:parquet",
+        "modality:text",
+        "library:datasets",
+        "library:dask",
+        "library:polars",
+        "library:mlcroissant",
+        "region:us"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "A Unified Framework for Probability Estimation of Data-Dependent Events",
+      "url": "https://arxiv.org/abs/2610.41244",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1574,7 +1961,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 164,
+      "downloads": 198,
       "gated": false,
       "tags": [
         "arxiv:2603.21768",
@@ -1585,6 +1972,67 @@
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Near-Optimal First-Order Regret for Bandits with Feedback Graphs",
+      "url": "https://arxiv.org/abs/2610.40861",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 2,
+      "hits": [
+        "yield"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Where, When, and How Many Bits? Scaling Laws for SGD with Stochastic Rounding",
+      "url": "https://arxiv.org/abs/2610.41074",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 2,
+      "hits": [
+        "schedule"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "On Statistical-Computational Gaps in Graph Combinatorial Testing Problems",
+      "url": "https://arxiv.org/abs/2610.41995",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 2,
+      "hits": [
+        "yield"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "reddit:r/datasets new",
+      "title": "Need vendor recommendations for bulk Alumni data enrichment (Employment & Wealth Screening)",
+      "url": "https://www.reddit.com/r/datasets/comments/1xjmahn/need_vendor_recommendations_for_bulk_alumni_data/",
+      "date": "2026-10-30",
+      "relevance": 1,
+      "hits": [
+        "resolution"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1617,6 +2065,113 @@
       "licence_basis": null,
       "leak_flags": [],
       "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "reddit:r/datasets search: sports",
+      "title": "Esports DFS dataset: CS2 match stats + player game logs + prop outcomes (hit/miss)",
+      "url": "https://www.reddit.com/r/datasets/comments/1ppw296/esports_dfs_dataset_cs2_match_stats_player_game/",
+      "date": "2025-12-18",
+      "relevance": 1,
+      "hits": [
+        "-sample dataset",
+        "esports"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "licence_basis": null,
+      "leak_flags": [],
+      "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
+    },
+    {
+      "source": "arxiv:arXiv q-fin.TR",
+      "title": "Tracking High-Frequency Trading Activity in China and Its Effects on Market Quality",
+      "url": "https://arxiv.org/abs/2610.33400",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 1,
+      "hits": [
+        "revision"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Coarse-Graining Optimal Transport for Rollout-Free Post-Training of Flow Matching",
+      "url": "https://arxiv.org/abs/2610.41269",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 1,
+      "hits": [
+        "resolution"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Conditional Neural SDEs for Financial Time-Series Generation",
+      "url": "https://arxiv.org/abs/2610.41405",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 1,
+      "hits": [
+        "time series"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Certified Behavioral Retention for Continual Adaptation with Held-Out Anchors",
+      "url": "https://arxiv.org/abs/2610.40740",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 1,
+      "hits": [
+        "resolution"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Discovering contemporaneous and lagged causal relations in autocorrelated nonlinear time series datasets",
+      "url": "https://arxiv.org/abs/2003.03685",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 1,
+      "hits": [
+        "time series"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Variational decomposition autoencoding improves disentanglement of latent representations",
+      "url": "https://arxiv.org/abs/2601.06844",
+      "date": "Mon, 02 Nov 2026",
+      "relevance": 1,
+      "hits": [
+        "temporal"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
     }
   ]
 }

@@ -1,25 +1,25 @@
 🔭 **Prediction-Market Repo Scout**
-Scanned 6 queries · 43 new candidates · top 5
+Scanned 6 queries · 40 new candidates · top 5
 **Gate:** watch-only (pipeline busy: Phase A2 outcome review; Phase B — Kelly sizing replaces band siz)
 
-**runesleo/polymarket-toolkit** — 201★ · MIT · TypeScript · pushed 0d ago · relevance 6
-> CLI + AI Skills workflow for profiling Polymarket traders from an address
-> keywords: ai, polymarket, prediction-market
+**tarpboi/Prediction-Markets-Trading-Bot-Toolkits** — 519★ · MIT · Rust · pushed 3d ago · relevance 14
+> Rust trading bots for prediction markets — Polymarket, Kalshi, Limitless. Copy Trading is production-ready; nine more strategies in development on the same exec
+> keywords: arb, arbitrage, kalshi, polymarket, prediction market, prediction-market, trading bot
 
-**gnosis/pm-contracts** — 193★ · LGPL-3.0 · Solidity · pushed 868d ago · relevance 5
-> Collection of smart contracts for the Gnosis prediction market platform.
-> keywords: prediction market, prediction-market
+**Polytutor-AI-Labs/polymarket-trading-bot-strategy** — 183★ · NO-LICENSE · ? · pushed 18d ago · relevance 6
+> PolyTutor overview of Polymarket trading bots: strategy guides (copy trading, market making, dump-hedge, last-seconds, sports), case studies, and engineering no
+> keywords: polymarket, prediction-market, trading bot
 
-**Reddimus/kalshi-cpp** — 184★ · MIT · C++ · pushed 0d ago · relevance 5
-> C++23 client for Kalshi's Predictions API. Created from Kalshi's OpenAPI and AsyncAPI specs, it covers every REST operation and WebSocket channel. The WebSocket
-> keywords: kalshi, prediction-market
+**mvanhorn/last30days-skill** — 66348★ · MIT · Python · pushed 1d ago · relevance 5
+> AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymarket, and the web - then synthesizes a grounded summary
+> keywords: ai, polymarket
 
-**harish-garg/Awesome-Polymarket-Tools** — 175★ · NO-LICENSE · ? · pushed 202d ago · relevance 5
-> This list compiles the best Polymarket tools and resources for traders, developers, and researchers
-> keywords: polymarket, prediction-market
+**Polymarket/agents** — 3807★ · MIT · Python · pushed 727d ago · relevance 5
+> Trade autonomously on Polymarket using AI Agents
+> keywords: ai, polymarket
 
-**holypolyfoundation/bs-p** — 161★ · MIT · C · pushed 114d ago · relevance 5
-> Ultra-low latency AVX-512 Polymarket market-making kernel (Logit Jump-Diffusion + Avellaneda-Stoikov in logit space)
-> keywords: polymarket, prediction-market
+**Polymarket/polymarket-cli** — 2893★ · NO-LICENSE · Rust · pushed 160d ago · relevance 5
+> 
+> keywords: polymarket
 
 Seen list updated. Deep audit only if it maps to an open gap or pipeline has room.
