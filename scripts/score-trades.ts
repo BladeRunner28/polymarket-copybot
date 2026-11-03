@@ -1161,7 +1161,13 @@ async function main() {
           // v52 sweep-dedup (option A): this open copy is now the coalescing
           // anchor — any later fill of the same (wallet, market, outcome)
           // while it stays open collapses into it.
-          openCopyKeys.add(`${t.walletAddress}|${t.marketId}|${t.outcome}`);
+          //
+          // The anchor MUST be the same shape the check reads (line ~350). It was
+          // `${wallet}|${market}|${raw outcome}`, so an outcome whose label
+          // normalises (e.g. "NEMIGA GAMING" -> "NEMIGAGAMING") never matched its
+          // own anchor and the same-run guard silently passed: 5 duplicate pairs
+          // since 2026-10-30, one duplicating a -$35.98 loss.
+          openCopyKeys.add(positionIdentityKey(t.walletAddress, t.marketId, t.outcome));
           legsOpened++;
 
           // Counters and the copy alert belong to a SUCCESSFUL open, so they live
