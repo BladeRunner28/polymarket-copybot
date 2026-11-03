@@ -8,6 +8,37 @@
   ],
   "cards": [
     {
+      "id": "c200-fill-scoreboard-caveat",
+      "title": "Measurement — the C-200 ladder sums are ~3x phantom (68.6% of booked PnL is on legs that were never positions per the resolver)",
+      "column": "Backlog",
+      "effort": "0.5h",
+      "dates": "Proposed 2026-11-03 by the profit review (drafts/profit-recs-20261103.md). Measurement card: nothing applied.",
+      "note": "WHY: the lane books one PaperTrade per dispatched intent at p(fill)=1. The resolver (scripts/c200-fill-resolve.ts -> PaperTrade.fillStatus) has now stamped 7 days of legs, and nobody has read them as a population. MEASURED (scripts/profit-robustness-alloc.py §7, read-only): 413 stamped legs — filled 138 legs / $1,333 / +24.3% ROI / hit 47.4%; unfilled 275 legs / $2,750 / +25.7% / hit 31.2%. Reach rate 33.4% of legs, 32.7% of notional; phantom PnL $707.80 of the $1,032.17 booked (68.6%). The near-identical ROI is the load-bearing part: this is NOT adverse selection (filled legs are not the losers), it is a volume/bookkeeping fact — edge per unit of notional survives, absolute dollars do not. For scale: the taker fee is 27% of booked PnL; the fill verdict is 68.6%. CAVEATS THAT TRAVEL WITH IT: 'unfilled' = the maker level was not reachable inside our 5-MINUTE L2 book window; a resting bid could fill later, so 33.4% is a lower bound on fill. fillBasis was 'book-window' on all stamped legs (the strongest evidence class), and 'unresolved' is never stamped as unfilled. DECISION RULE: print modelled reach-rate and reach-weighted PnL as a ONE-LINE EOD caveat (not a ledger column) when the 30-day reach rate stays <= 50% — the fee card's precedent: booking changed 0 of 30 rung verdicts, a print costs nothing. DO NOT BOOK. REFUTATION: if a 30-day forward reach sample comes back >= 70%, today's 33.4% is an artefact of the 5-minute window and the 3x claim is void. EXPECTED EFFECT $0 PnL; it stops the ladder's direction being read off a sum that is 3x the positions that existed ($128/day claimed vs $46/day reached on the C-200 lane). COST 0.5h to card, 1h if the print is approved (report change needs an explicit yes).",
+      "tags": [
+        "measurement",
+        "fill",
+        "ladder",
+        "scoreboard",
+        "c200"
+      ]
+    },
+    {
+      "id": "lane-scoped-band-factors",
+      "title": "LANE A PROPOSAL — make the C-200 band factors lane-scoped: the short-TTR lane is paying the main lane's dead-zone tax",
+      "column": "Backlog",
+      "effort": "1h",
+      "dates": "Proposed 2026-11-03 by the profit review (drafts/profit-recs-20261103.md). NOT APPROVED — Lane A: changes how much the bot risks.",
+      "note": "WHY: `src/lib/paper.ts::mapBankroll200Size` applies ONE `deadZone` (0.25) to 0.40-0.60 and ONE `premium` (0.5) to >=0.60 for every lane that routes through the C-200 mapping, including short-TTR. The two lanes DISAGREE IN SIGN in the mid band, so the rule's harshest discount lands on the only mid-band cell that clears its confidence interval. MEASURED (scripts/profit-robustness-alloc.py, read-only immutable=1, regime ruleSetVersion>=49, bet-level = first leg per wallet/market/outcome, cost basis = simulatedPositionSize DOLLARS at risk, fee 0.05): short-TTR 0.40-0.60 n=307 / 290 markets / clip $1.73 / +22.6% ROI / hit 58.0% vs hurdle 50.9% / z=2.52 / ex-top-5 +18.0% / CI [+10.2,+34.9] / f*(hit-2SE) +5.4% / break-even entry slippage +8.4c. short-TTR 0.60-0.80 n=152 / 147 markets / clip $3.75 / +24.4% / hit 82.2% vs hurdle 69.8% / z=4.00 / ex-top-5 +22.2% / CI [+14.5,+32.6] / f*(hit-2SE) +23.3% / tolerance +13.5c. CONTRAST: main-lane 0.40-0.60 is -7.1% (CI [-22.8,+8.9]) at $18.00/bet and $3,546 notional — the pooled '0.4-0.6 is dead' finding is a LANE AVERAGE. PROPOSED CHANGE: add two lane-scoped fields (`shortTtrDeadZoneFactor` 0.25 -> 0.5, `shortTtrPremiumFactor` 0.5 -> 2.0), defaulted to today's values so the shipped code is byte-identical until a RuleSet sets them (the v67/v68 pattern). Removing a x0.25 factor multiplies a cell's clip by exactly 4.0, a x0.5 by 2.0, so the step is proportional to measured z (4x where z=4.0, 2x where z=2.5). DECISION RULE: adopt per cell when (a) market-clustered CI excludes zero, (b) ex-top-5 ROI >= +10%, (c) n >= 140 bets — both cells pass. REFUTATION: on the next 150 forward bets, if either cell's CI lower bound falls below 0, or its ex-top-5 ROI falls below +8%, or median realised entry slippage on those cells exceeds 4c (half the smaller cell's 8.4c tolerance; the STANDARD booth measured median +0.50c), revert. EXPECTED EFFECT §5 variant (a'): +$537.41 over the 57.4-day regime = +$9.4/day (+17% of the book's $55.24/day) on +$2,242 notional, clips $3.46 / $15.00, 0.18% of net worth per bet at the top. NOTE what this is NOT: it is the whole size prize available today — no rule change in this book is worth more than ~$10/day at $1.7-$15 clips. COST 1h. Lane A: propose only, nothing applied, no RuleSet written.",
+      "tags": [
+        "lane-a",
+        "sizing",
+        "short-ttr",
+        "band-map",
+        "proposed",
+        "awaiting-approval"
+      ]
+    },
+    {
       "id": "fee-booking-net-ledger",
       "title": "LANE A PROPOSAL — book the taker fee in the ledger and in the ladder advance (27% of measured edge is unbooked)",
       "column": "Backlog",
