@@ -28,6 +28,7 @@ import { computeBenchmarks, beatBlindOnMatchedBasis } from "./benchmarks";
 import { computeEdgeCostSnapshot, edgeCostLines } from "./copy-cost";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
+import { payoffSummary, payoffCompanionText, type Payoff } from "./payoff";
 import { dedupeProposalText } from "./rules";
 import * as fs from "fs";
 import { join } from "path";
@@ -222,16 +223,7 @@ export function oneReason(reason: string): string {
   return dedupeProposalText(String(reason ?? "").split(" | "));
 }
 
-export type Payoff = {
-  n: number;
-  wins: number;
-  winRate: number;
-  avgWin: number;
-  avgLoss: number;
-  roi: number;
-  cost: number;
-  since: Date | null;
-};
+export type { Payoff } from "./payoff";
 
 /**
  * 2026-10-28 (self-audit, prereg Part C): the EOD report printed "Win Rate: 63.5%" with no
@@ -241,50 +233,33 @@ export type Payoff = {
  * 71.7% (Jul) -> 41.2% (Oct) while ROI rose to the best month in the series, because average win went
  * $6.67 -> $23.30 against average loss -$9.05 -> -$12.80.
  *
- * So the win rate and its companions come from ONE function on ONE population (settled `closed`+
- * `resolved` rows, isDemo=false) at ONE level (the trade). It cannot drift from what it is printed
- * beside, because the printed win rate IS this function's output.
+ * 2026-11-03 (winrate-payoff-companion-reporting): the companions are no longer a SECOND line that a
+ * reader could skip. They ride on the win-rate line itself via payoffCompanionText, and the
+ * arithmetic moved to src/lib/payoff.ts — the same function the dashboard home, the rule-change
+ * evidence and the fact sheet use, so the four surfaces cannot drift into different populations.
  */
 export function payoffStats(
   rows: { realizedPnl: number | null; simulatedPositionSize: number; closedAt: Date | null; resolvedAt: Date | null }[]
 ): Payoff {
-  const wins = rows.filter((t) => (t.realizedPnl ?? 0) > 0);
-  const nonWins = rows.filter((t) => (t.realizedPnl ?? 0) <= 0);
-  const pnl = rows.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
-  const cost = rows.reduce((a, t) => a + (t.simulatedPositionSize ?? 0), 0);
-  let since: Date | null = null;
-  for (const t of rows) {
-    const d = t.closedAt ?? t.resolvedAt;
-    if (d && (!since || d < since)) since = d;
-  }
-  return {
-    n: rows.length,
-    wins: wins.length,
-    winRate: rows.length ? wins.length / rows.length : 0,
-    avgWin: wins.length ? wins.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) / wins.length : 0,
-    avgLoss: nonWins.length ? nonWins.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) / nonWins.length : 0,
-    roi: cost ? (100 * pnl) / cost : 0,
-    cost,
-    since,
-  };
+  return payoffSummary(
+    rows.map((t) => ({
+      pnl: t.realizedPnl,
+      stake: t.simulatedPositionSize ?? 0,
+      at: t.closedAt ?? t.resolvedAt,
+    }))
+  );
 }
 
-/** The basis line that must accompany every printed win rate (prereg Part C). */
+/**
+ * The win rate WITH its clock, population, level and payoff companions, on ONE line (prereg Part C).
+ * A caller cannot print the rate without them, because this is the only thing that renders one.
+ */
 export function winRateLine(p: Payoff, openCount: number): string {
-  const pct = (p.winRate * 100).toFixed(1);
-  return `• Win Rate: ${pct}% (LIFETIME settled, n=${p.n}) | Open Positions: ${openCount}`;
-}
-
-/** Payoff companions on the SAME population, clock and level as the win rate above it. */
-export function payoffLine(p: Payoff): string {
-  if (!p.n) return `  ↳ payoff: no settled legs yet — win rate is undefined here, not 0%`;
-  const f = (n: number) => `${n >= 0 ? "+" : "-"}$${Math.abs(n).toFixed(2)}`;
-  const since = p.since ? ` since ${localDate(p.since)}` : "";
+  const rate = p.n ? `• Win Rate: ${(p.winRate * 100).toFixed(1)}%` : "• Win Rate: undefined";
+  const basis = payoffCompanionText(p, localDate);
   return (
-    `  ↳ payoff on those ${p.n.toLocaleString()} settled legs${since}: ` +
-    `avg win ${f(p.avgWin)} / avg loss ${f(p.avgLoss)} / ROI ${p.roi >= 0 ? "+" : ""}${p.roi.toFixed(1)}% ` +
-    `on $${Math.round(p.cost).toLocaleString()} cost — win rate alone cannot separate payoff from ` +
-    `decay; these three can`
+    `${rate} (${basis}) | Open Positions: ${openCount}` +
+    ` — win rate alone cannot separate payoff from decay; the three beside it can`
   );
 }
 
@@ -484,7 +459,6 @@ export async function generateDailyReport(
     `**🤖 STANDARD Bot (Infinite Pool):**`,
     `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)}`,
     winRateLine(stdPayoff, standardOpen.length),
-    payoffLine(stdPayoff),
     sizingRangeLine("STANDARD", sizingRanges),
     `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmt(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
     largestStack && largestStackShare > 0.5
@@ -494,7 +468,6 @@ export async function generateDailyReport(
     `**⚖️ BANKROLL_200 Bot (Compounding Pool):**`,
     `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)}`,
     winRateLine(cmpPayoff, compoundOpen.length),
-    payoffLine(cmpPayoff),
     sizingRangeLine("BANKROLL_200", sizingRanges),
     `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
     ledgerNote,

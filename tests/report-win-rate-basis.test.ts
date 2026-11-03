@@ -11,10 +11,18 @@
  * Second defect fixed in the same line: neither the open nor the lifetime query scoped isDemo, so
  * "Open Positions: 487" counted 18 seeded demo rows (real book: 469). Every other read script in this
  * repo already scopes on isDemo=0.
+ *
+ * 2026-11-03 (winrate-payoff-companion-reporting): the companions used to be a SECOND line, so a caller
+ * (or a reader) could print/repeat the rate without them — and the dashboard, the rule-change evidence
+ * and the fact sheet all did exactly that. They now ride on the SAME line, from the SAME rows, via
+ * src/lib/payoff.ts, which every surface shares. The tests below pin the one-line invariant.
  */
 
 import { describe, it, expect } from "vitest";
-import { payoffStats, winRateLine, payoffLine } from "../src/lib/report";
+import { payoffStats, winRateLine } from "../src/lib/report";
+import { payoffSummary, payoffCompanionText } from "../src/lib/payoff";
+import { proposeRuleChanges } from "../src/lib/rule-updater";
+import { DEFAULT_RULES } from "../src/lib/rules";
 
 type Row = {
   realizedPnl: number | null;
@@ -23,7 +31,10 @@ type Row = {
   resolvedAt: Date | null;
 };
 
-const row = (pnl: number, ntl: number, d = new Date("2026-07-15T00:00:00Z")): Row => ({
+// Noon UTC, not midnight: the EOD report renders `since` on the LOCAL calendar (localDate), so a
+// midnight-UTC fixture would print the previous day in any negative-offset zone and the assertion
+// would be testing the test's timezone instead of the label.
+const row = (pnl: number, ntl: number, d = new Date("2026-07-15T12:00:00Z")): Row => ({
   realizedPnl: pnl,
   simulatedPositionSize: ntl,
   closedAt: d,
@@ -61,30 +72,69 @@ describe("payoffStats: the win rate and its companions come from one population"
     expect(p.n).toBe(0);
     expect(p.winRate).toBe(0);
     expect(p.roi).toBe(0);
-    expect(payoffLine(p)).toMatch(/undefined here, not 0%/);
+    expect(winRateLine(p, 12)).toMatch(/undefined here, not 0%/);
+  });
+
+  it("is the same arithmetic every other surface uses (one source of truth)", () => {
+    const rows = [row(10, 100), row(-30, 100), row(-30, 100)];
+    const viaReport = payoffStats(rows);
+    const viaPayoff = payoffSummary(rows.map((r) => ({ pnl: r.realizedPnl, stake: r.simulatedPositionSize, at: r.closedAt ?? r.resolvedAt })));
+    expect(viaPayoff).toEqual(viaReport);
   });
 });
 
-describe("winRateLine / payoffLine: the label states what it counts", () => {
+describe("winRateLine: the rate cannot be printed without its companions", () => {
   const p = payoffStats([row(10, 100), row(-30, 100), row(-30, 100)]);
 
-  it("names the clock and the denominator in the win-rate line", () => {
+  it("names the clock, the population and the level on the rate's own line", () => {
     const line = winRateLine(p, 469);
     expect(line).toContain("LIFETIME settled");
+    expect(line).toContain("level=leg");
     expect(line).toContain("n=3");
+    expect(line).toContain("since 2026-07-15");
     // the old line said only "Win Rate: 33.3% | Open Positions: N" — no clock, no n
     expect(line).not.toMatch(/^• Win Rate: [\d.]+% \| Open Positions/);
   });
 
-  it("prints average win, average loss and ROI beside the rate", () => {
-    const line = payoffLine(p);
+  it("prints average win, average loss and ROI on that same line — not the line below", () => {
+    const line = winRateLine(p, 469);
     expect(line).toMatch(/avg win \+\$10\.00/);
     expect(line).toMatch(/avg loss -\$30\.00/);
     expect(line).toMatch(/ROI -16\.7%/);
+    expect(line).not.toContain("\n");
   });
 
   it("does not claim a direction it has not measured", () => {
-    // the payoff line must not assert that the rate is falling or the average win rising
-    expect(payoffLine(p)).not.toMatch(/falling win rate|rising average win/);
+    expect(winRateLine(p, 469)).not.toMatch(/falling win rate|rising average win/);
+  });
+});
+
+describe("payoffCompanionText: an unknown stake is n/a, never 0%", () => {
+  it("says ROI n/a when no leg carried a stake", () => {
+    const p = payoffSummary([{ pnl: 5, stake: null, at: null }, { pnl: -2, stake: null, at: null }]);
+    expect(payoffCompanionText(p)).toContain("ROI n/a (no stake recorded)");
+    expect(payoffCompanionText(p)).not.toContain("ROI +0.0%");
+    expect(payoffCompanionText(p)).toContain("n=2");
+  });
+});
+
+describe("rule-change evidence: the threshold move carries its payoff", () => {
+  it("prints avg win / avg loss / ROI beside the win rate that justified the move", () => {
+    const samples = Array.from({ length: 8 }, () => ({
+      pnl: -5,
+      stake: 20,
+      at: new Date("2026-07-20T00:00:00Z"),
+      spread: 0.01,
+      liquidity: 50_000,
+      drift: 0.01,
+      walletScore: 70,
+    }));
+    const proposals = proposeRuleChanges(samples, DEFAULT_RULES);
+    const copyBar = proposals.find((p) => p.field === "minCopyScore");
+    expect(copyBar).toBeDefined();
+    expect(copyBar!.evidence).toContain("win rate 0%");
+    expect(copyBar!.evidence).toContain("avg win");
+    expect(copyBar!.evidence).toContain("avg loss");
+    expect(copyBar!.evidence).toMatch(/ROI -25\.0%/);
   });
 });

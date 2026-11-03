@@ -333,12 +333,44 @@ def bot_facts(db: str, days: int) -> list[str]:
                     out.append(f"  - rail read FAILED: {e}")
             if "botId" in cols:
                 for bot, in cur.execute("SELECT DISTINCT botId FROM PaperTrade WHERE botId IS NOT NULL").fetchall():
+                    # 2026-11-03 (card winrate-payoff-companion-reporting): this line printed a
+                    # LIFETIME win rate with no clock and NO payoff companions -- "win=0.47" sitting
+                    # under a block of rolling windows, with nothing to say which population it was,
+                    # and nothing to separate a payoff shift from a collapse. Same rows, same level
+                    # (the leg), same clock (settled) now carry average win, average loss and ROI,
+                    # and the population is named on the line. Arithmetic matches
+                    # src/lib/payoff.ts, which the EOD report and the dashboard use.
+                    stake_col = "simulatedPositionSize" if "simulatedPositionSize" in cols else None
+                    stake_sel = f"SUM({stake_col})" if stake_col else "NULL"
                     r = cur.execute(
                         f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2), "
-                        f"ROUND(1.0*SUM(CASE WHEN realizedPnl>0 THEN 1 ELSE 0 END)/COUNT(*),3) "
+                        f"ROUND(1.0*SUM(CASE WHEN realizedPnl>0 THEN 1 ELSE 0 END)/COUNT(*),3), "
+                        f"SUM(CASE WHEN realizedPnl>0 THEN 1 ELSE 0 END), "
+                        f"ROUND(SUM(CASE WHEN realizedPnl>0 THEN realizedPnl ELSE 0 END),2), "
+                        f"ROUND(SUM(CASE WHEN realizedPnl<=0 THEN realizedPnl ELSE 0 END),2), "
+                        f"{stake_sel}, MIN({scol}) "
                         f"FROM PaperTrade WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} AND botId=?",
                         (bot,)).fetchone()
-                    out.append(f"  - {bot}: n={r[0]} realized ${r[1] or 0:,.2f} win={r[2]}")
+                    n, realized, wr, wins, win_sum, loss_sum, cost, first = r
+                    wins = wins or 0
+                    win_sum, loss_sum = win_sum or 0.0, loss_sum or 0.0
+                    losses = (n or 0) - wins
+                    avg_win = win_sum / wins if wins else 0.0
+                    avg_loss = loss_sum / losses if losses else 0.0
+                    roi = (100.0 * (realized or 0) / cost) if cost else None
+                    since = (datetime.fromtimestamp(first / 1000, timezone.utc).date().isoformat()
+                             if first else "n/a")
+                    roi_txt = (f"ROI {roi:+.1f}% on ${cost:,.0f} cost" if roi is not None
+                               else "ROI n/a (no stake recorded)")
+                    # The companions are built as ONE fragment so they live on the same printed
+                    # line as the rate (scripts/winrate-companion-census.py enforces that).
+                    companion = (
+                        f"avg win {'+' if avg_win >= 0 else '-'}${abs(avg_win):,.2f} / "
+                        f"avg loss {'+' if avg_loss >= 0 else '-'}${abs(avg_loss):,.2f} / {roi_txt} "
+                        f"-- win rate alone cannot separate payoff from decay")
+                    out.append(
+                        f"  - {bot}: n={n} (LIFETIME settled, isDemo=0, level=leg, since {since}) "
+                        f"realized ${realized or 0:,.2f} | win {100.0 * (wr or 0):.1f}% | {companion}")
         except Exception as e:  # noqa: BLE001
             out.append(f"- PaperTrade read FAILED: {e}")
 

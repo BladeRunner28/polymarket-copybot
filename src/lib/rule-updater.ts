@@ -8,9 +8,15 @@
 import { prisma } from "./db";
 import { getActiveRules, applyRuleChanges, RuleChangeProposal, Rules } from "./rules";
 import { log } from "./redact";
+import { payoffSummary, payoffCompanionText } from "./payoff";
 
 interface ResolvedSample {
   pnl: number;
+  /** Booked stake and settlement time — carried ONLY so the evidence line can print ROI and a
+   *  clock beside its win rate (winrate-payoff-companion-reporting, 2026-11-03). Optional: the
+   *  thresholds below never read either field. */
+  stake?: number | null;
+  at?: Date | null;
   spread: number | null;
   liquidity: number | null;
   drift: number;
@@ -38,6 +44,8 @@ async function collectSamples(): Promise<ResolvedSample[]> {
     });
     samples.push({
       pnl: t.realizedPnl ?? 0,
+      stake: t.simulatedPositionSize,
+      at: t.closedAt ?? t.resolvedAt,
       spread: snap?.spread ?? null,
       liquidity: snap?.liquidity ?? null,
       drift: Math.abs(d.observedTrade.detectedPrice - d.observedTrade.walletEntryPrice),
@@ -104,12 +112,18 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
   // 4) Overall losing streak: raise the copy bar.
   const totalPnl = samples.reduce((a, s) => a + s.pnl, 0);
   const winRate = samples.filter((s) => s.pnl > 0).length / samples.length;
+  // 2026-11-03 (winrate-payoff-companion-reporting): a win rate in the audit trail that justifies a
+  // threshold move was printed alone. Same rows, same level, same clock as the rate above it:
+  // avg win, avg loss and ROI ride with it. REPORTING ONLY — no threshold reads these fields.
+  const payoffEvidence = payoffSummary(
+    samples.map((s) => ({ pnl: s.pnl, stake: s.stake ?? null, at: s.at ?? null }))
+  );
   if (totalPnl < 0 && winRate < 0.45 && rules.minCopyScore < 85) {
     proposals.push({
       field: "minCopyScore",
       newValue: Math.min(85, rules.minCopyScore + 3),
       reason: "Overall paper performance negative — raising copy threshold",
-      evidence: `total PnL ${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}% across ${samples.length} resolved trades`,
+      evidence: `total PnL ${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}% — ${payoffCompanionText(payoffEvidence)}`,
     });
   }
 
@@ -125,7 +139,7 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
       field: "minCopyScore",
       newValue: Math.max(copyFloor, rules.minCopyScore - 2),
       reason: "Strategy is winning — cautiously widening the funnel",
-      evidence: `total PnL +${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}%`,
+      evidence: `total PnL +${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}% — ${payoffCompanionText(payoffEvidence)}`,
     });
   }
 

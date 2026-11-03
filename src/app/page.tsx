@@ -12,6 +12,7 @@ import { effectiveExposureCap, exposureCapNote } from "@/lib/exposure-cap";
 import { c200HourPolicy, etHourNow } from "@/lib/hour-policy";
 import { summarizeDayPnl, combinedTodayPnl, dayWindow, rowsFinishedIn, finishedAt } from "@/lib/day-pnl";
 import { researchCategoryFor } from "@/lib/research-categories";
+import { payoffSummary, payoffCompanionText } from "@/lib/payoff";
 import { readFileSync, readdirSync, statSync } from "fs";
 import path from "path";
 
@@ -39,7 +40,8 @@ export default async function Overview() {
     regulatorySignals,
     recentC200Trades,
     closedTodayC200Rows,
-    openTradesC200
+    openTradesC200,
+    settledLaneRows
   ] = await Promise.all([
       prisma.paperTrade.findMany({ where: { status: "open" } }),
       prisma.paperTrade.findMany({ where: { status: "resolved" } }),
@@ -84,6 +86,15 @@ export default async function Overview() {
       prisma.paperTrade.aggregate({
         where: { botId: 'BANKROLL_200', status: 'open' },
         _sum: { unrealizedPnl: true, simulatedPositionSize: true }
+      }),
+      // 2026-11-03 (winrate-payoff-companion-reporting): the Win Rate cards on this page read
+      // `status: 'resolved'` with NO isDemo filter, while the EOD report reads settled
+      // (closed + resolved, isDemo=0). Two different populations under one heading is the defect
+      // class this card exists for. This query is the EOD's population, and the card prints the
+      // win rate only WITH its payoff companions (payoffSummary), so the two can never disagree.
+      prisma.paperTrade.findMany({
+        where: { status: { in: ['closed', 'resolved'] }, isDemo: false, realizedPnl: { not: null } },
+        select: { botId: true, realizedPnl: true, simulatedPositionSize: true, closedAt: true, resolvedAt: true },
       })
     ]);
 
@@ -97,16 +108,20 @@ export default async function Overview() {
   const stdRealizedPnl = stdResolved.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const stdUnrealizedPnl = stdOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
   const stdTotalPnl = stdRealizedPnl + stdUnrealizedPnl;
-  const stdWinRate = stdResolved.length
-    ? stdResolved.filter((t) => (t.realizedPnl ?? 0) > 0).length / stdResolved.length
-    : 0;
 
   const cmpRealizedPnl = cmpResolved.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
   const cmpUnrealizedPnl = cmpOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
   const cmpTotalPnl = cmpRealizedPnl + cmpUnrealizedPnl;
-  const cmpWinRate = cmpResolved.length
-    ? cmpResolved.filter((t) => (t.realizedPnl ?? 0) > 0).length / cmpResolved.length
-    : 0;
+  // Win rate and companions from ONE population (settled, isDemo=0, level=leg) — the same rows
+  // and the same arithmetic as the EOD report (src/lib/payoff.ts).
+  const lanePayoff = (botId: string) =>
+    payoffSummary(
+      settledLaneRows
+        .filter((t) => t.botId === botId)
+        .map((t) => ({ pnl: t.realizedPnl, stake: t.simulatedPositionSize, at: t.closedAt ?? t.resolvedAt }))
+    );
+  const stdPayoff = lanePayoff("STANDARD");
+  const cmpPayoff = lanePayoff("BANKROLL_200");
 
   const c200Bankroll = bankrolls.find(b => b.botId === "BANKROLL_200") || { principal: 200, cashBalance: 0, realizedPnl: 0 };
   // Today's PnL (2026-09-11 card). c200OpenMtm + todayC200.realized are the two
@@ -772,7 +787,7 @@ export default async function Overview() {
           sub={`realized ${stdRealizedPnl >= 0 ? "+" : ""}$${stdRealizedPnl.toFixed(2)} / open ${stdUnrealizedPnl >= 0 ? "+" : ""}$${stdUnrealizedPnl.toFixed(2)}`}
           tone={stdTotalPnl > 0 ? "pos" : stdTotalPnl < 0 ? "neg" : "neutral"}
         />
-        <Stat label="Win Rate" value={`${(stdWinRate * 100).toFixed(1)}%`} sub={`${stdResolved.length} resolved trades`} tone={stdWinRate >= 0.5 ? "pos" : "neg"} />
+        <Stat label="Win Rate" value={`${(stdPayoff.winRate * 100).toFixed(1)}%`} sub={`${payoffCompanionText(stdPayoff)} — win rate alone cannot separate payoff from decay`} tone={stdPayoff.winRate >= 0.5 ? "pos" : "neg"} />
         <Stat label="Open Positions" value={String(stdOpen.length)} sub="standard bot ($0.25 - $20)" />
         <Stat label="Tracked Wallets" value={String(tracked)} sub={`${today} copy candidates today`} />
         
@@ -782,7 +797,7 @@ export default async function Overview() {
           sub={`realized ${cmpRealizedPnl >= 0 ? "+" : ""}$${cmpRealizedPnl.toFixed(2)} / open ${cmpUnrealizedPnl >= 0 ? "+" : ""}$${cmpUnrealizedPnl.toFixed(2)}`}
           tone={cmpTotalPnl > 0 ? "pos" : cmpTotalPnl < 0 ? "neg" : "neutral"}
         />
-        <Stat label="Win Rate (C-200)" value={`${(cmpWinRate * 100).toFixed(1)}%`} sub={`${cmpResolved.length} resolved trades`} tone={cmpWinRate >= 0.5 ? "pos" : "neg"} />
+        <Stat label="Win Rate (C-200)" value={`${(cmpPayoff.winRate * 100).toFixed(1)}%`} sub={`${payoffCompanionText(cmpPayoff)} — win rate alone cannot separate payoff from decay`} tone={cmpPayoff.winRate >= 0.5 ? "pos" : "neg"} />
         <Stat label="Open Positions" value={String(cmpOpen.length)} sub="compounding bot ($0.10 - $45)" />
         <Stat label="Total Capital" value={`$${(c200Bankroll.principal + cmpTotalPnl).toFixed(2)}`} sub={`starting principal: $${c200Bankroll.principal.toFixed(2)}`} tone="neutral" />
       </div>
