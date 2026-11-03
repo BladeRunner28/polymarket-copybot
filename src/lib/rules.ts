@@ -154,6 +154,17 @@ export interface Rules {
   // received the 3.5x and are sized by the standard path instead.
   c200LongshotBandFloor: number;
   c200DeadZoneBandFactor: number; // 0.40–0.60 entries (default 0.25)
+  // v71 (2026-11-03 profit-recs #1, user-approved): the band map was LANE-BLIND.
+  // mapBankroll200Size applied one deadZone factor and one premium factor to both
+  // the main lane and the short-TTR lane, but the two lanes disagree on exactly
+  // those bands: 0.40-0.60 is -7.1% in main and +22.6% in short-TTR
+  // (CI [+10.2,+34.9], z=2.52, 290 markets); 0.60-0.80 is +24.4% in short-TTR
+  // (CI [+14.5,+32.6], z=4.00, ex-top-5 keeps 86% of the cell, best market 5%).
+  // Those two cells tolerate 8.4c and 13.5c of entry slippage before ROI hits 0.
+  // Defaults EQUAL the shipped constants, so landing this code changes nothing
+  // until a RuleSet version sets the fields (v71 does).
+  shortTtrDeadZoneBandFactor: number; // default 0.25 (same as main)
+  shortTtrPremiumBandFactor: number; // default 0.5 (same as main)
   // v68 (2026-10-27, user-approved "approve standard-maturity-size-factor"): STANDARD sizes
   // FLAT across an axis whose realised ROI spans 9x -- <24h -6.0%, 24-72h +2.0%, >=72h +21.4%
   // -- because the two band factors on its path were neutralised to 1.0 by v41 and Kelly is
@@ -409,6 +420,10 @@ export const DEFAULT_RULES: Rules = {
   standardMaturityHugeHours: 1e9,
   standardMaturityFactorHuge: 1.0,
   c200DeadZoneBandFactor: 0.25,
+  // v71: lane-scoped band factors. Defaults equal the shipped constants, so
+  // behavior is byte-identical until a RuleSet sets them (v71 sets 0.5 / 2.0).
+  shortTtrDeadZoneBandFactor: 0.25,
+  shortTtrPremiumBandFactor: 0.5,
   // v38 Phase-A overlay defaults (live values land in the DB ruleset).
   premiumOverlayEnabled: 1,
   premiumOverlayK: 0.5,

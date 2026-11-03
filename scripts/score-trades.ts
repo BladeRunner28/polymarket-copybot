@@ -9,7 +9,7 @@ import { getActiveRules } from "../src/lib/rules";
 import { scoreTrade } from "../src/lib/scoring/trade";
 import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
-import { openPaperTrade, mapBankroll200Size, applyKellyBandRails } from "../src/lib/paper";
+import { openPaperTrade, mapBankroll200Size, applyKellyBandRails, C200_BAND_DEFAULTS } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
 import { effectiveExposureCap, marketCapDecision, walletCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
@@ -1136,9 +1136,20 @@ async function main() {
             // v54: band multipliers come from the active ruleset (the C-200
             // legacy path applies them inside openPaperTrade; the Kelly path
             // already used them for its rails below this call).
+            // v71 (2026-11-03 profit-recs #1, user-approved): the band map is LANE-SCOPED.
+            // 0.40-0.60 and >=0.60 carry OPPOSITE signs in the two lanes, so one factor pair
+            // for both lanes was an average that fit neither. The main lane keeps its existing
+            // rules fields and shipped premium const; only short-TTR reads the new fields.
             bandFactors: {
               longshot: rules.c200LongshotBandFactor,
-              deadZone: rules.c200DeadZoneBandFactor,
+              deadZone:
+                result.lane === "short_ttr"
+                  ? rules.shortTtrDeadZoneBandFactor
+                  : rules.c200DeadZoneBandFactor,
+              premium:
+                result.lane === "short_ttr"
+                  ? rules.shortTtrPremiumBandFactor
+                  : C200_BAND_DEFAULTS.premium,
               longshotFloor: rules.c200LongshotBandFloor,
             },
             // v68: STANDARD maturity schedule (ruleset-driven; every factor 1.0 = disabled and

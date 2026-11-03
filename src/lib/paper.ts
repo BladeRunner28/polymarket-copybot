@@ -87,10 +87,14 @@ export function mapBankroll200Size(
   entryPrice: number,
   // v54 (2026-09-15 Rec 1, user-approved): band multipliers are rule fields.
   // Omitted → the shipped constants, byte-identical to pre-v54 behavior.
-  factors: { longshot?: number; deadZone?: number; longshotFloor?: number } = {}
+  // v71 (2026-11-03 profit-recs #1, user-approved): `premium` joined the override
+  // set. It was the only band still read straight from C200_BAND_DEFAULTS, so the
+  // >=0.60 tilt could not be lane-scoped at all.
+  factors: { longshot?: number; deadZone?: number; premium?: number; longshotFloor?: number } = {}
 ): number {
   const longshot = factors.longshot ?? C200_BAND_DEFAULTS.longshot;
   const deadZone = factors.deadZone ?? C200_BAND_DEFAULTS.deadZone;
+  const premium = factors.premium ?? C200_BAND_DEFAULTS.premium;
   const longshotFloor = factors.longshotFloor ?? 0; // v67: 0 = no floor (legacy)
   // v67 (profit-recs #1, user-approved 2026-10-24): the long-shot multiplier needs a
   // LOWER bound. It was `entryPrice < 0.2` with nothing underneath, so the ruleset's
@@ -107,7 +111,7 @@ export function mapBankroll200Size(
   // <=0 entries (bad data) fall through at x1.0.
   if (Number.isFinite(entryPrice) && entryPrice > 0) {
     if (entryPrice < 0.2 && entryPrice >= longshotFloor) size *= longshot; // v51 x1.5 → v54 field → v67 floor
-    else if (entryPrice >= 0.6) size *= C200_BAND_DEFAULTS.premium;
+    else if (entryPrice >= 0.6) size *= premium;
     else if (entryPrice >= 0.4) size *= deadZone; // v51 x0.5 → v54 rule field
   }
   return size;
@@ -161,7 +165,7 @@ export async function openPaperTrade(params: {
   // the legacy BOT_LIMITS $20 cap. Omitted → legacy path, byte-identical.
   kelly?: { maxSizeUsd: number };
   // v54: C-200 band multipliers from the active ruleset (see rules.ts).
-  bandFactors?: { longshot?: number; deadZone?: number; longshotFloor?: number };
+  bandFactors?: { longshot?: number; deadZone?: number; premium?: number; longshotFloor?: number };
   // v68: STANDARD maturity schedule. ttrHours is time-to-resolution AT ENTRY (hours remaining,
   // decision-time variable — never the realised holding time). Both omitted => no change, which
   // is what every non-STANDARD caller and every pre-v68 caller does.
