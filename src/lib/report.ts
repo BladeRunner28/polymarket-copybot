@@ -223,6 +223,24 @@ export function oneReason(reason: string): string {
   return dedupeProposalText(String(reason ?? "").split(" | "));
 }
 
+/**
+ * Drop a rule reason's OWN leading version token, because the caller already prints one.
+ *
+ * 2026-11-04 (self-audit): the "Rule changes" bullet renders `v${version}: ${reason}` — but 14 of
+ * the 70 stored reasons already open with their own version ("v71: the band map was lane-blind",
+ * "v64 (user-approved 2026-10-20): give STANDARD the open-position..."), so the bullet printed the
+ * version twice. Live on the 11-03 dry run: "v71: v71: the band map was lane-blind". The token is
+ * stripped ONLY when it names the row's own version: v69's reason opens "v68 gave the same 1.5x
+ * up-weight" and v70's opens "v66's standard stale exit recycles capital" — those are references to
+ * an EARLIER version and must survive verbatim, so a version-blind regex would corrupt them.
+ */
+export function withoutOwnVersion(reason: string, version: number | string): string {
+  const text = String(reason ?? "");
+  const stripped = text.replace(new RegExp(`^\\s*v${String(version)}(?![0-9])\\s*:?\\s*`), "");
+  // Never hand back an empty reason (a bare "v71:" row would otherwise erase the sentence).
+  return stripped.trim().length > 0 ? stripped : text;
+}
+
 export type { Payoff } from "./payoff";
 
 /**
@@ -437,9 +455,14 @@ export async function generateDailyReport(
   const edgeCost = await computeEdgeCostSnapshot(now);
   const edgeBlock = edgeCostLines(edgeCost);
 
+  // 2026-11-04 (self-audit): the lesson used to BE the rule reason — `oneReason(c.reason)` — so a
+  // day with a rule change printed the same 245-char sentence twice, once under "Rule changes" and
+  // again under "Top lesson" (the exact defect the 10-28 note above describes, which only collapsed
+  // repeats WITHIN one string). The rule bullet is the place that sentence lives; this line points
+  // at it. Filter read is unchanged and still printed on days with no rule change.
   const lesson =
     ruleChangesToday.length > 0
-      ? oneReason(ruleChangesToday[0].reason)
+      ? `the rule change above (v${ruleChangesToday[0].newRuleSet.version}) is the day's lesson — its evidence is on that line, not restated here`
       : bench.avoidedLosers > bench.missedWinners
         ? "Filtering is avoiding more losers than it misses winners — filters are earning their keep"
         : "Watch for missed winners — filters may be too strict";
@@ -479,7 +502,7 @@ export async function generateDailyReport(
     `• Bot vs blind copy (matched basis: hold to resolution, flat $10 both sides): ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} per dollar staked — copied decisions ${(bench.botFilteredOutcome.roi * 100).toFixed(2)}% of ${usd(bench.botFilteredOutcome.totalCost)} (n=${bench.botFilteredOutcome.resolvedCount} reviewed copies of ${bench.botFilteredOutcome.count}; unreviewed copies are not imputed) vs blind ${(bench.blindCopy.roi * 100).toFixed(2)}% of ${usd(bench.blindCopy.totalCost)} (n=${bench.blindCopy.resolvedCount} of ${bench.blindCopy.count} signals — the reviewed ones)`,
     `• Book on its own basis (EXIT: early exits count, own stake): ${(bench.botFiltered.roi * 100).toFixed(2)}% of ${usd(bench.botFiltered.totalCost)} staked, n=${bench.botFiltered.resolvedCount} settled legs — NOT comparable to the blind arm above`,
     ruleChangesToday.length
-      ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${oneReason(c.reason)}`).join("; ")}`
+      ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${withoutOwnVersion(oneReason(c.reason), c.newRuleSet.version)}`).join("; ")}`
       : `• Rule changes: none`,
     `• Top lesson: ${lesson}`,
     walletScan,
