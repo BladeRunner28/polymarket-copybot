@@ -1,0 +1,512 @@
+{
+  "builtAt": "2026-11-04T02:15:31.098Z",
+  "readOnly": true,
+  "basis": {
+    "population": "ObservedTrade side=BUY, observationOnly=false, isDemo=0, wallet status=track as of this run, conditionId present",
+    "clock": "leg timestamps 2026-07-14T19:45:53Z .. 2026-11-04T02:13:45Z (tape and wallet rows as read at run time)",
+    "level": "leg; population means market-clustered, wallet lines wallet-clustered",
+    "money": "return on cost, payout/price - 1, GROSS of fees",
+    "settlement": "venue truth: CLOB /markets/{conditionId} -> token whose winner flag is true, matched by normalised outcome NAME"
+  },
+  "legs": 49635,
+  "markets": 3860,
+  "wallets": 22,
+  "labelled": 47532,
+  "labelStates": {
+    "resolved_labelled": 47532,
+    "not_closed_yet": 98,
+    "closed_without_winner": 36,
+    "http_429": 1969
+  },
+  "printBasis": {
+    "print_at_or_before": 48176,
+    "print_after": 60227
+  },
+  "unpricedByLag": {
+    "1800000": 14214,
+    "3600000": 19979
+  },
+  "populationByLag": [
+    {
+      "lagMs": 0,
+      "n": 47532,
+      "excluded": 0,
+      "meanRet": -0.079386,
+      "medianRet": -1,
+      "winRate": 0.42018,
+      "ci95": [
+        -0.242257,
+        0.082544
+      ],
+      "exTop10MarketsMeanRet": -0.00743,
+      "markets": 3734
+    },
+    {
+      "lagMs": 600000,
+      "n": 47532,
+      "excluded": 0,
+      "meanRet": -0.077085,
+      "medianRet": -1,
+      "winRate": 0.42018,
+      "ci95": [
+        -0.239833,
+        0.085368
+      ],
+      "exTop10MarketsMeanRet": -0.015418,
+      "markets": 3734
+    },
+    {
+      "lagMs": 1800000,
+      "n": 33318,
+      "excluded": 14214,
+      "meanRet": -0.120166,
+      "medianRet": -1,
+      "winRate": 0.416952,
+      "ci95": [
+        -0.3168,
+        0.101779
+      ],
+      "exTop10MarketsMeanRet": -0.058988,
+      "markets": 1631
+    },
+    {
+      "lagMs": 3600000,
+      "n": 27553,
+      "excluded": 19979,
+      "meanRet": -0.084891,
+      "medianRet": -1,
+      "winRate": 0.427104,
+      "ci95": [
+        -0.33629,
+        0.155535
+      ],
+      "exTop10MarketsMeanRet": -0.025362,
+      "markets": 1314
+    }
+  ],
+  "matchedPanel": {
+    "legs": 24462,
+    "rows": [
+      {
+        "lagMs": 0,
+        "n": 24462,
+        "meanRet": -0.115382,
+        "ci95": [
+          -0.384204,
+          0.159258
+        ],
+        "dropVsLag0": 0,
+        "dropVsLag0Ci95": [
+          0,
+          0
+        ],
+        "winRate": 0.424372,
+        "exTop10MarketsMeanRet": 0.015869
+      },
+      {
+        "lagMs": 600000,
+        "n": 24462,
+        "meanRet": -0.10541,
+        "ci95": [
+          -0.371674,
+          0.166009
+        ],
+        "dropVsLag0": 0.009972,
+        "dropVsLag0Ci95": [
+          -0.006037,
+          0.036506
+        ],
+        "winRate": 0.424372,
+        "exTop10MarketsMeanRet": -0.001305
+      },
+      {
+        "lagMs": 1800000,
+        "n": 24462,
+        "meanRet": -0.126234,
+        "ci95": [
+          -0.393437,
+          0.149064
+        ],
+        "dropVsLag0": -0.010852,
+        "dropVsLag0Ci95": [
+          -0.030275,
+          0.009443
+        ],
+        "winRate": 0.424372,
+        "exTop10MarketsMeanRet": -0.01983
+      },
+      {
+        "lagMs": 3600000,
+        "n": 24462,
+        "meanRet": -0.099869,
+        "ci95": [
+          -0.370724,
+          0.186323
+        ],
+        "dropVsLag0": 0.015513,
+        "dropVsLag0Ci95": [
+          -0.036102,
+          0.089867
+        ],
+        "winRate": 0.424372,
+        "exTop10MarketsMeanRet": -0.077489
+      }
+    ],
+    "walletSensitivity": {
+      "topContributor": "0x3413c803c3a6efc8d963afbce2dcee48d3738ff2",
+      "topContributorLegs": 687,
+      "topContributorShareOfPanel": 0.0281,
+      "fullPanelMove0to1h": 0.015513,
+      "moveWithoutTopContributor": 0.002509,
+      "walletsInPanel": 22
+    }
+  },
+  "perWallet": [
+    {
+      "wallet": "0x3413c803c3a6efc8d963afbce2dcee48d3738ff2",
+      "n": 3609,
+      "ret0": -0.1512,
+      "ret10": -0.0985,
+      "ret30": -0.3032,
+      "ret1h": 0.8519,
+      "drop0to1h": 1.0031,
+      "survives1h": true
+    },
+    {
+      "wallet": "0x713d129636144ae32c089e9ef7a8f8d191ce3efc",
+      "n": 69,
+      "ret0": 0.2016,
+      "ret10": 0.1795,
+      "ret30": 0.1878,
+      "ret1h": 0.598,
+      "drop0to1h": 0.3965,
+      "survives1h": true
+    },
+    {
+      "wallet": "0xe36756aa4756928b9f501dc1acf1dccb09752104",
+      "n": 167,
+      "ret0": 0.8445,
+      "ret10": 0.8666,
+      "ret30": 0.7592,
+      "ret1h": 0.5685,
+      "drop0to1h": -0.276,
+      "survives1h": true
+    },
+    {
+      "wallet": "0xede186f37ead91aa618cf8101db2bfe6b6c57dd1",
+      "n": 106,
+      "ret0": 0.3122,
+      "ret10": 0.2875,
+      "ret30": -0.4476,
+      "ret1h": 0.3333,
+      "drop0to1h": 0.0211,
+      "survives1h": true
+    },
+    {
+      "wallet": "0x80896d05a92082ac31ac4a6cd5568c8d3bbdf935",
+      "n": 1385,
+      "ret0": 0.0694,
+      "ret10": 0.1345,
+      "ret30": 0.1821,
+      "ret1h": 0.2595,
+      "drop0to1h": 0.19,
+      "survives1h": true
+    },
+    {
+      "wallet": "0x6d98d93b9fa0684f21fa1a2ab475c8ca8b97efe9",
+      "n": 387,
+      "ret0": 0.4063,
+      "ret10": 0.4057,
+      "ret30": 0.4582,
+      "ret1h": 0.235,
+      "drop0to1h": -0.1714,
+      "survives1h": true
+    },
+    {
+      "wallet": "0x9609d30d4ab2c72992c86b5559343bbb8feba48d",
+      "n": 229,
+      "ret0": 0.4016,
+      "ret10": 0.3366,
+      "ret30": 0.4434,
+      "ret1h": 0.1749,
+      "drop0to1h": -0.2267,
+      "survives1h": true
+    },
+    {
+      "wallet": "0xc4a68d127318fd917a188c35e839a0707e374e4e",
+      "n": 51,
+      "ret0": 0.2001,
+      "ret10": 0.2105,
+      "ret30": 0.2634,
+      "ret1h": 0.1666,
+      "drop0to1h": -0.0335,
+      "survives1h": true
+    },
+    {
+      "wallet": "0xc46661a5c720740d7c70fbf2cfc10c5de8c4b5cf",
+      "n": 75,
+      "ret0": -0.095,
+      "ret10": -0.0939,
+      "ret30": 0.028,
+      "ret1h": 0.0521,
+      "drop0to1h": 0.1472,
+      "survives1h": true
+    },
+    {
+      "wallet": "0xf5a3504ad3a8b079974620b3aa4fcca3f7579e12",
+      "n": 3748,
+      "ret0": 0.0261,
+      "ret10": 0.0269,
+      "ret30": 0.0508,
+      "ret1h": 0.0515,
+      "drop0to1h": 0.0254,
+      "survives1h": true
+    },
+    {
+      "wallet": "0x52b7fc8a97df5f18974c06a83909f60c81010aa1",
+      "n": 4505,
+      "ret0": -0.0289,
+      "ret10": -0.0638,
+      "ret30": -0.119,
+      "ret1h": -0.0352,
+      "drop0to1h": -0.0062,
+      "survives1h": false
+    },
+    {
+      "wallet": "0xd29312e2446a746bbd94408e1c475f1ec6d7d683",
+      "n": 4183,
+      "ret0": -0.0084,
+      "ret10": -0.0171,
+      "ret30": -0.0234,
+      "ret1h": -0.0355,
+      "drop0to1h": -0.0271,
+      "survives1h": false
+    },
+    {
+      "wallet": "0x1f08255a13ac12875f77e70fd7a6ba6dea5ec518",
+      "n": 194,
+      "ret0": 0.04,
+      "ret10": 0.0492,
+      "ret30": 0.1238,
+      "ret1h": -0.0421,
+      "drop0to1h": -0.0821,
+      "survives1h": false
+    },
+    {
+      "wallet": "0x85f031d069de300055900c4055c1baeb6bde3f67",
+      "n": 16555,
+      "ret0": -0.0693,
+      "ret10": -0.0678,
+      "ret30": -0.0724,
+      "ret1h": -0.0545,
+      "drop0to1h": 0.0147,
+      "survives1h": false
+    },
+    {
+      "wallet": "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+      "n": 1839,
+      "ret0": -0.0218,
+      "ret10": -0.0238,
+      "ret30": -0.0931,
+      "ret1h": -0.0787,
+      "drop0to1h": -0.0569,
+      "survives1h": false
+    },
+    {
+      "wallet": "0xc95ed399d2fbaec9461f2abd70e0d96df1921288",
+      "n": 8807,
+      "ret0": -0.191,
+      "ret10": -0.191,
+      "ret30": -0.2444,
+      "ret1h": -0.282,
+      "drop0to1h": -0.0911,
+      "survives1h": false
+    },
+    {
+      "wallet": "0x2cff41636fe21fad120fed603d54d4fdd96259db",
+      "n": 1388,
+      "ret0": -0.5838,
+      "ret10": -0.5757,
+      "ret30": -0.4976,
+      "ret1h": -0.4228,
+      "drop0to1h": 0.161,
+      "survives1h": false
+    },
+    {
+      "wallet": "0xe156c859fc8a3aace3f2f981459d8f989eea134b",
+      "n": 35,
+      "ret0": -0.2575,
+      "ret10": -0.2595,
+      "ret30": -1,
+      "ret1h": -0.6124,
+      "drop0to1h": -0.3549,
+      "survives1h": false
+    },
+    {
+      "wallet": "0x26165df18c4dae74bfc20b8f266f0887fedbc6aa",
+      "n": 190,
+      "ret0": -0.0531,
+      "ret10": -0.0527,
+      "ret30": -0.6447,
+      "ret1h": -0.6757,
+      "drop0to1h": -0.6226,
+      "survives1h": false
+    }
+  ],
+  "walletsPositiveAt1h": 10,
+  "comparison": {
+    "cut": "2026-10-01T16:43:08Z",
+    "scoreLegs": 13776,
+    "evalLegs": 11047,
+    "evalWallets": 9,
+    "evalMarkets": 698,
+    "labelWinShare": 0.3251,
+    "legLevelMdeAuc": 0.0115,
+    "rankers": [
+      {
+        "name": "persistence@1h",
+        "aucWin": 0.5714,
+        "ci95": [
+          0.4549,
+          0.6167
+        ],
+        "aucProfitableAt1h": 0.5714
+      },
+      {
+        "name": "persistence@0",
+        "aucWin": 0.5714,
+        "ci95": [
+          0.4549,
+          0.6167
+        ],
+        "aucProfitableAt1h": 0.5714
+      },
+      {
+        "name": "globalScore",
+        "aucWin": 0.5216,
+        "ci95": [
+          0.395,
+          0.606
+        ],
+        "aucProfitableAt1h": 0.5216
+      },
+      {
+        "name": "roi30d",
+        "aucWin": 0.5558,
+        "ci95": [
+          0.4038,
+          0.619
+        ],
+        "aucProfitableAt1h": 0.5558
+      },
+      {
+        "name": "consistencyScore",
+        "aucWin": 0.4547,
+        "ci95": [
+          0.3995,
+          0.6339
+        ],
+        "aucProfitableAt1h": 0.4547
+      },
+      {
+        "name": "copyabilityScore",
+        "aucWin": 0.4116,
+        "ci95": [
+          0.3614,
+          0.4927
+        ],
+        "aucProfitableAt1h": 0.4116
+      },
+      {
+        "name": "winRate30d",
+        "aucWin": 0.4331,
+        "ci95": [
+          0.3839,
+          0.6278
+        ],
+        "aucProfitableAt1h": 0.4331
+      },
+      {
+        "name": "entryPrice",
+        "aucWin": 0.5607,
+        "ci95": [
+          0.4659,
+          0.7324
+        ],
+        "aucProfitableAt1h": 0.5607
+      }
+    ],
+    "pairedDeltas": [
+      {
+        "vs": "persistence@0",
+        "delta": 0,
+        "ci95": [
+          0,
+          0
+        ],
+        "pGreater": 0
+      },
+      {
+        "vs": "globalScore",
+        "delta": 0.0499,
+        "ci95": [
+          -0.0611,
+          0.1755
+        ],
+        "pGreater": 0.7975
+      },
+      {
+        "vs": "roi30d",
+        "delta": 0.0156,
+        "ci95": [
+          -0.0465,
+          0.1461
+        ],
+        "pGreater": 0.707
+      },
+      {
+        "vs": "consistencyScore",
+        "delta": 0.1167,
+        "ci95": [
+          -0.1477,
+          0.2095
+        ],
+        "pGreater": 0.7805
+      },
+      {
+        "vs": "copyabilityScore",
+        "delta": 0.1598,
+        "ci95": [
+          0.0031,
+          0.2382
+        ],
+        "pGreater": 0.981
+      },
+      {
+        "vs": "winRate30d",
+        "delta": 0.1384,
+        "ci95": [
+          -0.141,
+          0.2178
+        ],
+        "pGreater": 0.835
+      },
+      {
+        "vs": "entryPrice",
+        "delta": 0.0107,
+        "ci95": [
+          -0.2018,
+          0.0778
+        ],
+        "pGreater": 0.4535
+      }
+    ],
+    "top2WalletShareOfDecay": 0.5016,
+    "verdict": "REFUTED",
+    "reasons": [
+      "persistence AUC(win) 0.571 does not clear 0.60 with a CI above 0.5",
+      "it does not beat the best stored score (roi30d 0.556) with a paired CI above zero",
+      "the 0->1h decay is concentrated: top-2 wallets carry 50.16%"
+    ]
+  }
+}
