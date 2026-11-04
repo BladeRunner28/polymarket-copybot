@@ -361,6 +361,34 @@
    "status": "audited",
    "url": "https://github.com/lein3000zzz/polythought-go",
    "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-11-03 08:26 CST",
+    "state": "pending"
+   },
+   "audited": "2026-11-03 08:26 CST",
+   "claimed": "2026-11-03 08:20 CST",
+   "claimed_ts": 1793715638.7398882,
+   "discovered": "2026-11-03 08:20 CST",
+   "id": "mirabilis-agent/lip-ledger",
+   "license": "MIT",
+   "note": "Read-only tools for Kalshi: exact Liquidity Incentive Program model, Weather Index clien",
+   "pushed": "2026-11-03",
+   "recommendation": {
+    "decision_rule": "If modelled LIP reward >= $0.0131/contract-hour (one taker fee at P=0.25, the card's own bar) NET of measured adverse selection over >=50 counted program-hours across >=20 distinct programs by 2026-11-24 then add the LIP line to the maker read's PnL; else record LIP as immaterial and close the card's reward leg",
+    "effort": "~2-3h, read-only, zero risk",
+    "reversibility": "Delete scripts/kalshi-lip-reward-model.py; no rule, size, threshold or lane touched",
+    "text": "Reimplement lip-ledger's LIP side_score (~60 lines, MIT) as scripts/kalshi-lip-reward-model.py and price the reward leg of kalshi-maker-read-prereg over our captured Kalshi tape, net of adverse selection"
+   },
+   "report": "drafts/asset-audit-lip-ledger-20261103.md",
+   "source": "radar-seed",
+   "stars": 7,
+   "status": "audited",
+   "url": "https://github.com/mirabilis-agent/lip-ledger",
+   "verdict": "watch"
   }
  ],
  "version": 1
