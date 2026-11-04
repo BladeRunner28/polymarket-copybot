@@ -36,12 +36,21 @@ CST = timezone(timedelta(hours=-5))
 UA = {"User-Agent": "polyhydra-research/1.0"}
 TIMEOUT = 20
 
-# 2026-10-24 (local/CST) is a STOCK CLEAR, not a trading day: v66's stale exit force-closed the
-# C-200 book in one pass, so 708 settlements of -$487.04 land on that single date. One such day
-# dominates any window it falls in (it is 82% of the 7d sample) and can invert the sign of the
-# per-leg read, so both settled windows also print an ex-stock-clear companion line. Kept as a
-# named constant rather than a SQL literal: every number below must be able to state its basis.
-STOCK_CLEAR_DATE = "2026-10-24"
+# A day carrying >= 100 closures is a STOCK CLEAR, not a trading day: one forced-exit rail empties a
+# backlog in one pass, so it dominates any window it lands in and can invert the per-leg read. The
+# list is DERIVED from the book on every run (2026-11-04 self-audit), never a named date.
+#
+# It used to be the single hardcoded constant STOCK_CLEAR_DATE = "2026-10-24". Measured on the live
+# book at the fix: only one day in the trailing 45 clears the bar (10-24: 708 closures; next is
+# 10-25 with 74), so the hardcode was still ACCURATE — but by construction it could never notice a
+# NEW clear, and once 10-24 rolled out of the 7d window the "EX-STOCK-CLEAR (2026-10-24 excluded)"
+# line printed a date that was not in the window at all, with numbers identical to the blended line,
+# and no way for a reader to tell "nothing to exclude" from "the exclusion is working".
+#
+# WHICH LANE that 10-24 clear belongs to: the 701 early exits are STANDARD (booked -$350.52, opened
+# mostly 07-15/07-16); C-200 contributed 4 rows that day. Both comments here said "closed 701 C-200
+# legs", which is the wrong lane — v66 added the STANDARD stale-exit rail, and that is what fired.
+BULK_CLOSE_MIN_LEGS = 100
 
 
 # ---------------------------------------------------------------- helpers
@@ -87,6 +96,25 @@ def fetch_text(url: str) -> tuple[str | None, str]:
 
 def ms(dt: datetime) -> int:
     return int(dt.timestamp() * 1000)
+
+
+def bulk_close_days(cur, scol: str, status_ok: str, demo_ok: str, since_ms: int, bot: str | None = None):
+    """Local days in the window carrying >= BULK_CLOSE_MIN_LEGS closures -> [(day, n, pnl)].
+
+    Derived from the book on every run (2026-11-04 self-audit), per lane when `bot` is given: a
+    stock clear is one lane's rail emptying a backlog, so a day that is a clear for STANDARD (708
+    closures on 2026-10-24) is an ordinary day for C-200 (4 closures) and must not be excluded from
+    C-200's window. Empty list means "nothing to exclude" and every caller must SAY so rather than
+    print a number that happens to equal the blended one.
+    """
+    bot_ok = " AND botId=?" if bot else ""
+    args = (bot, since_ms) if bot else (since_ms,)
+    rows = cur.execute(
+        f"SELECT date({scol}/1000,'unixepoch','-5 hours') d, COUNT(*), ROUND(SUM(realizedPnl),2) "
+        f"FROM PaperTrade WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok}{bot_ok} "
+        f"AND {scol} >= ? GROUP BY d HAVING COUNT(*) >= ? ORDER BY d",
+        (*args, BULK_CLOSE_MIN_LEGS)).fetchall()
+    return [(r[0], r[1], r[2]) for r in rows]
 
 
 def per_leg(n: int | None, pnl: float | None) -> str:
@@ -161,21 +189,30 @@ def bot_facts(db: str, days: int) -> list[str]:
                         f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} AND {scol} >= ?",
                         (ms(now - timedelta(days=d)),)).fetchone()
                     out.append(f"  - last {d}d: n={r[0]}, realized ${r[1] or 0:,.2f}")
-                    # Companion line on the same clock/basis, one non-trading day excluded --
+                    # Companion line on the same clock/basis, stock-clear days excluded --
                     # deliberately alongside the blended line, not replacing it: the blended
                     # figure is what actually settled, the ex-clear figure is what trading did.
                     if d in (7, 30):
-                        ex = cur.execute(
-                            f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
-                            f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
-                            f"AND {scol} >= ? "
-                            f"AND date({scol}/1000,'unixepoch','-5 hours') <> ?",
-                            (ms(now - timedelta(days=d)), STOCK_CLEAR_DATE)).fetchone()
-                        out.append(
-                            f"    last {d}d EX-STOCK-CLEAR ({STOCK_CLEAR_DATE} excluded): "
-                            f"n={ex[0]}, realized ${ex[1] or 0:,.2f}, "
-                            f"{per_leg(ex[0], ex[1])}/leg "
-                            f"[blended {per_leg(r[0], r[1])}/leg]")
+                        since = ms(now - timedelta(days=d))
+                        clears = bulk_close_days(cur, scol, status_ok, demo_ok, since)
+                        if clears:
+                            ph = ",".join("?" * len(clears))
+                            ex = cur.execute(
+                                f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                                f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
+                                f"AND {scol} >= ? "
+                                f"AND date({scol}/1000,'unixepoch','-5 hours') NOT IN ({ph})",
+                                (since, *[c[0] for c in clears])).fetchone()
+                            excl = ", ".join(f"{day} n={n:,}" for day, n, _ in clears)
+                            out.append(
+                                f"    last {d}d EX-BULK-CLOSE ({excl} excluded): "
+                                f"n={ex[0]}, realized ${ex[1] or 0:,.2f}, "
+                                f"{per_leg(ex[0], ex[1])}/leg "
+                                f"[blended {per_leg(r[0], r[1])}/leg]")
+                        else:
+                            out.append(
+                                f"    last {d}d EX-BULK-CLOSE: none -- no day in this window has "
+                                f">= {BULK_CLOSE_MIN_LEGS} closures, so it IS the blended figure")
                     # 2026-11-01: a per-leg mean summarises a window a handful of legs can set.
                     # Measured at the fix: the 7d window read +$265.45 net while its top-3 legs
                     # alone carried +$1,161.20, so the other 201 legs were -$895.75 -- the sign of
@@ -198,17 +235,16 @@ def bot_facts(db: str, days: int) -> list[str]:
                             f"${abs_sum:,.2f} ({share:.0f}%), ex-top-3 net ${ex3:,.2f} "
                             f"-- sign {agree} with the window net")
                 # A single day carrying >=100 closures is a STOCK CLEAR, not trading, and it
-                # dominates any window it lands in. v66's stale exit closed 701 C-200 legs on
-                # 2026-10-24 (booked -$350.52); this grouped read lands 708 / -$487.04 because
-                # the settled clock also picks up that date's 7 natural resolutions. Either way
-                # the 7d window reads n=768 / +$174.81 WITH it and n=60 / +$661.85 WITHOUT it --
-                # quote the ex-stock-clear figure when the question is "how is trading doing".
-                for d_, n_, pnl_ in cur.execute(
-                    f"SELECT date({scol}/1000,'unixepoch','-5 hours') dd, COUNT(*), "
-                    f"ROUND(SUM(realizedPnl),2) FROM PaperTrade WHERE {status_ok} "
-                    f"AND realizedPnl IS NOT NULL{demo_ok} AND {scol} >= ? GROUP BY dd "
-                    f"HAVING COUNT(*) >= 100 ORDER BY 2 DESC",
-                    (ms(now - timedelta(days=30)),)).fetchall():
+                # dominates any window it lands in. 2026-10-24: 708 closures / -$487.04 -- the 701
+                # early exits are STANDARD (v66's new stale-exit rail, booked -$350.52, legs opened
+                # mostly 07-15/07-16); C-200 contributed 4 resolutions. The settled clock lands 708
+                # because it also picks up that date's 7 natural resolutions. When it sat inside the
+                # 7d window the window read n=768 / +$174.81 WITH it and n=60 / +$661.85 WITHOUT --
+                # quote the ex-bulk-close figure when the question is "how is trading doing".
+                # Same derived read the exclusion uses, so the list a reader sees and the days the
+                # arithmetic removes cannot drift apart.
+                for d_, n_, pnl_ in bulk_close_days(
+                        cur, scol, status_ok, demo_ok, ms(now - timedelta(days=30))):
                     out.append(
                         f"    [bulk-close day {d_}: n={n_}, ${pnl_ or 0:,.2f} -- stock clear, not "
                         f"flow; exclude it when reading a window as trading]")
@@ -263,13 +299,21 @@ def bot_facts(db: str, days: int) -> list[str]:
                         nets[d] = rb[1] or 0
                         seg = f"{d}d n={rb[0]} ${rb[1] or 0:,.2f}"
                         if d in (7, 30):
-                            exb = cur.execute(
-                                f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
-                                f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
-                                f"AND botId=? AND {scol} >= ? "
-                                f"AND date({scol}/1000,'unixepoch','-5 hours') <> ?",
-                                (bot, ms(now - timedelta(days=d)), STOCK_CLEAR_DATE)).fetchone()
-                            seg += f", ex-stock-clear n={exb[0]} ${exb[1] or 0:,.2f}"
+                            since = ms(now - timedelta(days=d))
+                            # Per-lane: a clear is THIS lane's rail emptying a backlog, so a day
+                            # that is a clear for STANDARD is an ordinary C-200 day.
+                            lane_clears = bulk_close_days(cur, scol, status_ok, demo_ok, since, bot=bot)
+                            if lane_clears:
+                                ph = ",".join("?" * len(lane_clears))
+                                exb = cur.execute(
+                                    f"SELECT COUNT(*), ROUND(SUM(realizedPnl),2) FROM PaperTrade "
+                                    f"WHERE {status_ok} AND realizedPnl IS NOT NULL{demo_ok} "
+                                    f"AND botId=? AND {scol} >= ? "
+                                    f"AND date({scol}/1000,'unixepoch','-5 hours') NOT IN ({ph})",
+                                    (bot, since, *[c[0] for c in lane_clears])).fetchone()
+                                seg += f", ex-bulk-close n={exb[0]} ${exb[1] or 0:,.2f}"
+                            else:
+                                seg += ", ex-bulk-close: no clear day in window"
                         parts.append(seg)
                     lane_nets[bot] = nets
                     out.append(
