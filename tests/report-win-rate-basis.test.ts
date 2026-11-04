@@ -132,7 +132,11 @@ describe("rule-change evidence: the threshold move carries its payoff", () => {
     const proposals = proposeRuleChanges(samples, DEFAULT_RULES);
     const copyBar = proposals.find((p) => p.field === "minCopyScore");
     expect(copyBar).toBeDefined();
-    expect(copyBar!.evidence).toContain("win rate 0%");
+    // 2026-11-04 (ruleupdater-exit-labeled-winrate): the rate now NAMES its basis and carries the
+    // settlement read beside it. These samples carry no outcomeWin, so the OUTCOME arm is n/a rather
+    // than a silent 0% — an unjudgeable population is not a losing one.
+    expect(copyBar!.evidence).toContain("win rate EXIT basis 0.0%");
+    expect(copyBar!.evidence).toContain("OUTCOME basis n/a");
     expect(copyBar!.evidence).toContain("avg win");
     expect(copyBar!.evidence).toContain("avg loss");
     expect(copyBar!.evidence).toMatch(/ROI -25\.0%/);

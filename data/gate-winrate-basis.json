@@ -1,0 +1,199 @@
+{
+  "generatedAt": "2026-11-04T15:05:17.156Z",
+  "basis": {
+    "level": "leg",
+    "population": "PaperTrade.status IN (closed,resolved) AND realizedPnl NOT NULL (rule-updater collectSamples query)",
+    "clock": "COALESCE(closedAt, resolvedAt)",
+    "exitWin": "realizedPnl > 0",
+    "outcomeWin": "didOutcomeWin(PaperTrade.outcome, OutcomeReview.finalOutcome), undeterminable excluded",
+    "settleBook": "hold-to-settlement at our stake and entry price, fees and slippage zero"
+  },
+  "window": {
+    "since": "2026-07-15T23:12:26.689Z",
+    "until": "2026-11-04T15:01:53.844Z"
+  },
+  "rulesVersion": 71,
+  "thresholds": {
+    "minCopyScore": 80,
+    "highScoreCapMin": 80,
+    "sweetSpotMinScore": 70
+  },
+  "demoRows": 0,
+  "reads": {
+    "ALL": {
+      "exit": {
+        "n": 12534,
+        "wins": 7515,
+        "rate": 0.5995691718525611,
+        "pnl": 17357.090000000237,
+        "cost": 137177.68953265774
+      },
+      "outcomeOnExitBook": {
+        "n": 9800,
+        "wins": 5478,
+        "rate": 0.5589795918367347,
+        "pnl": 13777.960000000148,
+        "cost": 110986.95006227735,
+        "undetermined": 2734,
+        "coverage": 0.7818733046114569
+      },
+      "settleBook": {
+        "n": 9800,
+        "wins": 5478,
+        "rate": 0.5589795918367347,
+        "pnl": 16195.553839894332,
+        "cost": 110986.95006227735,
+        "undetermined": 0,
+        "coverage": 1
+      },
+      "verdictLive": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictOutcomeLabel": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictSettleBook": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictFlips": false,
+      "disagreement": {
+        "exitWinOutcomeLoss": {
+          "n": 534,
+          "pnl": 4631.520000000007,
+          "cost": 5463.650855949374
+        },
+        "exitLossOutcomeWin": {
+          "n": 616,
+          "pnl": -4550.249999999986,
+          "cost": 6645.410632911403
+        },
+        "bothWon": 4862,
+        "bothLost": 3788,
+        "unknown": 2734
+      }
+    },
+    "STANDARD": {
+      "exit": {
+        "n": 9919,
+        "wins": 6293,
+        "rate": 0.634438955539873,
+        "pnl": 9703.55000000025,
+        "cost": 114181.37999999999
+      },
+      "outcomeOnExitBook": {
+        "n": 7295,
+        "wins": 4248,
+        "rate": 0.5823166552433173,
+        "pnl": 6175.75000000001,
+        "cost": 89696.37999999797,
+        "undetermined": 2624,
+        "coverage": 0.7354572033471116
+      },
+      "settleBook": {
+        "n": 7295,
+        "wins": 4248,
+        "rate": 0.5823166552433173,
+        "pnl": 7357.375179873471,
+        "cost": 89696.37999999797,
+        "undetermined": 0,
+        "coverage": 1
+      },
+      "verdictLive": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictOutcomeLabel": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictSettleBook": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictFlips": false,
+      "disagreement": {
+        "exitWinOutcomeLoss": {
+          "n": 409,
+          "pnl": 3920.470000000011,
+          "cost": 4539.999999999995
+        },
+        "exitLossOutcomeWin": {
+          "n": 427,
+          "pnl": -3934.009999999993,
+          "cost": 5140.400000000011
+        },
+        "bothWon": 3821,
+        "bothLost": 2638,
+        "unknown": 2624
+      }
+    },
+    "BANKROLL_200": {
+      "exit": {
+        "n": 2615,
+        "wins": 1222,
+        "rate": 0.4673040152963671,
+        "pnl": 7653.5400000000145,
+        "cost": 22996.309532658073
+      },
+      "outcomeOnExitBook": {
+        "n": 2505,
+        "wins": 1230,
+        "rate": 0.49101796407185627,
+        "pnl": 7602.2100000000155,
+        "cost": 21290.570062278413,
+        "undetermined": 110,
+        "coverage": 0.9579349904397706
+      },
+      "settleBook": {
+        "n": 2505,
+        "wins": 1230,
+        "rate": 0.49101796407185627,
+        "pnl": 8838.17866002084,
+        "cost": 21290.570062278413,
+        "undetermined": 0,
+        "coverage": 1
+      },
+      "verdictLive": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictOutcomeLabel": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictSettleBook": {
+        "tightens": false,
+        "relaxes": false,
+        "copyFloor": 80
+      },
+      "verdictFlips": false,
+      "disagreement": {
+        "exitWinOutcomeLoss": {
+          "n": 125,
+          "pnl": 711.0500000000001,
+          "cost": 923.6508559493678
+        },
+        "exitLossOutcomeWin": {
+          "n": 189,
+          "pnl": -616.2400000000001,
+          "cost": 1505.0106329113937
+        },
+        "bothWon": 1041,
+        "bothLost": 1150,
+        "unknown": 110
+      }
+    }
+  },
+  "settlementPnlTotal": 16195.553839894332
+}

@@ -9,6 +9,8 @@ import { prisma } from "./db";
 import { getActiveRules, applyRuleChanges, RuleChangeProposal, Rules } from "./rules";
 import { log } from "./redact";
 import { payoffSummary, payoffCompanionText } from "./payoff";
+import { didOutcomeWin } from "./resolution";
+import { compareGateBasis, gateBasisText } from "./gate-winrate-basis";
 
 interface ResolvedSample {
   pnl: number;
@@ -17,6 +19,12 @@ interface ResolvedSample {
    *  thresholds below never read either field. */
   stake?: number | null;
   at?: Date | null;
+  /** The venue's settlement read for this leg's own token: true/false/null. Carried ONLY so the
+   *  evidence line can print the OUTCOME-basis win rate beside the EXIT-basis one the arms read
+   *  (ruleupdater-exit-labeled-winrate, 2026-11-04). No threshold reads this field. */
+  outcomeWin?: boolean | null;
+  /** entry price — only for the settlement-book counterfactual in the evidence line. */
+  entryPrice?: number | null;
   spread: number | null;
   liquidity: number | null;
   drift: number;
@@ -33,7 +41,11 @@ async function collectSamples(): Promise<ResolvedSample[]> {
   // on resolved-only evidence; v52 reverted it and widens the sample.
   const trades = await prisma.paperTrade.findMany({
     where: { status: { in: ["resolved", "closed"] }, realizedPnl: { not: null } },
-    include: { decision: { include: { observedTrade: true } } },
+    include: {
+      decision: { include: { observedTrade: true, outcomeReviews: { select: { finalOutcome: true } } } },
+      // both label paths: 8.9pt of legs carry a decision-level review but no paperTrade-linked one
+      outcomeReviews: { select: { finalOutcome: true } },
+    },
   });
   const samples: ResolvedSample[] = [];
   for (const t of trades) {
@@ -42,9 +54,14 @@ async function collectSamples(): Promise<ResolvedSample[]> {
       where: { marketId: t.marketId },
       orderBy: { collectedAt: "desc" },
     });
+    const review =
+      t.outcomeReviews.find((r) => r.finalOutcome !== null) ??
+      t.decision.outcomeReviews.find((r) => r.finalOutcome !== null);
     samples.push({
       pnl: t.realizedPnl ?? 0,
       stake: t.simulatedPositionSize,
+      entryPrice: t.entryPrice,
+      outcomeWin: review ? didOutcomeWin(t.outcome, { winningLabel: review.finalOutcome }) : null,
       at: t.closedAt ?? t.resolvedAt,
       spread: snap?.spread ?? null,
       liquidity: snap?.liquidity ?? null,
@@ -118,12 +135,27 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
   const payoffEvidence = payoffSummary(
     samples.map((s) => ({ pnl: s.pnl, stake: s.stake ?? null, at: s.at ?? null }))
   );
+  // 2026-11-04 (ruleupdater-exit-labeled-winrate): `winRate` above is realizedPnl > 0 — an EXIT
+  // sign, not the market's outcome — and it GATES minCopyScore. The arms keep reading it (changing
+  // that is Lane A, not applied); what changes here is that the evidence can no longer print it as
+  // if it were a probability. Both bases + coverage ride on the same line. REPORTING ONLY.
+  const gateBasis = compareGateBasis(
+    samples.map((s) => ({
+      pnl: s.pnl,
+      stake: s.stake ?? null,
+      entryPrice: s.entryPrice ?? null,
+      at: s.at ?? null,
+      outcomeWin: s.outcomeWin ?? null,
+    })),
+    rules
+  );
+  const basisEvidence = gateBasisText(gateBasis);
   if (totalPnl < 0 && winRate < 0.45 && rules.minCopyScore < 85) {
     proposals.push({
       field: "minCopyScore",
       newValue: Math.min(85, rules.minCopyScore + 3),
       reason: "Overall paper performance negative — raising copy threshold",
-      evidence: `total PnL ${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}% — ${payoffCompanionText(payoffEvidence)}`,
+      evidence: `total PnL ${totalPnl.toFixed(2)}, ${basisEvidence} — ${payoffCompanionText(payoffEvidence)}`,
     });
   }
 
@@ -139,7 +171,7 @@ export function proposeRuleChanges(samples: ResolvedSample[], rules: Rules): Rul
       field: "minCopyScore",
       newValue: Math.max(copyFloor, rules.minCopyScore - 2),
       reason: "Strategy is winning — cautiously widening the funnel",
-      evidence: `total PnL +${totalPnl.toFixed(2)}, win rate ${(winRate * 100).toFixed(0)}% — ${payoffCompanionText(payoffEvidence)}`,
+      evidence: `total PnL +${totalPnl.toFixed(2)}, ${basisEvidence} — ${payoffCompanionText(payoffEvidence)}`,
     });
   }
 
