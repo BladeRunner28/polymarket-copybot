@@ -15,11 +15,15 @@ wallets are. The standing rule is MEASURE FIRST — this script gates nothing.
 
 TWO DEPTH MEASURES, because the stored one is broken in a way that matters:
   (a) AS-OF-PRINT snapshot: WalletProfile.resolvedTradeCount30d. MEASURED
-      FINDING: this field is CLAMPED AT 100 (p50 = p75 = p90 = max = 100 over
-      3,201 wallets), so it cannot separate a 100-position record from a
-      900-position one — exactly the deep end a thin-record rule is meant to
-      grade against. It is also a live value, not an as-of-entry one: a wallet's
-      depth as read today is not the depth the copy decision saw.
+      FINDING: this field is CEILING-CLAMPED by the depth walk's page budget. The
+      ceiling is DERIVED at run time below, never hard-coded (it moved 100 -> 300
+      on 2026-09-23 when the fetch was un-clamped; 49.5% of live wallets sat
+      EXACTLY on 300 on 2026-11-04), so it cannot separate a 300-position record
+      from a 3,000-position one: it is a THRESHOLD indicator, not a depth measure,
+      and the 100+ bucket is ceiling-mixed, NOT "the deep end"
+      (wallet-depth-ceiling-300-finding). It is also a live value, not an
+      as-of-entry one: a wallet's depth as read today is not the depth the copy
+      decision saw.
   (b) AS-OF-ENTRY record depth: the number of DISTINCT markets we had already
       observed that wallet trading strictly BEFORE the leg was opened
       (ObservedTrade.timestamp < PaperTrade.openedAt), time-consistent with the
@@ -59,7 +63,10 @@ random.seed(20260923)
 _DRAWS = []
 _BOOT_DRAWS = []
 
-SNAP_BUCKETS = [(0, 25, "<25"), (25, 100, "25-99"), (100, 10 ** 9, "100+ (deep)")]
+# The top bucket is ceiling-mixed: it holds exact counts AND censored lower bounds side by side,
+# so it can never be read as "the deep end" (wallet-depth-ceiling-300-finding, 2026-11-04).
+DEEP_LABEL = "100+ (ceiling-mixed)"
+SNAP_BUCKETS = [(0, 25, "<25"), (25, 100, "25-99"), (100, 10 ** 9, DEEP_LABEL)]
 
 
 # ---------------------------------------------------------------- statistics
@@ -205,7 +212,8 @@ def load():
     scans = con.execute(
         """SELECT address, coalesce(resolvedTradeCount30d,0), coalesce(tradeCount30d,0),
                   coalesce(winRate30d,0), coalesce(roi30d,0), coalesce(globalScore,0),
-                  coalesce(status,''), coalesce(lastScannedAt,0), coalesce(updatedAt,0)
+                  coalesce(status,''), coalesce(lastScannedAt,0), coalesce(updatedAt,0),
+                  coalesce(depthCensored,0)
            FROM WalletProfile WHERE isDemo = 0"""
     ).fetchall()
     con.close()
@@ -234,8 +242,13 @@ def main():
           % (ceiling, ceiling))
     print("      depth fetch was un-clamped (src/lib/adapters/polymarket.ts:272 DEPTH_MAX_CLOSED_PAGES, default 6")
     print("      pages = <=300 rows; env-tunable), so a 2026-09-23-era read at ceiling 100 is NOT comparable")
-    print("      bucket-for-bucket with this one. Bucket '100+ (deep)' below is the whole deep end; the")
-    print("      as-of-entry measure (b) is the one that can still grade it.")
+    print("      bucket-for-bucket with this one. Bucket '100+ (ceiling-mixed)' below is NOT the deep end: it")
+    print("      holds exact counts and censored LOWER BOUNDS side by side, so it cannot order its own members.")
+    censored_n = sum(1 for r in scans if r[9])
+    print("      censored wallets: %d of %d (%.1f%%) — a censored count still answers 'at least N' truthfully, so it"
+          % (censored_n, n, 100.0 * censored_n / max(1, n)))
+    print("      passes every floor at or below the ceiling and only turns indeterminate above it. The")
+    print("      as-of-entry measure (b) is the one that can still grade depth (itself a lower bound).")
     tvals = sorted(r[2] for r in scans)
     print("  WalletProfile.tradeCount30d: p50 %d | p90 %d | max %d (%s)"
           % (tvals[n // 2], tvals[9 * n // 10], tvals[-1],
@@ -285,6 +298,7 @@ def main():
                 resolved30=s[1] if s else None, trades30=s[2] if s else None,
                 winrate30=s[3] if s else None, roi30=s[4] if s else None,
                 globalScore=s[5] if s else None, status=s[6] if s else "",
+                censored=bool(s[9]) if s else False,
             ))
         print("\n" + "=" * 78)
         print("%s — %d settled legs, %d source wallets, realized %s on %s cost (%.1f%% of cost)"
@@ -310,9 +324,14 @@ def main():
                 100.0 * sum(1 for l in grp if l["pnl"] > 0) / len(grp),
                 "%+.1f" % (100.0 * sum(l["pnl"] for l in grp) / cost),
                 statistics.median([l["entry"] for l in grp])))
+            if label == DEEP_LABEL:
+                cen_legs = sum(1 for l in grp if l.get("censored"))
+                print("  %-15s   ^ %d of %d legs (%.1f%%) rest on a censored LOWER BOUND at the %d ceiling — a bucket,"
+                      % ("", cen_legs, len(grp), 100.0 * cen_legs / len(grp), ceiling))
+                print("  %-15s     not the deep end, and not comparable with a deeper book." % "")
         thin = bucket_legs.get("<25", [])
-        deep = bucket_legs.get("100+ (deep)", [])
-        ci_line(legs, [("<25", thin), ("25-99", bucket_legs.get("25-99", [])), ("100+ deep", deep)],
+        deep = bucket_legs.get(DEEP_LABEL, [])
+        ci_line(legs, [("<25", thin), ("25-99", bucket_legs.get("25-99", [])), ("100+ mixed", deep)],
                 "stored snapshot")
         if thin and deep:
             ga = [[l["pnl"] for l in thin if l["wallet"] == w] for w in {l["wallet"] for l in thin}]
@@ -351,7 +370,7 @@ def main():
             ci_line(legs, sorted(qbuckets.items()), "as-of-entry depth")
 
         # ---------- price control on (a)
-        print("\n  PRICE CONTROL on (a): thin(<25) vs deep(100), WITHIN entry-price quintiles")
+        print("\n  PRICE CONTROL on (a): thin(<25) vs 100+ (ceiling-mixed), WITHIN entry-price quintiles")
         prices = sorted(l["entry"] for l in legs)
         cuts_p = [0.0] + [prices[int(k * len(prices) / 5.0)] for k in range(1, 5)] + [1.01]
         print("  %-13s %5s %5s %10s %10s %10s   %s" % ("entry band", "thin", "deep", "thin mean$", "deep mean$", "diff", "clustered p"))

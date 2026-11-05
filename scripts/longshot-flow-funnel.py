@@ -256,18 +256,28 @@ def main() -> int:
 
     # ---------- 5. wallet depth of the candidates reaching <0.20 --------------------
     depth = Counter()
-    for r in q("""SELECT w.resolvedTradeCount30d d, w.depthCensored cen, COUNT(*) n
-                  FROM DecisionJournal j JOIN ObservedTrade o ON o.id=j.observedTradeId
-                  JOIN WalletProfile w ON w.address=o.walletAddress
-                  WHERE j.isDemo=0 AND j.createdAt >= ? AND j.createdAt < ? AND o.detectedPrice < 0.20
-                  GROUP BY 1,2""", (start_ms, end_ms)):
-        k = ("censored@cap" if r["cen"] else
-             "<10" if (r["d"] or 0) < 10 else
-             "10-49" if r["d"] < 50 else
-             "50-99" if r["d"] < 100 else
-             "100-299" if r["d"] < 300 else ">=300")
-        depth[k] += r["n"]
+    # The depth ceiling is DERIVED from the wallet table, never hard-coded: it moved 100 -> 300 on
+    # 2026-09-23 when the depth fetch was un-clamped (wallet-depth-ceiling-300-finding, 2026-11-04).
+    # A censored count is a LOWER BOUND, so it is marked on the bucket it actually falls in. The old
+    # label put every censored wallet in one "censored@cap" bucket, which printed a wallet measured at
+    # 47 as if it sat on the cap — a depth claim the walk never made.
+    _cap_row = q("SELECT MAX(resolvedTradeCount30d) m FROM WalletProfile WHERE isDemo=0").fetchone()
+    depth_cap = (_cap_row["m"] if _cap_row else 0) or 0
+    depth_rows = q("""SELECT w.resolvedTradeCount30d d, w.depthCensored cen, COUNT(*) n
+                      FROM DecisionJournal j JOIN ObservedTrade o ON o.id=j.observedTradeId
+                      JOIN WalletProfile w ON w.address=o.walletAddress
+                      WHERE j.isDemo=0 AND j.createdAt >= ? AND j.createdAt < ? AND o.detectedPrice < 0.20
+                      GROUP BY 1,2""", (start_ms, end_ms))
+    for r in depth_rows:
+        d, cen = (r["d"] or 0), bool(r["cen"])
+        base = ("<10" if d < 10 else
+                "10-49" if d < 50 else
+                "50-99" if d < 100 else
+                ("100-%d" % (depth_cap - 1) if d < depth_cap else "%d+" % depth_cap))
+        depth[base + (" (lower bound)" if cen else "")] += r["n"]
     rep["longshot_wallet_depth"] = depth.most_common()
+    rep["longshot_wallet_depth_cap"] = {"ceiling": depth_cap,
+                                        "censored_legs": sum(n for k, n in depth.items() if "lower bound" in k)}
 
     # ---------- 6. throughput ceiling: is the gap size or flow? ---------------------
     # Pure arithmetic off THIS window, stated as such (not a forecast).
@@ -359,7 +369,10 @@ def main() -> int:
         P(f"  {n:7,}  {lab}")
     P(f"  median drift {rep['longshot_drift']['median_drift']}")
     P("")
-    P("WALLET DEPTH (resolvedTradeCount30d) of candidates reaching <0.20")
+    P("WALLET DEPTH (resolvedTradeCount30d) of candidates reaching <0.20 — derived ceiling %d, %d of %d"
+      % (rep["longshot_wallet_depth_cap"]["ceiling"], rep["longshot_wallet_depth_cap"]["censored_legs"],
+         sum(n for _, n in depth.most_common())))
+    P("  candidate rows rest on a censored LOWER BOUND: a bucket, never the deep end.")
     for k, n in depth.most_common():
         P(f"  {n:7,}  {k}")
     P("")
