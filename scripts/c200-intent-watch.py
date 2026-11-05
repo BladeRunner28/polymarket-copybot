@@ -26,8 +26,10 @@ Each alert fires once per distinct object (state file, default data/c200-intent-
 repeat ticks stay silent. Exit code is always 0 unless the watcher itself cannot read its inputs.
 
 D (tape ingest) runs from here too: when the measured-leg count changes, the artifact is refreshed from
-the public trade tape (`c200-printthrough.py --json`), so each leg's prints are recorded while the
-endpoint still has them.
+the public trade tape (`c200-printthrough.py --json --since-ms <last ingest - 90 min>`), so each leg's
+prints are recorded while the endpoint still has them. It is INCREMENTAL: a full-census re-analysis is
+~10 min of tape fetches and cannot fit a 15-min watcher's budget, and the 2-hourly fill-chain already
+re-derives the whole census (the resolver merges artifact lines latest-wins per intentId).
 
 USAGE
   python3 scripts/c200-intent-watch.py                 # normal tick (silent when healthy)
@@ -69,6 +71,17 @@ GATE_LEGS = 50
 DELTA = 0.02
 TOL = 1e-9
 STALE_INTENT_MS = 20 * 60 * 1000
+# D (tape ingest) budget. The legs a tick must ingest are the ones dispatched since the last
+# successful ingest; anything older was already folded in (and the 2-hourly fill-chain re-derives the
+# whole census anyway). 90 min of overlap is deliberate: a leg's print-through horizons are 5 and 60
+# minutes after dispatch, so a leg captured sooner than that would book reached60=False for a window
+# that had not elapsed. Measured 2026-11-05: the old full census took >420s (killed by the tool at
+# 420s, est. ~600s = 584 tape fetches at 1.03s + 32.6s condition_map); a 24h-bootstrap ingest on the
+# same box finished the whole watcher tick in 13.2s once condition_map was restricted.
+INGEST_TIMEOUT_S = 180
+INGEST_OVERLAP_MS = 90 * 60 * 1000
+INGEST_BOOTSTRAP_MS = 24 * 3600 * 1000
+INGEST_ALERT_H = 6                # a failing D re-alerts at most this often, not every tick
 PORT = 3013
 
 
@@ -524,17 +537,41 @@ def main() -> int:
     # exist in c200-printthrough.py — the call exited 2 with that usage error and the failure was
     # swallowed (captured output, no return-code check), so D had never ingested anything. The real
     # entry point is `--json` (append the artifact, quiet stdout), and a non-zero exit now raises.
+    #
+    # WHY IT IS INCREMENTAL (the second and worse defect, found 2026-11-05): D called --json with NO
+    # --since-ms, i.e. a full re-analysis of the whole C-200 census, inside a 150s timeout. That run is
+    # not 150s of work: 617 legs over 584 distinct markets, each a fresh data-api tape fetch (1.03s
+    # mean: 0.24s quiet markets, 3.7s for 2,600-print ones) plus a 27.5s condition_map — measured
+    # >420s, killed at the timeout, so `lastMeasured` never advanced and EVERY tick retried the same
+    # doomed full run and printed the same alert: 50 consecutive runs, 2026-11-04 15:0x -> 2026-11-05
+    # 06:44, 0 successful ingests, one Discord line every ~18 min. A probe that cannot succeed inside
+    # its own budget is a dead counter, not a rate limit.
+    # Now it ingests only the legs dispatched since the last successful ingest, minus a 90-min overlap
+    # so each leg's 60-minute print-through horizon has actually elapsed before it is captured (a
+    # premature capture would record reached60=False for a window that had not finished yet). The
+    # 2-hourly fill-chain still runs the full census; the resolver merges lines latest-wins per
+    # intentId (scripts/c200-fill-resolve.ts:57-68), so a partial line can only ADD rows, never
+    # truncate the population.
     if not a.no_ingest and not a.now_ms and st.get("lastMeasured") != measured:
+        wm = st.get("ingestWatermarkMs")
+        since = (int(wm) if isinstance(wm, (int, float)) else now_ms - INGEST_BOOTSTRAP_MS) - INGEST_OVERLAP_MS
         try:
-            p = subprocess.run(["python3", PRINTTHROUGH, "--json"],
-                               capture_output=True, text=True, timeout=150, cwd=ROOT)
+            p = subprocess.run(["python3", PRINTTHROUGH, "--json", "--since-ms", str(int(since))],
+                               capture_output=True, text=True, timeout=INGEST_TIMEOUT_S, cwd=ROOT)
             if p.returncode != 0:
-                alerts.append(f"⚠️ tape ingest (D) FAILED (exit {p.returncode}) — "
-                              f"{(p.stderr or p.stdout or '').strip()[-300:]}")
-            else:
-                st["lastMeasured"] = measured
+                raise RuntimeError(f"exit {p.returncode}: {(p.stderr or p.stdout or '').strip()[-300:]}")
+            st["lastMeasured"] = measured
+            st["ingestWatermarkMs"] = now_ms
+            st["flags"].pop("ingestFailAt", None)
         except Exception as e:
-            alerts.append(f"⚠️ tape ingest (D) failed: {e}")
+            # Alert once per INGEST_ALERT_H, not once per tick: the old every-tick alert is what made a
+            # 15-hour outage look like a recurring blip (and kept the Discord channel noisy).
+            last = st["flags"].get("ingestFailAt")
+            if not isinstance(last, (int, float)) or now_ms - int(last) >= INGEST_ALERT_H * 3600 * 1000:
+                alerts.append(f"⚠️ tape ingest (D) failed: {e}. Nothing was folded into "
+                              f"`data/c200-printthrough.jsonl` this tick; the 2-hourly fill-chain's full "
+                              f"census is unaffected. Re-alerting at most every {INGEST_ALERT_H}h.")
+                st["flags"]["ingestFailAt"] = now_ms
 
     if alerts:
         alerts.append(f"_watcher state: measured {measured} legs / {GATE_LEGS} to gate · "

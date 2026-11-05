@@ -106,9 +106,27 @@ def wallet_print(observed_trade_id: str | None) -> dict | None:
     return dict(r) if r else None
 
 
-def condition_map() -> dict[str, str]:
-    m = {r["marketId"]: r["conditionId"] for r in db().execute(
-        "SELECT DISTINCT marketId, conditionId FROM ObservedTrade WHERE conditionId IS NOT NULL")}
+def condition_map(markets: set[str] | None = None) -> dict[str, str]:
+    """marketId -> conditionId. Pass `markets` to restrict the scan to ids you will actually look up.
+
+    WHY this parameter exists: the unrestricted query materialises every (marketId, conditionId)
+    pair the observed-trade table has ever held — 303,510 rows on 2026-11-05 — and cost 32.57s
+    PER CALL, which is most of a scheduled ingest's whole budget. The map is only ever consulted
+    for the marketIds of the legs being analysed, so restricting it to that set returns the same
+    answers for that population. Measured on the live 617-leg census (584 distinct marketIds):
+    32.57s -> 1.35s, 0 marketIds missing, 0 whose conditionId differs, 0 keys outside the request.
+    """
+    m: dict[str, str] = {}
+    sql = "SELECT DISTINCT marketId, conditionId FROM ObservedTrade WHERE conditionId IS NOT NULL"
+    if markets:
+        ids = [x for x in markets if x]
+        for i in range(0, len(ids), 900):
+            chunk = ids[i:i + 900]
+            for r in db().execute(sql + f" AND marketId IN ({','.join('?' * len(chunk))})", chunk):
+                m[r["marketId"]] = r["conditionId"]
+    else:
+        for r in db().execute(sql):
+            m[r["marketId"]] = r["conditionId"]
     if os.path.exists(META):
         for line in open(META):
             try:
@@ -559,7 +577,7 @@ def main() -> int:
     a = ap.parse_args()
 
     legs = load_legs(a.since_ms)
-    cmap = condition_map()
+    cmap = condition_map({leg["marketId"] for leg in legs})
     amap = l2_map()
     tapes: dict[str, list[dict]] = {}
     res: list[dict] = []
