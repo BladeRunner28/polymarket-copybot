@@ -370,9 +370,22 @@ def main() -> int:
             if at_streak
             else f"no job at or over {MIN_STREAK} failures"
         )
+        # ...and the second half was a FIXED string too ("no quiet or past-due jobs"), printing exactly
+        # when a quiet or past-due job was being SUPPRESSED by the reminder window — which is the only
+        # way to reach this branch with one present: a first-time or re-due alert appends to `out`, so
+        # the elif above is skipped. Count the live suppression keys instead (they are popped the
+        # moment the condition clears, so their presence is exactly "flagged, inside the window").
+        n_quiet = sum(1 for k in state if str(k).startswith("quiet:"))
+        n_pastdue = sum(1 for k in state if str(k).startswith("pastdue:"))
+        held = []
+        if n_quiet:
+            held.append(f"{n_quiet} QUIET job(s) inside the {REMIND_HOURS}h reminder window")
+        if n_pastdue:
+            held.append(f"{n_pastdue} PAST-DUE job(s) inside the {REMIND_HOURS}h reminder window")
         print(
             f"cron-health-watch: nothing to send — {ok}/{len(jobs)} jobs ok, {tail}, "
-            f"no quiet or past-due jobs."
+            + ("; ".join(held) if held else "no quiet or past-due jobs")
+            + "."
         )
     return 0
 
