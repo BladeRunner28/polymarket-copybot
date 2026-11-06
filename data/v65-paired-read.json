@@ -1,0 +1,647 @@
+{
+  "card": "v65-paired-read-instrument",
+  "generatedAt": "2026-11-06T15:05:33.549Z",
+  "epoch": "2026-10-21T09:16:47Z",
+  "basis": {
+    "population": "PaperTrade isDemo=0, status closed|resolved, settlement clock not null, journal ruleSetVersion",
+    "clock": "settled = COALESCE(closedAt, resolvedAt) UTC",
+    "level": "leg; one pair = one post leg + one pre leg",
+    "fee": "feeDecomposition + netTargets: p*(1-p)*rate on entry, plus exit fee on early exits; proxy rate from MarketSnapshot.question",
+    "pairing": "exact = lane+market+outcome; class = lane+price band, nearest entry price within $0.10, 1:1 no replacement"
+  },
+  "gate": {
+    "maxTwoSe": 10,
+    "minPairs": 70
+  },
+  "population": {
+    "preAll": [
+      {
+        "lane": "BANKROLL_200",
+        "n": 2498,
+        "distinctSizes": 102,
+        "minSize": 0.6202531645569621,
+        "maxSize": 100,
+        "netPnl": 5068.827090437651,
+        "bands": {
+          "0.20-0.40": 533,
+          "0.40-0.60": 1053,
+          "0.60-0.80": 494,
+          "<0.20": 257,
+          ">=0.80": 161
+        }
+      },
+      {
+        "lane": "STANDARD",
+        "n": 9865,
+        "distinctSizes": 61,
+        "minSize": 8,
+        "maxSize": 20,
+        "netPnl": 6150.420708057713,
+        "bands": {
+          "0.20-0.40": 1255,
+          "0.40-0.60": 3728,
+          "0.60-0.80": 1673,
+          "<0.20": 525,
+          ">=0.80": 2684
+        }
+      }
+    ],
+    "preNear": [
+      {
+        "lane": "BANKROLL_200",
+        "n": 555,
+        "distinctSizes": 14,
+        "minSize": 0.6202531645569621,
+        "maxSize": 100,
+        "netPnl": 1572.5073618720814,
+        "bands": {
+          "0.20-0.40": 165,
+          "0.40-0.60": 245,
+          "0.60-0.80": 70,
+          "<0.20": 75
+        }
+      },
+      {
+        "lane": "STANDARD",
+        "n": 133,
+        "distinctSizes": 1,
+        "minSize": 18,
+        "maxSize": 18,
+        "netPnl": 129.99584393681334,
+        "bands": {
+          "0.20-0.40": 28,
+          "0.40-0.60": 79,
+          "0.60-0.80": 9,
+          "<0.20": 15,
+          ">=0.80": 2
+        }
+      }
+    ],
+    "v65": [
+      {
+        "lane": "BANKROLL_200",
+        "n": 13,
+        "distinctSizes": 6,
+        "minSize": 2.481012658227848,
+        "maxSize": 20,
+        "netPnl": 77.94088222443256,
+        "bands": {
+          "0.20-0.40": 8,
+          "0.60-0.80": 2,
+          "<0.20": 3
+        }
+      },
+      {
+        "lane": "STANDARD",
+        "n": 4,
+        "distinctSizes": 1,
+        "minSize": 18,
+        "maxSize": 18,
+        "netPnl": 85.345,
+        "bands": {
+          "0.20-0.40": 2,
+          "0.60-0.80": 2
+        }
+      }
+    ],
+    "post": [
+      {
+        "lane": "BANKROLL_200",
+        "n": 155,
+        "distinctSizes": 12,
+        "minSize": 1.227848101265823,
+        "maxSize": 100,
+        "netPnl": 2133.6723871496147,
+        "bands": {
+          "0.20-0.40": 83,
+          "0.40-0.60": 1,
+          "0.60-0.80": 25,
+          "<0.20": 46
+        }
+      },
+      {
+        "lane": "STANDARD",
+        "n": 91,
+        "distinctSizes": 6,
+        "minSize": 4,
+        "maxSize": 20,
+        "netPnl": 1367.7045432499997,
+        "bands": {
+          "0.20-0.40": 54,
+          "0.60-0.80": 14,
+          "<0.20": 21,
+          ">=0.80": 2
+        }
+      }
+    ]
+  },
+  "treatment": {
+    "standardFlatPath": {
+      "preNear": "133/133",
+      "v65": "4/4"
+    },
+    "c200V65Legs": 13
+  },
+  "reads": [
+    {
+      "label": "v65 era | pre all BANKROLL_200 exact",
+      "stats": {
+        "n": 0,
+        "meanDiff": 0,
+        "sd": 0,
+        "se": 0,
+        "twoSe": 0,
+        "sumDiff": 0,
+        "preMean": 0,
+        "postMean": 0,
+        "preSd": 0,
+        "postSd": 0,
+        "clusters": 0,
+        "clusterCi": {
+          "lo": null,
+          "hi": null
+        }
+      },
+      "gate": {
+        "n": 0,
+        "twoSe": 0,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 70,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": null
+    },
+    {
+      "label": "v65 era | pre all BANKROLL_200 class",
+      "stats": {
+        "n": 13,
+        "meanDiff": 22.99809739539906,
+        "sd": 61.48683827358612,
+        "se": 17.053380627813578,
+        "twoSe": 34.106761255627156,
+        "sumDiff": 298.9752661401878,
+        "preMean": -17.002644916596555,
+        "postMean": 5.9954524788025045,
+        "preSd": 30.837630774775338,
+        "postSd": 36.0374672988282,
+        "clusters": 13,
+        "clusterCi": {
+          "lo": -10.426528635115542,
+          "hi": 56.42272342591366
+        }
+      },
+      "gate": {
+        "n": 13,
+        "twoSe": 34.106761255627156,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 152,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": {
+        "sum": 298.9752661401878,
+        "median": 1.6223624549891182,
+        "trimmedMean": 10.239960182235485,
+        "exTop": [
+          {
+            "k": 3,
+            "sum": -5.5586731227525625,
+            "mean": -0.5558673122752562
+          },
+          {
+            "k": 10,
+            "sum": -50.91030762014498,
+            "mean": -16.970102540048327
+          }
+        ],
+        "topShare": 1.1702826734713014
+      }
+    },
+    {
+      "label": "v65 era | pre all STANDARD exact",
+      "stats": {
+        "n": 0,
+        "meanDiff": 0,
+        "sd": 0,
+        "se": 0,
+        "twoSe": 0,
+        "sumDiff": 0,
+        "preMean": 0,
+        "postMean": 0,
+        "preSd": 0,
+        "postSd": 0,
+        "clusters": 0,
+        "clusterCi": {
+          "lo": null,
+          "hi": null
+        }
+      },
+      "gate": {
+        "n": 0,
+        "twoSe": 0,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 70,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": null
+    },
+    {
+      "label": "v65 era | pre all STANDARD class",
+      "stats": {
+        "n": 4,
+        "meanDiff": 16.783440156203667,
+        "sd": 36.492413860237264,
+        "se": 18.246206930118632,
+        "twoSe": 36.492413860237264,
+        "sumDiff": 67.13376062481467,
+        "preMean": 4.5528098437963305,
+        "postMean": 21.33625,
+        "preSd": 12.445810935552464,
+        "postSd": 32.89431732457751,
+        "clusters": 4,
+        "clusterCi": {
+          "lo": -18.97912542682885,
+          "hi": 52.546005739236186
+        }
+      },
+      "gate": {
+        "n": 4,
+        "twoSe": 36.492413860237264,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 54,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": {
+        "sum": 67.13376062481467,
+        "median": 14.392992474804029,
+        "trimmedMean": 16.783440156203667,
+        "exTop": [
+          {
+            "k": 3,
+            "sum": -24.173420024793387,
+            "mean": -24.173420024793387
+          },
+          {
+            "k": 10,
+            "sum": 0,
+            "mean": 0
+          }
+        ],
+        "topShare": 1
+      }
+    },
+    {
+      "label": "v65 era | pre v60-64 BANKROLL_200 exact",
+      "stats": {
+        "n": 0,
+        "meanDiff": 0,
+        "sd": 0,
+        "se": 0,
+        "twoSe": 0,
+        "sumDiff": 0,
+        "preMean": 0,
+        "postMean": 0,
+        "preSd": 0,
+        "postSd": 0,
+        "clusters": 0,
+        "clusterCi": {
+          "lo": null,
+          "hi": null
+        }
+      },
+      "gate": {
+        "n": 0,
+        "twoSe": 0,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 70,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": null
+    },
+    {
+      "label": "v65 era | pre v60-64 BANKROLL_200 class",
+      "stats": {
+        "n": 13,
+        "meanDiff": 20.985963552738042,
+        "sd": 63.30957583519141,
+        "se": 17.55891706935835,
+        "twoSe": 35.1178341387167,
+        "sumDiff": 272.81752618559455,
+        "preMean": -14.990511073935535,
+        "postMean": 5.995452478802505,
+        "preSd": 32.73313915629212,
+        "postSd": 36.0374672988282,
+        "clusters": 13,
+        "clusterCi": {
+          "lo": -13.429513903204324,
+          "hi": 55.40144100868041
+        }
+      },
+      "gate": {
+        "n": 13,
+        "twoSe": 35.1178341387167,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 161,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": {
+        "sum": 272.81752618559455,
+        "median": 0,
+        "trimmedMean": 9.392293465552585,
+        "exTop": [
+          {
+            "k": 3,
+            "sum": -31.716413077345823,
+            "mean": -3.1716413077345824
+          },
+          {
+            "k": 10,
+            "sum": -71.86465628089903,
+            "mean": -23.954885426966342
+          }
+        ],
+        "topShare": 1.263416567423936
+      }
+    },
+    {
+      "label": "v65 era | pre v60-64 STANDARD exact",
+      "stats": {
+        "n": 0,
+        "meanDiff": 0,
+        "sd": 0,
+        "se": 0,
+        "twoSe": 0,
+        "sumDiff": 0,
+        "preMean": 0,
+        "postMean": 0,
+        "preSd": 0,
+        "postSd": 0,
+        "clusters": 0,
+        "clusterCi": {
+          "lo": null,
+          "hi": null
+        }
+      },
+      "gate": {
+        "n": 0,
+        "twoSe": 0,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 70,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": null
+    },
+    {
+      "label": "v65 era | pre v60-64 STANDARD class",
+      "stats": {
+        "n": 4,
+        "meanDiff": 32.336875,
+        "sd": 45.98857756076502,
+        "se": 22.99428878038251,
+        "twoSe": 45.98857756076502,
+        "sumDiff": 129.3475,
+        "preMean": -11.000625,
+        "postMean": 21.33625,
+        "preSd": 15.094612782794398,
+        "postSd": 32.89431732457751,
+        "clusters": 4,
+        "clusterCi": {
+          "lo": -12.731931009549726,
+          "hi": 77.40568100954972
+        }
+      },
+      "gate": {
+        "n": 4,
+        "twoSe": 45.98857756076502,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 85,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": {
+        "sum": 129.34750000000003,
+        "median": 44.3765,
+        "trimmedMean": 32.336875000000006,
+        "exTop": [
+          {
+            "k": 3,
+            "sum": -29.9955,
+            "mean": -29.9955
+          },
+          {
+            "k": 10,
+            "sum": 0,
+            "mean": 0
+          }
+        ],
+        "topShare": 1
+      }
+    },
+    {
+      "label": "post-v65 | pre v60-64 BANKROLL_200 exact",
+      "stats": {
+        "n": 2,
+        "meanDiff": 3.225897550036075,
+        "sd": 19.99376753435841,
+        "se": 14.137728605012267,
+        "twoSe": 28.275457210024534,
+        "sumDiff": 6.45179510007215,
+        "preMean": -12.988726694339872,
+        "postMean": -9.762829144303797,
+        "preSd": 19.354004901275715,
+        "postSd": 0.6397626330826914,
+        "clusters": 2,
+        "clusterCi": {
+          "lo": -24.48405051578797,
+          "hi": 30.935845615860124
+        }
+      },
+      "gate": {
+        "n": 2,
+        "twoSe": 28.275457210024534,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 16,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": null
+    },
+    {
+      "label": "post-v65 | pre v60-64 BANKROLL_200 class",
+      "stats": {
+        "n": 155,
+        "meanDiff": 11.272609951868265,
+        "sd": 124.22797759619756,
+        "se": 9.978231279573247,
+        "twoSe": 19.956462559146495,
+        "sumDiff": 1747.254542539581,
+        "preMean": 2.493018352322808,
+        "postMean": 13.765628304191056,
+        "preSd": 73.09800378143076,
+        "postSd": 103.0710848014101,
+        "clusters": 155,
+        "clusterCi": {
+          "lo": -8.284723356095299,
+          "hi": 30.82994325983183
+        }
+      },
+      "gate": {
+        "n": 155,
+        "twoSe": 19.956462559146495,
+        "nPass": true,
+        "precisionPass": false,
+        "verdict": "UNRESOLVABLE-BY-PRECISION",
+        "requiredPairs": 618,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": {
+        "sum": 1747.2545425395779,
+        "median": 0.9793344683544304,
+        "trimmedMean": 3.4485719436684787,
+        "exTop": [
+          {
+            "k": 3,
+            "sum": -197.07500893100985,
+            "mean": -1.2965461113882226
+          },
+          {
+            "k": 10,
+            "sum": -1479.174618535439,
+            "mean": -10.20120426576165
+          }
+        ],
+        "topShare": 1.8465707671794105
+      }
+    },
+    {
+      "label": "post-v65 | pre v60-64 STANDARD exact",
+      "stats": {
+        "n": 1,
+        "meanDiff": 0.2079000000000022,
+        "sd": 0,
+        "se": 0,
+        "twoSe": 0,
+        "sumDiff": 0.2079000000000022,
+        "preMean": -18.82485,
+        "postMean": -18.61695,
+        "preSd": 0,
+        "postSd": 0,
+        "clusters": 1,
+        "clusterCi": {
+          "lo": null,
+          "hi": null
+        }
+      },
+      "gate": {
+        "n": 1,
+        "twoSe": 0,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 70,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": null
+    },
+    {
+      "label": "post-v65 | pre v60-64 STANDARD class",
+      "stats": {
+        "n": 54,
+        "meanDiff": 16.345006411651834,
+        "sd": 37.52494273017187,
+        "se": 5.10649790644901,
+        "twoSe": 10.21299581289802,
+        "sumDiff": 882.630346229199,
+        "preMean": 3.124399944829653,
+        "postMean": 19.469406356481482,
+        "preSd": 33.14010054534458,
+        "postSd": 34.10992508646588,
+        "clusters": 54,
+        "clusterCi": {
+          "lo": 6.336270515011773,
+          "hi": 26.353742308291896
+        }
+      },
+      "gate": {
+        "n": 54,
+        "twoSe": 10.21299581289802,
+        "nPass": false,
+        "precisionPass": false,
+        "verdict": "VANISHED-BY-N",
+        "requiredPairs": 57,
+        "requiredSd": 41.83300132670378
+      },
+      "concentration": {
+        "sum": 882.6303462291992,
+        "median": 2.684762330508473,
+        "trimmedMean": 13.002698391572704,
+        "exTop": [
+          {
+            "k": 3,
+            "sum": 556.2602292291988,
+            "mean": 10.907063318219585
+          },
+          {
+            "k": 10,
+            "sum": 87.02772922919871,
+            "mean": 1.9779029370272434
+          }
+        ],
+        "topShare": 0.9013995727645195
+      }
+    }
+  ],
+  "verdict": {
+    "eraExact": {
+      "n": 0,
+      "twoSe": 0,
+      "nPass": false,
+      "precisionPass": false,
+      "verdict": "VANISHED-BY-N",
+      "requiredPairs": 70,
+      "requiredSd": 41.83300132670378
+    },
+    "eraClass": {
+      "n": 17,
+      "twoSe": 28.397438029283855,
+      "nPass": false,
+      "precisionPass": false,
+      "verdict": "VANISHED-BY-N",
+      "requiredPairs": 138,
+      "requiredSd": 41.83300132670378
+    },
+    "widenedStandard": {
+      "n": 54,
+      "twoSe": 10.21299581289802,
+      "nPass": false,
+      "precisionPass": false,
+      "verdict": "VANISHED-BY-N",
+      "requiredPairs": 57,
+      "requiredSd": 41.83300132670378
+    },
+    "widenedC200": {
+      "n": 155,
+      "twoSe": 19.956462559146495,
+      "nPass": true,
+      "precisionPass": false,
+      "verdict": "UNRESOLVABLE-BY-PRECISION",
+      "requiredPairs": 618,
+      "requiredSd": 41.83300132670378
+    }
+  }
+}
