@@ -262,6 +262,20 @@ def main():
             out["exTop1"] = stats_ex_top1(sub)
         return out
 
+    def settled_window_stats(since_ms):
+        """Same cutoff on the SETTLEMENT clock, not the opening clock.
+
+        2026-11-06 (self-audit, Lane B): `liveSinceSep5` is anchored on openedMs, so it counts
+        COHORT OPENINGS and reports the PnL of whichever of those legs have since settled.
+        Printed as "since Sep 5" beside a lifetime settled figure, that read as "PnL booked
+        since Sep 5". Measured on the live book (2026-11-06, level=leg, isDemo=0,
+        BANKROLL_200): opened-cohort n=1,363/$8,100.00 vs settled-cohort n=1,414/$8,374.01 --
+        51 legs and $274 apart, same sign here but not by construction. Both are published so
+        the line cannot be read on the wrong clock.
+        """
+        sub = [d for d in rows if (d["finishedMs"] or 0) >= since_ms and d["pnl"] is not None]
+        return stats(sub)
+
     SEP5 = 1788677940000  # 2026-09-05 08:39 (breaker clear / Kalshi leg re-priced)
     summary = {
         "asOf": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -276,7 +290,14 @@ def main():
             "caveats": art["caveats"],
         },
         "live": live_total,
+        # 2026-11-06 (self-audit, Lane B): `live` is the whole BANKROLL_200 book, which is NOT
+        # Polymarket-only -- 93 historical Kalshi legs are in it (they were re-priced onto the
+        # PM reference on 2026-09-05 and deliberately re-joined the C-200 series, card
+        # kalshi-reprice-92). The delivered line called that "all Polymarket". Split it.
+        "liveByVenue": {v: stats([d for d in rows if (d["venue"] or "?") == v])
+                        for v in sorted({(d["venue"] or "?") for d in rows})},
         "liveSinceSep5": window_stats(SEP5),
+        "liveSinceSep5Settled": settled_window_stats(SEP5),
         "liveFeeEntryUsd": round(live_fee, 2),
         "livePnlNetEntryFee": round(live_total["pnl"] - live_fee, 2),
         "variants": variants,

@@ -50,12 +50,28 @@ import json, time
 s = json.load(open("data/kalshi-shadow-summary.json"))
 live, ss = s["live"], s["shadowScoreSplit"]
 print("--- KALSHI SHADOW STATUS (%s) ---" % s["asOf"])
-print("live C-200 (all Polymarket): n=%d pnl=$%.2f roi=%.1f%% win=%.0f%% | since Sep 5: n=%d pnl=$%.2f"
-      % (live["n"], live["pnl"], live["roi_pct"], live["win_rate_pct"],
-         s["liveSinceSep5"]["n"], s["liveSinceSep5"]["pnl"]))
+# 2026-11-06 (self-audit, Lane B): this line used to read "live C-200 (all Polymarket)" while
+# `live` is the whole BANKROLL_200 book INCLUDING the 93 historical Kalshi legs (re-priced onto
+# the PM reference 2026-09-05 and deliberately re-joined to the C-200 series, card
+# kalshi-reprice-92). Measured on the live book: the mixed figure is n=2,660/+$8,240.47/34.4%
+# vs Polymarket-only n=2,568/+$8,288.10/35.9% -- so the label understated PM ROI by 1.5pp and
+# PM PnL by $47.63. Both readings are now printed; nothing about the numbers changed.
+print("live C-200 (BANKROLL_200 book, BOTH venues — not Polymarket-only): n=%d pnl=$%.2f roi=%.1f%% win[EXIT]=%.0f%%"
+      % (live["n"], live["pnl"], live["roi_pct"], live["win_rate_pct"]))
+for v in sorted(s.get("liveByVenue") or {}):
+    x = s["liveByVenue"][v]
+    print("  by venue %-10s n=%4d settled=%4d pnl=$%9.2f roi=%6.1f%% win[EXIT]=%2.0f%%"
+          % (v, x["n"], x["n_settled"], x["pnl"], x["roi_pct"], x["win_rate_pct"]))
+# CLOCK: `liveSinceSep5` is anchored on OPENINGS (openedAt>=Sep 5), so its PnL is "these legs,
+# as far as they have settled" -- not "PnL booked since Sep 5". The settled-clock twin prints
+# beside it because the two are not the same number and do not have to agree in sign.
+o5 = s["liveSinceSep5"]
+f5 = s.get("liveSinceSep5Settled") or {}
+print("since Sep 5, OPENED cohort: n=%d pnl=$%.2f | since Sep 5, SETTLED cohort: n=%d pnl=$%.2f"
+      % (o5["n"], o5["pnl"], f5.get("n", 0), f5.get("pnl", 0.0)))
 print("shadow-score split (IN-SAMPLE, model fitted %s, n_train=%d, purged OOS rank IC=%+.3f):"
       % (s["model"]["fittedAt"][:16], s["model"]["nTrain"], s["model"]["oosRankIcPurged"]))
-print("  selected: n=%d pnl=$%.2f roi=%.1f%% win=%.0f%%   rejected: n=%d pnl=$%.2f roi=%.1f%%"
+print("  selected: n=%d pnl=$%.2f roi=%.1f%% win[EXIT]=%.0f%%   rejected: n=%d pnl=$%.2f roi=%.1f%%"
       % (ss["selected"]["n"], ss["selected"]["pnl"], ss["selected"]["roi_pct"], ss["selected"]["win_rate_pct"],
          ss["rejected"]["n"], ss["rejected"]["pnl"], ss["rejected"]["roi_pct"]))
 o = ss["oosSinceFit"]; r = ss["oosRejected"]
@@ -72,10 +88,10 @@ if oe and re_:
              re_["n_settled"], re_["pnl"], re_["roi_pct"], re_["droppedTradeId"] or "-", re_["droppedPnl"]))
     print("    retop1 spread: selected %+.1f%% vs rejected %+.1f%% = %+.1fpp (raw spread %+.1fpp)"
           % (oe["roi_pct"], re_["roi_pct"], re_["roi_pct"] - oe["roi_pct"], r["roi_pct"] - o["roi_pct"]))
-print("candidate venue rules (attribution of the existing Polymarket book):")
+print("candidate venue rules (attribution of the C-200 book — BOTH venues, not PM-only):")
 for k, v in s["variants"].items():
     sel = v["selected"]
-    print("  %-18s n=%4d share=%5.1f%% pnl=$%+8.2f roi=%+7.1f%% win=%3.0f%%"
+    print("  %-18s n=%4d share=%5.1f%% pnl=$%+8.2f roi=%+7.1f%% win[EXIT]=%3.0f%%"
           % (k, sel["n"], v["share_of_book_pct"], sel["pnl"], sel["roi_pct"], sel["win_rate_pct"]))
 print("series days=%d last=%s live_cum=$%.2f shadow_cum=$%.2f pm_only_cum=$%.2f"
       % (len(s["series"]["dates"]), s["series"]["dates"][-1] if s["series"]["dates"] else "-",
