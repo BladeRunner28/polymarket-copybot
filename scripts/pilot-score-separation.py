@@ -359,7 +359,7 @@ def main():
     for w in sorted({r["wallet"] for r in recs}, key=lambda w: -sum(1 for r in recs if r["wallet"] == w)):
         sub = [r for r in recs if r["wallet"] == w]
         ag = sum(1 for r in sub if (r["good"] == 1) == (r["hypo"] > 0)) / len(sub)
-        print(f"   {w[:10]}… n={len(sub):>3} win={np.mean([r['won'] for r in sub]):.2f} "
+        print(f"   {w[:10]}… n={len(sub):>3} win[OUTCOME]={np.mean([r['won'] for r in sub]):.2f} "
               f"label-agree={ag:.2f} meanCopyPnL=${np.mean([r['hypo'] for r in sub]):+.2f}")
 
     # ---------------- supplementary: clustering, cluster-CI, MDE, wallet-blocked gate ----------------

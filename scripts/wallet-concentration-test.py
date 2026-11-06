@@ -376,7 +376,7 @@ def vendor_split(L, key, label):
         for l in grp:
             gh[l["wallet"]].append(l["pnl"])
         lo_ci, hi_ci = boot_ci_clusters(list(gh.values()), lambda s: statistics.mean([x for g in s for x in g]))
-        print("    %-17s wallets=%3d legs=%4d cost=%9s realized=%10s mean leg=%8s [%s, %s] median=%7s win=%.0f%% edge=%+.1f%%" % (
+        print("    %-17s wallets=%3d legs=%4d cost=%9s realized=%10s mean leg=%8s [%s, %s] median=%7s win[EXIT]=%.0f%% edge=%+.1f%%" % (
             lab, len(gh), len(grp), money(sum(l["size"] for l in grp)), money(sum(l["pnl"] for l in grp)),
             money(statistics.mean([l["pnl"] for l in grp])), money(lo_ci), money(hi_ci),
             money(statistics.median([l["pnl"] for l in grp])),

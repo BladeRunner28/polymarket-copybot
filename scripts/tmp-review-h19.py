@@ -27,7 +27,7 @@ ORDER BY realizedPnl DESC""",(cut,)).fetchall()
 n=len(rows); tot=sum(r[3] or 0 for r in rows)
 cost=sum(r[2] or 0 for r in rows)
 wins=sum(1 for r in rows if (r[3] or 0)>0)
-print(f"n={n} cost=${cost:.2f} pnl=${tot:.2f} roi={100*tot/cost:.1f}% win%={100*wins/n:.1f} avg=${cost/n:.2f}")
+print(f"n={n} cost=${cost:.2f} pnl=${tot:.2f} roi={100*tot/cost:.1f}% win%[EXIT]={100*wins/n:.1f} avg=${cost/n:.2f}")
 print("top3:", [round(r[3],2) for r in rows[:3]], "bottom3:", [round(r[3],2) for r in rows[-3:]])
 print(f"ex-top3 pnl=${tot-sum(r[3] for r in rows[:3]):.2f} ex-top3 roi={100*(tot-sum(r[3] for r in rows[:3]))/cost:.1f}%")
 

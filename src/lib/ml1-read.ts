@@ -274,7 +274,7 @@ export function readArms(
 
   console.log(`\n### ${label}`);
   console.log(`  ${split.provenance}`);
-  console.log(`  test base rate ${fmt(mean(labels))} | constant-predictor Brier ${fmt(constantBrier(labels))} | markets ${new Set(test.map((l) => l.market)).size}`);
+  console.log(`  test base rate ${fmt(mean(labels))} | constant-predictor Brier ${fmt(constantBrier(labels))} | markets ${new Set(test.map((l) => l.market)).size} | label basis EXIT (y = pnl_net_entry > 0)`);
 
   // TRAIN ERA MIX — claim (2) of card `ml1-fit-population-gaps`. Reporting only: the boundary,
   // the split and every bar stay exactly where they were. What changes is that the gate now SAYS
@@ -410,11 +410,11 @@ export function readArms(
     if (trainScored.length >= 30) {
       const trainAuc = auc(trainScored.map(score), trainScored.map((l) => l.y));
       (rows[rows.length - 1] as Record<string, unknown>)["trainAucInsample"] = trainAuc;
-      console.log(`  ${"".padEnd(22)} in-sample (train) AUC ${fmt(trainAuc)} — gap to the test AUC is the overfit read`);
+      console.log(`  ${"".padEnd(22)} in-sample (train) AUC ${fmt(trainAuc)} — gap to the test AUC is the overfit read; label basis EXIT (pnl_net_entry > 0)`);
     }
   }
 
-  console.log(`  PRICE-ONLY (the bar's comparator): AUC ${fmt(priceAuc)} Brier ${fmt(priceBrier)}`);
+  console.log(`  PRICE-ONLY (the bar's comparator): AUC ${fmt(priceAuc)} Brier ${fmt(priceBrier)} | label basis EXIT (pnl_net_entry > 0)`);
   // Per-era read — criterion (d) of the pre-registered shadow read, applied to AUC:
   // a sign that only holds in one era is not a signal, it is a policy artifact.
   const eras = eraGroups(test, (l) => l.era);

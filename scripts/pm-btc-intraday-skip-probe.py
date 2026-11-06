@@ -274,7 +274,7 @@ def main():
             print("  %-9s no usable rows" % name)
             continue
         variants.append(v)
-        print("  %-9s n=%4d markets=%3d win=%.1f%%  MEAN EDGE %+.4f/$1  clustered 95%% CI [%+.4f, %+.4f]%s"
+        print("  %-9s n=%4d markets=%3d win[OUTCOME]=%.1f%%  MEAN EDGE %+.4f/$1  clustered 95%% CI [%+.4f, %+.4f]%s"
               % (v["name"], v["n"], v["markets"], 100 * v["win_rate"], v["mean_edge"],
                  v["ci95"][0], v["ci95"][1], "  <-- CI EXCLUDES 0" if v["excludes_zero"] else ""))
 
