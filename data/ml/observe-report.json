@@ -1,10 +1,10 @@
 {
-  "built_at": "2026-11-05T02:21:05.078052+00:00",
+  "built_at": "2026-11-06T02:20:59.656728+00:00",
   "status": "NOT_ESTABLISHED",
-  "observations": 2094,
-  "distinct_markets": 598,
-  "settled_observations": 1878,
-  "settled_markets": 536,
+  "observations": 2254,
+  "distinct_markets": 641,
+  "settled_observations": 2128,
+  "settled_markets": 606,
   "by_day": {
     "2026-10-21": 144,
     "2026-10-22": 136,
@@ -21,14 +21,15 @@
     "2026-11-02": 80,
     "2026-11-03": 142,
     "2026-11-04": 245,
-    "2026-11-05": 159
+    "2026-11-05": 233,
+    "2026-11-06": 86
   },
-  "baseline_roi_net_pct": -5.178,
+  "baseline_roi_net_pct": -5.388,
   "buckets": 5,
   "settlement": {
     "source": "venue (clob tokens[].winner)",
-    "venue_settled_markets": 536,
-    "venue_settled_observations": 1878,
+    "venue_settled_markets": 606,
+    "venue_settled_observations": 2128,
     "snapshot_settled_markets": 16,
     "snapshot_settled_observations": 46,
     "decisive_overlap": 16,
@@ -41,9 +42,9 @@
       }
     ],
     "market_state": {
-      "from_cache": 525,
-      "resolved_now": 11,
-      "not_closed_yet": 62
+      "from_cache": 594,
+      "not_closed_yet": 35,
+      "resolved_now": 12
     },
     "cache": "data/ml/settlement-cache.json"
   },
@@ -51,142 +52,142 @@
     "p_profit": [
       {
         "bucket": 1,
-        "n": 376,
-        "markets": 217,
+        "n": 426,
+        "markets": 241,
         "win_rate": 30.05,
-        "roi_net_pct": -7.895,
-        "ci_lo": -28.177,
-        "ci_hi": 9.831
+        "roi_net_pct": -5.508,
+        "ci_lo": -24.388,
+        "ci_hi": 14.221
       },
       {
         "bucket": 2,
-        "n": 375,
-        "markets": 219,
-        "win_rate": 45.33,
-        "roi_net_pct": -2.152,
-        "ci_lo": -17.437,
-        "ci_hi": 12.021
+        "n": 425,
+        "markets": 248,
+        "win_rate": 45.18,
+        "roi_net_pct": -2.863,
+        "ci_lo": -15.305,
+        "ci_hi": 11.559
       },
       {
         "bucket": 3,
-        "n": 376,
-        "markets": 132,
-        "win_rate": 47.07,
-        "roi_net_pct": -9.799,
-        "ci_lo": -15.191,
-        "ci_hi": -4.309
+        "n": 426,
+        "markets": 147,
+        "win_rate": 48.12,
+        "roi_net_pct": -8.113,
+        "ci_lo": -12.77,
+        "ci_hi": -2.986
       },
       {
         "bucket": 4,
-        "n": 375,
-        "markets": 222,
-        "win_rate": 56.27,
-        "roi_net_pct": -1.626,
-        "ci_lo": -12.728,
-        "ci_hi": 9.638
+        "n": 425,
+        "markets": 248,
+        "win_rate": 56.24,
+        "roi_net_pct": -2.793,
+        "ci_lo": -12.909,
+        "ci_hi": 9.022
       },
       {
         "bucket": 5,
-        "n": 376,
-        "markets": 218,
-        "win_rate": 71.54,
-        "roi_net_pct": -4.399,
-        "ci_lo": -12.573,
-        "ci_hi": 3.558
+        "n": 426,
+        "markets": 242,
+        "win_rate": 70.42,
+        "roi_net_pct": -7.652,
+        "ci_lo": -15.356,
+        "ci_hi": 1.109
       }
     ],
     "ev": [
       {
         "bucket": 1,
-        "n": 376,
-        "markets": 215,
-        "win_rate": 30.59,
-        "roi_net_pct": -7.209,
-        "ci_lo": -23.862,
-        "ci_hi": 13.437
+        "n": 426,
+        "markets": 240,
+        "win_rate": 31.46,
+        "roi_net_pct": -3.209,
+        "ci_lo": -21.067,
+        "ci_hi": 15.64
       },
       {
         "bucket": 2,
-        "n": 375,
-        "markets": 217,
-        "win_rate": 43.73,
-        "roi_net_pct": -5.529,
-        "ci_lo": -19.577,
-        "ci_hi": 9.866
+        "n": 425,
+        "markets": 242,
+        "win_rate": 42.35,
+        "roi_net_pct": -8.794,
+        "ci_lo": -23.157,
+        "ci_hi": 4.853
       },
       {
         "bucket": 3,
-        "n": 376,
-        "markets": 145,
-        "win_rate": 47.87,
-        "roi_net_pct": -7.975,
-        "ci_lo": -15.056,
-        "ci_hi": 0.077
+        "n": 426,
+        "markets": 166,
+        "win_rate": 48.83,
+        "roi_net_pct": -6.521,
+        "ci_lo": -13.077,
+        "ci_hi": 0.384
       },
       {
         "bucket": 4,
-        "n": 375,
-        "markets": 224,
-        "win_rate": 57.87,
-        "roi_net_pct": 0.981,
-        "ci_lo": -10.144,
-        "ci_hi": 13.017
+        "n": 425,
+        "markets": 249,
+        "win_rate": 57.88,
+        "roi_net_pct": -1.157,
+        "ci_lo": -10.953,
+        "ci_hi": 9.466
       },
       {
         "bucket": 5,
-        "n": 376,
-        "markets": 217,
-        "win_rate": 70.21,
-        "roi_net_pct": -6.141,
-        "ci_lo": -15.378,
-        "ci_hi": 1.881
+        "n": 426,
+        "markets": 243,
+        "win_rate": 69.48,
+        "roi_net_pct": -7.258,
+        "ci_lo": -15.56,
+        "ci_hi": 0.538
       }
     ],
     "roi_reg": [
       {
         "bucket": 1,
-        "n": 376,
-        "markets": 219,
-        "win_rate": 29.52,
-        "roi_net_pct": -11.351,
-        "ci_lo": -28.473,
-        "ci_hi": 7.648
+        "n": 426,
+        "markets": 246,
+        "win_rate": 29.58,
+        "roi_net_pct": -8.848,
+        "ci_lo": -29.333,
+        "ci_hi": 6.449
       },
       {
         "bucket": 2,
-        "n": 375,
-        "markets": 225,
-        "win_rate": 44.53,
-        "roi_net_pct": -2.977,
-        "ci_lo": -18.367,
-        "ci_hi": 14.917
+        "n": 425,
+        "markets": 253,
+        "win_rate": 43.06,
+        "roi_net_pct": -5.887,
+        "ci_lo": -19.94,
+        "ci_hi": 8.353
       },
       {
         "bucket": 3,
-        "n": 376,
-        "markets": 155,
-        "win_rate": 53.46,
-        "roi_net_pct": -3.319,
-        "ci_lo": -10.196,
-        "ci_hi": 3.315
+        "n": 426,
+        "markets": 172,
+        "win_rate": 52.58,
+        "roi_net_pct": -4.797,
+        "ci_lo": -11.711,
+        "ci_hi": 1.488
       },
       {
         "bucket": 4,
-        "n": 375,
-        "markets": 222,
-        "win_rate": 70.4,
-        "roi_net_pct": 1.779,
-        "ci_lo": -7.902,
-        "ci_hi": 10.764
+        "n": 425,
+        "markets": 249,
+        "win_rate": 69.41,
+        "roi_net_pct": -0.949,
+        "ci_lo": -9.727,
+        "ci_hi": 7.838
       },
       {
         "bucket": 5,
-        "n": 376,
-        "markets": 223,
-        "win_rate": 52.39,
-        "roi_net_pct": -9.996,
-        "ci_lo": -22.754,
-        "ci_hi": 1.199
+        "n": 426,
+        "markets": 248,
+        "win_rate": 55.4,
+        "roi_net_pct": -6.451,
+        "ci_lo": -17.483,
+        "ci_hi": 4.608
       }
     ]
   },
