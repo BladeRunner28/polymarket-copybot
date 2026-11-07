@@ -9,7 +9,8 @@
  * Usage
  *   npx tsx scripts/frozen-artifact-tripwire.ts                 # verify the working tree + pin
  *   npx tsx scripts/frozen-artifact-tripwire.ts --changed HEAD~1..HEAD
- *   npx tsx scripts/frozen-artifact-tripwire.ts --digest        # digest to paste into the pin
+ *   npx tsx scripts/frozen-artifact-tripwire.ts --staged          # the pre-commit shape (M/D/R/T only;
+ *                                                                 # a commit that CREATES a frozen file is the freeze)
  *   npx tsx scripts/frozen-artifact-tripwire.ts --self-test     # negative control: prove it trips
  *
  * Exit 0 clean, 1 tripped/pin-problem, 2 self-test could not prove itself.
@@ -50,14 +51,32 @@ function loadJson<T>(file: string): T {
 }
 
 function changedPaths(range: string): string[] {
-  const out = execFileSync("git", ["diff", "--name-only", range], { cwd: ROOT, encoding: "utf8" });
-  return out.split("\n").map((s) => s.trim()).filter(Boolean);
+  // ADDED paths are deliberately dropped: a commit that CREATES a frozen artifact is the freeze
+  // itself, not a breach of it. Only M/D/R/T can land ON a file that was already frozen.
+  const out = execFileSync("git", ["diff", "--name-status", range], { cwd: ROOT, encoding: "utf8" });
+  return out
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter((parts) => parts.length >= 2 && parts[0][0] !== "A")
+    .map((parts) => parts[parts.length - 1].trim());
 }
 
-function report(manifest: FreezeManifest, pin: FreezePin, now: Date, touched: string[]): number {
+function stagedPaths(): string[] {
+  const out = execFileSync("git", ["diff", "--cached", "--name-status"], { cwd: ROOT, encoding: "utf8" });
+  return out
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter((parts) => parts.length >= 2 && parts[0][0] !== "A")
+    .map((parts) => parts[parts.length - 1].trim());
+}
+
+function report(manifest: FreezeManifest, pin: FreezePin, now: Date, touched: string[], scope: string): number {
   const r = checkFrozen({ manifest, readFile: readRel, now });
   const pinCheck = verifyPin(manifest, pin, now);
   const touchedViolations = checkTouchedPaths(touched, manifest, now);
+
+  if (touched.length > 0) console.log("change set (" + scope + "): " + touched.length + " path(s) checked");
+
 
   console.log(
     `frozen-artifacts: ${manifest.entries.length} entries, ${r.enforced.length} enforced at ${now.toISOString()}, ` +
@@ -179,14 +198,16 @@ function main(): void {
     console.log(digestManifest(loadJson<FreezeManifest>(MANIFEST)));
     return;
   }
+  const wantStaged = argv.includes("--staged");
   const i = argv.indexOf("--changed");
-  const touched = i >= 0 && argv[i + 1] ? changedPaths(argv[i + 1]) : [];
-  if (i >= 0 && touched.length === 0 && !argv[i + 1]) {
+  if (i >= 0 && !argv[i + 1]) {
     console.log("FAIL — --changed needs a git range (e.g. HEAD~1..HEAD)");
     process.exit(1);
   }
+  const touched = wantStaged ? stagedPaths() : i >= 0 ? changedPaths(argv[i + 1]) : [];
+  const scope = wantStaged ? "staged" : i >= 0 ? `range ${argv[i + 1]}` : "no change set";
   const now = new Date();
-  process.exit(report(loadJson<FreezeManifest>(MANIFEST), loadJson<FreezePin>(PIN), now, touched));
+  process.exit(report(loadJson<FreezeManifest>(MANIFEST), loadJson<FreezePin>(PIN), now, touched, scope));
 }
 
 main();
