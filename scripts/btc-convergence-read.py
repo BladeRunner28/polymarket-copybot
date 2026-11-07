@@ -44,7 +44,20 @@ SENSITIVITY_TREAT_AS_UNKNOWN = ("no_schedule_zero",)
 
 
 def load(dirpath):
+    """rows, coverage, diagnostics.
+
+    2026-11-07 SELF-AUDIT (Lane B): this used to `except OSError: pass` per file and
+    `except JSONDecodeError: pass` per line, and print nothing. A whole day's samples
+    file that fails to open (truncated gzip, permission, a half-written rotation) therefore
+    left the population with no line anywhere saying so — and the Q1 gate reads ONLY that
+    population, so the loss moved `n`, `days` and the ask<0.99 count with no trace. The
+    direction is conservative (it can only shrink the sample into INSUFFICIENT rather than
+    invent a PASS), but a gate that can never reach its floor because a file silently
+    vanished is a measurement fault, not a null result. Both losses are now COUNTED and
+    printed beside the population.
+    """
     rows, cov = [], []
+    unreadable, bad_lines, files_read = [], 0, 0
     files = sorted(glob.glob(str(Path(dirpath) / "btc-convergence-samples-*.jsonl*")))
     for f in files:                       # finished days are gzipped by the sampler's rotation
         opener = gzip.open if f.endswith(".gz") else open
@@ -55,9 +68,14 @@ def load(dirpath):
                         try:
                             rows.append(json.loads(line))
                         except json.JSONDecodeError:
-                            pass
-        except OSError:
-            pass
+                            bad_lines += 1
+        except OSError as exc:
+            unreadable.append((Path(f).name, str(exc)[:80]))
+            continue
+        files_read += 1
+    diag = {"files": len(files), "read": files_read, "unreadable": unreadable,
+            "bad_lines": bad_lines}
+
     cpath = Path(dirpath) / "btc-convergence-coverage.jsonl"
     if cpath.exists():
         with open(cpath) as fh:
@@ -67,7 +85,7 @@ def load(dirpath):
                         cov.append(json.loads(line))
                     except json.JSONDecodeError:
                         pass
-    return rows, cov
+    return rows, cov, diag
 
 
 def cluster_bootstrap_ci(pairs, draws=BOOT_DRAWS, seed=13):
@@ -173,7 +191,7 @@ def main():
     ap.add_argument("--json", default=None)
     a = ap.parse_args()
 
-    rows_all, cov = load(a.dir)
+    rows_all, cov, diag = load(a.dir)
     now = datetime.now(timezone.utc)
 
     print("=== btx2 · deterministic convergence · GATE READ ===")
@@ -207,6 +225,14 @@ def main():
 
     rows = [r for r in rows_all if str(r.get("code")) == PINNED_CODE]
     decided = [r for r in rows if r.get("determined")]
+    if diag["unreadable"] or diag["bad_lines"]:
+        print(f"  🟠 SAMPLE GAPS: {len(diag['unreadable'])}/{diag['files']} samples file(s) UNREADABLE "
+              f"and {diag['bad_lines']} malformed line(s) skipped — the population BELOW is missing them "
+              f"(this shrinks n/days, it cannot inflate them)")
+        for nm, err in diag["unreadable"]:
+            print(f"      {nm}: {err}")
+    else:
+        print(f"  samples files: {diag['read']}/{diag['files']} read clean, 0 malformed lines")
     print(f"  eligible rows: {len(rows)} | decided: {len(decided)}")
 
     # ---- 2. structural census: is the determined side even buyable?
