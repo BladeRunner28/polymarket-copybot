@@ -1,0 +1,230 @@
+{
+  "generatedAt": "2026-11-07T02:04:11.587Z",
+  "days": 0,
+  "basis": {
+    "population": "non-demo decisions carrying a v41 category-concentration refusal",
+    "level": "one decision (each refusal = one lost copy; repeats counted each time)",
+    "clock": "decision createdAt, UTC",
+    "price": "detectedPrice at decision time; fee 0, slippage 0",
+    "settlement": "market winning label (adapter -> event fallback), else undetermined",
+    "seatBasis": "open C-200 legs in the same research category at decision time, from booked open/close intervals",
+    "reachability": "lifetime peak concurrent open C-200 legs per research category"
+  },
+  "capInForce": 40,
+  "refused": 7,
+  "distinctOutcomes": 5,
+  "basisForm": {
+    "attempts": 7,
+    "attemptsLabelled": 0
+  },
+  "blockClass": {
+    "genuine": 0,
+    "phantom": 7,
+    "unknown": 0
+  },
+  "sameRunBurst": {
+    "largestRefusalsInOneSecond": 1,
+    "distinctSeconds": 7
+  },
+  "admissions": {
+    "noOtherDecisionLevelBlocker": 0,
+    "withOtherBlocker": 7
+  },
+  "settlement": {
+    "market": 7,
+    "event": 0,
+    "undetermined": 0
+  },
+  "priced": {
+    "n": 7,
+    "meanPerDollar": 0.1367,
+    "sumPerDollar": 0.96,
+    "exTop10PerDollar": 0,
+    "wins": 6
+  },
+  "reachability": [
+    {
+      "category": "Macro/Politics",
+      "lifetimeLegs": 176,
+      "peakConcurrentOpen": 88,
+      "peakAt": "2026-08-28T23:47:54.630Z",
+      "peakPostRailActivation": false,
+      "peakPostActivationLegs": 12
+    },
+    {
+      "category": "Crypto",
+      "lifetimeLegs": 40,
+      "peakConcurrentOpen": 24,
+      "peakAt": "2026-08-28T20:55:34.967Z",
+      "peakPostRailActivation": false,
+      "peakPostActivationLegs": 2
+    },
+    {
+      "category": "Defense/Geopolitics",
+      "lifetimeLegs": 37,
+      "peakConcurrentOpen": 15,
+      "peakAt": "2026-09-19T16:55:56.439Z",
+      "peakPostRailActivation": true,
+      "peakPostActivationLegs": 15
+    },
+    {
+      "category": "Finance",
+      "lifetimeLegs": 30,
+      "peakConcurrentOpen": 15,
+      "peakAt": "2026-09-09T22:17:43.016Z",
+      "peakPostRailActivation": true,
+      "peakPostActivationLegs": 15
+    },
+    {
+      "category": "Tech/AI",
+      "lifetimeLegs": 18,
+      "peakConcurrentOpen": 6,
+      "peakAt": "2026-08-28T22:55:21.054Z",
+      "peakPostRailActivation": false,
+      "peakPostActivationLegs": 3
+    }
+  ],
+  "unmappedBookedLegs": 2374,
+  "rows": [
+    {
+      "decidedAt": "2026-09-17T15:08:43.999Z",
+      "decisionJournalId": "cmu5o01nj008fh1t37u9gffhs",
+      "observedTradeId": "cmu5nrtn901lyobdpgywvvodh",
+      "marketId": "will-united-russia-win-between-340-and-354-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win between 340 and 354 seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.765,
+      "settlement": "market",
+      "won": false,
+      "ret": -1
+    },
+    {
+      "decidedAt": "2026-09-17T15:08:43.937Z",
+      "decisionJournalId": "cmu5o01lt008bh1t3f78s3jz3",
+      "observedTradeId": "cmu5nrtjq01lpobdpwnad8nk0",
+      "marketId": "will-united-russia-win-between-310-and-324-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win between 310 and 324 seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.806,
+      "settlement": "market",
+      "won": true,
+      "ret": 0.24069478908188577
+    },
+    {
+      "decidedAt": "2026-09-17T15:08:43.909Z",
+      "decisionJournalId": "cmu5o01l10089h1t3ut3zjh9g",
+      "observedTradeId": "cmu5nrtid01lmobdpa88dk3gi",
+      "marketId": "will-united-russia-win-355-or-more-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win 355 or more seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.9465,
+      "settlement": "market",
+      "won": true,
+      "ret": 0.05652403592181721
+    },
+    {
+      "decidedAt": "2026-09-17T15:08:43.876Z",
+      "decisionJournalId": "cmu5o01k30087h1t3fk910neo",
+      "observedTradeId": "cmu5nrtfk01ljobdpkdobzjao",
+      "marketId": "will-united-russia-win-between-295-and-309-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win between 295 and 309 seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.9435,
+      "settlement": "market",
+      "won": true,
+      "ret": 0.05988341282458929
+    },
+    {
+      "decidedAt": "2026-09-17T15:08:43.839Z",
+      "decisionJournalId": "cmu5o01j30085h1t3mg250ado",
+      "observedTradeId": "cmu5nrtej01lgobdpd1p247l1",
+      "marketId": "will-united-russia-win-between-325-and-339-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win between 325 and 339 seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.565,
+      "settlement": "market",
+      "won": true,
+      "ret": 0.769911504424779
+    },
+    {
+      "decidedAt": "2026-09-17T15:08:43.491Z",
+      "decisionJournalId": "cmu5o019e007th1t32pbvtauu",
+      "observedTradeId": "cmu5nrtcc01l7obdp3gyoqx2n",
+      "marketId": "will-united-russia-win-between-325-and-339-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win between 325 and 339 seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.565,
+      "settlement": "market",
+      "won": true,
+      "ret": 0.769911504424779
+    },
+    {
+      "decidedAt": "2026-09-17T15:08:43.437Z",
+      "decisionJournalId": "cmu5o017x007ph1t3fx8olx0j",
+      "observedTradeId": "cmu5nrt5b01ktobdpqqs4c79z",
+      "marketId": "will-united-russia-win-between-295-and-309-seats-in-the-next-russian-state-duma-election",
+      "marketQuestion": "Will United Russia win between 295 and 309 seats in the next Russian State Duma election?",
+      "category": "Defense/Geopolitics",
+      "wouldBe": 41,
+      "cap": 40,
+      "basisForm": "attempts",
+      "openLegsAtDecision": 0,
+      "blockClass": "phantom",
+      "otherDecisionLevelBlockers": [
+        "yes"
+      ],
+      "entry": 0.9435,
+      "settlement": "market",
+      "won": true,
+      "ret": 0.05988341282458929
+    }
+  ]
+}

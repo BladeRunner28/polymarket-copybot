@@ -18,6 +18,7 @@ import { applyBandSizeFactor, isInBandRange } from "../src/lib/band-size";
 import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
 import { appendLowConfShadow } from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
+import { formatCategoryCapBlock } from "../src/lib/category-cap-blocks";
 import { positionIdentityKey } from "../src/lib/outcome-identity";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -272,6 +273,18 @@ async function main() {
   // rows are measurement, not candidates — they are never scored, never
   // journaled and never copied. Excluding them here keeps the skip histogram and
   // the copy funnel exactly as they were before the observation sweep was added.
+
+  // LANE B (2026-11-06, category-seats-never-released): the map above is an
+  // ATTEMPT counter — it is incremented when a candidate PASSES the v41 gate
+  // (~L678) and never decremented, so later refusals in the same run leave their
+  // seat consumed. The refusal line used to print that number as if it were open
+  // positions ("would be 41/40" with zero legs open). Two read-only maps make the
+  // printed number name its basis without touching the gate: the seed snapshot
+  // (open C-200 legs at run start) and the legs this run actually dispatched.
+  // Moving the seat itself to the booking point is a Lane A change and is carded
+  // awaiting-approval, NOT applied here.
+  const c200CategorySeed = new Map(c200CategoryCounts);
+  const c200CategoryBooked = new Map<string, number>();
   const unscored = await prisma.observedTrade.findMany({
     where: { decisions: { none: {} }, observationOnly: false },
     orderBy: { timestamp: "desc" },
@@ -673,7 +686,16 @@ async function main() {
       if (rules.maxCategoryPositions > 0 && tradeCat) {
         const projected = (c200CategoryCounts.get(tradeCat) ?? 0) + 1;
         if (projected > rules.maxCategoryPositions) {
-          riskGates.push(`category concentration (${tradeCat} would be ${projected}/${rules.maxCategoryPositions})`);
+          // LANE B: name the basis. `projected` counts ATTEMPTS that passed this
+          // gate this run, not positions; the true C-200 open count in the
+          // category is the run-start seed plus the legs dispatched so far. The
+          // gate decision itself is unchanged (basis repair only — moving the seat
+          // to the booking point is carded awaiting-approval).
+          const categoryTrueOpen =
+            (c200CategorySeed.get(tradeCat) ?? 0) + (c200CategoryBooked.get(tradeCat) ?? 0);
+          riskGates.push(
+            formatCategoryCapBlock(tradeCat, projected, rules.maxCategoryPositions, categoryTrueOpen)
+          );
         } else {
           c200CategoryCounts.set(tradeCat, projected);
         }
@@ -1179,6 +1201,13 @@ async function main() {
           // own anchor and the same-run guard silently passed: 5 duplicate pairs
           // since 2026-10-30, one duplicating a -$35.98 loss.
           openCopyKeys.add(positionIdentityKey(t.walletAddress, t.marketId, t.outcome));
+
+          // LANE B (2026-11-06): the C-200 leg this run actually dispatched, per
+          // research category — the truthful half of the v41 refusal line. C-200
+          // only, because the counter's own seed is C-200 open rows.
+          if (botId === "BANKROLL_200" && tradeCat) {
+            c200CategoryBooked.set(tradeCat, (c200CategoryBooked.get(tradeCat) ?? 0) + 1);
+          }
           legsOpened++;
 
           // Counters and the copy alert belong to a SUCCESSFUL open, so they live
