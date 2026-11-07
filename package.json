@@ -25,6 +25,8 @@
     "update:rules": "tsx scripts/update-rules.ts",
     "report:daily": "tsx scripts/report-daily.ts",
     "test": "vitest run",
+    "verify:frozen": "tsx scripts/frozen-artifact-tripwire.ts",
+    "verify:frozen:self-test": "tsx scripts/frozen-artifact-tripwire.ts --self-test",
     "shadow:forward-read": "tsx scripts/shadow-forward-read.ts",
   "verify:bankroll-limits": "tsx scripts/verify-botbankroll-limits.ts"
   },

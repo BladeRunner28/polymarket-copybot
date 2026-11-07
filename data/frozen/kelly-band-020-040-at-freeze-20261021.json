@@ -1,0 +1,18 @@
+{
+  "record": "kelly-window-020-040-unresolved — the reading the 30-day extension is anchored to",
+  "frozenAt": "2026-10-21",
+  "source": "data/roadmap.json#kelly-window-020-040-unresolved (approval: user 'approved' on copybot-kelly-window-report recs 1-4, 2026-10-21)",
+  "basis": {
+    "population": "settled copies whose entry price falls in the 0.20-0.40 band",
+    "level": "leg",
+    "clock": "settlement (COALESCE(closedAt, resolvedAt)); the Oct-21 report's own window, not restated here"
+  },
+  "verbatim": "Band 0.20-0.40 read n=77, realized -$76, lambda-hat -0.21/-0.158 vs a NEGATIVE realized -> sign flip against the model.",
+  "values": {
+    "n": 77,
+    "realizedPnlUsd": -76,
+    "lambdaHat": [-0.21, -0.158]
+  },
+  "instruction": "do NOT reclassify it as a loss, do not propose a band rule for it, and do not cite it as evidence either way until 2026-11-20.",
+  "why_this_file_exists": "So that 'we agreed not to touch it' is a machine-visible record with a hash instead of prose in a roadmap note. This file records the Oct-21 reading; it is NOT a re-derivation, and it is NOT the refit artifact (data/premium-calibration.json continues to refit on its own schedule — the wire protects the RECORD, not the calibration)."
+}

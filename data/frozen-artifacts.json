@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-07T15:10:00Z",
+  "entries": [
+    {
+      "id": "shadow-score-model-frozen-20261018",
+      "reason": "The Kalshi shadow score model fitted 2026-10-18 IS the out-of-sample baseline: every later 7d refit rewrites data/shadow-score-model.json in place, so the only surviving comparison is an untouched copy (scripts/snapshot-kalshi-shadow-oos.py). Open-ended by construction — a frozen copy that gets 'refreshed' stops being out-of-sample.",
+      "frozenFrom": "2026-10-18",
+      "frozenUntil": null,
+      "approval": {
+        "date": "2026-10-23",
+        "by": "commit 5fff527 (copy made expressly to be unchangeable; no separate approval was asked because nothing depends on being able to edit it)",
+        "quote": "observability: archive the Kalshi shadow OOS verdict so the 7d refit stops erasing it"
+      },
+      "artifacts": [
+        {
+          "path": "data/shadow-score-model-frozen-20261018.json",
+          "sha256": "b38d0bfb7375458fbc573cb0bcb9c76a9632fd37234c5454d11719c20921b737",
+          "note": "n_train 2475, fitted_at 2026-10-18T09:28:30-0500"
+        }
+      ]
+    },
+    {
+      "id": "kelly-band-020-040-unresolved",
+      "reason": "2026-10-21 approval put the 0.20-0.40 Kelly band on a 30-day UNRESOLVED hold to 2026-11-20: do not reclassify it as a loss, do not propose a band rule for it, do not cite it as evidence either way. The record of what was actually read on Oct-21 is what stops that hold being re-litigated from a fresher snapshot.",
+      "frozenFrom": "2026-10-21",
+      "frozenUntil": "2026-11-20",
+      "approval": {
+        "date": "2026-10-21",
+        "by": "user (roadmap card kelly-window-020-040-unresolved)",
+        "quote": "approved (copybot-kelly-window-report recs 1-4)"
+      },
+      "artifacts": [
+        {
+          "path": "data/frozen/kelly-band-020-040-at-freeze-20261021.json",
+          "sha256": "0ba33c4c98075064b1417cb09b91b38248ac2e42b8e2071840c95d71c4677032",
+          "note": "the Oct-21 reading verbatim (n=77, -$76, lambda -0.21/-0.158). NOT the refit artifact — data/premium-calibration.json keeps refitting on its own schedule and is deliberately not on this list."
+        }
+      ]
+    }
+  ]
+}
