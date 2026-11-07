@@ -37,7 +37,11 @@ for attempt in 1 2 3; do
   RC=$?
   if [ $RC -eq 0 ] && [ -n "$OUT" ]; then
     echo "$OUT"
-    echo "delivered $(printf '%s' "$OUT" | wc -l | tr -d ' ') lines" >>"$LOG"
+    # 2026-11-07 SELF-AUDIT (Lane B): `printf '%s' "$OUT" | wc -l` counts NEWLINES, and
+    # `$(...)` has already stripped the trailing one — so a 19-line digest was logged as
+    # "delivered 18 lines" (measured on the 2026-11-06 run: 19 lines sent, 18 logged; and
+    # `OUT="a\nb\nc"` -> old form 2, new form 3). One newline is one line.
+    echo "delivered $(printf '%s\n' "$OUT" | wc -l | tr -d ' ') lines" >>"$LOG"
     exit 0
   fi
   echo "attempt $attempt failed (rc=$RC)" >>"$LOG"
