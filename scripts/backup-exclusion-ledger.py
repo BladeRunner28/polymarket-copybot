@@ -35,8 +35,15 @@ import os
 import sys
 import tempfile
 
-LEDGER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                      "data", "backup-exclusions.json")
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 2026-11-08 (self-audit, Lane B): this defaulted to data/backup-exclusions.json, but the ONLY
+# writer (scripts/cron-scripts/copybot-git-backup.sh) has always passed
+# BACKUP_EXCLUSION_LEDGER=$repo/.backup-exclusions.json. So the documented invocation —
+# `python3 scripts/backup-exclusion-ledger.py` with no args and no env — read a file that has
+# never existed, found nothing, and printed NOTHING at all (silence, not "nothing excluded"),
+# while the live ledger read `data/wallet-sells.jsonl ... nights: 5`. One source of truth now:
+# the same path the backup writes. The env override is unchanged, so an explicit path still wins.
+LEDGER = os.path.join(REPO, ".backup-exclusions.json")
 
 
 def load(path: str) -> dict:
@@ -133,6 +140,16 @@ def main(argv: list[str]) -> int:
     if doc:
         out.append(f"⚠️  backup INCOMPLETE — {len(doc)} file(s) are on disk only; "
                    f"see the exclusion line(s) above.")
+    elif today is None:
+        # 2026-11-08 (self-audit, Lane B): the empty answer used to be a completely blank line,
+        # which is indistinguishable from "the helper never ran" or "it read the wrong file".
+        # Nothing excluded is a valid state; silence is not an answer.
+        if os.path.exists(ledger):
+            out.append(f"no exclusions recorded — ledger {ledger} is empty (the size guard has "
+                       f"nothing unstaged)")
+        else:
+            out.append(f"no exclusions recorded — ledger {ledger} does not exist yet (the size "
+                       f"guard has never unstaged a file)")
     if out:
         print("\n".join(out))
     return 0

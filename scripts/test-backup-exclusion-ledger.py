@@ -75,7 +75,12 @@ def main() -> int:
 
     os.unlink(ledger)
     rc, out, _ = run(ledger)
-    check("missing ledger = nothing excluded (exit 0, silent)", rc == 0 and out == "", (rc, out))
+    # 2026-11-08 (self-audit, Lane B): this used to assert `out == ""` — i.e. the test PINNED the
+    # silence. A blank answer is indistinguishable from "the helper never ran" or "it read the
+    # wrong path" (which is exactly what the shipped default did). It must still exit 0, but it
+    # must SAY that nothing is excluded and name the ledger it looked at.
+    check("missing ledger = nothing excluded (exit 0, says so, names the path)",
+          rc == 0 and out.startswith("no exclusions recorded") and ledger in out, (rc, out))
 
     print()
     if FAILS:
