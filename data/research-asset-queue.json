@@ -389,6 +389,34 @@
    "status": "audited",
    "url": "https://github.com/mirabilis-agent/lip-ledger",
    "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-11-07 08:24 CST",
+    "state": "pending"
+   },
+   "audited": "2026-11-07 08:24 CST",
+   "claimed": "2026-11-07 08:20 CST",
+   "claimed_ts": 1794061248.197527,
+   "discovered": "2026-11-07 07:16 CST",
+   "id": "kmasterfleek/kdreams",
+   "license": "MIT",
+   "note": "Observe-only nightly research loop (MIT, TS, created 2026-10-14, pushed hourly). Freezes one falsifiable hypothesis/night as a machine-gradeable spec (metric+ve",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "grade 3 hand-read gates numerically by 2026-11-22; adopt the registry only if >=2 of 3 matches the bespoke printed value (or an explainable rounding delta), else drop it",
+    "effort": "~2h engineering, read-only, zero lane risk",
+    "reversibility": "delete scripts/prereg-grade.py + data/prereg-registry.jsonl and restore the fact-sheet gate line; no rule, size or threshold touched",
+    "text": "Ship data/prereg-registry.jsonl + scripts/prereg-grade.py (donor spec grammar, our metrics) so dated gates are graded rows not bespoke scripts"
+   },
+   "report": "drafts/asset-audit-kdreams-20261107.md",
+   "source": "agent",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/kmasterfleek/kdreams",
+   "verdict": "watch"
   }
  ],
  "version": 1
