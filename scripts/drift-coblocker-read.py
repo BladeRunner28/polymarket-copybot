@@ -183,13 +183,18 @@ def main():
             print("=" * 78)
             return 0
 
-    # sole-blocker check: the number that decides whether a sign fix alone does anything
-    sole = [r for r in built if len(r["kinds"]) == 0]
+    # sole-blocker check: the number that decides whether a sign fix alone does anything.
+    # NOTE: this is REACHABILITY, so it must be priced off independent positions, not
+    # monitor snapshots — one position is re-written every cycle and would otherwise be
+    # counted 2-6x (see independent(); the nearest-reachable table already does this).
+    sole = independent([r for r in built if len(r["kinds"]) == 0])
     out["soleBlocker"] = len(sole)
+    out["soleBlockerSnapshots"] = sum(1 for r in built if len(r["kinds"]) == 0)
     if not args.json:
         print(f"\nSOLE-BLOCKER CHECK (the number that decides if a sign fix alone pays)")
-        print(f"  drift was the ONLY blocker: {len(sole):,} of {settled:,} "
-              f"({len(sole)/settled*100:.2f}%)")
+        print(f"  drift was the ONLY blocker: {len(sole):,} of "
+              f"{len(independent(built)):,} independent positions "
+              f"({out['soleBlockerSnapshots']:,} snapshots)")
         if len(sole) == 0:
             print("  => still zero. Fixing the sign alone admits NOTHING. Bundle required.")
         summarise(sole, "sole-blocker cohort")
