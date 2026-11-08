@@ -22,6 +22,7 @@ WEEK = timedelta(days=7)
 
 def load(path):
     rows = []
+    bad = 0
     if os.path.exists(path):
         with open(path) as f:
             for line in f:
@@ -30,21 +31,48 @@ def load(path):
                     try:
                         rows.append(json.loads(line))
                     except Exception:
-                        pass
-    return rows
+                        # 2026-11-08 (self-audit, Lane B): a truncated/torn last line used to be
+                        # dropped in silence, so the digest's counts were a lower bound with the
+                        # gap never stated. Count it and print it below.
+                        bad += 1
+    return rows, bad
+
+
+def age_days(rows, now):
+    """Days since the newest row, or None when the file is empty."""
+    ts = max((r.get("ts", "") for r in rows), default="")
+    if not ts:
+        return None
+    try:
+        return (now - datetime.fromisoformat(ts)).days
+    except ValueError:
+        return None
+
+
+def stale_note(rows, now, label, total):
+    """0-new is only a measurement if the feed actually wrote something in the window."""
+    a = age_days(rows, now)
+    if a is None:
+        return f"**{label}:** no rows at all yet — 0 new is UNMEASURED (the collector has never written)"
+    return (f"⚠️ **{label}:** 0 new this week is NOT a measurement — the feed's newest row is "
+            f"{a} day(s) old ({total} total). The collector is writing nothing, so nothing was "
+            f"compared; this is a DEAD FEED, not a quiet week.")
 
 
 def main():
     now = datetime.now(timezone.utc)
     cutoff = (now - WEEK).isoformat()
 
-    m_rows = load(MANIFOLD)
-    o_rows = load(ODDS)
+    m_rows, m_bad = load(MANIFOLD)
+    o_rows, o_bad = load(ODDS)
 
     m_week = [r for r in m_rows if r.get("ts", "") >= cutoff]
     o_week = [r for r in o_rows if r.get("ts", "") >= cutoff]
 
     lines = ["🔭 **Cross-Platform Gaps Digest (weekly)**"]
+    if m_bad or o_bad:
+        lines.append(f"🟠 CORRUPT LINES SKIPPED: manifold {m_bad}, odds {o_bad} — counts below are a "
+                     f"LOWER BOUND (an unparseable line was never compared)")
 
     if not m_rows and not o_rows:
         lines.append("No gap data yet — the Manifold scanner runs 6-hourly; first digest after a week of accumulation.")
@@ -60,14 +88,19 @@ def main():
                 f"- {r['pmQuestion'][:55]}… gap {r['gap']:+.3f} "
                 f"({direction}: PM {r['pmProb']:.2f} vs MF {r['manifoldProb']:.2f}, sim {r['similarity']:.2f})"
             )
+    elif m_rows:
+        lines.append(stale_note(m_rows, now, "Manifold ↔ Polymarket", len(m_rows)))
     else:
-        lines.append(f"**Manifold ↔ Polymarket:** no new gaps this week ({len(m_rows)} total logged)")
+        lines.append("**Manifold ↔ Polymarket:** no data yet")
 
     if o_rows:
-        o_sorted = sorted(o_rows, key=lambda r: abs(r.get("gap", 0)), reverse=True)
-        lines.append(f"**Sportsbook ↔ Polymarket:** {len(o_week)} new this week · {len(o_rows)} total")
-        for r in o_sorted[:3]:
-            lines.append(f"- {r.get('event', '?')} gap {r['gap']:+.3f} (book {r.get('bookImplied', '?')} vs PM {r.get('pmProb', '?')})")
+        if o_week:
+            o_sorted = sorted(o_week, key=lambda r: abs(r.get("gap", 0)), reverse=True)
+            lines.append(f"**Sportsbook ↔ Polymarket:** {len(o_week)} new this week · {len(o_rows)} total")
+            for r in o_sorted[:3]:
+                lines.append(f"- {r.get('event', '?')} gap {r['gap']:+.3f} (book {r.get('bookImplied', '?')} vs PM {r.get('pmProb', '?')})")
+        else:
+            lines.append(stale_note(o_rows, now, "Sportsbook ↔ Polymarket", len(o_rows)))
     else:
         lines.append("**Sportsbook ↔ Polymarket:** no data yet (needs ODDS_API_KEY)")
 
