@@ -1,0 +1,107 @@
+{
+ "audit": 2,
+ "sample": "data/market-news-lead-stage-a.sample2.jsonl (offset 20, stride 40)",
+ "rubric": "PRECISE = every extracted entity denotes the market's proposition SUBJECT (the thing whose news flow could move this market). WRONG = at least one extracted entity is not the subject, or the span is malformed so a news query would retrieve a different referent. primary_ok records whether the market's principal subject survived, so 'right subject, contaminated map' can be read apart from 'wrong subject'. Labeller: the backlog-worker session, reading each question and each extracted span by hand; verdicts recorded here before any coverage query was run.",
+ "labels": {
+  "6277031": {
+   "verdict": "WRONG",
+   "primary_ok": false,
+   "reason": "place name stands for a TEAM ('Hawai'i' = Rainbow Warriors); the news index carries the state, not the team"
+  },
+  "2771335": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "4397571": {
+   "verdict": "WRONG",
+   "primary_ok": false,
+   "reason": "malformed span 'Gen.G Make' -- trailing verb not cut; the query retrieves nothing"
+  },
+  "682706": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "2243306": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "2771334": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "2695697": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "6279780": {
+   "verdict": "WRONG",
+   "primary_ok": false,
+   "reason": "'UFO' is a theme; the actor (Trump) was dropped as a dictionary word, so the query is not about this proposition"
+  },
+  "666665": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "6765184": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "college team name is the subject"
+  },
+  "3704229": {
+   "verdict": "WRONG",
+   "primary_ok": true,
+   "reason": "primary (Erling Haaland) correct, but 'Man City' is a parenthetical affiliation tag, not the subject -> contaminated map"
+  },
+  "6594050": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "both clubs are subjects"
+  },
+  "6198651": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "6571489": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "both clubs are subjects"
+  },
+  "6806507": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "both players are subjects"
+  },
+  "562007": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "6252573": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club acronym is the subject"
+  },
+  "1357389": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "6096680": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "index name is the subject"
+  },
+  "6615940": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "both clubs are subjects"
+  }
+ }
+}

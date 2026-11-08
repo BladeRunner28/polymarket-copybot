@@ -1,0 +1,122 @@
+{
+ "audit": 1,
+ "sample": "data/market-news-lead-stage-a.sample.jsonl (offset 0, stride 40)",
+ "rubric": "SAME rubric as audit 2. Audit 1 was taken with the extractor BEFORE repairs R1-R6; its defect classes are the ones the repairs were induced from, so audit 1 is a DEVELOPMENT set and its number is reported as such, never as the gate.",
+ "labels": {
+  "5563985": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "2243312": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "2116540": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "559666": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "679019": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "2243311": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "5563966": {
+   "verdict": "WRONG",
+   "primary_ok": true,
+   "reason": "bare plural nickname 'Islanders' -- subject inferable from context but the string also matches non-sport referents"
+  },
+  "6512727": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "club name is the subject"
+  },
+  "559686": {
+   "verdict": "WRONG",
+   "primary_ok": false,
+   "reason": "malformed span \"Rock' Johnson\" (quoted nickname split the name)"
+  },
+  "3211406": {
+   "verdict": "WRONG",
+   "primary_ok": true,
+   "reason": "'Babydoll' is a song title the index cannot resolve; artist survived"
+  },
+  "5488549": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "2243499": {
+   "verdict": "WRONG",
+   "primary_ok": true,
+   "reason": "primary (Sindarov) correct, but 'World Chess' is an event label"
+  },
+  "559657": {
+   "verdict": "WRONG",
+   "primary_ok": false,
+   "reason": "span dropped the middle initial -> 'Stephen Smith' is a different referent"
+  },
+  "682707": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "5974121": {
+   "verdict": "WRONG",
+   "primary_ok": true,
+   "reason": "bare plural nickname 'Eagles'"
+  },
+  "561983": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "559693": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "561230": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "full person name is the subject"
+  },
+  "6324299": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "the conjecture name IS the subject"
+  },
+  "6279781": {
+   "verdict": "WRONG",
+   "primary_ok": false,
+   "reason": "'UFO' is a theme; the actor was dropped as a dictionary word"
+  },
+  "5762052": {
+   "verdict": "WRONG",
+   "primary_ok": true,
+   "reason": "primary (Doncic) correct, 'NBA MVP' is an award label"
+  },
+  "6367323": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "artist + the named platform are the subjects"
+  },
+  "3377747": {
+   "verdict": "PRECISE",
+   "primary_ok": true,
+   "reason": "person + the contested seat are the subjects"
+  }
+ }
+}

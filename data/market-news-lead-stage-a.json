@@ -1,0 +1,564 @@
+{
+ "card": "market-to-news-lead-test",
+ "stage": "A",
+ "universe": {
+  "n": 2000,
+  "fetched_at": "2026-11-08T02:06:10Z",
+  "order": "volume24hr desc"
+ },
+ "ambiguity_max": 3,
+ "census": {
+  "ambiguous": 721,
+  "no-candidate": 443,
+  "mapped": 836
+ },
+ "n_mapped": 836,
+ "mapped_share": 0.418,
+ "top_entities": [
+  [
+   "bitcoin",
+   80
+  ],
+  [
+   "elon musk",
+   58
+  ],
+  [
+   "ukraine",
+   31
+  ],
+  [
+   "ethereum",
+   28
+  ],
+  [
+   "new zealand",
+   27
+  ],
+  [
+   "uefa champions",
+   25
+  ],
+  [
+   "putin",
+   20
+  ],
+  [
+   "notre dame",
+   17
+  ],
+  [
+   "james bond",
+   16
+  ],
+  [
+   "anthropic's",
+   15
+  ],
+  [
+   "hong kong",
+   15
+  ],
+  [
+   "real salt lake",
+   13
+  ],
+  [
+   "atlas fc",
+   13
+  ],
+  [
+   "cf pachuca",
+   13
+  ],
+  [
+   "ai",
+   13
+  ]
+ ],
+ "entity_distribution": {
+  "n_distinct_entities": 916,
+  "entities_over_cap": 122
+ },
+ "precision_audits": [
+  {
+   "n_labelled": 23,
+   "n_mapped_labelled": 23,
+   "n_precise": 15,
+   "precision": 0.6521739130434783,
+   "wrong": [
+    {
+     "id": "5563966",
+     "reason": "bare plural nickname 'Islanders' -- subject inferable from context but the string also matches non-sport referents"
+    },
+    {
+     "id": "559686",
+     "reason": "malformed span \"Rock' Johnson\" (quoted nickname split the name)"
+    },
+    {
+     "id": "3211406",
+     "reason": "'Babydoll' is a song title the index cannot resolve; artist survived"
+    },
+    {
+     "id": "2243499",
+     "reason": "primary (Sindarov) correct, but 'World Chess' is an event label"
+    },
+    {
+     "id": "559657",
+     "reason": "span dropped the middle initial -> 'Stephen Smith' is a different referent"
+    },
+    {
+     "id": "5974121",
+     "reason": "bare plural nickname 'Eagles'"
+    },
+    {
+     "id": "6279781",
+     "reason": "'UFO' is a theme; the actor was dropped as a dictionary word"
+    },
+    {
+     "id": "5762052",
+     "reason": "primary (Doncic) correct, 'NBA MVP' is an award label"
+    }
+   ],
+   "abstain_bad": [],
+   "audit": 1,
+   "sample": "data/market-news-lead-stage-a.sample.jsonl (offset 0, stride 40)",
+   "gate": 0.85,
+   "passes_gate": false,
+   "primary_subject_recovered": 0.8696
+  },
+  {
+   "n_labelled": 20,
+   "n_mapped_labelled": 20,
+   "n_precise": 16,
+   "precision": 0.8,
+   "wrong": [
+    {
+     "id": "6277031",
+     "reason": "place name stands for a TEAM ('Hawai'i' = Rainbow Warriors); the news index carries the state, not the team"
+    },
+    {
+     "id": "4397571",
+     "reason": "malformed span 'Gen.G Make' -- trailing verb not cut; the query retrieves nothing"
+    },
+    {
+     "id": "6279780",
+     "reason": "'UFO' is a theme; the actor (Trump) was dropped as a dictionary word, so the query is not about this proposition"
+    },
+    {
+     "id": "3704229",
+     "reason": "primary (Erling Haaland) correct, but 'Man City' is a parenthetical affiliation tag, not the subject -> contaminated map"
+    }
+   ],
+   "abstain_bad": [],
+   "audit": 2,
+   "sample": "data/market-news-lead-stage-a.sample2.jsonl (offset 20, stride 40)",
+   "gate": 0.85,
+   "passes_gate": false,
+   "primary_subject_recovered": 0.85
+  }
+ ],
+ "coverage": {
+  "window": [
+   "2026-11-01T00:00:00Z",
+   "2026-11-08T00:00:00Z"
+  ],
+  "days": 7,
+  "n_mapped_markets": 836,
+  "n_entities_queried": 400,
+  "n_entities_saturated": 159,
+  "n_markets_5plus_items": 442,
+  "gate_20_markets": true,
+  "median_items_7d": 8,
+  "top": [
+   {
+    "id": "6806542",
+    "question": "Rolex Paris Masters: Ben Shelton vs Carlos Alcaraz",
+    "entities": [
+     "Rolex Paris Masters",
+     "Ben Shelton",
+     "Carlos Alcaraz"
+    ],
+    "items_7d": 271,
+    "per_entity": {
+     "Rolex Paris Masters": 90,
+     "Ben Shelton": 87,
+     "Carlos Alcaraz": 94
+    },
+    "saturated": true,
+    "volume24hr": 8145.649403999998
+   },
+   {
+    "id": "5336164",
+    "question": "Will Luiz In\u00e1cio Lula da Silva win Brazil, Gadi Eizenkot become Israeli PM, and Democrats win the US Senate?",
+    "entities": [
+     "Luiz In\u00e1cio Lula",
+     "Gadi Eizenkot",
+     "Israeli PM",
+     "US Senate"
+    ],
+    "items_7d": 216,
+    "per_entity": {
+     "Luiz In\u00e1cio Lula": 65,
+     "Gadi Eizenkot": 18,
+     "Israeli PM": 31,
+     "US Senate": 102
+    },
+    "saturated": true,
+    "volume24hr": 3355.0280760000005
+   },
+   {
+    "id": "5336170",
+    "question": "Will Luiz In\u00e1cio Lula da Silva win Brazil, Benjamin Netanyahu become Israeli PM, and Democrats win the US Senate?",
+    "entities": [
+     "Luiz In\u00e1cio Lula",
+     "Israeli PM",
+     "US Senate"
+    ],
+    "items_7d": 198,
+    "per_entity": {
+     "Luiz In\u00e1cio Lula": 65,
+     "Israeli PM": 31,
+     "US Senate": 102
+    },
+    "saturated": true,
+    "volume24hr": 2488.696093
+   },
+   {
+    "id": "2589858",
+    "question": "Will Japan's core CPI increase by less than or equal to 1.9% in 2026?",
+    "entities": [
+     "Japan's",
+     "CPI"
+    ],
+    "items_7d": 191,
+    "per_entity": {
+     "Japan's": 98,
+     "CPI": 93
+    },
+    "saturated": true,
+    "volume24hr": 2608.123584
+   },
+   {
+    "id": "6496358",
+    "question": "Will Waldo Cortes Acosta win by KO or TKO?",
+    "entities": [
+     "Waldo Cortes Acosta",
+     "KO",
+     "TKO"
+    ],
+    "items_7d": 186,
+    "per_entity": {
+     "Waldo Cortes Acosta": 85,
+     "KO": 42,
+     "TKO": 59
+    },
+    "saturated": true,
+    "volume24hr": 3998.268086
+   },
+   {
+    "id": "1709755",
+    "question": "Will Mohammed bin Salman cease to be the de facto leader of Saudi Arabia by December 31, 2026?",
+    "entities": [
+     "Mohammed",
+     "Salman",
+     "Saudi Arabia"
+    ],
+    "items_7d": 185,
+    "per_entity": {
+     "Mohammed": 89,
+     "Salman": 96
+    },
+    "saturated": true,
+    "volume24hr": 14659.800000000001
+   },
+   {
+    "id": "2771491",
+    "question": "Will Atl\u00e9tico Madrid win the 2026-27 LALIGA Championship?",
+    "entities": [
+     "Atl\u00e9tico Madrid",
+     "LALIGA"
+    ],
+    "items_7d": 178,
+    "per_entity": {
+     "Atl\u00e9tico Madrid": 88,
+     "LALIGA": 90
+    },
+    "saturated": true,
+    "volume24hr": 8364.509999999998
+   },
+   {
+    "id": "6547032",
+    "question": "Will Carlos Alcaraz win the 2026 Paris, France?",
+    "entities": [
+     "Carlos Alcaraz",
+     "France"
+    ],
+    "items_7d": 178,
+    "per_entity": {
+     "Carlos Alcaraz": 94,
+     "France": 84
+    },
+    "saturated": true,
+    "volume24hr": 5455.964116
+   },
+   {
+    "id": "2771499",
+    "question": "Will Real Madrid win the 2026-27 LALIGA Championship?",
+    "entities": [
+     "Real Madrid",
+     "LALIGA"
+    ],
+    "items_7d": 173,
+    "per_entity": {
+     "Real Madrid": 83,
+     "LALIGA": 90
+    },
+    "saturated": true,
+    "volume24hr": 7239.127039
+   },
+   {
+    "id": "6277176",
+    "question": "Texas State vs. Oregon State: O/U 71.5",
+    "entities": [
+     "Texas State",
+     "Oregon State"
+    ],
+    "items_7d": 171,
+    "per_entity": {
+     "Texas State": 89,
+     "Oregon State": 82
+    },
+    "saturated": true,
+    "volume24hr": 6722.307695
+   },
+   {
+    "id": "5684938",
+    "question": "Spain General Election: PP + Vox get 50%+ of Vote?",
+    "entities": [
+     "Spain General",
+     "PP",
+     "Vox"
+    ],
+    "items_7d": 169,
+    "per_entity": {
+     "Spain General": 6,
+     "PP": 76,
+     "Vox": 87
+    },
+    "saturated": true,
+    "volume24hr": 2311.353533
+   },
+   {
+    "id": "5563953",
+    "question": "Canadiens vs. Maple Leafs",
+    "entities": [
+     "Canadiens",
+     "Maple Leafs"
+    ],
+    "items_7d": 163,
+    "per_entity": {
+     "Canadiens": 88,
+     "Maple Leafs": 75
+    },
+    "saturated": true,
+    "volume24hr": 140727.41320200003
+   },
+   {
+    "id": "5563956",
+    "question": "Canadiens vs. Maple Leafs: O/U 6.5",
+    "entities": [
+     "Canadiens",
+     "Maple Leafs"
+    ],
+    "items_7d": 163,
+    "per_entity": {
+     "Canadiens": 88,
+     "Maple Leafs": 75
+    },
+    "saturated": true,
+    "volume24hr": 3943.8271959999993
+   },
+   {
+    "id": "6277023",
+    "question": "Hawai'i vs. UTEP",
+    "entities": [
+     "Hawai'i",
+     "UTEP"
+    ],
+    "items_7d": 160,
+    "per_entity": {
+     "Hawai'i": 104,
+     "UTEP": 56
+    },
+    "saturated": true,
+    "volume24hr": 45884.814333
+   },
+   {
+    "id": "6239737",
+    "question": "Sunderland AFC vs. Chelsea FC: Both Teams to Score",
+    "entities": [
+     "Sunderland AFC",
+     "Chelsea FC"
+    ],
+    "items_7d": 159,
+    "per_entity": {
+     "Sunderland AFC": 70,
+     "Chelsea FC": 89
+    },
+    "saturated": true,
+    "volume24hr": 5682.1539729999995
+   },
+   {
+    "id": "6239715",
+    "question": "Sunderland AFC vs. Chelsea FC: O/U 0.5",
+    "entities": [
+     "Sunderland AFC",
+     "Chelsea FC"
+    ],
+    "items_7d": 159,
+    "per_entity": {
+     "Sunderland AFC": 70,
+     "Chelsea FC": 89
+    },
+    "saturated": true,
+    "volume24hr": 4579.729961
+   },
+   {
+    "id": "6236372",
+    "question": "Exact Score: Crystal Palace FC 2 - 0 Liverpool FC?",
+    "entities": [
+     "Crystal Palace FC",
+     "Liverpool FC"
+    ],
+    "items_7d": 158,
+    "per_entity": {
+     "Crystal Palace FC": 64,
+     "Liverpool FC": 94
+    },
+    "saturated": true,
+    "volume24hr": 2819.152706
+   },
+   {
+    "id": "6239248",
+    "question": "Manchester United FC vs. Aston Villa FC: O/U 2.5",
+    "entities": [
+     "Manchester United FC",
+     "Aston Villa FC"
+    ],
+    "items_7d": 154,
+    "per_entity": {
+     "Manchester United FC": 79,
+     "Aston Villa FC": 75
+    },
+    "saturated": true,
+    "volume24hr": 9745.277741000002
+   },
+   {
+    "id": "6237030",
+    "question": "Exact Score: Manchester United FC 0 - 0 Aston Villa FC?",
+    "entities": [
+     "Manchester United FC",
+     "Aston Villa FC"
+    ],
+    "items_7d": 154,
+    "per_entity": {
+     "Manchester United FC": 79,
+     "Aston Villa FC": 75
+    },
+    "saturated": true,
+    "volume24hr": 6032.339354999999
+   },
+   {
+    "id": "3704229",
+    "question": "Will Erling Haaland (Man City) be the top goalscorer of the 2026-27 Premier League season?",
+    "entities": [
+     "Erling Haaland",
+     "Man City"
+    ],
+    "items_7d": 142,
+    "per_entity": {
+     "Erling Haaland": 65,
+     "Man City": 77
+    },
+    "saturated": true,
+    "volume24hr": 5994.290084
+   },
+   {
+    "id": "4960839",
+    "question": "Courts block Trump's $100,000 Truth Social early access plan by December 31?",
+    "entities": [
+     "Trump's",
+     "Truth Social"
+    ],
+    "items_7d": 140,
+    "per_entity": {
+     "Trump's": 96,
+     "Truth Social": 44
+    },
+    "saturated": true,
+    "volume24hr": 3500
+   },
+   {
+    "id": "665513",
+    "question": "Friedrich Merz out as Chancellor of Germany before December 31, 2026?",
+    "entities": [
+     "Friedrich Merz",
+     "Germany"
+    ],
+    "items_7d": 136,
+    "per_entity": {
+     "Friedrich Merz": 47,
+     "Germany": 89
+    },
+    "saturated": true,
+    "volume24hr": 7462.579311
+   },
+   {
+    "id": "1662429",
+    "question": "Will Chris Van Hollen be the next Senate Majority Leader?",
+    "entities": [
+     "Chris Van Hollen",
+     "Senate Majority Leader"
+    ],
+    "items_7d": 128,
+    "per_entity": {
+     "Chris Van Hollen": 37,
+     "Senate Majority Leader": 91
+    },
+    "saturated": false,
+    "volume24hr": 2469.947218
+   },
+   {
+    "id": "3848388",
+    "question": "Will Racing Santander be relegated from the 2026-27 LaLiga?",
+    "entities": [
+     "Racing Santander",
+     "LaLiga"
+    ],
+    "items_7d": 126,
+    "per_entity": {
+     "Racing Santander": 36,
+     "LaLiga": 90
+    },
+    "saturated": true,
+    "volume24hr": 2895.120269
+   },
+   {
+    "id": "6618428",
+    "question": "Will Malaysia win Eurovision Asia 2026?",
+    "entities": [
+     "Malaysia",
+     "Eurovision Asia"
+    ],
+    "items_7d": 119,
+    "per_entity": {
+     "Malaysia": 86,
+     "Eurovision Asia": 33
+    },
+    "saturated": true,
+    "volume24hr": 5421.49652
+   }
+  ]
+ }
+}
