@@ -1,6 +1,6 @@
 {
-  "asOf": "2026-11-07T22:19:49-0600",
-  "asOfMs": 1794111589158,
+  "asOf": "2026-11-08T22:19:49-0600",
+  "asOfMs": 1794197989610,
   "kind": "counterfactual-attribution",
   "note": "C-200 book attributed across candidate Kalshi venue rules. Rows are priced at the Polymarket reference because live Kalshi routing is retired; slice PnL is an attribution, not venue P&L.",
   "model": {
@@ -15,13 +15,13 @@
     ]
   },
   "live": {
-    "n": 2704,
-    "n_settled": 2685,
-    "n_open": 19,
-    "pnl": 8615.44,
-    "staked": 24822.58,
-    "roi_pct": 34.71,
-    "win_rate_pct": 46.0
+    "n": 2732,
+    "n_settled": 2716,
+    "n_open": 16,
+    "pnl": 9091.63,
+    "staked": 25713.25,
+    "roi_pct": 35.36,
+    "win_rate_pct": 45.6
   },
   "liveByVenue": {
     "Kalshi": {
@@ -34,35 +34,35 @@
       "win_rate_pct": 41.9
     },
     "Polymarket": {
-      "n": 2611,
-      "n_settled": 2592,
-      "n_open": 19,
-      "pnl": 8663.07,
-      "staked": 23916.37,
-      "roi_pct": 36.22,
-      "win_rate_pct": 46.1
+      "n": 2639,
+      "n_settled": 2623,
+      "n_open": 16,
+      "pnl": 9139.26,
+      "staked": 24807.04,
+      "roi_pct": 36.84,
+      "win_rate_pct": 45.7
     }
   },
   "liveSinceSep5": {
-    "n": 1414,
-    "n_settled": 1395,
-    "n_open": 19,
-    "pnl": 8474.97,
-    "staked": 17361.6,
-    "roi_pct": 48.81,
-    "win_rate_pct": 40.9
+    "n": 1442,
+    "n_settled": 1426,
+    "n_open": 16,
+    "pnl": 8951.16,
+    "staked": 18252.27,
+    "roi_pct": 49.04,
+    "win_rate_pct": 40.3
   },
   "liveSinceSep5Settled": {
-    "n": 1446,
-    "n_settled": 1446,
+    "n": 1477,
+    "n_settled": 1477,
     "n_open": 0,
-    "pnl": 8748.98,
-    "staked": 17748.33,
-    "roi_pct": 49.29,
-    "win_rate_pct": 40.8
+    "pnl": 9225.17,
+    "staked": 18639.0,
+    "roi_pct": 49.49,
+    "win_rate_pct": 40.3
   },
-  "liveFeeEntryUsd": 841.24,
-  "livePnlNetEntryFee": 7774.2,
+  "liveFeeEntryUsd": 877.32,
+  "livePnlNetEntryFee": 8214.31,
   "variants": {
     "gate_as_written": {
       "label": "conf > 0.8 AND copyScore >= 80 (live rule, structurally unsatisfiable post-v37)",
@@ -91,7 +91,7 @@
         "2026-09-08": 89.01,
         "2026-11-04": 13.56
       },
-      "delta_vs_all_pm": -8601.88,
+      "delta_vs_all_pm": -9078.07,
       "fee_entry_usd": 27.4,
       "pnl_net_entry_fee": -13.84,
       "in_sample": true
@@ -99,13 +99,13 @@
     "gate_pre_v37": {
       "label": "copyScore >= 87.5 (confidence read from the post-boost score, pre-v37 semantics)",
       "selected": {
-        "n": 195,
-        "n_settled": 195,
+        "n": 197,
+        "n_settled": 197,
         "n_open": 0,
-        "pnl": -20.62,
-        "staked": 3682.64,
-        "roi_pct": -0.56,
-        "win_rate_pct": 36.4
+        "pnl": -120.62,
+        "staked": 3882.64,
+        "roi_pct": -3.11,
+        "win_rate_pct": 36.0
       },
       "share_of_book_pct": 7.2,
       "series_cum": {
@@ -154,11 +154,12 @@
         "2026-11-03": 211.71,
         "2026-11-04": 118.27,
         "2026-11-05": 100.28,
-        "2026-11-06": -20.62
+        "2026-11-06": -20.62,
+        "2026-11-08": -120.62
       },
-      "delta_vs_all_pm": -8636.06,
-      "fee_entry_usd": 131.88,
-      "pnl_net_entry_fee": -152.5,
+      "delta_vs_all_pm": -9212.25,
+      "fee_entry_usd": 140.61,
+      "pnl_net_entry_fee": -261.23,
       "in_sample": true
     },
     "gate_repaired_raw": {
@@ -185,7 +186,7 @@
         "2026-09-08": 82.63,
         "2026-11-04": 7.18
       },
-      "delta_vs_all_pm": -8608.26,
+      "delta_vs_all_pm": -9084.45,
       "fee_entry_usd": 12.51,
       "pnl_net_entry_fee": -5.33,
       "in_sample": true
@@ -193,15 +194,15 @@
     "shadow_model": {
       "label": "shadow expectancy score > 0 (model call, decision-time features only)",
       "selected": {
-        "n": 1535,
-        "n_settled": 1521,
-        "n_open": 14,
-        "pnl": 8695.1,
-        "staked": 19223.91,
-        "roi_pct": 45.23,
-        "win_rate_pct": 41.6
+        "n": 1555,
+        "n_settled": 1543,
+        "n_open": 12,
+        "pnl": 9153.66,
+        "staked": 20025.11,
+        "roi_pct": 45.71,
+        "win_rate_pct": 41.1
       },
-      "share_of_book_pct": 56.8,
+      "share_of_book_pct": 56.9,
       "series_cum": {
         "2026-07-24": 2.92,
         "2026-07-25": -106.99,
@@ -292,11 +293,12 @@
         "2026-11-04": 8215.88,
         "2026-11-05": 8330.05,
         "2026-11-06": 8248.8,
-        "2026-11-07": 8695.1
+        "2026-11-07": 8651.49,
+        "2026-11-08": 9153.66
       },
-      "delta_vs_all_pm": 79.66,
-      "fee_entry_usd": 719.0,
-      "pnl_net_entry_fee": 7976.1,
+      "delta_vs_all_pm": 62.03,
+      "fee_entry_usd": 753.12,
+      "pnl_net_entry_fee": 8400.54,
       "in_sample": true
     }
   },
@@ -397,7 +399,8 @@
       "2026-11-04",
       "2026-11-05",
       "2026-11-06",
-      "2026-11-07"
+      "2026-11-07",
+      "2026-11-08"
     ],
     "liveCum": [
       -41.38,
@@ -494,7 +497,8 @@
       8123.48,
       8250.39,
       8169.14,
-      8615.44
+      8578.27,
+      9091.63
     ],
     "kalshiShadowCum": [
       0.0,
@@ -591,7 +595,8 @@
       8215.88,
       8330.05,
       8248.8,
-      8695.1
+      8651.49,
+      9153.66
     ],
     "pmOnlyCum": [
       -41.38,
@@ -688,69 +693,70 @@
       -92.4,
       -79.66,
       -79.66,
-      -79.66
+      -73.22,
+      -62.03
     ]
   },
   "shadowScoreSplit": {
     "selected": {
-      "n": 1535,
-      "n_settled": 1521,
-      "n_open": 14,
-      "pnl": 8695.1,
-      "staked": 19223.91,
-      "roi_pct": 45.23,
-      "win_rate_pct": 41.6
+      "n": 1555,
+      "n_settled": 1543,
+      "n_open": 12,
+      "pnl": 9153.66,
+      "staked": 20025.11,
+      "roi_pct": 45.71,
+      "win_rate_pct": 41.1
     },
     "rejected": {
-      "n": 1169,
-      "n_settled": 1164,
-      "n_open": 5,
-      "pnl": -79.66,
-      "staked": 5598.67,
-      "roi_pct": -1.42,
-      "win_rate_pct": 51.7
+      "n": 1177,
+      "n_settled": 1173,
+      "n_open": 4,
+      "pnl": -62.03,
+      "staked": 5688.14,
+      "roi_pct": -1.09,
+      "win_rate_pct": 51.6
     },
     "inSample": true,
     "oosSinceFit": {
-      "n": 117,
-      "n_settled": 103,
-      "n_open": 14,
-      "pnl": 2060.9,
-      "staked": 2812.09,
-      "roi_pct": 73.29,
-      "win_rate_pct": 16.5,
+      "n": 137,
+      "n_settled": 125,
+      "n_open": 12,
+      "pnl": 2519.46,
+      "staked": 3613.29,
+      "roi_pct": 69.73,
+      "win_rate_pct": 15.2,
       "exTop1": {
-        "n": 116,
-        "n_settled": 102,
-        "n_open": 14,
-        "pnl": 1278.44,
-        "staked": 2712.09,
-        "roi_pct": 47.14,
-        "win_rate_pct": 15.7,
+        "n": 136,
+        "n_settled": 124,
+        "n_open": 12,
+        "pnl": 1737.0,
+        "staked": 3513.29,
+        "roi_pct": 49.44,
+        "win_rate_pct": 14.5,
         "droppedTradeId": "cmw0jeymm007v13i04qhf3xt7",
         "droppedPnl": 782.46,
-        "n_settled_before": 103
+        "n_settled_before": 125
       }
     },
     "oosRejected": {
-      "n": 16,
-      "n_settled": 11,
-      "n_open": 5,
-      "pnl": 78.07,
-      "staked": 119.77,
-      "roi_pct": 65.18,
-      "win_rate_pct": 54.5,
+      "n": 24,
+      "n_settled": 20,
+      "n_open": 4,
+      "pnl": 95.7,
+      "staked": 209.24,
+      "roi_pct": 45.74,
+      "win_rate_pct": 45.0,
       "exTop1": {
-        "n": 15,
-        "n_settled": 10,
-        "n_open": 5,
-        "pnl": 39.9,
-        "staked": 101.77,
-        "roi_pct": 39.2,
-        "win_rate_pct": 50.0,
+        "n": 23,
+        "n_settled": 19,
+        "n_open": 4,
+        "pnl": 57.53,
+        "staked": 191.24,
+        "roi_pct": 30.08,
+        "win_rate_pct": 42.1,
         "droppedTradeId": "cmw0hg6qf007m13i08fmcl3p5",
         "droppedPnl": 38.17,
-        "n_settled_before": 11
+        "n_settled_before": 20
       }
     },
     "oosStartedMs": 1793543318043

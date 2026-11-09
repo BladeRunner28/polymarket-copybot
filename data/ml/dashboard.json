@@ -1,18 +1,18 @@
 {
- "generatedAt": "2026-11-07T11:53:49.246551Z",
+ "generatedAt": "2026-11-08T11:47:39.776480Z",
  "sources": {
   "marketCandidates": {
    "path": "data/ml/market-candidates.parquet",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-11-07T11:53:30.624104Z",
+   "mtimeZ": "2026-11-08T11:47:21.240525Z",
    "ageHours": 0.0
   },
   "paperTrades": {
    "path": "prisma/dev.db",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-11-07T11:49:50.387288Z",
+   "mtimeZ": "2026-11-08T11:39:53.950582Z",
    "ageHours": 0.1
   },
   "predictionsTest": {
@@ -20,7 +20,7 @@
    "role": "study",
    "exists": true,
    "mtimeZ": "2026-10-19T08:54:09.889491Z",
-   "ageHours": 459.0
+   "ageHours": 482.9
   }
  },
  "lane": {

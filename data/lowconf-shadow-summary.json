@@ -1,102 +1,102 @@
 {
-  "generatedAt": "2026-11-08T03:35:25.462Z",
-  "candidates": 31485,
-  "marked": 27781,
-  "awaitingResolution": 3704,
-  "wins": 13118,
-  "winRate": 0.47219322558583204,
-  "wouldHavePnl": 547902.73,
-  "avgPnlPerTrade": 19.72,
-  "confidenceOnlyCandidates": 212,
+  "generatedAt": "2026-11-09T03:35:03.888Z",
+  "candidates": 32679,
+  "marked": 27793,
+  "awaitingResolution": 4886,
+  "wins": 13124,
+  "winRate": 0.47220523153311983,
+  "wouldHavePnl": 547870.96,
+  "avgPnlPerTrade": 19.71,
+  "confidenceOnlyCandidates": 248,
   "stakeUsd": 10,
   "byBand": {
     "0-0.2": {
-      "n": 3021,
-      "marked": 2139,
-      "wouldHavePnl": 555602.87
+      "n": 3124,
+      "marked": 2140,
+      "wouldHavePnl": 555592.87
     },
     "0.8-1.01": {
-      "n": 5099,
-      "marked": 3930,
-      "wouldHavePnl": -20227.43
+      "n": 5542,
+      "marked": 3933,
+      "wouldHavePnl": -20226.75
     },
     "0.4-0.6": {
-      "n": 12267,
-      "marked": 11333,
-      "wouldHavePnl": 22867.59
+      "n": 12706,
+      "marked": 11341,
+      "wouldHavePnl": 22845.13
     },
     "0.6-0.8": {
-      "n": 6093,
+      "n": 6217,
       "marked": 5734,
       "wouldHavePnl": -23368.59
     },
     "0.2-0.4": {
-      "n": 5005,
+      "n": 5090,
       "marked": 4645,
       "wouldHavePnl": 13028.29
     }
   },
   "byPriceBand": {
     "0.05-0.1": {
-      "n": 333,
-      "marked": 298,
-      "wouldHavePnl": 6383.99
+      "n": 360,
+      "marked": 299,
+      "wouldHavePnl": 6373.99
     },
     "0.8-1.01": {
-      "n": 5099,
-      "marked": 3930,
-      "wouldHavePnl": -20227.43
+      "n": 5542,
+      "marked": 3933,
+      "wouldHavePnl": -20226.75
     },
     "0.4-0.6": {
-      "n": 12267,
-      "marked": 11333,
-      "wouldHavePnl": 22867.59
+      "n": 12706,
+      "marked": 11341,
+      "wouldHavePnl": 22845.13
     },
     "0.6-0.8": {
-      "n": 6093,
+      "n": 6217,
       "marked": 5734,
       "wouldHavePnl": -23368.59
     },
     "0.2-0.4": {
-      "n": 5005,
+      "n": 5090,
       "marked": 4645,
       "wouldHavePnl": 13028.29
     },
     "0.1-0.2": {
-      "n": 762,
+      "n": 797,
       "marked": 659,
       "wouldHavePnl": 7313.45
     },
     "0-0.05": {
-      "n": 1926,
+      "n": 1967,
       "marked": 1182,
       "wouldHavePnl": 541905.43
     }
   },
   "byConfidenceBucket": {
     "<0.40": {
-      "n": 12410,
-      "marked": 10987,
-      "wouldHavePnl": 511677.54
+      "n": 12845,
+      "marked": 10990,
+      "wouldHavePnl": 511668.21
     },
     "0.40-0.50": {
-      "n": 12484,
-      "marked": 11177,
-      "wouldHavePnl": 24475.72
+      "n": 12812,
+      "marked": 11186,
+      "wouldHavePnl": 24453.27
     },
     "0.50-0.60": {
-      "n": 5676,
+      "n": 5969,
       "marked": 4914,
       "wouldHavePnl": 14123.73
     },
     "0.60-0.70": {
-      "n": 915,
+      "n": 1053,
       "marked": 703,
       "wouldHavePnl": -2374.26
     }
   },
   "confidenceOnly": {
-    "n": 212,
+    "n": 248,
     "marked": 114,
     "wouldHavePnl": -578.87,
     "avgPnlPerTrade": -5.08
@@ -104,28 +104,28 @@
   "dust": {
     "minEntryPrice": 0.1,
     "bannedTailMax": 0.05,
-    "rowsExcluded": 1480,
-    "rowPnlExcluded": 548289.42,
-    "wouldHavePnl": -386.69,
-    "avgPnlPerTrade": -0.01,
-    "signalsExcluded": 434,
-    "wouldHavePnlPerSignal": 5411.68,
-    "marketsExcluded": 338,
-    "wouldHavePnlOneBetPerMarket": 5692.62,
-    "wouldHavePnlOneBetPerMarketExTop10": 4802.15,
+    "rowsExcluded": 1481,
+    "rowPnlExcluded": 548279.42,
+    "wouldHavePnl": -408.46,
+    "avgPnlPerTrade": -0.02,
+    "signalsExcluded": 435,
+    "wouldHavePnlPerSignal": 5401.89,
+    "marketsExcluded": 339,
+    "wouldHavePnlOneBetPerMarket": 5682.83,
+    "wouldHavePnlOneBetPerMarketExTop10": 4792.35,
     "topMarketId": "nfl-pit-cle-2026-10-02-rec-darnell-washington-3pt5",
     "topMarketPnl": 90,
-    "topMarketShare": 0.015809934780198827,
+    "topMarketShare": 0.01583717834108292,
     "bannedTailMarkets": 198,
     "bannedTailOneBetPerMarket": 266773.77
   },
   "basis": {
-    "bets": 27781,
-    "signals": 5635,
-    "markets": 4880,
-    "wouldHavePnlPerSignal": 362664.42,
-    "wouldHavePnlOneBetPerMarket": 277352.03
+    "bets": 27793,
+    "signals": 5644,
+    "markets": 4889,
+    "wouldHavePnlPerSignal": 362644.63,
+    "wouldHavePnlOneBetPerMarket": 277332.24
   },
   "firstCandidateAt": "2026-09-21T13:59:15.510Z",
-  "lastCandidateAt": "2026-11-08T03:25:04.125Z"
+  "lastCandidateAt": "2026-11-09T03:26:06.624Z"
 }
