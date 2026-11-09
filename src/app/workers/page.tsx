@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { Card, Stat, Empty } from "@/components/ui";
+import { toEpoch } from "@/lib/epoch";
 
 export const dynamic = "force-dynamic";
 
@@ -76,18 +77,13 @@ function query(db: string, sql: string): { rows: any[]; error?: string } {
 const nowS = () => Math.floor(Date.now() / 1000);
 
 /**
- * Timestamps are NOT uniform across these stores and assuming one format is how a dashboard lies:
- *   kanban  tasks.worker_started_at / completed_at  -> epoch SECONDS
- *   cron    executions.started_at                   -> ISO 8601 STRING, e.g. "2026-10-29T12:25:35.80-05:00"
- * A bare number passed to `new Date(x*1000)` renders "NaNd NaNh"; a string passed straight through
- * concatenates. Normalise everything to epoch seconds here, once, and return null for junk.
+ * Timestamp formats are NOT uniform across these stores, and assuming one is how a dashboard lies.
+ * `tasks.worker_started_at` is TEXT epoch-MILLISECONDS while every other kanban timestamp is INTEGER
+ * epoch-SECONDS. Passing the raw value into arithmetic is what printed "NaNd NaNh" for a running
+ * worker's elapsed time on 2026-11-09. The rule now lives in src/lib/epoch.ts so it is testable
+ * (tests/epoch-timestamps.test.ts) — a page file cannot carry extra exports, and that defect shipped
+ * precisely because the rule was inline and untested.
  */
-function toEpoch(v: unknown): number | null {
-  if (v === null || v === undefined || v === "") return null;
-  if (typeof v === "number") return v > 1e11 ? Math.floor(v / 1000) : v; // ms vs s
-  const t = Date.parse(String(v));
-  return Number.isFinite(t) ? Math.floor(t / 1000) : null;
-}
 
 function ago(ts: number | null): string {
   if (!ts) return "—";
@@ -125,9 +121,16 @@ function LoadError({ what, error }: { what: string; error: string }) {
 
 type Running = {
   id: string; title: string; assignee: string; branch_name: string | null;
-  worker_pid: number | null; worker_started_at: number | null;
-  last_heartbeat_at: number | null; max_runtime_seconds: number | null;
-  current_run_id: number | null; started_at: number | null;
+  worker_pid: number | null;
+  // These columns do NOT agree on type at runtime: the current kanban writer puts a 12-digit TEXT
+  // epoch-centisecond value in started_at and leaves worker_started_at NULL, while older rows carry
+  // epoch seconds as INTEGER. Typing them `number` was itself part of the defect — it promised the
+  // compiler a shape the data does not have, so raw values reached arithmetic unchallenged. `unknown`
+  // makes every consumer go through toEpoch.
+  worker_started_at: unknown; last_heartbeat_at: unknown; started_at: unknown;
+  max_runtime_seconds: number | null;
+  current_run_id: number | null;
+  run_started_at: unknown;
 };
 type Open = {
   id: string; title: string; status: string; assignee: string; priority: number;
@@ -149,7 +152,9 @@ export default function WorkersPage() {
 
   const runningQ = query(db, `
     SELECT t.id, t.title, t.assignee, t.branch_name, t.worker_pid, t.worker_started_at,
-           t.last_heartbeat_at, t.max_runtime_seconds, t.current_run_id, t.started_at
+           t.last_heartbeat_at, t.max_runtime_seconds, t.current_run_id, t.started_at,
+           (SELECT r.started_at FROM task_runs r WHERE r.task_id = t.id
+             ORDER BY r.id DESC LIMIT 1) AS run_started_at
     FROM tasks t WHERE t.status = 'running'
     ORDER BY COALESCE(t.worker_started_at, t.started_at, 0)`);
 
@@ -177,10 +182,27 @@ export default function WorkersPage() {
        OR (t.last_failure_error IS NOT NULL AND t.last_failure_error <> '')
     ORDER BY t.consecutive_failures DESC, COALESCE(t.created_at,0) DESC LIMIT 25`);
 
+  // QUOTA WALLS (added 2026-11-09). A run that exits rate-limited is REQUEUED WITHOUT COUNTING A
+  // FAILURE, so a task stalled on provider quota shows consecutive_failures = 0 and reads as
+  // perfectly healthy on every failure-based view. Observed: eight consecutive rate_limited
+  // requeues on one card between 08:08 and 08:50 while the board reported no failures at all.
+  // Derived from task_runs, which already persists every attempt — no schema change, no counter
+  // to drift out of step with the events it counts.
+  const rateLimitedQ = query(db, `
+    SELECT t.id, t.title, t.status, COUNT(r.id) AS rl_runs,
+           MAX(r.started_at) AS last_rl
+    FROM task_runs r
+    JOIN tasks t ON t.id = r.task_id
+    WHERE r.status = 'rate_limited' AND r.started_at >= ${cutoff}
+    GROUP BY t.id
+    ORDER BY rl_runs DESC, last_rl DESC LIMIT 25`);
+
   const running = runningQ.rows as Running[];
   const open = openQ.rows as Open[];
   const done = doneQ.rows as Done[];
   const failed = failedQ.rows as any[];
+  const rateLimited = rateLimitedQ.rows as any[];
+  const rateLimitedTotal = rateLimited.reduce((a, r) => a + Number(r.rl_runs || 0), 0);
 
   // ---- cron: what is executing right now, and what broke ----
   let cronRunning: CronRun[] = [];
@@ -216,17 +238,18 @@ export default function WorkersPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="Active workers" value={String(activeCount)} sub={`${running.length} kanban · ${cronRunning.length} cron`} tone={activeCount > 0 ? "pos" : "neutral"} />
         <Stat label="Blocked on you" value={String(blocked.length)} sub="needs promote / approval" tone={blocked.length > 0 ? "neg" : "neutral"} />
         <Stat label="Queued" value={String(queued.length)} sub="not started" tone="neutral" />
         <Stat label="Completed 24h" value={String(done.length)} sub="cards finished" tone={done.length > 0 ? "pos" : "neutral"} />
+        <Stat label="Quota walls 24h" value={String(rateLimitedTotal)} sub={`${rateLimited.length} card(s) requeued`} tone={rateLimitedTotal > 0 ? "neg" : "neutral"} />
       </div>
 
-      {(runningQ.error || openQ.error || doneQ.error) && (
+      {(runningQ.error || openQ.error || doneQ.error || rateLimitedQ.error) && (
         <LoadError
           what="kanban board"
-          error={[runningQ.error, openQ.error, doneQ.error].filter(Boolean).join(" | ")}
+          error={[runningQ.error, openQ.error, doneQ.error, rateLimitedQ.error].filter(Boolean).join(" | ")}
         />
       )}
 
@@ -239,9 +262,16 @@ export default function WorkersPage() {
         ) : (
           <div className="space-y-3">
             {running.map((t) => {
-              const started = t.worker_started_at || t.started_at;
-              const elapsed = started ? nowS() - started : null;
-              const hbAge = t.last_heartbeat_at ? nowS() - t.last_heartbeat_at : null;
+              // Three sources, in order of truth: the CURRENT RUN's start (task_runs.started_at,
+              // integer epoch seconds, written at every dispatch), then worker_started_at, then the
+              // task's started_at — which is the FIRST attempt, so on a retry it reports the card's
+              // age as if it were this run's duration. All go through toEpoch: the columns disagree
+              // on both type and unit.
+              const started =
+                toEpoch(t.run_started_at) ?? toEpoch(t.worker_started_at) ?? toEpoch(t.started_at);
+              const elapsed = started !== null ? nowS() - started : null;
+              const hbS = toEpoch(t.last_heartbeat_at);
+              const hbAge = hbS !== null ? nowS() - hbS : null;
               const overCap = elapsed !== null && t.max_runtime_seconds ? elapsed > t.max_runtime_seconds : false;
               const staleHb = hbAge !== null && hbAge > 300;
               return (
@@ -310,6 +340,37 @@ export default function WorkersPage() {
             </div>
           )}
         </div>
+      </Card>
+
+      {/* ---------- 1b. QUOTA WALLS ---------- */}
+      <Card title={`Quota walls — rate-limited requeues (24h) (${rateLimitedTotal})`}>
+        {rateLimitedQ.error ? (
+          <LoadError what="rate-limited runs" error={rateLimitedQ.error} />
+        ) : rateLimited.length === 0 ? (
+          <Empty message="No rate-limited requeues in the last 24 hours." />
+        ) : (
+          <>
+            <div className="mb-3 text-xs text-neutral-400">
+              A provider quota wall is requeued <span className="text-neutral-200">without counting a
+              failure</span>, so a card stalled on quota reports{" "}
+              <span className="font-mono">consecutive_failures = 0</span> and reads healthy on every
+              failure-based view. Counted from <span className="font-mono">task_runs</span>, which
+              records every attempt, so this cannot drift from the events it describes.
+            </div>
+            <div className="space-y-2">
+              {rateLimited.map((r) => (
+                <div key={r.id} className="flex flex-wrap items-center gap-3 text-xs">
+                  <span className="rounded bg-amber-500/20 px-2 py-0.5 text-amber-300">
+                    {r.rl_runs} requeue{r.rl_runs === 1 ? "" : "s"}
+                  </span>
+                  <span className="font-mono text-neutral-400">{r.id}</span>
+                  <span className="text-neutral-200">{String(r.title).slice(0, 70)}</span>
+                  <span className="text-neutral-500">status {r.status} · last {stamp(r.last_rl)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </Card>
 
       {/* ---------- 2. BLOCKED ---------- */}
