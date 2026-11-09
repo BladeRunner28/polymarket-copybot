@@ -9,6 +9,7 @@ import { getActiveRules } from "../src/lib/rules";
 import { scoreTrade } from "../src/lib/scoring/trade";
 import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
+import { priceForOutcome, isYesSideOutcome } from "../src/lib/outcome-price";
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails, C200_BAND_DEFAULTS } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
@@ -443,6 +444,12 @@ async function main() {
     let liquidity: number | undefined;
     let ttr: number | undefined;
     let currentPrice = t.detectedPrice;
+    // price-side-inversion (2026-11-09, user-approved): which side of the market
+    // this leg holds, as the VENUE labels it. Sentiment aggregation signs its
+    // edge in the YES frame; before this, any label that was not literally "NO"
+    // was assumed to be the yes side. Initialised from the LABEL (not true) so a
+    // failed market fetch reproduces the previous behaviour exactly.
+    let outcomeIsYesSide = t.outcome !== "NO";
     if (deadSlugs.has(t.marketId)) {
       // tuning review #38 rec 3 (2026-09-28, user-approved): cached 404 — skip the
       // doomed fetch, keep the detection-time fallback. Logged on its OWN line so
@@ -457,8 +464,14 @@ async function main() {
         spread = m.spread;
         liquidity = m.liquidity;
         ttr = m.timeToResolutionHours;
-        const p = t.outcome === "NO" ? m.noPrice : m.yesPrice;
+        // price-side-inversion (2026-11-09, user-approved): price the token the
+        // leg actually holds. `outcome === "NO" ? noPrice : yesPrice` priced
+        // every NAMED outcome ("Under", team names) at the FIRST token's price,
+        // booking the complement on 87 regime legs and carrying 56% of booked
+        // PnL. See src/lib/outcome-price.ts.
+        const p = priceForOutcome(m, t.outcome);
         if (p !== undefined) currentPrice = p;
+        outcomeIsYesSide = isYesSideOutcome(m, t.outcome);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         // Only a clean 404/not-found is evidence the market is gone — a 429, a
@@ -487,9 +500,9 @@ async function main() {
       const researchCat = researchCategoryFor(t.marketQuestion, t.marketCategory);
       if (researchCat) {
         const sideSign = t.side === "SELL" ? -1 : 1;
-        const outcomeSign = t.outcome === "NO" ? -1 : 1;
+        const outcomeSign = outcomeIsYesSide ? 1 : -1;
         if (rules.sentimentEvidenceEnabled === 1) {
-          const yesPrice = t.outcome === "NO" ? 1 - currentPrice : currentPrice;
+          const yesPrice = outcomeIsYesSide ? currentPrice : 1 - currentPrice;
           const agg = await aggregateSentimentForCategory(researchCat, yesPrice);
           if (agg && agg.n >= rules.sentimentMinSignals) {
             sentimentDelta = sideSign * outcomeSign * agg.delta;

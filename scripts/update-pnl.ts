@@ -17,6 +17,7 @@ import {
 } from "../src/lib/paper";
 import { fetchEventResolution } from "../src/lib/dead-market-resolution";
 import { didOutcomeWin } from "../src/lib/resolution";
+import { priceForOutcome } from "../src/lib/outcome-price";
 import { log, logError } from "../src/lib/redact";
 import { sweepExitRecovery } from "../src/lib/exit-recovery";
 import { loadDeadSlugs, rememberDeadSlug as rememberDeadSlugIn } from "../src/lib/dead-slug-cache";
@@ -217,7 +218,10 @@ async function main() {
           resolved++;
           continue;
         }
-        const price = t.outcome === "NO" ? m.noPrice : m.yesPrice;
+        // price-side-inversion (2026-11-09, user-approved): mark the leg at the
+        // price of the token it holds, by label. Positional yes/no pricing read
+        // the FIRST token on every named-outcome market.
+        const price = priceForOutcome(m, t.outcome);
         if (price === undefined) {
           failures.push(`${marketId}: no price available`);
           continue;

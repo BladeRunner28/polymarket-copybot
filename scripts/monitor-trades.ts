@@ -8,6 +8,7 @@ import { getAdapter } from "../src/lib/adapters";
 import { log, logError } from "../src/lib/redact";
 import { appendSellPrint } from "../src/lib/sell-log";
 import { fillIdentityKey } from "../src/lib/outcome-identity";
+import { priceForOutcome } from "../src/lib/outcome-price";
 import {
   MAX_OBSERVE,
   MAX_TRACKED,
@@ -168,7 +169,10 @@ async function main() {
           if (!w.observationOnly && !isBlankMarket) {
             try {
               const m = await adapter.fetchMarket(t.marketId);
-              const p = t.outcome === "NO" ? m.noPrice : m.yesPrice;
+              // price-side-inversion (2026-11-09, user-approved): the detection
+              // price is stored on ObservedTrade and is what every booking falls
+              // back to, so it must be the price of THIS leg's token by label.
+              const p = priceForOutcome(m, t.outcome);
               if (p !== undefined) detectedPrice = p;
               await prisma.marketSnapshot.create({
                 data: {

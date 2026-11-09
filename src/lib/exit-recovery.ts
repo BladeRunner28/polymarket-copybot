@@ -23,6 +23,7 @@ import { prisma } from "./db";
 import { log, logError } from "./redact";
 import { fetchEventResolution } from "./dead-market-resolution";
 import { didOutcomeWin } from "./resolution";
+import { priceForOutcome } from "./outcome-price";
 
 export const EXIT_RECOVERY_LOG =
   process.env.EXIT_RECOVERY_LOG ??
@@ -172,7 +173,9 @@ export async function sweepExitRecovery(adapter: {
             band: t.entryPrice < 0.2 ? "longshot" : t.entryPrice < 0.6 ? "mid" : "premium",
           });
         } else if (m) {
-          const price = t.outcome === "NO" ? m.noPrice : m.yesPrice;
+          // price-side-inversion (2026-11-09, user-approved): early-exit value is
+          // the price of the token held, by label — not the first token's.
+          const price = priceForOutcome(m, t.outcome);
           if (price === undefined) continue;
           for (const b of want) {
             marks.push({
