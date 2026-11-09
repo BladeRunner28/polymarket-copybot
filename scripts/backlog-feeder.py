@@ -279,7 +279,7 @@ def main():
     # Lane B first, always. Lane A only once no Lane B work is queued or running.
     lane_b_active = [
         t for t in active
-        if t.get("idempotency_key", "").startswith("roadmap:")
+        if (t.get("idempotency_key") or "").startswith("roadmap:")
         and classify({"tags": next((c.get("tags") for c in cards
                                     if c.get("id") == t["idempotency_key"].split(":", 1)[1]), [])}) == "b"
     ]
