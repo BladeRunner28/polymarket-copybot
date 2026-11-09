@@ -4042,18 +4042,22 @@
     },
     {
       "id": "polythought-go-taker-fill",
-      "column": "Scheduled",
+      "column": "Done",
       "effort": "2h",
-      "title": "lein3000zzz/polythought-go - book-walk taker fill as a read-only replay on booked C-200 BUY legs",
+      "title": "lein3000zzz/polythought-go - book-walk taker fill on booked C-200 BUY legs: FAIL at 49.1% <= 2c on n=477 - TAKER ARM CLOSED, null recorded",
       "tags": [
         "research",
         "approved-2026-11-09",
         "entry",
-        "maker-vs-taker"
+        "maker-vs-taker",
+        "lane-b",
+        "measurement",
+        "null",
+        "taker-closed"
       ],
-      "dates": "Approved 2026-11-09 in thread (user: 'approve reach-mcp, polythought-go, lip-ledger, kdreams'). Read-only; no live path. Source candidate: lein3000zzz/polythought-go.",
-      "gate": "DECISION RULE: VWAP premium <= 2c on >=50% of joined legs (n>=150) => open a maker-vs-taker comparison; ELSE close the taker arm permanently.",
-      "note": "Hypothesis: the Rust sidecar's fixed intent-$0.02 maker convention understates the real cost of taking, and a book-walk VWAP is measurable from data/l2/ without touching the live lane. Reuses the existing L2 cache. Cost ~2h, read-only. Reversibility: artifact only."
+      "dates": "Approved 2026-11-09 in thread (user: 'approve reach-mcp, polythought-go, lip-ledger, kdreams'). Read-only; no live path. Source candidate: lein3000zzz/polythought-go. | MEASURED + CLOSED 2026-11-09 (Lane B, read-only): drafts/polythought-go-taker-fill-20261109 (served at :3013/drafts/polythought-go-taker-fill-20261109) - instrument scripts/c200-bookwalk-taker.py - artifact data/c200-bookwalk-taker.jsonl. No rule, size, gate or published figure changed; the taker entry direction is recorded as closed on cost.",
+      "gate": "DECISION RULE: VWAP premium <= 2c on >=50% of joined legs (n>=150) => open a maker-vs-taker comparison; ELSE close the taker arm permanently. | READ 2026-11-09: 49.1% of 477 clean joined legs at or under 2c (bar >=50%; FAIL). 49.1% is 0.9pp below the bar at n=477 (binomial SE ~2.3pp). Adding the documented taker fee (rate*p*(1-p), per-market category rate) drops it to 27.0% overall and 45.6% on the measured-credit era, so the null does not rest on the 0.9pp. Re-read: python3 scripts/c200-bookwalk-taker.py",
+      "note": "Hypothesis: the Rust sidecar's fixed intent-$0.02 maker convention understates the real cost of taking, and a book-walk VWAP is measurable from data/l2/ without touching the live lane. Reuses the existing L2 cache. Cost ~2h, read-only. Reversibility: artifact only. | RESULT (2026-11-09): CLOSE_TAKER_ARM. Population 515 booked C-200 BUY legs (FillIntent JOIN PaperTrade) -> 505 joined to an L2 book at dispatch -> 28 wrong-side excluded -> 477 clean; unjoined 7 no-snapshot + 2 one-sided-book + 1 label-miss. Premium of a taker fill over the booked maker entry: mean +2.11c, median +2.37c, 49.1% <=2c (usd-weighted 60.1% - the rule is LEG-COUNT, so that is NOT a pass). Decomposition: vs the venue mid the median is +0.50c (86.4% <=2c) - the premium over our fill is the half-spread plus the credit we book, not a taker penalty. Era split: flat-2c 247 legs 16.2% <=2c; measured-credit 230 legs 84.4% <=2c (price only) but 45.6% with the documented per-market taker fee (fee/share = rate*p*(1-p); 448 legs at 0.05, 28 at 0.04, 1 at 0.07) - the fee arm is why the close is not a knife-edge. CORRECTION: the first pass read 47.8% on 433 legs because the L2 snapshot seek used linear byte interpolation on bursty append-only files (43 of 50 'no snapshot' legs had 14-24 snapshots inside the window); the binary-search seek recovers 44 legs and moves the share to 49.1%. Only artifact records carrying l2_seek=binary_search_ts_v2 are evidence. SIDE FINDING (own card, price-side-inversion): of the 28 wrong-side legs, 26 have the SIBLING outcome's book within 3c of our booked intent (24 within 1c) - independent corroboration from the venue's own L2, 26 of 28 in the measured era; 2 are inconclusive (dota2-1win-pari-2026-10-09, atp-michels-fils-2026-10-29). DO NOT RE-DERIVE: a price-only taker read is settled; a reopen needs a NEW pre-registration on the measured-credit population with a fee-inclusive metric (vwap+fee-entry<=2c, n>=150), not a reinterpretation of this null. Two earlier numbers (47.8%/433 and 70.9%/39.8% flat-rate fee arms) are superseded."
     },
     {
       "id": "lip-ledger-kalshi-reward",
