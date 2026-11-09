@@ -100,10 +100,12 @@ export const LOW_DISPUTE_CATEGORIES = ["sports", "crypto", "finance", "weather",
 export type RiskFactor = { key: string; score: number; weight: number; reason: string };
 
 export type RiskGrade = {
-  /** Weighted sum, 0-100 (higher = riskier). */
+  /** Weighted sum, 0-100 (higher = riskier), renormalised over the factors it MEASURED. */
   score: number;
   grade: "A" | "B" | "C" | "D" | "F";
   factors: RiskFactor[];
+  /** Factors absent because their INPUT was missing — no score is invented for them. */
+  omitted: string[];
   warnings: string[];
 };
 
@@ -274,8 +276,13 @@ function timeRiskScore(endDate: Date | null | undefined, now: Date): RiskFactor 
 }
 
 /** polyterm `risk_score.py:287-311` — volume quality (wash-trading proxy). */
-function volumeQualityScore(volume24hr: number | undefined, liquidity: number | undefined): RiskFactor {
-  const vol = volume24hr ?? 0;
+function volumeQualityScore(volume24hr: number | undefined, liquidity: number | undefined): RiskFactor | null {
+  // An ABSENT input is not an observed zero. Until 2026-11-09 this returned 40 "no recent volume" for
+  // a market whose volume was simply unknown; the polyterm-p3 pre-registered read found 8,067 of
+  // 12,685 legs had no reconstructable volume24hr and were being tagged with that false observation.
+  // Missing now returns null and the grade renormalises over the factors it actually measured.
+  if (volume24hr === undefined) return null;
+  const vol = volume24hr;
   const liq = liquidity ?? 0;
   let score: number;
   let reason: string;
@@ -368,7 +375,7 @@ export function scoreToGrade(score: number): RiskGrade["grade"] {
  * measured edge, and the source itself returns no calibration evidence for it.
  */
 export function marketRiskGrade(input: HygieneMarketInput, now: Date = new Date()): RiskGrade {
-  const factors: RiskFactor[] = [
+  const raw: (RiskFactor | null)[] = [
     resolutionClarityScore(input),
     liquidityScore(input.liquidity),
     timeRiskScore(input.endDate, now),
@@ -376,14 +383,18 @@ export function marketRiskGrade(input: HygieneMarketInput, now: Date = new Date(
     spreadScore(input.spread),
     categoryRiskScore(input.categoryForRisk, input.question),
   ];
-  const score = Math.round(factors.reduce((a, f) => a + f.score * f.weight, 0));
+  const factors = raw.filter((f): f is RiskFactor => f !== null);
+  const ALL_KEYS = ["resolution_clarity", "liquidity", "time_risk", "volume_quality", "spread", "category_risk"];
+  const omitted = ALL_KEYS.filter((k) => !factors.some((f) => f.key === k));
+  const weightSum = factors.reduce((a, f) => a + f.weight, 0);
+  const score = weightSum > 0 ? Math.round(factors.reduce((a, f) => a + f.score * f.weight, 0) / weightSum) : 0;
   const warnings: string[] = [];
   const get = (k: string) => factors.find((f) => f.key === k);
   if ((get("resolution_clarity")?.score ?? 0) >= 60) warnings.push("resolution criteria may be subjective or unclear");
   if ((get("liquidity")?.score ?? 0) >= 60) warnings.push("low liquidity - large orders may cause slippage");
   if ((get("time_risk")?.score ?? 0) >= 60) warnings.push("long time to resolution - capital locked up");
   if ((get("volume_quality")?.score ?? 0) >= 70) warnings.push("volume pattern may indicate wash trading");
-  return { score, grade: scoreToGrade(score), factors, warnings };
+  return { score, grade: scoreToGrade(score), factors, omitted, warnings };
 }
 
 export type HolderRow = { proxyWallet?: string; amount?: number; outcomeIndex?: number };

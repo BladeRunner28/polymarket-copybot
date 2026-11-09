@@ -145,6 +145,17 @@ describe("market risk grade (ported weights + tiers)", () => {
     expect(g.warnings.join(" | ")).toMatch(/low liquidity/);
     expect(g.grade).toMatch(/^[ABCDF]$/);
   });
+
+  it("omits the volume factor when volume24hr is UNKNOWN (an absent input is not an observed zero)", () => {
+    // Lane B repair 2026-11-09: 8,067 of 12,685 legs in the polyterm-p3 rank read had no
+    // reconstructable volume24hr and were previously scored "no recent volume" (40).
+    const unknown = marketRiskGrade({ ...base, volume24hr: undefined, liquidity: 100 });
+    expect(unknown.factors.map((f) => f.key)).not.toContain("volume_quality");
+    expect(unknown.omitted).toContain("volume_quality");
+    const observedZero = marketRiskGrade({ ...base, volume24hr: 0, liquidity: 100 });
+    expect(observedZero.factors.find((f) => f.key === "volume_quality")!.score).toBe(40);
+    expect(observedZero.omitted).not.toContain("volume_quality");
+  });
 });
 
 describe("holder concentration (statistic is ours; the source never called /holders)", () => {
