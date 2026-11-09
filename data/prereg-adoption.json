@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-11-09T11:35:26.814646-06:00",
+  "rule": "adopt iff >= 2 of 3 hand-read gates reproduce",
+  "hand_read_gates": 3,
+  "reproduced": 3,
+  "verdict": "ADOPT",
+  "gates": [
+    {
+      "id": "entry-floor-a",
+      "metric": "roi",
+      "hand_value": -0.5518,
+      "grader_value": -0.5517966209817452,
+      "delta": 3.379018254756616e-06,
+      "tol": 0.002,
+      "hand_n": 31,
+      "grader_n": 31,
+      "n_drift": 0,
+      "n_basis": "population",
+      "hand_source": "data/entry-floor-read.jsonl verdict.gateA_roi / verdict.gateA_n (scripts/entry-floor-replay.py)",
+      "reproduced": true,
+      "reason": ""
+    },
+    {
+      "id": "price-side-inversion",
+      "metric": "inverted_share",
+      "hand_value": 0.0422,
+      "grader_value": 0.04219409282700422,
+      "delta": -5.907172995783805e-06,
+      "tol": 0.002,
+      "hand_n": 2131,
+      "grader_n": 2133,
+      "n_drift": 2,
+      "n_basis": "population",
+      "hand_source": "drafts/price-side-inversion-20261109.md sec 2 (scripts/profit-price-side.py): 90 inverted of 2,131 regime legs",
+      "reproduced": true,
+      "reason": ""
+    },
+    {
+      "id": "c200-ladder-window-1025",
+      "metric": "pnl",
+      "hand_value": 597.46,
+      "grader_value": 597.46,
+      "delta": 0.0,
+      "tol": 0.05,
+      "hand_n": 53,
+      "grader_n": 53,
+      "n_drift": 0,
+      "n_basis": "population",
+      "hand_source": "drafts/c200-fill-scoreboard-caveat-20261103.md sec 3 (query_bankroll.js settled window)",
+      "reproduced": true,
+      "reason": ""
+    }
+  ]
+}

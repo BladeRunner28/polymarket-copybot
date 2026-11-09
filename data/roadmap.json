@@ -4007,18 +4007,84 @@
     {
       "id": "price-side-inversion",
       "title": "LANE A PROPOSAL — the ledger books the YES-side price on 87 legs that hold the other outcome (56% of booked PnL; the C-200 ladder's advance is 107% this class)",
-      "column": "Scheduled",
+      "column": "Done",
       "effort": "1.5h",
-      "dates": "Proposed 2026-11-08 by the profit review (drafts/profit-recs-20261108.md). Lane A — NOTHING APPLIED.",
-      "note": "HYPOTHESIS: on a NO-side / second-outcome leg (UNDER, away team, second player), PaperTrade.entryPrice and the detectedPrice that feeds it are read from the market's YES quote, so the ledger pays a favourite at a longshot's price and the payoff identity inflates the win. MEASURED (scripts/profit-price-side.py, read-only, self-tests pass): 87 legs, $2,362 notional, +$4,965 booked = 56.3% of the book's +$8,817 (+29.7%); booked price mirrors the wallet's fill about 0.50 to a median of 0.007 (p90 0.020) on BOTH booked entry and detected price, against 0.295 for the control class; the class hits 59.8% at a booked average price of 0.246 (a +35pp 'edge') and 61.1% in the top wallet-price quintile where the booked price is 0.105; at the price the wallets actually paid (avg 0.746) the same legs book +$15. MarketSnapshot at the trade minute: booked price = the YES quote on 40 of 40 of the biggest legs (median distance 0.000) while the wallet's fill is the NO quote to within 0.005. Class window: first leg opened 2026-10-26, none before; 26 in Oct, 61 in Nov; 8 wallets, two carry 66 of 87. That date is the drift gate going directional (f61fdbe) — before it, |drift| > 0.004 blocked every one of these legs, so the gate was accidentally the filter and removing it exposed the read defect. CORRECTED BOOK: +$3,867 (+13.0%) not +$8,817; C-200 +$5,067 not +$8,415; STANDARD -$1,200 not +$402; cheap band +46.8% not +85.3%; 0.2-0.4 +7.8% not +18.9%; ex-top-5 -$64 (-0.2%) not +$4,117 (+14.1%). LADDER: C-200 7-day gate +$2,151 booked (passes $250/day) -> -$109 corrected (passes nothing); the class is 107% of the gate sum. DECISION RULE: fix the outcome->token price read at its source (the read populating detectedPrice / booked entry); acceptance = INVERTED n = 0 on the next 150 settled regime legs. Do NOT touch the drift gate, band map, clip or RuleSet — the gate is behaving correctly on a bad input. Also: do not advance the ladder while the class is >20% of the gate sum. REFUTATION: a tape check of >=20 of the 87 legs (v2 trades feed, condition_id + per-token outcome label) showing the booked price is what those tokens traded at would make the wallet price the wrong one and move the fix to a different file. COST 0.5h to card, ~1h to fix + verify. SCOPE NOTE: this is NOT the fill-aware card (that one is legs that were never positions); the two compound and must not be added. MEASURED 2026-11-09 (re-derived on the live book; the 11-08 figures have drifted +2 legs): 90 legs / $2,476 notional / +$5,641.69 booked = 59.7% of the book's +$9,443.76; corrected book +$3,852.99 (+12.7%) with the live gates re-run; C-200 7-day gate +$2,674.85 -> -$186.65 (the class is 108% of the gate sum); 25 of 90 legs would be REFUSED at their true price (C-200 cap 0.80 / STANDARD 0.85 / 0.4-0.6 skip). REFUTATION TEST RUN, DID NOT FIRE: v2 tape on 32 legs = 0 LEDGER=OWN (kill condition), 29 LEDGER=SIBLING, med |booked - sibling| 0.005 vs med |booked - recorded| 0.505; differential control on 12 CONSISTENT label-named legs = 7 OWN / 0 SIBLING, and the recorded token is outcome_index 1 on 31/31 inverted vs index 0 on 12/12 control -- the defect is the positional outcomePrices[0] read. PROPOSAL: drafts/price-side-inversion-20261109 (served :3013/drafts/price-side-inversion-20261109); instrument scripts/price-side-read-source.py on branch wt/price-side-inversion (uncommitted). NOTHING APPLIED.",
+      "dates": "Proposed 2026-11-08 by the profit review. APPROVED 2026-11-09 and APPLIED the same day (commit fbf9073) - Lane A, user-approved in thread.",
+      "note": "HYPOTHESIS: on a NO-side / second-outcome leg (UNDER, away team, second player), PaperTrade.entryPrice and the detectedPrice that feeds it are read from the market's YES quote, so the ledger pays a favourite at a longshot's price and the payoff identity inflates the win. MEASURED (scripts/profit-price-side.py, read-only, self-tests pass): 87 legs, $2,362 notional, +$4,965 booked = 56.3% of the book's +$8,817 (+29.7%); booked price mirrors the wallet's fill about 0.50 to a median of 0.007 (p90 0.020) on BOTH booked entry and detected price, against 0.295 for the control class; the class hits 59\n\nAPPLIED 2026-11-09 (commit fbf9073): new src/lib/outcome-price.ts prices a leg by the venue's own token label (MarketState.outcomeLabels/outcomePrices), falling back to binary yes/no and claiming nothing when no token list is present. Four call sites fixed: score-trades (booking), update-pnl (marking), monitor-trades (detection price - the fallback every booking inherits), exit-recovery (early-exit value). tsc clean, 890/890 tests, 10 new assertions that fail on the old expression. Live proof: Bilibili Gaming [0.415,0.585], wallet paid 0.58 -> new 0.585 (d=0.005) vs old 0.415 (d=0.165); first-token legs unchanged. CORRECTED BOOK: +$9,443.76 -> +$3,834.05 (-59%); BANKROLL_200 +49.0% -> +27.3%; STANDARD +3.9% -> -9.6%; 7-day ladder gate booked +$2,674.85 -> repriced -$156.32 (Phase-1 flips PASS -> fail). Ladder HELD (RuleSet v71 unchanged).",
       "tags": [
         "profit-review",
         "lane-a",
         "pricing",
         "ladder",
         "regression",
-        "awaiting-approval"
-      ]
+        "awaiting-approval",
+        "applied",
+        "done-2026-11-09",
+        "approved-2026-11-09"
+      ],
+      "gate": "ACCEPTANCE: INVERTED n = 0 on the next 150 settled legs, measured by python3 scripts/profit-price-side.py. Refutation: a tape check of >=20 legs showing the booked price IS what those tokens traded at."
+    },
+    {
+      "id": "reach-mcp-input-health",
+      "column": "In Progress",
+      "effort": "2h",
+      "title": "xyonium/reach-mcp - typed per-block input-health sidecar so a dead feed stops reading as a null result",
+      "tags": [
+        "research",
+        "approved-2026-11-09",
+        "venue-health",
+        "instrument",
+        "lane-b"
+      ],
+      "dates": "Approved 2026-11-09 in thread (user: 'approve reach-mcp, polythought-go, lip-ledger, kdreams'). Read-only; no live path. Source candidate: xyonium/reach-mcp. | Implemented 2026-11-09 (Lane B, approved): writer live; run 1 written 2026-11-09T16:17:33Z (18 blocks, ok=18).",
+      "gate": "GATE: 14-run clock starts on implementation. Sidecar must emit one typed row per block (ok | no_results | rate_limited | gated_off | void) so a dead feed is distinguishable from a quiet one. Gate CANNOT fire until data/cache/research-recon/factsheet-status.jsonl exists - it has never been written because the change was never approved. | STARTED 2026-11-09T16:17:33Z — the JSONL now EXISTS (data/cache/research-recon/factsheet-status.jsonl, 18 rows/run). READ: python3 scripts/factsheet-status-audit.py -> earliest fire at run 14 (~2026-11-23 at the daily + weekly cadence).",
+      "note": "Hypothesis: a dead or gated feed and a genuinely empty listing are the same zero once parsed, so venue-health blindness is invisible in every current read. Measurement: append-only status JSONL per collector block; audit counts of each typed state per run. Cost ~2h, read-only, zero live path. Reversibility: delete the sidecar writer and the JSONL. | IMPLEMENTED 2026-11-09 (Lane B). scripts/factsheet_status.py holds the CLOSED schema (keys v,ts,run,block,state,note,n; an unknown key, state or block id REFUSES the whole run's rows rather than writing a partial series) and one row is now emitted per collector block: 5 db blocks, prereg, 2 venues, 7 GitHub queries, 3 Reddit feeds = 18. scripts/research-collect.py prints a '## Input health' section with an audit count per state and NAMES every non-ok block in the same run it happened, so the gate's second half (\"the same run's fact sheet carried no line about it\") is structurally answered. scripts/factsheet-status-audit.py is the gate read. VERIFIED: scripts/test-factsheet-status.py 39/39 (unknown key refused with NOTHING written; a stale cache carrying rows = rate_limited with n>0 — the void-with-rows shape; an empty feed that answered = no_results; a failed fetch = void); a live run wrote 18/18 ok; a forced-failure probe (--db /nonexistent --skip-*) wrote void=5/gated_off=13 and named all 18; asset-queue seeding still sees 35 radar lines with 0 matches outside the radar section. Also repaired in passing: the Kalshi block's `data.get(...)` default-slot call raised AttributeError on a list body (the shape it meant to accept), and HTTP error bodies are now carried into the note so GitHub's keyless 403 rate limit classifies as rate_limited instead of gated_off. REVERT: `git revert <commit>` (or drop the factsheet_status import + REC.mark calls) and rm data/cache/research-recon/factsheet-status.jsonl."
+    },
+    {
+      "id": "polythought-go-taker-fill",
+      "column": "Scheduled",
+      "effort": "2h",
+      "title": "lein3000zzz/polythought-go - book-walk taker fill as a read-only replay on booked C-200 BUY legs",
+      "tags": [
+        "research",
+        "approved-2026-11-09",
+        "entry",
+        "maker-vs-taker"
+      ],
+      "dates": "Approved 2026-11-09 in thread (user: 'approve reach-mcp, polythought-go, lip-ledger, kdreams'). Read-only; no live path. Source candidate: lein3000zzz/polythought-go.",
+      "gate": "DECISION RULE: VWAP premium <= 2c on >=50% of joined legs (n>=150) => open a maker-vs-taker comparison; ELSE close the taker arm permanently.",
+      "note": "Hypothesis: the Rust sidecar's fixed intent-$0.02 maker convention understates the real cost of taking, and a book-walk VWAP is measurable from data/l2/ without touching the live lane. Reuses the existing L2 cache. Cost ~2h, read-only. Reversibility: artifact only."
+    },
+    {
+      "id": "lip-ledger-kalshi-reward",
+      "column": "Scheduled",
+      "effort": "2-3h",
+      "title": "mirabilis-agent/lip-ledger - Kalshi LIP reward model over captured tape, NET of adverse selection",
+      "tags": [
+        "research",
+        "approved-2026-11-09",
+        "kalshi",
+        "rewards"
+      ],
+      "dates": "Approved 2026-11-09 in thread (user: 'approve reach-mcp, polythought-go, lip-ledger, kdreams'). Read-only; no live path. Source candidate: mirabilis-agent/lip-ledger.",
+      "gate": "DECISION RULE: >= $0.0131/contract-hour NET of adverse selection over >=50 counted program-hours by 2026-11-24 => keep the reward leg; ELSE close it.",
+      "note": "Hypothesis: the LIP reward leg is profitable only if measured gross; adverse selection is the whole question. Runs over captured Kalshi tape (kalshi-tape-capture-live, user-tagged irreversible - do not reverse). Cost ~2-3h, read-only. Reversibility: artifact only."
+    },
+    {
+      "id": "kdreams-prereg-registry",
+      "column": "Done",
+      "effort": "2h",
+      "title": "kmasterfleek/kdreams - prereg registry + deterministic grader so dated gates grade as rows, not bespoke scripts — ADOPTED 2026-11-09 (3 of 3 hand reads reproduce)",
+      "tags": [
+        "research",
+        "approved-2026-11-09",
+        "preregistration",
+        "harness",
+        "done-2026-11-09"
+      ],
+      "dates": "Approved 2026-11-09 in thread (user: 'approve reach-mcp, polythought-go, lip-ledger, kdreams'). Read-only; no live path. Source candidate: kmasterfleek/kdreams (audited 2026-11-07, MIT, concept only). CLOSED 2026-11-09: adoption gate met the same day it was approved (3 of 3 hand-read gates reproduce; rule was >=2 of 3 by 2026-11-22).",
+      "gate": "ADOPTION: adopt iff >=2 of 3 hand-read gates reproduce by 2026-11-22. Deliverables: data/prereg-registry.jsonl + scripts/prereg-grade.py.",
+      "note": "Hypothesis: a dated gate written as a bespoke script cannot be distinguished from a frozen one; this is the instrument that would have flagged entry-floor gate A stopped at n=31 for 16 consecutive reads. Spec grammar to take: closed metric vocabulary, reject unknown keys, grade only strictly post-freeze rows, max(minN, floor) gating, and the three guards (reject a spec already true pre-freeze; count SUPPORTED-but-already-true as no-information; fresh-ticks/max-open/expire). NOT copying the engine: its own numbers are maker proxy -1.249c/attempt PM and -0.984c Kalshi, 11 of 14 predictions refuted. Cost ~2h. Reversibility: delete the registry and the grader.\n\nBUILT 2026-11-09 (Lane B instrument, ~2h). data/prereg-registry.jsonl (3 specs: entry-floor-a, price-side-inversion, c200-ladder-window-1025) + scripts/prereg-grade.py (938 lines: closed metric vocabulary, reject-unknown-keys, strictly-post-freeze grading, max(min_n,floor) gating, UNGRADEABLE, REJECTED_PRE_TRUE, NO_INFORMATION, FROZEN at >=7 unchanged reads, MODIFIED on a post-freeze edit) + append-only data/prereg-reads.jsonl + data/prereg-adoption.json. Draft: drafts/prereg-registry-20261109.md (served at :3013/drafts/prereg-registry-20261109).\nRESULTS (re-run end-to-end 2026-11-09 11:35, read-only on prisma/dev.db): self-test 0/25 failed; validate 3/3; adopt 3 of 3 hand reads reproduce within tolerance -> ADOPT. (1) entry-floor-a is FROZEN: n_all=31 unchanged across 19 graded reads, strictly-post-freeze n=0 -- all 31 legs settled BEFORE the gate's own freeze date, so gate A could never resolve; the bespoke script read INSUFFICIENT_N 17 times and could not say so. (2) price-side-inversion UNGRADEABLE: 4 of 36 post-freeze legs = 11.11% inverted (lifetime 90/2133 = 4.22%); those 4 legs book +$792.13 of the post-freeze book's +$735.05 (107.8%), needs 100 post-freeze legs. The after-the-fact form (inverted_pnl_share >= 20%, already 59.7% pre-freeze) is REJECTED_PRE_TRUE -- recorded as the evidence, not as a dead row. (3) c200-ladder-window-1025 REFUTED: pinned 2026-10-25..10-31 window = $597.46 vs the $1,750 Phase-1 bar, 53 legs, reproducing query_bankroll.js and drafts/c200-fill-scoreboard-caveat-20261103.md sec 3.\nADOPTION DETAIL: sample reproduction is basis-aware -- a bounded slice must match n exactly, a cumulative slice may only have grown (n_drift recorded; a shrink fails). Re-run saw 2133 vs the hand read's 2131 (+2 legs settled after the 08:59 read, value identical at 4 dp).\nREPRO: python3 scripts/prereg-grade.py self-test && python3 scripts/prereg-grade.py validate && python3 scripts/prereg-grade.py grade --dry-run && python3 scripts/prereg-grade.py adopt --dry-run\nREVERT: delete data/prereg-registry.jsonl, data/prereg-reads.jsonl, data/prereg-adoption.json and scripts/prereg-grade.py; no live path reads them."
     }
   ],
   "dates": {}
