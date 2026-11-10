@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T12:58:30.257Z",
+  "generatedAt": "2026-11-09T04:31:11.723Z",
   "card": "kalshi-tape-repo-size-policy",
   "basis": {
     "window": {
@@ -13,46 +13,46 @@
     "bytes": "on-disk object size of every blob newly added by that day diffs (loose zlib / delta-packed)"
   },
   "objectStore": {
-    "gitBytes": 2145064749,
+    "gitBytes": 2259983507,
     "packBytes": 875771904,
-    "looseBytes": 1268817920,
-    "looseCount": 3952
+    "looseBytes": 1383780352,
+    "looseCount": 4073
   },
   "head": {
-    "trackedBytes": 1727264408,
-    "files": 2145,
+    "trackedBytes": 1824292448,
+    "files": 2182,
     "classes": {
       "code": {
-        "files": 983,
-        "bytes": 16798097
+        "files": 988,
+        "bytes": 17188031
       },
       "other": {
-        "files": 310,
-        "bytes": 97939709
+        "files": 311,
+        "bytes": 98860243
       },
       "tape-shadow": {
         "files": 8,
-        "bytes": 112912962
+        "bytes": 117256017
       },
       "tape-other": {
-        "files": 63,
-        "bytes": 206988118
+        "files": 64,
+        "bytes": 207912750
       },
       "cache": {
         "files": 13,
-        "bytes": 2822329
+        "bytes": 2810576
       },
       "tape-kalshi": {
-        "files": 732,
-        "bytes": 1218480496
+        "files": 761,
+        "bytes": 1308651773
       },
       "orderbook": {
         "files": 1,
-        "bytes": 2912811
+        "bytes": 3101700
       },
       "dataset": {
-        "files": 35,
-        "bytes": 68409886
+        "files": 36,
+        "bytes": 68511358
       }
     }
   },
@@ -133,11 +133,11 @@
   "verdict": {
     "level": "alarm",
     "reasons": [
-      "median 78.6 MB/day crosses the 2048.0 MB ceiling in 1 days (alarm window 90)",
+      "median 78.6 MB/day crosses the 2048.0 MB ceiling in 0 days (alarm window 90)",
       "median 78.6 MB/day is over the 40.0 MB/day budget"
     ],
-    "daysAtMedian": 1,
-    "daysAtMax": 1,
+    "daysAtMedian": 0,
+    "daysAtMax": 0,
     "overBudget": true
   },
   "topContributors": [

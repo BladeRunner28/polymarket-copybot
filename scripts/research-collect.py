@@ -32,6 +32,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+# Typed per-block input-health sidecar (2026-11-09, approved in thread; candidate
+# xyonium/reach-mcp, whose only transferable asset was its status taxonomy). Sibling module, same
+# directory, so it resolves the same way whether this file is run or loaded by a test.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import factsheet_status  # noqa: E402
+
+REC = factsheet_status.Recorder()
+
 CST = timezone(timedelta(hours=-5))
 UA = {"User-Agent": "polyhydra-research/1.0"}
 TIMEOUT = 20
@@ -70,13 +78,32 @@ def has(cur: sqlite3.Cursor, table: str) -> bool:
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone())
 
 
+def _http_error_note(e: urllib.error.HTTPError) -> str:
+    """`HTTP <code>` plus a short body hint when the source says WHY.
+
+    A 403 is a different animal depending on its body: GitHub's keyless REST says "API rate limit
+    exceeded" (a 60 req/h allowance, i.e. rate_limited) while a plan/permission refusal is
+    gated_off. Dropping the body made those indistinguishable, so the sidecar classifier would
+    file a rate limit as a gate.
+    """
+    hint = ""
+    try:
+        raw = e.read().decode("utf-8", "replace")
+        m = re.search(r'"message"\s*:\s*"([^"]{1,120})"', raw) or re.search(r"\S.{0,120}", raw)
+        if m:
+            hint = " " + re.sub(r"\s+", " ", m.group(0))[:120]
+    except Exception:  # noqa: BLE001 - a body we cannot read is not worth a second failure
+        pass
+    return f"HTTP {e.code}{hint}"
+
+
 def fetch_json(url: str) -> tuple[Any | None, str]:
     try:
         req = urllib.request.Request(url, headers=UA)
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read().decode()), "ok"
     except urllib.error.HTTPError as e:
-        return None, f"HTTP {e.code}"
+        return None, _http_error_note(e)
     except Exception as e:  # noqa: BLE001 - any network/parse failure is a source failure
         return None, f"{type(e).__name__}: {e}"
 
@@ -89,7 +116,7 @@ def fetch_text(url: str) -> tuple[str | None, str]:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return r.read().decode("utf-8", "replace"), "ok"
     except urllib.error.HTTPError as e:
-        return None, f"HTTP {e.code}"
+        return None, _http_error_note(e)
     except Exception as e:  # noqa: BLE001
         return None, f"{type(e).__name__}: {e}"
 
@@ -132,7 +159,13 @@ def bot_facts(db: str, days: int) -> list[str]:
     try:
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     except sqlite3.Error as e:
+        # One failed open means every db block below was never measured: say so per block rather
+        # than letting four silent no-rows read as four healthy reads.
+        REC.mark("db.open", "void", str(e)[:200])
+        for b in ("db.ruleset", "db.papertrade", "db.decision_journal", "db.daily_report"):
+            REC.mark(b, "void", "not attempted: dev.db open failed")
         return [f"**SOURCE FAILED — dev.db**: {e}"]
+    REC.mark("db.open", "ok")
     cur = con.cursor()
     now = now_cst()
 
@@ -151,10 +184,16 @@ def bot_facts(db: str, days: int) -> list[str]:
                     "longshot", "shortttr", "ttr", "size"))]
                 knobs = ", ".join(f"{k}={rules[k]}" for k in keep[:14])
                 out.append(f"- active RuleSet **v{row[0]}**: {knobs or '(no matching keys)'}")
+                REC.mark("db.ruleset", "ok")
             else:
                 out.append("- active RuleSet: **none active**")
+                REC.mark("db.ruleset", "no_results", "no active RuleSet row")
         except Exception as e:  # noqa: BLE001
             out.append(f"- RuleSet read FAILED: {e}")
+            REC.mark("db.ruleset", "void", f"{type(e).__name__}: {e}")
+    else:
+        out.append("- RuleSet read FAILED: table missing")
+        REC.mark("db.ruleset", "void", "table RuleSet is missing")
 
     # trades: realized + open, per lane, over rolling windows
     if has(cur, "PaperTrade"):
@@ -415,8 +454,13 @@ def bot_facts(db: str, days: int) -> list[str]:
                     out.append(
                         f"  - {bot}: n={n} (LIFETIME settled, isDemo=0, level=leg, since {since}) "
                         f"realized ${realized or 0:,.2f} | win {100.0 * (wr or 0):.1f}% | {companion}")
+            REC.mark("db.papertrade", "ok", n=int(tot[0] or 0))
         except Exception as e:  # noqa: BLE001
             out.append(f"- PaperTrade read FAILED: {e}")
+            REC.mark("db.papertrade", "void", f"{type(e).__name__}: {e}")
+    else:
+        out.append("- PaperTrade read FAILED: table missing")
+        REC.mark("db.papertrade", "void", "table PaperTrade is missing")
 
     # decision funnel (what the scorer actually decided)
     if has(cur, "DecisionJournal"):
@@ -523,6 +567,15 @@ def bot_facts(db: str, days: int) -> list[str]:
                         out.append(f"- distinct skipped market/outcome last 24h: {dedup[0] if dedup else '?'}")
             except Exception as e:  # noqa: BLE001
                 out.append(f"- DecisionJournal read FAILED: {e}")
+                REC.mark("db.decision_journal", "void", f"{type(e).__name__}: {e}")
+            else:
+                REC.mark("db.decision_journal", "ok")
+        else:
+            out.append("- DecisionJournal read FAILED: no time column")
+            REC.mark("db.decision_journal", "void", "no createdAt/ts column")
+    else:
+        out.append("- DecisionJournal read FAILED: table missing")
+        REC.mark("db.decision_journal", "void", "table DecisionJournal is missing")
 
     # daily report history
     if has(cur, "DailyReport"):
@@ -549,23 +602,43 @@ def bot_facts(db: str, days: int) -> list[str]:
 
             out.append("- last daily reports (lane-labelled, date STANDARD$ C-200$): " + "; ".join(
                 _labelled(r) for r in rows))
+            REC.mark("db.daily_report", "ok" if rows else "no_results",
+                     "" if rows else "no DailyReport rows")
         except Exception as e:  # noqa: BLE001
             out.append(f"- DailyReport read FAILED: {e}")
+            REC.mark("db.daily_report", "void", f"{type(e).__name__}: {e}")
+    else:
+        out.append("- DailyReport read FAILED: table missing")
+        REC.mark("db.daily_report", "void", "table DailyReport is missing")
 
     con.close()
     return out
 
 
 # ---------------------------------------------------------------- venue snapshots
-def polymarket_snapshot() -> list[str]:
+def polymarket_snapshot(skipped: bool = False) -> list[str]:
     out: list[str] = []
+    if skipped:
+        REC.mark("polymarket.gamma", "gated_off", "skipped by --skip-venues")
+        return ["- (skipped by flag)"]
     data, err = fetch_json(
         "https://gamma-api.polymarket.com/markets?closed=false&limit=60"
         "&order=volume24hr&ascending=false")
     if data is None:
+        REC.mark("polymarket.gamma", factsheet_status.classify_fetch_note(err), err)
         return [f"- **SOURCE FAILED — Polymarket gamma**: {err}"]
+    if not isinstance(data, (list, dict)):
+        REC.mark("polymarket.gamma", "void", f"unexpected JSON shape: {type(data).__name__}")
+        return [f"- **SOURCE FAILED — Polymarket gamma**: unexpected JSON shape "
+                f"({type(data).__name__}, not a list or object)"]
     markets = data if isinstance(data, list) else data.get("data", [])
     open_n = len(markets)
+    if not markets:
+        REC.mark("polymarket.gamma", "no_results", "the top-60 page returned 0 markets")
+        return ["- Polymarket: 0 markets in the top-60 page — the venue was asked and answered "
+                "EMPTY (not a failure, but no venue read is available from it)"]
+    REC.mark("polymarket.gamma", "ok", n=open_n)
+
     vol = 0.0
     for m in markets:
         try:
@@ -587,7 +660,7 @@ def polymarket_snapshot() -> list[str]:
 KALSHI_CLOSE_WINDOW_S = 2 * 86400
 
 
-def kalshi_snapshot() -> list[str]:
+def kalshi_snapshot(skipped: bool = False) -> list[str]:
     """The closing-soon board, NOT the newest listings.
 
     `?limit=200&status=open` with no close filter returns the newest 200 LISTINGS — parlay
@@ -597,13 +670,31 @@ def kalshi_snapshot() -> list[str]:
     nonzero rows. So this block asks the close window and prints how many rows are nonzero,
     which makes a genuine zero visible as `0/200` instead of an unexplained `0`.
     """
+    if skipped:
+        REC.mark("kalshi.markets", "gated_off", "skipped by --skip-venues")
+        return ["- (skipped by flag)"]
     now = int(time.time())
     data, err = fetch_json(
         "https://api.elections.kalshi.com/trade-api/v2/markets?limit=200&status=open"
         f"&min_close_ts={now}&max_close_ts={now + KALSHI_CLOSE_WINDOW_S}")
     if data is None:
+        REC.mark("kalshi.markets", factsheet_status.classify_fetch_note(err), err)
         return [f"- **SOURCE FAILED — Kalshi**: {err}"]
-    mk = data.get("markets", data if isinstance(data, list) else [])
+    if not isinstance(data, (list, dict)):
+        REC.mark("kalshi.markets", "void", f"unexpected JSON shape: {type(data).__name__}")
+        return [f"- **SOURCE FAILED — Kalshi**: unexpected JSON shape "
+                f"({type(data).__name__}, not a list or object)"]
+    # `data.get(...)` in the default slot would be EVALUATED FIRST, so a list body raised
+    # AttributeError before the ternary could pick it (a crash on the very shape it meant to
+    # accept). Branch on the type, then read.
+    mk = data if isinstance(data, list) else (data.get("markets") or [])
+    if not mk:
+        # 0 rows in a 48h close window is a measurement of a quiet venue -- but only because the
+        # request succeeded. Say which of the two zeroes this is.
+        REC.mark("kalshi.markets", "no_results", "0 markets closing within 48h")
+        return ["- Kalshi: 0 open markets closing within 48h — the close window was asked and "
+                "answered EMPTY (not a failed request)"]
+    REC.mark("kalshi.markets", "ok", n=len(mk))
 
     def vol_of(m: dict) -> float:
         """Kalshi's plain `volume` is deprecated in favour of fixed-point *_fp strings."""
@@ -708,17 +799,27 @@ def gh_api(path: str) -> tuple[Any | None, str]:
     return body, err if body is None else "keyless REST"
 
 
-def github_recon() -> list[str]:
+def github_recon(skipped: bool = False) -> list[str]:
     out: list[str] = []
     for label, q, sort in GH_QUERIES:
+        block = "github." + factsheet_status.slug(label)
+        if skipped:
+            REC.mark(block, "gated_off", "skipped by --skip-recon")
+            continue
         qs = urllib.parse.quote(q, safe="")
         data, note = gh_api(f"search/repositories?q={qs}&sort={sort}&order=desc&per_page=5")
-        if data is None or "items" not in data:
+        if not isinstance(data, dict) or "items" not in data:
+            # Per QUERY, not per block: one rate-limited query used to hide behind six healthy
+            # ones. The state names which failure it was; the note carries the reason.
+            state = factsheet_status.classify_fetch_note(note)
+            REC.mark(block, state, note)
             out.append(f"- **SOURCE FAILED — GitHub '{label}'**: {note}")
             GH_STATS.append({"query": label, "sort": sort, "total_count": None, "slots": 0,
                              "usable": 0, "no_licence": 0, "zero_star": 0, "failed": note})
             continue
-        items = data.get("items", [])[:5]
+        items = (data.get("items") or [])[:5]
+        REC.mark(block, "ok" if items else "no_results",
+                 "" if items else "the search matched 0 repositories", n=len(items))
         GH_STATS.append({
             "query": label, "sort": sort, "total_count": data.get("total_count"),
             "slots": len(items), "usable": sum(1 for r in items if usable(r)),
@@ -734,6 +835,8 @@ def github_recon() -> list[str]:
             out.append(f"  - `{r['full_name']}` ★{r.get('stargazers_count', 0)} · pushed "
                        f"{(r.get('pushed_at') or '')[:10]} · {lic}{flag} · "
                        f"{(r.get('description') or '')[:88]} · {r.get('html_url')}")
+    if skipped:
+        return ["- (skipped by flag)"]
     return out
 
 
@@ -753,16 +856,21 @@ def cached_text(slug: str, url: str, ttl_h: float) -> tuple[str | None, str]:
     return body, "fresh"
 
 
-def reddit_recon() -> list[str]:
+def reddit_recon(skipped: bool = False) -> list[str]:
     out: list[str] = []
     rate_limited = False
     for i, (label, url) in enumerate(reddit_feeds()):
+        block = "reddit." + factsheet_status.slug(label)
+        if skipped:
+            REC.mark(block, "gated_off", "skipped by --skip-recon")
+            continue
         if rate_limited:
+            REC.mark(block, "rate_limited", "not attempted: backing off after a 429")
             out.append(f"- (not attempted — {label}: backing off after a 429 rather than making it worse)")
             continue
         if i:
             time.sleep(REDDIT_PAUSE_S)
-        slug = re.sub(r"\W+", "-", label.lower()).strip("-")
+        slug = factsheet_status.slug(label)
         body, err = cached_text(slug, url, REDDIT_TTL_H)
         if body is None and "429" in err:
             time.sleep(REDDIT_RETRY_S)
@@ -770,6 +878,8 @@ def reddit_recon() -> list[str]:
             if body is not None:
                 err = f"recovered after {REDDIT_RETRY_S:.0f}s backoff"
         if body is None:
+            state = factsheet_status.classify_fetch_note(err)
+            REC.mark(block, state, err)
             out.append(f"- **SOURCE FAILED — {label}**: {err}"
                        + ("  ← rate-limited; leaving the remaining feeds to the next run"
                           if "429" in err else ""))
@@ -781,7 +891,10 @@ def reddit_recon() -> list[str]:
         try:
             root = ET.fromstring(body)
         except ET.ParseError as e:
+            REC.mark(block, "void", f"XML parse error: {e}")
             out.append(f"- **SOURCE FAILED — {label}**: XML parse error: {e}")
+            REDDIT_STATS.append({"label": label, "state": "error", "note": f"XML parse error: {e}",
+                                 "entries": 0, "relevant": 0})
             continue
         ns = {"a": "http://www.w3.org/2005/Atom"}
         hits = []
@@ -799,14 +912,25 @@ def reddit_recon() -> list[str]:
                  "stale" if err.startswith("STALE") else "fresh")
         REDDIT_STATS.append({"label": label, "state": state, "note": err,
                              "entries": len(hits), "relevant": len(rel)})
+        # A STALE cache is the one case where rows EXIST but the input failed: state names the
+        # failure, `n` records that the numbers came from it. That is the void/rate_limited-with-
+        # rows shape the gate looks for -- a stale copy must never read as a fresh feed.
+        if factsheet_status.is_stale_cache(err):
+            REC.mark(block, factsheet_status.classify_fetch_note(err), err, n=len(hits))
+        elif not hits:
+            REC.mark(block, "no_results", err, n=0)
+        else:
+            REC.mark(block, "ok", err, n=len(hits))
         out.append(f"**{label}** [{err}] — {len(rel)} relevant of {len(hits)} entries:")
         for title, when, link in rel[:4]:
             out.append(f"  - {when} · {title[:96]} · {link.split('?')[0][:96]}")
+    if skipped:
+        return ["- (skipped by flag)"]
     return out
 
 
 # ---------------------------------------------------------------- main
-def prereg_reads() -> list[str]:
+def prereg_reads(skipped: bool = False) -> list[str]:
     """Status of the pre-registered reads whose gate dates are already in the past.
 
     WHY THIS EXISTS (2026-10-26, self-audit Lane B). `scripts/entry-floor-replay.py` was
@@ -818,6 +942,9 @@ def prereg_reads() -> list[str]:
     approved it (REC 1) and its fact sheet is where the gate has to be visible.
     """
     out: list[str] = []
+    if skipped:
+        REC.mark("prereg.entry_floor", "gated_off", "skipped by --skip-prereg")
+        return ["- (skipped by flag)"]
     try:
         p = subprocess.run(
             [sys.executable, str(REPO_DIR / "scripts" / "entry-floor-replay.py"),
@@ -826,9 +953,12 @@ def prereg_reads() -> list[str]:
         )
         note = (p.stdout or p.stderr or "").strip().splitlines()
         if p.returncode != 0:
+            REC.mark("prereg.entry_floor", "void",
+                     f"exit {p.returncode} {(note[-1] if note else 'no output')[:160]}")
             return [f"- **SOURCE FAILED — entry-floor prereg read**: exit {p.returncode} "
                     f"{(note[-1] if note else 'no output')[:200]}"]
     except (OSError, subprocess.SubprocessError) as e:
+        REC.mark("prereg.entry_floor", "void", f"{type(e).__name__}: {e}")
         return [f"- **SOURCE FAILED — entry-floor prereg read**: {type(e).__name__}: {e}"]
 
     # Always report the state from the SERIES (not from this run's stdout), so a skipped
@@ -842,8 +972,10 @@ def prereg_reads() -> list[str]:
                     last = line
         rec = json.loads(last) if last else None
     except (OSError, json.JSONDecodeError) as e:
+        REC.mark("prereg.entry_floor", "void", f"{type(e).__name__}: {e}")
         return [f"- **SOURCE FAILED — entry-floor prereg series**: {type(e).__name__}: {e}"]
     if rec is None:
+        REC.mark("prereg.entry_floor", "no_results", "series is empty: the read has never run")
         return ["- entry-floor prereg: series is EMPTY — the read has never run (no gate can be read)"]
 
     v = rec.get("verdict", {})
@@ -869,6 +1001,7 @@ def prereg_reads() -> list[str]:
         "- A `PENDING_DATE` line older than the gate date is NOT a pending gate — it is an "
         "unread one. Quote the newest state with its `gateDate` and `ranAt`, never the state alone."
     )
+    REC.mark("prereg.entry_floor", "ok")
     return out
 
 
@@ -883,6 +1016,11 @@ def main() -> int:
                     help="skip the pre-registered-read status block (does not take the read)")
     a = ap.parse_args()
 
+    # Every block this run must emit a typed row for. `--skip-*` blocks are recorded as
+    # gated_off (blocked on US, not broken), so a flag cannot masquerade as a healthy run.
+    REC.expect(factsheet_status.expected_blocks(
+        [q[0] for q in GH_QUERIES], [f[0] for f in reddit_feeds()]))
+
     lines: list[str] = []
     lines.append(f"# CopyBot fact sheet — {now_cst():%Y-%m-%d %H:%M} CDT")
     lines.append("")
@@ -894,20 +1032,17 @@ def main() -> int:
     lines += bot_facts(a.db, a.days)
     lines.append("")
     lines.append("## Pre-registered reads (gate status)")
-    lines += (["- (skipped by flag)"] if a.skip_prereg else prereg_reads())
+    lines += prereg_reads(skipped=a.skip_prereg)
     lines.append("")
     lines.append("## Venue snapshots (keyless, best-effort)")
-    if a.skip_venues:
-        lines.append("- (skipped by flag)")
-    else:
-        lines += polymarket_snapshot()
-        lines += kalshi_snapshot()
+    lines += polymarket_snapshot(skipped=a.skip_venues)
+    lines += kalshi_snapshot(skipped=a.skip_venues)
     lines.append("")
     lines.append("## Reusable assets radar — GitHub (search results are facts; `gh` authenticated)")
-    lines += (["- (skipped by flag)"] if a.skip_recon else github_recon())
+    lines += github_recon(skipped=a.skip_recon)
     lines.append("")
     lines.append("## Practitioner signal — Reddit (Atom feeds; .json endpoints 403 from this host)")
-    lines += (["- (skipped by flag)"] if a.skip_recon else reddit_recon())
+    lines += reddit_recon(skipped=a.skip_recon)
     # Log this run's yield (one JSON line per run) — the pre-registered read in REC 1 is a lookup
     # over this file, not a re-parse of prose after the fact.
     try:
@@ -919,6 +1054,18 @@ def main() -> int:
             }) + "\n")
     except OSError as e:
         lines.append(f"- **SOURCE FAILED — radar yield log not written**: {e}")
+
+    # Append this run's typed rows, ONE PER BLOCK, then show the audit count in the sheet itself.
+    # Order matters: the write happens before the sheet is persisted so a refused/failed write is
+    # printed inside the sheet that the agent is told to trust.
+    try:
+        factsheet_status.write_rows(REC.rows())
+    except (OSError, factsheet_status.StatusSchemaError) as e:
+        lines.append(f"- **SOURCE FAILED — input-health sidecar not written**: "
+                     f"{type(e).__name__}: {e}")
+    health = REC.sheet_block(factsheet_status.display_path())
+    at = lines.index("## Our measured state")
+    lines[at:at] = health + [""]
 
     # Persist the sheet: the audit worker's seeder parses the radar block straight out of this file,
     # and it doubles as the audit trail of what the agent was actually shown on a given run.
@@ -932,6 +1079,9 @@ def main() -> int:
     lines.append("## Reminders for the agent")
     lines.append("- Nothing above is a recommendation; it is the baseline the research must beat.")
     lines.append("- `SOURCE FAILED` lines are part of the report — say so, never paper over them.")
+    lines.append("- `## Input health` is the typed per-block record: `no_results` means the source "
+                 "answered EMPTY, `void`/`rate_limited`/`gated_off` mean it did NOT answer. A "
+                 "zero under a block that is not `ok` is not a measurement.")
     lines.append("- Our own numbers come from here; external claims need a cited URL.")
     lines.append("- A repo in the radar is a CANDIDATE, not an endorsement: read its licence, last push, "
                  "issues and tests before proposing to adopt anything (load `github-repo-audit`).")

@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-08T13:20:48Z",
+  "generated_at": "2026-11-09T13:20:49Z",
   "mode": "forward",
   "approval_date": "2026-10-23",
   "window": "n-driven (no calendar deadline)",
   "superseded_shadow_days": 14,
-  "days_elapsed": 16.56,
+  "days_elapsed": 17.56,
   "bot": "STANDARD",
   "rule": {
     "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
@@ -21,13 +21,13 @@
   },
   "bands": {
     "at_risk_2_24h": {
-      "legs": 66,
-      "markets": 63,
-      "notional": 659.12,
-      "pnl": 677.65,
-      "roi": 1.028105442821923,
-      "resolved_legs": 66,
-      "resolved_roi": 1.028105442821923
+      "legs": 71,
+      "markets": 68,
+      "notional": 699.29,
+      "pnl": 742.37,
+      "roi": 1.061597752021679,
+      "resolved_legs": 71,
+      "resolved_roi": 1.061597752021679
     },
     "kept_24h_plus": {
       "legs": 42,
@@ -48,13 +48,13 @@
       "resolved_roi": null
     }
   },
-  "opened_legs_in_band": 70,
+  "opened_legs_in_band": 74,
   "trailing_rate_window_days": 14,
-  "trailing_openings_per_day": 4.71,
-  "projected_days_to_n": 18,
+  "trailing_openings_per_day": 4.93,
+  "projected_days_to_n": 16,
   "unclassified_ttr": 0,
   "verdict": "ACCUMULATING",
-  "reason": "66 of 150 settled band legs (from 70 opened); 84 to go (~18 days at the trailing-14d rate of 4.71 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven; the originally-drafted 14-day deadline has elapsed but is RETIRED -- n is the only trigger",
+  "reason": "71 of 150 settled band legs (from 74 opened); 79 to go (~16 days at the trailing-14d rate of 4.93 band openings/day; settlement lag not included) -- the original 14-day clause could not have reached n=150 at this rate, which is why the window is n-driven; the originally-drafted 14-day deadline has elapsed but is RETIRED -- n is the only trigger",
   "not_yet_evaluable": [
     "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
     "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"
