@@ -8,6 +8,23 @@
   ],
   "cards": [
     {
+      "id": "ledger-price-side-repair",
+      "title": "LANE A PROPOSAL — 137 legs still carry the complement price: the book prints +$12,531 where the same exits are +$5,620, and this week's ladder gate prints PASS on it",
+      "column": "Scheduled",
+      "effort": "1h",
+      "dates": "Proposed 2026-11-10 by the profit review (drafts/profit-recs-20261110.md). Carries yesterday's item 2 ('re-base the advance sum on the corrected series') as a row-level change. NOT APPLIED — Lane A: it moves the PnL the ladder advances on.",
+      "note": "WHY NOW: the 2026-11-09 write-path fix (fbf9073, src/lib/outcome-price.ts) prices new legs correctly but left every historical row at the sibling token's price, and every downstream reader (Dashboard, DailyReport, PnlSnapshot, capital-data, the C-200 ladder gate) reads ROWS. MEASURED 2026-11-10 by scripts/profit-postfix-integrity.py (read-only, self-tests pass, no prisma write; basis = dollars at risk, deduped first leg per bot|wallet|market|outcome WITHIN status class, bands by the price actually paid): (1) WRITE FIX IS HOLDING — 53 legs opened after 2026-11-09 09:15:16, 0 carrying the complement, 25 settled (acceptance gate is 150). (2) LEDGER IS NOT REPAIRED — 137 finished deduped legs, $2,954 notional, booked +$5,598.58 -> true -$36.01, holding 45% of the book's booked profit; book +$12,524.03 (+18.9%) -> +$6,889.44 (+10.4%), a -$5,634.59 (1.8x) overstatement. (3) THE GATE IS ONE RUNG FROM A FALSE ADVANCE — C-200 trailing 7 local days (2026-11-03..11-10, 163 legs): booked +$2,474.48 = PASS on rung 1 ($1,750) vs true -$377.29 = fail. (4) NO OPEN LEGS AFFECTED — 0 of 130 open legs are inverted, so there is no live mark-vs-entry mismatch; a right mark divided by a wrong entry was the working hypothesis and it is FALSE. (5) CLASS IS OLDER THAN THE CARD CLAIMED — by provenance join it opens 26 legs in July, 21 in August, 26 in October, 64 in the first nine days of November; 'first opened 2026-10-26' was a property of the ruleSetVersion>=49 filter, not of the defect. EVIDENCE THE PRICE IS WRONG, not the rows: profit-price-side §2/§3 (mirror |b-(1-w)| median 0.007 on booked entry AND detected price; MarketSnapshot at the trade minute puts the booked price on the YES side 40 of 40). CHANGE: per leg, set entryPrice to the token price at the trade minute (the same read outcome-price.ts now performs), recompute realizedPnl on the payoff identity, rebuild BotBankroll + PnlSnapshot. 137 rows; 0 open legs. ROLLBACK: restore the 137-row pre-image (dump first) and revert BotBankroll/PnlSnapshot to the pre-change snapshot. NOT a rule change: no RuleSet row, no threshold, no sizing field.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "pricing",
+        "ladder",
+        "ledger-integrity"
+      ],
+      "gate": "DECISION RULE: apply when re-deriving entryPrice from the venue label reproduces the wallet's fill within 0.02 on >=95% of the 137 legs (measured: median 0.007, p90 0.020 = already met) AND the operator accepts a -$6,911 restatement of published PnL. REFUTATION: a tape check of >=20 legs showing the BOOKED price is what those tokens actually traded at — if that holds, the fix was wrong and the rows are right. Re-read after any change: python3 scripts/profit-postfix-integrity.py"
+    },
+    {
       "id": "c200-fill-scoreboard-caveat",
       "title": "Measurement — the C-200 ladder sums are ~3x phantom (68.6% of booked PnL is on legs that were never positions per the resolver)",
       "column": "Backlog",
