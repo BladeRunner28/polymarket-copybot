@@ -31,9 +31,17 @@ cd "$REPO"
 
 # 1) refit the shadow expectancy score weekly-ish (cheap, keeps the artifact
 #    current as labels accrue); failure is non-fatal for the ledger rebuild.
+#
+# 2026-11-09 (self-audit, Lane B): the refit had failed on 129 of 136 attempts and the
+# stderr was going to /dev/null, so it failed SILENTLY for 8 days (model stuck at the
+# 2026-11-01 fit, past the 7-day cadence). Cause: under the Hermes cron sandbox `python3`
+# resolves to a managed venv interpreter with no numpy, while this script needs numpy only
+# here (the ledger builder below is stdlib-only, which is why the rest of the run was fine).
+# Fix: pin the interpreter that has numpy and send stderr to the log instead of /dev/null.
+FIT_PY="${FIT_PY:-/usr/bin/python3}"
 if [ ! -f data/shadow-score-model.json ] || [ -n "$(find data/shadow-score-model.json -mmin +10080 2>/dev/null)" ]; then
-  echo "-- refitting shadow-score model"
-  python3 scripts/shadow-expectancy-model.py --fit 2>/dev/null | tail -2 || echo "!! refit failed — reusing existing artifact"
+  echo "-- refitting shadow-score model (interpreter: $FIT_PY)"
+  "$FIT_PY" scripts/shadow-expectancy-model.py --fit 2>>"$LOG" | tail -2 || echo "!! refit failed — reusing existing artifact (stderr appended to $LOG)"
 fi
 
 # 2) rebuild the ledger + summary (idempotent)
