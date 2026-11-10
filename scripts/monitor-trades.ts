@@ -7,6 +7,7 @@ import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { log, logError } from "../src/lib/redact";
 import { appendSellPrint } from "../src/lib/sell-log";
+import { toProvenanceColumns } from "../src/lib/provenance-persistence";
 import { fillIdentityKey } from "../src/lib/outcome-identity";
 import { priceForOutcome } from "../src/lib/outcome-price";
 import {
@@ -143,6 +144,7 @@ async function main() {
             size: t.size,
             printTs: t.timestamp.getTime(),
             observationOnly: w.observationOnly,
+            ...toProvenanceColumns(t.provenance),
           });
           continue; // copy entries only, not exits
         }
@@ -218,6 +220,12 @@ async function main() {
               rawTradeJson: "{}",
               isDemo: adapter.isDemo,
               observationOnly: w.observationOnly || isBlankMarket,
+              // polyterm-p1-provenance-persistence (2026-11-09, Lane B): persist the stamp
+              // the adapter attached AT INGEST (src/lib/provenance.ts). Before this the label
+              // died with the process, so a stored data-api print was indistinguishable from
+              // a live CLOB tape row to every later reader. NULL here = the fetched row
+              // carried no stamp, which is a fact worth keeping rather than papering over.
+              ...toProvenanceColumns(t.provenance),
             },
           });
           seen.add(dedupeKey);

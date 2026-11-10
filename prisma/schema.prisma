@@ -103,6 +103,15 @@ model ObservedTrade {
   // is ever made on them — so every reader whose output feeds a copy decision or
   // a published number must filter `observationOnly: false`.
   observationOnly Boolean @default(false)
+  // polyterm-p1-provenance-persistence (2026-11-09, Lane B instrument repair): the
+  // DataProvenance stamp (src/lib/provenance.ts) used to die with the process, so a
+  // stored print could not be told apart from the live CLOB tape by any later reader.
+  // These columns persist the stamp computed AT INGEST (scripts/monitor-trades.ts).
+  // NULL = row written before this change — no backfill, because the lag class is not
+  // derivable per historical row and inventing one would be worse than admitting the gap.
+  provenanceSource String?
+  provenanceLagged Boolean?
+  provenanceFlags  String? // JSON array of quality flags, in the order mergeQualityFlags produced them
   createdAt      DateTime @default(now())
 
   wallet    WalletProfile?   @relation(fields: [walletAddress], references: [address])

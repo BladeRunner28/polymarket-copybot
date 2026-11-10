@@ -29,8 +29,15 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import type { ProvenanceColumns } from "./provenance-persistence";
 
-export interface SellPrintRecord {
+/**
+ * Optional provenance columns (2026-11-09, card `polyterm-p1-provenance-persistence`): the
+ * same stamp the monitor now persists on ObservedTrade travels on the SELL sidecar, so the
+ * exit-side prints carry the same "which surface, how labelled" fact instead of an implied
+ * "live tape". Absent on lines written before the change.
+ */
+export interface SellPrintRecord extends Partial<ProvenanceColumns> {
   walletAddress: string;
   marketId: string;
   outcome: string;
