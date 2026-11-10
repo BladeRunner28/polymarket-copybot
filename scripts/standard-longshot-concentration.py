@@ -18,7 +18,13 @@ WHAT IT MEASURES (read-only; file:prisma/dev.db?mode=ro)
       realised -- a veto count is not a cost, and a cap that blocks winners is not a cap that helps.
   S4  a pct sensitivity sweep, so the LEVEL is chosen on measurement instead of argued
 
-BASIS NOTES (both stated because each can flip a level)
+BASIS NOTES (each stated because each can flip a level)
+  * population is `isDemo = 0` ONLY. The book carries 18 paper/demo legs (STANDARD, all open,
+    $165.60 cost, 6 of them long-shot) that are not real copy decisions: on 2026-11-10 they were
+    inflating the S1 headline from 12.07% to 12.33% of net worth (i.e. showing the book already
+    ABOVE the 12.2% level while it is actually just under it) and, because a demo leg's open cost
+    occupies cap headroom in the replay, they displaced 24 real legs from the S3 counterfactual
+    (blocked n=345 vs 321). A demo leg is not a decision, so it is not counted here.
   * cost basis is `simulatedPositionSize` = DOLLARS AT RISK, never size x price (that understates
     every cheap leg, and the cheap band is the whole argument).
   * net worth is REALIZED-ONLY over time: principal + realised PnL of legs closed before the entry.
@@ -70,7 +76,7 @@ def legs(con, lane):
     SELECT id, entryPrice, simulatedPositionSize AS ntl, realizedPnl AS pnl, status,
            openedAt, closedAt, resolvedAt, outcome, marketId
     FROM PaperTrade
-    WHERE botId = ? AND simulatedPositionSize > 0 AND openedAt IS NOT NULL
+    WHERE botId = ? AND isDemo = 0 AND simulatedPositionSize > 0 AND openedAt IS NOT NULL
     ORDER BY openedAt
     """
     out = []
@@ -90,12 +96,12 @@ def is_longshot(leg, thr):
 
 def s1_open_book(con, thr, br, rules, version):
     print("=" * 78)
-    print(f"S1  OPEN BOOK NOW  (long-shot = entryPrice < {thr}  from ACTIVE RuleSet v{version})")
+    print(f"S1  OPEN BOOK NOW  (long-shot = entryPrice < {thr}  from ACTIVE RuleSet v{version}; isDemo=0)")
     print("=" * 78)
     for lane in LANES:
         rows = con.execute(
             "SELECT entryPrice, simulatedPositionSize AS ntl FROM PaperTrade "
-            "WHERE botId=? AND status='open'",
+            "WHERE botId=? AND status='open' AND isDemo=0",
             (lane,),
         ).fetchall()
         ls = [r for r in rows if r["entryPrice"] is not None and r["entryPrice"] < thr]
@@ -122,18 +128,25 @@ def replay(con, lane, thr, pct, br, cap_on=True, verbose=False):
     events = []
     for r in rows:
         close = r["close_s"] if r["close_s"] is not None else float("inf")
-        events.append((close, r["pnl"] or 0.0))
+        events.append((close, r["pnl"] or 0.0, r["id"]))
     events.sort(key=lambda x: x[0])
 
     live = []          # (close_s, cost) of admitted long-shot legs
     cum_realized = 0.0
     ei = 0
     blocked = []
+    blocked_ids = set()
     peak_by_day = {}
     for r in rows:
         t = r["open_s"]
         while ei < len(events) and events[ei][0] <= t:
-            cum_realized += events[ei][1]
+            # A leg the cap REFUSED never happens, so its realised PnL must not raise the net
+            # worth the SAME cap is measured against. Counting it (the pre-2026-11-10 behaviour)
+            # leaks profit from trades the counterfactual never takes; here blocked long-shots are
+            # net winners (+$1.5k at 10%), so the leak LOOSENED the cap that refused them and
+            # admitted legs it should have blocked: blocked n=321 -> 339 at the approved 10%.
+            if events[ei][2] not in blocked_ids:
+                cum_realized += events[ei][1]
             ei += 1
         nw = principal + cum_realized
         live = [(c, n) for (c, n) in live if c is None or c > t]
@@ -151,6 +164,7 @@ def replay(con, lane, thr, pct, br, cap_on=True, verbose=False):
             if open_cost + r["ntl"] > ceiling:
                 r["_decision"] = "BLOCKED"
                 blocked.append(r)
+                blocked_ids.add(r["id"])
                 continue
         if ls:
             live.append((r["close_s"], r["ntl"]))
@@ -163,10 +177,14 @@ def s2_peaks(peak_by_day, lane, pct):
         return
     vals = sorted(peak_by_day.values())
     n = len(vals)
+    # True median: for an even n the midpoint is the mean of the two middle values. The pre-fix
+    # `vals[n // 2]` was the upper-middle order statistic, which is not the median and reads
+    # high by up to half the gap; it went unnoticed only because every live n happened to be odd.
+    med = vals[n // 2] if n % 2 else (vals[n // 2 - 1] + vals[n // 2]) / 2.0
     over = sum(1 for v in vals if v > pct)
     print(
-        f"  {lane:13s} days {n:4d} | peak% median {vals[n // 2]:5.2f} | p90 {vals[min(n - 1, int(n * 0.9))]:5.2f} "
-        f"| max {vals[-1]:5.2f} | days > {pct}%: {over} ({over / n * 100:.0f}%)"
+        f"  {lane:13s} entry-days {n:4d} | peak% median {med:5.2f} | p90 {vals[min(n - 1, int(n * 0.9))]:5.2f} "
+        f"| max {vals[-1]:5.2f} | entry-days > {pct}%: {over} ({over / n * 100:.0f}%)"
     )
     worst = sorted(peak_by_day.items(), key=lambda kv: -kv[1])[:3]
     print("               worst days: " + " · ".join(f"{d} {v:.1f}%" for d, v in worst))
