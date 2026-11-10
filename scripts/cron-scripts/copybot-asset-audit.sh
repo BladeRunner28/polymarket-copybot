@@ -20,6 +20,13 @@ echo "## Queue status"
 python3 scripts/asset-queue.py status || echo "**SOURCE FAILED — queue status**"
 
 echo
+echo
+echo "## Decay (pre-registered rule asset-queue-decay-v1)"
+echo "# A 'watch' used to be permanent. This expires the ones that show no progress, and only annotates"
+echo "# an ask that is still open on the user's side (that ask is theirs to answer, not the queue's to delete)."
+python3 scripts/asset-queue.py decay --apply || echo "**SOURCE FAILED — decay**"
+
+echo
 echo "## Claims for this run"
 CLAIMED=$(python3 scripts/asset-queue.py pending --limit "${AUDIT_LIMIT:-2}") || { echo "**SOURCE FAILED — pending**"; exit 0; }
 echo "$CLAIMED"
