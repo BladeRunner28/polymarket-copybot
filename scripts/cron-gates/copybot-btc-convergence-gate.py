@@ -17,6 +17,14 @@ Tokens:
                   errors, so a broken sampler wakes the agent rather than sitting quiet
 
 Read-only: reads the project's own sample/coverage files, writes nothing.
+
+DEFECT FIXED 2026-11-10: the PREMISE test was `not asks` -- an exact-ZERO asks test, while this
+table and the read job's prompt both say ">= 95% NO ASK". Live series: 62,463 decided pinned legs,
+35 with an ask, i.e. 99.94% no-ask; sub99 (ask < 0.99) only 8. One ask anywhere therefore disabled
+the premise token permanently, and the gate printed BELOW for 18 days (monitor hash unchanged since
+2026-10-23) while the "structurally unbuyable" finding was already true -- the one token designed to
+surface it could never fire. The token still carries no counter (a monitor hash must not churn):
+the measured fraction comes from btc-convergence-read.py, which the woken agent is told to run.
 """
 
 from __future__ import annotations
@@ -96,11 +104,15 @@ def main():
     n_exec = len(asks)
     sub99 = sum(1 for r in asks if r["q1"]["ask"] < 0.99)
     days = len({str(r.get("ts", ""))[:10] for r in decided})
+    # fraction of decided legs with NO ask on the determined side. The PREMISE bar is on the
+    # FRACTION (>= 95%), per this file's own token table and the read job's prompt:
+    # "a decided-leg sample (>=50 rows) now shows >=95% NO ASK".
+    no_ask_frac = (1.0 - n_exec / len(decided)) if decided else 0.0
 
     if n_exec >= FLOOR_ROWS_Q1 and days >= FLOOR_DAYS_Q1 and sub99 >= FLOOR_SUB99:
         print(f"MET{err_suffix}")
         return 0
-    if len(decided) >= 50 and not asks:
+    if len(decided) >= 50 and no_ask_frac >= 0.95:
         print(f"PREMISE{err_suffix}")
         return 0
     print(f"BELOW{err_suffix}")
