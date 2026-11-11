@@ -401,7 +401,7 @@ export type HolderRow = { proxyWallet?: string; amount?: number; outcomeIndex?: 
 
 export type ConcentrationProfile = {
   holderCount: number;
-  /** Share of amount held by the largest holder (0-1). */
+  /** Share of the outcome's SUPPLY held by the largest holder (0-1). */
   top1Share: number;
   top5Share: number;
   top10Share: number;
@@ -409,6 +409,20 @@ export type ConcentrationProfile = {
   hhi: number;
   /** 1/hhi — the effective number of holders. */
   effectiveHolders: number;
+  /**
+   * Denominator actually used, in shares. Either the caller-supplied outcome supply (the sum over
+   * the COMPLETE holder list) or, when none was supplied, the listed amounts themselves.
+   */
+  supplyShares: number;
+  /** Sum of the amounts we were given (<= supplyShares; the gap is holders we did not list). */
+  listedShares: number;
+  /**
+   * False when the holder list was paginated/cut before the outcome's supply was exhausted, so the
+   * top-N shares below are an UPPER BOUND on an unknown denominator, not the supply share.
+   */
+  supplyComplete: boolean;
+  /** Largest single holder, when one exists. A structural address shows up here on every market. */
+  topHolder?: { wallet?: string; share: number };
   assessed: boolean;
 };
 
@@ -416,16 +430,44 @@ export type ConcentrationProfile = {
  * Holder concentration over one outcome's holder list. Statistic is ours (HHI
  * plus top-N shares) — the source repo fetches `/holders` but never calls it,
  * so there was no formula to port.
+ *
+ * DENOMINATOR DISCIPLINE: the reading the card asks for is "top-N share of outcome SUPPLY", and a
+ * truncated holder page is not the supply. Until 2026-11-11 this function only ever divided by the
+ * sum of the amounts it was handed, so the number called `top1Share` was a share of the FETCHED
+ * SUBSET — 96.6% of supply on the widest market we hold (1,373 holders at limit=100). Callers that
+ * page to exhaustion pass `supplyShares` and `supplyComplete`; callers that do not keep the old
+ * subset denominator but are now told `supplyComplete: false` by default whenever they pass a
+ * supply, so a truncated read cannot wear a complete read's label.
  */
-export function holderConcentration(holders: readonly HolderRow[]): ConcentrationProfile {
-  const amounts = holders.map((h) => (Number.isFinite(h.amount) ? Number(h.amount) : 0)).filter((a) => a > 0);
-  const total = amounts.reduce((a, b) => a + b, 0);
+export function holderConcentration(
+  holders: readonly HolderRow[],
+  opts: { supplyShares?: number; supplyComplete?: boolean } = {},
+): ConcentrationProfile {
+  const rows = holders.filter((h) => Number.isFinite(h.amount) && Number(h.amount) > 0);
+  const amounts = rows.map((h) => Number(h.amount)).sort((a, b) => b - a);
+  const listed = amounts.reduce((a, b) => a + b, 0);
+  const supplied = Number.isFinite(opts.supplyShares) && Number(opts.supplyShares) > 0 ? Number(opts.supplyShares) : 0;
+  // Never divide by less than what we can see: a supplied supply below the listed sum means the
+  // supply read is stale/partial, and shrinking the denominator would inflate the concentration.
+  const total = Math.max(supplied, listed);
+  const complete = opts.supplyComplete ?? opts.supplyShares === undefined;
   if (amounts.length === 0 || total <= 0) {
-    return { holderCount: 0, top1Share: 0, top5Share: 0, top10Share: 0, hhi: 0, effectiveHolders: 0, assessed: false };
+    return {
+      holderCount: 0,
+      top1Share: 0,
+      top5Share: 0,
+      top10Share: 0,
+      hhi: 0,
+      effectiveHolders: 0,
+      supplyShares: total,
+      listedShares: listed,
+      supplyComplete: complete,
+      assessed: false,
+    };
   }
-  const sorted = [...amounts].sort((a, b) => b - a);
-  const share = (n: number) => sorted.slice(0, n).reduce((a, b) => a + b, 0) / total;
-  const hhi = sorted.reduce((a, b) => a + (b / total) ** 2, 0);
+  const share = (n: number) => amounts.slice(0, n).reduce((a, b) => a + b, 0) / total;
+  const hhi = amounts.reduce((a, b) => a + (b / total) ** 2, 0);
+  const biggest = rows.find((h) => Number(h.amount) === amounts[0]);
   return {
     holderCount: amounts.length,
     top1Share: share(1),
@@ -433,6 +475,10 @@ export function holderConcentration(holders: readonly HolderRow[]): Concentratio
     top10Share: share(10),
     hhi,
     effectiveHolders: hhi > 0 ? 1 / hhi : 0,
+    supplyShares: total,
+    listedShares: listed,
+    supplyComplete: complete,
+    topHolder: { wallet: biggest?.proxyWallet, share: share(1) },
     assessed: true,
   };
 }

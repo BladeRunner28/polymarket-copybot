@@ -175,6 +175,44 @@ describe("holder concentration (statistic is ours; the source never called /hold
     expect(holderConcentration([{ amount: Number.NaN }]).assessed).toBe(false);
     expect(holderConcentration([{ amount: 0 }, { amount: 10 }]).top1Share).toBe(1);
   });
+
+  // Card polyterm-p5: the metric is "top-N share of outcome SUPPLY". A holder page is not the
+  // supply, so the denominator must be the caller's enumerated supply — otherwise the number
+  // silently means "share of the holders we happened to fetch".
+  it("divides by the supplied outcome supply, not by the fetched subset", () => {
+    const holders = [{ amount: 25 }, { amount: 15 }, { amount: 10 }];
+    const subset = holderConcentration(holders);
+    expect(subset.top1Share).toBeCloseTo(0.5, 10); // 25/50 — the old behaviour
+    expect(subset.supplyShares).toBe(50);
+    expect(subset.listedShares).toBe(50);
+
+    const supply = holderConcentration(holders, { supplyShares: 100, supplyComplete: true });
+    expect(supply.top1Share).toBeCloseTo(0.25, 10);
+    expect(supply.top5Share).toBeCloseTo(0.5, 10);
+    expect(supply.supplyShares).toBe(100);
+    expect(supply.listedShares).toBe(50);
+    expect(supply.supplyComplete).toBe(true);
+    expect(supply.effectiveHolders).toBeGreaterThan(subset.effectiveHolders);
+  });
+
+  it("never shrinks the denominator below what it can see, and labels a partial walk", () => {
+    // A stale/partial supply read must not inflate the concentration.
+    const stale = holderConcentration([{ amount: 60 }, { amount: 40 }], { supplyShares: 50 });
+    expect(stale.supplyShares).toBe(100);
+    expect(stale.top1Share).toBeCloseTo(0.6, 10);
+    // A truncated walk is an upper bound, and says so.
+    const truncated = holderConcentration([{ amount: 50 }], { supplyShares: 50, supplyComplete: false });
+    expect(truncated.supplyComplete).toBe(false);
+    expect(truncated.top1Share).toBe(1);
+  });
+
+  it("names the largest holder so a structural address is visible per row", () => {
+    const c = holderConcentration([
+      { amount: 10, proxyWallet: "0xsmall" },
+      { amount: 90, proxyWallet: "0xbig" },
+    ]);
+    expect(c.topHolder).toEqual({ wallet: "0xbig", share: 0.9 });
+  });
 });
 
 describe("advisory row", () => {

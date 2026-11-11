@@ -2035,17 +2035,18 @@
     {
       "id": "polyterm-p5-holders-concentration",
       "title": "Polyterm P5 — `/holders` concentration metric (top-N share of outcome supply)",
-      "column": "Backlog",
+      "column": "In Progress",
       "effort": "included in the hygiene script (~40 lines); the READ is the open part",
-      "dates": "Built 2026-09-28 with P3 (single script, keyless) · read not taken · gated behind the same pre-registered bar",
-      "gate": "VERIFY BEFORE USE: (a) `/holders` returns a usable top-N share for the markets we actually trade — if the endpoint is empty or capped for our universe, the metric is a null, not a signal, and that null must be recorded; (b) concentration carries information about outcome INDEPENDENT of the hygiene score (correlation between them reported, not assumed); (c) same pre-registered bar as polyterm-p3 (rank correlation vs realized copies, per ruleSetVersion era, >=150 settled rows/arm). No rules.ts input on this read alone.",
-      "note": "The audit ranked this AFTER phase-data1 (In Progress) and behind analytics-heatmap-cost. Implemented inside the hygiene script (HYGIENE_HOLDERS=0 disables the endpoint read), data lands in market-hygiene.jsonl. Nothing reads it live.",
+      "dates": "Built 2026-09-28 with P3 (single script, keyless) · REPAIRED + VERIFIED 2026-11-11 (v1 route was 410 Gone; now `/v2/holders?conditionId=` with cursor paging and an enumerated-supply denominator — drafts/polyterm-p5-holders-concentration-20261111.md) · read not taken · gated behind the same pre-registered bar",
+      "gate": "VERIFY BEFORE USE: (a) `/holders` returns a usable top-N share for the markets we actually trade — if the endpoint is empty or capped for our universe, the metric is a null, not a signal, and that null must be recorded; (b) concentration carries information about outcome INDEPENDENT of the hygiene score (correlation between them reported, not assumed); (c) same pre-registered bar as polyterm-p3 (rank correlation vs realized copies, per ruleSetVersion era, >=150 settled rows/arm). No rules.ts input on this read alone. MEASURED 2026-11-11 — (a) PASS, not a null: 40/40 of our open-leg markets resolve and assess, 0 empty lists, 0 endpoint errors, 0 truncated walks, complementary-outcome supply identity gap 0.0%; the scorer's own run assessed 25/25. A failure now records a REASON (holdersBasis.error) instead of a zero. (b) REPORTED, NOT INDEPENDENT: Spearman(top5 worst side, risk score) = -0.287 (n=25), vs wash score -0.237 (n=16 wash-assessed rows; counting unassessed rows as zeroes inverts it to -0.626), vs volume24hr -0.227, and the spread side vs risk -0.367. AND the decisive caveat: one address (0xa5ef39c3d3e10d0b270233af41cac69796b12966) is the #1 holder of one outcome side in 9 of 25 markets at a median 96.1% of that side's supply and 0% of the other — structural mint inventory, so raw top-N is not a crowd measure. (c) STILL OPEN: needs a holder snapshot at each leg's decision instant plus >=150 settled legs/era; a spot market snapshot cannot answer it.",
+      "note": "2026-11-11 lane-B repair (drafts/polyterm-p5-holders-concentration-20261111.md): the endpoint read was DEAD — `${dataApi}/holders?market=` answers 410 'Data API v1 has been retired' — so every post-retirement row carried a zeroed concentration block behind a swallowed error; moved to `/v2/holders?conditionId=` with cursor paging (src/lib/holders-read.ts, unit-tested against a fake transport) and the statistic now divides by the ENUMERATED outcome supply, not the fetched page (src/lib/market-hygiene.ts::holderConcentration takes supplyShares/supplyComplete, keeps listedShares, names topHolder). Rows carry concentrationByOutcome (the two sides of a market differ by a median 25.3pp of top-5 share, so a single market-level number hid it), holdersBasis {endpoint, pages, supplyComplete, error} and the flags holder_concentration_unavailable / holder_supply_truncated. Nothing reads it live, no rules.ts input. HYGIENE_HOLDERS=0 disables the read and records the reason. Cadence NOT wired (runs by hand) — the gate-(c) forward read needs a series, so wiring `npm run shadow:hygiene` to a daily job is the one open decision. Reports: scripts/holders-concentration-read.ts (usability, asymmetry, correlations, structural-holder tally) and scripts/holders-coverage-our-markets.ts (gate (a) on our own legs). Revert: git revert the repair commit (which restores the dead v1 call) — there is deliberately no v1 switch.",
       "tags": [
         "measurement",
         "data-quality",
         "polyterm",
         "post-oct-8",
-        "needs-approval"
+        "needs-approval",
+        "instrument-shipped"
       ]
     },
     {
