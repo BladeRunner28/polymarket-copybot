@@ -1,9 +1,13 @@
 # Ledger price-side repair — 233 rows, and the exit column with them
 
-**Card:** `ledger-price-side-repair` · **Lane:** A (proposal, NOT applied) · **Date:** 2026-11-10
-**Instrument:** `scripts/profit-ledger-repair-preflight.py` (new, read-only) + `scripts/profit-postfix-integrity.py`
-**Manifest:** `data/repair-manifests/ledger-price-side.jsonl` (233 pre/post images, generated but **not written to the DB**)
+**Card:** `ledger-price-side-repair` · **Lane:** A — **APPLIED 2026-11-11** (approval `apr-ledger-price-side-repair`) · **Date:** 2026-11-10 (read) / 2026-11-11 (write)
+**Instrument:** `scripts/profit-ledger-repair-preflight.py` (read-only) + `scripts/profit-postfix-integrity.py`
+**Write path:** `scripts/apply-ledger-price-side.py` → `scripts/verify-ledger-price-side.py` → `scripts/rollback-ledger-price-side.py`
+**Manifest:** `data/repair-manifests/ledger-price-side-20261111.jsonl` (233 pre/post images actually written; ledger + full-row pre-image beside it)
 **Reproduce:** `COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/profit-ledger-repair-preflight.py`
+
+> **STATUS: EXECUTED.** The read below (sections 1–10) is the 2026-11-10 proposal, unchanged.
+> **Section 11 is the write and its verification, measured 2026-11-11.**
 
 ---
 
@@ -265,3 +269,123 @@ The preflight's venue cache (`data/repair-manifests/venue-cache.json`) makes a r
 take seconds and `--offline` reproduces every figure here without touching the network.
 A run writes **only** the manifest and the cache; the DB connection is `mode=ro`, so a
 write attempt raises instead of landing.
+
+---
+
+# 11. RESULTS — executed 2026-11-11
+
+Approval: `apr-ledger-price-side-repair`, clicked 2026-11-11T18:35:34Z. The write ran the same
+day at 12:39:34 local against the live `prisma/dev.db`. Everything below is measured after it.
+
+## 11.1 What actually ran
+
+```bash
+# 1. re-generate the pre-image on the day of the write (the live lane adds rows)
+COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/profit-ledger-repair-preflight.py \
+    --manifest data/repair-manifests/ledger-price-side-20261111.jsonl
+#    -> 233 rows, 0 stale, self-tests PASS, class unchanged since 2026-11-10
+# 2. dry run (nothing written)
+COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/apply-ledger-price-side.py \
+    --manifest data/repair-manifests/ledger-price-side-20261111.jsonl
+# 3. the write, in one transaction
+COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/apply-ledger-price-side.py \
+    --manifest data/repair-manifests/ledger-price-side-20261111.jsonl --apply
+# 4. verify, then let the hourly pre-aggregate heal
+COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/verify-ledger-price-side.py \
+    --ledger data/repair-manifests/ledger-price-side-applied-20261111T123934.jsonl --offset-before 0.00
+npm run --silent rollup:pnl
+```
+
+| what | before | after |
+|---|---|---|
+| `PaperTrade` rows written | — | **233** (all 233 guarded updates landed, 0 skipped) |
+| row class (finished legs whose entry is the sibling's price) | 233 | **0** |
+| class PnL on rows | +$5,689.67 | **+$346.74** (Δ **−$5,342.93**) |
+| book, deduped finished legs (`profit-postfix-integrity.py --only=B`) | +$12,520.20 (+18.6% on $67,255) | **+$7,079.42 (+10.5%)** |
+| STANDARD / BANKROLL_200 booked (deduped) | +$3,036.68 / +$9,483.52 | **+$1,431.20 / +$5,648.22** |
+| `BotBankroll` BANKROLL_200 realizedPnl | $8,913.40 | **$5,069.51** (−$3,843.89) |
+| `BotBankroll` BANKROLL_200 cashBalance | $9,603.64 | **$5,759.75** (same delta) |
+| C-200 trailing-7-day gate (dashboard basis) | −$393.18 → fail | **−$393.18 → fail** |
+| `PnlSnapshot` rows appended | — | **196** (one per leg whose realizedPnl moved) |
+| dashboard "Live C-200 (all Polymarket)" card | +$8,913.40 | **+$5,069.51** |
+
+The write is exactly the approved pre-image: **−$5,342.93** (BANKROLL_200 −$3,843.89 on 50 rows,
+STANDARD −$1,499.04 on 183; STANDARD posts nothing to the bankroll by design). Book lands on the
+projected **+$7,079.42** to the cent.
+
+**The gate's PASS was already gone by write day — say it plainly.** The approval was written against
+the 2026-11-03..10 window, where booked read +$2,456.49 = PASS. On 2026-11-11 the same window has
+rolled forward and the *unrepaired* booked basis already reads **+$1,259.86 → fail**; the repair moves
+it to **−$505.35 → fail** (integrity script, 8-day table) or **−$393.18 → fail** (dashboard, 7 local
+days including today). So this write corrected the **basis** the ladder sums, not the verdict of the
+week the card was filed against. Any later gate read is now on a paid-price ledger either way.
+
+## 11.2 Verification (all four bars, from the DB)
+
+```
+1. post image in place: 233/233 rows
+2. snapshots: 196 ledgers, 0 missing, 0 wrong value, 0 not the trade's last snapshot
+3. bankroll BANKROLL_200: realizedPnl 8,913.40 -> 5,069.51 (delta -3,843.89, posted -3,843.89); cash delta -3,843.89
+   offset (all finished rows - bankroll): +0.00 (pre-write +0.00)
+4. class: INVERTED finished rows = 0 of 12,785 fill-bearing rows (pre-write 233)
+5. rows: finished non-demo SUM(realizedPnl) = +14,290.09 (pre-write +19,633.02, ledger delta -5,342.93)
+VERIFY PASS
+```
+
+- **The class is empty under the instrument's own definition**, not under the write's say-so: a fresh
+  preflight reads `inverted 0 / consistent 12,621 / ambiguous 605` (was 233 / 12,388 / 605), and
+  `profit-postfix-integrity.py --only=A` reads `INVERTED among finished: 0`, `open: 0`.
+- **Idempotent:** a second `--apply` refuses (`233 STALE … values moved since the manifest`,
+  exit 2). Nothing double-posts.
+- **Bankroll reconciles:** on the raw-row basis BANKROLL_200's bankroll ≡ Σ its rows (+$0.00) both
+  before and after. Note the figure the proposal quoted (−$570.12) is the **deduped** basis and is
+  *expected* to move (it does: +$570.12 → +$578.71) because 93 of the 233 rows are second legs whose
+  corrections the dedupe does not see. Checking the wrong basis here reports a phantom failure.
+- **Hourly pre-aggregate:** `rollup:pnl` rebuilt 5,188 hour-rows and reconciled
+  `delta=0.0000` against `SUM(PnlSnapshot.pnl)`.
+- **Dashboard:** the C-200 all-time card moved from +$8,913.40 to **+$5,069.51** after
+  `python3 scripts/kalshi-shadow.py --quiet` rebuilt `data/kalshi-shadow-summary.json` (the card
+  reads that artifact, not the DB — it would otherwise have lagged a full cron cycle).
+
+## 11.3 Residuals — what this write did NOT fix
+
+1. **The hourly `PnlSnapshot` series is still wrong in the old hours.** 2,484 pre-fix marks on these
+   trades carry the sibling-side pnl and were left in place (the approval was one appended row per
+   repaired leg, not a restatement of marks). The append **adds** +$538.68 of corrected final marks at
+   the legs' own hours. Net effect on the hourly series today: the per-trade record is right, the
+   historical mark curve is not. Restating 2,484 marks is a separate, larger price-side write —
+   **not done, needs its own approval** (`flag: restate-marks`).
+2. **32 of the 120 published `DailyReport` statements are now stale** (2026-07-17 … 2026-11-09; every
+   day with a nonzero delta). Not rewritten, per the proposal — `paperPnl` on those rows is the old
+   figure. The next EOD run writes a clean one.
+3. **15 `needs_review` rows** (5 markets, $160 notional) stayed on the complement identity, as
+   approved. Their venue prints disagree by >6c; a manual review would move the book by ~$192.
+4. **25 unfilled rows** kept `realizedPnl 0.00` (never positions) but had their entry price repriced —
+   cosmetic only, no PnL effect (`flag: unfilled-entry`).
+5. **No open leg was touched** (0 of 441 open rows are in the class), so no live mark/entry mismatch
+   was created.
+
+## 11.4 Rollback (exact, nothing recomputed)
+
+```bash
+COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/rollback-ledger-price-side.py \
+    --ledger data/repair-manifests/ledger-price-side-applied-20261111T123934.jsonl        # dry run
+COPYBOT_DB=$PWD/prisma/dev.db python3 scripts/rollback-ledger-price-side.py \
+    --ledger data/repair-manifests/ledger-price-side-applied-20261111T123934.jsonl --apply
+npm run --silent rollup:pnl
+```
+
+It restores `entryPrice/currentPrice/realizedPnl` from the ledger's `pre` block (guarded on the post
+image, so a row that moved since aborts the whole rollback), deletes the 196 appended `PnlSnapshot`
+ids, and puts `BotBankroll` back to $8,913.40 / $9,603.64. Full-row pre-image for belt-and-braces:
+`data/repair-manifests/ledger-price-side-preimage-20261111T123934.json`.
+
+## 11.5 Judgment calls, as overridable flags
+
+- `flag: snapshot-backdating` — the 196 appended snapshots are dated **the leg's own end time + 1s**,
+  not "now", so the hourly series stays period-accurate. Cost: the rollup needed a full rebuild
+  (14s). Say the word and they move to insertion time instead (adds the correction to today's bucket).
+- `flag: append-only-where-moved` — snapshots were appended only for the 196 legs whose pnl moved
+  (37 unchanged rows get none; appending a duplicate value would double-count in the hourly sum).
+- `flag: restate-marks` (11.3.1) — the only piece of this defect still printing old numbers.
+
