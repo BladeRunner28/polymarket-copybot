@@ -7,7 +7,7 @@
 import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { getActiveRules } from "../src/lib/rules";
-import { scoreWallet, walletStatus } from "../src/lib/scoring/wallet";
+import { scoreWallet, walletStatus, encodeCategoryStrengths } from "../src/lib/scoring/wallet";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
 import * as fs from "fs";
@@ -15,6 +15,15 @@ import { join } from "path";
 
 const SCAN_LIMIT = Number(process.env.WALLET_SCAN_LIMIT ?? 25);
 const LOOKBACK_DAYS = 30;
+// WALLET_SCAN_STATUS (opt-in, unset in cron) restricts one run to the wallets the lane actually
+// copies from — e.g. "track". The rotation above is least-recently-scanned-first across all ~3,900
+// profiles, so a wallet that changed SCORING basis (v72) sits at the BACK of the queue for ~6 days
+// even though it is the only cohort whose stored map moves admissions. Unset = every profile, the
+// shipped behaviour.
+const SCAN_STATUS = (process.env.WALLET_SCAN_STATUS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 // 2026-09-20 tuning review #31 rec 3 (user-approved): a partial profile run used
 // to be indistinguishable from a clean one — 6 lifetime occurrences, each logging
@@ -34,7 +43,10 @@ async function main() {
   // Profile the least-recently-scanned wallets first. Demo wallets are never
   // profiled against the live API (their addresses don't exist on-chain).
   const wallets = await prisma.walletProfile.findMany({
-    where: adapter.isDemo ? {} : { isDemo: false },
+    where: {
+      ...(adapter.isDemo ? {} : { isDemo: false }),
+      ...(SCAN_STATUS.length ? { status: { in: SCAN_STATUS } } : {}),
+    },
     orderBy: [{ lastScannedAt: { sort: "asc", nulls: "first" } }, { sourceRank: "asc" }],
     take: SCAN_LIMIT,
   });
@@ -98,7 +110,7 @@ async function main() {
           oneHitWonderPenalty: score.oneHitWonderPenalty,
           globalScore: score.globalScore,
           bestCategory: score.bestCategory,
-          categoryStrengthsJson: JSON.stringify(score.categoryStrengths),
+          categoryStrengthsJson: encodeCategoryStrengths(score),
           averageTradeSize: score.averageTradeSize,
           tradeCount30d: depth.totalCount,
           resolvedTradeCount30d: depth.closedCount,

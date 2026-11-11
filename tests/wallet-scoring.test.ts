@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { scoreWallet, oneHitWonderPenalty, consistencyScore, copyabilityScore, walletStatus } from "../src/lib/scoring/wallet";
+import {
+  scoreWallet,
+  oneHitWonderPenalty,
+  consistencyScore,
+  copyabilityScore,
+  walletStatus,
+  categoryBucketKey,
+  encodeCategoryStrengths,
+  decodeCategoryStrengths,
+  categoryWinRateFor,
+} from "../src/lib/scoring/wallet";
 import { DEFAULT_RULES } from "../src/lib/rules";
 import { WalletActivityTrade } from "../src/lib/types";
 
@@ -119,5 +129,81 @@ describe("scoreWallet", () => {
     expect(walletStatus(s1, DEFAULT_RULES).status).toBe("track");
     expect(walletStatus(s2, DEFAULT_RULES).status).not.toBe("track");
     expect(walletStatus(s2, DEFAULT_RULES).reason).toBeTruthy();
+  });
+});
+
+describe("wallet category basis (v72 class swap)", () => {
+  const sample = [
+    trade({ marketCategory: "nfl", marketCategoryClass: "sports", marketCategoryFine: "football-nfl", pnl: 40 }),
+    trade({ marketCategory: "nba", marketCategoryClass: "sports", marketCategoryFine: "basketball-nba", pnl: 30 }),
+    trade({ marketCategory: "will", marketCategoryClass: "politics", marketCategoryFine: "politics-us", pnl: -10, won: false }),
+  ];
+
+  it("defaults to the TOKEN basis, so any ruleset lacking the field scores as before", () => {
+    expect(DEFAULT_RULES.walletCategoryBasis).toBe("token");
+    const s = scoreWallet(sample, DEFAULT_RULES);
+    expect(s.categoryBasis).toBe("token");
+    expect(Object.keys(s.categoryStrengths).sort()).toEqual(["nba", "nfl", "will"]);
+  });
+
+  it("aggregates the same sample per COARSE class when the rule says class", () => {
+    const s = scoreWallet(sample, { ...DEFAULT_RULES, walletCategoryBasis: "class" });
+    expect(s.categoryBasis).toBe("class");
+    expect(Object.keys(s.categoryStrengths).sort()).toEqual(["politics", "sports"]);
+    expect(s.categoryStrengths.sports).toEqual({ trades: 2, winRate: 1, pnl: 70 });
+    expect(s.bestCategory).toBe("sports");
+    expect(s.copyabilityNotes).toContain("Strongest class: sports");
+    // The fine grain is computed beside it as a diagnostic and never becomes the score's basis.
+    expect(Object.keys(s.categoryStrengthsFine).sort()).toEqual([
+      "basketball-nba",
+      "football-nfl",
+      "politics-us",
+    ]);
+  });
+
+  it("never advertises the absence of a category as the strongest one", () => {
+    const s = scoreWallet(
+      [
+        trade({ marketCategory: "highest", marketCategoryClass: undefined, pnl: 500 }),
+        trade({ marketCategory: "highest", marketCategoryClass: undefined, pnl: 400 }),
+      ],
+      { ...DEFAULT_RULES, walletCategoryBasis: "class" }
+    );
+    expect(s.categoryStrengths.uncategorized.trades).toBe(2);
+    expect(s.bestCategory).toBeNull();
+  });
+
+  it("buckets an empty class as uncategorized instead of falling back to the token", () => {
+    expect(categoryBucketKey(trade({ marketCategory: "nfl", marketCategoryClass: "" }), "class")).toBe("uncategorized");
+    expect(categoryBucketKey(trade({ marketCategory: "nfl", marketCategoryClass: "sports" }), "class")).toBe("sports");
+    expect(categoryBucketKey(trade({ marketCategory: "nfl", marketCategoryClass: "sports" }), "token")).toBe("nfl");
+  });
+
+  it("round-trips the stored payload and decodes legacy flat maps as token-keyed", () => {
+    const classScore = scoreWallet(sample, { ...DEFAULT_RULES, walletCategoryBasis: "class" });
+    const payload = decodeCategoryStrengths(encodeCategoryStrengths(classScore));
+    expect(payload.basis).toBe("class");
+    expect(payload.strengths.sports.trades).toBe(2);
+    expect(payload.fine?.["football-nfl"].trades).toBe(1);
+
+    const legacy = decodeCategoryStrengths(JSON.stringify({ nfl: { trades: 2, winRate: 0.5, pnl: 10 } }));
+    expect(legacy.basis).toBe("token");
+    expect(legacy.strengths.nfl.winRate).toBe(0.5);
+    expect(decodeCategoryStrengths(null).strengths).toEqual({});
+    expect(decodeCategoryStrengths("not json").basis).toBe("token");
+  });
+
+  it("reads the win rate off the field that matches the map's own basis", () => {
+    const classScore = scoreWallet(sample, { ...DEFAULT_RULES, walletCategoryBasis: "class" });
+    const payload = decodeCategoryStrengths(encodeCategoryStrengths(classScore));
+    expect(categoryWinRateFor(payload, { marketCategory: "nfl", marketCategoryClass: "sports" })).toBe(1);
+    // A pre-2026-09-23 row carries no class: no category information (scoreTrade -> neutral 50),
+    // never the token bucket's number.
+    expect(
+      categoryWinRateFor(payload, { marketCategory: "nfl", marketCategoryClass: null })
+    ).toBeUndefined();
+
+    const tokenPayload = decodeCategoryStrengths(JSON.stringify({ nfl: { trades: 2, winRate: 0.25, pnl: 1 } }));
+    expect(categoryWinRateFor(tokenPayload, { marketCategory: "nfl", marketCategoryClass: "sports" })).toBe(0.25);
   });
 });

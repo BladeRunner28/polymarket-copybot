@@ -7,7 +7,7 @@
 import { PrismaClient } from "@prisma/client";
 import { DemoAdapter } from "../src/lib/adapters/demo";
 import { DEFAULT_RULES } from "../src/lib/rules";
-import { scoreWallet, walletStatus } from "../src/lib/scoring/wallet";
+import { scoreWallet, walletStatus, encodeCategoryStrengths } from "../src/lib/scoring/wallet";
 import { scoreTrade } from "../src/lib/scoring/trade";
 import { computePnl } from "../src/lib/paper";
 
@@ -57,7 +57,7 @@ async function main() {
         oneHitWonderPenalty: score.oneHitWonderPenalty,
         globalScore: score.globalScore,
         bestCategory: score.bestCategory,
-        categoryStrengthsJson: JSON.stringify(score.categoryStrengths),
+        categoryStrengthsJson: encodeCategoryStrengths(score),
         averageTradeSize: score.averageTradeSize,
         tradeCount30d: score.tradeCount30d,
         resolvedTradeCount30d: score.resolvedTradeCount30d,

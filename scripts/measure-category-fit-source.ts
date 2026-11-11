@@ -127,8 +127,10 @@ async function main() {
       const coarse = buckets(trades, (t) => t.marketCategoryClass ?? "uncategorized");
       const fine = buckets(trades, (t) => t.marketCategoryFine ?? "uncategorized");
 
-      // Cross-check the mirror against production's own computation.
-      const score = scoreWallet(trades, rules);
+      // Cross-check the mirror against production's own computation. v72: pin the TOKEN basis
+      // explicitly — this instrument's mirror is token-keyed, so inheriting the live rule would
+      // report a "mismatch" on every wallet the moment the active ruleset moves to the class.
+      const score = scoreWallet(trades, { ...rules, walletCategoryBasis: "token" });
       for (const [cat, v] of Object.entries(score.categoryStrengths)) {
         const mine = token[cat];
         if (!mine || Math.abs(mine.winRate - v.winRate) > 1e-9 || mine.trades !== v.trades) {

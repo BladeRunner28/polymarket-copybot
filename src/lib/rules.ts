@@ -29,6 +29,16 @@ export interface Rules {
   minWalletGlobalScore: number; // ignore signals from wallets below this
   minResolvedTrades: number; // wallets with fewer resolved trades are unproven
   minOrderbookImbalance: number; // skip if OBI is below this (e.g., heavily negative)
+  /**
+   * v72 (2026-11-11, operator-approved via the approvals inbox): which DIMENSION the wallet's
+   * per-category strength map is keyed on. "token" = the raw event-slug token, defective as a
+   * category (`highest` spans 14,879 marketIds; bestCategory reads `will`/`what`/`world`);
+   * "class" = marketCategoryClass (src/lib/market-category.ts), the real coarse category.
+   * Default "token" so any ruleset lacking the field scores byte-identically to pre-v72 and a
+   * revert is this single field. Does NOT touch the v45 blacklist or the per-slug cap — those
+   * are token-granularity BY DESIGN and keep reading `marketCategory`.
+   */
+  walletCategoryBasis: "token" | "class";
   // Scoring weights (wallet)
   weightRoi: number;
   weightConsistency: number;
@@ -347,6 +357,9 @@ export const DEFAULT_RULES: Rules = {
   minWalletGlobalScore: 55,
   minResolvedTrades: 5,
   minOrderbookImbalance: -0.40,
+  // v72 default "token" = legacy key space; the active ruleset sets "class" via
+  // scripts/apply-v72.ts. Revert = set this field back to "token".
+  walletCategoryBasis: "token",
   weightRoi: 0.35,
   weightConsistency: 0.35,
   weightCopyability: 0.3,

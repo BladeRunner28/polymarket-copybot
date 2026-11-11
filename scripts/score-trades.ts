@@ -7,6 +7,7 @@ import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { getActiveRules } from "../src/lib/rules";
 import { scoreTrade } from "../src/lib/scoring/trade";
+import { decodeCategoryStrengths, categoryWinRateFor } from "../src/lib/scoring/wallet";
 import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
 import { priceForOutcome, isYesSideOutcome } from "../src/lib/outcome-price";
@@ -481,10 +482,13 @@ async function main() {
       }
     }
 
+    // v72: the wallet's strength map is keyed on the basis it was BUILT on (the stored payload
+    // carries it), so the lookup must read the matching field off this observation. Old code
+    // looked up the TOKEN unconditionally, which after the swap would silently match nothing (or,
+    // worse, a token that happens to equal a class name).
     let catWinRate: number | undefined;
     try {
-      const cats = JSON.parse(wallet.categoryStrengthsJson) as Record<string, { winRate: number }>;
-      if (t.marketCategory && cats[t.marketCategory]) catWinRate = cats[t.marketCategory].winRate;
+      catWinRate = categoryWinRateFor(decodeCategoryStrengths(wallet.categoryStrengthsJson), t);
     } catch { /* ignore */ }
 
     // Phase 8: Regulatory/Political Sentiment (C-200 research bot).

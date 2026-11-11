@@ -30,26 +30,36 @@
  *   level      = leg (one closed position). Wallet-level aggregates are marked
  *                as such.
  *
- * Writes only the JSON artifact below. No DB writes, no scoring change.
+ * Writes only the JSON artifact below. No DB writes, no scoring change — it re-implements the
+ * scorer's arithmetic with a pluggable win basis and prices each basis on the same rows. (The
+ * settlement basis it prices is what src/lib/scoring/wallet.ts SHIPS since 2026-11-11; the
+ * exit-sign basis is kept as the counterfactual, and the replication check fails loudly if the
+ * re-implementation ever drifts from the shipped scorer.)
  *
- *   npx tsx scripts/wallet-win-basis-audit.ts                 # 25 wallets
+ *   npx tsx scripts/wallet-win-basis-audit.ts                 # 25 wallets, track tier first
  *   npx tsx scripts/wallet-win-basis-audit.ts --limit=60
  *   npx tsx scripts/wallet-win-basis-audit.ts --clob-limit=150 # ground-truth cap
+ *   npx tsx scripts/wallet-win-basis-audit.ts --out=data/probe.json  # never clobber the artifact
  *
  * Output: data/wallet-win-basis-audit.json
  */
 import { prisma } from "../src/lib/db";
 import { getAdapter } from "../src/lib/adapters";
 import { getActiveRules, Rules } from "../src/lib/rules";
-import { scoreWallet, walletStatus, WalletScore } from "../src/lib/scoring/wallet";
+import { copyabilityScore, oneHitWonderPenalty, scoreWallet, walletStatus, WalletScore } from "../src/lib/scoring/wallet";
 import { fetchWinningLabelViaClob } from "../src/lib/dead-market-resolution";
 import { didOutcomeWin } from "../src/lib/resolution";
 import { WalletActivityTrade } from "../src/lib/types";
 import * as fs from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 
 const ROOT = join(__dirname, "..");
-const OUT = join(ROOT, "data", "wallet-win-basis-audit.json");
+/** `--out=<path>` so a probe run cannot overwrite the published artifact. */
+const argStr = (name: string, dflt: string) => {
+  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.split("=").slice(1).join("=") : dflt;
+};
+const OUT = resolve(ROOT, argStr("out", join("data", "wallet-win-basis-audit.json")));
 const arg = (name: string, dflt: number) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit ? Number(hit.split("=")[1]) : dflt;
@@ -97,8 +107,13 @@ type LegRow = {
   basis: LegBasis;
 };
 
-/** Replicates scoreWallet's arithmetic with a pluggable win-rate basis.
- *  Used ONLY to price a hypothetical; the shipped scorer is untouched. */
+/** Replicates scoreWallet's arithmetic with a pluggable win-rate basis, so a hypothetical
+ *  basis can be priced on the SAME rows as the shipped one.
+ *
+ *  Two arms exist now (2026-11-11): the SETTLEMENT basis ships in src/lib/scoring/wallet.ts,
+ *  and the exit-sign basis (`pnl > 0`) is kept here as the counterfactual that prices the
+ *  change. `classify` returning null on a leg excludes it from the win-rate DENOMINATOR
+ *  (never defaulted), which is the same rule as settledWinRate(). */
 function scoreWithBasis(
   trades: WalletActivityTrade[],
   rules: Rules,
@@ -126,10 +141,14 @@ function scoreWithBasis(
     const volumeBonus = clamp(resolved.length * 3, 0, 20);
     cons = clamp(covScore * 0.4 + wrScore * 0.5 + volumeBonus * 0.5);
   }
-  const base = scoreWallet(trades, rules); // copyability + one-hit-wonder are basis-independent
+  // UNROUNDED internals: scoreWallet returns copyability/penalty rounded to 1dp, and multiplying
+  // a rounded field into a 0-100 global score moves it up to ~0.03 — enough to cross the 0.1
+  // rounding step and report a phantom "replication mismatch" on high-score wallets.
+  const copy = copyabilityScore(trades, rules);
+  const penalty = oneHitWonderPenalty(trades);
   const roiScore = clamp(40 + roi30d * 90);
-  let global = roiScore * rules.weightRoi + cons * rules.weightConsistency + base.copyabilityScore * rules.weightCopyability;
-  global = global * (1 - (base.oneHitWonderPenalty / 100) * 0.6);
+  let global = roiScore * rules.weightRoi + cons * rules.weightConsistency + copy * rules.weightCopyability;
+  global = global * (1 - (penalty / 100) * 0.6);
   if (resolved.length < rules.minResolvedTrades) global = Math.min(global, 40);
 
   const cats: Record<string, { trades: number; wins: number; winRate: number; pnl: number }> = {};
@@ -142,34 +161,63 @@ function scoreWithBasis(
   }
   for (const v of Object.values(cats)) v.winRate = v.trades ? v.wins / v.trades : 0;
   return {
-    ...base,
+    ...scoreWallet(trades, rules),
     roi30d,
     consistencyScore: Math.round(cons * 10) / 10,
+    copyabilityScore: Math.round(copy * 10) / 10,
+    oneHitWonderPenalty: Math.round(penalty * 10) / 10,
     globalScore: Math.round(clamp(global) * 10) / 10,
     winRate30d: winRate,
     categoryStrengths: cats,
+    // v72: this audit builds `cats` from the TOKEN explicitly, so it must label itself as such
+    // rather than inherit the live rule's basis from the spread.
+    categoryBasis: "token",
   };
 }
 
 async function main() {
   const { rules } = await getActiveRules();
   const adapter = getAdapter();
-  const wallets = await prisma.walletProfile.findMany({
-    orderBy: [{ status: "asc" }, { globalScore: "desc" }],
-    take: LIMIT,
-  });
-  // status "asc" puts ignore < track < watch alphabetically; re-rank explicitly.
-  const rank: Record<string, number> = { track: 0, watch: 1, ignore: 2 };
-  wallets.sort((a, b) => (rank[a.status] ?? 3) - (rank[b.status] ?? 3) || (b.globalScore ?? 0) - (a.globalScore ?? 0));
+  // POPULATION: the tiers the status boundary is DECIDED on, fetched in rank order.
+  //
+  // This used to be `orderBy: [{status:"asc"},{globalScore:"desc"}], take: LIMIT`, then a
+  // client-side re-rank. `status` is a STRING, so `asc` is alphabetical — ignore < track <
+  // watch — and the take(25) never reached a track row: the report claimed "status rank:
+  // track first" while measuring the IGNORE tier only. The 2026-10-29 read that priced this
+  // card's delta inherited that defect. Re-ranking after the take cannot fix a fetch that
+  // already excluded the tier, so each tier is queried explicitly.
+  const wallets: {
+    address: string;
+    status: string;
+    globalScore: number | null;
+    winRate30d: number | null;
+  }[] = [];
+  for (const status of ["track", "watch", "ignore"]) {
+    const room = LIMIT - wallets.length;
+    if (room <= 0) break;
+    const tier = await prisma.walletProfile.findMany({
+      where: { status, ...(adapter.isDemo ? {} : { isDemo: false }) },
+      orderBy: [{ globalScore: "desc" }],
+      take: room,
+    });
+    wallets.push(...tier);
+  }
+  const tierCounts = wallets.reduce<Record<string, number>>(
+    (a, w) => ((a[w.status] = (a[w.status] ?? 0) + 1), a),
+    {}
+  );
 
   const legs: LegRow[] = [];
   const walletRows: Record<string, unknown>[] = [];
+  const replicationDetail: Record<string, unknown>[] = [];
   const walletTrades: {
     w: { address: string; status: string; globalScore: number | null; winRate30d: number | null };
     trades: WalletActivityTrade[];
     resolved: WalletActivityTrade[];
     mine: LegRow[];
     shipped: WalletScore;
+    exitArm: WalletScore;
+    flagArm: WalletScore;
   }[] = [];
   let replicationMismatches = 0;
   let walletsScored = 0;
@@ -211,19 +259,35 @@ async function main() {
     }
     legs.push(...mine);
 
-    // (B) score under the shipped basis vs a settlement basis
+    // (B) THREE bases priced on the SAME rows:
+    //   shipped  = scoreWallet() as it now reads (settlement flag `won`)
+    //   exitBasis = the expression this change replaced (`pnl > 0`)
+    //   truth    = mark + CLOB ground truth (filled in below, after the CLOB pass)
     const shipped = scoreWallet(trades, rules);
-    const replicated = scoreWithBasis(trades, rules, (t) => ((t.pnl ?? 0) > 0 ? true : false));
-    if (
-      Math.abs(replicated.globalScore - shipped.globalScore) > 0.05 ||
-      Math.abs(replicated.consistencyScore - shipped.consistencyScore) > 0.05 ||
-      Math.abs(replicated.winRate30d - shipped.winRate30d) > 1e-9
-    ) {
+    const flagArm = scoreWithBasis(trades, rules, (t) =>
+      t.won === true ? true : t.won === false ? false : null
+    );
+    const exitArm = scoreWithBasis(trades, rules, (t) => (t.pnl ?? 0) > 0);
+    // REPLICATION: the re-implementation must reproduce the shipped scorer on the basis the
+    // scorer now reads. A non-zero count means they have drifted, and no delta below is
+    // trustworthy — this is the check that catches a change to the arithmetic on either side.
+    const drift = Math.max(
+      Math.abs(flagArm.globalScore - shipped.globalScore),
+      Math.abs(flagArm.consistencyScore - shipped.consistencyScore),
+      Math.abs(flagArm.winRate30d - shipped.winRate30d) * 100
+    );
+    if (drift > 0.05) {
       replicationMismatches++;
+      replicationDetail.push({
+        address: w.address,
+        drift: r3(drift),
+        shipped: { g: shipped.globalScore, c: shipped.consistencyScore, wr: r3(shipped.winRate30d) },
+        reimplemented: { g: flagArm.globalScore, c: flagArm.consistencyScore, wr: r3(flagArm.winRate30d) },
+      });
     }
-    // The settlement-basis substitution is priced AFTER the CLOB pass below,
-    // so a leg the mark cannot settle still counts once its truth is fetched.
-    walletTrades.push({ w, trades, resolved, mine, shipped });
+    // The truth arm is priced AFTER the CLOB pass below, so a leg the mark cannot settle still
+    // counts once its truth is fetched.
+    walletTrades.push({ w, trades, resolved, mine, shipped, exitArm, flagArm });
   }
 
   // CLOB ground truth for legs the mark could NOT settle (the mark is the defect)
@@ -242,16 +306,18 @@ async function main() {
     l.basis = l.clobWon ? "early_exit_on_winning_token" : "early_exit_on_losing_token";
   }
 
-  // (B) shipped basis vs settlement basis, now that both mark and CLOB truth exist
-  for (const { w, trades, resolved, mine, shipped } of walletTrades) {
+  // (B) the change priced on stored-data-equivalent rows: exit basis -> settlement flag,
+  // plus the truth arm (mark + CLOB) as the label audit's own ground truth
+  for (const { w, trades, resolved, mine, shipped, exitArm } of walletTrades) {
     const settleKnown = new Map<WalletActivityTrade, boolean>();
     for (let i = 0; i < resolved.length; i++) {
       const truthI = mine[i]?.markSettled ?? mine[i]?.clobWon ?? null;
       if (truthI !== null) settleKnown.set(resolved[i], truthI);
     }
-    const settleScore = scoreWithBasis(trades, rules, (t) => (settleKnown.has(t) ? settleKnown.get(t)! : null));
-    const before = walletStatus(shipped, rules);
-    const after = walletStatus(settleScore, rules);
+    const truthArm = scoreWithBasis(trades, rules, (t) => (settleKnown.has(t) ? settleKnown.get(t)! : null));
+    const before = walletStatus(exitArm, rules); // what the OLD basis decided
+    const after = walletStatus(shipped, rules); // what the SHIPPED basis decides
+    const truthStatus = walletStatus(truthArm, rules);
     walletRows.push({
       address: w.address,
       statusNow: w.status,
@@ -259,16 +325,27 @@ async function main() {
       storedWinRate30d: w.winRate30d,
       closedLegs: resolved.length,
       settleKnownLegs: settleKnown.size,
+      knownFlagLegs: resolved.filter((t) => t.won !== undefined).length,
+      winRate_exitBasis: r3(exitArm.winRate30d),
       winRate_shipped: r3(shipped.winRate30d),
-      winRate_settleKnown: r3(settleScore.winRate30d),
+      winRate_truth: r3(truthArm.winRate30d),
+      global_exitBasis: exitArm.globalScore,
       global_shipped: shipped.globalScore,
-      global_settleKnown: settleScore.globalScore,
-      status_shipped: before.status,
-      status_settleKnown: after.status,
+      global_truth: truthArm.globalScore,
+      status_exitBasis: before.status,
+      status_shipped: after.status,
+      status_truth: truthStatus.status,
+      /** THE CHANGE: did any wallet change tier when the win-rate basis moved? */
       statusChanged: before.status !== after.status,
+      /** Diagnostic: shipped basis vs the CLOB-augmented truth read (may differ where a mid
+       *  mark was resolvable offline; the live scorer never sees that truth). */
+      statusChangedVsTruth: after.status !== truthStatus.status,
       storedMatchesShipped:
         Math.abs((w.globalScore ?? -1) - shipped.globalScore) < 0.15 &&
         Math.abs((w.winRate30d ?? -1) - shipped.winRate30d) < 1e-6,
+      storedMatchesExitBasis:
+        Math.abs((w.globalScore ?? -1) - exitArm.globalScore) < 0.15 &&
+        Math.abs((w.winRate30d ?? -1) - exitArm.winRate30d) < 1e-6,
     });
   }
 
@@ -287,7 +364,9 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     basis: {
-      population: `${walletsScored} wallets (status rank: track first) x their closed positions`,
+      population: `${walletsScored} wallets (tiers: ${Object.entries(tierCounts)
+        .map(([k, v]) => `${k} ${v}`)
+        .join(", ")}) x their closed positions`,
       clock: `fetched now, ${LOOKBACK_DAYS}d lookback of the hourly scanner's own call`,
       level: "leg (one closed position); wallet aggregates flagged in walletRows",
       terminalBand: `curPrice >= ${TERMINAL_HI} or <= ${TERMINAL_LO}`,
@@ -314,9 +393,14 @@ async function main() {
     },
     score: {
       replicationMismatches,
+      replicationDetail,
       wallets: walletRows.length,
+      /** THE CHANGE: exit-sign basis -> settlement flag, tier flips */
       statusChanged: walletRows.filter((w) => w.statusChanged).length,
+      /** Diagnostic: shipped flag vs the CLOB-augmented truth read */
+      statusChangedVsTruth: walletRows.filter((w) => w.statusChangedVsTruth).length,
       storedMatchesShipped: walletRows.filter((w) => w.storedMatchesShipped).length,
+      storedMatchesExitBasis: walletRows.filter((w) => w.storedMatchesExitBasis).length,
     },
     walletRows,
   };
@@ -325,7 +409,7 @@ async function main() {
   console.log(`\nWALLET WIN-BASIS AUDIT — ${report.generatedAt}`);
   console.log(`population: ${report.basis.population}; clock: ${report.basis.clock}; level: ${report.basis.level}`);
   console.log(
-    `LEGS ${legs.length} closed | booked wins ${bookedWins.length} (${pct(bookedWins.length, legs.length)}) | ` +
+    `LEGS ${legs.length} closed | booked wins (settlement flag) ${bookedWins.length} (${pct(bookedWins.length, legs.length)}) | ` +
       `settlement-known ${settled.length} -> true win rate ${pct(settled.filter((l) => truthOf(l) === true).length, settled.length)}`
   );
   console.log(
@@ -339,14 +423,23 @@ async function main() {
   );
   console.log(`by basis: ${JSON.stringify(report.legs.byBasis)}`);
   console.log(
-    `SCORE: replication vs scoreWallet mismatches=${replicationMismatches} | wallets=${walletRows.length} | ` +
-      `status flips under a settlement-basis win rate=${report.score.statusChanged}`
+    `SCORE: replication vs scoreWallet (settlement basis) mismatches=${replicationMismatches} | wallets=${walletRows.length}`
   );
-  console.log(`stored WalletProfile rows matching a fresh score: ${report.score.storedMatchesShipped}/${walletRows.length}`);
+  console.log(
+    `STATUS under the shipped basis vs the EXIT basis it replaced: ${report.score.statusChanged} flip(s) | ` +
+      `vs the CLOB-augmented truth read: ${report.score.statusChangedVsTruth} flip(s)`
+  );
+  console.log(
+    `stored WalletProfile rows matching a fresh score: shipped basis ${report.score.storedMatchesShipped}/${walletRows.length}, ` +
+      `exit basis ${report.score.storedMatchesExitBasis}/${walletRows.length} (the hourly scan rewrites each wallet as it rotates)`
+  );
+  for (const d of replicationDetail) {
+    console.log(`  MISMATCH ${String(d.address).slice(0, 10)} drift=${d.drift} ${JSON.stringify(d.shipped)} vs ${JSON.stringify(d.reimplemented)}`);
+  }
   for (const w of walletRows.filter((x) => x.statusChanged)) {
     console.log(
-      `  FLIP ${String(w.address).slice(0, 10)} ${w.status_shipped}->${w.status_settleKnown} ` +
-        `g ${w.global_shipped}->${w.global_settleKnown} wr ${w.winRate_shipped}->${w.winRate_settleKnown} (n=${w.closedLegs}, known=${w.settleKnownLegs})`
+      `  FLIP ${String(w.address).slice(0, 10)} ${w.status_exitBasis}->${w.status_shipped} ` +
+        `g ${w.global_exitBasis}->${w.global_shipped} wr ${w.winRate_exitBasis}->${w.winRate_shipped} (n=${w.closedLegs}, known=${w.knownFlagLegs})`
     );
   }
   console.log(`artifact: ${OUT}`);

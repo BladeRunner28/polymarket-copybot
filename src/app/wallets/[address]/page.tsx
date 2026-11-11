@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { Card, Stat, Badge, Addr, Empty, Pnl, ScoreBar } from "@/components/ui";
+import { decodeCategoryStrengths } from "@/lib/scoring/wallet";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +23,10 @@ export default async function WalletProfilePage({ params }: { params: { address:
   ]);
 
   const paperPnl = paperTrades.reduce((a, t) => a + (t.realizedPnl ?? t.unrealizedPnl), 0);
-  let cats: Record<string, { trades: number; winRate: number; pnl: number }> = {};
-  try {
-    cats = JSON.parse(wallet.categoryStrengthsJson);
-  } catch { /* empty */ }
+  // v72: the map is keyed on whatever basis the wallet was last scored on, and the payload says
+  // which — never assume token or class.
+  const strengths = decodeCategoryStrengths(wallet.categoryStrengthsJson);
+  const cats = strengths.strengths;
 
   const copyVerdict =
     wallet.copyabilityScore >= 60
@@ -87,7 +88,7 @@ export default async function WalletProfilePage({ params }: { params: { address:
           </div>
         </Card>
 
-        <Card title="Category Strengths">
+        <Card title={`Category Strengths (${strengths.basis === "class" ? "coarse class" : "slug token"})`}>
           {Object.keys(cats).length === 0 ? (
             <Empty message="No category data yet." />
           ) : (
