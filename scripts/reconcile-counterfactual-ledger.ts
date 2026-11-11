@@ -53,6 +53,8 @@ interface GoldenLane {
   rowsSelected: number;
   /** The resolve set as it stood at capture — replayed, not re-read from the live feed. */
   resolves: Array<[string, string, number]>;
+  /** Wall clock the pre-port summaries read the trailing-7d boundary against. */
+  readClockMs: number;
 }
 
 interface Golden {
@@ -65,7 +67,10 @@ interface LaneDef {
   id: keyof Golden["lanes"];
   file: string;
   read: () => Array<Record<string, unknown>>;
-  summarize: (rows: Array<Record<string, unknown>>) => Record<string, unknown>;
+  summarize: (
+    rows: Array<Record<string, unknown>>,
+    opts?: { now?: number }
+  ) => Record<string, unknown>;
   /** Read options the lane's OWN summary uses — restated here so the pre-registered read prices the same population. */
   readOptions: LedgerReadOptions;
 }
@@ -170,7 +175,9 @@ function main() {
     const rowsDigest = digest(candidates);
     const digestMatches = rowsDigest === g.rowsDigest;
     const goldenFlat = flatten(g.summary);
-    const ported = def.summarize(rows);
+    // Price the trailing-7d cohort at the instant the golden was captured, otherwise the
+    // 7-day boundary moves between capture and diff and the cohort fields "mismatch".
+    const ported = def.summarize(rows, { now: g.readClockMs });
     const portedFlat = flatten(ported);
 
     const mismatches: Array<{ path: string; golden: unknown; ported: unknown }> = [];

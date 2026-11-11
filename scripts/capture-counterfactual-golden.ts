@@ -80,13 +80,33 @@ for (const def of LANES) {
     ...candidates,
     ...resolves.map(([marketId, outcome, value]) => ({ type: "resolve", marketId, outcome, value })),
   ];
+  // The trailing-7d cohort is priced against the wall clock AT READ TIME. Record that
+  // clock so the reconcile can price it at the same instant, and prove no candidate sits
+  // on the boundary that moved between the two `Date.now()` calls.
+  const t0 = Date.now();
   const summary = def.summarize(rows as never) as unknown as Record<string, unknown>;
+  const t1 = Date.now();
+  const boundaryLow = t0 - 7 * 86400000;
+  const boundaryHigh = t1 - 7 * 86400000;
+  const straddling = candidates.filter((r) => {
+    const at = Date.parse(String(r.ts));
+    return Number.isFinite(at) && at > boundaryLow && at <= boundaryHigh;
+  }).length;
+  if (straddling > 0) {
+    throw new Error(
+      `${def.id}: ${straddling} candidate(s) fall inside the cohort-boundary sliver ` +
+        `(${(t1 - t0)}ms); the golden's cohort read could not be reproduced exactly. Re-run.`
+    );
+  }
   (out.lanes as Record<string, unknown>)[def.id] = {
     lane: def.lane,
     file: def.file.replace(/^.*\.worktrees\/[^/]+\//, ""),
     rowsSelected: candidates.length,
     resolvesSelected: resolves.length,
     rowsDigest: digest(candidates),
+    /** Wall clock the prefix summaries read the 7-day boundary against. */
+    readClockMs: t0,
+    readMs: t1 - t0,
     resolves,
     summary,
   };

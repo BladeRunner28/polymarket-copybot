@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-11-11T18:44:46.344Z",
-  "goldenCapturedAt": "2026-11-11T18:44:31.806Z",
+  "generatedAt": "2026-11-11T18:46:45.290Z",
+  "goldenCapturedAt": "2026-11-11T18:46:38.758Z",
   "windowCutoff": "2026-11-11T18:40:07.964Z",
   "lanes": [
     {
       "lane": "late_drift_gate",
       "laneId": "drift",
-      "file": "data/drift-shadow.jsonl",
+      "file": "/Users/xsnyde2/polymarket-copybot/data/drift-shadow.jsonl",
       "window": {
         "cutoff": "2026-11-11T18:40:07.964Z",
         "rows": 45421,
@@ -18,7 +18,7 @@
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:44:43.219Z",
+        "generatedAt": "2026-11-11T18:46:41.951Z",
         "candidates": 45421,
         "marked": 41262,
         "awaitingResolution": 4159,
@@ -30,7 +30,7 @@
         "dustExcluded": 2600,
         "dustMinEntryPrice": 0.1,
         "avgPnlPerTradeExDustLast7dCohort": -0.82,
-        "cohort7dMarked": 2752,
+        "cohort7dMarked": 2747,
         "totalMarked": 41262,
         "stakeUsd": 10,
         "firstCandidateAt": "2026-09-17T05:13:10.255Z",
@@ -39,8 +39,8 @@
         "signalsSettled": 10532,
         "avgPnlPerTradeExDustPerSignal": 0.6,
         "dustExcludedPerSignal": 614,
-        "avgPnlPerTradeExDustLast7dCohortPerSignal": -1.37,
-        "cohort7dMarkedPerSignal": 824,
+        "avgPnlPerTradeExDustLast7dCohortPerSignal": -1.35,
+        "cohort7dMarkedPerSignal": 821,
         "rawConfidenceRows": 18409
       },
       "preRegisteredRead": {
@@ -60,7 +60,7 @@
     {
       "lane": "min_confidence_gate",
       "laneId": "lowconf",
-      "file": "data/lowconf-shadow.jsonl",
+      "file": "/Users/xsnyde2/polymarket-copybot/data/lowconf-shadow.jsonl",
       "window": {
         "cutoff": "2026-11-11T18:40:07.964Z",
         "rows": 34803,
@@ -72,7 +72,7 @@
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:44:45.512Z",
+        "generatedAt": "2026-11-11T18:46:44.432Z",
         "candidates": 34803,
         "marked": 27809,
         "awaitingResolution": 6994,
@@ -219,7 +219,7 @@
     {
       "lane": "per_wallet_cap",
       "laneId": "walletCap",
-      "file": "data/wallet-cap-shadow.jsonl",
+      "file": "/Users/xsnyde2/polymarket-copybot/data/wallet-cap-shadow.jsonl",
       "window": {
         "cutoff": "2026-11-11T18:40:07.964Z",
         "rows": 0,
@@ -237,7 +237,7 @@
       ],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:44:46.315Z",
+        "generatedAt": "2026-11-11T18:46:45.256Z",
         "candidates": 0,
         "marked": 0,
         "awaitingResolution": 0,
@@ -275,7 +275,7 @@
     {
       "lane": "longshot_shadow_ladder",
       "laneId": "longshot",
-      "file": "data/longshot-shadow.jsonl",
+      "file": "/Users/xsnyde2/polymarket-copybot/data/longshot-shadow.jsonl",
       "window": {
         "cutoff": "2026-11-11T18:40:07.964Z",
         "rows": 9256,
@@ -287,7 +287,7 @@
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:44:46.337Z",
+        "generatedAt": "2026-11-11T18:46:45.284Z",
         "candidates": 9256,
         "wouldAdmit": 119,
         "admitsAwaitingResolution": 20,

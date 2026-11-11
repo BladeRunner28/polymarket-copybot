@@ -246,12 +246,21 @@ export interface DriftSummary {
  * VIEW of the shared counterfactual read (src/lib/counterfactual-ledger.ts).
  * Field names and values are the pre-port ones; nothing lane-specific is computed
  * here beyond the rawConfidence row count the feed itself owns.
+ *
+ * `now` overrides the clock the trailing-7d cohort is measured against. Production
+ * callers omit it (wall clock). It exists so the port's reconcile gate can price the
+ * cohort at the SAME instant the pre-port golden was captured at — otherwise a diff
+ * run a few minutes later "mismatches" purely because the 7-day boundary moved.
  */
-export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSummary {
+export function summarizeDrift(
+  rows: Array<Record<string, unknown>>,
+  opts: { now?: number } = {}
+): DriftSummary {
   const s = summarizeLedger(rows, {
     dustMinEntry: DRIFT_DUST_MIN_ENTRY,
     stakeField: "stakeUsd",
     defaultStakeUsd: DRIFT_SHADOW_STAKE_USD,
+    now: opts.now,
   });
   return {
     generatedAt: new Date().toISOString(),
