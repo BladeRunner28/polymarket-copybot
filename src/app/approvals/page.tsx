@@ -40,7 +40,13 @@ type Item = {
   kanbanTaskId?: string | null;
 };
 
-type Store = { updatedAt?: string; counts?: Record<string, number>; items?: Item[] };
+type Store = {
+  updatedAt?: string;
+  counts?: Record<string, number>;
+  items?: Item[];
+  excluded?: { id?: string; card?: string; title?: string; column?: string; reason?: string }[];
+  retired?: { id?: string; card?: string; status?: string; why?: string; at?: string }[];
+};
 
 function load(): { store: Store | null; error: string | null } {
   if (!existsSync(STORE)) {
@@ -92,6 +98,8 @@ export default function ApprovalsPage() {
   }
 
   const items = store?.items ?? [];
+  const excluded = store?.excluded ?? [];
+  const retired = store?.retired ?? [];
   const pending = items.filter((i) => (i.status ?? "pending") === "pending");
   const decided = items
     .filter((i) => (i.status ?? "pending") !== "pending")
@@ -176,6 +184,32 @@ export default function ApprovalsPage() {
           </div>
         )}
       </Card>
+
+      {excluded.length + retired.length > 0 ? (
+        <Card title={`Not in the queue (${excluded.length + retired.length})`}>
+          <div className="mb-2 text-xs text-neutral-500">
+            Tagged for approval but excluded or retired by the intake, with the reason it gave. Shown so the
+            queue cannot quietly hide a card — the 2026-11-11 audit found closure inferred from a substring,
+            which had hidden six cards that explicitly said no decision had been made.
+          </div>
+          <div className="space-y-1 text-sm">
+            {excluded.map((e, n) => (
+              <div key={`x${n}`} className="flex flex-wrap items-baseline gap-2 border-b border-neutral-900 pb-1">
+                <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">excluded</span>
+                <span className="text-neutral-400">{e.title ?? e.card ?? e.id}</span>
+                <span className="ml-auto font-mono text-xs text-neutral-600">{e.reason ?? ""}</span>
+              </div>
+            ))}
+            {retired.map((r, n) => (
+              <div key={`r${n}`} className="flex flex-wrap items-baseline gap-2 border-b border-neutral-900 pb-1">
+                <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">retired</span>
+                <span className="text-neutral-400">{r.card ?? r.id}</span>
+                <span className="ml-auto font-mono text-xs text-neutral-600">{r.why ?? ""}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <div className="text-xs text-neutral-600">
         Store updated {store?.updatedAt ?? "unknown"} · written by{" "}

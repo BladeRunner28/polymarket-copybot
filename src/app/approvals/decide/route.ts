@@ -123,9 +123,24 @@ function parseTaskId(out: string): string | null {
 }
 
 function taskBody(item: Item): string {
+  // LANE A GUARD: an approval authorises a PROPOSAL, not an apply. Without this the generated task
+  // body said nothing about it and a worker could legitimately read "approved" as "go ahead and ship".
+  // The two-lane policy is instruction-enforced (a worktree isolates code, not prisma/dev.db).
+  const laneGuard =
+    item.lane === "A"
+      ? [
+          "## LANE A CONSTRAINT — PROPOSAL ONLY",
+          "",
+          "This approval authorises a PROPOSAL, not an apply. Write a `drafts/` document.",
+          "You MUST NOT run `scripts/apply-vNN.ts`, MUST NOT write `prisma/dev.db`, and MUST NOT merge to",
+          "main. The apply step belongs to the operator after he reads the proposal.",
+          "",
+        ].join("\n")
+      : "";
   return [
     `Approved via the approvals inbox at ${new Date().toISOString()}.`,
     "",
+    laneGuard,
     `## Proposal`,
     item.proposal ?? item.title ?? "(none recorded)",
     "",
