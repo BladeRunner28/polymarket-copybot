@@ -35,6 +35,7 @@ import {
   LOWCONF_SHADOW_FILE,
   LOWCONF_SHADOW_SUMMARY_FILE,
 } from "../src/lib/shadow-lowconf";
+import { appendCounterfactualResolve } from "../src/lib/counterfactual-ledger";
 import { log, logError } from "../src/lib/redact";
 import {
   ATTEMPT_FAIL_LIMIT,
@@ -148,10 +149,7 @@ async function main() {
       }
     }
     if (value === undefined) continue;
-    fs.appendFileSync(
-      SHADOW_FILE,
-      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
-    );
+    appendCounterfactualResolve(SHADOW_FILE, marketId, outcome, value);
     resolvedNow++;
   }
 
@@ -226,10 +224,7 @@ async function main() {
       }
     }
     if (value !== undefined) {
-      fs.appendFileSync(
-        DRIFT_SHADOW_FILE,
-        JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
-      );
+      appendCounterfactualResolve(DRIFT_SHADOW_FILE, marketId, outcome, value);
       dResolved++;
     }
     attempted.push({ marketId, outcome, decidedAt, resolved: value !== undefined });
@@ -411,10 +406,7 @@ async function main() {
       }
     }
     if (value === undefined) continue;
-    fs.appendFileSync(
-      WALLET_CAP_SHADOW_FILE,
-      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
-    );
+    appendCounterfactualResolve(WALLET_CAP_SHADOW_FILE, marketId, outcome, value);
     wResolved++;
   }
   const wSummary = summarizeWalletCap(readWalletCapRows());
@@ -470,10 +462,7 @@ async function main() {
       }
     }
     if (value === undefined) continue;
-    fs.appendFileSync(
-      LOWCONF_SHADOW_FILE,
-      JSON.stringify({ ts: new Date().toISOString(), type: "resolve", marketId, outcome, value }) + "\n"
-    );
+    appendCounterfactualResolve(LOWCONF_SHADOW_FILE, marketId, outcome, value);
     lResolved++;
   }
   const lSummary = summarizeLowConf(readLowConfRows());

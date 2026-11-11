@@ -1,0 +1,324 @@
+{
+  "generatedAt": "2026-11-11T18:44:46.344Z",
+  "goldenCapturedAt": "2026-11-11T18:44:31.806Z",
+  "windowCutoff": "2026-11-11T18:40:07.964Z",
+  "lanes": [
+    {
+      "lane": "late_drift_gate",
+      "laneId": "drift",
+      "file": "data/drift-shadow.jsonl",
+      "window": {
+        "cutoff": "2026-11-11T18:40:07.964Z",
+        "rows": 45421,
+        "digest": "de44f51c6ae50ac2",
+        "digestMatches": true
+      },
+      "compared": 23,
+      "mismatches": [],
+      "additive": [],
+      "status": "match",
+      "portedSummary": {
+        "generatedAt": "2026-11-11T18:44:43.219Z",
+        "candidates": 45421,
+        "marked": 41262,
+        "awaitingResolution": 4159,
+        "wins": 22068,
+        "winRate": 0.5348262323687655,
+        "wouldHavePnl": 784050.56,
+        "avgPnlPerTrade": 19,
+        "avgPnlPerTradeExDust": 0.1,
+        "dustExcluded": 2600,
+        "dustMinEntryPrice": 0.1,
+        "avgPnlPerTradeExDustLast7dCohort": -0.82,
+        "cohort7dMarked": 2752,
+        "totalMarked": 41262,
+        "stakeUsd": 10,
+        "firstCandidateAt": "2026-09-17T05:13:10.255Z",
+        "lastCandidateAt": "2026-11-11T18:32:56.739Z",
+        "signals": 12326,
+        "signalsSettled": 10532,
+        "avgPnlPerTradeExDustPerSignal": 0.6,
+        "dustExcludedPerSignal": 614,
+        "avgPnlPerTradeExDustLast7dCohortPerSignal": -1.37,
+        "cohort7dMarkedPerSignal": 824,
+        "rawConfidenceRows": 18409
+      },
+      "preRegisteredRead": {
+        "bets": 41262,
+        "clusters": 8405,
+        "roi": 1.9002,
+        "cwReturn": 1.6012,
+        "ci": [
+          0.9385,
+          3.2398
+        ],
+        "eraCheck": null,
+        "decision": "fail",
+        "note": "(d) UNVERIFIABLE — rows carry no ruleSetVersion era, so the era split cannot be read"
+      }
+    },
+    {
+      "lane": "min_confidence_gate",
+      "laneId": "lowconf",
+      "file": "data/lowconf-shadow.jsonl",
+      "window": {
+        "cutoff": "2026-11-11T18:40:07.964Z",
+        "rows": 34803,
+        "digest": "ebd59acd28ce484f",
+        "digestMatches": true
+      },
+      "compared": 84,
+      "mismatches": [],
+      "additive": [],
+      "status": "match",
+      "portedSummary": {
+        "generatedAt": "2026-11-11T18:44:45.512Z",
+        "candidates": 34803,
+        "marked": 27809,
+        "awaitingResolution": 6994,
+        "wins": 13131,
+        "winRate": 0.4721852637635298,
+        "wouldHavePnl": 547792.38,
+        "avgPnlPerTrade": 19.7,
+        "confidenceOnlyCandidates": 316,
+        "stakeUsd": 10,
+        "byBand": {
+          "0-0.2": {
+            "n": 3298,
+            "marked": 2145,
+            "wouldHavePnl": 555542.87
+          },
+          "0.8-1.01": {
+            "n": 6645,
+            "marked": 3939,
+            "wouldHavePnl": -20224.93
+          },
+          "0.4-0.6": {
+            "n": 13237,
+            "marked": 11346,
+            "wouldHavePnl": 22814.74
+          },
+          "0.6-0.8": {
+            "n": 6375,
+            "marked": 5734,
+            "wouldHavePnl": -23368.59
+          },
+          "0.2-0.4": {
+            "n": 5248,
+            "marked": 4645,
+            "wouldHavePnl": 13028.29
+          }
+        },
+        "byPriceBand": {
+          "0.05-0.1": {
+            "n": 392,
+            "marked": 301,
+            "wouldHavePnl": 6353.99
+          },
+          "0.8-1.01": {
+            "n": 6645,
+            "marked": 3939,
+            "wouldHavePnl": -20224.93
+          },
+          "0.4-0.6": {
+            "n": 13237,
+            "marked": 11346,
+            "wouldHavePnl": 22814.74
+          },
+          "0.6-0.8": {
+            "n": 6375,
+            "marked": 5734,
+            "wouldHavePnl": -23368.59
+          },
+          "0.2-0.4": {
+            "n": 5248,
+            "marked": 4645,
+            "wouldHavePnl": 13028.29
+          },
+          "0.1-0.2": {
+            "n": 862,
+            "marked": 661,
+            "wouldHavePnl": 7293.45
+          },
+          "0-0.05": {
+            "n": 2044,
+            "marked": 1183,
+            "wouldHavePnl": 541895.43
+          }
+        },
+        "byConfidenceBucket": {
+          "<0.40": {
+            "n": 13842,
+            "marked": 11001,
+            "wouldHavePnl": 511620.03
+          },
+          "0.40-0.50": {
+            "n": 13168,
+            "marked": 11189,
+            "wouldHavePnl": 24423.27
+          },
+          "0.50-0.60": {
+            "n": 6524,
+            "marked": 4915,
+            "wouldHavePnl": 14113.73
+          },
+          "0.60-0.70": {
+            "n": 1269,
+            "marked": 704,
+            "wouldHavePnl": -2364.65
+          }
+        },
+        "confidenceOnly": {
+          "n": 316,
+          "marked": 115,
+          "wouldHavePnl": -588.87,
+          "avgPnlPerTrade": -5.12
+        },
+        "dust": {
+          "minEntryPrice": 0.1,
+          "bannedTailMax": 0.05,
+          "rowsExcluded": 1484,
+          "rowPnlExcluded": 548249.42,
+          "wouldHavePnl": -457.04,
+          "avgPnlPerTrade": -0.02,
+          "signalsExcluded": 437,
+          "wouldHavePnlPerSignal": 5382.46,
+          "marketsExcluded": 340,
+          "wouldHavePnlOneBetPerMarket": 5663.41,
+          "wouldHavePnlOneBetPerMarketExTop10": 4772.93,
+          "topMarketId": "nfl-pit-cle-2026-10-02-rec-darnell-washington-3pt5",
+          "topMarketPnl": 90,
+          "topMarketShare": 0.015891499407029212,
+          "bannedTailMarkets": 199,
+          "bannedTailOneBetPerMarket": 266763.77
+        },
+        "basis": {
+          "bets": 27809,
+          "signals": 5655,
+          "markets": 4899,
+          "wouldHavePnlPerSignal": 362605.2,
+          "wouldHavePnlOneBetPerMarket": 277302.82
+        },
+        "firstCandidateAt": "2026-09-21T13:59:15.510Z",
+        "lastCandidateAt": "2026-11-11T18:32:56.739Z"
+      },
+      "preRegisteredRead": {
+        "bets": 27809,
+        "clusters": 4899,
+        "roi": 1.9698,
+        "cwReturn": 1.6027,
+        "ci": [
+          1.0228,
+          3.1613
+        ],
+        "eraCheck": null,
+        "decision": "fail",
+        "note": "(d) UNVERIFIABLE — rows carry no ruleSetVersion era, so the era split cannot be read"
+      }
+    },
+    {
+      "lane": "per_wallet_cap",
+      "laneId": "walletCap",
+      "file": "data/wallet-cap-shadow.jsonl",
+      "window": {
+        "cutoff": "2026-11-11T18:40:07.964Z",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c14",
+        "digestMatches": true
+      },
+      "compared": 10,
+      "mismatches": [],
+      "additive": [
+        "basis.bets",
+        "basis.signals",
+        "basis.markets",
+        "basis.wouldHavePnlPerSignal",
+        "basis.wouldHavePnlOneBetPerMarket"
+      ],
+      "status": "match",
+      "portedSummary": {
+        "generatedAt": "2026-11-11T18:44:46.315Z",
+        "candidates": 0,
+        "marked": 0,
+        "awaitingResolution": 0,
+        "wins": 0,
+        "winRate": null,
+        "wouldHavePnl": 0,
+        "avgPnlPerTrade": null,
+        "stakedUsd": 0,
+        "byBand": {},
+        "byWallet": {},
+        "basis": {
+          "bets": 0,
+          "signals": 0,
+          "markets": 0,
+          "wouldHavePnlPerSignal": 0,
+          "wouldHavePnlOneBetPerMarket": 0
+        },
+        "firstCandidateAt": null,
+        "lastCandidateAt": null
+      },
+      "preRegisteredRead": {
+        "bets": 0,
+        "clusters": 0,
+        "roi": 0,
+        "cwReturn": 0,
+        "ci": [
+          0,
+          0
+        ],
+        "eraCheck": null,
+        "decision": "too_few_bets",
+        "note": "KILL RULE: 0 bets < 15 — too few decisions to price the gate, NOT a verdict"
+      }
+    },
+    {
+      "lane": "longshot_shadow_ladder",
+      "laneId": "longshot",
+      "file": "data/longshot-shadow.jsonl",
+      "window": {
+        "cutoff": "2026-11-11T18:40:07.964Z",
+        "rows": 9256,
+        "digest": "f10c43d5a926e78d",
+        "digestMatches": true
+      },
+      "compared": 11,
+      "mismatches": [],
+      "additive": [],
+      "status": "match",
+      "portedSummary": {
+        "generatedAt": "2026-11-11T18:44:46.337Z",
+        "candidates": 9256,
+        "wouldAdmit": 119,
+        "admitsAwaitingResolution": 20,
+        "resolved": 99,
+        "wins": 23,
+        "winRate": 0.23232323232323232,
+        "totalPnl": 1996.49,
+        "avgPnlPerTrade": 20.17,
+        "stakeUsd": 20,
+        "firstCandidateAt": "2026-09-12T16:12:57.419Z",
+        "lastCandidateAt": "2026-11-11T18:32:56.738Z"
+      },
+      "preRegisteredRead": {
+        "bets": 99,
+        "clusters": 47,
+        "roi": 1.0083,
+        "cwReturn": 0.6021,
+        "ci": [
+          -0.4963,
+          2.7505
+        ],
+        "eraCheck": null,
+        "decision": "underpowered",
+        "note": "UNDERPOWERED: 99 bets < 150 pre-registered bar — criteria reported, no promotion and no rejection (a low-n pass is how a one-bet sample becomes a \"win\")"
+      }
+    }
+  ],
+  "summary": {
+    "lanesCompared": 4,
+    "lanesMatching": 4,
+    "mismatches": 0,
+    "verdict": "PASS — port reproduces every golden field"
+  }
+}
