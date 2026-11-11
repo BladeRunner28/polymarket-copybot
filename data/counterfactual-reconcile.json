@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T18:46:45.290Z",
+  "generatedAt": "2026-11-11T19:03:43.225Z",
   "goldenCapturedAt": "2026-11-11T18:46:38.758Z",
   "windowCutoff": "2026-11-11T18:40:07.964Z",
   "lanes": [
@@ -13,12 +13,13 @@
         "digest": "de44f51c6ae50ac2",
         "digestMatches": true
       },
+      "feedRows": 54225,
       "compared": 23,
       "mismatches": [],
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:46:41.951Z",
+        "generatedAt": "2026-11-11T19:03:39.875Z",
         "candidates": 45421,
         "marked": 41262,
         "awaitingResolution": 4159,
@@ -67,12 +68,13 @@
         "digest": "ebd59acd28ce484f",
         "digestMatches": true
       },
+      "feedRows": 40130,
       "compared": 84,
       "mismatches": [],
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:46:44.432Z",
+        "generatedAt": "2026-11-11T19:03:42.154Z",
         "candidates": 34803,
         "marked": 27809,
         "awaitingResolution": 6994,
@@ -226,6 +228,7 @@
         "digest": "e3b0c44298fc1c14",
         "digestMatches": true
       },
+      "feedRows": 0,
       "compared": 10,
       "mismatches": [],
       "additive": [
@@ -235,9 +238,29 @@
         "basis.wouldHavePnlPerSignal",
         "basis.wouldHavePnlOneBetPerMarket"
       ],
-      "status": "match",
+      "status": "empty",
+      "armCheck": {
+        "state": "DORMANT",
+        "enabled": true,
+        "walletCapUsd": 881.44,
+        "basis": "delta",
+        "blocksInWindow": 0,
+        "windowDays": 7,
+        "feedRows": 0,
+        "breached": [],
+        "tightest": {
+          "walletAddress": "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+          "notionalUsd": 505.13,
+          "ceilingUsd": 881.44,
+          "headroomUsd": 376.31,
+          "ratio": 0.5731
+        },
+        "contradiction": false,
+        "note": "DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3525.76 = $881.44 + frozen baseline (basis delta). Nearest wallet 0x17dd123a… holds $505.13 = 57.3% of its $881.44 ceiling ($376.31 of headroom = 3.8x the largest clip booked in the window ($100.00)).",
+        "capBasis": "ddBasis=realized → cap NW $6951.52 (principal $1900.00, realizedPnl $5051.52, mtm NW $6991.93)"
+      },
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:46:45.256Z",
+        "generatedAt": "2026-11-11T19:03:42.940Z",
         "candidates": 0,
         "marked": 0,
         "awaitingResolution": 0,
@@ -282,12 +305,13 @@
         "digest": "f10c43d5a926e78d",
         "digestMatches": true
       },
+      "feedRows": 9304,
       "compared": 11,
       "mismatches": [],
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T18:46:45.284Z",
+        "generatedAt": "2026-11-11T19:03:43.217Z",
         "candidates": 9256,
         "wouldAdmit": 119,
         "admitsAwaitingResolution": 20,
@@ -317,8 +341,12 @@
   ],
   "summary": {
     "lanesCompared": 4,
-    "lanesMatching": 4,
+    "lanesMatching": 3,
+    "lanesEmpty": [
+      "walletCap"
+    ],
+    "armContradictions": 0,
     "mismatches": 0,
-    "verdict": "PASS — port reproduces every golden field"
+    "verdict": "PASS — every POPULATED lane reproduces its golden; empty lane(s) reported as EMPTY, not as matches"
   }
 }

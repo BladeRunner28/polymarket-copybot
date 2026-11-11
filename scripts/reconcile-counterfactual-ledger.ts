@@ -38,12 +38,14 @@ import {
   readWalletCapRows,
   summarizeWalletCap,
   WALLET_CAP_SHADOW_FILE,
+  COUNTERFACTUAL_RECONCILE_FILE,
 } from "../src/lib/shadow-wallet-cap";
 import { readShadowRows, summarizeShadow, SHADOW_FILE } from "../src/lib/shadow-longshot";
 import { evaluateShadowRead } from "../src/lib/shadow-read";
+import { readWalletCapArming } from "../src/lib/wallet-cap-arming";
 
 const GOLDEN_FILE = join(__dirname, "..", "data", "counterfactual-ledger-golden.json");
-const REPORT_FILE = join(__dirname, "..", "data", "counterfactual-reconcile.json");
+const REPORT_FILE = COUNTERFACTUAL_RECONCILE_FILE;
 
 interface GoldenLane {
   lane: string;
@@ -150,27 +152,38 @@ interface LaneReconcile {
   laneId: string;
   file: string;
   window: { cutoff: string; rows: number; digest: string; digestMatches: boolean };
+  /** Rows the lane's own feed holds on disk (0 = the file was never written). */
+  feedRows: number;
   compared: number;
   mismatches: Array<{ path: string; golden: unknown; ported: unknown }>;
   /** Fields the port ADDS (e.g. the ex-dust read the confidence lane never had). */
   additive: string[];
-  status: "match" | "mismatch" | "window_moved";
+  /** `empty` = the feed holds no rows, so the diff below attests the empty path only. */
+  status: "match" | "mismatch" | "window_moved" | "empty";
+  /**
+   * Present on an EMPTY lane: the exact reason it is empty. `contradiction` is
+   * the falsifiable part — an empty feed while the gated rail fired (or is
+   * already breached) means the writer is broken, and the gate exits 1.
+   */
+  armCheck?: Record<string, unknown>;
   /** The ported summary itself, so the report is auditable without re-running the read. */
   portedSummary: Record<string, unknown>;
   preRegisteredRead: Record<string, unknown>;
 }
 
-function main() {
+async function main() {
   const golden = JSON.parse(fs.readFileSync(GOLDEN_FILE, "utf-8")) as Golden;
   const cutoff = golden.windowCutoff;
 
   const results: LaneReconcile[] = [];
   let failures = 0;
+  let armContradictions = 0;
 
   for (const def of LANES) {
     const g = golden.lanes[def.id];
     if (!g) throw new Error(`golden capture is missing lane "${def.id}"`);
-    const candidates = windowRows(def.read(), cutoff);
+    const feed = def.read();
+    const candidates = windowRows(feed, cutoff);
     const rows = [...candidates, ...resolveRows(g.resolves)];
     const rowsDigest = digest(candidates);
     const digestMatches = rowsDigest === g.rowsDigest;
@@ -196,22 +209,65 @@ function main() {
     const readRows = toShadowReadRows(rows, def.readOptions);
     const read = evaluateShadowRead(readRows);
 
-    const status: LaneReconcile["status"] = !digestMatches
-      ? "window_moved"
-      : mismatches.length === 0
-        ? "match"
-        : "mismatch";
+    // A lane with NOTHING in the frozen window cannot attest anything: the golden's
+    // own fields are all zeros, so a field-for-field match is a property of the empty
+    // path, not evidence the lane works. Score it EMPTY and say why (card t_bfb9e54c:
+    // a 10/10 match on an empty feed looked like evidence for 53 days). Keyed on the
+    // WINDOW, not the feed, so the day the lane starts writing still reports honestly.
+    const status: LaneReconcile["status"] =
+      candidates.length === 0
+        ? "empty"
+        : !digestMatches
+          ? "window_moved"
+          : mismatches.length === 0
+            ? "match"
+            : "mismatch";
     if (mismatches.length > 0) failures++;
+
+    let armCheck: Record<string, unknown> | undefined;
+    if (status === "empty") {
+      const armRead = await readWalletCapArming({ feedRows: feed.length });
+      if (armRead.ok) {
+        const a = armRead.arming;
+        armCheck = {
+          state: a.state,
+          enabled: a.enabled,
+          walletCapUsd: Math.round(a.walletCapUsd * 100) / 100,
+          basis: a.basis,
+          blocksInWindow: a.blocksInWindow,
+          windowDays: a.windowDays,
+          feedRows: a.feedRows,
+          breached: a.breached,
+          tightest: a.tightest
+            ? {
+                walletAddress: a.tightest.walletAddress,
+                notionalUsd: Math.round(a.tightest.notionalUsd * 100) / 100,
+                ceilingUsd: Math.round(a.tightest.ceilingUsd * 100) / 100,
+                headroomUsd: Math.round(a.tightest.headroomUsd * 100) / 100,
+                ratio: Math.round(a.tightest.ratio * 10000) / 10000,
+              }
+            : null,
+          contradiction: a.contradiction,
+          note: a.note,
+          capBasis: armRead.capBasis,
+        };
+        if (a.contradiction) armContradictions++;
+      } else {
+        armCheck = { unavailable: armRead.error };
+      }
+    }
 
     results.push({
       lane: g.lane,
       laneId: def.id,
       file: def.file.replace(/^.*\.worktrees\/[^/]+\//, ""),
       window: { cutoff, rows: candidates.length, digest: rowsDigest.slice(0, 16), digestMatches },
+      feedRows: feed.length,
       compared: Object.keys(goldenFlat).length,
       mismatches,
       additive,
       status,
+      armCheck,
       portedSummary: ported,
       preRegisteredRead: {
         bets: read.bets,
@@ -234,18 +290,50 @@ function main() {
     summary: {
       lanesCompared: results.length,
       lanesMatching: results.filter((r) => r.status === "match").length,
+      lanesEmpty: results.filter((r) => r.status === "empty").map((r) => r.laneId),
+      armContradictions,
       mismatches: results.reduce((n, r) => n + r.mismatches.length, 0),
-      verdict: failures === 0 ? "PASS — port reproduces every golden field" : "FAIL — port bug",
+      verdict:
+        failures > 0 || armContradictions > 0
+          ? failures > 0
+            ? "FAIL — port bug"
+            : "FAIL — an EMPTY lane's gate is firing, so its writer is broken (feed silent while blocks exist)"
+          : results.some((r) => r.status === "empty")
+            ? "PASS — every POPULATED lane reproduces its golden; empty lane(s) reported as EMPTY, not as matches"
+            : "PASS — port reproduces every golden field",
     },
   };
   fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
 
   for (const r of results) {
+    const emptyNote =
+      r.status === "empty"
+        ? `\n  VACUOUS — ${
+            r.feedRows === 0
+              ? "the feed holds 0 rows"
+              : `the window holds 0 rows of the feed's ${r.feedRows}`
+          }, so the ${r.compared}-field match below attests the EMPTY path only, not the lane`
+        : "";
     console.log(
       `\n[${r.status.toUpperCase()}] ${r.lane} (${r.laneId}) window<=${cutoff} rows=${r.window.rows} ` +
-        `digest=${r.window.digest}${r.window.digestMatches ? "" : " (MOVED since capture)"}`
+        `digest=${r.window.digest}${r.window.digestMatches ? "" : " (MOVED since capture)"}${emptyNote}`
     );
     console.log(`  compared ${r.compared} golden fields, ${r.mismatches.length} mismatch(es)`);
+    if (r.armCheck) {
+      const a = r.armCheck as Record<string, unknown>;
+      if (a.unavailable) {
+        const why = String(a.unavailable).replace(/\s+/g, " ").trim();
+        console.log(`  arm check: UNAVAILABLE — ${why.length > 240 ? `${why.slice(0, 240)}…` : why}`);
+      } else {
+        console.log(
+          `  arm check: state=${String(a.state)} ceiling=$${Number(a.walletCapUsd).toFixed(2)} ` +
+            `(basis ${String(a.basis)}) blocks/${String(a.windowDays)}d=${String(a.blocksInWindow)} ` +
+            `breached=${(a.breached as string[]).length} contradiction=${String(a.contradiction)}`
+        );
+        console.log(`    ${String(a.note)}`);
+        console.log(`    cap: ${String(a.capBasis)}`);
+      }
+    }
     for (const m of r.mismatches.slice(0, 10)) {
       console.log(`    ${m.path}: golden=${JSON.stringify(m.golden)} ported=${JSON.stringify(m.ported)}`);
     }
@@ -258,10 +346,15 @@ function main() {
   }
 
   console.log(
-    `\n${report.summary.verdict}: ${report.summary.lanesMatching}/${report.summary.lanesCompared} lanes match, ` +
-      `${report.summary.mismatches} field mismatch(es). Report: ${REPORT_FILE}`
+    `\n${report.summary.verdict}\n  ${report.summary.lanesMatching}/${report.summary.lanesCompared} lanes match` +
+      `${report.summary.lanesEmpty.length ? `, ${report.summary.lanesEmpty.length} EMPTY (${report.summary.lanesEmpty.join(", ")})` : ""}` +
+      `, ${report.summary.mismatches} field mismatch(es), ${report.summary.armContradictions} arm contradiction(s). ` +
+      `Report: ${REPORT_FILE}`
   );
-  process.exit(failures === 0 ? 0 : 1);
+  process.exit(failures === 0 && armContradictions === 0 ? 0 : 1);
 }
 
-main();
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -26,8 +26,10 @@ import {
 import {
   readWalletCapRows,
   summarizeWalletCap,
+  walletCapFeedState,
   WALLET_CAP_SHADOW_FILE,
   WALLET_CAP_SHADOW_SUMMARY_FILE,
+  COUNTERFACTUAL_RECONCILE_FILE,
 } from "../src/lib/shadow-wallet-cap";
 import {
   readLowConfRows,
@@ -410,6 +412,18 @@ async function main() {
     wResolved++;
   }
   const wSummary = summarizeWalletCap(readWalletCapRows());
+  // An all-zero feed must say WHY it is zero (card t_bfb9e54c): the reconcile
+  // gate's arm check is the evidence, read from its report so the marker needs
+  // no database. Only attached when there is nothing to report.
+  if (wSummary.candidates === 0) {
+    let report: unknown = null;
+    try {
+      report = JSON.parse(fs.readFileSync(COUNTERFACTUAL_RECONCILE_FILE, "utf-8"));
+    } catch {
+      report = null;
+    }
+    wSummary.feedState = walletCapFeedState(report);
+  }
   fs.writeFileSync(WALLET_CAP_SHADOW_SUMMARY_FILE, JSON.stringify(wSummary, null, 2));
   const bandLine = Object.entries(wSummary.byBand)
     .map(([b, v]) => `${b}: ${v.n} (${v.marked} marked, $${v.wouldHavePnl.toFixed(2)})`)
@@ -421,6 +435,7 @@ async function main() {
       `${wSummary.winRate === null ? "—" : (wSummary.winRate * 100).toFixed(1) + "%"}), ` +
       `$${wSummary.wouldHavePnl.toFixed(2)} on $${wSummary.stakedUsd.toFixed(2)} staked ` +
       `(${wSummary.avgPnlPerTrade === null ? "—" : "$" + wSummary.avgPnlPerTrade.toFixed(2)}/trade) | ${bandLine}. ` +
+      `${wSummary.feedState ? `FEED EMPTY: ${wSummary.feedState.note} ` : ""}` +
       `Summary: ${WALLET_CAP_SHADOW_SUMMARY_FILE}`
   );
 

@@ -35,6 +35,12 @@ import { join } from "path";
 
 export const WALLET_CAP_SHADOW_FILE = join(__dirname, "..", "..", "data", "wallet-cap-shadow.jsonl");
 export const WALLET_CAP_SHADOW_SUMMARY_FILE = join(__dirname, "..", "..", "data", "wallet-cap-shadow-summary.json");
+/**
+ * The reconcile gate's report (scripts/reconcile-counterfactual-ledger.ts). The
+ * summary reads its walletCap ARM CHECK from here so an all-zero summary can say
+ * WHY it is all zeros without the marker needing a database (card t_bfb9e54c).
+ */
+export const COUNTERFACTUAL_RECONCILE_FILE = join(__dirname, "..", "..", "data", "counterfactual-reconcile.json");
 
 /** Same band edges the calibration table uses, so the read joins to it directly. */
 export const BAND_EDGES: ReadonlyArray<[number, number]> = COARSE_BAND_EDGES;
@@ -127,6 +133,57 @@ export interface WalletCapSummary {
   };
   firstCandidateAt: string | null;
   lastCandidateAt: string | null;
+  /**
+   * Present ONLY when `candidates === 0` (card t_bfb9e54c): why the feed is
+   * empty, read from the reconcile gate's arm check. Without it an all-zero
+   * summary is indistinguishable from a clean result — the exact defect that let
+   * this lane sit in a reconcile table as a 10/10 match for 53 days.
+   */
+  feedState?: WalletCapFeedState;
+}
+
+export interface WalletCapFeedState {
+  note: string;
+  /** The gate's arm check for this lane (state, blocks, headroom), when on disk. */
+  armCheck: Record<string, unknown> | null;
+  /** When that arm check was taken; null when none exists. */
+  armCheckAsOf: string | null;
+  /** Arm check older than ARM_CHECK_STALE_MS — still shown, but flagged. */
+  stale: boolean;
+}
+
+/** An arm check older than this is flagged rather than trusted silently. */
+export const ARM_CHECK_STALE_MS = 7 * 86400_000;
+
+/**
+ * Build the feed-state block from the gate's report. Pure-ish: takes the parsed
+ * report so the marker can read the file once and a test can pass a fixture.
+ */
+export function walletCapFeedState(report: unknown, nowMs: number = Date.now()): WalletCapFeedState {
+  const lanes = (report as { lanes?: Array<Record<string, unknown>> } | null)?.lanes;
+  const lane = Array.isArray(lanes) ? lanes.find((l) => l && l.laneId === "walletCap") : undefined;
+  const armCheck = (lane?.armCheck as Record<string, unknown> | undefined) ?? null;
+  const asOf = ((report as { generatedAt?: string } | null)?.generatedAt as string | undefined) ?? null;
+  if (!armCheck) {
+    return {
+      note:
+        "0 candidates: no arm check on disk, so this emptiness is UNEXPLAINED — run `npm run shadow:reconcile`.",
+      armCheck: null,
+      armCheckAsOf: null,
+      stale: false,
+    };
+  }
+  const ageMs = asOf ? nowMs - Date.parse(asOf) : Number.NaN;
+  const stale = !Number.isFinite(ageMs) || ageMs > ARM_CHECK_STALE_MS;
+  const note = String(armCheck.note ?? "");
+  return {
+    note: stale
+      ? `0 candidates; arm check is STALE (${asOf ?? "unknown time"}, > ${ARM_CHECK_STALE_MS / 86400_000}d) — re-run \`npm run shadow:reconcile\`. Last read: ${note}`
+      : note,
+    armCheck,
+    armCheckAsOf: asOf,
+    stale,
+  };
 }
 
 /**

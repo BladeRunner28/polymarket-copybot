@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T04:26:58.413Z",
+  "generatedAt": "2026-11-11T19:00:50.631Z",
   "candidates": 0,
   "marked": 0,
   "awaitingResolution": 0,
@@ -10,6 +10,38 @@
   "stakedUsd": 0,
   "byBand": {},
   "byWallet": {},
+  "basis": {
+    "bets": 0,
+    "signals": 0,
+    "markets": 0,
+    "wouldHavePnlPerSignal": 0,
+    "wouldHavePnlOneBetPerMarket": 0
+  },
   "firstCandidateAt": null,
-  "lastCandidateAt": null
+  "lastCandidateAt": null,
+  "feedState": {
+    "note": "DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3525.76 = $881.44 + frozen baseline (basis delta). Nearest wallet 0x17dd123a… holds $505.13 = 57.3% of its $881.44 ceiling ($376.31 of headroom = 3.8x the largest clip booked in the window ($100.00)).",
+    "armCheck": {
+      "state": "DORMANT",
+      "enabled": true,
+      "walletCapUsd": 881.44,
+      "basis": "delta",
+      "blocksInWindow": 0,
+      "windowDays": 7,
+      "feedRows": 0,
+      "breached": [],
+      "tightest": {
+        "walletAddress": "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+        "notionalUsd": 505.13,
+        "ceilingUsd": 881.44,
+        "headroomUsd": 376.31,
+        "ratio": 0.5731
+      },
+      "contradiction": false,
+      "note": "DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3525.76 = $881.44 + frozen baseline (basis delta). Nearest wallet 0x17dd123a… holds $505.13 = 57.3% of its $881.44 ceiling ($376.31 of headroom = 3.8x the largest clip booked in the window ($100.00)).",
+      "capBasis": "ddBasis=realized → cap NW $6951.52 (principal $1900.00, realizedPnl $5051.52, mtm NW $6991.93)"
+    },
+    "armCheckAsOf": "2026-11-11T18:59:39.120Z",
+    "stale": false
+  }
 }
