@@ -109,16 +109,39 @@ def fetch_json(url: str) -> tuple[Any | None, str]:
 
 
 def fetch_text(url: str) -> tuple[str | None, str]:
-    """Fetch a non-JSON body (Reddit's Atom feeds). Same fail-loud contract as fetch_json."""
+    """Fetch a non-JSON body (Reddit's Atom feeds). Same fail-loud contract as fetch_json.
+
+    Records Reddit's own rate-limit reset (`x-ratelimit-reset`, seconds) in REDDIT_RESET_S so the
+    caller waits the window the venue states instead of a guessed pause. Measured 2026-11-11: a
+    burst leaves `x-ratelimit-remaining: 0.0` and a 48 s reset, so a 3 s spacing guarantees 429s.
+    """
+    global REDDIT_RESET_S
     try:
         req = urllib.request.Request(
             url, headers={**UA, "Accept": "application/atom+xml, text/xml, */*"})
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            _note_reset(r.headers)
             return r.read().decode("utf-8", "replace"), "ok"
     except urllib.error.HTTPError as e:
+        _note_reset(e.headers)
         return None, _http_error_note(e)
     except Exception as e:  # noqa: BLE001
         return None, f"{type(e).__name__}: {e}"
+
+
+REDDIT_RESET_S = 0.0  # seconds Reddit said to wait; 0 = it told us nothing
+
+
+def _note_reset(headers) -> None:
+    """Keep the longest reset seen in this call — a 429 body can carry one too."""
+    global REDDIT_RESET_S
+    try:
+        reset = float(headers.get("x-ratelimit-reset") or 0)
+        remaining = float(headers.get("x-ratelimit-remaining") or 1)
+    except (TypeError, ValueError):
+        return
+    if remaining <= 0 and reset > 0:
+        REDDIT_RESET_S = max(REDDIT_RESET_S, reset)
 
 
 def ms(dt: datetime) -> int:
@@ -743,8 +766,10 @@ REDDIT_ROTATION = [
     ("r/algotrading top/week", "https://www.reddit.com/r/algotrading/top/.rss?t=week"),
     ("search: kalshi bot", "https://www.reddit.com/search.rss?q=kalshi%20bot&sort=new&t=month"),
 ]
-REDDIT_PAUSE_S = 3.0     # between feeds: the 429s here are self-inflicted, not a block
-REDDIT_RETRY_S = 30.0    # one backoff retry before declaring a feed failed
+REDDIT_PAUSE_S = 25.0    # between feeds: the 429s here are self-inflicted, not a block.
+                         # 3.0 s was measured too tight on 2026-11-11 (a 2nd request 8 s after a
+                         # 200 still returned 429), which left 2 of 3 feeds on 45-72 h old caches.
+REDDIT_RETRY_S = 75.0    # one backoff retry before declaring a feed failed (was 30 s: not enough)
 REDDIT_TTL_H = 26.0      # fetch each feed at most once per day, regardless of run cadence
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache" / "research-recon"
 YIELD_LOG = Path(__file__).resolve().parent.parent / "data" / "radar-yield.jsonl"
@@ -780,6 +805,21 @@ def reddit_feeds() -> list[tuple[str, str]]:
     """
     wd = datetime.now().weekday()
     return REDDIT_FIXED + [REDDIT_ROTATION[wd % len(REDDIT_ROTATION)]]
+
+
+def reddit_feeds_stalest_first() -> list[tuple[str, str]]:
+    """The run's feeds, oldest cache first (never-fetched ahead of everything).
+
+    Why order matters: Reddit's burst limit lands on request #2, and a fixed order puts the same
+    feed in that slot every run. On 2026-11-11 the two fixed feeds were fetched 3 s apart, #2
+    429'd, and the tail slot went three days without a refresh. Sorting by cache age makes slot
+    #1 rotate by staleness, so a feed cannot be starved by its position in the list.
+    """
+    def age(item: tuple[str, str]) -> float:
+        f = CACHE_DIR / f"{factsheet_status.slug(item[0])}.xml"
+        return (time.time() - f.stat().st_mtime) if f.exists() else float("inf")
+
+    return sorted(reddit_feeds(), key=age, reverse=True)
 
 
 RELEVANT = re.compile(
@@ -856,24 +896,37 @@ def cached_text(slug: str, url: str, ttl_h: float) -> tuple[str | None, str]:
     return body, "fresh"
 
 
+def _reddit_wait() -> None:
+    """Wait Reddit's own stated reset (plus 2 s) when it gave one, else the floor pause.
+
+    `x-ratelimit-remaining: 0.0` with `x-ratelimit-reset: 48` is what a burst looks like; sleeping
+    a fixed 3 s into that window is a guaranteed 429, which is how two feeds sat 45-72 h stale.
+    """
+    global REDDIT_RESET_S
+    wait = max(REDDIT_PAUSE_S, REDDIT_RESET_S + 2.0) if REDDIT_RESET_S else REDDIT_PAUSE_S
+    REDDIT_RESET_S = 0.0
+    time.sleep(wait)
+
+
 def reddit_recon(skipped: bool = False) -> list[str]:
     out: list[str] = []
-    rate_limited = False
-    for i, (label, url) in enumerate(reddit_feeds()):
+    # Consecutive 429s with no cached copy: two in a row means the host is throttled.
+    hard_429s = 0
+    for i, (label, url) in enumerate(reddit_feeds_stalest_first()):
         block = "reddit." + factsheet_status.slug(label)
         if skipped:
             REC.mark(block, "gated_off", "skipped by --skip-recon")
             continue
-        if rate_limited:
-            REC.mark(block, "rate_limited", "not attempted: backing off after a 429")
-            out.append(f"- (not attempted — {label}: backing off after a 429 rather than making it worse)")
+        if hard_429s >= 2:
+            REC.mark(block, "rate_limited", "not attempted: backing off after two consecutive 429s")
+            out.append(f"- (not attempted — {label}: backing off after two consecutive 429s rather than making it worse)")
             continue
         if i:
-            time.sleep(REDDIT_PAUSE_S)
+            _reddit_wait()
         slug = factsheet_status.slug(label)
         body, err = cached_text(slug, url, REDDIT_TTL_H)
         if body is None and "429" in err:
-            time.sleep(REDDIT_RETRY_S)
+            time.sleep(max(REDDIT_RETRY_S, REDDIT_RESET_S + 2))
             body, err = cached_text(slug, url, REDDIT_TTL_H)
             if body is not None:
                 err = f"recovered after {REDDIT_RETRY_S:.0f}s backoff"
@@ -881,13 +934,15 @@ def reddit_recon(skipped: bool = False) -> list[str]:
             state = factsheet_status.classify_fetch_note(err)
             REC.mark(block, state, err)
             out.append(f"- **SOURCE FAILED — {label}**: {err}"
-                       + ("  ← rate-limited; leaving the remaining feeds to the next run"
-                          if "429" in err else ""))
+                       + ("  ← rate-limited with no cached copy" if "429" in err else ""))
             REDDIT_STATS.append({"label": label, "state": "429" if "429" in err else "error",
                                  "note": err, "entries": 0, "relevant": 0})
             if "429" in err:
-                rate_limited = True
+                hard_429s += 1
+            else:
+                hard_429s = 0
             continue
+        hard_429s = 0
         try:
             root = ET.fromstring(body)
         except ET.ParseError as e:
