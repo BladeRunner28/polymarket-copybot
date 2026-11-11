@@ -3,20 +3,32 @@
  *
  * The `price drifted X > max 0.004 (too late)` gate is the single largest volume
  * blocker in the book (~2,000 skips/24h, and 905 of a day's skips carried
- * copyScore >= 80) yet its counterfactual has never been measured: nobody knows
- * what those would-have-copied entries were worth. This module is WRITE-ONLY
- * instrumentation — it records the would-have entry price and the market's
- * current state at decision time, and scripts/mark-shadow-longshot.ts marks each
- * candidate to settlement from the same feed machinery, so the gate can be
- * judged on data at the Oct 9 window close.
+ * copyScore >= 80) yet its counterfactual was never measured: nobody knew what
+ * those would-have-copied entries were worth. This module records the would-have
+ * entry and the market's state at decision time; scripts/mark-shadow-longshot.ts
+ * marks each candidate to settlement so the gate can be judged on data.
  *
- * NOTHING here changes behaviour: `maxPriceDrift` must not move before Oct 9 —
- * the Oct 8 Kelly-window read is benchmarked against the pre-Kelly baseline
- * measured at drift 0.004, so moving the gate now would contaminate the
- * comparison (the daily report's own caveat).
+ * WRITE-ONLY instrumentation: no gate, threshold, sizing or routing reads this
+ * file, and `maxPriceDrift` must not move on the strength of it.
+ *
+ * 2026-10-29 (card phil-counterfactual-ledger-primitive): the writer and the
+ * summary math are no longer local. Rows go through the shared append-only
+ * primitive (src/lib/counterfactual-ledger.ts) and `summarizeDrift` is a VIEW of
+ * the shared read — same fill rule, same dust floor, same per-signal dedupe as
+ * every other declined-gate lane. The published field names and their values are
+ * unchanged (verified field-for-field against the pre-port implementation by
+ * scripts/reconcile-counterfactual-ledger.ts on a frozen window).
  */
 
-import * as fs from "fs";
+import {
+  appendCounterfactualCandidate,
+  dedupeSignals as dedupeSignalsShared,
+  ledgerEntryPrice,
+  priceBandOf,
+  readLedger,
+  summarizeLedger,
+  COARSE_BAND_EDGES,
+} from "./counterfactual-ledger";
 import { join } from "path";
 
 export const DRIFT_SHADOW_FILE = join(__dirname, "..", "..", "data", "drift-shadow.jsonl");
@@ -34,6 +46,10 @@ export const DRIFT_SHADOW_STAKE_USD = 10;
  * floor are not executable at any sane size on Polymarket, so they are excluded
  * from the per-trade average and reported separately. The headline figure is kept
  * for continuity and labelled as dust-inclusive.
+ *
+ * The floor is passed to the shared read as an OPTION (the primitive itself has
+ * no floor and no other threshold), and the same option is what the minConfidence
+ * lane now passes — one policy, one place.
  */
 export const DRIFT_DUST_MIN_ENTRY = Number(process.env.DRIFT_DUST_MIN_ENTRY ?? 0.10);
 
@@ -88,43 +104,39 @@ export interface DriftShadowCandidate {
 }
 
 export function appendDriftShadow(c: DriftShadowCandidate): void {
-  const row = {
-    ts: new Date().toISOString(),
-    type: "candidate",
-    source: "late_drift_gate",
+  appendCounterfactualCandidate({
+    lane: "late_drift_gate",
+    file: DRIFT_SHADOW_FILE,
     marketId: c.marketId,
     outcome: c.outcome,
     side: c.side,
-    wallet: c.walletAddress,
-    currentPrice: c.currentPrice,
-    walletEntryPrice: c.walletEntryPrice,
-    detectedPrice: c.detectedPrice,
-    drift: Math.round(c.drift * 10000) / 10000,
-    maxDrift: c.maxDrift,
+    walletAddress: c.walletAddress,
+    entryPrice: c.currentPrice,
+    fill: { kind: "fixed_clip", stakeUsd: DRIFT_SHADOW_STAKE_USD },
     copyScore: c.copyScore,
     confidence: c.confidence,
     ttrHours: c.ttrHours ?? null,
     spread: c.spread ?? null,
     liquidity: c.liquidity ?? null,
-    otherBlocks: c.otherBlocks ?? null,
-    otherRiskKinds: c.otherRiskKinds ?? null,
-    rawConfidence: c.rawConfidence ?? null,
-    stakeUsd: DRIFT_SHADOW_STAKE_USD,
     reason: c.reason,
-  };
-  fs.appendFileSync(DRIFT_SHADOW_FILE, JSON.stringify(row) + "\n");
+    extras: {
+      // Legacy field names kept verbatim: existing readers, dashboards and the
+      // frozen golden diff all read these keys.
+      source: "late_drift_gate",
+      currentPrice: c.currentPrice,
+      walletEntryPrice: c.walletEntryPrice,
+      detectedPrice: c.detectedPrice,
+      drift: Math.round(c.drift * 10000) / 10000,
+      maxDrift: c.maxDrift,
+      otherBlocks: c.otherBlocks ?? null,
+      otherRiskKinds: c.otherRiskKinds ?? null,
+      rawConfidence: c.rawConfidence ?? null,
+    },
+  });
 }
 
 export function readDriftRows(): Array<Record<string, unknown>> {
-  try {
-    return fs
-      .readFileSync(DRIFT_SHADOW_FILE, "utf-8")
-      .split("\n")
-      .filter((l) => l.trim().length > 0)
-      .map((l) => JSON.parse(l) as Record<string, unknown>);
-  } catch {
-    return [];
-  }
+  return readLedger(DRIFT_SHADOW_FILE);
 }
 
 /**
@@ -148,19 +160,20 @@ export const DRIFT_DECAY_SERIES_PER_SIGNAL_FILE = join(
  * One row per distinct copy signal: (marketId, outcome, wallet), keeping the
  * EARLIEST poll — the decision at which the signal first appeared, which is also
  * the price a relaxed tolerance would have paid.
+ *
+ * The rule now lives in the shared primitive so every lane's per-opportunity
+ * basis uses one key and one tie-break; this re-export keeps the drift feed's
+ * public surface (tests and the marker import it from here).
  */
 export function dedupeSignals(
   rows: Array<Record<string, unknown>>
 ): Map<string, Record<string, unknown>> {
-  const out = new Map<string, Record<string, unknown>>();
-  for (const c of rows) {
-    if (c.type !== "candidate") continue;
-    const key = `${c.marketId}|${c.outcome}|${c.wallet}`;
-    const prev = out.get(key);
-    if (!prev || String(c.ts) < String(prev.ts)) out.set(key, c);
-  }
-  return out;
+  return dedupeSignalsShared(rows);
 }
+
+/** Coarse band edges, re-exported for readers that band drift rows by price. */
+export { COARSE_BAND_EDGES as DRIFT_BAND_EDGES };
+export { priceBandOf as driftBandOf };
 
 /**
  * Consecutive days at or below the bar, read from the END of a day series (a
@@ -229,102 +242,49 @@ export interface DriftSummary {
   rawConfidenceRows: number;
 }
 
+/**
+ * VIEW of the shared counterfactual read (src/lib/counterfactual-ledger.ts).
+ * Field names and values are the pre-port ones; nothing lane-specific is computed
+ * here beyond the rawConfidence row count the feed itself owns.
+ */
 export function summarizeDrift(rows: Array<Record<string, unknown>>): DriftSummary {
-  const candidates = rows.filter((r) => r.type === "candidate");
-  const resolves = new Map<string, number>();
-  for (const r of rows) {
-    if (r.type === "resolve") resolves.set(`${r.marketId}|${r.outcome}`, Number(r.value));
-  }
-  let marked = 0;
-  let wins = 0;
-  let pnl = 0;
-  let pnlExDust = 0;
-  let markedExDust = 0;
-  // trailing 7-day cohort (decision date, not settle date)
-  const cohortCutoff = Date.now() - 7 * 86400000;
-  let cohortPnl = 0;
-  let cohortMarked = 0;
-  for (const c of candidates) {
-    const v = resolves.get(`${c.marketId}|${c.outcome}`);
-    if (v === undefined) continue;
-    marked++;
-    if (v > 0) wins++;
-    const entry = Number(c.currentPrice);
-    const rowPnl = entry > 0 ? ((v - entry) / entry) * Number(c.stakeUsd ?? DRIFT_SHADOW_STAKE_USD) : 0;
-    pnl += rowPnl;
-    if (entry >= DRIFT_DUST_MIN_ENTRY) {
-      pnlExDust += rowPnl;
-      markedExDust++;
-      const decidedAt = Date.parse(String(c.ts));
-      if (Number.isFinite(decidedAt) && decidedAt >= cohortCutoff) {
-        cohortPnl += rowPnl;
-        cohortMarked++;
-      }
-    }
-  }
-  const ts = candidates.map((r) => String(r.ts)).sort();
-
-  // ---- instrument v2: the same statistics, one row per SIGNAL ----------------
-  // The loop above counts one trade per POLL: a market that stays drifted is
-  // counted once per tick, so its mean answers "what did the average poll of a
-  // blocked market return". This pass keeps the earliest poll per
-  // (marketId, outcome, wallet) so the number answers "what would the average
-  // blocked copy have returned" — the question a gate decision needs.
-  let sigPnlEx = 0;
-  let sigMarkedEx = 0;
-  let sigDust = 0;
-  let sigCohortPnl = 0;
-  let sigCohortN = 0;
-  for (const c of dedupeSignals(rows).values()) {
-    const v = resolves.get(`${c.marketId}|${c.outcome}`);
-    if (v === undefined) continue;
-    const entry = Number(c.currentPrice);
-    if (!(entry >= DRIFT_DUST_MIN_ENTRY)) {
-      sigDust++;
-      continue;
-    }
-    const rowPnl = entry > 0 ? ((v - entry) / entry) * Number(c.stakeUsd ?? DRIFT_SHADOW_STAKE_USD) : 0;
-    sigPnlEx += rowPnl;
-    sigMarkedEx++;
-    const decidedAt = Date.parse(String(c.ts));
-    if (Number.isFinite(decidedAt) && decidedAt >= cohortCutoff) {
-      sigCohortPnl += rowPnl;
-      sigCohortN++;
-    }
-  }
-  const signals = dedupeSignals(rows);
-  const signalsSettled = [...signals.values()].filter(
-    (c) => resolves.get(`${c.marketId}|${c.outcome}`) !== undefined
-  ).length;
-
+  const s = summarizeLedger(rows, {
+    dustMinEntry: DRIFT_DUST_MIN_ENTRY,
+    stakeField: "stakeUsd",
+    defaultStakeUsd: DRIFT_SHADOW_STAKE_USD,
+  });
   return {
     generatedAt: new Date().toISOString(),
-    candidates: candidates.length,
-    marked,
-    awaitingResolution: candidates.length - marked,
-    wins,
-    winRate: marked ? wins / marked : null,
-    wouldHavePnl: Math.round(pnl * 100) / 100,
-    avgPnlPerTrade: marked ? Math.round((pnl / marked) * 100) / 100 : null,
-    avgPnlPerTradeExDust: markedExDust ? Math.round((pnlExDust / markedExDust) * 100) / 100 : null,
-    dustExcluded: marked - markedExDust,
+    candidates: s.candidates,
+    marked: s.marked,
+    awaitingResolution: s.awaitingResolution,
+    wins: s.wins,
+    winRate: s.winRate,
+    wouldHavePnl: s.wouldHavePnl,
+    avgPnlPerTrade: s.avgPnlPerTrade,
+    avgPnlPerTradeExDust: s.exDust.avgPnlPerTrade,
+    dustExcluded: s.exDust.excluded,
     dustMinEntryPrice: DRIFT_DUST_MIN_ENTRY,
-    avgPnlPerTradeExDustLast7dCohort: cohortMarked ? Math.round((cohortPnl / cohortMarked) * 100) / 100 : null,
-    cohort7dMarked: cohortMarked,
-    totalMarked: marked,
+    avgPnlPerTradeExDustLast7dCohort: s.cohort.avgPnlPerTrade,
+    cohort7dMarked: s.cohort.marked,
+    totalMarked: s.marked,
     stakeUsd: DRIFT_SHADOW_STAKE_USD,
-    firstCandidateAt: ts.length ? ts[0] : null,
-    lastCandidateAt: ts.length ? ts[ts.length - 1] : null,
-    signals: signals.size,
-    signalsSettled,
-    avgPnlPerTradeExDustPerSignal: sigMarkedEx ? Math.round((sigPnlEx / sigMarkedEx) * 100) / 100 : null,
-    dustExcludedPerSignal: sigDust,
-    avgPnlPerTradeExDustLast7dCohortPerSignal: sigCohortN
-      ? Math.round((sigCohortPnl / sigCohortN) * 100) / 100
-      : null,
-    cohort7dMarkedPerSignal: sigCohortN,
-    rawConfidenceRows: candidates.filter(
-      (c) => c.rawConfidence !== null && c.rawConfidence !== undefined
-    ).length,
+    firstCandidateAt: s.firstCandidateAt,
+    lastCandidateAt: s.lastCandidateAt,
+    signals: s.signals,
+    signalsSettled: s.signalsSettled,
+    avgPnlPerTradeExDustPerSignal: s.perSignal.exDustAvg,
+    dustExcludedPerSignal: s.perSignal.dustExcluded,
+    avgPnlPerTradeExDustLast7dCohortPerSignal: s.perSignal.cohortAvg,
+    cohort7dMarkedPerSignal: s.perSignal.cohortMarked,
+    rawConfidenceRows: rows.filter((r) => {
+      if (r.type !== "candidate") return false;
+      return r.rawConfidence !== null && r.rawConfidence !== undefined;
+    }).length,
   };
+}
+
+/** Entry price of a legacy or canonical drift row (exposed for reconciliation reads). */
+export function driftEntryPrice(row: Record<string, unknown>): number {
+  return ledgerEntryPrice(row);
 }

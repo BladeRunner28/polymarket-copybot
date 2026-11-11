@@ -6,19 +6,26 @@
  * the scorer saw 2,296 distinct sub-0.20 candidates and copied 61 (2.7%,
  * ≈9/day) while ~400 candidates/day arrive in-band; blocker tags: drift 74%,
  * confidence floor 79%, sub-0.05 near-certainty 53%, liquidity 40%, spread 21%.
- * All live thresholds are frozen for the Kelly window (hold through Oct 8), so
- * this module MEASURES instead: every sub-0.20 candidate is logged with its full
- * feature vector, and a shadow book is marked to resolution next to the live
- * book. "Would-admit at the relaxed ladder" is computed both live and
- * retroactively (the raw features are stored, so thresholds can be re-cut).
+ * All live thresholds are frozen through the Kelly window, so this module
+ * MEASURES instead: every sub-0.20 candidate is logged with its full feature
+ * vector, and a shadow book is marked to resolution next to the live book.
+ * "Would-admit at the relaxed ladder" is computed both live and retroactively
+ * (the raw features are stored, so thresholds can be re-cut).
  *
  * Relaxed ladder (report): drift ≤ 0.01, spread ≤ 0.08, confidence ≥ 0.50,
  * price in [0.05, 0.20). Fixed shadow stake for comparability.
  *
- * Decision point: Sep 22 (7 shadow days) or the Oct 8 Kelly-window close.
+ * 2026-10-29 (card phil-counterfactual-ledger-primitive): rows go through the
+ * shared append-only primitive and `summarizeShadow` is a VIEW of the shared read.
+ * The relaxed ladder below is this lane's own HYPOTHESIS screen and stays declared
+ * here — it is data recorded on the row, never a threshold inside the primitive.
  */
 
-import * as fs from "fs";
+import {
+  appendCounterfactualCandidate,
+  readLedger,
+  summarizeLedger,
+} from "./counterfactual-ledger";
 import { join } from "path";
 
 export const SHADOW_FILE = join(__dirname, "..", "..", "data", "longshot-shadow.jsonl");
@@ -58,7 +65,7 @@ export interface ShadowAdmitVerdict {
   blockers: string[];
 }
 
-/** Evaluate the report's relaxed ladder. Pure. */
+/** Evaluate the report's relaxed ladder — this lane's hypothesis, recorded as data. Pure. */
 export function evaluateShadowAdmit(c: ShadowCandidate): ShadowAdmitVerdict {
   const blockers: string[] = [];
   if (c.entryPrice < SHADOW_MIN_PRICE) blockers.push("sub-0.05 near-certainty band");
@@ -71,34 +78,36 @@ export function evaluateShadowAdmit(c: ShadowCandidate): ShadowAdmitVerdict {
   return { wouldAdmit: blockers.length === 0, blockers };
 }
 
-/** Append one candidate row (event-sourced JSONL, same style as the other shadow feeds). */
+/** Append one candidate row (event-sourced JSONL, same primitive as the other shadow feeds). */
 export function appendShadowRow(c: ShadowCandidate): void {
   const verdict = evaluateShadowAdmit(c);
-  const row = {
-    ts: new Date().toISOString(),
-    type: "candidate",
-    source: "longshot_shadow_ladder",
+  appendCounterfactualCandidate({
+    lane: "longshot_shadow_ladder",
+    file: SHADOW_FILE,
     marketId: c.marketId,
     outcome: c.outcome,
     side: c.side,
-    wallet: c.walletAddress,
+    walletAddress: c.walletAddress,
     entryPrice: c.entryPrice,
-    walletEntryPrice: c.walletEntryPrice,
-    detectedPrice: c.detectedPrice,
-    drift: Math.abs(c.entryPrice - c.walletEntryPrice),
+    fill: { kind: "fixed_clip", stakeUsd: SHADOW_STAKE_USD },
+    copyScore: c.copyScore,
+    confidence: c.confidence,
+    ttrHours: c.ttrHours ?? null,
     spread: c.spread ?? null,
     liquidity: c.liquidity ?? null,
-    ttrHours: c.ttrHours ?? null,
-    confidence: c.confidence,
-    copyScore: c.copyScore,
-    liveDecision: c.liveDecision,
-    longshotFloorScore: c.longshotFloorScore ?? null,
-    longshotFloorConf: c.longshotFloorConf ?? null,
-    stakeUsd: SHADOW_STAKE_USD,
-    wouldAdmit: verdict.wouldAdmit,
-    blockers: verdict.blockers,
-  };
-  fs.appendFileSync(SHADOW_FILE, JSON.stringify(row) + "\n");
+    extras: {
+      // Legacy field names kept verbatim.
+      source: "longshot_shadow_ladder",
+      walletEntryPrice: c.walletEntryPrice,
+      detectedPrice: c.detectedPrice,
+      drift: Math.abs(c.entryPrice - c.walletEntryPrice),
+      liveDecision: c.liveDecision,
+      longshotFloorScore: c.longshotFloorScore ?? null,
+      longshotFloorConf: c.longshotFloorConf ?? null,
+      wouldAdmit: verdict.wouldAdmit,
+      blockers: verdict.blockers,
+    },
+  });
 }
 
 export interface ShadowSummary {
@@ -117,52 +126,32 @@ export interface ShadowSummary {
 }
 
 export function readShadowRows(): Array<Record<string, unknown>> {
-  try {
-    return fs
-      .readFileSync(SHADOW_FILE, "utf-8")
-      .split("\n")
-      .filter((l) => l.trim().length > 0)
-      .map((l) => JSON.parse(l) as Record<string, unknown>);
-  } catch {
-    return [];
-  }
+  return readLedger(SHADOW_FILE);
 }
 
-/** Join candidate + resolve records into the shadow book summary. Pure-ish. */
+/**
+ * Join candidate + resolve records into the shadow book summary. A VIEW of the
+ * shared read, restricted to the rows this lane's relaxed ladder would have
+ * admitted — the population the question is about.
+ */
 export function summarizeShadow(rows: Array<Record<string, unknown>>): ShadowSummary {
-  const candidates = rows.filter((r) => r.type === "candidate");
-  const admits = candidates.filter((r) => r.wouldAdmit === true);
-  const resolves = new Map<string, number>();
-  for (const r of rows) {
-    if (r.type === "resolve") {
-      resolves.set(`${r.marketId}|${r.outcome}`, Number(r.value));
-    }
-  }
-  let resolved = 0;
-  let wins = 0;
-  let totalPnl = 0;
-  for (const a of admits) {
-    const v = resolves.get(`${a.marketId}|${a.outcome}`);
-    if (v === undefined) continue;
-    resolved++;
-    if (v > 0) wins++;
-    const stake = Number(a.stakeUsd ?? SHADOW_STAKE_USD);
-    const entry = Number(a.entryPrice);
-    totalPnl += entry > 0 ? (v - entry) / entry * stake : 0;
-  }
-  const ts = candidates.map((r) => String(r.ts)).sort();
+  const s = summarizeLedger(rows, {
+    betFilter: (r) => r.wouldAdmit === true,
+    stakeField: "stakeUsd",
+    defaultStakeUsd: SHADOW_STAKE_USD,
+  });
   return {
     generatedAt: new Date().toISOString(),
-    candidates: candidates.length,
-    wouldAdmit: admits.length,
-    admitsAwaitingResolution: admits.length - resolved,
-    resolved,
-    wins,
-    winRate: resolved ? wins / resolved : null,
-    totalPnl: Math.round(totalPnl * 100) / 100,
-    avgPnlPerTrade: resolved ? Math.round((totalPnl / resolved) * 100) / 100 : null,
+    candidates: s.candidates,
+    wouldAdmit: s.bets,
+    admitsAwaitingResolution: s.bets - s.marked,
+    resolved: s.marked,
+    wins: s.wins,
+    winRate: s.winRate,
+    totalPnl: s.wouldHavePnl,
+    avgPnlPerTrade: s.avgPnlPerTrade,
     stakeUsd: SHADOW_STAKE_USD,
-    firstCandidateAt: ts.length ? ts[0] : null,
-    lastCandidateAt: ts.length ? ts[ts.length - 1] : null,
+    firstCandidateAt: s.firstCandidateAt,
+    lastCandidateAt: s.lastCandidateAt,
   };
 }

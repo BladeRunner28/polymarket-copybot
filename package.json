@@ -28,6 +28,8 @@
     "verify:frozen": "tsx scripts/frozen-artifact-tripwire.ts",
     "verify:frozen:self-test": "tsx scripts/frozen-artifact-tripwire.ts --self-test",
     "shadow:forward-read": "tsx scripts/shadow-forward-read.ts",
+    "shadow:reconcile": "tsx scripts/reconcile-counterfactual-ledger.ts",
+    "shadow:golden": "tsx scripts/capture-counterfactual-golden.ts",
   "verify:bankroll-limits": "tsx scripts/verify-botbankroll-limits.ts"
   },
   "prisma": {
