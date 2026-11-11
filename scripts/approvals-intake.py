@@ -149,7 +149,11 @@ def kanban_blocked_items(existing):
     import sqlite3
 
     if not os.path.exists(KANBAN_DB):
-        return []
+        # A missing board is not "no blocked cards": four of the thirty pending items come from here,
+        # and before 2026-11-11 this returned [] so the board half of the queue vanished silently.
+        print(f"FATAL: kanban board missing at {KANBAN_DB}; refusing to write a queue that omits it",
+              file=sys.stderr)
+        raise SystemExit(1)
     out = []
     try:
         con = sqlite3.connect(f"file:{KANBAN_DB}?mode=ro", uri=True)
