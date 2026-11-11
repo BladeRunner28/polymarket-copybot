@@ -1,18 +1,18 @@
 {
- "generatedAt": "2026-11-08T11:47:39.776480Z",
+ "generatedAt": "2026-11-10T11:50:53.165275Z",
  "sources": {
   "marketCandidates": {
    "path": "data/ml/market-candidates.parquet",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-11-08T11:47:21.240525Z",
+   "mtimeZ": "2026-11-10T11:50:34.502140Z",
    "ageHours": 0.0
   },
   "paperTrades": {
    "path": "prisma/dev.db",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-11-08T11:39:53.950582Z",
+   "mtimeZ": "2026-11-10T11:44:53.199980Z",
    "ageHours": 0.1
   },
   "predictionsTest": {
@@ -20,7 +20,7 @@
    "role": "study",
    "exists": true,
    "mtimeZ": "2026-10-19T08:54:09.889491Z",
-   "ageHours": 482.9
+   "ageHours": 530.9
   }
  },
  "lane": {
@@ -35,18 +35,18 @@
   "note": "same <0.20 band, same accounting -- the difference is WHICH WALLETS were copied"
  },
  "marketOnly": {
-  "candidates": 120884,
-  "gated": 99561,
+  "candidates": 120888,
+  "gated": 99565,
   "bands": [
    {
     "band": "0.0-0.2",
-    "rows": 20668,
-    "markets": 10723,
+    "rows": 20670,
+    "markets": 10724,
     "premiumPct": 15.2,
-    "roiMidPct": -41.03,
-    "roiNetPct": -50.64,
-    "ciLoPct": -58.76,
-    "ciHiPct": -40.36
+    "roiMidPct": -41.04,
+    "roiNetPct": -50.65,
+    "ciLoPct": -59.04,
+    "ciHiPct": -40.53
    },
    {
     "band": "0.2-0.4",
@@ -80,13 +80,13 @@
    },
    {
     "band": "0.8-1.0",
-    "rows": 38925,
-    "markets": 19877,
+    "rows": 38927,
+    "markets": 19878,
     "premiumPct": 0.8,
     "roiMidPct": 2.43,
     "roiNetPct": 0.77,
-    "ciLoPct": 0.5,
-    "ciHiPct": 1.08
+    "ciLoPct": 0.49,
+    "ciHiPct": 1.05
    }
   ]
  },
@@ -121,11 +121,11 @@
    },
    {
     "band": "0.95-1.00",
-    "rows": 24972,
-    "markets": 12530,
+    "rows": 24974,
+    "markets": 12531,
     "roiNetPct": 0.62,
-    "ciLoPct": 0.36,
-    "ciHiPct": 1.0,
+    "ciLoPct": 0.38,
+    "ciHiPct": 0.99,
     "clearsZero": true
    }
   ],
@@ -140,7 +140,7 @@
    },
    {
     "premiumMult": 2.0,
-    "roiNetPct": -1.65
+    "roiNetPct": -1.64
    }
   ],
   "geometry": {
@@ -159,7 +159,7 @@
    "c200Usd": 0.3818,
    "standardUsd": 0.0114
   },
-  "rows": 38925
+  "rows": 38927
  },
  "veto": {
   "available": true,

@@ -1,0 +1,425 @@
+# Atlas entries — one per repo/package. Curated fields only; liveness data
+# lives in data/live.json (refreshed weekly by CI). Scores are 0-5 integers on
+# four curated axes (provenance, capability, safety, agent_fit); the fifth axis
+# (maintenance) is COMPUTED from live.json — never write it here.
+# Every entry carries dated evidence. See docs/methodology.md for axis anchors.
+
+entries:
+  # ───────────────────────────── Kalshi ─────────────────────────────
+  - id: cejor6/kalshi-mcp-server
+    venue: kalshi
+    category: mcp-server
+    url: https://github.com/cejor6/kalshi-mcp-server
+    packages: { pypi: kalshi-mcp-server }
+    scores: { provenance: 2, capability: 4, safety: 5, agent_fit: 5 }
+    evidence:
+      - "2026-07-23: 26 tools + 4 resources (REST + live WS sampling) confirmed in README/code"
+      - "2026-07-23: demo-default; prod trading needs KALSHI_ALLOW_PROD + KALSHI_TRADING_ENABLED; per-order/day USD caps; runtime limits tighten-only"
+      - "2026-07-23: RSA-PSS auth, secrets via env, no key logging found"
+    notes: "Strongest safety model surveyed on either venue. Bus factor 1 (single human contributor, self-labeled alpha) — read the code before trusting it with keys; pin the PyPI version."
+
+  - id: TexasCoding/kalshi-python-sdk
+    venue: kalshi
+    category: sdk-client
+    url: https://github.com/TexasCoding/kalshi-python-sdk
+    packages: { pypi: kalshi-sdk }
+    scores: { provenance: 2, capability: 5, safety: 4, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: 101 REST ops / 19 resources, 12 typed WS channels, Decimal-never-float, retries limited to idempotent verbs (POST/DELETE never retried)"
+      - "2026-07-23: covers Kalshi Perps margin API — only surveyed repo touching margin"
+      - "2026-07-23: 5 major versions in 7 weeks (3.1.0 Jun-04 → 7.0.0 Jul-10) — churn risk, pin exact version"
+    notes: "Most complete Kalshi client surveyed. Pin the version; budget upgrade time per major."
+
+  - id: kalshi-python-sync
+    venue: kalshi
+    category: sdk-client
+    owner: Kalshi
+    packages: { pypi: kalshi-python-sync }
+    scores: { provenance: 5, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: official Kalshi SDK per docs.kalshi.com/sdks/overview; v3.25.0, weekly release cadence; RSA-PSS auth"
+      - "2026-07-23: registry-only — no public source repo; REST-only (WebSocket = generate from AsyncAPI spec)"
+    notes: "Official REST ground truth (async variant: kalshi-python-async). The deprecated `kalshi-python` package is its predecessor — do not confuse them."
+
+  - id: kalshi-typescript
+    venue: kalshi
+    category: sdk-client
+    owner: Kalshi
+    packages: { npm: kalshi-typescript }
+    scores: { provenance: 5, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: official Kalshi TypeScript SDK per docs.kalshi.com; v3.25.0, published 2026-07-21; RSA-PSS"
+      - "2026-07-23: registry-only, no public source repo; REST-only"
+    notes: "Official TS ground truth."
+
+  - id: ArshKA/pykalshi
+    venue: kalshi
+    category: sdk-client
+    url: https://github.com/ArshKA/pykalshi
+    packages: { pypi: pykalshi }
+    scores: { provenance: 3, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: most-starred community Kalshi client (117★); WS streaming + local orderbook manager confirmed"
+      - "2026-07-23: RSA-PSS via .env; retries/backoff; positions itself as ergonomic layer over spec SDKs"
+    notes: "Ergonomics layer — pairs well with a spec-first SDK as source of truth."
+
+  - id: newyorkcompute/kalshi
+    venue: kalshi
+    category: mcp-server
+    url: https://github.com/newyorkcompute/kalshi
+    packages: { npm: "@newyorkcompute/kalshi-mcp" }
+    scores: { provenance: 2, capability: 4, safety: 3, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: monorepo — MCP server + Claude skill (skills/kalshi-trading) + TS packages + MM bot; repo pushed 2026-07-20"
+      - "2026-07-23: npm packages lag the repo by ~7 months (last publish 2025-12-28)"
+    notes: "Both MCP and skill in one TS stack. Prefer running from source over the stale npm publishes."
+
+  - id: 9crusher/mcp-server-kalshi
+    venue: kalshi
+    category: mcp-server
+    url: https://github.com/9crusher/mcp-server-kalshi
+    scores: { provenance: 2, capability: 3, safety: 4, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: demo env by default; order tools require confirm=true (preview-first); July 2026 overhaul added full test coverage"
+      - "2026-07-23: no WebSocket support"
+    notes: "Lighter fallback MCP — fewer tools, sane defaults."
+
+  - id: austron24/kalshi-trader-plugin
+    venue: kalshi
+    category: agent-framework
+    url: https://github.com/austron24/kalshi-trader-plugin
+    scores: { provenance: 2, capability: 3, safety: 3, agent_fit: 5 }
+    evidence:
+      - "2026-07-23: Claude Code plugin — /alpha scans spawn parallel market-researcher subagents; wraps kalshi-cli"
+    notes: "Only surveyed Kalshi tool natively shaped as an agent-harness plugin."
+
+  - id: rmadev01/kalshi-rs
+    venue: kalshi
+    category: sdk-client
+    url: https://github.com/rmadev01/kalshi-rs
+    scores: { provenance: 2, capability: 4, safety: 3, agent_fit: 2 }
+    evidence:
+      - "2026-07-23: Rust REST+WS client with HFT-style in-memory orderbook (README claims); dormant since 2026-03-13"
+      - "2026-07-23: crate is named kalshi-trading (0.0.1) — the crates.io crate `kalshi-rs` is a DIFFERENT author's project (arnavchahal)"
+    notes: "Low-latency niche. Unproven; name collision invites dependency mistakes."
+
+  - id: Kalshi/kalshi-starter-code-python
+    venue: kalshi
+    category: sdk-client
+    url: https://github.com/Kalshi/kalshi-starter-code-python
+    hard_flags: [official_dormant]
+    scores: { provenance: 5, capability: 2, safety: 3, agent_fit: 2 }
+    evidence:
+      - "2026-07-23: only public repo in the Kalshi org relevant to API use; last push 2025-03-07"
+    notes: "Reference snippets only — the maintained official surface is the registry SDKs."
+
+  # ──────────────────────────── Polymarket ────────────────────────────
+  - id: Polymarket/agent-skills
+    venue: polymarket
+    category: skill
+    url: https://github.com/Polymarket/agent-skills
+    hard_flags: [official_dormant]
+    scores: { provenance: 5, capability: 5, safety: 4, agent_fit: 5 }
+    evidence:
+      - "2026-07-23: official org; progressive-disclosure skill files covering auth (L1/L2/builder), orders, market data, WS, CTF ops, bridge, gasless"
+      - "2026-07-23: upstream tip 2026-02-19 — dormant; code samples still import archived v1 clob-clients (SKILL.md:51)"
+    notes: "The official agent-integration path. Apply a v1→v2 client substitution when following its samples: @polymarket/clob-client-v2 / py-clob-client-v2."
+
+  - id: Polymarket/polymarket-cli
+    venue: polymarket
+    category: cli
+    url: https://github.com/Polymarket/polymarket-cli
+    scores: { provenance: 5, capability: 4, safety: 3, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: official Rust CLI (2,823★); markets/orders/positions/on-chain ops; -o json designed for scripts and agents"
+      - "2026-07-23: self-labeled experimental"
+    notes: "Agent harnesses can drive it via shell with zero MCP plumbing."
+
+  - id: Polymarket/ts-sdk
+    venue: polymarket
+    category: sdk-client
+    url: https://github.com/Polymarket/ts-sdk
+    scores: { provenance: 5, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: newest official unified SDK line (pushed 2026-07-22); supersedes the archived v1 clients"
+    notes: "Python sibling: Polymarket/py-sdk. Check the registry for the actual published package name before adding a dependency."
+
+  - id: Polymarket/py-clob-client-v2
+    venue: polymarket
+    category: sdk-client
+    url: https://github.com/Polymarket/py-clob-client-v2
+    packages: { pypi: py-clob-client-v2 }
+    scores: { provenance: 5, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: current official Python CLOB client (v1 py-clob-client repo archived 2026-05-25); pushed 2026-07-17"
+    notes: "TS sibling: @polymarket/clob-client-v2; Rust: rs-clob-client-v2."
+
+  - id: Polymarket/real-time-data-client
+    venue: polymarket
+    category: sdk-client
+    url: https://github.com/Polymarket/real-time-data-client
+    packages: { npm: "@polymarket/real-time-data-client" }
+    scores: { provenance: 5, capability: 2, safety: 4, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: official WebSocket market-data client; read-only, no trading keys involved"
+    notes: "Pair with a CLOB client when you need writes."
+
+  - id: caiovicentino/polymarket-mcp-server
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/caiovicentino/polymarket-mcp-server
+    scores: { provenance: 1, capability: 5, safety: 4, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: 45 MCP tools counted in server.py; safety caps (order size, exposure, per-market) confirmed in utils/safety_limits.py; demo mode confirmed"
+      - "2026-07-23: key handled env-only, masked in config dumps; no exfiltration patterns found in auth/config/web modules"
+      - "2026-07-23: engagement flags — 597★/133 forks on 16 commits from one contributor; ~30 AI-generated hype markdowns at repo root"
+    notes: "Functional and safety-conscious in code, but treat as a reference implementation rather than a trust anchor until provenance concerns age out."
+
+  - id: demwick/polymarket-agent-mcp
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/demwick/polymarket-agent-mcp
+    scores: { provenance: 2, capability: 4, safety: 4, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: 48 tools, 207 tests, CI, OpenSSF badge; npm + Docker; low stars because new (created 2026)"
+    notes: "Best engineering posture among community Polymarket MCPs; depth of the advanced tools (copy-trading, backtest) not independently audited."
+
+  - id: ozgureyilmaz/polymarket-mcp
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/ozgureyilmaz/polymarket-mcp
+    scores: { provenance: 2, capability: 2, safety: 5, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: Rust read-only MCP (market discovery/prices/trending); no trading code paths; no keys required for public data"
+    notes: "Clean read-only research server."
+
+  - id: pab1it0/polymarket-mcp
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/pab1it0/polymarket-mcp
+    scores: { provenance: 2, capability: 2, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: Gamma API only — deps are mcp/httpx/python-dotenv; claims of CLOB integration in third-party writeups are wrong"
+    notes: "Simple self-host reference; data-only despite some directories' descriptions."
+
+  - id: guangxiangdebizi/PolyMarket-MCP
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/guangxiangdebizi/PolyMarket-MCP
+    scores: { provenance: 1, capability: 3, safety: 4, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: 8 read-only tools incl. positions/holders/orderbook; read-only design confirmed (no signing deps)"
+      - "2026-07-23: node_modules committed (1,471 files); one-day commit history"
+    notes: "Analytics niche (holders/positions). Hygiene tells; read-only limits the blast radius."
+
+  - id: berlinbra/polymarket-mcp
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/berlinbra/polymarket-mcp
+    scores: { provenance: 2, capability: 1, safety: 4, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: exactly 4 read-only tools (market info/list/prices/history); Smithery-listed"
+    notes: "Minimal demo-grade server."
+
+  - id: PlayAINetwork/Polymarket-mcp
+    venue: polymarket
+    category: mcp-server
+    url: https://github.com/PlayAINetwork/Polymarket-mcp
+    scores: { provenance: 1, capability: 3, safety: 1, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: hardcoded third-party Alchemy RPC key in source — your wallet activity routes through an unknown dev's endpoint (privacy leak; signing stays local)"
+      - "2026-07-23: one-shot repo (last push = creation day, 2025-07-07); env-var naming mismatch in error messages"
+    notes: "Works, but the hardcoded RPC endpoint is disqualifying for real keys. If you must, replace the RPC URL before use."
+
+  - id: Polymarket/agents
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/Polymarket/agents
+    hard_flags: [archived]
+    evidence:
+      - "2026-07-23: ARCHIVED on GitHub; last push 2024-11-05; 43 open issues frozen"
+    notes: "Historically influential official agent framework — instructive to read, unsafe to build on. Third-party writeups still recommend it as active; they are wrong."
+
+  - id: artvandelay/polymarket-agents
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/artvandelay/polymarket-agents
+    scores: { provenance: 2, capability: 2, safety: 5, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: cricket-markets MCP + paper-trading agent; 'Paper trading only (no real money)' in README; no venue trading keys handled"
+    notes: "Narrow domain, honest scope — a good template for domain-specific paper agents."
+
+  - id: mjunaidca/polymarket-skills
+    venue: polymarket
+    category: skill
+    url: https://github.com/mjunaidca/polymarket-skills
+    scores: { provenance: 2, capability: 3, safety: 4, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: paper-trading-first composable skills for agent harnesses (77★, active Feb 2026)"
+    notes: "Community alternative to the official skill pack, paper-first."
+
+  - id: 0xrsydn/polymarket-crypto-toolkit
+    venue: polymarket
+    category: data-backtesting
+    url: https://github.com/0xrsydn/polymarket-crypto-toolkit
+    scores: { provenance: 2, capability: 3, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: backtest engine, plugin strategies, Binance + Polymarket WS feeds, CLOB executor — all confirmed in package layout"
+      - "2026-07-23: entire commit history spans 4 days (Feb 2026); idle since"
+    notes: "Solid architecture to mine for backtesting patterns; not a maintained dependency."
+
+  # ──────────────────────────── Cross-venue ────────────────────────────
+  - id: pmxt-dev/pmxt
+    venue: cross-venue
+    category: sdk-client
+    url: https://github.com/pmxt-dev/pmxt
+    packages: { npm: "@pmxt/mcp" }
+    scores: { provenance: 3, capability: 4, safety: 3, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: unified TS/Py API across Polymarket, Kalshi, Limitless+ (2,005★, MIT); companion @pmxt/mcp with explicit-confirm order tools"
+      - "2026-07-23: hosted mode does NOT cover Kalshi writes and takes custody of your signing key; self-host with venue-native creds for full control"
+      - "2026-07-23: 896 open issues ≈ 91% self-filed by the maintainer as a tracked backlog — roadmap, not user distress"
+    notes: "The cross-venue abstraction layer. Self-host for anything involving real keys."
+
+  - id: guzus/dr-manhattan
+    venue: cross-venue
+    category: sdk-client
+    url: https://github.com/guzus/dr-manhattan
+    hard_flags: [license_missing]
+    scores: { provenance: 2, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: CCXT-style Python unified lib — Polymarket (incl. WS/CTF/builder), Kalshi, Limitless, Predict.fun; strategy base + order tracker"
+      - "2026-07-23: no license file — legal status of embedding is undefined"
+    notes: "Fully self-hosted pmxt alternative. Resolve the license question before shipping it inside anything."
+
+  - id: agent-next/polymarket-paper-trader
+    venue: cross-venue
+    category: data-backtesting
+    url: https://github.com/agent-next/polymarket-paper-trader
+    packages: { pypi: polymarket-paper-trader }
+    scores: { provenance: 2, capability: 3, safety: 5, agent_fit: 5 }
+    evidence:
+      - "2026-07-23: paper-trading simulator against real orderbooks — level-by-level fills, exact fee model, GTC/GTD lifecycle, MCP server; MIT, tests in CI"
+    notes: "The dev harness: let agents trade risk-free against live books before any real key exists."
+
+  - id: braedonsaunders/homerun
+    venue: cross-venue
+    category: agent-framework
+    url: https://github.com/braedonsaunders/homerun
+    scores: { provenance: 2, capability: 4, safety: 3, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: Kalshi+Polymarket strategy platform — L2 book replay backtests, shadow→live promotion, LLM scoring, cross-venue arb strategies; AGPL-3.0"
+    notes: "Architecture reference for cross-venue strategy infra. AGPL — read it, don't vendor it into proprietary code."
+
+  - id: machina-sports/sports-skills
+    venue: cross-venue
+    category: skill
+    url: https://github.com/machina-sports/sports-skills
+    scores: { provenance: 3, capability: 2, safety: 5, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: zero-auth read-only Kalshi+Polymarket price/sports skills with an explicit read-only agent contract"
+    notes: "Cleanest pattern for a read-only skill safety contract."
+
+  - id: alsk1992/CloddsBot
+    venue: cross-venue
+    category: agent-framework
+    url: https://github.com/alsk1992/CloddsBot
+    scores: { provenance: 2, capability: 4, safety: 2, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: TS autonomous agent across Polymarket/Kalshi/Binance/Hyperliquid (528★, MIT); broad surface, many credential types in one process"
+    notes: "Ambitious scope = large key blast radius. Mine for patterns; run nothing with real keys without an audit."
+
+  - id: Oddpool/PredictionMarketBench
+    venue: cross-venue
+    category: data-backtesting
+    url: https://github.com/Oddpool/PredictionMarketBench
+    scores: { provenance: 2, capability: 2, safety: 5, agent_fit: 3 }
+    evidence:
+      - "2026-07-23: benchmark for backtesting agents on real Kalshi market replay data; simulation only"
+    notes: "Unique replay dataset angle; small."
+
+  - id: JamesANZ/prediction-market-mcp
+    venue: cross-venue
+    category: mcp-server
+    url: https://github.com/JamesANZ/prediction-market-mcp
+    scores: { provenance: 2, capability: 2, safety: 4, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: read-only MCP aggregating Polymarket + PredictIt + Kalshi data; PulseMCP-listed"
+    notes: "Multi-venue read-only scanner."
+
+  - id: SpartanLabsXyz/simmer-sdk
+    venue: cross-venue
+    category: sdk-client
+    url: https://github.com/SpartanLabsXyz/simmer-sdk
+    scores: { provenance: 2, capability: 3, safety: 3, agent_fit: 4 }
+    evidence:
+      - "2026-07-23: Python SDK for agentic prediction-market trading; active daily as of scan"
+    notes: "Young; watch."
+
+  # ─────────────────── Flagged (scam signatures) ───────────────────
+  # Phrasing note: entries below are FLAGGED as matching known scam-repo
+  # signatures on the evidence dates shown — see docs/safety.md for the
+  # signature list and CONTRIBUTING.md for the correction/appeal path.
+  - id: HarrierOnChain/Prediction-Markets-Trading-Bot-Toolkits
+    venue: cross-venue
+    category: agent-framework
+    url: https://github.com/HarrierOnChain/Prediction-Markets-Trading-Bot-Toolkits
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — new org, stars(359)≫watchers, forks≈stars, toolkit pitch without inspectable code provenance"
+  - id: casatrick/polymarket-arbitrage-bot-python
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/casatrick/polymarket-arbitrage-bot-python
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — arbitrage-bot pitch, engagement pattern inconsistent with history"
+  - id: cryptomoonday/polymarket-arbitrage-bot
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/cryptomoonday/polymarket-arbitrage-bot
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — arbitrage-bot pitch, low-provenance account"
+  - id: radioman/polymarket-arbitrage-trading-bot
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/radioman/polymarket-arbitrage-trading-bot
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — arbitrage-bot pitch, low-provenance account"
+  - id: Cortex-AI-Network/polymarket-copy-trading-bot
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/Cortex-AI-Network/polymarket-copy-trading-bot
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — copy-trading pitch, org pattern typical of drainer campaigns"
+  - id: kaktusesquire6rmu/ai-polymarket-agent
+    venue: polymarket
+    category: agent-framework
+    url: https://github.com/kaktusesquire6rmu/ai-polymarket-agent
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — 218★ with no detected code language (README/binary only)"
+  - id: brodyautomates/polymarket-pipeline
+    venue: polymarket
+    category: data-backtesting
+    url: https://github.com/brodyautomates/polymarket-pipeline
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — 367★ four days after creation"
+  - id: reunios2024/cortex-sentinel-trading-nexus
+    venue: cross-venue
+    category: agent-framework
+    url: https://github.com/reunios2024/cortex-sentinel-trading-nexus
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — buzzword pitch, throwaway account pattern"
+  - id: hanshaze/Awesome-Prediction-Market-Trading-Tools
+    venue: cross-venue
+    category: agent-framework
+    url: https://github.com/hanshaze/Awesome-Prediction-Market-Trading-Tools
+    hard_flags: [scam]
+    evidence:
+      - "2026-07-23: matches signatures — awesome-list wrapper funneling to flagged bot repos"

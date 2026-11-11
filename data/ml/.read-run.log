@@ -1,35 +1,35 @@
-observations: 3,140 | distinct markets: 917 | kinds: {'live': 3140}
-by day: {'2026-10-21': 144, '2026-10-22': 136, '2026-10-23': 116, '2026-10-24': 199, '2026-10-25': 207, '2026-10-26': 140, '2026-10-27': 86, '2026-10-28': 78, '2026-10-29': 68, '2026-10-30': 100, '2026-10-31': 104, '2026-11-01': 90, '2026-11-02': 80, '2026-11-03': 142, '2026-11-04': 245, '2026-11-05': 233, '2026-11-06': 200, '2026-11-07': 423, '2026-11-08': 349}
+observations: 3,626 | distinct markets: 1,100 | kinds: {'live': 3626}
+by day: {'2026-10-21': 144, '2026-10-22': 136, '2026-10-23': 116, '2026-10-24': 199, '2026-10-25': 207, '2026-10-26': 140, '2026-10-27': 86, '2026-10-28': 78, '2026-10-29': 68, '2026-10-30': 100, '2026-10-31': 104, '2026-11-01': 90, '2026-11-02': 80, '2026-11-03': 142, '2026-11-04': 245, '2026-11-05': 233, '2026-11-06': 200, '2026-11-07': 423, '2026-11-08': 393, '2026-11-09': 191, '2026-11-10': 251}
 settlement source: venue (clob tokens[].winner)
-  markets with a venue outcome    : 818 of 917 (89.2%)
-  markets with a snapshot outcome : 41 of 917 (4.5%)
-  venue market states             : {'from_cache': 773, 'not_closed_yet': 98, 'closed_without_winner': 1, 'resolved_now': 45}
-  decisive overlap 32 | disagreements 1
-settled observations: 2,880 (venue 2,880 | snapshot 111)
+  markets with a venue outcome    : 1,016 of 1,100 (92.4%)
+  markets with a snapshot outcome : 70 of 1,100 (6.4%)
+  venue market states             : {'from_cache': 1015, 'not_closed_yet': 79, 'closed_without_winner': 5, 'resolved_now': 1}
+  decisive overlap 56 | disagreements 2
+settled observations: 3,432 (venue 3,432 | snapshot 174)
 
 === FORWARD DECILE ECONOMICS (settled, net of fee+spread at the recorded ask) ===
-    baseline mean net ROI: -6.840%  over 818 markets
+    baseline mean net ROI: -6.669%  over 1016 markets
 
   --- p_profit ---
-    B1  n=576   mkt=325   win  27.26%  net  -15.412%  CI [-30.67, +0.09]
-    B2  n=576   mkt=333   win  44.79%  net   -3.753%  CI [-16.81, +7.12]
-    B3  n=576   mkt=197   win  50.00%  net   -4.703%  CI [-9.32, -0.72]
-    B4  n=576   mkt=332   win  55.38%  net   -5.198%  CI [-13.48, +4.40]
-    B5  n=576   mkt=327   win  73.61%  net   -5.134%  CI [-12.48, +1.25]
+    B1  n=687   mkt=407   win  27.66%  net  -12.420%  CI [-25.74, +1.85]
+    B2  n=686   mkt=404   win  44.31%  net   -4.478%  CI [-13.94, +7.13]
+    B3  n=686   mkt=241   win  50.29%  net   -4.469%  CI [-8.43, -0.37]
+    B4  n=686   mkt=404   win  55.69%  net   -6.182%  CI [-14.02, +1.41]
+    B5  n=687   mkt=409   win  74.82%  net   -5.786%  CI [-11.73, -0.61]
 
   --- ev ---
-    B1  n=576   mkt=324   win  27.60%  net  -15.615%  CI [-31.76, -1.10]
-    B2  n=576   mkt=326   win  44.27%  net   -4.860%  CI [-15.15, +6.30]
-    B3  n=576   mkt=221   win  50.35%  net   -3.834%  CI [-9.59, +1.51]
-    B4  n=576   mkt=332   win  57.29%  net   -4.374%  CI [-13.66, +4.83]
-    B5  n=576   mkt=328   win  71.53%  net   -5.518%  CI [-11.44, +1.07]
+    B1  n=687   mkt=408   win  27.22%  net  -14.815%  CI [-29.81, -0.18]
+    B2  n=686   mkt=393   win  45.34%  net   -1.821%  CI [-14.61, +9.45]
+    B3  n=686   mkt=271   win  49.56%  net   -5.907%  CI [-11.75, -0.70]
+    B4  n=686   mkt=405   win  58.60%  net   -5.644%  CI [-13.83, +2.43]
+    B5  n=687   mkt=407   win  72.05%  net   -5.147%  CI [-11.08, +1.16]
 
   --- roi_reg ---
-    B1  n=576   mkt=331   win  26.74%  net  -18.877%  CI [-35.34, -2.11]
-    B2  n=576   mkt=344   win  44.62%  net   -2.976%  CI [-14.29, +8.74]
-    B3  n=576   mkt=232   win  51.39%  net   -8.123%  CI [-13.76, -2.66]
-    B4  n=576   mkt=333   win  70.66%  net   -0.399%  CI [-7.37, +6.53]
-    B5  n=576   mkt=333   win  57.64%  net   -3.826%  CI [-12.29, +6.31]
+    B1  n=687   mkt=413   win  27.95%  net  -13.724%  CI [-30.39, +0.15]
+    B2  n=686   mkt=415   win  44.02%  net   -4.551%  CI [-15.05, +7.13]
+    B3  n=686   mkt=297   win  53.35%  net   -7.670%  CI [-13.01, -2.82]
+    B4  n=686   mkt=410   win  70.70%  net   -1.622%  CI [-8.23, +4.13]
+    B5  n=687   mkt=406   win  56.77%  net   -5.767%  CI [-14.40, +2.82]
 
 === VERDICT ===
   nominal 95% intervals computed: 15 -> 0.75 hits expected by chance
