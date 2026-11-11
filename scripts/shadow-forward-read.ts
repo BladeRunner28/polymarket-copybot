@@ -32,12 +32,25 @@
  *   (default)        print the read
  *   --write          also append the result rows to data/shadow-forward-read.jsonl
  *   --preregistered  tag the written rows as the pre-registered read (Oct 8+ only)
+ *
+ * REPRODUCIBILITY (why the cutoffs exist)
+ *   The population used to be "whatever has settled by now", so the same command
+ *   returned a different population every day and a stored read could not be
+ *   re-derived — the one property a PRE-REGISTERED read cannot do without. Two
+ *   cutoffs pin it, both recorded in the written row:
+ *
+ *   --as-of <ISO>       count only settles recorded at/before this instant
+ *                       (what a read run at that moment could have seen)
+ *   --decided-by <ISO>  count only candidates DECIDED at/before this instant
+ *                       (the decision window; a window-close read needs both)
+ *
+ *   Neither flag = the historical uncut read, bit-for-bit.
  */
 
 import { appendFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { prisma } from "../src/lib/db";
-import { evaluateShadowRead, type ShadowReadRow, type ShadowReadResult } from "../src/lib/shadow-read";
+import { buildShadowRows, evaluateShadowRead, type ShadowReadResult } from "../src/lib/shadow-read";
 import { log, logError } from "../src/lib/redact";
 
 const OUT = join(__dirname, "..", "data", "shadow-forward-read.jsonl");
@@ -45,6 +58,26 @@ const DUST = Number(process.env.SHADOW_READ_DUST ?? 0.10);
 const MIN_ERA = Number(process.env.SHADOW_READ_MIN_ERA ?? 49);
 const WRITE = process.argv.includes("--write");
 const PREREGISTERED = process.argv.includes("--preregistered");
+
+/** Read `--flag <ISO>` and return epoch ms, or undefined when absent. */
+function cutoff(flag: string): number | undefined {
+  const i = process.argv.indexOf(flag);
+  if (i === -1) return undefined;
+  const raw = process.argv[i + 1];
+  if (!raw) {
+    logError(`[forward-read] ${flag} needs an ISO timestamp argument`);
+    process.exit(2);
+  }
+  const ms = Date.parse(raw);
+  if (!Number.isFinite(ms)) {
+    logError(`[forward-read] ${flag} is not a parseable timestamp: ${raw}`);
+    process.exit(2);
+  }
+  return ms;
+}
+
+const AS_OF = cutoff("--as-of");
+const DECIDED_BY = cutoff("--decided-by");
 
 /** Shadow lanes that already pair candidate rows with resolve rows. */
 const LANES = [
@@ -91,55 +124,17 @@ async function eraLookup(): Promise<{ at: (ms: number) => string | null; version
   };
 }
 
-function buildRows(
-  laneRows: Row[],
-  stakeField: string,
-  eraAt: (ms: number) => string | null
-): { rows: ShadowReadRow[]; candidates: number; resolved: number; dustExcluded: number; unlabeledEra: number } {
-  const resolves = new Map<string, number>();
-  for (const r of laneRows) {
-    if (String(r.type) === "resolve") resolves.set(`${r.marketId}|${r.outcome}`, Number(r.value));
-  }
-  const rows: ShadowReadRow[] = [];
-  let resolved = 0;
-  let dustExcluded = 0;
-  let unlabeledEra = 0;
-  for (const c of laneRows) {
-    if (String(c.type) !== "candidate") continue;
-    const v = resolves.get(`${c.marketId}|${c.outcome}`);
-    if (v === undefined) continue;
-    resolved++;
-    const entry = Number(c.currentPrice);
-    const stake = Number(c[stakeField] ?? 10);
-    if (!Number.isFinite(entry) || entry < DUST || !Number.isFinite(stake) || stake <= 0) {
-      dustExcluded++;
-      continue;
-    }
-    const decidedAt = Date.parse(String(c.ts));
-    const era = Number.isFinite(decidedAt) ? eraAt(decidedAt) : null;
-    if (era === null) unlabeledEra++;
-    rows.push({
-      key: `${c.marketId}|${c.outcome}|${c.wallet ?? ""}|${c.ts}`,
-      cluster: String(c.marketId),
-      ret: (v - entry) / entry,
-      stake,
-      won: v > 0,
-      decidedAt: Number.isFinite(decidedAt) ? decidedAt : 0,
-      era,
-    });
-  }
-  return { rows, candidates: laneRows.filter((r) => String(r.type) === "candidate").length, resolved, dustExcluded, unlabeledEra };
-}
-
 function pct(x: number): string {
   return `${(x * 100).toFixed(2)}%`;
 }
 
-function printRead(lane: string, built: ReturnType<typeof buildRows>, result: ShadowReadResult): void {
+function printRead(lane: string, built: ReturnType<typeof buildShadowRows>, result: ShadowReadResult): void {
   const b = (v: boolean | null) => (v === null ? "n/a" : v ? "PASS" : "FAIL");
   log(
     `\n[forward-read] ${lane} — decision=${result.decision.toUpperCase()} ` +
-      `(settled=${built.resolved}, dust_excluded=${built.dustExcluded}, era_unlabeled=${built.unlabeledEra})`
+      `(settled=${built.resolved}, dust_excluded=${built.dustExcluded}, era_unlabeled=${built.unlabeledEra}` +
+      `${built.awaitingSettle > 0 ? `, awaiting_settle=${built.awaitingSettle}` : ""}` +
+      `${built.candidatesInWindow !== built.candidates ? `, after_window=${built.candidates - built.candidatesInWindow}` : ""})`
   );
   log(
     `  bets=${result.bets} markets=${result.clusters} stake=$${result.stakeUsd.toFixed(0)} winRate=${pct(result.winRate)} ` +
@@ -158,7 +153,9 @@ async function main(): Promise<number> {
   log(
     `[forward-read] mode=${PREREGISTERED ? "PRE-REGISTERED" : "SMOKE"}${
       PREREGISTERED ? "" : " (harness smoke test — the pre-registered window closes 2026-10-08)"
-    } dust_floor=${DUST} min_era=v${MIN_ERA} ruleset_versions=${era.versions.length}`
+    } dust_floor=${DUST} min_era=v${MIN_ERA} ruleset_versions=${era.versions.length}` +
+      ` as_of=${AS_OF === undefined ? "none" : new Date(AS_OF).toISOString()}` +
+      ` decided_by=${DECIDED_BY === undefined ? "none" : new Date(DECIDED_BY).toISOString()}`
   );
 
   const out: Row[] = [];
@@ -168,7 +165,13 @@ async function main(): Promise<number> {
       log(`\n[forward-read] ${lane.name} — no rows in data/${lane.file} (nothing to read)`);
       continue;
     }
-    const built = buildRows(laneRows, lane.stakeField, era.at);
+    const built = buildShadowRows(laneRows, {
+      stakeField: lane.stakeField,
+      dustFloor: DUST,
+      asOf: AS_OF,
+      decidedBy: DECIDED_BY,
+      eraAt: era.at,
+    });
     const result = evaluateShadowRead(built.rows);
     printRead(lane.name, built, result);
     out.push({
@@ -178,8 +181,12 @@ async function main(): Promise<number> {
       sourceFile: `data/${lane.file}`,
       entryConvention: "candidate.currentPrice; stake=row stakeUsd; ret=(settledValue-entry)/entry",
       dustFloor: DUST,
+      asOf: AS_OF === undefined ? null : new Date(AS_OF).toISOString(),
+      decidedBy: DECIDED_BY === undefined ? null : new Date(DECIDED_BY).toISOString(),
       candidates: built.candidates,
+      candidatesInWindow: built.candidatesInWindow,
       settled: built.resolved,
+      awaitingSettle: built.awaitingSettle,
       dustExcluded: built.dustExcluded,
       eraUnlabeled: built.unlabeledEra,
       result,

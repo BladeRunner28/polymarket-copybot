@@ -61,6 +61,126 @@ export type ShadowReadOptions = {
   alpha?: number;
 };
 
+/**
+ * A row as it sits in a shadow feed's JSONL (`type: candidate` | `type: resolve`).
+ * Deliberately untyped beyond `Record`: each lane names its stake field itself.
+ */
+export type ShadowSourceRow = Record<string, unknown>;
+
+export type ShadowBuildOptions = {
+  /** Field holding the dollars-at-risk for this lane (default `stakeUsd`). */
+  stakeField?: string;
+  /** Approved dust floor (tuning #29 rec 1); entries below it are not executable. */
+  dustFloor?: number;
+  /**
+   * REPRODUCIBILITY CUTOFF (epoch ms). Count only settles RECORDED at or before
+   * this instant, i.e. what a read run at that moment could have seen. Without
+   * it a read's population is "whatever has settled by now", which grows every
+   * day — so the same command returns a different population and the stored
+   * result cannot be re-derived. Undefined = no cutoff (the historical behaviour).
+   */
+  asOf?: number;
+  /**
+   * WINDOW CLOSE (epoch ms). Count only candidates DECIDED at or before this
+   * instant. A read "at the window close" must not include decisions taken after
+   * the window shut, even if they have since settled. Undefined = no cutoff.
+   */
+  decidedBy?: number;
+  /** Era lookup: which ruleSetVersion was live at a decision timestamp. */
+  eraAt?: (ms: number) => string | null;
+};
+
+export type ShadowBuiltRows = {
+  rows: ShadowReadRow[];
+  /** Candidate rows in the file (all of them, for comparability with old reads). */
+  candidates: number;
+  /** Candidate rows at/before `decidedBy` (equals `candidates` when unset). */
+  candidatesInWindow: number;
+  /** Candidates with a settle counted by this read (dust rows included). */
+  resolved: number;
+  /** Candidates settled only AFTER `asOf` — the rows an as-of read must not count. */
+  awaitingSettle: number;
+  dustExcluded: number;
+  unlabeledEra: number;
+};
+
+/**
+ * Turn a shadow feed's raw rows into the rows the criteria run on.
+ *
+ * Pure and side-effect free: the same file plus the same cutoffs must produce
+ * the same rows, or a "pre-registered" read is only a label. The two cutoffs are
+ * what make that true over time — `asOf` freezes the settle population, and
+ * `decidedBy` freezes the decision window; both unset reproduces the historical
+ * (uncut) read exactly.
+ */
+export function buildShadowRows(
+  source: readonly ShadowSourceRow[],
+  opts: ShadowBuildOptions = {}
+): ShadowBuiltRows {
+  const stakeField = opts.stakeField ?? "stakeUsd";
+  const dustFloor = opts.dustFloor ?? 0.1;
+  const eraAt = opts.eraAt ?? (() => null);
+
+  // Last write wins, as in the raw feed: a market|outcome has ONE outcome, and a
+  // later resolve row is the same market re-marked.
+  const settles = new Map<string, number>();
+  const lateSettles = new Set<string>();
+  for (const r of source) {
+    if (String(r.type) !== "resolve") continue;
+    const key = `${r.marketId}|${r.outcome}`;
+    const ts = Date.parse(String(r.ts));
+    if (opts.asOf !== undefined && Number.isFinite(ts) && ts > opts.asOf) {
+      lateSettles.add(key);
+      continue;
+    }
+    settles.set(key, Number(r.value));
+  }
+
+  const rows: ShadowReadRow[] = [];
+  let candidates = 0;
+  let candidatesInWindow = 0;
+  let resolved = 0;
+  let awaitingSettle = 0;
+  let dustExcluded = 0;
+  let unlabeledEra = 0;
+
+  for (const c of source) {
+    if (String(c.type) !== "candidate") continue;
+    candidates++;
+    const decidedAt = Date.parse(String(c.ts));
+    if (opts.decidedBy !== undefined && Number.isFinite(decidedAt) && decidedAt > opts.decidedBy) continue;
+    candidatesInWindow++;
+
+    const key = `${c.marketId}|${c.outcome}`;
+    const v = settles.get(key);
+    if (v === undefined) {
+      if (lateSettles.has(key)) awaitingSettle++;
+      continue;
+    }
+    resolved++;
+
+    const entry = Number(c.currentPrice);
+    const stake = Number(c[stakeField] ?? 10);
+    if (!Number.isFinite(entry) || entry < dustFloor || !Number.isFinite(stake) || stake <= 0) {
+      dustExcluded++;
+      continue;
+    }
+    const era = Number.isFinite(decidedAt) ? eraAt(decidedAt) : null;
+    if (era === null) unlabeledEra++;
+    rows.push({
+      key: `${c.marketId}|${c.outcome}|${c.wallet ?? ""}|${c.ts}`,
+      cluster: String(c.marketId),
+      ret: (v - entry) / entry,
+      stake,
+      won: v > 0,
+      decidedAt: Number.isFinite(decidedAt) ? decidedAt : 0,
+      era,
+    });
+  }
+
+  return { rows, candidates, candidatesInWindow, resolved, awaitingSettle, dustExcluded, unlabeledEra };
+}
+
 export type EraRead = { era: string; bets: number; roi: number };
 
 export type ShadowReadResult = {

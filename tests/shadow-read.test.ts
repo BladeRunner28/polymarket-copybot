@@ -3,6 +3,7 @@ import {
   evaluateShadowRead,
   clusteredBootstrapCi,
   stakeWeightedRead,
+  buildShadowRows,
   type ShadowReadRow,
 } from "../src/lib/shadow-read";
 
@@ -156,5 +157,105 @@ describe("evaluateShadowRead — the four criteria", () => {
     expect(r.criterionD).toBe(false);
     expect(r.decision).toBe("fail");
     expect(r.reasons.join(" ")).toMatch(/sign not consistent across eras/);
+  });
+});
+
+/**
+ * The cutoffs that make a read REPRODUCIBLE. A "pre-registered" read whose
+ * population moves with the calendar is not pre-registered: re-running the same
+ * command must return the same rows, which is what `asOf` (settle population)
+ * and `decidedBy` (decision window) pin. The no-cutoff case must stay identical
+ * to the historical read, or the fix silently re-bases stored results.
+ */
+describe("buildShadowRows — the reproducibility cutoffs", () => {
+  const cand = (over: Record<string, unknown>) => ({
+    type: "candidate",
+    marketId: "m1",
+    outcome: "YES",
+    currentPrice: 0.5,
+    stakeUsd: 10,
+    ts: "2026-10-01T00:00:00Z",
+    ...over,
+  });
+  const resolve = (marketId: string, value: number, ts: string) => ({
+    type: "resolve",
+    marketId,
+    outcome: "YES",
+    value,
+    ts,
+  });
+
+  it("no cutoffs = the historical read (same counts, same rows)", () => {
+    const built = buildShadowRows([
+      cand({ marketId: "m1" }),
+      cand({ marketId: "m2", ts: "2026-10-09T00:00:00Z" }),
+      cand({ marketId: "m3", currentPrice: 0.05 }), // dust
+      cand({ marketId: "m4" }), // never settles
+      resolve("m1", 1, "2026-10-02T00:00:00Z"),
+      resolve("m2", 0, "2026-10-09T00:00:00Z"),
+      resolve("m3", 1, "2026-10-03T00:00:00Z"),
+    ]);
+    expect(built.candidates).toBe(4);
+    expect(built.candidatesInWindow).toBe(4);
+    expect(built.resolved).toBe(3);
+    expect(built.dustExcluded).toBe(1);
+    expect(built.awaitingSettle).toBe(0);
+    expect(built.rows).toHaveLength(2);
+    expect(built.rows.map((r) => r.cluster).sort()).toEqual(["m1", "m2"]);
+  });
+
+  it("as-of excludes a settle RECORDED later, and counts it as awaiting rather than as a bet", () => {
+    const source = [
+      cand({ marketId: "m1" }),
+      cand({ marketId: "m2" }),
+      resolve("m1", 1, "2026-10-02T00:00:00Z"),
+      resolve("m2", 1, "2026-10-20T00:00:00Z"), // settled after the read instant
+    ];
+    const at = Date.parse("2026-10-10T00:00:00Z");
+    const cut = buildShadowRows(source, { asOf: at });
+    expect(cut.resolved).toBe(1);
+    expect(cut.awaitingSettle).toBe(1);
+    expect(cut.rows).toHaveLength(1);
+    // The uncut read would have counted it — that is the population drift.
+    expect(buildShadowRows(source).rows).toHaveLength(2);
+  });
+
+  it("decided-by freezes the decision window: a later decision is excluded, not counted as awaiting", () => {
+    const source = [
+      cand({ marketId: "m1", ts: "2026-10-01T00:00:00Z" }),
+      cand({ marketId: "m2", ts: "2026-10-09T00:00:00Z" }),
+      resolve("m1", 1, "2026-10-02T00:00:00Z"),
+      resolve("m2", 1, "2026-10-10T00:00:00Z"),
+    ];
+    const built = buildShadowRows(source, { decidedBy: Date.parse("2026-10-08T23:59:59Z") });
+    expect(built.candidates).toBe(2);
+    expect(built.candidatesInWindow).toBe(1);
+    expect(built.rows.map((r) => r.cluster)).toEqual(["m1"]);
+    expect(built.awaitingSettle).toBe(0);
+  });
+
+  it("counts dust as settled (not awaiting), so the excluded count still reconciles", () => {
+    const built = buildShadowRows([cand({ currentPrice: 0.02 }), resolve("m1", 1, "2026-10-02T00:00:00Z")], {
+      asOf: Date.parse("2026-10-10T00:00:00Z"),
+    });
+    expect(built.resolved).toBe(1);
+    expect(built.dustExcluded).toBe(1);
+    expect(built.awaitingSettle).toBe(0);
+    expect(built.rows).toHaveLength(0);
+  });
+
+  it("labels the era live at the DECISION, not at the settle", () => {
+    const built = buildShadowRows(
+      [cand({ marketId: "m1", ts: "2026-10-01T00:00:00Z" }), resolve("m1", 1, "2026-11-01T00:00:00Z")],
+      { eraAt: (ms) => (ms < Date.parse("2026-10-15T00:00:00Z") ? "v60" : "v71") }
+    );
+    expect(built.rows[0].era).toBe("v60");
+    expect(built.unlabeledEra).toBe(0);
+  });
+
+  it("reports an unlabelable era as unlabeled, never as a passing label", () => {
+    const built = buildShadowRows([cand({}), resolve("m1", 1, "2026-10-02T00:00:00Z")], { eraAt: () => null });
+    expect(built.rows[0].era).toBeNull();
+    expect(built.unlabeledEra).toBe(1);
   });
 });
