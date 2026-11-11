@@ -32,7 +32,7 @@
  * Run: npx tsx scripts/market-hygiene-rank-read.ts
  */
 import { writeFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { prisma } from "../src/lib/db";
 import { marketRiskGrade, washTradeProfile, type HygieneMarketInput } from "../src/lib/market-hygiene";
 import { eraOf } from "../src/lib/training-export";
@@ -47,7 +47,11 @@ import {
   type HygieneRankLeg,
 } from "../src/lib/hygiene-rank";
 
-const OUT = join(__dirname, "..", "data", "market-hygiene-rank.json");
+// The 2026-11-09 first run is the pre-registered artefact; a re-run must not overwrite it in
+// place, or the record of what was read before the rule had seen any data disappears.
+const OUT = process.env.HYGIENE_RANK_OUT
+  ? resolve(process.env.HYGIENE_RANK_OUT)
+  : join(__dirname, "..", "data", "market-hygiene-rank.json");
 const ASOF_WINDOW_MS = 12 * 3600 * 1000;
 const VOL_LOOKBACK_MS = 36 * 3600 * 1000;
 const VOL_MIN_WINDOW_MS = 6 * 3600 * 1000;

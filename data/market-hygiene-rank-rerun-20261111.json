@@ -1,0 +1,555 @@
+{
+  "generatedAt": "2026-11-11T18:38:01.800Z",
+  "basis": {
+    "population": "settled non-demo PaperTrade legs joined to DecisionJournal for ruleSetVersion era",
+    "level": "leg; bootstrap clusters on market",
+    "clock": "as-of MarketSnapshot at or before openedAt (<=12h stale); outcome realizedPnl/size",
+    "outcome": "realizedPnl / simulatedPositionSize",
+    "volume24hr": "reconstructed from our own cumulative-volume delta, window >=6h inside [open-36h, open], scaled to 24h; 4629/12767 legs",
+    "riskScore": "ported 6-factor grade, weights renormalised over factors whose input is present",
+    "minArmRows": 150
+  },
+  "verdict": {
+    "verdict": "NO RANK INFORMATION",
+    "reasons": [
+      "sign is not negative in every era: kelly-window-v49-57 0.129, exposure-v58plus 0.057",
+      "pooled clustered CI does not exclude zero (hi=0.045)"
+    ],
+    "pooledRiskSpearman": -0.10108987518309566,
+    "pooledCi": {
+      "lo": -0.2595691314788686,
+      "hi": 0.04540117627894123,
+      "iters": 4000,
+      "usable": 4000
+    }
+  },
+  "eras": [
+    {
+      "era": "pre-kelly-v1-48",
+      "nLegs": 10557,
+      "nMarkets": 2670,
+      "nSettlementLegs": 2187,
+      "returns": {
+        "n": 10557,
+        "mean": 0.09500997661679579,
+        "median": 0.04001125492402926,
+        "trimmedMean": -0.027816014796668016,
+        "winRate": 0.6327555176660036,
+        "sum": 1003.0203231435131,
+        "exTop10": 0.08019877751055961
+      },
+      "riskSpearman": -0.1417789228585756,
+      "riskCi": {
+        "lo": -0.3192646571308028,
+        "hi": 0.036210502259799604,
+        "iters": 4000,
+        "usable": 4000
+      },
+      "washSpearman": -0.10003516941446668,
+      "washAssessedShare": 0.16463010324902907,
+      "byGrade": [
+        {
+          "grade": "A",
+          "n": 1657,
+          "returns": {
+            "n": 1657,
+            "mean": 0.380018763642642,
+            "median": 0.719672131147541,
+            "trimmedMean": 0.4384555917796901,
+            "winRate": 0.832226916113458,
+            "sum": 629.6910913558578,
+            "exTop10": 0.35502333571442396
+          }
+        },
+        {
+          "grade": "B",
+          "n": 7413,
+          "returns": {
+            "n": 7413,
+            "mean": 0.03652443850432431,
+            "median": 0.007407407407407407,
+            "trimmedMean": -0.10946051789205803,
+            "winRate": 0.6036692297315527,
+            "sum": 270.7556626325561,
+            "exTop10": 0.0153959596615434
+          }
+        },
+        {
+          "grade": "C",
+          "n": 1476,
+          "returns": {
+            "n": 1476,
+            "mean": 0.06525545501614087,
+            "median": 0.0475,
+            "trimmedMean": -0.12020468087349193,
+            "winRate": 0.5548780487804879,
+            "sum": 96.31705160382393,
+            "exTop10": 0.016723270178405393
+          }
+        },
+        {
+          "grade": "D",
+          "n": 11,
+          "returns": {
+            "n": 11,
+            "mean": 0.5687743228457282,
+            "median": 0.960377358490566,
+            "trimmedMean": 0.5609222829140963,
+            "winRate": 0.6363636363636364,
+            "sum": 6.256517551303009,
+            "exTop10": -1.000532994923858
+          }
+        },
+        {
+          "grade": "F",
+          "n": 0,
+          "returns": {
+            "n": 0,
+            "mean": 0,
+            "median": 0,
+            "trimmedMean": 0,
+            "winRate": 0,
+            "sum": 0,
+            "exTop10": 0
+          }
+        }
+      ],
+      "byPriceBand": [
+        {
+          "band": "0.00-0.20",
+          "n": 540,
+          "riskSpearman": -0.06694957855265089
+        },
+        {
+          "band": "0.20-0.40",
+          "n": 1408,
+          "riskSpearman": -0.015776581550560425
+        },
+        {
+          "band": "0.40-0.60",
+          "n": 4022,
+          "riskSpearman": -0.12173705596725466
+        },
+        {
+          "band": "0.60-0.80",
+          "n": 1764,
+          "riskSpearman": 0.055452527209727244
+        },
+        {
+          "band": "0.80-1.00",
+          "n": 2823,
+          "riskSpearman": 0.08625465408522222
+        }
+      ]
+    },
+    {
+      "era": "kelly-window-v49-57",
+      "nLegs": 992,
+      "nMarkets": 672,
+      "nSettlementLegs": 584,
+      "returns": {
+        "n": 992,
+        "mean": -0.017958961097861496,
+        "median": -0.1997314454745674,
+        "trimmedMean": -0.21349087493058133,
+        "winRate": 0.4334677419354839,
+        "sum": -17.815289409078602,
+        "exTop10": -0.08537770832244722
+      },
+      "riskSpearman": 0.1285217833464194,
+      "riskCi": {
+        "lo": -0.07331936013175629,
+        "hi": 0.33214172683788845,
+        "iters": 4000,
+        "usable": 4000
+      },
+      "washSpearman": -0.11979611933195307,
+      "washAssessedShare": 0.17137096774193547,
+      "byGrade": [
+        {
+          "grade": "A",
+          "n": 110,
+          "returns": {
+            "n": 110,
+            "mean": -0.35023114050760534,
+            "median": -1,
+            "trimmedMean": -0.6766703626020795,
+            "winRate": 0.17272727272727273,
+            "sum": -38.52542545583659,
+            "exTop10": -0.6953098302573427
+          }
+        },
+        {
+          "grade": "B",
+          "n": 616,
+          "returns": {
+            "n": 616,
+            "mean": 0.010390214998016109,
+            "median": -0.1608530456852792,
+            "trimmedMean": -0.16238945452762235,
+            "winRate": 0.461038961038961,
+            "sum": 6.400372438777923,
+            "exTop10": -0.08432250041136109
+          }
+        },
+        {
+          "grade": "C",
+          "n": 266,
+          "returns": {
+            "n": 266,
+            "mean": 0.053796103789397975,
+            "median": -0.16341370558375634,
+            "trimmedMean": -0.13660277963605275,
+            "winRate": 0.4774436090225564,
+            "sum": 14.309763607979862,
+            "exTop10": -0.11799665920903514
+          }
+        },
+        {
+          "grade": "D",
+          "n": 0,
+          "returns": {
+            "n": 0,
+            "mean": 0,
+            "median": 0,
+            "trimmedMean": 0,
+            "winRate": 0,
+            "sum": 0,
+            "exTop10": 0
+          }
+        },
+        {
+          "grade": "F",
+          "n": 0,
+          "returns": {
+            "n": 0,
+            "mean": 0,
+            "median": 0,
+            "trimmedMean": 0,
+            "winRate": 0,
+            "sum": 0,
+            "exTop10": 0
+          }
+        }
+      ],
+      "byPriceBand": [
+        {
+          "band": "0.00-0.20",
+          "n": 123,
+          "riskSpearman": -0.34901955964466225
+        },
+        {
+          "band": "0.20-0.40",
+          "n": 167,
+          "riskSpearman": 0.16317480475985968
+        },
+        {
+          "band": "0.40-0.60",
+          "n": 409,
+          "riskSpearman": 0.2852247860140846
+        },
+        {
+          "band": "0.60-0.80",
+          "n": 283,
+          "riskSpearman": 0.010951208751876504
+        },
+        {
+          "band": "0.80-1.00",
+          "n": 10,
+          "riskSpearman": -0.12936908446738699
+        }
+      ]
+    },
+    {
+      "era": "exposure-v58plus",
+      "nLegs": 1218,
+      "nMarkets": 1000,
+      "nSettlementLegs": 981,
+      "returns": {
+        "n": 1218,
+        "mean": 0.3138038239714173,
+        "median": -0.16332755102040816,
+        "trimmedMean": -0.07711535878908439,
+        "winRate": 0.3891625615763547,
+        "sum": 382.21305759718626,
+        "exTop10": 0.20069806398186416
+      },
+      "riskSpearman": 0.057217850217028195,
+      "riskCi": {
+        "lo": -0.002851361795025311,
+        "hi": 0.11899638231625174,
+        "iters": 4000,
+        "usable": 4000
+      },
+      "washSpearman": -0.16908233556850968,
+      "washAssessedShare": 0.035303776683087026,
+      "byGrade": [
+        {
+          "grade": "A",
+          "n": 170,
+          "returns": {
+            "n": 170,
+            "mean": -0.1304942509859013,
+            "median": -0.893434340801385,
+            "trimmedMean": -0.336197539510283,
+            "winRate": 0.3588235294117647,
+            "sum": -22.184022667603223,
+            "exTop10": -0.31538361303481377
+          }
+        },
+        {
+          "grade": "B",
+          "n": 761,
+          "returns": {
+            "n": 761,
+            "mean": 0.31750615043474334,
+            "median": -0.15059791783905457,
+            "trimmedMean": -0.03310236282658927,
+            "winRate": 0.4021024967148489,
+            "sum": 241.6221804808397,
+            "exTop10": 0.18026236393786582
+          }
+        },
+        {
+          "grade": "C",
+          "n": 287,
+          "returns": {
+            "n": 287,
+            "mean": 0.5671599295607896,
+            "median": 0,
+            "trimmedMean": -0.024888025871539873,
+            "winRate": 0.37282229965156793,
+            "sum": 162.77489978394664,
+            "exTop10": 0.1593737256540393
+          }
+        },
+        {
+          "grade": "D",
+          "n": 0,
+          "returns": {
+            "n": 0,
+            "mean": 0,
+            "median": 0,
+            "trimmedMean": 0,
+            "winRate": 0,
+            "sum": 0,
+            "exTop10": 0
+          }
+        },
+        {
+          "grade": "F",
+          "n": 0,
+          "returns": {
+            "n": 0,
+            "mean": 0,
+            "median": 0,
+            "trimmedMean": 0,
+            "winRate": 0,
+            "sum": 0,
+            "exTop10": 0
+          }
+        }
+      ],
+      "byPriceBand": [
+        {
+          "band": "0.00-0.20",
+          "n": 240,
+          "riskSpearman": 0.2244054647124214
+        },
+        {
+          "band": "0.20-0.40",
+          "n": 427,
+          "riskSpearman": 0.1433164236034315
+        },
+        {
+          "band": "0.40-0.60",
+          "n": 349,
+          "riskSpearman": -0.04474374225464412
+        },
+        {
+          "band": "0.60-0.80",
+          "n": 191,
+          "riskSpearman": -0.005030112885113004
+        },
+        {
+          "band": "0.80-1.00",
+          "n": 11,
+          "riskSpearman": -0.5150936846251739
+        }
+      ]
+    }
+  ],
+  "sensitivity": {
+    "portedAsIsSpearman": -0.09985741672827672,
+    "n": 12767,
+    "note": "ported formula reads a missing volume input as no recent volume (40)"
+  },
+  "settlementSensitivity": [
+    {
+      "era": "pre-kelly-v1-48",
+      "n": 2187,
+      "rho": -0.3324138778850567,
+      "mean": 0.3502131456668649
+    },
+    {
+      "era": "kelly-window-v49-57",
+      "n": 584,
+      "rho": 0.1353748247469099,
+      "mean": -0.001802616917219859
+    },
+    {
+      "era": "exposure-v58plus",
+      "n": 981,
+      "rho": 0.050734271069654197,
+      "mean": 0.43572830222627085
+    }
+  ],
+  "versionCensus": {
+    "versions": 67,
+    "reachingFloor": 22,
+    "medianLegsPerVersion": 67,
+    "atFloor": [
+      "2:3766",
+      "3:482",
+      "6:816",
+      "7:268",
+      "8:253",
+      "9:163",
+      "10:301",
+      "12:207",
+      "15:159",
+      "19:384",
+      "20:318",
+      "21:279",
+      "22:225",
+      "26:583",
+      "28:225",
+      "32:183",
+      "35:436",
+      "50:155",
+      "52:299",
+      "53:253",
+      "60:502",
+      "71:247"
+    ]
+  },
+  "perVersion": [
+    {
+      "version": 2,
+      "n": 3766,
+      "rho": -0.4119057598978161
+    },
+    {
+      "version": 3,
+      "n": 482,
+      "rho": -0.32288579525793254
+    },
+    {
+      "version": 6,
+      "n": 816,
+      "rho": 0.06896314631169792
+    },
+    {
+      "version": 7,
+      "n": 268,
+      "rho": -0.058074625128331545
+    },
+    {
+      "version": 8,
+      "n": 253,
+      "rho": -0.03572996589231045
+    },
+    {
+      "version": 9,
+      "n": 163,
+      "rho": 0.08155132091292729
+    },
+    {
+      "version": 10,
+      "n": 301,
+      "rho": -0.11569612216809717
+    },
+    {
+      "version": 12,
+      "n": 207,
+      "rho": 0.20065216540994438
+    },
+    {
+      "version": 15,
+      "n": 159,
+      "rho": 0.1428458234844256
+    },
+    {
+      "version": 19,
+      "n": 384,
+      "rho": 0.08507471998218213
+    },
+    {
+      "version": 20,
+      "n": 318,
+      "rho": 0.0671936296793326
+    },
+    {
+      "version": 21,
+      "n": 279,
+      "rho": -0.2651916974936225
+    },
+    {
+      "version": 22,
+      "n": 225,
+      "rho": 0.04690897072621624
+    },
+    {
+      "version": 26,
+      "n": 583,
+      "rho": 0.21929245566050637
+    },
+    {
+      "version": 28,
+      "n": 225,
+      "rho": -0.09378193070153998
+    },
+    {
+      "version": 32,
+      "n": 183,
+      "rho": -0.054337626769760235
+    },
+    {
+      "version": 35,
+      "n": 436,
+      "rho": 0.015308522717866549
+    },
+    {
+      "version": 50,
+      "n": 155,
+      "rho": 0.3318266774677335
+    },
+    {
+      "version": 52,
+      "n": 299,
+      "rho": -0.07741223212065666
+    },
+    {
+      "version": 53,
+      "n": 253,
+      "rho": -0.03866048861675202
+    },
+    {
+      "version": 60,
+      "n": 502,
+      "rho": -0.0363471892963671
+    },
+    {
+      "version": 71,
+      "n": 247,
+      "rho": 0.21177401365545329
+    }
+  ],
+  "counts": {
+    "legs": 12767,
+    "markets": 4288,
+    "volEstimated": 4629,
+    "volMissing": 8138,
+    "omittedVolume": 8138
+  }
+}
