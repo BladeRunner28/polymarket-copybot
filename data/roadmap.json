@@ -8,6 +8,22 @@
   ],
   "cards": [
     {
+      "id": "profit-band-clip-rebalance",
+      "title": "LANE A PROPOSAL — clip is inverse to edge: cap 0.0-0.2 at $25 and lift 0.2-0.4 to $25 (same gross, +$935 in the live regime)",
+      "column": "Scheduled",
+      "effort": "1h",
+      "dates": "Proposed 2026-11-11 by the profit review (drafts/profit-recs-20261111.md, instrument scripts/profit-postfix-integrity.py §J). NOT APPLIED — Lane A: it changes how much each band risks.",
+      "note": "WHY: on the basis-independent edge test (hit rate vs price paid, resolved legs excluded from selection effects) the book's clip is inverse to its evidence. All-time, legs that traded (5,680 legs, $64,168, cost = $ at risk): 0.0-0.2 avg clip $23.0 (p90 $75.1) on a +9.1pp calibration edge [Wilson +5.9,+12.9]; 0.2-0.4 avg clip $11.8 (p90 $18.0) on +6.4pp [+3.3,+9.6]; 0.8-1.0 avg clip $10.2 on -7.6pp [-9.8,-5.7]. Shadow on REALISED legs, PnL rescaled linearly in dollars at risk with no re-selection, delta CI market-clustered: package (cap cheap $25 + lift 0.2-0.4 $25) = +$78 all-time (CI [-5.8,+5.3], i.e. a wash), +$935 regime >= 2026-10-26 (CI [+5.5,+29.9]), +$287 clean post-fix cohort (CI [+0.5,+74.6]); notional 5,037 -> 5,038 in the regime (the same gross, a different cell). SPLIT: the cap alone is -$2,108 all-time / +$790 regime (a window bet); the lift alone is +$2,186 all-time (CI [+1.2,+5.8]) / +$145 regime / +$63 clean and has never changed sign. The package exists so the history pays for the regime; if only one half is approved, apply the lift.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "sizing",
+        "edge-attribution"
+      ],
+      "gate": "DECISION RULE: apply the package ($25 cap on 0.0-0.2, $25 floor on 0.2-0.4 for legs currently below it), after the book-walk fill read on 0.2-0.4. REFUTATION: (a) median fill premium > 6.4c in 0.2-0.4 — that cell's tol is +6.4pp, so a premium above it prices the lift away entirely; or (b) 150 settled legs of the new mix with 0.2-0.4 ROI <= 0 AND the cheap band back above +40% — the cheap band's edge returning at scale means the cap was wrong. Re-read: python3 scripts/profit-postfix-integrity.py --only=G,J"
+    },
+    {
       "id": "ledger-price-side-repair",
       "title": "LANE A PROPOSAL — 137 legs still carry the complement price: the book prints +$12,531 where the same exits are +$5,620, and this week's ladder gate prints PASS on it",
       "column": "Scheduled",

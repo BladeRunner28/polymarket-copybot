@@ -491,6 +491,449 @@ def sec_wallets(ded):
           f"({pos / max(1, len(per)) * 100:.0f}%)")
 
 
+def _wilson(k, n, z=1.96):
+    """Wilson score interval for a binomial proportion (no normal approx at small n)."""
+    import math
+    if n == 0:
+        return (0.0, 0.0)
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return (max(0.0, c - h), min(1.0, c + h))
+
+
+def risk_legs(ls):
+    """Legs that actually TRADED. `unfilled` with a zero payoff is an order the venue
+    says never filled: it risked nothing, so it must not sit in an ROI denominator and
+    must not be counted as a loss. In the current regime these are 121 of 367 legs and
+    $3,042 of the regime's $8,079 notional (a third of the legs, 38% of the money) --
+    so this exclusion moves every number it touches, in the direction of MORE extreme,
+    not less. `unfilled` legs that DO carry a payoff (246 all-time, partial fills / fee
+    adjustments) are kept.
+    """
+    return [l for l in ls if not (l["fillStatus"] == "unfilled" and (l["realizedPnl"] or 0) == 0)]
+
+
+def _excl_note(label, all_legs, kept):
+    drop = [l for l in all_legs if l not in kept]
+    if not drop:
+        return
+    print(f"  [{label}: {len(drop)} unfilled legs excluded, "
+          f"${sum(l['simulatedPositionSize'] for l in drop):,.0f} notional "
+          f"({len(drop) / max(1, len(all_legs)) * 100:.0f}% of legs)]")
+
+
+def sec_calibration(ded):
+    """G. HIT RATE VS PRICE -- the basis-independent edge test.
+
+    WHY THIS SECTION EXISTS. The standing claim "PnL is extremely concentrated,
+    ex-top-10 collapses +16.1% -> +2.1%, so there is no edge" is a FAVOURITES test
+    applied to a LONGSHOT book. In a cell with a ~19% hit rate and a ~+700% payoff,
+    the top 10 of 541 legs holding the whole profit is arithmetic, not evidence: with
+    19% accuracy the mean is carried by a handful of draws at ANY sample size, and
+    ex-top-N destroys it EVEN IF the edge is exactly the measured one. For a BUY at
+    p, ROI = hit/p - 1, so the cell has edge iff hit > p. That is the falsifiable
+    statement, and its standard error depends on the number of DRAWS (legs), not on
+    how fat the tail is. So this section reports hit rate, break-even rate (= the
+    price paid), the gap in points, and a Wilson interval on the hit rate.
+
+    Resolved-only, by contract: a resolved leg pays 1.0 or 0.0, so the identity
+    ROI = hit/p - 1 is EXACT. An early close pays the mark, and hit%-p would then be
+    the wrong identity -- which is why the finished-all table is printed for reference
+    but the VERDICT rests on the resolved table. Where the two disagree, the gap is
+    the early-close policy and section H prices it.
+    """
+    print()
+    print("=" * 78)
+    print("G. CALIBRATION -- hit rate vs the price paid (the edge test that does not")
+    print("   depend on the clip size, the cost basis, or the shape of the payoff)")
+    print("=" * 78)
+    fin_all = [l for l in ded if l["status"] != "open"]
+    fin = risk_legs(fin_all)
+    _excl_note("ALL-TIME", fin_all, fin)
+    clean_from = _ms(FIX_EPOCH)
+    reg_from = _ms(REGIME)
+    pops = [
+        ("ALL-TIME finished", fin),
+        ("ALL-TIME resolved", [l for l in fin if l["status"] == "resolved"]),
+        ("REGIME >= %s finished" % REGIME[:10], [l for l in fin if l["openedTs"] >= reg_from]),
+        ("REGIME resolved", [l for l in fin if l["status"] == "resolved" and l["openedTs"] >= reg_from]),
+        ("CLEAN post-fix resolved", [l for l in fin if l["status"] == "resolved" and l["openedTs"] >= clean_from]),
+    ]
+    for label, pop in pops:
+        if not pop:
+            continue
+        exact = "resolved" in label
+        print(f"\n  {label}   (legs {len(pop):,}; identity "
+              f"{'EXACT' if exact else 'approx -- early closes pay a mark'})")
+        print(f"    {'band':<8} {'n':>4} {'hit%':>6} {'wilson95':>15} {'avgP':>6} "
+              f"{'tol pp':>7} {'tol CI95':>16} {'ROI@ident':>9} {'verdict':>10}")
+        for lo, hi in BANDS:
+            bn = band_name(lo, hi)
+            g = [l for l in pop if band_of(l["trueP"]) == bn]
+            if not g:
+                continue
+            k = sum(1 for l in g if (true_pnl(l, l["trueP"]) or 0.0) > 0)
+            n = len(g)
+            hit = k / n
+            avgp = sum(l["trueP"] for l in g) / n
+            wlo, whi = _wilson(k, n)
+            tlo, thi = (wlo - avgp) * 100, (whi - avgp) * 100
+            roi = (hit / avgp - 1.0) * 100 if avgp > 0 else 0.0
+            verdict = "edge" if tlo > 0 else ("NO edge" if thi < 0 else "open")
+            print(f"    {bn:<8} {n:>4} {hit * 100:>6.1f} "
+                  f"[{wlo * 100:>4.1f},{whi * 100:>5.1f}] {avgp:>6.3f} "
+                  f"{(hit - avgp) * 100:>+7.1f} [{tlo:>+6.1f},{thi:>+6.1f}] "
+                  f"{roi:>+9.1f} {verdict:>10}")
+        tot_k = sum(1 for l in pop if (true_pnl(l, l["trueP"]) or 0.0) > 0)
+        tot_avgp = sum(l["trueP"] for l in pop) / len(pop)
+        print(f"    {'BOOK':<8} {len(pop):>4} {tot_k / len(pop) * 100:>6.1f} "
+              f"{'':>15} {tot_avgp:>6.3f} {(tot_k / len(pop) - tot_avgp) * 100:>+7.1f}")
+    print("\n  READ: a band has an EDGE iff tol's interval excludes 0. tol < 0 means the")
+    print("  band pays a price above the accuracy it delivers. No tail-trimming argument")
+    print("  is needed for that, and none can argue it away.")
+
+
+def sec_clean(ded):
+    """H. THE CLEAN COHORT -- the only population where the price basis cannot matter.
+
+    Every leg opened after FIX_EPOCH was written by the corrected parser, so booked
+    price == price paid and bookedPnl == truePnl. That makes it the one forward read
+    that is immune to the 233-row defect and to any argument about which estimator to
+    use. It is small, and small is the finding: n is on every line.
+
+    H2 prices the gap between the two edge statistics: a cell's ROI can be far worse
+    than its calibration when the early-close policy sells the ticket before it pays.
+    For a longshot that is the whole edge -- the payoff IS the tail -- so the split
+    between `closed` and `resolved` legs is the difference between being paid for a
+    lottery and paying for one.
+    """
+    print()
+    print("=" * 78)
+    print("H. CLEAN COHORT -- legs opened after the write fix (basis-independent)")
+    print("=" * 78)
+    fin_all = [l for l in ded if l["status"] != "open"]
+    fin = risk_legs(fin_all)
+    clean = [l for l in fin if l["openedTs"] >= _ms(FIX_EPOCH)]
+    if not clean:
+        print("  none settled yet")
+        return
+    _excl_note("CLEAN", [l for l in fin_all if l["openedTs"] >= _ms(FIX_EPOCH)], clean)
+    ntl = sum(l["simulatedPositionSize"] for l in clean)
+    p = sum((true_pnl(l, l["trueP"]) or 0.0) for l in clean)
+    clo, chi = cluster_ci(clean, lambda l: true_pnl(l, l["trueP"]))
+    print(f"  settled {len(clean)} legs that traded, ${ntl:,.0f} at risk, true PnL "
+          f"{money(p)} ({pct(p / ntl * 100)}), clustered CI [{clo:+.1f},{chi:+.1f}]")
+    days = (max(l["openedTs"] for l in clean) - _ms(FIX_EPOCH)) / 86400000.0
+    print(f"  cohort spans {days:.1f} days; ${ntl / max(days, 0.1):,.0f}/day at risk")
+    print(f"\n  {'band':<8} {'n':>4} {'ntl':>8} {'ROI':>8} {'CI95':>17} {'hit%':>6} "
+          f"{'avgP':>6} {'tol':>6} {'x1':>7} {'x3':>7}")
+    for lo, hi in BANDS:
+        bn = band_name(lo, hi)
+        g = [l for l in clean if band_of(l["trueP"]) == bn]
+        if not g:
+            continue
+        n_ = sum(l["simulatedPositionSize"] for l in g)
+        p_ = sum((true_pnl(l, l["trueP"]) or 0.0) for l in g)
+        a, b_ = cluster_ci(g, lambda l: true_pnl(l, l["trueP"]))
+        hit = sum(1 for l in g if (true_pnl(l, l["trueP"]) or 0.0) > 0) / len(g) * 100
+        avgp = sum(l["trueP"] for l in g) / len(g)
+        ex = {}
+        for k in (1, 3):
+            s = sorted(g, key=lambda l: -(true_pnl(l, l["trueP"]) or 0.0))[k:]
+            nn = sum(l["simulatedPositionSize"] for l in s)
+            ex[k] = (sum((true_pnl(l, l["trueP"]) or 0.0) for l in s) / nn * 100) if nn else 0.0
+        print(f"    {bn:<8} {len(g):>4} {n_:>8,.0f} {pct(p_ / n_ * 100):>8} "
+              f"[{a:+.1f},{b_:+.1f}]".rjust(18) + f" {hit:>6.1f} {avgp:>6.3f} "
+              f"{hit - avgp * 100:>+6.1f} {ex[1]:>+7.1f} {ex[3]:>+7.1f}")
+
+    # H2. closed vs resolved -- the early-close column
+    print(f"\n  H2. WHERE ROI AND CALIBRATION DISAGREE: the early-close column")
+    for label, pop in (("ALL-TIME", fin), ("REGIME", [l for l in fin if l["openedTs"] >= _ms(REGIME)]),
+                       ("CLEAN", clean)):
+        print(f"    {label}: {'band':<8} {'closed n':>9} {'closed pnl':>11} "
+              f"{'resolved n':>11} {'resolved pnl':>12} {'resid ROI':>10}")
+        for lo, hi in BANDS:
+            bn = band_name(lo, hi)
+            g = [l for l in pop if band_of(l["trueP"]) == bn]
+            if not g:
+                continue
+            c = [l for l in g if l["status"] == "closed"]
+            r = [l for l in g if l["status"] == "resolved"]
+            cp = sum((true_pnl(l, l["trueP"]) or 0.0) for l in c)
+            rp = sum((true_pnl(l, l["trueP"]) or 0.0) for l in r)
+            rn = sum(l["simulatedPositionSize"] for l in r)
+            print(f"        {bn:<8} {len(c):>9} {money(cp):>11} {len(r):>11} "
+                  f"{money(rp):>12} {pct(rp / rn * 100) if rn else 'n/a':>10}")
+    # H3. band ROI by window on legs that traded -- the table the review quotes
+    print(f"\n  H3. BAND ROI by window, legs that traded only (cost = $ at risk)")
+    for label, pop in (("ALL-TIME", fin), ("REGIME", [l for l in fin if l["openedTs"] >= _ms(REGIME)]),
+                       ("CLEAN", clean)):
+        print(f"    {label:<9} {'band':<8} {'n':>4} {'ntl':>8} {'ROI':>8} {'CI95':>17} "
+              f"{'share':>6}")
+        tt = sum(l["simulatedPositionSize"] for l in pop)
+        for lo, hi in BANDS:
+            bn = band_name(lo, hi)
+            g = [l for l in pop if band_of(l["trueP"]) == bn]
+            if not g:
+                continue
+            n_ = sum(l["simulatedPositionSize"] for l in g)
+            p_ = sum((true_pnl(l, l["trueP"]) or 0.0) for l in g)
+            a, b_ = cluster_ci(g, lambda l: true_pnl(l, l["trueP"]))
+            print(f"    {'':<9} {bn:<8} {len(g):>4} {n_:>8,.0f} {pct(p_ / n_ * 100):>8} "
+                  f"[{a:+.1f},{b_:+.1f}]".rjust(18) + f" {n_ / tt * 100:>5.0f}%")
+    # what the open book is holding in the same cells
+    opn = [l for l in ded if l["status"] == "open"]
+    print(f"\n  open book by band (this is what the clean cohort is about to become):")
+    for lo, hi in BANDS:
+        bn = band_name(lo, hi)
+        g = [l for l in opn if band_of(l["trueP"]) == bn]
+        if not g:
+            continue
+        print(f"    {bn:<8} n={len(g):>3} ${sum(l['simulatedPositionSize'] for l in g):>8,.0f}")
+
+
+def _day_series(legs):
+    """Per-local-day booked PnL, true PnL and leg count for finished legs."""
+    b, t, n = {}, {}, {}
+    for l in legs:
+        end = l["closedAt"] or l["resolvedAt"]
+        if not end:
+            continue
+        d = market_day(_ms(end))
+        b[d] = b.get(d, 0.0) + (l["realizedPnl"] or 0.0)
+        t[d] = t.get(d, 0.0) + (true_pnl(l, l["trueP"]) or 0.0)
+        n[d] = n.get(d, 0) + 1
+    return b, t, n
+
+
+def sec_ladder(ded):
+    """I. WHAT IS THE LADDER READING, AND DOES THE READ EXIST ON THE TRUE BASIS?
+
+    query_bankroll.js computes the phase at READ TIME: gateFrom() walks the phase
+    table and advances while the trailing 7 SETTLED days sum >= target*7. It reads
+    the rows. Two consequences this section measures:
+
+      (1) THE RUNG IS NOT STORED. Nothing records "we earned Phase 2". A window that
+          clears $1,750 for seven days makes the read say Phase 2; the day that
+          window rolls off, the read falls back with no event and no alarm. So a
+          booked-clearing window is not a milestone -- it is a rolling artefact, and
+          the ladder can advance and retreat on arithmetic that later changes.
+      (2) THE SUM IS BOOKED. On the true basis the sum is a different number, and
+          "how many windows EVER cleared" becomes a question with an arithmetic
+          answer that does not depend on any estimator choice.
+
+    Also priced here: the 30-day capital series (src/lib/capital.ts, the /capital
+    chart) and the standing "50% of daily profit swept out of capital" policy, which
+    converts a booked daily number into an irreversible cash decision and a tax event.
+    """
+    print()
+    print("=" * 78)
+    print("I. LADDER PROVENANCE -- the rung is a read-time function of booked rows")
+    print("=" * 78)
+    fin = [l for l in ded if l["status"] != "open" and l["botId"] == "BANKROLL_200"]
+    b, t, n = _day_series(fin)
+    import datetime
+    days = sorted(b)
+    if len(days) < 8:
+        print("  too few days")
+        return
+    d0, d1 = datetime.date.fromisoformat(days[0]), datetime.date.fromisoformat(days[-1])
+    one = datetime.timedelta(days=1)
+
+    PHASES = [250, 500, 1000, 2000, 5000]
+    K = 7
+    wins = []
+    cur = d0
+    while cur + one * (K - 1) <= d1:
+        ds = [(cur + one * i).isoformat() for i in range(K)]
+        wins.append((ds[0], ds[-1],
+                     sum(b.get(x, 0.0) for x in ds),
+                     sum(t.get(x, 0.0) for x in ds),
+                     sum(n.get(x, 0) for x in ds)))
+        cur += one
+    print(f"  calendar span {days[0]} .. {days[-1]}; rolling {K}-day windows: {len(wins)}")
+    print(f"  {'rung':<12} {'need/7d':>9} {'booked clearing':>16} {'true clearing':>14}")
+    for i, target in enumerate(PHASES):
+        need = target * K
+        cb = sum(1 for w in wins if w[2] >= need)
+        ct = sum(1 for w in wins if w[3] >= need)
+        print(f"  Phase {i + 1} (${target:>4}/d) {need:>9,} {cb:>9}/{len(wins):<6} {ct:>8}/{len(wins):<5}")
+    best = max(wins, key=lambda w: w[3])
+    print(f"  best TRUE window ever: {best[0]}..{best[1]} {money(best[3])} "
+          f"(booked {money(best[2])})")
+    lastb = [w for w in wins if w[2] >= 1750]
+    lastt = [w for w in wins if w[3] >= 1750]
+    print(f"  last BOOKED window clearing $1,750: ends {lastb[-1][1] if lastb else 'never'}")
+    print(f"  last TRUE   window clearing $1,750: ends {lastt[-1][1] if lastt else 'never'}")
+    if len(lastb) > len(lastt):
+        span_b = {(w[0], w[1]) for w in lastb}
+        span_t = {(w[0], w[1]) for w in lastt}
+        print(f"  windows that clear on BOOKED rows but not on true rows: "
+              f"{len(span_b - span_t)} of {len(span_b)}")
+
+    # reproduce query_bankroll's own read: settled window = days T-SETTLE..T-SETTLE-6
+    SETTLE = 3
+    today = max(datetime.date.fromisoformat(x) for x in days)
+    for label, series in (("booked", b), ("true", t)):
+        w = [(today - one * (SETTLE + i)).isoformat() for i in range(K)]
+        s = sum(series.get(x, 0.0) for x in w)
+        idx = 0
+        for i, target in enumerate(PHASES):
+            if s >= target * K:
+                idx = i + 1
+            else:
+                break
+        idx = min(idx, len(PHASES) - 1)
+        need = PHASES[idx] * K
+        print(f"\n  query_bankroll read reproduced ({label}): window {w[-1]}..{w[0]} "
+              f"sum {money(s)}")
+        print(f"    -> current goal = Phase {idx + 1} (${PHASES[idx]}/day), "
+              f"gate {money(s)} vs ${need:,} = {s / need * 100:.1f}% "
+              f"{'MET' if s >= need else 'SHORT'}")
+
+    # the 30-day capital series (capital.ts) and the 50% sweep policy
+    print(f"\n  30 local days of the /capital series (booked vs true, same rows):")
+    end = today
+    start = end - one * 29
+    sb = st = 0.0
+    sweep_b = sweep_t = 0.0
+    for i in range(30):
+        d = (start + one * i).isoformat()
+        vb, vt = b.get(d, 0.0), t.get(d, 0.0)
+        sb += vb
+        st += vt
+        sweep_b += 0.5 * max(0.0, vb)
+        sweep_t += 0.5 * max(0.0, vt)
+    print(f"    {start} .. {end}: booked {money(sb)}   true {money(st)}   "
+          f"gap {money(sb - st)}")
+    print(f"    50% profit sweep over the same 30 days: booked {money(sweep_b)}  "
+          f"true {money(sweep_t)}  -> phantom withdrawal {money(sweep_b - sweep_t)}")
+    print("    (the sweep is a PRODUCTION policy, 2027-01-02; in paper it is a number,")
+    print("     in production it is cash leaving the book and a taxable event)")
+
+
+def _resize(l, plan):
+    """New dollars at risk under a band-relative clip PLAN.
+
+    `plan` is a list of {"band": ..., "cap": ...} / {"band": ..., "lift": ...} steps,
+    applied in order, so a plan can cap one cell and lift another (the first draft
+    passed cap and lift as one dict and silently capped AND lifted the same band,
+    which made the 'cap cheap + lift mid' arm print the lift-only number -- caught
+    before quoting). PnL scales linearly in size at a fixed price:
+    pnl = ntl*(exit/p - 1). FILL ASSUMPTION: the larger clip pays the same price.
+    """
+    old = l["simulatedPositionSize"]
+    if old is None or old <= 0:
+        return old
+    new = old
+    bn = band_of(l["trueP"])
+    for step in plan:
+        if band_of(l["trueP"]) != step["band"]:
+            continue
+        if "cap" in step and new > step["cap"]:
+            new = step["cap"]
+        if "lift" in step and new < step["lift"]:
+            new = step["lift"]
+    return new
+
+
+def _shadow(legs, plan, label):
+    """Apply a sizing plan to realised legs and re-sum. Delta CI resamples markets."""
+    p_old = n_old = 0.0
+    tot = 0.0
+    n_new = 0.0
+    by = {}
+    for l in legs:
+        po = true_pnl(l, l["trueP"]) or 0.0
+        old = l["simulatedPositionSize"] or 0.0
+        new = _resize(l, plan) or 0.0
+        pn = po * (new / old) if old > 0 else po
+        p_old += po
+        n_old += old
+        n_new += new
+        tot += pn - po
+        g = by.setdefault(l["marketId"], [0.0, 0.0])
+        g[0] += pn - po
+        g[1] += old
+    # clustered bootstrap on the DELTA (roi points, old notional as the base)
+    import random
+    ks = list(by)
+    out = []
+    rnd = random.Random(11)
+    for _ in range(2000):
+        dp = dn = 0.0
+        for _ in range(len(ks)):
+            k = ks[rnd.randrange(len(ks))]
+            dp += by[k][0]
+            dn += by[k][1]
+        if dn > 0:
+            out.append(dp / dn * 100.0)
+    out.sort()
+    lo = out[int(0.025 * len(out))] if out else 0.0
+    hi = out[int(0.975 * len(out)) - 1] if out else 0.0
+    print(f"  {label:<26} n={len(legs):>4} ntl={n_old:>8,.0f}->{n_new:>8,.0f} "
+          f"pnl {p_old:>+9,.2f} -> {p_old + tot:>+9,.2f}  delta {tot:>+8,.2f} "
+          f"({tot / n_old * 100 if n_old else 0:+.1f}pp) CI [{lo:+.1f},{hi:+.1f}]")
+
+
+def sec_sizing(ded):
+    """J. SIZING SHADOW -- is the clip where the edge is?
+
+    LANE A CONTEXT: this is a shadow computation on REALISED legs. It proposes
+    nothing by itself; it prices a band-relative clip, which is the one sizing
+    question the 2026-10-20 clamp refutation does not cover (that refutation was
+    about a GLOBAL $18 cap on a single day; this caps ONE cell and lifts another).
+    """
+    print()
+    print("=" * 78)
+    print("J. SIZING SHADOW -- band-relative clip, on realised outcomes (no re-selection)")
+    print("=" * 78)
+    fin_all = [l for l in ded if l["status"] != "open"]
+    fin = risk_legs(fin_all)
+    clean_from = _ms(FIX_EPOCH)
+    reg_from = _ms(REGIME)
+    print(f"\n  observed clip by band (all-time, legs that traded):")
+    print(f"    {'band':<8} {'n':>4} {'avg clip':>9} {'median':>7} {'p90':>7} {'share ntl':>10} {'ROI':>8}")
+    tot = sum(l["simulatedPositionSize"] for l in fin)
+    for lo, hi in BANDS:
+        bn = band_name(lo, hi)
+        g = [l for l in fin if band_of(l["trueP"]) == bn]
+        if not g:
+            continue
+        s = sorted(l["simulatedPositionSize"] for l in g)
+        p_ = sum((true_pnl(l, l["trueP"]) or 0.0) for l in g)
+        print(f"    {bn:<8} {len(g):>4} {sum(s) / len(s):>9.1f} {s[len(s) // 2]:>7.1f} "
+              f"{s[int(0.9 * len(s))]:>7.1f} "
+              f"{sum(s) / tot * 100:>9.0f}% {pct(p_ / sum(s) * 100):>8}")
+    rules = [
+        ("cap cheap at $25", [{"band": "0.0-0.2", "cap": 25.0}]),
+        ("cap cheap at $50", [{"band": "0.0-0.2", "cap": 50.0}]),
+        ("lift 0.2-0.4 to $25", [{"band": "0.2-0.4", "lift": 25.0}]),
+        ("lift 0.2-0.4 to $50", [{"band": "0.2-0.4", "lift": 50.0}]),
+        ("cap cheap $25 + lift 0.2-0.4 $25",
+         [{"band": "0.0-0.2", "cap": 25.0}, {"band": "0.2-0.4", "lift": 25.0}]),
+        ("cap cheap $13 + lift 0.2-0.4 $25",
+         [{"band": "0.0-0.2", "cap": 13.0}, {"band": "0.2-0.4", "lift": 25.0}]),
+    ]
+    pops = [
+        ("ALL-TIME", fin),
+        ("REGIME >= %s" % REGIME[:10], [l for l in fin if l["openedTs"] >= reg_from]),
+        ("CLEAN post-fix", [l for l in fin if l["openedTs"] >= clean_from]),
+    ]
+    for plabel, pop in pops:
+        print(f"\n  {plabel}:")
+        for rlabel, rule in rules:
+            _shadow(pop, rule, rlabel)
+    print("\n  delta is vs the book as actually sized. Positive = the rule would have")
+    print("  earned more on the SAME legs, at the SAME prices, with no re-selection.")
+    print("  A rule whose delta changes SIGN between rows is a window bet, not a lever.")
+    print("  FILL ASSUMPTION: a lifted clip pays the same price. On thin books that is")
+    print("  the optimistic case, so the lift arms are UPPER BOUNDS; the cell's tol (G)")
+    print("  is the entry slippage it can absorb before the lift is worthless.")
+
+
 def self_test(legs):
     print()
     print("=" * 78)
@@ -516,7 +959,21 @@ def self_test(legs):
     cons = sum(1 for l in legs if l["class"] == "consistent")
     print(f"  classification partitions: inverted {inv} + consistent {cons} + "
           f"no_fill {len(legs) - inv - cons} = {len(legs)}")
+    # G/J arithmetic: the resize rule must be the identity when nothing binds, and
+    # risk_legs must remove exactly the unfilled-and-unpaying rows.
+    fake2 = {"status": "resolved", "entryPrice": 0.30, "trueP": 0.30,
+             "simulatedPositionSize": 12.0, "realizedPnl": 28.0}
+    same = _resize(fake2, [{"band": "0.0-0.2", "cap": 25.0}])
+    lift = _resize(fake2, [{"band": "0.2-0.4", "lift": 25.0}])
+    print(f"  resize identity (band not in plan): 12.00 -> {same:.2f} (expect 12.00); "
+          f"lift 0.2-0.4 $25 -> {lift:.2f} (expect 25.00)")
+    zero_unfilled = sum(1 for l in legs if l["fillStatus"] == "unfilled" and (l["realizedPnl"] or 0) == 0)
+    kept = len(risk_legs(legs))
+    print(f"  risk_legs: {len(legs):,} rows -> keeps {kept:,}, drops {len(legs) - kept:,} "
+          f"(unfilled & zero-payoff = {zero_unfilled:,})")
+    # window sums must close: the 7-day windows cannot invent money
     print("  SELF-TEST PASS" if ok == tot and abs(true_pnl(fake, 0.80) - 2.5) < 0.01
+          and same == 12.0 and lift == 25.0 and len(legs) - kept == zero_unfilled
           else "  SELF-TEST FAIL")
 
 
@@ -549,6 +1006,14 @@ def main():
         sec_velocity(ded)
     if not only or "F" in only:
         sec_wallets(ded)
+    if not only or "G" in only:
+        sec_calibration(ded)
+    if not only or "H" in only:
+        sec_clean(ded)
+    if not only or "I" in only:
+        sec_ladder(ded)
+    if not only or "J" in only:
+        sec_sizing(ded)
     if not only or "E" in only:
         self_test(legs)
 
