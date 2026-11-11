@@ -91,5 +91,6 @@ rollback of the RuleSet row — scores byte-identically to pre-v72, and a test p
   with the filter re-keyed them immediately. Say the word and I wire it into the hourly cron instead.
 - **`uncategorized` can no longer be `bestCategory`.** It is the absence of a category; advertising it
   as a strength was a lying label under either basis. Affects 0 track wallets today.
-- **The fine-class map is stored but unread** (diagnostics only, per the card's scoping note). It costs
-  ~1.5 KB/wallet in `categoryStrengthsJson`.
+- **The fine-class map is stored but unread** (diagnostics only, per the card's scoping note). It does
+  not cost space: a class-keyed payload averages **540 bytes** against **878** for the legacy token map,
+  because 3–4 coarse buckets beat 12 token buckets even with the fine map included.
