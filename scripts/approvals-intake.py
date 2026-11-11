@@ -34,12 +34,26 @@ PENDING_TAGS = {"awaiting-approval", "needs-approval", "lane-a"}
 KANBAN_DB = os.path.expanduser("~/.hermes/kanban/boards/medusa/kanban.db")
 
 # A card whose note records its own closure is not a pending decision, whatever its tags say.
-CLOSED_MARKERS = (
-    "APPLIED", "DONE 2026", "CLOSED 2026", "REFUTED", "WITHDRAWN", "CORRECTED AND CLOSED",
-    "NOTHING APPLIED",  # a proposal that was explicitly never applied is still OPEN, see below
+#
+# 2026-11-11: the first version tested `marker in blob` on the uppercased title+note. That closes a
+# card whenever the CONTRARY text appears anywhere in it, and the corpus is full of it: "NOTHING
+# APPLIED -- AWAITING A ONE-WORD CHOICE", "PROPOSED 2026-10-27, NOTHING APPLIED", "REFUTED IF <=52%"
+# (a pre-registered kill clause present in almost every Lane A proposal). Measured on the live board:
+# 40 cards carried a pending tag, 29 were dropped, and at least 6 of the 29 say in plain text that no
+# decision was made. Closure evidence is now restricted to STAMPS, and negated/conditional text is
+# rejected. Anything else stays pending, which is the safe direction: a hidden decision never gets made.
+CLOSED_MARKERS = ("APPLIED", "DONE 2026", "CLOSED 2026", "REFUTED", "WITHDRAWN")
+# "REFUTED IF ..." / "DONE IF ..." is a pre-registered condition, not a verdict.
+CONDITIONAL = re.compile(r"^[\s\-—:]*IF\b", re.I)
+# A title that opens with a verdict, or names one after the em-dash ("... esports bleed — NO CUT (...)"
+# or "... 2 -> 24 (APPROVED 2026-10-23; ...)"), is closed regardless of note prose.
+TITLE_VERDICT = re.compile(
+    r"(?:^|[—–:]\s*|\()"
+    r"(DONE|CLOSED|APPLIED|REFUTED|WITHDRAWN|SHIPPED|NO\s+CUT|NO\s+CHANGE|REFUSED|DECLINED|APPROVED)\b",
+    re.I,
 )
-# "NOTHING APPLIED" means the decision is still open, so it must NOT be treated as closed.
-CLOSED_MARKERS = tuple(m for m in CLOSED_MARKERS if m != "NOTHING APPLIED")
+# A tag that asserts work finished. Prefix match so "shipped-2026-10-27" counts.
+CLOSED_TAGS = ("done", "closed", "withdrawn", "activated", "shipped", "applied", "refuted", "refused", "declined")
 
 
 def tags_of(card):
@@ -57,6 +71,42 @@ def first_sentence(text, limit=320):
         return text
     cut = text[:limit]
     return cut.rsplit(" ", 1)[0] + " …"
+
+
+def closure_evidence(card):
+    """Why this card counts as decided, or '' when it is still a pending decision.
+
+    Returns an auditable string, not a bare bool: the queue has to be able to say WHY a card it
+    dropped is not a decision. Structural signals (tag, title verdict) win; note prose only counts
+    when the marker is a stamp -- not negated and not a "… IF" clause.
+    """
+    tags = tags_of(card)
+    for prefix in CLOSED_TAGS:
+        hit = sorted(t for t in tags if t == prefix or t.startswith(prefix))
+        if hit:
+            return f"tag:{hit[0]}"
+    title = str(card.get("title") or "")
+    m = TITLE_VERDICT.search(title)
+    if m:
+        return f"title:{m.group(1).upper()}"
+    # Note prose: only a STAMP counts, i.e. a segment that opens with the marker
+    # ("--- APPLIED AND VERIFIED 2026-10-22"). A marker buried mid-sentence is prose about some other
+    # thing that shipped -- measured on the live board, "APPLIED"/"SHIPPED" mid-sentence were the
+    # single most common false-closure signal (ml1-price-baseline-drift: instrument shipped, BAR
+    # pending; category-seats-never-released: the C-200 half shipped, the seat release did not).
+    STAMP = re.compile(r"^[\s\-—–:|*]+(" + "|".join(CLOSED_MARKERS) + r")\b")
+    for seg in re.split(r"(?<=[.;])\s+|\n", str(card.get("note") or "")):
+        up = seg.strip().upper()
+        if not up:
+            continue
+        m2 = STAMP.match(up)
+        if not m2:
+            continue
+        after = up[m2.end():]
+        if CONDITIONAL.match(after):
+            continue              # "REFUTED IF <=52%" is a kill criterion, not a verdict
+        return f"note:{m2.group(1)}"
+    return ""
 
 
 def extract(note, keys):
@@ -110,8 +160,12 @@ def kanban_blocked_items(existing):
         ).fetchall()
         con.close()
     except Exception as exc:
-        print(f"kanban source unavailable ({exc}); roadmap items only", file=sys.stderr)
-        return []
+        # 2026-11-11: this used to print to stderr and return [], i.e. a renamed column or a locked DB
+        # silently erased the board half of the queue while the run still exited 0. The roadmap half
+        # cannot detect the loss, so fail the whole intake.
+        print(f"FATAL: kanban source unreadable ({exc}); refusing to write a queue that omits "
+              f"{KANBAN_DB}", file=sys.stderr)
+        raise SystemExit(1)
 
     for r in rows:
         iid = f"apr-{r['id']}"
@@ -151,15 +205,21 @@ def main():
             return 1
 
     now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
-    items, skipped_closed, added, kept = [], 0, 0, 0
+    items, skipped_closed, added, kept = [], [], 0, 0
 
     for card in cards:
         tags = tags_of(card)
         if not (tags & PENDING_TAGS):
             continue
-        blob = f"{card.get('title','')} {card.get('note','')}".upper()
-        if any(m in blob for m in CLOSED_MARKERS):
-            skipped_closed += 1
+        reason = closure_evidence(card)
+        if reason:
+            skipped_closed.append({
+                "id": f"apr-{card.get('id')}",
+                "card": str(card.get("id") or ""),
+                "title": first_sentence(card.get("title"), 120),
+                "column": str(card.get("column") or ""),
+                "reason": reason,
+            })
             continue
         item = build_item(card)
         if not item:
@@ -177,9 +237,25 @@ def main():
         items.append(item)
 
     # Items created directly (not from a roadmap card) survive intake untouched.
+    #
+    # 2026-11-11: this block used to re-append EVERY roadmap item that was not rebuilt, so a card that
+    # closed after intake had added it could never leave the queue -- the queue only ever grew. Two
+    # cards that are shipped and tagged done (`profit-stop-060-carry`, `standard-maturity-size-factor`)
+    # were still sitting there as pending decisions. A roadmap-sourced item whose card is now closed,
+    # or whose card no longer exists, is retired instead of resurrected.
+    rebuilt = {i["id"] for i in items}
+    retired = []
     for iid, it in existing.items():
-        if not any(i["id"] == iid for i in items):
-            items.append(it)
+        if iid in rebuilt:
+            continue
+        if str(it.get("source") or "").startswith("roadmap:"):
+            # Not rebuilt => the roadmap no longer asserts it as a pending decision (closed, tag
+            # removed after an approval, or the card is gone). Either way it must leave the queue.
+            retired.append({"id": iid, "card": str(it.get("source")).split(":", 1)[1],
+                            "status": it.get("status"),
+                            "why": "card closed, de-tagged or absent from the roadmap"})
+            continue
+        items.append(it)
 
     # Second source: blocked board cards. Sticky decisions apply here too.
     for item in kanban_blocked_items(existing):
@@ -196,6 +272,21 @@ def main():
     items.sort(key=lambda i: (order.get(i.get("status"), 3), str(i.get("createdAt") or "")))
     pending = [i for i in items if i.get("status") == "pending"]
 
+    # Retirement history is kept: the queue must be able to show, days later, which decisions it
+    # dropped and why. Without this a retirement is invisible the moment the store is rewritten.
+    retired_history = []
+    if os.path.exists(STORE):
+        try:
+            with open(STORE) as fh:
+                retired_history = (json.load(fh).get("retired") or [])[-40:]
+        except Exception:
+            retired_history = []
+    seen = {r.get("id") for r in retired_history}
+    for r in retired:
+        r["at"] = now
+        if r["id"] not in seen:
+            retired_history.append(r)
+
     store = {
         "version": 1,
         "updatedAt": now,
@@ -203,8 +294,14 @@ def main():
             "pending": len(pending),
             "approved": sum(1 for i in items if i.get("status") == "approved"),
             "declined": sum(1 for i in items if i.get("status") == "declined"),
+            "excluded": len(skipped_closed),
+            "retired": len(retired_history),
         },
         "items": items,
+        # Every tagged card this run dropped, with the reason it was dropped. Before 2026-11-11 the
+        # count was printed and the names were not, so a wrong exclusion was unfalsifiable.
+        "excluded": skipped_closed,
+        "retired": retired_history,
     }
     tmp = STORE + ".tmp"
     with open(tmp, "w") as fh:
@@ -213,7 +310,9 @@ def main():
     os.replace(tmp, STORE)
 
     print(f"approvals-intake: {len(items)} items | pending {store['counts']['pending']} "
-          f"| new {added} | refreshed {kept} | skipped-closed {skipped_closed}")
+          f"| new {added} | refreshed {kept} | excluded {len(skipped_closed)} | retired {len(retired)}")
+    for e in skipped_closed:
+        print(f"  excluded [{e['reason']}] {e['card']} ({e['column'] or 'no column'})")
     return 0
 
 
