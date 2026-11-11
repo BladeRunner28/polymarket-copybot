@@ -111,3 +111,11 @@ data/sellside-m2c.json
 # for a directory whose loss costs one refetch. Kept on disk, off the index.
 data/cache/data-feed-scout/
 
+
+# Kalshi maker read (2026-11-11, card kalshi-maker-read-prereg): the settlement sweep
+# caches 76,359 ticker->result rows (8.2 MB) that are refetchable from the keyless venue
+# in ~4 minutes (13 series, cursor-paged /markets?status=settled). It churns on every run
+# and would re-enter the 22:30 `git add -A` backup forever. The READ artifact
+# data/kalshi-maker-read.json IS committed, so the verdict re-reads offline.
+data/kalshi-maker-settlements.json
+data/kalshi-maker-settlements.json.tmp
