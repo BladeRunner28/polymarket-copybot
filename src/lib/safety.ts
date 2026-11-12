@@ -50,6 +50,40 @@ export function clampPaperSize(usd: number, botId: string = "STANDARD", maxUsd?:
 }
 
 /**
+ * The bot ids whose sizing can take the KELLY path — i.e. the lanes for which
+ * `clampPaperSize(usd, botId, rules.kellyMaxSizeUsd)` can raise the ceiling above BOT_LIMITS.
+ *
+ * Mirrors `isKellyCandidate` in scripts/score-trades.ts
+ * (`botId === "BANKROLL_200" && lane !== "short_ttr" && rules.kellyEnabled === 1`).
+ * Kept here so the ceiling arithmetic has ONE definition instead of one per script.
+ */
+export const KELLY_BOTS: readonly string[] = ["BANKROLL_200"];
+
+/**
+ * The size range a lane can ACTUALLY be given, per sizing path.
+ *
+ *   legacy path   clampPaperSize(usd, botId)          -> BOT_LIMITS[botId] ?? BOT_LIMITS.STANDARD
+ *   Kelly path    clampPaperSize(usd, botId, maxUsd)  -> hi = max(limits.min, maxUsd),
+ *                   reachable only for KELLY_BOTS; every other lane keeps limits.max
+ *
+ * `BotBankroll.minPositionSize` / `maxPositionSize` are DISPLAY-ONLY copies of this and nothing
+ * reads them. Every writer or checker of those columns MUST call this function rather than
+ * re-derive the arithmetic: the ML_LANE row advertised $0.10 / $100 for 22 days because
+ * scripts/apply-ml-lane.ts mirrored `max(BOT_LIMITS.max, kellyMaxSizeUsd)` onto a lane that has
+ * no BOT_LIMITS entry (so it falls back to STANDARD's {0.25, 20}) and cannot take the Kelly path.
+ */
+export function effectiveSizeLimits(
+  botId: string,
+  kellyMaxSizeUsd: number
+): { min: number; max: number } {
+  const limits = BOT_LIMITS[botId] || BOT_LIMITS.STANDARD;
+  const max = KELLY_BOTS.includes(botId)
+    ? Math.max(limits.max, Math.max(limits.min, kellyMaxSizeUsd))
+    : limits.max;
+  return { min: limits.min, max };
+}
+
+/**
  * Feature: Phase 1 - Circuit Breaker
  * PBI: Auto-halts execution if a bot fires off an abnormal burst of trades.
  * Prevents blowing up the portfolio during network/bot tilt anomalies.

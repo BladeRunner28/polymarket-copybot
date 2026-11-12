@@ -22,23 +22,23 @@
  */
 
 import { prisma } from "../src/lib/db";
-import { BOT_LIMITS } from "../src/lib/safety";
+import { BOT_LIMITS, effectiveSizeLimits } from "../src/lib/safety";
 
-/** The HIGHEST ceiling any sizing path permits, per bot. This is what maxPositionSize mirrors. */
-function effectiveMax(botId: string, kellyMaxSizeUsd: number): number {
-  const limits = BOT_LIMITS[botId] ?? BOT_LIMITS.STANDARD;
-  // Kelly sizing is C-200 ONLY -- `isKellyCandidate` in score-trades.ts is
-  // `botId === "BANKROLL_200" && lane !== "short_ttr" && kellyEnabled === 1`, and STANDARD
-  // "keeps legacy sizing". An earlier draft of this verifier applied the Kelly ceiling to
-  // BOTH bots and wrongly flagged STANDARD's correct $20 as drift.
-  if (botId !== "BANKROLL_200") return limits.max;
-  // Kelly path: hi = max(limits.min, maxUsd). Legacy fallback: limits.max. Mirror the larger.
-  return Math.max(limits.max, Math.max(limits.min, kellyMaxSizeUsd));
-}
-
-function effectiveMin(botId: string): number {
-  return (BOT_LIMITS[botId] ?? BOT_LIMITS.STANDARD).min;
-}
+/**
+ * The HIGHEST ceiling any sizing path permits, per bot, and the lowest. This is what the two
+ * display columns mirror.
+ *
+ * The arithmetic lives in `src/lib/safety.ts` (`effectiveSizeLimits`) rather than here, because
+ * this script previously carried its own copy and the OTHER copy — in scripts/apply-ml-lane.ts —
+ * mirrored C-200's Kelly ceiling onto ML_LANE, a lane with no BOT_LIMITS entry and no Kelly path,
+ * and the row then advertised $0.10 / $100 against an effective $0.25 / $20 for 22 days. One
+ * definition, two callers.
+ *
+ * Kelly sizing is C-200 ONLY — `isKellyCandidate` in score-trades.ts is
+ * `botId === "BANKROLL_200" && lane !== "short_ttr" && kellyEnabled === 1`, and STANDARD
+ * "keeps legacy sizing". An earlier draft applied the Kelly ceiling to BOTH bots and wrongly
+ * flagged STANDARD's correct $20 as drift.
+ */
 
 async function main() {
   const rules = await prisma.ruleSet.findFirst({ where: { active: true }, orderBy: { version: "desc" } });
@@ -56,8 +56,7 @@ async function main() {
   let bad = 0;
   console.log("bot            field   table      effective   verdict");
   for (const r of rows) {
-    const expMin = effectiveMin(r.botId);
-    const expMax = effectiveMax(r.botId, kellyMaxSizeUsd);
+    const { min: expMin, max: expMax } = effectiveSizeLimits(r.botId, kellyMaxSizeUsd);
     for (const [field, actual, expected] of [
       ["min", r.minPositionSize, expMin],
       ["max", r.maxPositionSize, expMax],

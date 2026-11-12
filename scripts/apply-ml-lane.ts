@@ -6,9 +6,16 @@
  * flow architecture."
  *
  * WHAT THIS DOES (idempotent, re-runnable):
- *   1. BotBankroll row for ML_LANE: principal $2,500, cash $2,500, realized $0.
- *      min/max mirror C-200's ENFORCED ceilings (0.10 / kellyMaxSizeUsd), not the dead
- *      BotBankroll numbers that were corrected to display-only the same day.
+ *   1. BotBankroll row for ML_LANE: principal $2,500, cash $2,500, realized $0 (CREATE only — once
+ *      the row exists, a re-run moves NOTHING but the two display-only size columns).
+ *      min/max are ML_LANE's own EFFECTIVE rails, from `effectiveSizeLimits` in src/lib/safety.ts:
+ *      ML_LANE has no BOT_LIMITS entry, so it falls back to STANDARD's {0.25, 20}, and it cannot
+ *      take the Kelly path (`isKellyCandidate` in score-trades.ts is `botId === "BANKROLL_200"`),
+ *      so `kellyMaxSizeUsd` is NOT its ceiling. The first version of this script mirrored
+ *      `max(BOT_LIMITS.max, kellyMaxSizeUsd)` anyway and advertised $0.10 / $100 against an
+ *      effective $0.25 / $20 from 2026-10-20 until 2026-11-12 (found 2026-10-29, kanban
+ *      t_b8913619 / repaired by t_a25f8a45) — a stale display row that scripts/profit-velocity.py
+ *      printed as `clip $min-$max`. The arithmetic is now imported, not re-derived.
  *   2. A `capital-ledger.json` opening entry of $2,500 tagged botId ML_LANE, so the daily-deposit
  *      series has dated provenance instead of seeding from the standing principal (which emits a
  *      warning and gives the first day's capital no provenance).
@@ -18,6 +25,8 @@
  *     scoring time, because two copies of a number drift apart — the BotBankroll maxPositionSize
  *     false rail was fixed for exactly that reason today. "Mirror C-200" means SHARE its fields,
  *     not copy their values.
+ *   - It does not re-set principal / cashBalance / realizedPnl on an existing row: only the two
+ *     display columns move. `minPositionSize`/`maxPositionSize` are read by NOTHING.
  *   - It opens no positions and touches no C-200 row. C-200's series was regression-checked
  *     against the live pre-change /capital page before and after the capital-loader refactor
  *     (principal $1900.00, realized $5977.39, live total $7872.53 — unchanged).
@@ -31,7 +40,7 @@ import { prisma } from "../src/lib/db";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { ML_BOT } from "../src/lib/capital-data";
-import { BOT_LIMITS } from "../src/lib/safety";
+import { BOT_LIMITS, effectiveSizeLimits } from "../src/lib/safety";
 
 const APPLY = process.argv.includes("--apply");
 const START_CAPITAL = 2500;
@@ -43,14 +52,17 @@ async function main() {
   const j = JSON.parse(rules?.rulesJson ?? "{}") as Record<string, unknown>;
   const kellyMaxSizeUsd = Number(j.kellyMaxSizeUsd ?? 0);
 
-  // Mirror C-200's ENFORCED ceilings. Kelly sizing is C-200-only today; if ML_LANE ever takes the
-  // Kelly path it inherits the same cap, so mirror the max of both paths.
-  const c200Limits = BOT_LIMITS["BANKROLL_200"];
-  const mirrorMin = c200Limits.min;
-  const mirrorMax = Math.max(c200Limits.max, Math.max(c200Limits.min, kellyMaxSizeUsd));
+  // ML_LANE's OWN effective rails — the same function verify-botbankroll-limits.ts checks against.
+  // Kelly sizing is C-200-only, so `kellyMaxSizeUsd` is deliberately NOT part of this lane's
+  // ceiling: mirroring it here is what advertised $100 on a lane that clamps at $20.
+  const { min: mirrorMin, max: mirrorMax } = effectiveSizeLimits(ML_BOT, kellyMaxSizeUsd);
 
   log(`active RuleSet v${rules?.version}: kellyMaxSizeUsd=${kellyMaxSizeUsd}`);
-  log(`mirroring C-200 ceilings -> min $${mirrorMin} max $${mirrorMax}\n`);
+  log(
+    `ML_LANE effective rails -> min $${mirrorMin} max $${mirrorMax} ` +
+      `(${BOT_LIMITS[ML_BOT] ? "own BOT_LIMITS entry" : "no BOT_LIMITS entry -> STANDARD fallback"}, ` +
+      `legacy path only; Kelly is C-200-only)\n`
+  );
 
   const existing = await prisma.botBankroll.findUnique({ where: { botId: ML_BOT } });
   log(`BotBankroll.${ML_BOT}: ${existing ? `EXISTS (principal $${existing.principal})` : "absent"}`);
@@ -63,7 +75,7 @@ async function main() {
   if (!APPLY) {
     log("\nDRY RUN — would write:");
     log(existing
-      ? `  update BotBankroll ${ML_BOT} -> principal ${START_CAPITAL}, cash ${START_CAPITAL}, realized 0`
+      ? `  update BotBankroll ${ML_BOT} -> min ${mirrorMin}, max ${mirrorMax} (principal/cash/realized untouched)`
       : `  create BotBankroll ${ML_BOT} -> principal ${START_CAPITAL}, cash ${START_CAPITAL}, realized 0, min ${mirrorMin}, max ${mirrorMax}`);
     if (!hasOpening) log(`  append ledger opening ${START_CAPITAL} for ${ML_BOT}`);
     log("\nRe-run with --apply to write.");
@@ -80,7 +92,9 @@ async function main() {
       minPositionSize: mirrorMin,
       maxPositionSize: mirrorMax,
     },
-    update: { principal: START_CAPITAL, minPositionSize: mirrorMin, maxPositionSize: mirrorMax },
+    // Display columns ONLY on re-run: principal/cash/realized are seeded once at create and are
+    // not this script's to re-state (a repair of the size columns must not move capital).
+    update: { minPositionSize: mirrorMin, maxPositionSize: mirrorMax },
   });
   log(`\nBotBankroll ${ML_BOT}: principal $${row.principal.toFixed(2)} cash $${row.cashBalance.toFixed(2)} `
     + `realized $${row.realizedPnl.toFixed(2)} min $${row.minPositionSize} max $${row.maxPositionSize}`);
