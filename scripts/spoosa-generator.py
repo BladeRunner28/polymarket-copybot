@@ -258,6 +258,8 @@ def main() -> int:
     ap.add_argument("--bed", default="350x350",
                     help="build volume as WxD; plates larger than this are refused (default 350x350)")
     ap.add_argument("--no-bed-check", action="store_true")
+    ap.add_argument("--clean", action="store_true",
+                    help="delete STLs present on disk but absent from the manifest (never implied)")
     ap.add_argument("--all-insert-counts", action="store_true",
                     help="generate 1/2/4/8 for each profile (the Spoosa's 8-10 variations)")
     args = ap.parse_args()
@@ -308,15 +310,50 @@ def main() -> int:
                   f"{meta['mass_asa_g']:5.1f} g ASA | wall {meta['min_insert_to_vesa_wall_mm']:4.1f} mm | "
                   f"{'WATERTIGHT' if meta['watertight'] else 'LEAKY'}")
 
-    with open(os.path.join(OUT_DIR, "manifest.json"), "w") as fh:
+    manifest_path = os.path.join(OUT_DIR, "manifest.json")
+    # MERGE, do not clobber. Found 2026-11-12: each run overwrote manifest.json, so after building the
+    # full set and then one custom part, the "record of what was built" described exactly one part while
+    # 71 STLs sat on disk. An artefact that claims to be the index and isn't is worse than no index.
+    prior: dict[str, dict] = {}
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path) as fh:
+                for p in (json.load(fh).get("parts") or []):
+                    if p.get("file"):
+                        prior[p["file"]] = p
+        except Exception as e:  # noqa: BLE001 - a corrupt index must not stop a build
+            print(f"WARN: could not read the existing manifest ({e}); starting a fresh index")
+    for p in manifest:
+        prior[p["file"]] = p
+
+    on_disk = sorted(f for f in os.listdir(OUT_DIR) if f.endswith(".stl"))
+    # `*_cq.stl` belongs to scripts/spoosa-step.py (the OpenCascade twin of each part), not to this
+    # generator's inventory, so it is neither indexed nor called stale here.
+    orphans = [f for f in on_disk if not f.endswith("_cq.stl") and f not in prior]
+    if args.clean and orphans:
+        for f in orphans:
+            os.remove(os.path.join(OUT_DIR, f))
+        print(f"\nremoved {len(orphans)} stale STL(s) not in the manifest (--clean)")
+        orphans = []
+
+    with open(manifest_path, "w") as fh:
         json.dump({"generated_by": "scripts/spoosa-generator.py", "bed_mm": bed,
-                   "parts": manifest, "skipped": skipped}, fh, indent=2)
-    print(f"\n{made} parts -> {os.path.relpath(OUT_DIR, ROOT)}/  (manifest.json alongside)")
+                   "parts": sorted(prior.values(), key=lambda p: p["file"]),
+                   "skipped_this_run": skipped, "orphans_on_disk": orphans}, fh, indent=2)
+    print(f"\n{made} parts built this run -> {os.path.relpath(OUT_DIR, ROOT)}/ "
+          f"({len(prior)} total in manifest.json)")
     if skipped:
         limit = f"{bed[0]:.0f}x{bed[1]:.0f}" if bed else "unlimited"
         print(f"{len(skipped)} skipped as too large for the {limit} mm bed:")
         for s in skipped:
             print(f"  - {s}")
+    if orphans:
+        print(f"{len(orphans)} STL(s) on disk are NOT in the manifest (built under older settings or "
+              f"not reproducible now) — pass --clean to remove them:")
+        for f in orphans[:12]:
+            print(f"  - {f}")
+        if len(orphans) > 12:
+            print(f"  ... and {len(orphans) - 12} more")
     return 0
 
 

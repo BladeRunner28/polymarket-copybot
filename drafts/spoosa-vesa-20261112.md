@@ -100,14 +100,33 @@ completed job, 117 g is ≈ **2.9 h** of print time.
 ## Two kernels agree — the geometry is checked, not asserted
 
 `spoosa-generator.py` builds meshes on manifold3d; `spoosa-step.py` rebuilds the same part on
-OpenCascade and exports **STEP** (editable, analytic faces) alongside STL. They share no code:
+OpenCascade and exports **STEP** (editable, analytic faces) alongside STL. They share no code. All
+**28 printable parts** were rebuilt in both and each STEP was re-imported and re-measured:
 
-| part | trimesh | OpenCascade | delta |
-|---|---|---|---|
-| 100×100 × 4 | 109.8 cm³ | 109.4 cm³ | **0.39 %** |
+| | result |
+|---|---|
+| parts compared | **28 of 28** matched to the manifest |
+| volume delta (trimesh vs OpenCascade) | **0.03 % – 0.81 %**, all within 1 % |
+| worst case | 75×75 × 8 at 0.81 % |
+| 100×100 × 4 (the reference part) | 109.8 vs 109.4 cm³ — 0.35 % |
 
-Every part is refused unless it is a **single watertight body**; exported STLs were re-loaded from
-disk and re-verified against the manifest within 1 % volume.
+Every part is refused unless it is a **single watertight body**; exported STLs were re-loaded from disk
+and re-verified against the manifest within 1 % volume.
+
+### A defect this exercise caught in my own generator
+
+The generator used to **overwrite** `manifest.json` on every run rather than merging. After building
+the full set and then one custom part, the "record of what was built" described **one** part while
+**71 STLs** sat on disk — an index that lies, which is worse than no index. The manifest now merges by
+filename, and anything on disk that is not in it is named explicitly:
+
+```
+14 STL(s) on disk are NOT in the manifest (built under older settings or not reproducible now)
+   — pass --clean to remove them
+```
+
+Those 14 are the 12 TV-pattern plates that the bed check now refuses, plus two earlier custom parts.
+**They are listed, not deleted**: `--clean` is opt-in and never implied.
 
 ## Honest limitations
 
