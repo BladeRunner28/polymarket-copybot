@@ -20,10 +20,11 @@ no RuleSet change, no merge. Every number below comes from `scripts/c200-fill-or
 3. **The only live event is one leg, +$27.57.** Since the backfill (`settle date ≥ 2026-10-29`): **3 settle-first
    legs out of 275 settled** — 1 stamped `unfilled` (+$27.57, enters the class) and 2 stamped `filled`
    (−$117.99, booking was correct anyway).
-4. **It is not "a slow month".** November is *busier* than October's stamping and the stamp-before-settle path
-   is demonstrably working at volume: **136 legs were stamped `unfilled` and then settled, booking $0** where the
-   old ordering would have booked **+$172.28**. The 0 is a real effect of ordering-within-the-hour, not an
-   absence of settlements — but it is a property of **timing**, not an invariant the code enforces.
+4. **It is not "a slow month".** November is not quiet — 275 legs settled since 2026-10-29 and 187 new stamps
+   landed in its first 11 days — and the stamp-before-settle path is demonstrably working at volume: **136 legs
+   were stamped `unfilled` and then settled, booking $0** where the old ordering would have booked **+$172.28**.
+   The 0 is a real effect of the stamp generally arriving hours before the market resolves, not an absence of
+   settlements — but it is a property of **timing**, not an invariant the code enforces.
 5. **The mechanism is still unsafe, and the channel that keeps it unsafe is not the race — it is the missing
    link.** `resolvePaperTrade()` reads `fillStatus` once, at write time, and nothing ever revisits it;
    `c200-fill-resolve.ts` can only stamp legs its `FillIntent.paperTradeId` points at. **100% of the 84 legs
