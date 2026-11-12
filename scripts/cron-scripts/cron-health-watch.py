@@ -17,6 +17,16 @@ Alerts on:
   * a 6-hourly reminder while a job stays down (don't let a long outage go quiet)
   * a RECOVERY line once a job returns to ok (closes the thread)
 
+MIN_STREAK is a count of FAILED RUNS, so it is only a sane unit for a job that runs many
+times a day. For a job that runs once a day or once a week, 3 failures is 3 days or 3
+WEEKS: on 2026-11-12 two weekly jobs (copybot-research-weekly, ML data-feed scout) sat at
+failure_streak=1 with last_status=error from the Nov 9 HTTP 402 outage and the watcher
+said, verbatim, "nothing to send — 0/2 jobs ok". Their next attempt is Nov 16, so nothing
+would have alerted before then. Jobs whose schedule period is >= LONG_GAP_MIN now trip at
+ONE failed run. They are deduped on the failing RUN (last_run_at), not on a reminder
+clock: for a job whose next dispatch is a week away there is nothing to re-remind about
+and a 6-hourly timer would just repeat the same line ~28 times before the retry.
+
 Also flags jobs that are enabled but QUIET: interval-scheduled jobs whose last run
 is older than 3x their interval + grace. Scope note: quiet-detection covers
 interval schedules only (the copybot core: monitor 10m, update-pnl 60m, watchdogs
@@ -65,6 +75,7 @@ QUIET_GRACE_MIN = 20    # plus this much slack (dispatch lateness measured ~45-6
 PAST_DUE_MIN = 45       # a next_run_at this far behind now means the job was not dispatched
 PAST_DUE_LIST = 8       # names quoted per past-due line before collapsing to a count
 ERR_SNIPPET = 220       # chars of the last error kept in the alert
+LONG_GAP_MIN = 18 * 60  # schedule period at/over this = "runs at most once a day" (see docstring)
 
 
 def load_json(path: Path, default):
@@ -179,6 +190,31 @@ def expected_interval_minutes(job: dict) -> int | None:
     return None
 
 
+def schedule_period_minutes(job: dict) -> int | None:
+    """How long one full cycle takes — the unit that makes a failure COUNT meaningful.
+
+    Interval jobs state it. Cron-expression and one-shot jobs do not, but jobs.json
+    records the two instants either side of the cycle: last_run_at → next_run_at. That
+    gap is the period the scheduler itself is keeping, measured rather than modelled
+    (copybot-research-weekly: 2026-11-09T08:31 → 2026-11-16T08:30 = 10,079 min).
+
+    Returns None when the gap cannot be read (never run, no next_run_at, paused) — those
+    jobs keep the old failure-count threshold, because guessing a period is how you get
+    false alarms. A negative or absurd gap is also None.
+    """
+    iv = expected_interval_minutes(job)
+    if iv is not None:
+        return iv
+    last = parse_ts(job.get("last_run_at"))
+    nxt = parse_ts(job.get("next_run_at"))
+    if last is None or nxt is None:
+        return None
+    gap = int((nxt - last).total_seconds() // 60)
+    if gap <= 0 or gap > 400 * 24 * 60:  # 0/negative = stale clock, >400d = not a period
+        return None
+    return gap
+
+
 def main() -> int:
     jobs_doc = load_json(JOBS_FILE, {})
     jobs = jobs_doc.get("jobs", []) if isinstance(jobs_doc, dict) else jobs_doc
@@ -211,16 +247,27 @@ def main() -> int:
         streak = int(job.get("failure_streak") or 0)
         status = str(job.get("last_status") or "")
         rec = state.get(jid) or {}
+        period = schedule_period_minutes(job)
+        long_gap = period is not None and period >= LONG_GAP_MIN
+        # A once-a-week job cannot fail 3 times before it next runs, so the count-based
+        # threshold is out of reach for it by construction; one failed run = one lost week.
+        min_streak = 1 if long_gap else MIN_STREAK
 
-        if streak >= MIN_STREAK or (status == "error" and streak >= MIN_STREAK):
+        if streak >= min_streak:
             since = rec.get("down_since") or job.get("last_run_at")
             last_alert = parse_ts(rec.get("alerted_at"))
             alerted_streak = int(rec.get("alerted_streak") or 0)
-            due = (
-                rec.get("alerted_streak") is None
-                or streak >= alerted_streak + ALERT_EVERY
-                or (last_alert is not None and now - last_alert >= timedelta(hours=REMIND_HOURS))
-            )
+            if long_gap:
+                # Dedupe on the RUN, not on the clock: this failure cannot be retried
+                # until next_run_at, so a 6h reminder would repeat the same line for days.
+                run_id = str(job.get("last_run_at"))
+                due = rec.get("alerted_for") != run_id
+            else:
+                due = (
+                    rec.get("alerted_streak") is None
+                    or streak >= alerted_streak + ALERT_EVERY
+                    or (last_alert is not None and now - last_alert >= timedelta(hours=REMIND_HOURS))
+                )
             if due:
                 head = f"🔴 `{name}` — {streak} consecutive failures"
                 detail = f"   ↳ {first_error_line(job.get('last_error'), job)}"
@@ -237,6 +284,14 @@ def main() -> int:
                     new_lines.append(rerun)
                 if when:
                     new_lines.append(when)
+                if long_gap:
+                    # Name the thing that makes this different: one failure already costs a
+                    # whole cycle, and nothing retries before next_run_at.
+                    new_lines.append(
+                        f"   ↳ runs every ~{int(round((period or 0) / 60))}h, so ONE failed run = a whole cycle lost"
+                        f" and the next attempt is {fmt(parse_ts(job.get('next_run_at')))} — this job cannot"
+                        f" reach {MIN_STREAK} failures without {MIN_STREAK} dead cycles"
+                    )
             else:
                 still_down.append(f"`{name}` ({streak})")
             state[jid] = {
@@ -255,6 +310,10 @@ def main() -> int:
                 "alerted_streak": streak if due else (alerted_streak or streak),
                 "down_since": rec.get("down_since") or since,
             }
+            if long_gap:
+                # Run identity for the once-per-failing-run dedupe above. Kept only while
+                # this run is the one alerted on; a new failing run re-arms the alert.
+                state[jid]["alerted_for"] = rec.get("alerted_for") if not due else str(job.get("last_run_at"))
             continue
 
         # healthy path — is this a recovery we already alerted on?
@@ -332,7 +391,8 @@ def main() -> int:
         out.append("")
         out.append("Fix path: read the job's last output in `~/.hermes/cron/output/<job_id>/`, then re-run its script "
                    "directly (`bash ~/.hermes/scripts/<job>.sh`). This watcher alerts at "
-                   f"{MIN_STREAK} consecutive failures and reminds every {REMIND_HOURS}h while a job stays down.")
+                   f"{MIN_STREAK} consecutive failures — ONE for a job that runs less than once a day, because "
+                   f"a single failed run already costs a whole cycle — and reminds every {REMIND_HOURS}h while a job stays down.")
     if recovered:
         out.extend(recovered)
     if quiet:
@@ -359,16 +419,24 @@ def main() -> int:
         # This line used to end "... no streak >= 3, no quiet jobs" as a FIXED string, so it said
         # that while a job sat at 5 consecutive failures inside the reminder window. Measured:
         # a fixture with failure_streak=5 printed "0/1 jobs ok, no streak >= 3". Count it instead.
+        # The threshold is per job (long-gap jobs trip at one failure), so ask each job for
+        # ITS bar rather than comparing everything to MIN_STREAK — otherwise this line reports
+        # "no job at or over 3 failures" while a once-a-week job sits at 1, which is exactly
+        # the fixed-string lie above in a new costume.
+        def _bar(j: dict) -> int:
+            p = schedule_period_minutes(j)
+            return 1 if (p is not None and p >= LONG_GAP_MIN) else MIN_STREAK
+
         at_streak = [
             str(j.get("name") or j.get("id"))
             for j in jobs
-            if j.get("enabled") and int(j.get("failure_streak") or 0) >= MIN_STREAK
+            if j.get("enabled") and int(j.get("failure_streak") or 0) >= _bar(j) > 0
         ]
         tail = (
-            f"{len(at_streak)} job(s) at/over {MIN_STREAK} failures inside the {REMIND_HOURS}h reminder window "
+            f"{len(at_streak)} job(s) at/over its failure bar inside the {REMIND_HOURS}h reminder window "
             f"({', '.join(at_streak[:5])}{'…' if len(at_streak) > 5 else ''})"
             if at_streak
-            else f"no job at or over {MIN_STREAK} failures"
+            else "no job at or over its failure bar"
         )
         # ...and the second half was a FIXED string too ("no quiet or past-due jobs"), printing exactly
         # when a quiet or past-due job was being SUPPRESSED by the reminder window — which is the only
