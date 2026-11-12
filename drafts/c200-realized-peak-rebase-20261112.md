@@ -385,7 +385,7 @@ the same series — median 2.9%, p90 8.1%, max 13.53%, 0 dates over 20%.)
 
 ---
 
-**Added with this proposal, uncommitted:** `scripts/c200-drawdown-rebase.py` (new; read-only unless `--apply`, and
-`--apply` refuses unless `--confirm` equals the computed peak), `drafts/c200-realized-peak-rebase-20261112.md` (this file).
-`scripts/c200-drawdown-attribution.py` was used unchanged. All three ride the 22:30 auto-backup. Working tree otherwise
-untouched: no DB write, no state-file write, no RuleSet change, no dashboard edit, no merge.
+**Added with this proposal, committed as `1163d66`:** `scripts/c200-drawdown-rebase.py` (new; read-only unless `--apply`,
+and `--apply` refuses unless `--confirm` equals the computed peak), `drafts/c200-realized-peak-rebase-20261112.md` (this file).
+`scripts/c200-drawdown-attribution.py` was used unchanged. Nothing else is in that commit: no DB write, no state-file
+write, no RuleSet change, no dashboard edit, nothing merged beyond the doc and its report-only script.
