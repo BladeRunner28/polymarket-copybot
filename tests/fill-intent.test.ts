@@ -376,4 +376,85 @@ describe("intent recording and linking (real SQL path)", () => {
     });
     expect(id).toBeNull();
   });
+
+  // --- the link race: the leg row and the intent row are written by different processes -----
+  // Measured on the live book 2026-11-12: 219 of 802 intents unlinked (27.3%), every one with
+  // exactly one leg on the same (dj, market, outcome, side). The lookup ran before the intent
+  // row was visible, returned null silently, and nothing retried — so 219 legs could never be
+  // fill-resolved. These two tests pin the retry and its bound.
+  it("links when the intent row lands AFTER the webhook (the real race)", async () => {
+    const d = await makeDecision("mkt-race");
+    const trade = await prisma.paperTrade.create({
+      data: {
+        botId: "BANKROLL_200",
+        venue: "Polymarket",
+        decisionJournalId: d.id,
+        walletAddress: "0xw",
+        marketId: "mkt-race",
+        outcome: "YES",
+        side: "BUY",
+        entryPrice: 0.56,
+        currentPrice: 0.56,
+        simulatedPositionSize: 10,
+      },
+    });
+    // The webhook's link runs while the scorer's insert is still in flight.
+    const pending = stampIntentLink({
+      paperTradeId: trade.id,
+      decisionJournalId: d.id,
+      marketId: "mkt-race",
+      outcome: "YES",
+      side: "BUY",
+      venue: "Polymarket",
+      botId: "BANKROLL_200",
+    });
+    await new Promise((r) => setTimeout(r, 40));
+    await recordFillIntent({
+      decisionJournalId: d.id,
+      botId: "BANKROLL_200",
+      venue: "Polymarket",
+      marketId: "mkt-race",
+      outcome: "YES",
+      side: "BUY",
+      intentPrice: 0.58,
+      sizeUsd: 10,
+    });
+    await expect(pending).resolves.toBe(0.58);
+    const after = await prisma.paperTrade.findUnique({ where: { id: trade.id } });
+    expect(after?.intentPrice).toBe(0.58);
+  });
+
+  it("gives up in bounded time (and not silently) when the intent never arrives", async () => {
+    const d = await makeDecision("mkt-no-intent");
+    const trade = await prisma.paperTrade.create({
+      data: {
+        botId: "BANKROLL_200",
+        venue: "Polymarket",
+        decisionJournalId: d.id,
+        walletAddress: "0xw",
+        marketId: "mkt-no-intent",
+        outcome: "YES",
+        side: "BUY",
+        entryPrice: 0.4,
+        currentPrice: 0.4,
+        simulatedPositionSize: 10,
+      },
+    });
+    const t0 = Date.now();
+    const stamped = await stampIntentLink({
+      paperTradeId: trade.id,
+      decisionJournalId: d.id,
+      marketId: "mkt-no-intent",
+      outcome: "YES",
+      side: "BUY",
+      venue: "Polymarket",
+      botId: "BANKROLL_200",
+    });
+    const ms = Date.now() - t0;
+    expect(stamped).toBeNull();
+    // Bounded: retries must never become an open-ended wait on the live booking path.
+    expect(ms).toBeLessThan(2000);
+    const after = await prisma.paperTrade.findUnique({ where: { id: trade.id } });
+    expect(after?.intentPrice).toBeNull();
+  });
 });

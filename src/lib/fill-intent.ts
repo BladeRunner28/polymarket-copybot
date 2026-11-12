@@ -209,12 +209,32 @@ export async function recordFillIntent(input: IntentInput): Promise<string | nul
   }
 }
 
+/** Bounded retry on the intent lookup — see stampIntentLink(). Measured need: 219 of 802
+ *  C-200 intents (27.3%) were left unlinked, every one of them with an exactly-matching leg
+ *  (same decisionJournalId+market+outcome+side, 1:1, no duplicates), and no `link skipped`
+ *  exception in the log — i.e. the lookup ran before the intent row was visible. */
+const LINK_ATTEMPTS = Math.max(1, Math.min(20, Number(process.env.FILL_INTENT_LINK_ATTEMPTS ?? 5)));
+const LINK_BACKOFF_MS = Math.max(0, Math.min(1000, Number(process.env.FILL_INTENT_LINK_BACKOFF_MS ?? 20)));
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
  * Link a booked leg to the intent it came from and stamp `PaperTrade.intentPrice`.
  * Called AFTER the booking transaction commits, so the worst case is a booked
  * copy with no measurement. Matching is on the identity the webhook carries
  * (decisionJournalId + market + outcome + side + venue); the newest unlinked
  * intent wins. Never throws.
+ *
+ * IT RETRIES, and that is load-bearing. The intent row and the leg row are written by
+ * DIFFERENT processes on the same SQLite file — the intent by the scorer that dispatched
+ * (`scripts/score-trades.ts`), the leg by this dashboard's execution-result webhook — and the
+ * sidecar posts the webhook the moment it responds, so the leg often commits a few ms BEFORE
+ * the intent insert does. A single lookup then finds nothing and returns null silently, and
+ * nothing ever retries: the leg can never be stamped by the resolver and books at p(fill)=1
+ * forever. Measured on the live book 2026-11-12: 219 of 802 intents unlinked (27.3%), each
+ * with exactly one matching leg; unlinked legs = unlinked intents, so it is the link that
+ * failed, not the dispatch. The retry is bounded (~200ms at defaults) and runs after the
+ * booking commits, so a slow miss can never delay or fail a copy.
  */
 export async function stampIntentLink(match: {
   paperTradeId: string;
@@ -228,17 +248,33 @@ export async function stampIntentLink(match: {
   if (!FILL_INTENT_SHADOW) return null;
   if (match.botId !== "BANKROLL_200") return null; // STANDARD books its own price
   try {
-    const intent = await prisma.fillIntent.findFirst({
-      where: {
-        paperTradeId: null,
-        decisionJournalId: match.decisionJournalId,
-        marketId: match.marketId,
-        outcome: match.outcome,
-        side: match.side,
-      },
-      orderBy: { dispatchedAt: "desc" },
-    });
-    if (!intent) return null;
+    let intent: { id: string; intentPrice: number } | null = null;
+    for (let attempt = 1; attempt <= LINK_ATTEMPTS; attempt++) {
+      intent = await prisma.fillIntent.findFirst({
+        where: {
+          paperTradeId: null,
+          decisionJournalId: match.decisionJournalId,
+          marketId: match.marketId,
+          outcome: match.outcome,
+          side: match.side,
+        },
+        orderBy: { dispatchedAt: "desc" },
+        select: { id: true, intentPrice: true },
+      });
+      if (intent) break;
+      if (attempt < LINK_ATTEMPTS && LINK_BACKOFF_MS > 0) await sleep(LINK_BACKOFF_MS * attempt);
+    }
+    if (!intent) {
+      // Never silent: an unlinked leg is unusable by the fill resolver, so the miss is the
+      // measurement's own defect and has to be countable in the log rather than inferred from
+      // a NULL column months later.
+      console.warn(
+        `[fill-intent] link MISSED after ${LINK_ATTEMPTS} attempt(s): leg ${match.paperTradeId} ` +
+          `dj ${match.decisionJournalId} ${match.marketId}/${match.outcome}/${match.side} ` +
+          `— no unlinked intent; this leg cannot be fill-resolved`
+      );
+      return null;
+    }
     // Stamp the LEG first, then mark the intent linked: if the stamp fails there is
     // nothing recorded, and the intent stays unlinked (retryable) instead of
     // pointing at a leg it never touched.
