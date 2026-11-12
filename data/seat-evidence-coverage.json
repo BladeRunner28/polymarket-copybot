@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-12T21:15:32Z",
+ "generated_at": "2026-11-12T21:29:32Z",
  "instrument": "scripts/seat-evidence-coverage.py",
  "lane": "B \u2014 read-only measurement (no rule/gate/size/tracking change)",
  "rules_version": 72,
@@ -28,13 +28,16 @@
    "c_capture_miss": 11329,
    "c_not_swept": 668,
    "c_undated": 0,
-   "venue_legs_entered_7d": 9266,
+   "venue_legs_entered_7d": 9246,
    "unobserved_legs_in_activity_window": 3218,
    "c_no_copy_print": 961,
    "c_print_not_stored": 84,
    "c_print_unwatched": 2173,
-   "venue_settled_entered_7d": 5608,
-   "venue_settled_entered_14d": 12384
+   "venue_settled_entered_7d": 5596,
+   "venue_settled_entered_14d": 12384,
+   "c_no_copy_print_token": 1039,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 2179
   },
   "thin_seats": [
    {
@@ -687,7 +690,7 @@
    "seats_with_30plus_settled_entered_in_7d": 6,
    "seats_with_30plus_settled_entered_in_14d": 7,
    "seats_with_30plus_observed_settled_today": 13,
-   "settled_entered_7d_total": 5608,
+   "settled_entered_7d_total": 5596,
    "settled_entered_14d_total": 12384,
    "note": "a 7-day pre-admission observation window would hand an admission rule the trailing settled yield shown here for each wallet; today the same wallets are admitted on a 100-row profile sample and their observed-settled population is measured afterwards"
   },
@@ -865,9 +868,9 @@
   "structural_note": "a wallet that has never held status=track is outside observeWhere() (status!='track' AND lastTrackedAt within 7d), so it accumulates ZERO observed keys until it is admitted; its time-to-evidence is unbounded however fast its flow, which is why the measured days-to-30 below is a POST-admission number and not an age an admission rule can check first"
  },
  "cycle_stats": {
-  "runs": 14407,
+  "runs": 14408,
   "first_run": "2026-07-14T20:12:17Z",
-  "last_run": "2026-11-12T21:07:46Z",
+  "last_run": "2026-11-12T21:18:46Z",
   "gap_median_min": 11.0,
   "gap_p90_min": 16.5,
   "gap_max_min": 1254.0,
@@ -923,6 +926,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 6,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 6
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 6,
    "first_ingest": "2026-11-12T04:59:44Z",
    "last_ingest": "2026-11-12T12:52:44Z",
    "first_copyable_ingest": "2026-11-12T04:59:44Z",
@@ -1011,6 +1020,10 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 0,
    "capture_miss_rate": null,
+   "unobserved_first_event_token": {},
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 0,
    "first_ingest": "2026-07-15T19:38:30Z",
    "last_ingest": "2026-11-12T01:08:44Z",
    "first_copyable_ingest": "2026-07-15T19:38:30Z",
@@ -1265,6 +1278,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 74,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 74
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 74,
    "first_ingest": "2026-10-05T02:41:32Z",
    "last_ingest": "2026-11-12T18:55:44Z",
    "first_copyable_ingest": "2026-10-14T17:41:29Z",
@@ -1473,6 +1492,10 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 0,
    "capture_miss_rate": null,
+   "unobserved_first_event_token": {},
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 0,
    "first_ingest": "2026-10-16T09:39:32Z",
    "last_ingest": "2026-11-12T19:50:45Z",
    "first_copyable_ingest": "2026-10-16T09:39:32Z",
@@ -1587,6 +1610,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 9,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 9
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 9,
    "first_ingest": "2026-10-16T03:14:34Z",
    "last_ingest": "2026-11-12T00:02:44Z",
    "first_copyable_ingest": "2026-11-11T23:40:44Z",
@@ -1715,6 +1744,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 230,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 233
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 233,
    "first_ingest": "2026-09-04T12:49:28Z",
    "last_ingest": "2026-11-11T15:25:44Z",
    "first_copyable_ingest": "2026-09-04T12:49:28Z",
@@ -2077,6 +2112,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 4,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 4
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 4,
    "first_ingest": "2026-09-25T16:45:37Z",
    "last_ingest": "2026-11-04T02:14:40Z",
    "first_copyable_ingest": "2026-09-25T16:45:37Z",
@@ -2224,6 +2265,14 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 118,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "REDEEM/-": 323,
+    "TRADE/BUY": 116,
+    "TRADE/SELL": 16
+   },
+   "c_no_copy_print_token": 339,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 116,
    "first_ingest": "2026-10-23T03:21:36Z",
    "last_ingest": "2026-11-12T06:38:51Z",
    "first_copyable_ingest": "2026-11-05T18:23:42Z",
@@ -2381,6 +2430,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 79,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 79
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 79,
    "first_ingest": "2026-09-13T15:32:29Z",
    "last_ingest": "2026-11-12T19:50:45Z",
    "first_copyable_ingest": "2026-09-13T15:32:29Z",
@@ -2582,6 +2637,10 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 0,
    "capture_miss_rate": null,
+   "unobserved_first_event_token": {},
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 0,
    "first_ingest": "2026-07-31T04:47:18Z",
    "last_ingest": "2026-11-12T17:16:45Z",
    "first_copyable_ingest": "2026-07-31T04:47:18Z",
@@ -2710,6 +2769,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 1163,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 1165
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 1165,
    "first_ingest": "2026-09-21T20:37:37Z",
    "last_ingest": "2026-11-10T06:58:44Z",
    "first_copyable_ingest": "2026-09-21T20:37:37Z",
@@ -3107,6 +3172,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 304,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 307
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 307,
    "first_ingest": "2026-08-02T13:52:27Z",
    "last_ingest": "2026-11-12T19:17:46Z",
    "first_copyable_ingest": "2026-08-02T13:52:27Z",
@@ -3380,6 +3451,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 8,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 8
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 8,
    "first_ingest": "2026-07-15T18:25:08Z",
    "last_ingest": "2026-10-24T02:16:38Z",
    "first_copyable_ingest": "2026-07-15T18:25:08Z",
@@ -3531,6 +3608,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 8,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 8
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 8,
    "first_ingest": null,
    "last_ingest": null,
    "first_copyable_ingest": null,
@@ -3584,7 +3667,7 @@
    "c_not_swept": 12,
    "c_undated": 0,
    "capture_rate_in_coverage": 1.0,
-   "venue_legs_entered_7d": 85,
+   "venue_legs_entered_7d": 84,
    "venue_settled_entered_7d": 23,
    "venue_settled_entered_14d": 51,
    "activity_window": [
@@ -3609,6 +3692,10 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 0,
    "capture_miss_rate": null,
+   "unobserved_first_event_token": {},
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 0,
    "first_ingest": "2026-09-03T18:47:32Z",
    "last_ingest": "2026-11-12T20:34:45Z",
    "first_copyable_ingest": "2026-09-03T18:47:32Z",
@@ -3922,6 +4009,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 13,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 13
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 13,
    "first_ingest": "2026-10-03T15:18:31Z",
    "last_ingest": "2026-10-29T17:57:40Z",
    "first_copyable_ingest": "2026-10-15T10:11:30Z",
@@ -4031,6 +4124,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 2,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 2
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 2,
    "first_ingest": "2026-10-26T04:20:42Z",
    "last_ingest": "2026-11-03T10:20:44Z",
    "first_copyable_ingest": "2026-11-03T10:20:44Z",
@@ -4141,6 +4240,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 5,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 5
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 5,
    "first_ingest": "2026-11-07T04:29:51Z",
    "last_ingest": "2026-11-12T10:29:46Z",
    "first_copyable_ingest": "2026-11-07T04:29:51Z",
@@ -4235,6 +4340,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 22,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 22
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 22,
    "first_ingest": "2026-08-16T21:18:17Z",
    "last_ingest": "2026-08-16T21:18:17Z",
    "first_copyable_ingest": "2026-08-16T21:18:17Z",
@@ -4324,6 +4435,10 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 0,
    "capture_miss_rate": null,
+   "unobserved_first_event_token": {},
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 0,
    "first_ingest": "2026-09-26T03:12:25Z",
    "last_ingest": "2026-11-12T21:07:46Z",
    "first_copyable_ingest": "2026-09-26T03:12:25Z",
@@ -4508,6 +4623,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 23,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 23
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 23,
    "first_ingest": "2026-08-07T03:51:20Z",
    "last_ingest": "2026-11-02T23:53:52Z",
    "first_copyable_ingest": "2026-08-07T03:51:20Z",
@@ -4618,6 +4739,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 4,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 4
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 4,
    "first_ingest": "2026-09-27T05:41:43Z",
    "last_ingest": "2026-11-08T23:01:54Z",
    "first_copyable_ingest": "2026-10-17T13:31:34Z",
@@ -4763,6 +4890,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 70,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 70
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 70,
    "first_ingest": "2026-11-03T04:06:46Z",
    "last_ingest": "2026-11-12T19:39:47Z",
    "first_copyable_ingest": "2026-11-10T00:44:43Z",
@@ -4845,8 +4978,8 @@
    "c_not_swept": 0,
    "c_undated": 0,
    "capture_rate_in_coverage": 0.4437,
-   "venue_legs_entered_7d": 7707,
-   "venue_settled_entered_7d": 5020,
+   "venue_legs_entered_7d": 7688,
+   "venue_settled_entered_7d": 5008,
    "venue_settled_entered_14d": 11059,
    "activity_window": [
     "2026-11-10T07:23:03Z",
@@ -4864,8 +4997,8 @@
    },
    "unobserved_legs_in_activity_window": 700,
    "unobserved_first_event": {
-    "TRADE/BUY": 84,
     "REDEEM/-": 592,
+    "TRADE/BUY": 84,
     "MERGE/-": 2,
     "TRADE/SELL": 22
    },
@@ -4873,6 +5006,14 @@
    "c_print_not_stored": 84,
    "c_print_unwatched": 0,
    "capture_miss_rate": 0.12,
+   "unobserved_first_event_token": {
+    "REDEEM/-": 646,
+    "no_row_on_token": 16,
+    "TRADE/SELL": 38
+   },
+   "c_no_copy_print_token": 700,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 0,
    "first_ingest": "2026-10-05T03:36:29Z",
    "last_ingest": "2026-11-12T20:12:48Z",
    "first_copyable_ingest": "2026-11-06T15:39:43Z",
@@ -5008,6 +5149,12 @@
    "c_print_not_stored": 0,
    "c_print_unwatched": 31,
    "capture_miss_rate": 0.0,
+   "unobserved_first_event_token": {
+    "TRADE/BUY": 31
+   },
+   "c_no_copy_print_token": 0,
+   "c_print_not_stored_token": 0,
+   "c_print_unwatched_token": 31,
    "first_ingest": "2026-11-12T04:59:52Z",
    "last_ingest": "2026-11-12T19:50:46Z",
    "first_copyable_ingest": "2026-11-12T04:59:52Z",

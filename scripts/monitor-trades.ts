@@ -116,10 +116,24 @@ async function main() {
         // measured steady state (0 drops / 14,500 rows); anything it prints is a
         // real change in the venue tape and must not be absorbed quietly.
         (r) => {
-          log(
-            `[monitor] print-type guard: ${r.address.slice(0, 10)}… dropped ${r.dropped} non-fill row(s) ` +
-              `${JSON.stringify(r.droppedByType)}`
-          );
+          // Page-cap alarm (card t_4c9847c9, Lane B): a capped read means the wallet's 24 h
+          // window held MORE rows than 4 x 500 could carry, so prints inside the window were
+          // never seen this cycle. Before this line the sweep was silently short: every other
+          // number in the run stayed clean. It has not fired at luciebot's measured 1.1-1.5k
+          // rows/24 h (2.9 pages max) and is only reachable on a burst day or after a long gap.
+          if (r.cappedAtPageLimit) {
+            logError(
+              `[monitor] ALERT page cap: ${r.address.slice(0, 10)}… read ${r.rowsFetched} activity rows ` +
+                `(4 x 500) and the venue still had more — prints inside the ${MONITOR_HOURS} h window were ` +
+                `NOT seen this cycle; raise the page budget only after pricing it (Lane A, t_4c9847c9)`
+            );
+          }
+          if (r.dropped > 0) {
+            log(
+              `[monitor] print-type guard: ${r.address.slice(0, 10)}… dropped ${r.dropped} non-fill row(s) ` +
+                `${JSON.stringify(r.droppedByType)}`
+            );
+          }
           if (r.uncataloguedTypes.length > 0) {
             logError(
               `[monitor] ALERT print-type guard saw UNCATALOGUED tape type(s) ${r.uncataloguedTypes.join(", ")} — ` +

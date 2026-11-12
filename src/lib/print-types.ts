@@ -119,4 +119,16 @@ export type PrintFilterReport = {
   droppedByType: Record<string, number>;
   /** Types we have never catalogued (or "(empty)"): the alarm that matters. */
   uncataloguedTypes: string[];
+  /**
+   * Set when the activity read stopped at its page cap with the venue still
+   * offering rows. A capped read means prints INSIDE the caller's window were
+   * never handed back and the caller cannot tell: the sweep would look clean
+   * while quietly under-reading a busy wallet. Emitted so the truncation is
+   * visible instead of inferred (measured: silent at luciebot's 1.1-1.5k
+   * rows/24 h, exceeded on a 4.3k-row burst day — see
+   * drafts/monitor-page-cap-20261112.md).
+   */
+  cappedAtPageLimit?: boolean;
+  /** Rows the venue actually returned on this read (the number the cap bounds). */
+  rowsFetched?: number;
 };

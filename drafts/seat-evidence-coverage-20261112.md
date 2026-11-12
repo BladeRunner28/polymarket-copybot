@@ -194,6 +194,18 @@ Consequences:
    `TheOmniussiah` (1,163), `GamblingAddict12345` (304), `KongX` (230), i.e. wallets observed only
    from the date they first held a seat. That is an admission-sequencing question, not a rotation one.
 
+> **Correction 2026-11-12 (card `t_4c9847c9`) — consequence 1 does not hold; the "84" is a probe
+> artefact, not an instrument miss.** The probe above classifies the FIRST activity row on the
+> market's **conditionId**, and on a two-token market that row can be the **other** token's fill. For
+> all 84 legs the matched print is a `no`-token BUY while the leg is the `yes` token, which we never
+> printed on that token (52 `REDEEM`-only, 16 no row, 16 SELL-only) — and every paired `no` print was
+> stored, 84 of them at the print's exact second. Token-matched basis: **1,039 no-print / 2,179
+> unwatched / 0 missed**; copyable-side capture for the same wallet and window is **2,388 of 2,388
+> prints (0 absent)**, and the page cap needed 2.9 of its 4 pages at worst. The table above and its
+> first column are unchanged and still reproduce; the `c_print_not_stored` / `capture_miss_rate` fields
+> now have token-matched twins (`*_token`) that should be quoted instead. Full measurement:
+> `drafts/monitor-page-cap-20261112.md`, `scripts/monitor-miss-attribution.py`.
+
 ## 5. Rotation arithmetic
 
 | quantity | value | source |

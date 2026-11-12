@@ -604,6 +604,14 @@ def main():
         act_window = act.get("window")
         unobs_in_window = 0
         c_no_print = c_print_missed = c_print_unwatched = 0
+        # TOKEN-MATCHED arm (card t_4c9847c9, Lane B): the block above classifies the FIRST row on
+        # the CONDITION, so on a two-token market it counts a BUY of the OTHER token as this leg's
+        # print. MEASURED on luciebot 2026-11-10..11-12: all 84 "print-present-and-not-stored" legs
+        # were legs whose own token had NO BUY print at all, while the paired token carried the
+        # prints (all of them stored). The card's basis is kept above and unchanged; this arm names
+        # the token-corrected counts so a reader can tell the two apart.
+        c_no_print_tok = c_print_missed_tok = c_print_unwatched_tok = 0
+        act_first_mix_tok = Counter()
         if act_rows and act_window:
             lo = int(ts_parse(act_window[0]) / 1000)
             hi = int(ts_parse(act_window[1]) / 1000)
@@ -624,21 +632,41 @@ def main():
                 if fe_s is None or fe_s < lo or fe_s > hi:
                     continue
                 unobs_in_window += 1
+                # --- the card's basis: FIRST row on the CONDITION, either token.
                 ev = next((x for x in (by_cid.get(k[0]) or [])
                            if int(x.get("timestamp") or 0) >= fe_s - 120), None)
                 if ev is None:
                     act_first_mix["no_row"] += 1
                     c_no_print += 1
-                    continue
-                tag = "%s/%s" % (str(ev.get("type")), str(ev.get("side") or "-"))
-                act_first_mix[tag] += 1
-                is_buy_print = str(ev.get("type")) == "TRADE" and str(ev.get("side")).upper() == "BUY"
-                if not is_buy_print:
-                    c_no_print += 1          # position born of REDEEM/CONVERSION/MERGE: nothing to copy
-                elif swept_after(fe_s * 1000, cts_all):
-                    c_print_missed += 1      # a BUY print we should have stored, and did not
                 else:
-                    c_print_unwatched += 1   # a BUY print nobody was watching for: coverage, not capture
+                    tag = "%s/%s" % (str(ev.get("type")), str(ev.get("side") or "-"))
+                    act_first_mix[tag] += 1
+                    is_buy_print = str(ev.get("type")) == "TRADE" and str(ev.get("side")).upper() == "BUY"
+                    if not is_buy_print:
+                        c_no_print += 1          # position born of REDEEM/CONVERSION/MERGE: nothing to copy
+                    elif swept_after(fe_s * 1000, cts_all):
+                        c_print_missed += 1      # a BUY print we should have stored, and did not
+                    else:
+                        c_print_unwatched += 1   # a BUY print nobody was watching for: coverage, not capture
+                # --- token-matched twin: same three buckets, but the row must be on THIS leg's
+                # token, which is the side a copy would have to cross. Runs unconditionally, so a
+                # condition with no rows at all lands in the same bucket in both arms.
+                ev_t = next((x for x in (by_cid.get(k[0]) or [])
+                             if int(x.get("timestamp") or 0) >= fe_s - 120
+                             and nrm(x.get("outcome")) == k[1]), None)
+                if ev_t is None:
+                    act_first_mix_tok["no_row_on_token"] += 1
+                    c_no_print_tok += 1
+                else:
+                    tag_t = "%s/%s" % (str(ev_t.get("type")), str(ev_t.get("side") or "-"))
+                    act_first_mix_tok[tag_t] += 1
+                    is_buy_t = str(ev_t.get("type")) == "TRADE" and str(ev_t.get("side")).upper() == "BUY"
+                    if not is_buy_t:
+                        c_no_print_tok += 1
+                    elif swept_after(fe_s * 1000, cts_all):
+                        c_print_missed_tok += 1
+                    else:
+                        c_print_unwatched_tok += 1
 
         # ---- ingest cadence for this seat
         days = Counter(iso(c)[:10] for c in cts_all) if cts_all else Counter()
@@ -683,6 +711,13 @@ def main():
             "c_print_not_stored": c_print_missed,
             "c_print_unwatched": c_print_unwatched,
             "capture_miss_rate": round(c_print_missed / unobs_in_window, 3) if unobs_in_window else None,
+            # token-matched arm (card t_4c9847c9): what is left of the three buckets once the row
+            # must sit on THIS leg's own token. Same three names, suffixed, so no reader can quote
+            # one basis as the other.
+            "unobserved_first_event_token": dict(act_first_mix_tok),
+            "c_no_copy_print_token": c_no_print_tok,
+            "c_print_not_stored_token": c_print_missed_tok,
+            "c_print_unwatched_token": c_print_unwatched_tok,
             "first_ingest": iso(first_ingest), "last_ingest": iso(last_ingest),
             "first_copyable_ingest": iso(first_copyable),
             "coverage_holes_gt_24h": len(holes),
@@ -820,7 +855,8 @@ def main():
                   "venue_positions_settled", "venue_settled_unobserved", "c_pre_observation",
                   "c_capture_miss", "c_not_swept", "c_undated", "venue_legs_entered_7d",
                   "unobserved_legs_in_activity_window", "c_no_copy_print", "c_print_not_stored",
-                  "c_print_unwatched", "venue_settled_entered_7d", "venue_settled_entered_14d"):
+                  "c_print_unwatched", "venue_settled_entered_7d", "venue_settled_entered_14d",
+                  "c_no_copy_print_token", "c_print_not_stored_token", "c_print_unwatched_token"):
             tot[k] += r[k]
 
     # what an admissibility floor would see at admission under a pre-admission observation window:
@@ -929,6 +965,14 @@ def main():
     print("seats <30 observed settled: %d of %d ; zero observed: %d"
           % (summary["seats_under_30_observed_settled"], len(rows_out), summary["seats_zero_observed"]))
     print("totals: %s" % json.dumps(summary["totals"]))
+    print("activity probe — CONDITION basis (the card's, first row on either token): "
+          "no_print=%d print_unwatched=%d print_not_stored=%d"
+          % (summary["totals"]["c_no_copy_print"], summary["totals"]["c_print_unwatched"],
+             summary["totals"]["c_print_not_stored"]))
+    print("activity probe — TOKEN-MATCHED basis (the leg's own token; card t_4c9847c9): "
+          "no_print=%d print_unwatched=%d print_not_stored=%d"
+          % (summary["totals"]["c_no_copy_print_token"], summary["totals"]["c_print_unwatched_token"],
+             summary["totals"]["c_print_not_stored_token"]))
     for r in sorted(rows_out, key=lambda x: x["observed_keys_settled"]):
         print("%-46s ks=%5d settled=%5d +oracle=%4d unsett=%4d unm=%3d unk=%3d | vsettled=%5d unobs=%5d "
               "(pre=%5d miss=%4d notswept=%5d) cap=%s v7=%d"

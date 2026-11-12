@@ -481,6 +481,11 @@ export class PolymarketAdapter implements DataAdapter {
     let dropped = 0;
     const droppedByType: Record<string, number> = {};
     const uncatalogued = new Set<string>();
+    // Page-cap accounting (card t_4c9847c9, Lane B): the read is bounded at 4 x 500 rows. When
+    // the venue still has a cursor after the last page, prints inside the caller's window were
+    // NOT returned, and before this flag that was indistinguishable from a quiet wallet.
+    let rowsFetched = 0;
+    let pending = false;
     for (let page = 0; page < 4; page++) {
       const url = apiV2()
         ? `${DATA_API}/v2/activity?user=${address}&type=TRADE&limit=${pageSize}&start=${since}` +
@@ -497,6 +502,7 @@ export class PolymarketAdapter implements DataAdapter {
       // merge 542 of 2,519). Any drop this reports is therefore a change in the
       // tape, not noise — which is exactly what we want surfaced.
       const classified = filterTradeRows(data);
+      rowsFetched += data.length;
       if (classified.skipped > 0) {
         dropped += classified.skipped;
         for (const [t, n] of Object.entries(classified.skippedByType)) {
@@ -539,19 +545,23 @@ export class PolymarketAdapter implements DataAdapter {
       // look short and stop pagination early.
       if (apiV2()) {
         cursor = nextCursorOf(payload);
+        pending = Boolean(cursor);
         if (!cursor) break;
       } else {
-        if (data.length < pageSize) break;
+        pending = data.length >= pageSize;
+        if (!pending) break;
         offset += pageSize;
       }
       await sleep(DELAY_MS);
     }
-    if (onPrintFilter && (dropped > 0 || uncatalogued.size > 0)) {
+    if (onPrintFilter && (dropped > 0 || uncatalogued.size > 0 || pending)) {
       onPrintFilter({
         address,
         dropped,
         droppedByType,
         uncataloguedTypes: [...uncatalogued].sort(),
+        cappedAtPageLimit: pending,
+        rowsFetched,
       });
     }
     return out;
