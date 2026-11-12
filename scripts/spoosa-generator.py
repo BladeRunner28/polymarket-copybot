@@ -37,6 +37,10 @@ import numpy as np
 import trimesh
 from shapely.geometry import Polygon as ShapelyPolygon
 
+class TooBig(Exception):
+    """The requested plate does not fit the build volume. Raised so a run can report and continue."""
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, "cad", "spoosa")
 
@@ -90,12 +94,22 @@ def vesa_holes(prof: dict) -> list[tuple[float, float]]:
     return [(-w / 2.0, -h / 2.0), (w / 2.0, -h / 2.0), (-w / 2.0, h / 2.0), (w / 2.0, h / 2.0)]
 
 
-def insert_points(count: int, pw: float, ph: float, inset: float) -> list[tuple[float, float]]:
+def insert_points(count: int, pw: float, ph: float, inset: float,
+                  grid: tuple[int, int] | None = None) -> list[tuple[float, float]]:
     """Accessory points, always OUTSIDE the VESA pattern so the boss clears the arm plate.
 
-    1 -> centre; 2 -> left/right mid-edges; 4 -> corners; 8 -> corners + edge midpoints.
+    grid=(rows, cols) places an arbitrary evenly-spaced matrix (the generic case for a pattern size
+    nobody anticipated). Otherwise 1 -> centre; 2 -> left/right mid-edges; 4 -> corners;
+    8 -> corners + edge midpoints.
     """
     ex, ey = pw / 2.0 - inset, ph / 2.0 - inset
+    if grid:
+        rows, cols = grid
+        if rows < 1 or cols < 1:
+            raise ValueError(f"insert grid must be at least 1x1 (got {rows}x{cols})")
+        xs = [0.0] if cols == 1 else [-ex + 2.0 * ex * i / (cols - 1) for i in range(cols)]
+        ys = [0.0] if rows == 1 else [-ey + 2.0 * ey * j / (rows - 1) for j in range(rows)]
+        return [(x, y) for y in ys for x in xs]
     if count == 1:
         return [(0.0, 0.0)]
     if count == 2:
@@ -105,22 +119,51 @@ def insert_points(count: int, pw: float, ph: float, inset: float) -> list[tuple[
     if count == 8:
         return [(-ex, -ey), (ex, -ey), (-ex, ey), (ex, ey),
                 (-ex, 0.0), (ex, 0.0), (0.0, -ey), (0.0, ey)]
-    raise ValueError(f"insert count must be 1, 2, 4 or 8 (got {count})")
+    raise ValueError(f"insert count must be 1, 2, 4 or 8 -- or use --insert-grid RxC (got {count})")
 
 
-def build(profile: str, inserts: int, board_theme, *, plate_t: float, margin: float,
+def plate_size(prof: dict, margin: float, boss_r: float) -> tuple[float, float]:
+    """Plate dimensions for a VESA pattern: pattern + margins, but never smaller than a boss needs."""
+    h = prof["h"] if prof["h"] else prof["w"]      # a 2-screw pattern has no vertical spacing
+    pw = max(prof["w"] + 2 * margin, 2 * (boss_r + 2.0) + prof["w"])
+    ph = max(h + 2 * margin, 2 * (boss_r + 2.0) + h)
+    return pw, ph
+
+
+def resolve_profile(args) -> tuple[dict, str]:
+    """Either a named VESA profile, or an arbitrary WxH supplied on the command line."""
+    import re
+    if args.vesa:
+        m = re.match(r"^\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*$", args.vesa, re.I)
+        if not m:
+            raise SystemExit(f"--vesa expects WxH (e.g. 200x150), got {args.vesa!r}")
+        w, h = float(m.group(1)), float(m.group(2))
+        if w <= 0 or h <= 0:
+            raise SystemExit("--vesa dimensions must be positive")
+        if args.screws == 2:
+            h = 0.0
+        screw_d = args.screw_d if args.screw_d else (6.6 if max(w, h) >= 300 else 4.4)
+        return dict(w=w, h=h, screw_d=screw_d, screws=args.screws), f"custom{int(w)}x{int(h or w)}"
+    prof = dict(VESA_PROFILES[args.profile])
+    if args.screw_d:
+        prof["screw_d"] = args.screw_d
+    return prof, args.profile
+
+
+
+def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float,
           corner_r: float, insert_key: str, wall: float, chamfer: float,
-          relief: bool) -> tuple[trimesh.Trimesh, dict]:
-    prof = VESA_PROFILES[profile]
+          relief: bool, grid: tuple[int, int] | None = None,
+          bed: tuple[float, float] | None = None) -> tuple[trimesh.Trimesh, dict]:
     ins = INSERT_PRESETS[insert_key]
     boss_r = ins["od"] / 2.0 + wall
 
-    pw = prof["w"] + 2 * margin
-    ph = (prof["h"] if prof["h"] else prof["w"]) + 2 * margin
-    # the plate must also be big enough to seat every boss fully inside the rim
-    need = 2 * (boss_r + 2.0)
-    pw = max(pw, need + prof["w"])
-    ph = max(ph, need + prof["h"])
+    pw, ph = plate_size(prof, margin, boss_r)
+
+    # THE HARD LIMIT: a plate bigger than the bed is not a part, it is a drawing. Refuse it here so a
+    # generated STL can always be printed rather than discovered unprintable at the slicer.
+    if bed and (pw > bed[0] or ph > bed[1]):
+        raise TooBig(f"plate {pw:.0f}x{ph:.0f} mm exceeds the {bed[0]:.0f}x{bed[1]:.0f} mm bed")
 
     # refuse to model an insert bore that cannot fit in the plate thickness
     min_t = ins["length"] + 2.0          # 2 mm of material behind the insert
@@ -137,7 +180,7 @@ def build(profile: str, inserts: int, board_theme, *, plate_t: float, margin: fl
         cutters.append(trimesh.creation.cylinder(radius=prof["screw_d"] / 2.0, height=plate_t + 2,
                                                  sections=64).apply_translation((x, y, plate_t / 2)))
     # insert bores, opening on the ARM face (z = plate_t), with a lead-in chamfer
-    pts = insert_points(inserts, pw, ph, boss_r + 3.0)
+    pts = insert_points(inserts, pw, ph, boss_r + 3.0, grid=grid)
     for (x, y) in pts:
         depth = ins["length"] + 0.5
         z_top = plate_t
@@ -171,7 +214,7 @@ def build(profile: str, inserts: int, board_theme, *, plate_t: float, margin: fl
         for (x, y) in pts for (vx, vy) in vesa_holes(prof)
     )
     meta = dict(
-        profile=profile, vesa=f'{prof["w"]}x{prof["h"] or "(2-screw)"}',
+        profile=label, vesa=f'{int(prof["w"])}x{int(prof["h"]) if prof["h"] else "(2-screw)"}',
         plate_mm=[round(pw, 2), round(ph, 2), round(plate_t, 2)],
         inserts=inserts, insert_preset=insert_key, insert_od=ins["od"], insert_len=ins["length"],
         pilot_d=ins["pilot"], boss_d=round(2 * boss_r, 2),
@@ -192,31 +235,70 @@ def build(profile: str, inserts: int, board_theme, *, plate_t: float, margin: fl
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--profile", default="all")
+    ap = argparse.ArgumentParser(
+        description="Generate SPOOSA-style VESA spacer/adapter plates with 1/4-20 heatset points.")
+    ap.add_argument("--profile", default="all",
+                    help="named VESA profile, or 'all'. Ignored when --vesa is given.")
+    ap.add_argument("--vesa", default=None,
+                    help="arbitrary pattern as WxH (e.g. 200x150, 130x130). Supersedes --profile.")
+    ap.add_argument("--screws", type=int, default=4, choices=[2, 4],
+                    help="mounting points: 4 for a rectangular pattern, 2 for a horizontal pair")
+    ap.add_argument("--screw-d", type=float, default=None,
+                    help="VESA screw clearance (default M4=4.4, M6=6.6 for patterns >=300 mm)")
     ap.add_argument("--inserts", type=int, default=4, choices=[1, 2, 4, 8])
-    ap.add_argument("--plate-t", type=float, default=10.0)
+    ap.add_argument("--insert-grid", default=None,
+                    help="arbitrary insert matrix as RxC (e.g. 2x3). Overrides --inserts.")
+    ap.add_argument("--plate-t", type=float, default=9.0)
     ap.add_argument("--margin", type=float, default=30.0)
     ap.add_argument("--corner-r", type=float, default=8.0)
-    ap.add_argument("--insert-preset", default="1/4-20 standard", choices=list(INSERT_PRESETS))
+    ap.add_argument("--insert-preset", default="1/4-20 short", choices=list(INSERT_PRESETS))
     ap.add_argument("--wall", type=float, default=3.0)
     ap.add_argument("--chamfer", type=float, default=0.6)
     ap.add_argument("--relief", action="store_true", help="pocket the monitor face to save material")
+    ap.add_argument("--bed", default="350x350",
+                    help="build volume as WxD; plates larger than this are refused (default 350x350)")
+    ap.add_argument("--no-bed-check", action="store_true")
     ap.add_argument("--all-insert-counts", action="store_true",
                     help="generate 1/2/4/8 for each profile (the Spoosa's 8-10 variations)")
     args = ap.parse_args()
 
-    os.makedirs(OUT_DIR, exist_ok=True)
-    profiles = list(VESA_PROFILES) if args.profile == "all" else [args.profile]
-    counts = [1, 2, 4, 8] if args.all_insert_counts else [args.inserts]
+    bw, _, bd = args.bed.partition("x")
+    bed = None if args.no_bed_check else (float(bw), float(bd or bw))
 
-    manifest, made = [], 0
-    for prof in profiles:
+    grid = None
+    if args.insert_grid:
+        rows, _, cols = args.insert_grid.lower().partition("x")
+        grid = (int(rows), int(cols))
+
+    os.makedirs(OUT_DIR, exist_ok=True)
+
+    # one target, or every named profile
+    if args.vesa:
+        targets = [resolve_profile(args)]
+    elif args.profile == "all":
+        targets = [(dict(p), name) for name, p in VESA_PROFILES.items()]
+    else:
+        if args.profile not in VESA_PROFILES:
+            raise SystemExit(f"unknown profile {args.profile!r}; choose from {', '.join(VESA_PROFILES)} "
+                             f"or pass --vesa WxH")
+        targets = [resolve_profile(args)]
+
+    counts = [1, 2, 4, 8] if (args.all_insert_counts and not grid) else [args.inserts]
+
+    manifest, made, skipped = [], 0, []
+    for prof, label in targets:
         for n in counts:
-            body, meta = build(prof, n, None, plate_t=args.plate_t, margin=args.margin,
-                               corner_r=args.corner_r, insert_key=args.insert_preset,
-                               wall=args.wall, chamfer=args.chamfer, relief=args.relief)
-            name = f"spoosa_{prof}_{n}x1q4-20.stl"
+            try:
+                body, meta = build(prof, label, n, plate_t=args.plate_t, margin=args.margin,
+                                   corner_r=args.corner_r, insert_key=args.insert_preset,
+                                   wall=args.wall, chamfer=args.chamfer, relief=args.relief,
+                                   grid=grid, bed=bed)
+            except TooBig as e:
+                skipped.append(f"{label} x{n}: {e}")
+                print(f"  SKIP {label:11s} x{n}  -- {e}")
+                continue
+            suffix = f"{n}x" if not grid else f"{grid[0]}x{grid[1]}x"
+            name = f"spoosa_{label}_{suffix}1q4-20.stl"
             body.export(os.path.join(OUT_DIR, name))
             meta["file"] = name
             manifest.append(meta)
@@ -227,8 +309,14 @@ def main() -> int:
                   f"{'WATERTIGHT' if meta['watertight'] else 'LEAKY'}")
 
     with open(os.path.join(OUT_DIR, "manifest.json"), "w") as fh:
-        json.dump({"generated_by": "scripts/spoosa-generator.py", "parts": manifest}, fh, indent=2)
+        json.dump({"generated_by": "scripts/spoosa-generator.py", "bed_mm": bed,
+                   "parts": manifest, "skipped": skipped}, fh, indent=2)
     print(f"\n{made} parts -> {os.path.relpath(OUT_DIR, ROOT)}/  (manifest.json alongside)")
+    if skipped:
+        limit = f"{bed[0]:.0f}x{bed[1]:.0f}" if bed else "unlimited"
+        print(f"{len(skipped)} skipped as too large for the {limit} mm bed:")
+        for s in skipped:
+            print(f"  - {s}")
     return 0
 
 
