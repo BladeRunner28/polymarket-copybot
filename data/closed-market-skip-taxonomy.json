@@ -1,0 +1,489 @@
+{
+ "card": "t_d246fc66",
+ "lane": "A proposal \u2014 read-only, no rule/gate/size/exit touched",
+ "read_at": "2026-11-12T19:57:40.787417+00:00",
+ "db": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
+ "classifier": "decisionLiveness() semantics (src/lib/nearcertainty-tail.ts)",
+ "selftest": [
+  "post-close recognised",
+  "open market is live even with no close time",
+  "closed market with no clock is unknown, never live",
+  "decided exactly at closedTime is post-close (>=)",
+  "one second before closedTime is live",
+  "5-digit fractional second parses (Date.parse does; fromisoformat does not)",
+  "5-digit fraction still orders correctly"
+ ],
+ "windows": {
+  "post": {
+   "start_utc": "2026-11-09T15:15:16+00:00",
+   "end_utc": "2026-11-12T19:43:12+00:00",
+   "days": 3.19,
+   "decisions": 5588,
+   "liveness": {
+    "live": 5479,
+    "post-close": 103,
+    "uncached": 6
+   },
+   "decision_mix": {
+    "live": {
+     "skip": 4818,
+     "paper_copy": 99,
+     "watchlist": 562
+    },
+    "post-close": {
+     "skip": 103
+    },
+    "uncached": {
+     "watchlist": 3,
+     "skip": 3
+    }
+   },
+   "legs_booked_on_post_close": 0,
+   "legs_booked_on_unknown": 0,
+   "post_close": {
+    "decisions": 103,
+    "share_pct": 1.84,
+    "decision_mix": {
+     "skip": 103
+    },
+    "near_certainty_rows": 103,
+    "near_certainty_first_risk": 0,
+    "near_certainty_sole_risk": 0,
+    "near_certainty_preceded_by_ttr_reason": 52,
+    "detected_price_zero": 10,
+    "detected_price_mean": 0.9029,
+    "closed_to_decision_lag_s": {
+     "n": 103,
+     "median": 57422.92228603363,
+     "p90": 70085.05297207832,
+     "buckets": {
+      "5-60m": 24,
+      "1-6h": 8,
+      ">=6h": 71
+     }
+    },
+    "observed_to_decision_lag_s": {
+     "n": 103,
+     "median": 70030.048
+    },
+    "by_day": {
+     "2026-11-12": 103
+    },
+    "top_markets": {
+     "cs2-mouz-g2-2026-11-11-map-handicap-away-1pt5": 28,
+     "cs2-lgc-fal2-2026-11-11": 23,
+     "cs2-mouz-g2-2026-11-11": 11,
+     "cs2-ts7-fut-2026-11-11-map-handicap-away-1pt5": 9,
+     "atp-bellucc-gueymar-2026-11-11": 4
+    },
+    "first_risk": {
+     "liquidity $# < min $#": 103
+    },
+    "unknown_clock": {
+     "rows": 0,
+     "det_zero": 0,
+     "near_cert": 0,
+     "cheap": 0,
+     "legs": 0,
+     "detected_price_mean": null,
+     "note": "closed at cache time with no readable closedTime \u2014 UPPER BOUND only"
+    },
+    "guard_upper_bound_closed_now": 103,
+    "option_coverage": {
+     "caught_at_intake": 103,
+     "scoring_only": 0,
+     "intake_pct": 100.0
+    }
+   },
+   "zero_ttr": {
+    "rows": 955,
+    "decision_mix": {
+     "skip": 955
+    },
+    "near_certainty_rows": 530,
+    "post_close_rows": 52,
+    "live_rows": 903
+   },
+   "cohort": {
+    "near_certainty_rows_all": 1991,
+    "near_certainty_rows_all_live_only": 1888,
+    "cheap_lt_0_05": 182,
+    "cheap_lt_0_05_live_only": 172,
+    "cheap_lt_0_05_post_close": 10,
+    "cheap_lt_0_05_post_close_exactly_zero": 10
+   },
+   "intake": {
+    "copy_eligible_observations": 5593,
+    "liveness_at_trade_clock": {
+     "live": 5586,
+     "uncached": 7
+    },
+    "liveness_at_ingest_clock": {
+     "live": 5483,
+     "post-close": 103,
+     "uncached": 7
+    },
+    "closed_at_ingest_pct": 1.84,
+    "unscored_observations": 0,
+    "unscored_liveness_at_ingest": {},
+    "uncached_market_rows": 6
+   }
+  },
+  "post_now": {
+   "start_utc": "2026-11-09T15:15:16+00:00",
+   "end_utc": "2026-11-12T19:57:40.787417+00:00",
+   "days": 3.2,
+   "decisions": 5608,
+   "liveness": {
+    "live": 5497,
+    "post-close": 103,
+    "uncached": 8
+   },
+   "decision_mix": {
+    "live": {
+     "skip": 4836,
+     "paper_copy": 99,
+     "watchlist": 562
+    },
+    "post-close": {
+     "skip": 103
+    },
+    "uncached": {
+     "watchlist": 4,
+     "skip": 4
+    }
+   },
+   "legs_booked_on_post_close": 0,
+   "legs_booked_on_unknown": 0,
+   "post_close": {
+    "decisions": 103,
+    "share_pct": 1.84,
+    "decision_mix": {
+     "skip": 103
+    },
+    "near_certainty_rows": 103,
+    "near_certainty_first_risk": 0,
+    "near_certainty_sole_risk": 0,
+    "near_certainty_preceded_by_ttr_reason": 52,
+    "detected_price_zero": 10,
+    "detected_price_mean": 0.9029,
+    "closed_to_decision_lag_s": {
+     "n": 103,
+     "median": 57422.92228603363,
+     "p90": 70085.05297207832,
+     "buckets": {
+      "5-60m": 24,
+      "1-6h": 8,
+      ">=6h": 71
+     }
+    },
+    "observed_to_decision_lag_s": {
+     "n": 103,
+     "median": 70030.048
+    },
+    "by_day": {
+     "2026-11-12": 103
+    },
+    "top_markets": {
+     "cs2-mouz-g2-2026-11-11-map-handicap-away-1pt5": 28,
+     "cs2-lgc-fal2-2026-11-11": 23,
+     "cs2-mouz-g2-2026-11-11": 11,
+     "cs2-ts7-fut-2026-11-11-map-handicap-away-1pt5": 9,
+     "atp-bellucc-gueymar-2026-11-11": 4
+    },
+    "first_risk": {
+     "liquidity $# < min $#": 103
+    },
+    "unknown_clock": {
+     "rows": 0,
+     "det_zero": 0,
+     "near_cert": 0,
+     "cheap": 0,
+     "legs": 0,
+     "detected_price_mean": null,
+     "note": "closed at cache time with no readable closedTime \u2014 UPPER BOUND only"
+    },
+    "guard_upper_bound_closed_now": 103,
+    "option_coverage": {
+     "caught_at_intake": 103,
+     "scoring_only": 0,
+     "intake_pct": 100.0
+    }
+   },
+   "zero_ttr": {
+    "rows": 974,
+    "decision_mix": {
+     "skip": 974
+    },
+    "near_certainty_rows": 530,
+    "post_close_rows": 52,
+    "live_rows": 922
+   },
+   "cohort": {
+    "near_certainty_rows_all": 1991,
+    "near_certainty_rows_all_live_only": 1888,
+    "cheap_lt_0_05": 182,
+    "cheap_lt_0_05_live_only": 172,
+    "cheap_lt_0_05_post_close": 10,
+    "cheap_lt_0_05_post_close_exactly_zero": 10
+   },
+   "intake": {
+    "copy_eligible_observations": 5604,
+    "liveness_at_trade_clock": {
+     "live": 5596,
+     "uncached": 8
+    },
+    "liveness_at_ingest_clock": {
+     "live": 5493,
+     "post-close": 103,
+     "uncached": 8
+    },
+    "closed_at_ingest_pct": 1.84,
+    "unscored_observations": 0,
+    "unscored_liveness_at_ingest": {},
+    "uncached_market_rows": 8
+   }
+  },
+  "pre_equal": {
+   "start_utc": "2026-11-06T10:47:19+00:00",
+   "end_utc": "2026-11-09T15:15:16+00:00",
+   "days": 3.19,
+   "decisions": 7279,
+   "liveness": {
+    "live": 7277,
+    "post-close": 2
+   },
+   "decision_mix": {
+    "live": {
+     "skip": 7179,
+     "paper_copy": 90,
+     "watchlist": 8
+    },
+    "post-close": {
+     "skip": 2
+    }
+   },
+   "legs_booked_on_post_close": 0,
+   "legs_booked_on_unknown": 0,
+   "post_close": {
+    "decisions": 2,
+    "share_pct": 0.03,
+    "decision_mix": {
+     "skip": 2
+    },
+    "near_certainty_rows": 2,
+    "near_certainty_first_risk": 0,
+    "near_certainty_sole_risk": 0,
+    "near_certainty_preceded_by_ttr_reason": 1,
+    "detected_price_zero": 2,
+    "detected_price_mean": 0.0,
+    "closed_to_decision_lag_s": {
+     "n": 2,
+     "median": 6618.602206945419,
+     "p90": 6618.602206945419,
+     "buckets": {
+      "1-6h": 2
+     }
+    },
+    "observed_to_decision_lag_s": {
+     "n": 2,
+     "median": 38529.172
+    },
+    "by_day": {
+     "2026-11-07": 1,
+     "2026-11-08": 1
+    },
+    "top_markets": {
+     "lol-kc-t1-2026-11-04-game-handicap-home-2pt5": 1,
+     "itf-osuigw1-laskev1-2026-11-07": 1
+    },
+    "first_risk": {
+     "liquidity $# < min $#": 2
+    },
+    "unknown_clock": {
+     "rows": 0,
+     "det_zero": 0,
+     "near_cert": 0,
+     "cheap": 0,
+     "legs": 0,
+     "detected_price_mean": null,
+     "note": "closed at cache time with no readable closedTime \u2014 UPPER BOUND only"
+    },
+    "guard_upper_bound_closed_now": 2,
+    "option_coverage": {
+     "caught_at_intake": 2,
+     "scoring_only": 0,
+     "intake_pct": 100.0
+    }
+   },
+   "zero_ttr": {
+    "rows": 1627,
+    "decision_mix": {
+     "skip": 1627
+    },
+    "near_certainty_rows": 841,
+    "post_close_rows": 1,
+    "live_rows": 1626
+   },
+   "cohort": {
+    "near_certainty_rows_all": 2249,
+    "near_certainty_rows_all_live_only": 2247,
+    "cheap_lt_0_05": 281,
+    "cheap_lt_0_05_live_only": 279,
+    "cheap_lt_0_05_post_close": 2,
+    "cheap_lt_0_05_post_close_exactly_zero": 2
+   },
+   "intake": {
+    "copy_eligible_observations": 7278,
+    "liveness_at_trade_clock": {
+     "live": 7278
+    },
+    "liveness_at_ingest_clock": {
+     "live": 7276,
+     "post-close": 2
+    },
+    "closed_at_ingest_pct": 0.03,
+    "unscored_observations": 0,
+    "unscored_liveness_at_ingest": {},
+    "uncached_market_rows": 0
+   }
+  },
+  "d30": {
+   "start_utc": "2026-09-29T21:36:00+00:00",
+   "end_utc": "2026-10-29T21:36:00+00:00",
+   "days": 30.0,
+   "decisions": 36655,
+   "liveness": {
+    "live": 35075,
+    "uncached": 597,
+    "post-close": 983
+   },
+   "decision_mix": {
+    "live": {
+     "skip": 34510,
+     "paper_copy": 540,
+     "watchlist": 25
+    },
+    "uncached": {
+     "skip": 595,
+     "paper_copy": 2
+    },
+    "post-close": {
+     "skip": 983
+    }
+   },
+   "legs_booked_on_post_close": 0,
+   "legs_booked_on_unknown": 0,
+   "post_close": {
+    "decisions": 983,
+    "share_pct": 2.68,
+    "decision_mix": {
+     "skip": 983
+    },
+    "near_certainty_rows": 919,
+    "near_certainty_first_risk": 0,
+    "near_certainty_sole_risk": 0,
+    "near_certainty_preceded_by_ttr_reason": 820,
+    "detected_price_zero": 479,
+    "detected_price_mean": 0.4176,
+    "closed_to_decision_lag_s": {
+     "n": 983,
+     "median": 24456.694000005722,
+     "p90": 54463.72099995613,
+     "buckets": {
+      "1-6h": 301,
+      "<5m": 35,
+      "5-60m": 76,
+      ">=6h": 571
+     }
+    },
+    "observed_to_decision_lag_s": {
+     "n": 983,
+     "median": 45462.913
+    },
+    "by_day": {
+     "2026-09-30": 9,
+     "2026-10-02": 11,
+     "2026-10-03": 20,
+     "2026-10-05": 191,
+     "2026-10-06": 1,
+     "2026-10-10": 33,
+     "2026-10-11": 8,
+     "2026-10-12": 12,
+     "2026-10-13": 7,
+     "2026-10-14": 179,
+     "2026-10-15": 5,
+     "2026-10-16": 189,
+     "2026-10-19": 12,
+     "2026-10-21": 5,
+     "2026-10-22": 7,
+     "2026-10-23": 1,
+     "2026-10-24": 209,
+     "2026-10-25": 38,
+     "2026-10-28": 46
+    },
+    "top_markets": {
+     "lol-lgd-fox1-2026-10-04": 83,
+     "uel-cel1-juv-2026-10-15-juv": 70,
+     "cs2-vit-navi-2026-10-04-map-handicap-away-1pt5": 40,
+     "aus-bri-per-2026-10-23-total-2pt5": 36,
+     "uel-hof-bes-2026-10-15-bes": 35
+    },
+    "first_risk": {
+     "liquidity $# < min $#": 915,
+     "observation-only: wallet outside the current top-# copy set (v# observation/copy split)": 59,
+     "price drifted # since entry > max # (too late)": 8,
+     "spread # > max #": 1
+    },
+    "unknown_clock": {
+     "rows": 0,
+     "det_zero": 0,
+     "near_cert": 0,
+     "cheap": 0,
+     "legs": 0,
+     "detected_price_mean": null,
+     "note": "closed at cache time with no readable closedTime \u2014 UPPER BOUND only"
+    },
+    "guard_upper_bound_closed_now": 983,
+    "option_coverage": {
+     "caught_at_intake": 846,
+     "scoring_only": 137,
+     "intake_pct": 86.1
+    }
+   },
+   "zero_ttr": {
+    "rows": 3975,
+    "decision_mix": {
+     "skip": 3975
+    },
+    "near_certainty_rows": 921,
+    "post_close_rows": 793,
+    "live_rows": 3182
+   },
+   "cohort": {
+    "near_certainty_rows_all": 1983,
+    "near_certainty_rows_all_live_only": 1064,
+    "cheap_lt_0_05": 1443,
+    "cheap_lt_0_05_live_only": 919,
+    "cheap_lt_0_05_post_close": 524,
+    "cheap_lt_0_05_post_close_exactly_zero": 521
+   },
+   "intake": {
+    "copy_eligible_observations": 36659,
+    "liveness_at_trade_clock": {
+     "live": 36062,
+     "uncached": 597
+    },
+    "liveness_at_ingest_clock": {
+     "live": 35216,
+     "uncached": 597,
+     "post-close": 846
+    },
+    "closed_at_ingest_pct": 2.31,
+    "unscored_observations": 0,
+    "unscored_liveness_at_ingest": {},
+    "uncached_market_rows": 597
+   }
+  }
+ }
+}
