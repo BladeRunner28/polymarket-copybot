@@ -1,7 +1,7 @@
 {
  "card": "t_d246fc66",
  "lane": "A proposal \u2014 read-only, no rule/gate/size/exit touched",
- "read_at": "2026-11-12T20:03:33.885305+00:00",
+ "read_at": "2026-11-12T20:12:05.570250+00:00",
  "db": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
  "classifier": "decisionLiveness() semantics (src/lib/nearcertainty-tail.ts)",
  "selftest": [
@@ -12,7 +12,10 @@
   "one second before closedTime is live",
   "5-digit fractional second parses (Date.parse does; fromisoformat does not)",
   "5-digit fraction still orders correctly",
-  "wallet-print cell splits groups: pooled min 0.1731, det=0 min 0.34 (review round 1)"
+  "wallet-print cell splits groups: pooled min 0.1731, det=0 min 0.34 (review round 1)",
+  "--pre-days N alone spans now-N..now and is NOT a confirmation",
+  "--ship-at inside the span clamps the start to the ship time",
+  "--ship-at older than the span keeps now-N..now and stays valid (nothing pre-ship inside)"
  ],
  "windows": {
   "post": {
@@ -21,22 +24,17 @@
    "days": 3.19,
    "decisions": 5588,
    "liveness": {
-    "live": 5479,
-    "post-close": 103,
-    "uncached": 6
+    "live": 5485,
+    "post-close": 103
    },
    "decision_mix": {
     "live": {
-     "skip": 4818,
+     "skip": 4821,
      "paper_copy": 99,
-     "watchlist": 562
+     "watchlist": 565
     },
     "post-close": {
      "skip": 103
-    },
-    "uncached": {
-     "watchlist": 3,
-     "skip": 3
     }
    },
    "legs_booked_on_post_close": 0,
@@ -137,42 +135,35 @@
    "intake": {
     "copy_eligible_observations": 5593,
     "liveness_at_trade_clock": {
-     "live": 5586,
-     "uncached": 7
+     "live": 5593
     },
     "liveness_at_ingest_clock": {
-     "live": 5483,
-     "post-close": 103,
-     "uncached": 7
+     "live": 5490,
+     "post-close": 103
     },
     "closed_at_ingest_pct": 1.84,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 6
+    "uncached_market_rows": 0
    }
   },
   "post_now": {
    "start_utc": "2026-11-09T15:15:16+00:00",
-   "end_utc": "2026-11-12T20:03:33.885305+00:00",
-   "days": 3.2,
+   "end_utc": "2026-11-12T20:12:05.570250+00:00",
+   "days": 3.21,
    "decisions": 5611,
    "liveness": {
-    "live": 5499,
-    "post-close": 103,
-    "uncached": 9
+    "live": 5508,
+    "post-close": 103
    },
    "decision_mix": {
     "live": {
-     "skip": 4838,
+     "skip": 4843,
      "paper_copy": 99,
-     "watchlist": 562
+     "watchlist": 566
     },
     "post-close": {
      "skip": 103
-    },
-    "uncached": {
-     "watchlist": 4,
-     "skip": 5
     }
    },
    "legs_booked_on_post_close": 0,
@@ -273,18 +264,16 @@
    "intake": {
     "copy_eligible_observations": 5607,
     "liveness_at_trade_clock": {
-     "live": 5598,
-     "uncached": 9
+     "live": 5607
     },
     "liveness_at_ingest_clock": {
-     "live": 5495,
-     "post-close": 103,
-     "uncached": 9
+     "live": 5504,
+     "post-close": 103
     },
     "closed_at_ingest_pct": 1.84,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 9
+    "uncached_market_rows": 0
    }
   },
   "pre_equal": {
@@ -569,6 +558,152 @@
     "unscored_liveness_at_ingest": {},
     "uncached_market_rows": 597
    }
+  },
+  "pre_days": {
+   "start_utc": "2026-11-05T20:12:05.570250+00:00",
+   "end_utc": "2026-11-12T20:12:05.570250+00:00",
+   "days": 7.0,
+   "decisions": 13588,
+   "liveness": {
+    "live": 13483,
+    "post-close": 105
+   },
+   "decision_mix": {
+    "live": {
+     "skip": 12716,
+     "paper_copy": 193,
+     "watchlist": 574
+    },
+    "post-close": {
+     "skip": 105
+    }
+   },
+   "legs_booked_on_post_close": 0,
+   "legs_booked_on_unknown": 0,
+   "post_close": {
+    "decisions": 105,
+    "share_pct": 0.77,
+    "decision_mix": {
+     "skip": 105
+    },
+    "near_certainty_rows": 105,
+    "near_certainty_first_risk": 0,
+    "near_certainty_sole_risk": 0,
+    "near_certainty_preceded_by_ttr_reason": 53,
+    "detected_price_zero": 12,
+    "detected_price_mean": 0.8857,
+    "wallet_entry_price": {
+     "n": 105,
+     "min": 0.1731,
+     "max": 0.71,
+     "mean": 0.4758,
+     "below_0_34": 22,
+     "by_detected_price_group": {
+      "0.0": {
+       "n": 12,
+       "min": 0.2342,
+       "max": 0.5225,
+       "mean": 0.4047
+      },
+      "1.0": {
+       "n": 93,
+       "min": 0.1731,
+       "max": 0.71,
+       "mean": 0.4849
+      }
+     }
+    },
+    "closed_to_decision_lag_s": {
+     "n": 105,
+     "median": 57422.874285936356,
+     "p90": 70085.05297207832,
+     "buckets": {
+      "1-6h": 10,
+      "5-60m": 24,
+      ">=6h": 71
+     }
+    },
+    "observed_to_decision_lag_s": {
+     "n": 105,
+     "median": 70027.999
+    },
+    "by_day": {
+     "2026-11-07": 1,
+     "2026-11-08": 1,
+     "2026-11-12": 103
+    },
+    "top_markets": {
+     "cs2-mouz-g2-2026-11-11-map-handicap-away-1pt5": 28,
+     "cs2-lgc-fal2-2026-11-11": 23,
+     "cs2-mouz-g2-2026-11-11": 11,
+     "cs2-ts7-fut-2026-11-11-map-handicap-away-1pt5": 9,
+     "atp-bellucc-gueymar-2026-11-11": 4
+    },
+    "first_risk": {
+     "liquidity $# < min $#": 105
+    },
+    "unknown_clock": {
+     "rows": 0,
+     "det_zero": 0,
+     "near_cert": 0,
+     "cheap": 0,
+     "legs": 0,
+     "detected_price_mean": null,
+     "note": "closed at cache time with no readable closedTime \u2014 UPPER BOUND only"
+    },
+    "guard_upper_bound_closed_now": 105,
+    "option_coverage": {
+     "caught_at_intake": 105,
+     "scoring_only": 0,
+     "intake_pct": 100.0
+    }
+   },
+   "zero_ttr": {
+    "rows": 2611,
+    "decision_mix": {
+     "skip": 2611
+    },
+    "near_certainty_rows": 1371,
+    "post_close_rows": 53,
+    "live_rows": 2558
+   },
+   "cohort": {
+    "near_certainty_rows_all": 4241,
+    "near_certainty_rows_all_live_only": 4136,
+    "cheap_lt_0_05": 463,
+    "cheap_lt_0_05_live_only": 451,
+    "cheap_lt_0_05_post_close": 12,
+    "cheap_lt_0_05_post_close_exactly_zero": 12
+   },
+   "intake": {
+    "copy_eligible_observations": 13587,
+    "liveness_at_trade_clock": {
+     "live": 13587
+    },
+    "liveness_at_ingest_clock": {
+     "live": 13482,
+     "post-close": 105
+    },
+    "closed_at_ingest_pct": 0.77,
+    "unscored_observations": 0,
+    "unscored_liveness_at_ingest": {},
+    "uncached_market_rows": 0
+   }
   }
- }
+ },
+ "pre_days": {
+  "requested_days": 7.0,
+  "ship_at_utc": null,
+  "requested_start_utc": "2026-11-05T20:12:05.570250+00:00",
+  "window_start_utc": "2026-11-05T20:12:05.570250+00:00",
+  "window_end_utc": "2026-11-12T20:12:05.570250+00:00",
+  "anchored_at_ship": false,
+  "excluded_pre_ship_decisions": 0,
+  "uncached_rows": 0,
+  "valid_confirmation_window": false,
+  "confirm_if": "windows.pre_days.post_close.decisions == 0 and windows.pre_days.post_close.option_coverage.caught_at_intake == 0, with admissions (legs_booked_on_post_close) unchanged",
+  "refute_if": "any decision in windows.pre_days still stores detectedPrice in {0,1} on a market closed at ingest (option_coverage.caught_at_intake > 0), or the scoring-only residual is still > 0.5% of decisions -> (b) ships as well",
+  "note": "NOT a valid confirmation: no --ship-at given, so the window starts at now-N d and still contains decisions stamped before the guard existed. Pass --ship-at <ship timestamp> to make the same window a confirmation."
+ },
+ "fetch_scope": "pre_days"
 }

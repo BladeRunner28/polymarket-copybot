@@ -30,6 +30,19 @@ READ-ONLY on prisma/dev.db (`mode=ro`). Reuses data/nearcert-market-meta.json an
 fetches markets missing from it. Writes data/closed-market-skip-taxonomy.json.
 
 Run: python3 scripts/closed-market-skip-taxonomy.py [--no-fetch] [--fetch-cap 4000]
+                                                [--pre-days N [--ship-at ISO]]
+
+  --pre-days N     add a re-read window [now - N days, now) named `pre_days`, for the
+                   post-ship check of the approved guard (review round 2: the draft told
+                   the reader to run this flag before the script had it).
+  --ship-at ISO    anchor that window at the guard's ship timestamp, i.e.
+                   [max(now - N d, ship_at), now). Without it the window still contains
+                   rows stamped before the guard existed (today: the frozen 103), so the
+                   artifact reports `valid_confirmation_window: false` instead of letting
+  --fetch-window W restrict label fetching to window W (e.g. `pre_days`). The frozen windows
+                   (post / post_now / pre_equal / d30) then read the cache only, so a
+                   re-read cannot quietly restate their published figures by labelling a
+                   market it previously could not label.
 """
 from __future__ import annotations
 
@@ -105,6 +118,33 @@ def decision_liveness(decided_at, closed, closed_iso):
     return "live" if decided_at < t else "post-close"
 
 
+def resolve_pre_days_window(now, days, ship_at=None):
+    """The post-ship re-read window: [now - N d, now), optionally anchored at the ship time.
+
+    Review round 2 (t_d246fc66) found the draft telling the reader to run `--pre-days 7` on a
+    script that parsed no such flag, and that every window the script could build started at or
+    before the guard's ship time — so the pre-registered check would have reported the frozen
+    pre-ship rows forever and could neither confirm nor refute the guard.
+
+    `--pre-days N` alone is a valid *measurement*, not a valid *confirmation*: on any run before
+    ship + N days it still contains decisions stamped before the guard existed. `--ship-at ISO`
+    is the anchor that makes it a confirmation — the window becomes
+    [max(now - N d, ship_at), now), so no row inside it predates the ship. Either branch of that
+    max() is safe: an anchor inside the span clamps the start forward to ship_at, an anchor older
+    than the span leaves a window that is entirely post-ship. The number of decisions the clamp
+    excluded is emitted next to it, so a reader sees what was dropped instead of reading a frozen
+    103 as a guard failure.
+    """
+    requested_start = now - timedelta(days=days)
+    if ship_at is None:
+        return {"start": requested_start, "end": now, "requested_start": requested_start,
+                "ship_at": None, "anchored_at_ship": False, "valid_confirmation_window": False}
+    if ship_at > now:
+        raise SystemExit("--ship-at is in the future (%s > %s)" % (ship_at.isoformat(), now.isoformat()))
+    return {"start": max(requested_start, ship_at), "end": now, "requested_start": requested_start,
+            "ship_at": ship_at, "anchored_at_ship": True, "valid_confirmation_window": True}
+
+
 def fetch_market(mid):
     for attempt in range(4):
         try:
@@ -159,6 +199,11 @@ def wallet_print_stats(pairs):
 def selftest():
     """The three assertions the TS self-test pins, plus the boundary case."""
     st = wallet_print_stats([(0.0, 0.34), (0.0, 0.5225), (1.0, 0.1731), (1.0, 0.71)])
+    T_NOW = datetime(2026, 11, 19, 12, 0, tzinfo=timezone.utc)
+    T_SHIP = datetime(2026, 11, 13, 2, 0, tzinfo=timezone.utc)
+    T_PD = resolve_pre_days_window(T_NOW, 7)
+    T_PD_A = resolve_pre_days_window(T_NOW, 7, T_SHIP)
+    T_PD_B = resolve_pre_days_window(T_NOW, 7, datetime(2026, 11, 1, tzinfo=timezone.utc))
     cases = [
         ("post-close recognised",
          decision_liveness(datetime(2026, 10, 16, tzinfo=timezone.utc), True, "2026-10-15 21:00:00+00") == "post-close"),
@@ -179,6 +224,15 @@ def selftest():
          st["min"] == 0.1731 and st["max"] == 0.71 and st["below_0_34"] == 1
          and st["by_detected_price_group"]["0.0"]["min"] == 0.34
          and st["by_detected_price_group"]["1.0"]["min"] == 0.1731),
+        # --pre-days / --ship-at (review round 2): the flag the draft told the reader to run has
+        # to exist AND has to be able to fail. An unanchored window is never a confirmation.
+        ("--pre-days N alone spans now-N..now and is NOT a confirmation",
+         T_PD["start"] == T_NOW - timedelta(days=7) and T_PD["valid_confirmation_window"] is False),
+        ("--ship-at inside the span clamps the start to the ship time",
+         T_PD_A["start"] == T_SHIP and T_PD_A["valid_confirmation_window"] is True
+         and T_PD_A["requested_start"] == T_NOW - timedelta(days=7)),
+        ("--ship-at older than the span keeps now-N..now and stays valid (nothing pre-ship inside)",
+         T_PD_B["start"] == T_NOW - timedelta(days=7) and T_PD_B["valid_confirmation_window"] is True),
     ]
     bad = [n for n, ok in cases if not ok]
     if bad:
@@ -190,8 +244,23 @@ def main():
     argv = sys.argv[1:]
     do_fetch = "--no-fetch" not in argv
     fetch_cap = int(argv[argv.index("--fetch-cap") + 1]) if "--fetch-cap" in argv else 4000
+    pre_days = None
+    if "--pre-days" in argv:
+        try:
+            pre_days = float(argv[argv.index("--pre-days") + 1])
+        except (IndexError, ValueError):
+            raise SystemExit("--pre-days needs a number of days (e.g. --pre-days 7)")
+    ship_at = parse_venue_clock(argv[argv.index("--ship-at") + 1]) if "--ship-at" in argv else None
+    if "--pre-days" in argv and (pre_days is None or pre_days <= 0):
+        raise SystemExit("--pre-days needs a positive number of days")
+    if "--ship-at" in argv and ship_at is None:
+        raise SystemExit("--ship-at is not a readable timestamp (want e.g. 2026-11-12T20:00:00Z)")
+    if ship_at is not None and pre_days is None:
+        raise SystemExit("--ship-at only means something with --pre-days N")
+    fetch_window = argv[argv.index("--fetch-window") + 1] if "--fetch-window" in argv else None
     now = datetime.now(timezone.utc)
     tests = selftest()
+    pre = resolve_pre_days_window(now, pre_days, ship_at) if pre_days is not None else None
 
     windows = {
         "post": (FIX_CUT, POST_END),
@@ -199,6 +268,8 @@ def main():
         "pre_equal": (PRE_EQUAL_START, FIX_CUT),
         "d30": (D30_START, D30_END),
     }
+    if pre is not None:
+        windows["pre_days"] = (pre["start"], pre["end"])
 
     con = sqlite3.connect("file:%s?mode=ro" % DB, uri=True)
     con.row_factory = sqlite3.Row
@@ -210,6 +281,8 @@ def main():
     # ---- label cache: only what the windows need, fetching only what is missing ----
     needed = set()
     for name, (s, e) in windows.items():
+        if fetch_window is not None and name != fetch_window:
+            continue
         s_ms, e_ms = ms((s, e))
         for r in con.execute(
             """SELECT DISTINCT o.marketId FROM DecisionJournal d
@@ -219,7 +292,8 @@ def main():
         ):
             if r[0] and r[0] not in meta:
                 needed.add(r[0])
-    print("markets missing from label cache: %d" % len(needed), flush=True)
+    print("markets missing from label cache: %d%s" % (
+        len(needed), "" if fetch_window is None else " (fetch scope: %s only)" % fetch_window), flush=True)
     fetched = errors = 0
     if do_fetch and needed:
         todo = sorted(needed)[:fetch_cap]
@@ -252,7 +326,37 @@ def main():
         "classifier": "decisionLiveness() semantics (src/lib/nearcertainty-tail.ts)",
         "selftest": tests,
         "windows": {},
+        "pre_days": None,
+        "fetch_scope": fetch_window,
     }
+
+    if pre is not None:
+        ex_s, ex_e = ms((pre["requested_start"], pre["start"]))
+        excluded = con.execute(
+            "SELECT COUNT(*) FROM DecisionJournal WHERE isDemo = 0 AND createdAt >= ? AND createdAt < ?",
+            (ex_s, ex_e)).fetchone()[0]
+        report["pre_days"] = {
+            "requested_days": pre_days,
+            "ship_at_utc": pre["ship_at"].isoformat() if pre["ship_at"] else None,
+            "requested_start_utc": pre["requested_start"].isoformat(),
+            "window_start_utc": pre["start"].isoformat(),
+            "window_end_utc": pre["end"].isoformat(),
+            "anchored_at_ship": pre["anchored_at_ship"],
+            "excluded_pre_ship_decisions": excluded,
+            "uncached_rows": None,
+            "valid_confirmation_window": pre["valid_confirmation_window"],
+            "confirm_if": "windows.pre_days.post_close.decisions == 0 and "
+                          "windows.pre_days.post_close.option_coverage.caught_at_intake == 0, "
+                          "with admissions (legs_booked_on_post_close) unchanged",
+            "refute_if": "any decision in windows.pre_days still stores detectedPrice in {0,1} on a "
+                         "market closed at ingest (option_coverage.caught_at_intake > 0), or the "
+                         "scoring-only residual is still > 0.5% of decisions -> (b) ships as well",
+            "note": ("window anchored at the ship timestamp: no row inside it predates the guard"
+                     if pre["anchored_at_ship"] else
+                     "NOT a valid confirmation: no --ship-at given, so the window starts at now-N d "
+                     "and still contains decisions stamped before the guard existed. Pass "
+                     "--ship-at <ship timestamp> to make the same window a confirmation."),
+        }
 
     # DecisionJournal.observedTradeId is not indexed, so a NOT EXISTS / anti-join per
     # observation row is O(obs x decisions) — it ran past 5 minutes on the 30d window.
@@ -486,9 +590,24 @@ def main():
             "uncached_market_rows": w["liveness"].get("uncached", 0),
         }
         report["windows"][name] = w
+        if name == "pre_days" and report["pre_days"] is not None:
+            uncached = w["liveness"].get("uncached", 0)
+            report["pre_days"]["uncached_rows"] = uncached
+            if uncached:
+                report["pre_days"]["valid_confirmation_window"] = False
+                report["pre_days"]["note"] += (
+                    " Also INVALID: %d row(s) could not be labelled (market missing from the cache); "
+                    "re-run without --no-fetch." % uncached)
 
         pc = w["post_close"]
         print("\n== %s  %s .. %s  (%.2fd)" % (name, s.date(), e.date(), w["days"]))
+        if name == "pre_days" and report["pre_days"] is not None:
+            pr = report["pre_days"]
+            print("   re-read window %s .. %s | ship anchor %s | excluded pre-ship decisions %d | "
+                  "valid confirmation %s | uncached %s"
+                  % (pr["window_start_utc"], pr["window_end_utc"], pr["ship_at_utc"],
+                     pr["excluded_pre_ship_decisions"], pr["valid_confirmation_window"],
+                     pr["uncached_rows"]))
         print("   decisions %-6d liveness %s" % (len(rows), dict(w["liveness"])))
         print("   post-close decisions %d (%.2f%%) mix %s | legs booked %d"
               % (pc["decisions"], pc["share_pct"], pc["decision_mix"], w["legs_booked_on_post_close"]))

@@ -1,8 +1,10 @@
 # A closed market is not a candidate — the 2% post-close decisions are data-api prints that arrive after settlement
 
 Card `t_d246fc66` · **Lane A proposal — nothing shipped, no rule/gate/size/exit touched** · read
-2026-11-12T19:52Z, rev 2 2026-11-12T20:03Z (review round 1: the wallet-print cell is now
-instrument-emitted and the (a) sketch is price-only) · instrument `scripts/closed-market-skip-taxonomy.py`
+2026-11-12T19:52Z, rev 3 2026-11-12T20:12Z (review round 1: the wallet-print cell is now
+instrument-emitted and the (a) sketch is price-only; round 2: the "Refutation / re-read" recipe now
+names flags the script actually parses — `--pre-days` plus its `--ship-at` anchor — and the window
+each run produced is pasted below) · instrument `scripts/closed-market-skip-taxonomy.py`
 (read-only, `mode=ro`) → `data/closed-market-skip-taxonomy.json` · upstream:
 `drafts/nearcert-mark-guard-after-20261112.md`
 
@@ -105,7 +107,7 @@ are exactly the days with the worst decision lag (158 / 243 / 195 / 69 min avg, 
 | figure | today | **(a) intake** | (b) scoring | (c) leave |
 |---|---|---|---|---|
 | decisions on a market already closed, 3.19 d | 103 (1.84 %) | **0** | 0 | 103 |
-| … 30 d | 983 (2.68 %) | **137 (86 % caught)** | 0 | 983 |
+| … 30 d | 983 (2.68 %) | **137 left (846 / 86.1 % caught)** | 0 | 983 |
 | journal rows whose first reason is a dead-book artefact | 103 | **0** | 0 | 103 |
 | sub-0.05 near-certainty cohort (post-fix) | 182 | **172** | 172 | 182 |
 | near-certainty cohort, all rows (post-fix) | 1,991 | **1,888** | 1,888 | 1,991 |
@@ -140,6 +142,7 @@ That is 0.37 % of decisions (13.9 % of a 2.7 % class). **Pre-registered backstop
 at the detected-price assignment only:
 
 ```
++ let marketClosed = false;   // declared next to isBlankMarket, before the try: the write block reads it
  const m = await adapter.fetchMarket(t.marketId);
 + // t_d246fc66 (Lane A, approved): a print that arrives after the venue closed the market is not a
 + // candidate — the payload's quotes are settlement values, not a book. Same shape as isBlankMarket:
@@ -158,8 +161,9 @@ at the detected-price assignment only:
  await prisma.marketSnapshot.create({ ... });   // unchanged, all copy-eligible fills
 ```
 
-and at the write: `observationOnly: w.observationOnly || isBlankMarket || marketClosed`,
-`detectedPrice: marketClosed ? t.price : detectedPrice`, plus `closedMarket++` and a
+and at the write: `observationOnly: w.observationOnly || isBlankMarket || marketClosed`, `detectedPrice`
+left as the `let detectedPrice = t.price` initialised at :170 (no ternary — the guard is price-only, so
+the wallet's own print is already the value), plus `closedMarket++` and a
 `[CLOSED-MARKET] N row(s) stored observationOnly — market already resolved at ingest (price-only:
 MarketSnapshot kept)` line next to `[BLANK-MARKET]`, so the event is counted, not silent — and so the
 next reader can tell this guard from a blank-market one by what it says it touched.
@@ -188,12 +192,55 @@ in-play markets trading past their end date**, where the reason is true and the 
 
 ## Refutation / re-read (what would prove this wrong)
 
-Run `python3 scripts/closed-market-skip-taxonomy.py --pre-days 7` seven days after it ships:
+The check has to run on a window that **starts at the guard's ship timestamp**: every row already
+journaled keeps reading `post-close` forever, so an unanchored window can neither confirm nor refute
+it. Review round 2 caught that the first draft told the reader to run `--pre-days 7` on this script
+while only the *upstream* script parsed that flag — here it was silently ignored and the run returned
+the frozen windows unchanged. The instrument now implements both the window and its anchor.
 
-* **confirms** if `option_coverage.caught_at_intake` = 0 and `post_close.decisions` = 0 with
-  admissions unchanged;
-* **refutes** if new decisions still store `detectedPrice ∈ {0, 1}` on a market closed at ingest, or if
-  the residual (`scoring_only`) exceeds 0.5 % of decisions — then (b) ships as well.
+Ship at time `T`, then **7 days later**:
+
+```
+python3 scripts/closed-market-skip-taxonomy.py --pre-days 7 --ship-at <T> --fetch-window pre_days
+```
+
+* `--pre-days 7` adds a `pre_days` window and prints its own clock —
+  `windows.pre_days.start_utc`/`end_utc` and `pre_days.window_start_utc`/`window_end_utc`.
+* `--ship-at T` clamps that window to `[max(now − 7 d, T), now)` and sets
+  `pre_days.valid_confirmation_window: true`; `pre_days.excluded_pre_ship_decisions` reports how many
+  pre-guard decisions the clamp kept out, so nothing is silently dropped.
+* `--fetch-window pre_days` scopes the label fetch to that window's missing markets, so a re-read
+  cannot go hunting labels for the frozen windows. The cache is shared, so a label it does fetch can
+  also resolve a row in another window: this run moved 6 previously-`uncached` rows in `post` and 9 in
+  `post_now` into `live` and moved **no headline figure** (`post` 103 / 5,588 and `d30` 983 / 36,655
+  byte-identical apart from the read clock); d30 was not touched at all.
+* The run is **only** a confirmation when `pre_days.valid_confirmation_window` is `true` **and**
+  `pre_days.uncached_rows` is `0`; either condition can hold it `false` and `pre_days.note` says which.
+
+**Run today, unanchored** (the committed artifact `data/closed-market-skip-taxonomy.json`,
+`read_at 2026-11-12T20:12:05Z`): window `2026-11-05T20:12:05Z .. 2026-11-12T20:12:05Z`
+(`read_at − 7 d` on every run), 13,588 decisions, **105 post-close**,
+`anchored_at_ship: false`, `valid_confirmation_window: false`, `uncached_rows: 0`. Those 105 are the
+frozen pre-ship rows — the class the guard exists to stop stamping — reported as a measurement and
+explicitly **not** as a confirmation.
+
+**Mechanics check with a synthetic anchor** (scratch copy, real DB, `--no-fetch`, anchor
+`2026-11-07T00:00:00Z`, inside the span): window `2026-11-07T00:00:00Z .. 2026-11-12T20:11:00Z`,
+`excluded_pre_ship_decisions: 1921`, `valid_confirmation_window: true`, 11,667 decisions,
+**105 post-close / `caught_at_intake` 105**. So the anchored path works *and* can fail — which is the
+property the pre-registered check needs. Anchored at a pre-guard instant it reports the 105; anchored
+at the real ship time it should report 0.
+
+* **confirms** if `windows.pre_days.post_close.decisions` = 0 and
+  `windows.pre_days.post_close.option_coverage.caught_at_intake` = 0, with admissions unchanged
+  (`legs_booked_on_post_close` 0 before and after);
+* **refutes** if any decision in the anchored window still stores `detectedPrice ∈ {0, 1}` on a
+  market closed at ingest, or `option_coverage.scoring_only` exceeds 0.5 % of the window's decisions —
+  then (b) ships as well.
+
+Bad arguments fail loudly rather than being ignored: `--pre-days heck`, `--pre-days 0`, `--ship-at`
+without `--pre-days`, and an unreadable `--ship-at` each exit with a message (round 2's defect was
+exactly a silently ignored flag).
 
 ## Two follow-ups this read found (neither is shipped)
 
@@ -212,8 +259,10 @@ Run `python3 scripts/closed-market-skip-taxonomy.py --pre-days 7` seven days aft
 `data/nearcert-market-meta.json` and fetches only markets missing from it. Liveness is the same
 three-state rule as `decisionLiveness()` in `src/lib/nearcertainty-tail.ts` (`closed !== true` → live;
 closed with no readable clock → unknown, never coerced to live; else compare against `closedTime`),
-pinned by eight self-test lines — including the five-digit-fraction case that broke both this read and
-the upstream one, and the wallet-print cell's pooled-vs-per-group minimum that review round 1 broke.
+pinned by eleven self-test lines — including the five-digit-fraction case that broke both this read and
+the upstream one, the wallet-print cell's pooled-vs-per-group minimum that review round 1 broke, and the
+three that pin the re-read window (an unanchored `--pre-days` is never a confirmation; `--ship-at` clamps
+the start forward; an anchor older than the span still yields a window with nothing pre-ship inside).
 The wallet-print cell (§2) is `post_close.wallet_entry_price` = `{n, min, max, mean, below_0_34,
 by_detected_price_group{0.0,1.0,other}}`, computed by `wallet_print_stats()` in the instrument — so
 that cell is re-runnable like every other figure in this write-up.
@@ -221,6 +270,8 @@ that cell is re-runnable like every other figure in this write-up.
 ```
 python3 scripts/closed-market-skip-taxonomy.py --no-fetch        # no network, cached labels
 python3 scripts/closed-market-skip-taxonomy.py --fetch-cap 4000  # refresh missing market labels
+python3 scripts/closed-market-skip-taxonomy.py --pre-days 7 --ship-at <T> --fetch-window pre_days
+                                                                 # the post-ship check (§ Refutation)
 ```
 
 Nothing in the trade path was touched: no rule, gate, band, size or exit changed; no `apply-vNN`; the
