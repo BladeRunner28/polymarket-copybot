@@ -1,4 +1,5 @@
 import { Card, Stat, Empty } from "@/components/ui";
+import { SelectAll } from "@/components/SelectAll";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
@@ -119,10 +120,40 @@ export default function ApprovalsPage() {
         {pending.length === 0 ? (
           <Empty message="Nothing pending. The queue is empty and the store was read successfully." />
         ) : (
-          <div className="space-y-4">
+          <form method="post" action="/approvals/decide" id="bulk-approvals">
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-900/60 p-3">
+              <SelectAll formId="bulk-approvals" count={pending.length} />
+              <button
+                type="submit"
+                name="d"
+                value="approve"
+                className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+              >
+                ✓ Approve selected
+              </button>
+              <button
+                type="submit"
+                name="d"
+                value="decline"
+                className="rounded bg-neutral-700 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-600"
+              >
+                ✕ Decline selected
+              </button>
+              <span className="text-xs text-neutral-500">
+                Tick items then submit — one atomic write, per-item results. Undo stays single-item on purpose.
+              </span>
+            </div>
+            <div className="space-y-4">
             {pending.map((i) => (
               <div key={i.id} className="rounded border border-neutral-800 bg-neutral-950/60 p-4">
                 <div className="flex flex-wrap items-baseline gap-2">
+                  <input
+                    type="checkbox"
+                    name="id"
+                    value={i.id}
+                    aria-label={`select ${i.title ?? i.id}`}
+                    className="h-4 w-4 shrink-0 cursor-pointer accent-emerald-500"
+                  />
                   <span
                     className={`rounded px-2 py-0.5 text-xs font-bold ${
                       i.lane === "A" ? "bg-amber-500/20 text-amber-300" : "bg-sky-500/20 text-sky-300"
@@ -155,7 +186,8 @@ export default function ApprovalsPage() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          </form>
         )}
       </Card>
 

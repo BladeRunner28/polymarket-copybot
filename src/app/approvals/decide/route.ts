@@ -6,7 +6,10 @@ import { join } from "path";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /approvals/decide?id=<id>&d=approve|decline|undo
+ * /approvals/decide
+ *
+ * GET  ?id=<id>&d=approve|decline|undo   — one item, one click, from a bookmark or a phone.
+ * POST (form) id=<id>&id=<id>…&d=approve|decline — bulk submit from the queue page.
  *
  * WHY A GET WITH SIDE EFFECTS: the requirement is a clickable approval that never expires, readable
  * from a bookmark, an email or a phone. A platform interaction token (Discord: ~15 min) cannot do
@@ -16,10 +19,14 @@ export const dynamic = "force-dynamic";
  * the whole point of the page.
  *
  * OPTION 3 SEMANTICS: approving does not just record an opinion, it STARTS the work —
- *   - roadmap item  -> create a medusa task (idempotency key = item id), assign, dispatch
+ *   - roadmap item  -> create a medusa task (idempotency key = item id + attempt), assign, dispatch
  *   - blocked card  -> unblock the existing card and dispatch it
  * FAIL LOUD: if the CLI call fails the item stays PENDING. A recorded approval whose task was never
  * created is the exact defect class this inbox exists to kill.
+ *
+ * ONE DECISION PATH: GET and POST both go through decideOne(). A bulk submit that behaved even
+ * slightly differently from a single click would be two implementations of one policy, and the
+ * second one is always the one that rots.
  */
 
 const STORE = join(process.cwd(), "data", "approvals.json");
@@ -42,6 +49,20 @@ type Item = {
   kanbanTaskId?: string | null;
 };
 type Store = { version?: number; updatedAt?: string; counts?: Record<string, number>; items: Item[] };
+type Action = "approve" | "decline" | "undo";
+
+type Outcome = {
+  id: string;
+  title: string;
+  lane: string;
+  ok: boolean;
+  changed: boolean;
+  message: string;
+  warn: string;
+  taskId: string | null;
+  /** true when this outcome produced or released a task and a dispatch is warranted */
+  needsDispatch: boolean;
+};
 
 function loadStore(): Store {
   if (!existsSync(STORE)) throw new Error(`approvals store missing at ${STORE}`);
@@ -52,7 +73,7 @@ function saveStore(store: Store): void {
   store.updatedAt = new Date().toISOString();
   store.items = store.items ?? [];
   store.counts = {
-    pending: store.items.filter((i) => i.status === "pending" || !i.status).length,
+    pending: store.items.filter((i) => !i.status || i.status === "pending").length,
     approved: store.items.filter((i) => i.status === "approved").length,
     declined: store.items.filter((i) => i.status === "declined").length,
   };
@@ -94,6 +115,9 @@ function html(body: string): Response {
        .btn{display:inline-block;margin:.5rem .5rem 0 0;padding:.5rem .9rem;border-radius:.375rem;
             text-decoration:none;font-weight:600}
        .pri{background:#059669;color:#fff} .sec{background:#262626;color:#d4d4d4}
+       table{width:100%;border-collapse:collapse;margin-top:.5rem}
+       td{padding:.4rem .5rem;border-bottom:1px solid #1f1f1f;vertical-align:top}
+       .new{color:#6ee7b7} .fail{color:#fca5a5} .skip{color:#a3a3a3}
      </style></head><body>${body}</body></html>`,
     { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } }
   );
@@ -154,6 +178,129 @@ function taskBody(item: Item): string {
   ].join("\n");
 }
 
+/**
+ * Apply one decision to one item, in place. Does NOT save the store — the caller saves once so a
+ * bulk submit is a single atomic write and a partial failure cannot leave the file half-decided.
+ */
+function decideOne(item: Item, action: Action): Outcome {
+  const base = {
+    id: item.id,
+    title: item.title ?? item.id,
+    lane: item.lane ?? "?",
+    taskId: item.kanbanTaskId ?? null,
+  };
+  const status = item.status ?? "pending";
+
+  // ---------- undo ----------
+  if (action === "undo") {
+    if (status === "pending") {
+      return { ...base, ok: false, changed: false, needsDispatch: false, message: "Already pending — nothing to undo.", warn: "" };
+    }
+    const prevTask = item.kanbanTaskId ?? null;
+    const wasCreated = item.origin !== "kanban";
+    let warn = "";
+    if (prevTask && wasCreated) {
+      const st = taskStatus(prevTask);
+      if (st === "done" || st === "archived") {
+        warn = `Task ${prevTask} already finished (${st}) — nothing was stopped. Re-approving will create a NEW task.`;
+      } else {
+        // NOTE: `kanban block` takes the reason as a POSITIONAL (there is no --reason flag; that exists
+        // only on `unblock`). Passing --reason made argparse dump top-level usage and the block silently
+        // failed while the store reverted — approval undone, work still running. Verified 2026-11-11.
+        let blocked = run(["kanban", "--board", "medusa", "block", prevTask, "Approval undone via approvals inbox"]);
+        if (!blocked.ok) {
+          run(["kanban", "--board", "medusa", "reclaim", prevTask]);
+          blocked = run(["kanban", "--board", "medusa", "block", prevTask, "Approval undone via approvals inbox"]);
+        }
+        if (!blocked.ok) {
+          warn = `Store reverted, but parking ${prevTask} FAILED: ${blocked.out} — stop it by hand (hermes kanban --board medusa reclaim ${prevTask}).`;
+        }
+      }
+    } else if (prevTask && !wasCreated) {
+      warn = `Card ${prevTask} was unblocked and may have started. Re-block it by hand if that was not intended.`;
+    }
+    item.status = "pending";
+    item.decidedAt = null;
+    item.decidedVia = null;
+    // Bump the attempt so a re-approve gets a FRESH idempotency key. Without this the second approve
+    // returned the already-finished task and the work never restarted. Verified 2026-11-11.
+    item.attempt = (item.attempt ?? 0) + 1;
+    if (wasCreated) item.kanbanTaskId = null;
+    return {
+      ...base,
+      ok: true,
+      changed: true,
+      needsDispatch: false,
+      message: `Returned to pending.${prevTask ? ` Previous task ${prevTask}.` : ""}`,
+      warn,
+      taskId: null,
+    };
+  }
+
+  // ---------- decline ----------
+  if (action === "decline") {
+    if (status !== "pending") {
+      return { ...base, ok: false, changed: false, needsDispatch: false, message: `Already ${status} — not changed. Use undo first to re-decide.`, warn: "" };
+    }
+    item.status = "declined";
+    item.decidedAt = new Date().toISOString();
+    item.decidedVia = "approvals-inbox";
+    return { ...base, ok: true, changed: true, needsDispatch: false, message: "Declined. No task was created.", warn: "" };
+  }
+
+  // ---------- approve ----------
+  if (status === "approved") {
+    return {
+      ...base,
+      ok: false,
+      changed: false,
+      needsDispatch: false,
+      message: `Already approved${item.kanbanTaskId ? ` — task ${item.kanbanTaskId}` : ""}. Nothing new was created.`,
+      warn: "",
+    };
+  }
+
+  let taskId: string | null = item.kanbanTaskId ?? null;
+  let message = "";
+
+  if (item.origin === "kanban") {
+    if (!taskId) {
+      return { ...base, ok: false, changed: false, needsDispatch: false, message: "Board-sourced item carries no task id — refusing to guess.", warn: "" };
+    }
+    const res = run(["kanban", "--board", "medusa", "unblock", taskId, "--reason", "Approved via approvals inbox"]);
+    if (!res.ok) {
+      return { ...base, ok: false, changed: false, needsDispatch: false, message: "UNBLOCK FAILED — item left pending, nothing recorded.", warn: res.out };
+    }
+    message = `Unblocked board card ${taskId}.`;
+  } else {
+    const res = run([
+      "kanban", "--board", "medusa", "create", item.title ?? item.id,
+      "--body", taskBody(item),
+      "--assignee", "default",
+      "--idempotency-key", `approvals:${item.id}:a${item.attempt ?? 0}`,
+      "--json",
+    ]);
+    if (!res.ok) {
+      return { ...base, ok: false, changed: false, needsDispatch: false, message: "TASK CREATION FAILED — item left pending, nothing recorded.", warn: res.out };
+    }
+    taskId = parseTaskId(res.out) ?? taskId;
+    message = `Created and assigned board task${taskId ? ` ${taskId}` : ""}.`;
+  }
+
+  item.status = "approved";
+  item.decidedAt = new Date().toISOString();
+  item.decidedVia = "approvals-inbox";
+  item.kanbanTaskId = taskId;
+  return { ...base, ok: true, changed: true, needsDispatch: true, message, warn: "", taskId };
+}
+
+function dispatch(times: number): { ok: boolean; out: string } {
+  return run(["kanban", "--board", "medusa", "dispatch", "--max", String(Math.max(1, Math.min(times, 12)))]);
+}
+
+// ---------------------------------------------------------------------------------------------
+// GET — one item, one click
+// ---------------------------------------------------------------------------------------------
 export async function GET(req: NextRequest): Promise<Response> {
   const id = req.nextUrl.searchParams.get("id") ?? "";
   const action = req.nextUrl.searchParams.get("d") ?? "";
@@ -178,126 +325,117 @@ export async function GET(req: NextRequest): Promise<Response> {
     );
   }
 
-  const status = item.status ?? "pending";
-  const title = esc(item.title ?? item.id);
-  const head = `<h1>${title}</h1><p><code>${esc(item.id)}</code> · lane ${esc(item.lane ?? "?")} · ${esc(item.source ?? "")}</p>`;
+  const out = decideOne(item, action as Action);
+  if (out.changed) saveStore(store);
 
-  // ---------- undo ----------
-  if (action === "undo") {
-    if (status === "pending") {
-      return html(`${head}<div class="box warn">Already pending — nothing to undo.</div>${nav()}`);
-    }
-    const prevTask = item.kanbanTaskId ?? null;
-    const wasCreated = item.origin !== "kanban";
-    let warn = "";
-    if (prevTask && wasCreated) {
-      // A task that already FINISHED cannot be parked — say so instead of reporting a failure.
-      const st = taskStatus(prevTask);
-      if (st === "done" || st === "archived") {
-        warn = `<div class="box warn">Task <code>${esc(prevTask)}</code> already finished (<b>${esc(st)}</b>) —
-                nothing was stopped. Re-approving will create a NEW task.</div>`;
-      } else {
-        // NOTE: `kanban block` takes the reason as a POSITIONAL (there is no --reason flag; that exists
-        // only on `unblock`). Passing --reason made argparse dump top-level usage and the block silently
-        // failed while the store reverted — approval undone, work still running. Verified 2026-11-11.
-        let blocked = run(["kanban", "--board", "medusa", "block", prevTask, "Approval undone via approvals inbox"]);
-        if (!blocked.ok) {
-          // A running task must be released before it can be parked.
-          run(["kanban", "--board", "medusa", "reclaim", prevTask]);
-          blocked = run(["kanban", "--board", "medusa", "block", prevTask, "Approval undone via approvals inbox"]);
-        }
-        if (!blocked.ok) {
-          warn = `<div class="box warn">Store reverted, but parking <code>${esc(prevTask)}</code> FAILED:
-                  <pre>${esc(blocked.out)}</pre>Stop it by hand
-                  (<code>hermes kanban --board medusa reclaim ${esc(prevTask)}</code>) so it does not keep running.</div>`;
-        }
-      }
-    } else if (prevTask && !wasCreated) {
-      warn = `<div class="box warn">Card <code>${esc(prevTask)}</code> was unblocked and may have started.
-              Re-block it by hand if that was not intended.</div>`;
-    }
-    item.status = "pending";
-    item.decidedAt = null;
-    item.decidedVia = null;
-    // Bump the attempt so a re-approve gets a FRESH idempotency key. Without this the second approve
-    // returned the already-finished task and the work never restarted. Verified 2026-11-11.
-    item.attempt = (item.attempt ?? 0) + 1;
-    if (wasCreated) item.kanbanTaskId = null;
-    saveStore(store);
-    return html(`${head}<div class="box ok">Returned to <b>pending</b>.${prevTask ? ` Previous task <code>${esc(prevTask)}</code>.` : ""}</div>${warn}${nav()}`);
+  const head = `<h1>${esc(out.title)}</h1><p><code>${esc(out.id)}</code> · lane ${esc(out.lane)} · ${esc(item.source ?? "")}</p>`;
+  const cls = out.ok ? "ok" : "warn";
+  const dispNote = out.needsDispatch
+    ? (() => {
+        const d = dispatch(1);
+        return d.ok
+          ? `<div class="box ok"><b>Dispatched.</b><pre>${esc(d.out.slice(0, 1200))}</pre></div>`
+          : `<div class="box warn">Approval recorded and task exists, but dispatch FAILED — it will start on the next dispatcher tick.<pre>${esc(d.out)}</pre></div>`;
+      })()
+    : "";
+  const undoLink = out.changed
+    ? `<a class="btn sec" href="/approvals/decide?id=${encodeURIComponent(out.id)}&d=undo">undo</a>`
+    : "";
+
+  return html(
+    `${head}<div class="box ${cls}">${out.ok ? "<b>" : "<b>No change.</b> "}${esc(out.message)}</div>
+     ${out.warn ? `<div class="box warn">${esc(out.warn)}</div>` : ""}${dispNote}${undoLink}${nav()}`
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// POST — bulk submit (multi-select on the queue page)
+// ---------------------------------------------------------------------------------------------
+export async function POST(req: NextRequest): Promise<Response> {
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return html(`<h1>Bad form</h1><div class="box bad">Could not read the submitted form.</div>${nav()}`);
   }
 
-  // ---------- decline ----------
-  if (action === "decline") {
-    if (status !== "pending") {
-      return html(
-        `${head}<div class="box warn">Already <b>${esc(status)}</b> — not changed. Use undo first if you want to re-decide.</div>${nav()}`
-      );
-    }
-    item.status = "declined";
-    item.decidedAt = new Date().toISOString();
-    item.decidedVia = "approvals-inbox";
-    saveStore(store);
-    return html(`${head}<div class="box ok">Declined. No task was created.</div>
-      <a class="btn sec" href="/approvals/decide?id=${encodeURIComponent(item.id)}&d=undo">undo</a>${nav()}`);
-  }
+  const ids = form.getAll("id").map((v) => String(v)).filter(Boolean);
+  const action = String(form.get("d") ?? "");
 
-  // ---------- approve ----------
-  if (status === "approved") {
+  if (!["approve", "decline"].includes(action)) {
     return html(
-      `${head}<div class="box warn">Already approved${item.kanbanTaskId ? ` — task <code>${esc(item.kanbanTaskId)}</code>` : ""}.
-       Nothing new was created.</div>
-       <a class="btn sec" href="/approvals/decide?id=${encodeURIComponent(item.id)}&d=undo">undo</a>${nav()}`
+      `<h1>Unknown bulk action</h1><div class="box bad">Bulk submit accepts <code>approve</code> or <code>decline</code>; got <code>${esc(action)}</code>.
+       Undo stays single-item on purpose — un-blocking a batch of tasks in one unverified click is not a feature.</div>${nav()}`
+    );
+  }
+  if (ids.length === 0) {
+    return html(`<h1>Nothing selected</h1><div class="box warn">Tick at least one item on the queue page, then submit.</div>${nav()}`);
+  }
+
+  let store: Store;
+  try {
+    store = loadStore();
+  } catch (e) {
+    return html(
+      `<h1>Store unavailable</h1><div class="box bad">${esc((e as Error).message)}</div>
+       <p>Nothing was changed.</p>${nav()}`
     );
   }
 
-  let taskId: string | null = item.kanbanTaskId ?? null;
-  let detail = "";
+  const byId = new Map(store.items.map((i) => [i.id, i]));
+  const outcomes: Outcome[] = [];
 
-  if (item.origin === "kanban") {
-    // The card already exists and is blocked: approving means letting it run.
-    if (!taskId) {
-      return html(`${head}<div class="box bad">This item is board-sourced but carries no task id — refusing to guess.</div>${nav()}`);
+  for (const id of ids) {
+    const item = byId.get(id);
+    if (!item) {
+      outcomes.push({
+        id, title: id, lane: "?", ok: false, changed: false, needsDispatch: false,
+        message: "Unknown id — not in the store (it may have been retired by the intake).", warn: "", taskId: null,
+      });
+      continue;
     }
-    const res = run(["kanban", "--board", "medusa", "unblock", taskId, "--reason", "Approved via approvals inbox"]);
-    if (!res.ok) {
-      return html(
-        `${head}<div class="box bad">UNBLOCK FAILED — item left PENDING, nothing was recorded.<pre>${esc(res.out)}</pre></div>${nav()}`
-      );
-    }
-    detail = `Unblocked board card <code>${esc(taskId)}</code>.`;
-  } else {
-    const res = run([
-      "kanban", "--board", "medusa", "create", item.title ?? item.id,
-      "--body", taskBody(item),
-      "--assignee", "default",
-      "--idempotency-key", `approvals:${item.id}:a${item.attempt ?? 0}`,
-      "--json",
-    ]);
-    if (!res.ok) {
-      return html(
-        `${head}<div class="box bad">TASK CREATION FAILED — item left PENDING, nothing was recorded.<pre>${esc(res.out)}</pre></div>${nav()}`
-      );
-    }
-    taskId = parseTaskId(res.out) ?? taskId;
-    detail = `Created and assigned board task${taskId ? ` <code>${esc(taskId)}</code>` : ""}.`;
+    outcomes.push(decideOne(item, action as Action));
   }
 
-  item.status = "approved";
-  item.decidedAt = new Date().toISOString();
-  item.decidedVia = "approvals-inbox";
-  item.kanbanTaskId = taskId;
-  saveStore(store);
+  // ONE atomic write for the whole batch: a partial failure must not leave the file half-decided.
+  const changed = outcomes.filter((o) => o.changed);
+  if (changed.length > 0) saveStore(store);
 
-  const disp = run(["kanban", "--board", "medusa", "dispatch", "--max", "2"]);
-  const dispNote = disp.ok
-    ? `<div class="box ok"><b>Dispatched.</b><pre>${esc(disp.out.slice(0, 1200))}</pre></div>`
-    : `<div class="box warn">Approval recorded and task exists, but dispatch FAILED — it will start on the next dispatcher tick.
-       <pre>${esc(disp.out)}</pre></div>`;
+  const dispensable = outcomes.filter((o) => o.needsDispatch).length;
+  let dispNote = "";
+  if (dispensable > 0) {
+    const d = dispatch(dispensable);
+    dispNote = d.ok
+      ? `<div class="box ok"><b>Dispatched ${dispensable}.</b><pre>${esc(d.out.slice(0, 1200))}</pre></div>`
+      : `<div class="box warn">Decisions recorded and tasks exist, but dispatch FAILED — they will start on the next dispatcher tick.<pre>${esc(d.out)}</pre></div>`;
+  }
+
+  const failed = outcomes.filter((o) => !o.ok);
+  const verb = action === "approve" ? "Approved" : "Declined";
+  const header =
+    failed.length === 0
+      ? `<div class="box ok"><b>${verb} ${changed.length} of ${outcomes.length}.</b> Every selected item was decided.</div>`
+      : `<div class="box warn"><b>${verb} ${changed.length} of ${outcomes.length}.</b>
+         ${failed.length} could not be decided and ${failed.length === 1 ? "is" : "are"} unchanged — listed below with the reason.
+         A partial batch is reported as partial, never as done.</div>`;
+
+  const rows = outcomes
+    .map((o) => {
+      const cls = !o.ok ? "fail" : o.changed ? "new" : "skip";
+      const undo = o.changed && o.taskId
+        ? ` <a href="/approvals/decide?id=${encodeURIComponent(o.id)}&d=undo">undo</a>`
+        : o.changed
+          ? ` <a href="/approvals/decide?id=${encodeURIComponent(o.id)}&d=undo">undo</a>`
+          : "";
+      return `<tr><td class="${cls}">${o.ok ? (o.changed ? "✓" : "·") : "✕"}</td>
+        <td><code>${esc(o.id)}</code><br><span class="${cls}">${esc(o.title)}</span></td>
+        <td>${esc(o.message)}${o.warn ? `<br><span class="fail">${esc(o.warn)}</span>` : ""}${undo}</td></tr>`;
+    })
+    .join("");
 
   return html(
-    `${head}<div class="box ok"><b>Approved.</b> ${detail}</div>${dispNote}
-     <a class="btn sec" href="/approvals/decide?id=${encodeURIComponent(item.id)}&d=undo">undo</a>
-     ${nav()}`
+    `<h1>Bulk ${action}</h1><p>${outcomes.length} selected · ${changed.length} decided · ${failed.length} unchanged</p>
+     ${header}${dispNote}
+     <table>${rows}</table>${nav()}`
   );
 }
