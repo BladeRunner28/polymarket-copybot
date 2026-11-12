@@ -1,0 +1,259 @@
+{
+ "generated_at": "2026-11-12T02:08:09Z",
+ "mode": "selftest",
+ "lane": "A / shadow-only -- no selection, status, size or rule changes",
+ "shadow_start_ms": 1787202000000,
+ "shadow_start_iso": "2026-08-20T05:00:00Z",
+ "rule": {
+  "arms": {
+   "hard_q": "n_eff >= 8 AND BH q <= 0.10 AND band-excess > 0",
+   "shrunk": "n_eff >= 8 AND EB-shrunk band-excess > 0 (tau^2 = max(0, var(x)-mean(se^2)))"
+  },
+  "coverage_gate": "no ranking decision on n_eff < 8 or on a wallet with no settled print",
+  "baseline": "WalletProfile.status='track' snapshot taken at shadow_start",
+  "decision": "arm beats keep-the-set on forward band-excess per market AND its market-clustered bootstrap 95% CI excludes zero, on >= 200 forward bets; tie or loss kills it",
+  "pending": "fewer than 200 forward settled bets => PENDING, never PASS"
+ },
+ "truth": {
+  "markets": 29338,
+  "settled": 25269,
+  "coverage_pct": 6.112
+ },
+ "bets_joined": 436215,
+ "bets_fit": 5401,
+ "bets_forward": 430814,
+ "wallets_fit": 200,
+ "bh_family_m": 135,
+ "eligible_neff8": 73,
+ "eb": {
+  "tau2": 20.09608565501476,
+  "tau": 4.482865785969368,
+  "var_x": 130.2700505600852,
+  "mean_se2": 110.17396490507043,
+  "note": null
+ },
+ "arms": {
+  "hard_q": {
+   "admitted": 4,
+   "wallets": [
+    "0x03805a13a0b3e058f55f6c6af95389d4f431073d",
+    "0x090af6fd2aeb04202abc97370aa86c1b81d90fa6",
+    "0x23d81ba9371e576015c1e562db09c689f56b0288",
+    "0xb496b941749ad050b54d780e26265b1e32591f45"
+   ],
+   "of_track": 0,
+   "refit_admitted": 4
+  },
+  "shrunk": {
+   "admitted": 36,
+   "wallets": [
+    "0x03805a13a0b3e058f55f6c6af95389d4f431073d",
+    "0x23d81ba9371e576015c1e562db09c689f56b0288",
+    "0x090af6fd2aeb04202abc97370aa86c1b81d90fa6",
+    "0xb496b941749ad050b54d780e26265b1e32591f45",
+    "0x9f208e85f326f865077fffa68b32d8b0e2bc12c3",
+    "0x511f9c771449162349795d17becf8b37031acbe1",
+    "0x9c56304c8840621ef4c1e707b4c7d708d09878d1",
+    "0x764b305694b026c1acce7bf862c3b5456a146bad",
+    "0xfd557e6db670c9704bc1d0d8e8b585c7d9c9f905",
+    "0x207346fa33d896d4e7009a4a265ac319b811385b",
+    "0x3b62c64ebaee15478e8b21765b9f940458655cc8",
+    "0x4a3f86ed9ce6b3dac5b66e2d5478a6bf38cc4333",
+    "0x16bb9951a36fce71e2ef57890b786145e0ba8492",
+    "0x04d5524a0a5af2eca6e39e03defc261d42fe66d8",
+    "0x524db836890e08aceb3abcdee98d44240e324495",
+    "0x684baa57c338c2549aec0aa3f034f695d72a8409",
+    "0xe4102cb53459f9fc72f1e1c34ac27654fd66d4d1",
+    "0x73e3fec494611d73c170cb2f23850fd998b21be9",
+    "0x3da89a55cdd4b5c69f80e5cd3ef1782a3e0480c3",
+    "0x04785a97c62e126280af714baa050f59e75837c3",
+    "0xc5187cb669690150643ba2f9aac6b7d98d212594",
+    "0x038566a76a51ebab67c04628157730ffad15acaf",
+    "0xe548376f231af12b4d56aff55a7503a88892a9fe",
+    "0xb7aba0e44edb6773c3b3a8308aae8a24781fa2d1",
+    "0x99d686db3463206b68a243e4880194314576513f",
+    "0x1cd24cc49782240413903b4b7e7694779f917f85",
+    "0x0e03f4d7ac9d23eb7a78ad586179ae8ee1eb040f",
+    "0x69c5c6f6a4dda665991c203bc8d5df3e006b1e01",
+    "0x09933d426d714890588f597eac833dbd947e525f",
+    "0xafe4272b4fb0bcc1d734ee2cdec3e78cdc94f3f7",
+    "0x8a8685a792c184e5c2ee8c7d4d4baba7c2c94998",
+    "0x59018ff1f4300838f635386ab5e0b8b353ce63a2",
+    "0xe8c4d68aff65b38cac46987b9b65e01eb47d395d",
+    "0xad421edb44175e55aa641c5bac88d74c775f6031",
+    "0x03c580ac16418c6ffed2cfe09a86bd88d62a5f61",
+    "0xab444cf90149a8128eb510099e5917f521547ffe"
+   ],
+   "of_track": 1,
+   "refit_admitted": 36
+  }
+ },
+ "baseline": {
+  "track_n": 25,
+  "wallets": [
+   "0x0fabca735d47e427ae47b5abe263c6918dbe4ed1",
+   "0x167d74fc517d5f7ce4c594e77c6117bbc588e531",
+   "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+   "0x2cff41636fe21fad120fed603d54d4fdd96259db",
+   "0x36a4978843cb404ce522a6183ba779174ccfb736",
+   "0x3df531c9dca21d8051d6f2b0be11e2b24b9bd752",
+   "0x3ef7342f161113628ef96129f43fded49acdcde6",
+   "0x52b7fc8a97df5f18974c06a83909f60c81010aa1",
+   "0x80896d05a92082ac31ac4a6cd5568c8d3bbdf935",
+   "0x85f031d069de300055900c4055c1baeb6bde3f67",
+   "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+   "0x95581a6f5045bc6c7cd8acc017df188b05a1fd3f",
+   "0x95c6c9a6727ed203e97230dda61ab19a020e1508",
+   "0x9c56304c8840621ef4c1e707b4c7d708d09878d1",
+   "0xac2519c4e68c4b58326eadd26d7373a4f7fb433f",
+   "0xad2b18343919cf24b56b6f822360937ab322f091",
+   "0xaf4d84e9e912ba86208bef165e23e587e5a677c6",
+   "0xc3744a19f42266ce6fa2736f52eae6e178b20f3e",
+   "0xc576775ef9167ddc38ee6a4e537545ab73d0b9d2",
+   "0xcfad110bc7b48b49bcb8c536a953f1b3c1c2fa05",
+   "0xd29312e2446a746bbd94408e1c475f1ec6d7d683",
+   "0xe156c859fc8a3aace3f2f981459d8f989eea134b",
+   "0xe36756aa4756928b9f501dc1acf1dccb09752104",
+   "0xeaac36f714563e13d88db7a4f0a0898388f2d71d",
+   "0xede186f37ead91aa618cf8101db2bfe6b6c57dd1"
+  ]
+ },
+ "coverage_gate": {
+  "track_measured": 6,
+  "track_thin_neff": [
+   "0x2cff41636fe21fad120fed603d54d4fdd96259db",
+   "0x3ef7342f161113628ef96129f43fded49acdcde6",
+   "0xaf4d84e9e912ba86208bef165e23e587e5a677c6"
+  ],
+  "track_no_settled_print": [
+   "0x0fabca735d47e427ae47b5abe263c6918dbe4ed1",
+   "0x167d74fc517d5f7ce4c594e77c6117bbc588e531",
+   "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+   "0x36a4978843cb404ce522a6183ba779174ccfb736",
+   "0x3df531c9dca21d8051d6f2b0be11e2b24b9bd752",
+   "0x52b7fc8a97df5f18974c06a83909f60c81010aa1",
+   "0x80896d05a92082ac31ac4a6cd5568c8d3bbdf935",
+   "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+   "0x95581a6f5045bc6c7cd8acc017df188b05a1fd3f",
+   "0x95c6c9a6727ed203e97230dda61ab19a020e1508",
+   "0xac2519c4e68c4b58326eadd26d7373a4f7fb433f",
+   "0xad2b18343919cf24b56b6f822360937ab322f091",
+   "0xc3744a19f42266ce6fa2736f52eae6e178b20f3e",
+   "0xc576775ef9167ddc38ee6a4e537545ab73d0b9d2",
+   "0xcfad110bc7b48b49bcb8c536a953f1b3c1c2fa05",
+   "0xd29312e2446a746bbd94408e1c475f1ec6d7d683",
+   "0xe156c859fc8a3aace3f2f981459d8f989eea134b",
+   "0xe36756aa4756928b9f501dc1acf1dccb09752104",
+   "0xede186f37ead91aa618cf8101db2bfe6b6c57dd1"
+  ],
+  "screened_thin": 127
+ },
+ "forward": {
+  "baseline": {
+   "bets": 14527,
+   "markets": 13911,
+   "mean": 0.3840429140170616,
+   "t": 1.192157409285305,
+   "df": 13910,
+   "p_pos": 0.11660993373186879,
+   "ci_lo": -0.2427283014196278,
+   "ci_hi": 1.013077995265436
+  },
+  "baseline_measurable_only": {
+   "bets": 1934,
+   "markets": 1859,
+   "mean": 1.4553600624110326,
+   "t": 1.3011376871050806,
+   "df": 1858,
+   "p_pos": 0.09668632793424364,
+   "ci_lo": -0.7201031731688178,
+   "ci_hi": 3.6758577883492456
+  },
+  "arms": {
+   "hard_q": {
+    "admitted": 4,
+    "read": {
+     "bets": 6962,
+     "markets": 6117,
+     "mean": -0.7005414725334682,
+     "t": -1.5417714068339055,
+     "df": 6116,
+     "p_pos": 0.9384095560152144,
+     "ci_lo": -1.56810061440103,
+     "ci_hi": 0.1764765316428657
+    },
+    "vs_baseline": {
+     "mean": -1.0845843865505298,
+     "ci_lo": -2.1762570681942477,
+     "ci_hi": -0.013992574681886694,
+     "unpaired": true,
+     "paired_shared": {
+      "markets": 2217,
+      "mean": -2.557585975600052,
+      "ci_lo": -3.574407479260707,
+      "ci_hi": -1.5168399507057668
+     }
+    },
+    "verdict": "FAIL",
+    "why": "does not beat keep-the-set (-0.70pp vs +0.38pp); CI includes zero [-1.57, +0.18]",
+    "scored_frozen": false,
+    "refit_admitted": 4,
+    "refit_of_track": 0
+   },
+   "shrunk": {
+    "admitted": 36,
+    "read": {
+     "bets": 27727,
+     "markets": 12531,
+     "mean": -0.3910406609710423,
+     "t": -1.2302713816671904,
+     "df": 12530,
+     "p_pos": 0.8906907031571138,
+     "ci_lo": -1.0142426152990425,
+     "ci_hi": 0.22984326365165725
+    },
+    "vs_baseline": {
+     "mean": -0.7750835749881039,
+     "ci_lo": -1.6556188008345623,
+     "ci_hi": 0.14046164540758244,
+     "unpaired": true,
+     "paired_shared": {
+      "markets": 6385,
+      "mean": -0.74415342384396,
+      "ci_lo": -1.5512741834390897,
+      "ci_hi": 0.06615120899054672
+     }
+    },
+    "verdict": "FAIL",
+    "why": "does not beat keep-the-set (-0.39pp vs +0.38pp); CI includes zero [-1.01, +0.23]",
+    "scored_frozen": false,
+    "refit_admitted": 36,
+    "refit_of_track": 1
+   }
+  }
+ },
+ "selection_hash": "4edb63c7c816da8f",
+ "selection_drift": null,
+ "decision": {
+  "hard_q": {
+   "verdict": "FAIL",
+   "why": "does not beat keep-the-set (-0.70pp vs +0.38pp); CI includes zero [-1.57, +0.18]",
+   "diff_ci_excludes_zero": false,
+   "diff_ci": [
+    -2.1762570681942477,
+    -0.013992574681886694
+   ],
+   "binding": true
+  },
+  "shrunk": {
+   "verdict": "FAIL",
+   "why": "does not beat keep-the-set (-0.39pp vs +0.38pp); CI includes zero [-1.01, +0.23]",
+   "diff_ci_excludes_zero": false,
+   "diff_ci": [
+    -1.6556188008345623,
+    0.14046164540758244
+   ],
+   "binding": true
+  }
+ }
+}

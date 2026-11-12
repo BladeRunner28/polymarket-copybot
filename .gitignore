@@ -119,3 +119,11 @@ data/cache/data-feed-scout/
 # data/kalshi-maker-read.json IS committed, so the verdict re-reads offline.
 data/kalshi-maker-settlements.json
 data/kalshi-maker-settlements.json.tmp
+
+# Wallet-FDR truth cache (2026-11-11, card crowdintel-wallet-fdr-audit): 4.6 MB of
+# conditionId -> settled outcome that is refetchable keyless via
+# `python3 scripts/wallet-fdr-audit.py --fetch N` and is rewritten on every widening.
+# The READ artifacts (data/wallet-fdr-audit.json, data/wallet-rank-shadow.json,
+# data/wallet-rank-shadow-state.json) ARE committed, so the verdicts re-read offline.
+data/wallet-fdr-truth.json
+data/wallet-fdr-truth.json.tmp
