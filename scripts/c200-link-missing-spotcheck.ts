@@ -12,7 +12,13 @@
  *   1. every pair's leg carries fillStatus NULL today (nothing is being re-stamped);
  *   2. the sum over the "unfilled" bucket + "filled" bucket reproduces the repair's booked PnL.
  *
- * Usage: DATABASE_URL="file:./dev.db" npx tsx scripts/c200-link-missing-spotcheck.ts [--n 8]
+ * Usage: DATABASE_URL="file:./dev.db" npx tsx scripts/c200-link-missing-spotcheck.ts [--n 8] [--complement]
+ *
+ * --complement  audit the REFUSED complement-frame pairs (card t_1f579e82) instead: for each, the
+ *               level under both frames (`intent` vs `1 − intent`), the book ask, and — where the
+ *               recomputed tape decides the verdict — the actual post-dispatch prints that do it.
+ *               The artifact's own reached5/reached60 are NOT quoted here: they were computed at
+ *               `intent − 0.02` on the booked frame and are invalid at the re-framed operand.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -76,6 +82,98 @@ async function main() {
   }
   const isInverted = (entry: number, intent: number) =>
     Math.abs(entry - (1 - intent)) <= 0.012 && Math.abs(entry - intent) >= 0.05;
+
+  // ---- --complement: the refused pairs, re-framed, with the tape recomputed at each level ----
+  if (process.argv.includes("--complement")) {
+    type Tape = { asset: string; price: number | string; size: number | string; timestamp: number; side?: string };
+    const tapeCache = new Map<string, Tape[] | null>();
+    const seenC = new Set<string>();
+    const pairsArr: Array<{ i: (typeof intents)[number]; l: (typeof legs)[number] }> = [];
+    for (const i of intents) {
+      if (i.paperTradeId) continue;
+      const key = k(i);
+      if (seenC.has(key)) continue;
+      seenC.add(key);
+      const cands = (byKey.get(key) ?? []).filter((l) => !linked.has(l.id));
+      if (cands.length !== 1) continue;
+      if (!isInverted(cands[0].entryPrice, i.intentPrice)) continue;
+      pairsArr.push({ i, l: cands[0] });
+    }
+    const EPS = 1e-9;
+    const verdict = (book: boolean | null, tp: boolean | null) =>
+      book === true ? "reachable" : tp === true ? "reachable(tape)" : book === false ? "unreachable" : tp === false ? "unreachable(tape)" : "unresolved";
+    log(`REFUSED complement-frame pairs, re-framed — ${pairsArr.length} pairs (card t_1f579e82)`);
+    log("  frame A = levelFor(intent, live) · frame B = levelFor(1 − intent, live) · book = minAsk ≤ level · tape recomputed at each level");
+    log("");
+    let unfB = 0;
+    let pnlB = 0;
+    let ntlB = 0;
+    for (const { i, l } of pairsArr) {
+      const s = latest.get(i.id);
+      const lvlA = levelFor(i.intentPrice, "live");
+      const lvlB = levelFor(1 - i.intentPrice, "live");
+      const minAsk = s?.book && typeof s.book.minAsk === "number" ? s.book.minAsk : null;
+      const token = (s as any)?.token ?? null;
+      if (!tapeCache.has(i.marketId)) {
+        const ot = await prisma.observedTrade.findFirst({
+          where: { marketId: i.marketId, conditionId: { not: null } },
+          select: { conditionId: true },
+          orderBy: { timestamp: "desc" },
+        });
+        let rows: Tape[] | null = null;
+        if (ot?.conditionId) {
+          const f = path.join(process.cwd(), "data", "c200-tape", `${ot.conditionId}.json`);
+          if (fs.existsSync(f)) {
+            try {
+              rows = JSON.parse(fs.readFileSync(f, "utf8")) as Tape[];
+            } catch {
+              rows = null;
+            }
+          }
+        }
+        tapeCache.set(i.marketId, rows);
+      }
+      const tape = tapeCache.get(i.marketId) ?? null;
+      const t0 = Math.floor(new Date(l.openedAt).getTime() / 1000);
+      const win = (tape ?? []).filter(
+        (x) => x.asset === token && Number(x.timestamp) > t0 && Number(x.timestamp) <= t0 + 3600
+      );
+      const hitsAt = (level: number) => win.filter((x) => Number(x.price) <= level + EPS);
+      const hitA = win.length ? hitsAt(lvlA).length > 0 : null;
+      const hitB = win.length ? hitsAt(lvlB).length > 0 : null;
+      const bookA = minAsk === null ? null : minAsk <= lvlA + EPS;
+      const bookB = minAsk === null ? null : minAsk <= lvlB + EPS;
+      const vB = verdict(bookB, hitB);
+      if (vB === "unreachable") {
+        unfB++;
+        pnlB += l.realizedPnl ?? 0;
+        ntlB += l.simulatedPositionSize;
+      }
+      log(
+        `  ${new Date(l.openedAt).toISOString().slice(0, 16)} ${l.marketId.slice(0, 30).padEnd(30)} ${String(l.outcome).slice(0, 14).padEnd(14)} ` +
+          `intent ${i.intentPrice.toFixed(3)} entry ${l.entryPrice.toFixed(3)} | A lvl ${lvlA.toFixed(3)} book ${String(bookA)} tape ${String(hitA)} | ` +
+          `B lvl ${lvlB.toFixed(3)} book ${String(bookB)} tape ${String(hitB)} → ${vB}  pnl ${usd2(l.realizedPnl ?? 0)} / ${usd2(l.simulatedPositionSize)}`
+      );
+      // The prints that decide a tape-based call, so the reader can check the operand themselves.
+      const deciding = hitB && !bookB ? hitsAt(lvlB).slice(0, 4) : [];
+      for (const p of deciding) {
+        log(
+          `        print t+${Number(p.timestamp) - t0}s ${String(p.side).padEnd(4)} ${Number(p.price).toFixed(3)} x ${Number(p.size).toFixed(2)} ` +
+            `(≤ ${lvlB.toFixed(3)})`
+        );
+      }
+    }
+    log("");
+    log(
+      `  frame B verdict: ${unfB}/${pairsArr.length} unreachable = ${usd2(pnlB)} of booked PnL on ${usd2(ntlB)} notional ` +
+        `(book-only would read ${pairsArr.filter(({ l, i }) => {
+          const s = latest.get(i.id);
+          const ma = s?.book && typeof s.book.minAsk === "number" ? s.book.minAsk : null;
+          return ma !== null && ma > levelFor(1 - i.intentPrice, "live") + EPS;
+        }).length})`
+    );
+    return;
+  }
 
   type Row = { intent: (typeof intents)[number]; leg: (typeof legs)[number]; verdict: string; basis: string; level: number; credit: number; snap?: SnapLeg };
   const rows: Row[] = [];
