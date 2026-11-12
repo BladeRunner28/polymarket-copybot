@@ -1,7 +1,7 @@
 # The 84 "print-present, swept, not stored" seat legs were never copyable
 
-**Card** `t_4c9847c9` (raised by `t_52219682`) · **lane** B — read-only measurement, one contained
-instrument repair · **instrument** `scripts/monitor-miss-attribution.py` ·
+**Card** `t_4c9847c9` (raised by `t_52219682`) · **lane** B — read-only measurement, two contained
+instrument repairs · **instrument** `scripts/monitor-miss-attribution.py` ·
 **artifact** `data/monitor-miss-attribution.json` · measured 2026-11-12 on `prisma/dev.db` +
 `data/seat-evidence-activity.json` + the venue's own tape.
 
@@ -13,7 +13,7 @@ two-token market that row is usually the **other** token's fill — which this b
 same second, 84 times out of 84.
 
 * 84/84: the matched print is on the **paired token** (`no`), the leg is the `yes` token. Stored rows
-  for that condition: 403, of which **84 sit at the print's exact second**.
+  across those 84 conditions: 403, of which **84 sit at the print's exact second** — one per leg.
 * 84/84: **no BUY print exists on the leg's own token** — 52 legs carry only a `REDEEM` on that token,
   16 carry nothing at all, 16 carry `SELL` prints only (13 sell-only, 3 redeem+sell), and those SELLs
   are kept in `data/wallet-sells.jsonl` (2,524 lines across those markets) by design — a SELL is not a
@@ -125,7 +125,9 @@ lookback or dedupe:
    — prints inside the 24 h window were NOT seen this cycle`. Before this, a capped read was
    indistinguishable from a quiet wallet: every number in the run stayed clean.
    Proof: `tests/adapter-page-cap.test.ts` (3 cases — a capped read reports, a short read is silent, a
-   single short page is silent) plus the existing print-guard suite, `7 passed`.
+   single short page is silent) plus the existing print-guard suite, `7 passed`, and the line itself
+   renders through the monitor's own logger (`logError` from `src/lib/redact`, address truncated as
+   everywhere else).
    *Revert:* `git revert <commit>` — the fields are optional and additive, so no caller breaks.
 2. **The seat-evidence probe now names its basis.** `scripts/seat-evidence-coverage.py` keeps the card's
    condition-basis fields untouched (so `3,218 / 961 / 2,173 / 84` still reproduces) and adds a
@@ -162,6 +164,23 @@ call and is not taken here. Priced for the record:
    the four causes above should be re-run for that seat.
 4. A copy seat fails repeatedly while other wallets in the same cycle succeed (the failure path named
    in §5).
+
+## How to re-run this
+
+```bash
+cd ~/polymarket-copybot
+python3 scripts/monitor-miss-attribution.py                      # off the caches + DB + cron log
+python3 scripts/monitor-miss-attribution.py --fetch-tokens --day 2026-11-04 --fetch-volume --days 8
+```
+
+The first form is deterministic and needs no network: it reads `prisma/dev.db` (read-only),
+`data/wallet-seat-positions.json`, `data/seat-evidence-open-positions.json`,
+`data/seat-evidence-activity.json`, `data/seat-evidence-market-truth.json` and
+`logs/cron/copybot-monitor-score.log`. The caches are regenerable from the venue
+(`scripts/seat-evidence-coverage.py --fetch-open --fetch-truth --fetch-activity`) and are therefore
+untracked; the activity cache is newest-first and bounded, so a fresh fetch moves the window forward
+and the per-leg list would move with it. The flags add the live arms: `--fetch-tokens` (token-identity
+read), `--day` (per-day capture on a chosen UTC day), `--fetch-volume --days N` (per-day TRADE volume).
 
 ## Appendix: all 84 legs
 
