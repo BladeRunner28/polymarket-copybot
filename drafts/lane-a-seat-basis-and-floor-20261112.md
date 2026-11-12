@@ -18,7 +18,9 @@ wallet — stored **+163.3% vs a full record of +17.5% (ratio 0.11×)**. Because
 most seats, repairing the basis *raises* the cut (83.4 → 83.9), so the wallet falls out on score
 **even though its own score also falls** (83.9 → 68.0). The card's "still inside the cap" is an
 artifact of ranking the 25 seats against *themselves*: against the challenger pool the wallet ranks
-**40th of 40**.
+**40th of 40**. A1 turns over 8 seats, and 4 of the 8 it drops journaled nothing in the last 7 days;
+`A2` (basis + `atan`, the variant that de-saturates the whole range instead of only above +100%) is
+priced in §2.2–2.3 with its extra cost — it is the second option, not the default.
 
 **(B) Settled-record floor — REFUTED AS WRITTEN; do not ship.** The rule as stated ("on ≥30
 venue-settled legs, ROI's 95% CI excludes zero on the positive side") **passes this wallet**:
