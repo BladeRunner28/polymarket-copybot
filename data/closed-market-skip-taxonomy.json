@@ -1,7 +1,7 @@
 {
  "card": "t_d246fc66",
  "lane": "A proposal \u2014 read-only, no rule/gate/size/exit touched",
- "read_at": "2026-11-12T20:22:00.748531+00:00",
+ "read_at": "2026-11-12T20:30:27.618727+00:00",
  "db": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
  "classifier": "decisionLiveness() semantics (src/lib/nearcertainty-tail.ts)",
  "selftest": [
@@ -16,7 +16,9 @@
   "--pre-days N alone spans now-N..now and is NOT a confirmation",
   "--ship-at inside the span clamps the start to the ship time",
   "--ship-at older than the span keeps now-N..now and stays valid (nothing pre-ship inside)",
-  "trigger gap counts a readable clock on an unflagged market, and nothing else"
+  "trigger gap counts a readable clock on an unflagged market, and nothing else",
+  "lag_stats_min emits median/p10/p90/max in minutes",
+  "swarm contamination splits closed-at-ingest from within-1h rows"
  ],
  "windows": {
   "post": {
@@ -83,9 +85,28 @@
       ">=6h": 71
      }
     },
-    "observed_to_decision_lag_s": {
-     "n": 103,
-     "median": 70030.048
+    "lag_min": {
+     "trade_to_ingest": {
+      "n": 103,
+      "median": 1166.8,
+      "p10": 366.9,
+      "p90": 1347.9,
+      "max": 1420.0
+     },
+     "ingest_to_decision": {
+      "n": 103,
+      "median": 0.3,
+      "p10": 0.3,
+      "p90": 0.3,
+      "max": 0.3
+     },
+     "trade_to_decision": {
+      "n": 103,
+      "median": 1167.2,
+      "p10": 367.2,
+      "p90": 1348.3,
+      "max": 1420.4
+     }
     },
     "by_day": {
      "2026-11-12": 103
@@ -145,7 +166,39 @@
     "closed_at_ingest_pct": 1.84,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 0
+    "uncached_market_rows": 0,
+    "swarm_window_contamination": {
+     "copy_eligible_observations": 5593,
+     "on_closed_market_at_ingest": 103,
+     "share_pct": 1.84,
+     "within_1h_of_ingest": 0,
+     "share_within_1h_pct": 0.0,
+     "definition": "copy-eligible (observationOnly=false) observations in the window whose market was already closed when the monitor ingested it \u2014 the row set behind the 1h swarmCount input; within_1h_of_ingest keeps only those whose trade clock is <=1h before ingest"
+    }
+   },
+   "lag_min_all_decisions": {
+    "trade_to_ingest": {
+     "n": 5588,
+     "median": 5.6,
+     "p10": 1.3,
+     "p90": 10.5,
+     "max": 1420.0
+    },
+    "ingest_to_decision": {
+     "n": 5588,
+     "median": 0.2,
+     "p10": 0.1,
+     "p90": 0.2,
+     "max": 6.5
+    },
+    "trade_to_decision": {
+     "n": 5588,
+     "median": 5.8,
+     "p10": 1.5,
+     "p90": 10.6,
+     "max": 1420.4
+    },
+    "note": "window-wide, every decision in the window (not just the post-close rows) \u2014 the caption \u00a73 needs, because the post-close median is not the window's"
    },
    "trigger_check": {
     "decisions": 5588,
@@ -160,16 +213,16 @@
   },
   "post_now": {
    "start_utc": "2026-11-09T15:15:16+00:00",
-   "end_utc": "2026-11-12T20:22:00.748531+00:00",
-   "days": 3.21,
-   "decisions": 5614,
+   "end_utc": "2026-11-12T20:30:27.618727+00:00",
+   "days": 3.22,
+   "decisions": 5615,
    "liveness": {
-    "live": 5511,
+    "live": 5512,
     "post-close": 103
    },
    "decision_mix": {
     "live": {
-     "skip": 4846,
+     "skip": 4847,
      "paper_copy": 99,
      "watchlist": 566
     },
@@ -222,9 +275,28 @@
       ">=6h": 71
      }
     },
-    "observed_to_decision_lag_s": {
-     "n": 103,
-     "median": 70030.048
+    "lag_min": {
+     "trade_to_ingest": {
+      "n": 103,
+      "median": 1166.8,
+      "p10": 366.9,
+      "p90": 1347.9,
+      "max": 1420.0
+     },
+     "ingest_to_decision": {
+      "n": 103,
+      "median": 0.3,
+      "p10": 0.3,
+      "p90": 0.3,
+      "max": 0.3
+     },
+     "trade_to_decision": {
+      "n": 103,
+      "median": 1167.2,
+      "p10": 367.2,
+      "p90": 1348.3,
+      "max": 1420.4
+     }
     },
     "by_day": {
      "2026-11-12": 103
@@ -273,24 +345,56 @@
     "cheap_lt_0_05_post_close_exactly_zero": 10
    },
    "intake": {
-    "copy_eligible_observations": 5610,
+    "copy_eligible_observations": 5611,
     "liveness_at_trade_clock": {
-     "live": 5610
+     "live": 5611
     },
     "liveness_at_ingest_clock": {
-     "live": 5507,
+     "live": 5508,
      "post-close": 103
     },
     "closed_at_ingest_pct": 1.84,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 0
+    "uncached_market_rows": 0,
+    "swarm_window_contamination": {
+     "copy_eligible_observations": 5611,
+     "on_closed_market_at_ingest": 103,
+     "share_pct": 1.84,
+     "within_1h_of_ingest": 0,
+     "share_within_1h_pct": 0.0,
+     "definition": "copy-eligible (observationOnly=false) observations in the window whose market was already closed when the monitor ingested it \u2014 the row set behind the 1h swarmCount input; within_1h_of_ingest keeps only those whose trade clock is <=1h before ingest"
+    }
+   },
+   "lag_min_all_decisions": {
+    "trade_to_ingest": {
+     "n": 5615,
+     "median": 5.6,
+     "p10": 1.3,
+     "p90": 10.5,
+     "max": 1420.0
+    },
+    "ingest_to_decision": {
+     "n": 5615,
+     "median": 0.2,
+     "p10": 0.1,
+     "p90": 0.2,
+     "max": 6.5
+    },
+    "trade_to_decision": {
+     "n": 5615,
+     "median": 5.8,
+     "p10": 1.5,
+     "p90": 10.6,
+     "max": 1420.4
+    },
+    "note": "window-wide, every decision in the window (not just the post-close rows) \u2014 the caption \u00a73 needs, because the post-close median is not the window's"
    },
    "trigger_check": {
-    "decisions": 5614,
+    "decisions": 5615,
     "uncached_market": 0,
     "closed_flag_true": 3789,
-    "closed_flag_false": 1825,
+    "closed_flag_false": 1826,
     "flag_false_with_readable_clock": 0,
     "flag_false_clock_le_decision": 0,
     "flag_false_clock_le_ingest": 0,
@@ -353,9 +457,28 @@
       "1-6h": 2
      }
     },
-    "observed_to_decision_lag_s": {
-     "n": 2,
-     "median": 38529.172
+    "lag_min": {
+     "trade_to_ingest": {
+      "n": 2,
+      "median": 642.0,
+      "p10": 220.6,
+      "p90": 642.0,
+      "max": 642.0
+     },
+     "ingest_to_decision": {
+      "n": 2,
+      "median": 0.2,
+      "p10": 0.2,
+      "p90": 0.2,
+      "max": 0.2
+     },
+     "trade_to_decision": {
+      "n": 2,
+      "median": 642.2,
+      "p10": 220.8,
+      "p90": 642.2,
+      "max": 642.2
+     }
     },
     "by_day": {
      "2026-11-07": 1,
@@ -413,7 +536,39 @@
     "closed_at_ingest_pct": 0.03,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 0
+    "uncached_market_rows": 0,
+    "swarm_window_contamination": {
+     "copy_eligible_observations": 7278,
+     "on_closed_market_at_ingest": 2,
+     "share_pct": 0.03,
+     "within_1h_of_ingest": 0,
+     "share_within_1h_pct": 0.0,
+     "definition": "copy-eligible (observationOnly=false) observations in the window whose market was already closed when the monitor ingested it \u2014 the row set behind the 1h swarmCount input; within_1h_of_ingest keeps only those whose trade clock is <=1h before ingest"
+    }
+   },
+   "lag_min_all_decisions": {
+    "trade_to_ingest": {
+     "n": 7279,
+     "median": 5.7,
+     "p10": 1.1,
+     "p90": 10.4,
+     "max": 642.0
+    },
+    "ingest_to_decision": {
+     "n": 7279,
+     "median": 0.2,
+     "p10": 0.1,
+     "p90": 0.3,
+     "max": 0.5
+    },
+    "trade_to_decision": {
+     "n": 7279,
+     "median": 5.9,
+     "p10": 1.2,
+     "p90": 10.6,
+     "max": 642.2
+    },
+    "note": "window-wide, every decision in the window (not just the post-close rows) \u2014 the caption \u00a73 needs, because the post-close median is not the window's"
    },
    "trigger_check": {
     "decisions": 7279,
@@ -502,9 +657,28 @@
       ">=6h": 571
      }
     },
-    "observed_to_decision_lag_s": {
-     "n": 983,
-     "median": 45462.913
+    "lag_min": {
+     "trade_to_ingest": {
+      "n": 983,
+      "median": 694.6,
+      "p10": 8.3,
+      "p90": 1371.6,
+      "max": 1437.7
+     },
+     "ingest_to_decision": {
+      "n": 983,
+      "median": 0.2,
+      "p10": 0.2,
+      "p90": 374.2,
+      "max": 1034.3
+     },
+     "trade_to_decision": {
+      "n": 983,
+      "median": 757.7,
+      "p10": 231.5,
+      "p90": 1371.8,
+      "max": 1437.9
+     }
     },
     "by_day": {
      "2026-09-30": 9,
@@ -587,7 +761,39 @@
     "closed_at_ingest_pct": 2.31,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 597
+    "uncached_market_rows": 597,
+    "swarm_window_contamination": {
+     "copy_eligible_observations": 36659,
+     "on_closed_market_at_ingest": 846,
+     "share_pct": 2.31,
+     "within_1h_of_ingest": 12,
+     "share_within_1h_pct": 0.03,
+     "definition": "copy-eligible (observationOnly=false) observations in the window whose market was already closed when the monitor ingested it \u2014 the row set behind the 1h swarmCount input; within_1h_of_ingest keeps only those whose trade clock is <=1h before ingest"
+    }
+   },
+   "lag_min_all_decisions": {
+    "trade_to_ingest": {
+     "n": 36655,
+     "median": 5.9,
+     "p10": 1.2,
+     "p90": 10.6,
+     "max": 1437.7
+    },
+    "ingest_to_decision": {
+     "n": 36655,
+     "median": 0.2,
+     "p10": 0.1,
+     "p90": 0.3,
+     "max": 1034.3
+    },
+    "trade_to_decision": {
+     "n": 36655,
+     "median": 6.3,
+     "p10": 1.4,
+     "p90": 11.2,
+     "max": 1437.9
+    },
+    "note": "window-wide, every decision in the window (not just the post-close rows) \u2014 the caption \u00a73 needs, because the post-close median is not the window's"
    },
    "trigger_check": {
     "decisions": 36655,
@@ -601,17 +807,17 @@
    }
   },
   "pre_days": {
-   "start_utc": "2026-11-05T20:22:00.748531+00:00",
-   "end_utc": "2026-11-12T20:22:00.748531+00:00",
+   "start_utc": "2026-11-05T20:30:27.618727+00:00",
+   "end_utc": "2026-11-12T20:30:27.618727+00:00",
    "days": 7.0,
-   "decisions": 13589,
+   "decisions": 13587,
    "liveness": {
-    "live": 13484,
+    "live": 13482,
     "post-close": 105
    },
    "decision_mix": {
     "live": {
-     "skip": 12717,
+     "skip": 12715,
      "paper_copy": 193,
      "watchlist": 574
     },
@@ -664,9 +870,28 @@
       ">=6h": 71
      }
     },
-    "observed_to_decision_lag_s": {
-     "n": 105,
-     "median": 70027.999
+    "lag_min": {
+     "trade_to_ingest": {
+      "n": 105,
+      "median": 1166.8,
+      "p10": 365.1,
+      "p90": 1347.9,
+      "max": 1420.0
+     },
+     "ingest_to_decision": {
+      "n": 105,
+      "median": 0.3,
+      "p10": 0.3,
+      "p90": 0.3,
+      "max": 0.3
+     },
+     "trade_to_decision": {
+      "n": 105,
+      "median": 1167.1,
+      "p10": 365.4,
+      "p90": 1348.3,
+      "max": 1420.4
+     }
     },
     "by_day": {
      "2026-11-07": 1,
@@ -717,24 +942,56 @@
     "cheap_lt_0_05_post_close_exactly_zero": 12
    },
    "intake": {
-    "copy_eligible_observations": 13586,
+    "copy_eligible_observations": 13579,
     "liveness_at_trade_clock": {
-     "live": 13586
+     "live": 13579
     },
     "liveness_at_ingest_clock": {
-     "live": 13481,
+     "live": 13474,
      "post-close": 105
     },
     "closed_at_ingest_pct": 0.77,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 0
+    "uncached_market_rows": 0,
+    "swarm_window_contamination": {
+     "copy_eligible_observations": 13579,
+     "on_closed_market_at_ingest": 105,
+     "share_pct": 0.77,
+     "within_1h_of_ingest": 0,
+     "share_within_1h_pct": 0.0,
+     "definition": "copy-eligible (observationOnly=false) observations in the window whose market was already closed when the monitor ingested it \u2014 the row set behind the 1h swarmCount input; within_1h_of_ingest keeps only those whose trade clock is <=1h before ingest"
+    }
+   },
+   "lag_min_all_decisions": {
+    "trade_to_ingest": {
+     "n": 13587,
+     "median": 5.7,
+     "p10": 1.2,
+     "p90": 10.4,
+     "max": 1420.0
+    },
+    "ingest_to_decision": {
+     "n": 13587,
+     "median": 0.2,
+     "p10": 0.1,
+     "p90": 0.3,
+     "max": 6.5
+    },
+    "trade_to_decision": {
+     "n": 13587,
+     "median": 5.9,
+     "p10": 1.4,
+     "p90": 10.6,
+     "max": 1420.4
+    },
+    "note": "window-wide, every decision in the window (not just the post-close rows) \u2014 the caption \u00a73 needs, because the post-close median is not the window's"
    },
    "trigger_check": {
-    "decisions": 13589,
+    "decisions": 13587,
     "uncached_market": 0,
-    "closed_flag_true": 10699,
-    "closed_flag_false": 2890,
+    "closed_flag_true": 10696,
+    "closed_flag_false": 2891,
     "flag_false_with_readable_clock": 0,
     "flag_false_clock_le_decision": 0,
     "flag_false_clock_le_ingest": 0,
@@ -745,9 +1002,9 @@
  "pre_days": {
   "requested_days": 7.0,
   "ship_at_utc": null,
-  "requested_start_utc": "2026-11-05T20:22:00.748531+00:00",
-  "window_start_utc": "2026-11-05T20:22:00.748531+00:00",
-  "window_end_utc": "2026-11-12T20:22:00.748531+00:00",
+  "requested_start_utc": "2026-11-05T20:30:27.618727+00:00",
+  "window_start_utc": "2026-11-05T20:30:27.618727+00:00",
+  "window_end_utc": "2026-11-12T20:30:27.618727+00:00",
   "anchored_at_ship": false,
   "excluded_pre_ship_decisions": 0,
   "uncached_rows": 0,
@@ -758,7 +1015,7 @@
  },
  "fetch_scope": "pre_days",
  "trigger_audit": {
-  "markets": 8899,
+  "markets": 8900,
   "closed_flag_true": 7438,
   "closed_time_readable": 7438,
   "closed_time_key_but_null": 81,

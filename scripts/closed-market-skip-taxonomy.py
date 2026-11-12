@@ -23,8 +23,16 @@ WHAT IT MEASURES (per window, and split by decision liveness)
     rows relabelled under (b)).
   * the intake-side population (a) would catch: observation-only=false ObservedTrade
     rows in the window that never got a decision at all.
-  * swarm-window contamination (a) removes: share of copy-eligible observations in the
-    window sitting on an already-closed market (the 1h `swarmCount` input).
+  * swarm-window contamination (a) removes — emitted as
+    `windows.*.intake.swarm_window_contamination`: share of copy-eligible observations in
+    the window sitting on an already-closed market, i.e. the row set behind the 1h
+    `swarmCount` input (scripts/score-trades.ts:441). Review round 4 caught the earlier
+    docstring advertising this cell while the script computed nothing; `within_1h_of_ingest`
+    splits out the rows whose trade clock could actually land in a live 1h window.
+  * the three lag legs the §3 mechanism table quotes — `windows.*.post_close.lag_min` (on the
+    post-close rows) and `windows.*.lag_min_all_decisions` (window-wide), each as
+    trade->ingest / ingest->decision / trade->decision with n, median, p10, p90, max. Emitted
+    because review round 4 found the table captioned by nothing and the p10/p90 hand-counted.
 
 READ-ONLY on prisma/dev.db (`mode=ro`). Reuses data/nearcert-market-meta.json and only
 fetches markets missing from it. Writes data/closed-market-skip-taxonomy.json.
@@ -39,6 +47,8 @@ Run: python3 scripts/closed-market-skip-taxonomy.py [--no-fetch] [--fetch-cap 40
                    [max(now - N d, ship_at), now). Without it the window still contains
                    rows stamped before the guard existed (today: the frozen 103), so the
                    artifact reports `valid_confirmation_window: false` instead of letting
+                   a pre-guard window read as a guard failure.
+
   --fetch-window W restrict label fetching to window W (e.g. `pre_days`). The frozen windows
                    (post / post_now / pre_equal / d30) then read the cache only, so a
                    re-read cannot quietly restate their published figures by labelling a
@@ -207,6 +217,58 @@ def wallet_print_stats(pairs):
     return out
 
 
+def lag_stats_min(secs):
+    """n / median / p10 / p90 / max in MINUTES (1 dp) — the §3 lag cells, emitted not hand-counted.
+
+    Review round 4 (t_d246fc66): the draft's mechanism table quoted only medians (and one
+    hand-measured p10/p90) over an uncaptioned population, so a reader could apply 1,167 min to
+    the whole window. The same window holds a 0-minute scoring path and a 6-hour one; the spread
+    is the point, so it is emitted.
+    """
+    if not secs:
+        return {"n": 0, "median": None, "p10": None, "p90": None, "max": None}
+    s = sorted(secs)
+
+    def q(p):
+        return round(s[min(len(s) - 1, int(len(s) * p))] / 60.0, 1)
+
+    return {"n": len(s), "median": q(0.5), "p10": q(0.1), "p90": q(0.9),
+            "max": round(s[-1] / 60.0, 1)}
+
+
+def swarm_contamination(obs_rows, window_ms=3_600_000):
+    """Share of copy-eligible observations whose market was already closed at ingest.
+
+    `obs_rows` are {ts, ingest, closed_at_ingest} for `observationOnly = 0` rows in the window.
+    This is the row set behind the 1h `swarmCount` input (score-trades.ts:441 counts
+    observationOnly=false rows in the last hour), which is why (a) — stamping them
+    observationOnly — removes them from it. Emitted because the docstring advertised this cell
+    while nothing computed it (review round 4, item 2).
+
+    `within_1h_of_ingest` is the honest sub-count: the input is a 1-hour window keyed on the
+    TRADE clock, so only a row whose trade stamp is <= 1 h before its own ingest could have
+    inflated a live swarm score. These prints arrive a median 19.4 h late, so most cannot.
+    """
+    total = len(obs_rows)
+    closed = [r for r in obs_rows if r["closed_at_ingest"]]
+    within = [r for r in closed if (r["ingest"] - r["ts"]) <= window_ms]
+
+    def pct(k):
+        return round(100.0 * k / total, 2) if total else 0.0
+
+    return {
+        "copy_eligible_observations": total,
+        "on_closed_market_at_ingest": len(closed),
+        "share_pct": pct(len(closed)),
+        "within_1h_of_ingest": len(within),
+        "share_within_1h_pct": pct(len(within)),
+        "definition": "copy-eligible (observationOnly=false) observations in the window whose "
+                      "market was already closed when the monitor ingested it — the row set "
+                      "behind the 1h swarmCount input; within_1h_of_ingest keeps only those "
+                      "whose trade clock is <=1h before ingest",
+    }
+
+
 def selftest():
     """The three assertions the TS self-test pins, plus the boundary case."""
     st = wallet_print_stats([(0.0, 0.34), (0.0, 0.5225), (1.0, 0.1731), (1.0, 0.71)])
@@ -255,6 +317,20 @@ def selftest():
                                   int(datetime(2026, 10, 16, tzinfo=timezone.utc).timestamp() * 1000)) is False
          and trigger_disagreement(False, datetime(2026, 10, 17, tzinfo=timezone.utc),
                                   int(datetime(2026, 10, 16, tzinfo=timezone.utc).timestamp() * 1000)) is False),
+        # lag cells (review round 4, item 3): median/p10/p90/max in minutes, so the §3 table's
+        # spread is emitted rather than hand-measured.
+        ("lag_stats_min emits median/p10/p90/max in minutes",
+         lag_stats_min([0, 60, 600, 3600]) == {"n": 4, "median": 10.0, "p10": 0.0,
+                                               "p90": 60.0, "max": 60.0}),
+        # swarm cell (review round 4, item 2): the docstring promised this number; only rows whose
+        # trade clock is within 1h of ingest could have entered a live swarmCount window.
+        ("swarm contamination splits closed-at-ingest from within-1h rows",
+         swarm_contamination([{"ts": 0, "ingest": 120_000, "closed_at_ingest": True},
+                              {"ts": 0, "ingest": 7_200_000, "closed_at_ingest": True},
+                              {"ts": 0, "ingest": 60_000, "closed_at_ingest": False}])
+         == {"copy_eligible_observations": 3, "on_closed_market_at_ingest": 2, "share_pct": 66.67,
+             "within_1h_of_ingest": 1, "share_within_1h_pct": 33.33,
+             "definition": swarm_contamination([])["definition"]}),
     ]
     bad = [n for n, ok in cases if not ok]
     if bad:
@@ -458,7 +534,12 @@ def main():
         # post-close mechanism: was this a scoring-LAG race or a stale re-score?
         lag_buckets = Counter()
         lag_secs = []
-        obs_lag_secs = []
+        # the three legs (review round 4, item 3): trade clock -> ingest, ingest -> decision,
+        # trade clock -> decision. Kept for the post-close rows AND window-wide, because the
+        # post-close 1,167 min median is NOT the window's (d30 reads ~695) and quoting it
+        # uncaptioned is how a reader applies the wrong number.
+        post_trade_ingest, post_ingest_dec, post_trade_dec = [], [], []
+        all_trade_ingest, all_ingest_dec, all_trade_dec = [], [], []
         by_day = Counter()
         top_markets = Counter()
         first_risk = Counter()
@@ -466,7 +547,7 @@ def main():
         # fetched the payload (closedTime <= ObservedTrade.createdAt). (b) scoring: it was
         # closed when the decision was stamped. A row can be post-close on the trade's own
         # clock and still be live at ingest if the print arrives late — which is the whole
-        # mechanism here (data-api prints up to 22 h old).
+        # mechanism here (data-api prints up to 23.7 h old on these rows; 24.0 h over d30).
         closure_class = Counter()
         # unknown-clock rows: closed now, clock unreadable — an UPPER BOUND on a
         # `resolved`-based guard, never a count of post-close decisions.
@@ -534,6 +615,12 @@ def main():
                 if r["did"] in legs:
                     unk["legs"] += 1
 
+            # window-wide lag legs (every decision, whatever its liveness)
+            all_ingest_dec.append((int(r["ts"]) - int(r["ingest"])) / 1000.0)
+            if r["obsts"] is not None:
+                all_trade_ingest.append((int(r["ingest"]) - int(r["obsts"])) / 1000.0)
+                all_trade_dec.append((int(r["ts"]) - int(r["obsts"])) / 1000.0)
+
             if lv != "post-close":
                 continue
             # mechanism: how long after the venue closed was this decision stamped,
@@ -551,7 +638,9 @@ def main():
                 else:
                     closure_class["scoring_only"] += 1
             if r["obsts"] is not None:
-                obs_lag_secs.append((int(r["ts"]) - int(r["obsts"])) / 1000.0)
+                post_trade_ingest.append((int(r["ingest"]) - int(r["obsts"])) / 1000.0)
+                post_trade_dec.append((int(r["ts"]) - int(r["obsts"])) / 1000.0)
+            post_ingest_dec.append((int(r["ts"]) - int(r["ingest"])) / 1000.0)
             by_day[datetime.fromtimestamp(int(r["ts"]) / 1000.0, timezone.utc).strftime("%Y-%m-%d")] += 1
             top_markets[r["mid"]] += 1
             if entries:
@@ -596,9 +685,10 @@ def main():
                 "p90": sorted(lag_secs)[int(len(lag_secs) * 0.9)] if lag_secs else None,
                 "buckets": dict(lag_buckets),
             },
-            "observed_to_decision_lag_s": {
-                "n": len(obs_lag_secs),
-                "median": sorted(obs_lag_secs)[len(obs_lag_secs) // 2] if obs_lag_secs else None,
+            "lag_min": {
+                "trade_to_ingest": lag_stats_min(post_trade_ingest),
+                "ingest_to_decision": lag_stats_min(post_ingest_dec),
+                "trade_to_decision": lag_stats_min(post_trade_dec),
             },
             "by_day": dict(sorted(by_day.items())),
             "top_markets": dict(top_markets.most_common(5)),
@@ -615,6 +705,13 @@ def main():
                 "intake_pct": round(100.0 * closure_class["caught_at_intake"] /
                                     max(1, closure_class["caught_at_intake"] + closure_class["scoring_only"]), 1),
             },
+        }
+        w["lag_min_all_decisions"] = {
+            "trade_to_ingest": lag_stats_min(all_trade_ingest),
+            "ingest_to_decision": lag_stats_min(all_ingest_dec),
+            "trade_to_decision": lag_stats_min(all_trade_dec),
+            "note": "window-wide, every decision in the window (not just the post-close rows) — "
+                    "the caption §3 needs, because the post-close median is not the window's",
         }
         w["trigger_check"] = {
             **tchk,
@@ -649,6 +746,9 @@ def main():
         obs_lv_ingest = Counter(live_of(r["mid"], int(r["ingest"])) for r in obs)
         unr = [r for r in obs if r["oid"] not in decided_ids]
         unr_lv = Counter(live_of(r["mid"], int(r["ingest"])) for r in unr)
+        obs_rows = [{"ts": int(r["ts"]), "ingest": int(r["ingest"]),
+                     "closed_at_ingest": live_of(r["mid"], int(r["ingest"])) == "post-close"}
+                    for r in obs]
         w["intake"] = {
             "copy_eligible_observations": len(obs),
             "liveness_at_trade_clock": dict(obs_lv),
@@ -657,6 +757,7 @@ def main():
             "unscored_observations": len(unr),
             "unscored_liveness_at_ingest": dict(unr_lv),
             "uncached_market_rows": w["liveness"].get("uncached", 0),
+            "swarm_window_contamination": swarm_contamination(obs_rows),
         }
         report["windows"][name] = w
         if name == "pre_days" and report["pre_days"] is not None:
@@ -712,6 +813,16 @@ def main():
         print("   intake: %d copy-eligible obs; closed at TRADE clock %d, at INGEST clock %d (%s)"
               % (len(obs), obs_lv.get("post-close", 0), obs_lv_ingest.get("post-close", 0),
                  w["intake"]["liveness_at_ingest_clock"]))
+        sw = w["intake"]["swarm_window_contamination"]
+        print("   swarm input: %d copy-eligible obs, %d on a closed market at ingest (%.2f%%), "
+              "%d of them within 1h of ingest (%.2f%%)"
+              % (sw["copy_eligible_observations"], sw["on_closed_market_at_ingest"], sw["share_pct"],
+                 sw["within_1h_of_ingest"], sw["share_within_1h_pct"]))
+        lp, la = pc["lag_min"], w["lag_min_all_decisions"]
+        print("   lag min — post-close rows: trade->ingest %s | ingest->decision %s"
+              % (lp["trade_to_ingest"], lp["ingest_to_decision"]))
+        print("   lag min — window-wide:    trade->ingest %s | ingest->decision %s"
+              % (la["trade_to_ingest"], la["ingest_to_decision"]))
 
     OUT.write_text(json.dumps(report, indent=1))
     print("\nwrote %s" % OUT)

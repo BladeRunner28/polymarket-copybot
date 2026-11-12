@@ -1,12 +1,15 @@
 # A closed market is not a candidate — the 2% post-close decisions are data-api prints that arrive after settlement
 
 Card `t_d246fc66` · **Lane A proposal — nothing shipped, no rule/gate/size/exit touched** · read
-2026-11-12T19:52Z, rev 4 2026-11-12T20:20Z (review round 1: the wallet-print cell is now
+2026-11-12T19:52Z, rev 5 2026-11-12T20:30Z (review round 1: the wallet-print cell is now
 instrument-emitted and the (a) sketch is price-only; round 2: the "Refutation / re-read" recipe now
 names flags the script actually parses — `--pre-days` plus its `--ship-at` anchor — and the window
 each run produced is pasted below; round 3: the (b) column is restated as "same rows journaled, first
 reason fixed, volume unchanged", the sketch now moves the run counters with the write, and the
-`m.resolved` vs `closed or closedTime <= now` deviation is measured instead of assumed) · instrument
+`m.resolved` vs `closed or closedTime <= now` deviation is measured instead of assumed; round 4: the
+blast radius now names **both** columns the guard flips and every reader of them, the §3 lag table is
+captioned and every lag leg is emitted with p10/p90/max, the swarm-contamination cell the docstring
+promised is actually computed, and the stale-print age is the measured 23.7 h) · instrument
 `scripts/closed-market-skip-taxonomy.py`
 (read-only, `mode=ro`) → `data/closed-market-skip-taxonomy.json` · upstream:
 `drafts/nearcert-mark-guard-after-20261112.md`
@@ -81,20 +84,34 @@ by_detected_price_group}`), not hand-computed. Round 1 of review caught the firs
 
 ## 3. The mechanism is not scoring lag — it is the feed
 
-The card implies the pipeline sits on rows and scores them later. Measured, it does not:
+The card implies the pipeline sits on rows and scores them later. Measured, it does not.
 
-| lag | median | p10 | p90 |
-|---|---|---|---|
-| ingest → decision (`ObservedTrade.createdAt` → `DecisionJournal.createdAt`) | **0 min** | 0 | 0 |
-| trade → ingest (`ObservedTrade.timestamp` → `.createdAt`) | **1,167 min (19.4 h)** | 367 | 1,348 |
+**Table is the 103 post-close decisions in the post-fix window, not the window** (review round 4:
+the earlier printing of these cells carried no population, so a reader could apply 1,167 min to
+`d30` and be wrong by 40 %). Every leg below is emitted by the instrument —
+`windows.post.post_close.lag_min` — with n / median / p10 / p90 / max in minutes:
+
+| lag, on the 103 post-close rows | median | p10 | p90 | max |
+|---|---|---|---|---|
+| ingest → decision (`ObservedTrade.createdAt` → `DecisionJournal.createdAt`) | **0.3 min** | 0.3 | 0.3 | 0.3 |
+| trade → ingest (`ObservedTrade.timestamp` → `.createdAt`) | **1,166.8 min (19.4 h)** | 366.9 | 1,347.9 | **1,420.0 min (23.7 h)** |
+
+The same two legs **window-wide** (`windows.post.lag_min_all_decisions`, all 5,588 decisions) are
+trade → ingest 5.6 / 1.3 / 10.5, ingest → decision 0.2 / 0.1 / 0.2 — i.e. the pipeline is prompt on
+a normal row and the 19.4 h belongs to the lagged tail only. Over `d30` the post-close rows read
+trade → ingest **694.6** (p10 8.3, p90 1,371.6, max 1,437.7 = 24.0 h) and ingest → decision
+**0.2** (p90 **374.2**, max 1,034.3), so scoring lag there is *not* zero on every row — that 374 min
+p90 is the 137 `scoring_only` decisions, the residual (b) would catch.
 
 Every one of the 103 rows carries `provenanceSource = data-api`, `provenanceLagged = 1`. The wallet
-activity feed hands us prints up to **22 hours old**; when the market settled in the meantime, the
-monitor fetches a payload whose book is gone and stores its settlement price as the detection price.
-That is why the population is **episodic, not a steady 2 %**: the 103 post-fix rows are all stamped
-2026-11-12 (top markets `cs2-mouz-g2-…-map-handicap-away-1pt5` 28, `cs2-lgc-fal2` 23,
-`cs2-mouz-g2` 11), and the 30 d burst days — 10-05 (191), 10-14 (179), 10-16 (189), 10-24 (209) —
-are exactly the days with the worst decision lag (158 / 243 / 195 / 69 min avg, ~23.7 h max).
+activity feed hands us prints up to **23.7 h** old on these rows (**24.0 h** over 30 d — emitted as
+the `max` cell above; an earlier draft said "22 hours", which matches neither measurement); when the
+market settled in the meantime, the monitor fetches a payload whose book is gone and stores its
+settlement price as the detection price. That is why the population is **episodic, not a steady 2 %**:
+the 103 post-fix rows are all stamped 2026-11-12 (top markets `cs2-mouz-g2-…-map-handicap-away-1pt5`
+28, `cs2-lgc-fal2` 23, `cs2-mouz-g2` 11), and the 30 d burst days — 10-05 (191), 10-14 (179),
+10-16 (189), 10-24 (209) — are exactly the days with the worst decision lag (158 / 243 / 195 / 69 min
+avg).
 
 **Consequence for the option set:** the rows were live when the wallet traded and already closed when
 *we* saw them, so the guard's test must be the market's state **at ingest**, not at the print.
@@ -129,6 +146,7 @@ figure below is split into **scored** (ran the gate loop) and **journaled** (has
 | sub-0.05 near-certainty cohort (post-fix) | 182 | **172** | 172 | 182 |
 | near-certainty cohort, all rows (post-fix) | 1,991 | **1,888** | 1,888 | 1,991 |
 | rows storing a settled 0/1 as `detectedPrice` | 103 | **0 — wallet print kept** | 103 (unchanged) | 103 |
+| 1 h `swarmCount` input rows on a closed market (post-fix) | 103 / 5,593 copy-eligible obs (1.84 %); 0 of them within 1 h of ingest | **0** | 103 — still copy-eligible | 103 |
 | admissions (legs booked on those decisions) | 0 | **0** | 0 | 0 |
 | longshot-shadow rows at `entryPrice 0` (lifetime) | 536 | stops growing | stops growing | grows ~10/3 d |
 
@@ -168,8 +186,10 @@ at the detected-price assignment only:
  // price-side-inversion (2026-11-09, user-approved): ...
 - const p = priceForOutcome(m, t.outcome);
 - if (p !== undefined) detectedPrice = p;
-+ // t_d246fc66: PRICE-ONLY guard. The MarketSnapshot write below stays unconditional for these
-+ // rows (see "Blast radius"): it is a shared table and suppressing it is a separate decision.
++ // t_d246fc66: this block gates the PRICE READ only. The MarketSnapshot write below stays
++ // unconditional for these rows (see "Blast radius"): it is a shared table and suppressing it is a
++ // separate decision. The column that changes is observationOnly (at the write, above); the price
++ // keeping the wallet's own print is its consequence.
 + if (!marketClosed) {
 +   const p = priceForOutcome(m, t.outcome);
 +   if (p !== undefined) detectedPrice = p;
@@ -178,11 +198,11 @@ at the detected-price assignment only:
 ```
 
 and at the write: `observationOnly: w.observationOnly || isBlankMarket || marketClosed`, `detectedPrice`
-left as the `let detectedPrice = t.price` initialised at :170 (no ternary — the guard is price-only, so
-the wallet's own print is already the value), plus `closedMarket++` and a
-`[CLOSED-MARKET] N row(s) stored observationOnly — market already resolved at ingest (price-only:
-MarketSnapshot kept)` line next to `[BLANK-MARKET]`, so the event is counted, not silent — and so the
-next reader can tell this guard from a blank-market one by what it says it touched.
+left as the `let detectedPrice = t.price` initialised at :170 (no ternary — the guard gates only the
+price read, so the wallet's own print is already the value), plus `closedMarket++` and a
+`[CLOSED-MARKET] N row(s) stored observationOnly — market already resolved at ingest (price read
+skipped; MarketSnapshot kept)` line next to `[BLANK-MARKET]`, so the event is counted, not silent — and
+so the next reader can tell this guard from a blank-market one by what it says it touched.
 
 The **run counters have to move with the write**, or the run log and the DB disagree about the same
 row (review round 3). `scripts/monitor-trades.ts:233-234` decides what the run summary calls
@@ -205,8 +225,37 @@ counts it as copy-eligible — a log line asserting a decision the DB contradict
 defect class this card exists to remove. `[CLOSED-MARKET]` and `blankMarket` are independent counters
 (a row is never both: blank rows have no marketId to fetch), so neither shadows the other.
 
-**Blast radius, stated rather than implied (review round 1).** The guard changes exactly one column
-on `ObservedTrade`: `detectedPrice` falls back to the wallet's own print. It does **not** touch:
+**Blast radius, stated rather than implied (review rounds 1 and 4).** The guard flips **two**
+columns on `ObservedTrade`, and the second one is the guard itself:
+
+1. `observationOnly` **`false → true`** — the row becomes inert; the scorer never sees it. This *is*
+   the guard.
+2. `detectedPrice` falls back to the wallet's own print (`0.1731 – 0.71`), because the settlement
+   read is no longer written.
+
+Round 4 caught the previous printing of this paragraph saying *"the guard changes exactly one
+column"*: that was false, and it understated the recommended option on the very column it flips.
+Every reader that filters on `observationOnly: false` therefore loses these rows. All of them
+shrink, none grows — which is why admissions stay 0 — but they are **not** all improvements, so the
+direction is stated per reader:
+
+| reader | what the flip does to it | direction |
+|---|---|---|
+| `scripts/score-trades.ts:441` — `swarmCount`, 1 h window | stops counting these rows as copy-eligible observations in the last hour | −103 rows / 3.19 d leave the input set, but measured only **0** of them (post-fix) and **12** (30 d) have a trade clock within 1 h of their own ingest, so almost none could ever land in a live 1 h window — the swarm score barely moves. Emitted as `intake.swarm_window_contamination` |
+| `scripts/score-trades.ts:678` — token circuit breaker / flash-move window | drops them from the price window (which also filters `p > 0`) | strictly better: the 93 `detectedPrice = 1.000` settlement prints stop entering it, so a settlement can no longer look like a flash move |
+| `src/lib/insider.ts:87` — 60 d insider profile | the wallet's observed-fill count shrinks by its closed-market fills (feeds pre-news / concentration / cluster) | the only real measurement loss among these readers, and a small one: one row per real fill, same wallet, same behaviour. Worth one number in a later insider read; **no follow-up card** — it moves no score the bot acts on today |
+| `scripts/record-l2.ts:242` — L2 watch list (2 h, `MAX_MARKETS`) | a market whose only recent rows are closed-market prints drops out of the WS subscription | strictly good: a settled token's CLOB book returns `[]`, so that subscription slot was wasted (the comment at `:236` says so) |
+| `scripts/score-trades.ts:298` — unscored-observation sweep | the row is never selected for scoring | this **is** "journal volume −103" — the row keeps no journal slot |
+| this instrument's `windows.*.intake.copy_eligible_observations` | counts the copy-eligible population the guard acts on | −103 post-fix / −846 d30 (137 still intake) — the re-runnable statement of the population change |
+
+The instrument's docstring already claimed that (a) removes these rows from the 1 h `swarmCount`
+input while nothing computed it (round 4, item 2). It is a cell now —
+`windows.<name>.intake.swarm_window_contamination` =
+`{copy_eligible_observations, on_closed_market_at_ingest, share_pct, within_1h_of_ingest,
+share_within_1h_pct}`: **1.84 %** of the post-fix intake population (103 / 5,593) and **2.31 %**
+over 30 d (846 / 36,659), of which **0** and **12** can sit inside a live hour.
+
+It does **not** touch:
 
 * **`MarketSnapshot`** — the write stays where it is and still fires once per copy-eligible fill,
   including the closed-market ones (≈103 / 3.19 d, one per fill, no extra fetch). Wrapping it in
@@ -234,15 +283,15 @@ in-play markets trading past their end date**, where the reason is true and the 
 read-only against `data/nearcert-market-meta.json` (own parser, 5-digit fractions padded to six),
 per decision rather than per market. The cells are emitted by the instrument
 (`windows.<name>.trigger_check`, plus a cache-wide `trigger_audit`), so they are re-runnable like every
-other figure here; the run below is `read_at 2026-11-12T20:22:00Z`:
+other figure here; the run below is `read_at 2026-11-12T20:30:27Z`:
 
 | window | decisions | `closed` flag true | `closed` flag false | of those: readable `closedTime` | clock **≤ decision** | clock **≤ ingest → guard gap** | uncached |
 |---|---|---|---|---|---|---|---|
 | post-fix 3.19 d | 5,588 | 3,789 | 1,799 | 0 | 0 | **0** | 0 |
 | trailing 30 d | 36,655 | 34,839 | 1,219 | 0 | 0 | **0** | 597 |
-| pre_days 7 d | 13,589 | 10,699 | 2,890 | 0 | 0 | **0** | 0 |
+| pre_days 7 d | 13,587 | 10,696 | 2,891 | 0 | 0 | **0** | 0 |
 
-and cache-wide (`trigger_audit`): 8,899 labelled markets, **7,438** with `closed: true`, **7,438** with a
+and cache-wide (`trigger_audit`): 8,900 labelled markets, **7,438** with `closed: true`, **7,438** with a
 readable `closedTime`, **0** with a readable clock but the flag false, **0** with the flag true but no
 clock. 81 markets carry `closedTime: null` — all of them open markets, so they are not a gap either.
 
@@ -283,19 +332,19 @@ python3 scripts/closed-market-skip-taxonomy.py --pre-days 7 --ship-at <T> --fetc
   `pre_days.uncached_rows` is `0`; either condition can hold it `false` and `pre_days.note` says which.
 
 **Run today, unanchored** (the committed artifact `data/closed-market-skip-taxonomy.json`,
-`read_at 2026-11-12T20:22:00Z`): window `2026-11-05T20:22:00Z .. 2026-11-12T20:22:00Z`
-(`read_at − 7 d` on every run), 13,589 decisions, **105 post-close**,
+`read_at 2026-11-12T20:30:27Z`): window `2026-11-05T20:30:27Z .. 2026-11-12T20:30:27Z`
+(`read_at − 7 d` on every run), 13,587 decisions, **105 post-close**,
 `anchored_at_ship: false`, `valid_confirmation_window: false`, `uncached_rows: 0`. Those 105 are the
 frozen pre-ship rows — the class the guard exists to stop stamping — reported as a measurement and
 explicitly **not** as a confirmation. (The window is `now − 7 d`, so this count moves with the clock:
-13,588 at the 20:12Z read, 13,589 at 20:22Z.)
+13,588 at the 20:12Z read, 13,589 at 20:22Z, 13,587 at 20:30Z.)
 
 **Mechanics check with a synthetic anchor** (scratch copy, real DB, `--no-fetch`, anchor
-`2026-11-07T00:00:00Z`, inside the span): window `2026-11-07T00:00:00Z .. 2026-11-12T20:20:56Z`,
-`excluded_pre_ship_decisions: 1919`, `valid_confirmation_window: true`, 11,670 decisions,
-**105 post-close / `caught_at_intake` 105**. So the anchored path works *and* can fail — which is the
-property the pre-registered check needs. Anchored at a pre-guard instant it reports the 105; anchored
-at the real ship time it should report 0.
+`2026-11-07T00:00:00Z`, inside the span): window `2026-11-07T00:00:00Z .. 2026-11-12T20:31:23Z`,
+`excluded_pre_ship_decisions: 1916`, `valid_confirmation_window: true`, `uncached_rows: 0`,
+11,671 decisions, **105 post-close / `caught_at_intake` 105**. So the anchored path works *and* can
+fail — which is the property the pre-registered check needs. Anchored at a pre-guard instant it
+reports the 105; anchored at the real ship time it should report 0.
 
 * **confirms** if `windows.pre_days.post_close.decisions` = 0 and
   `windows.pre_days.post_close.option_coverage.caught_at_intake` = 0, with admissions unchanged
@@ -325,17 +374,22 @@ exactly a silently ignored flag).
 `data/nearcert-market-meta.json` and fetches only markets missing from it. Liveness is the same
 three-state rule as `decisionLiveness()` in `src/lib/nearcertainty-tail.ts` (`closed !== true` → live;
 closed with no readable clock → unknown, never coerced to live; else compare against `closedTime`),
-pinned by twelve self-test lines — including the five-digit-fraction case that broke both this read and
-the upstream one, the wallet-print cell's pooled-vs-per-group minimum that review round 1 broke, the
-three that pin the re-read window (an unanchored `--pre-days` is never a confirmation; `--ship-at` clamps
-the start forward; an anchor older than the span still yields a window with nothing pre-ship inside), and
-the trigger-gap classifier (`trigger_disagreement()`) that review round 3 added with the audit table.
-The wallet-print cell (§2) is `post_close.wallet_entry_price` = `{n, min, max, mean, below_0_34,
+pinned by fourteen self-test lines — including the five-digit-fraction case that broke both this read
+and the upstream one, the wallet-print cell's pooled-vs-per-group minimum that review round 1 broke,
+the three that pin the re-read window (an unanchored `--pre-days` is never a confirmation; `--ship-at`
+clamps the start forward; an anchor older than the span still yields a window with nothing pre-ship
+inside), the trigger-gap classifier (`trigger_disagreement()`) that review round 3 added with the
+audit table, and two that review round 4 added: `lag_stats_min()` (median/p10/p90/max in minutes) and
+`swarm_contamination()` (closed-at-ingest split from within-1h-of-ingest). The wallet-print cell (§2)
+is `post_close.wallet_entry_price` = `{n, min, max, mean, below_0_34,
 by_detected_price_group{0.0,1.0,other}}`, computed by `wallet_print_stats()` in the instrument — so
 that cell is re-runnable like every other figure in this write-up. The trigger comparison (§ the
 `m.resolved` paragraph) is emitted too, not hand-counted: `windows.<name>.trigger_check` per window and
 a one-off `trigger_audit` over the whole label cache, both added in review round 3 for the same reason —
-a published cell should be a cell the script prints.
+a published cell should be a cell the script prints. Round 4 extended that rule to §3 and to the
+swarm claim: `windows.<name>.post_close.lag_min` and `.lag_min_all_decisions` (three legs ×
+n/median/p10/p90/max) and `windows.<name>.intake.swarm_window_contamination` are emitted, and the
+docstring's `--ship-at` entry that used to end mid-clause is whole again.
 
 ```
 python3 scripts/closed-market-skip-taxonomy.py --no-fetch        # no network, cached labels
