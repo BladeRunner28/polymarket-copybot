@@ -142,8 +142,13 @@ describe("cron-health-watch: the verbose line must not assert an absence it has 
     const { out } = run([failingJob()], {
       "job-a": { alerted_at: iso(2 * MIN), alerted_streak: 5, down_since: iso(60 * MIN) },
     });
-    expect(out).not.toContain("no job at or over 3 failures");
-    expect(out).toContain("1 job(s) at/over 3 failures");
+    // 2026-11-12: the script's wording moved when the bar became PER JOB (ddefd62 —
+    // a once-a-week job trips at ONE failure, so "3 failures" was itself the fixed-string
+    // lie this arm exists to catch). The test kept asserting the retired string and had
+    // been red at HEAD since; it now keys on the current sentence AND still requires the
+    // job NAME, which is the part that actually prevents a suppressed job from vanishing.
+    expect(out).not.toContain("no job at or over its failure bar");
+    expect(out).toContain("1 job(s) at/over its failure bar inside the");
     expect(out).toContain("copybot-monitor-score");
   });
 });

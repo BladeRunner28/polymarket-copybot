@@ -29,6 +29,7 @@ import { computeEdgeCostSnapshot, edgeCostLines } from "./copy-cost";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
 import { payoffSummary, payoffCompanionText, type Payoff } from "./payoff";
+import { selectionCaveatLine } from "./selection-caveat";
 import { dedupeProposalText } from "./rules";
 import * as fs from "fs";
 import { join } from "path";
@@ -506,6 +507,12 @@ export async function generateDailyReport(
     best ? `• Best trade: ${short(best.walletAddress)} ${fmt(best.realizedPnl ?? 0)} on ${best.marketId}` : `• Best trade: none resolved today`,
     `• Bot vs blind copy (matched basis: hold to resolution, flat $10 both sides): ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} per dollar staked — copied decisions ${(bench.botFilteredOutcome.roi * 100).toFixed(2)}% of ${usd(bench.botFilteredOutcome.totalCost)} (n=${bench.botFilteredOutcome.resolvedCount} reviewed copies of ${bench.botFilteredOutcome.count}; unreviewed copies are not imputed) vs blind ${(bench.blindCopy.roi * 100).toFixed(2)}% of ${usd(bench.blindCopy.totalCost)} (n=${bench.blindCopy.resolvedCount} of ${bench.blindCopy.count} signals — the reviewed ones)`,
     `• Book on its own basis (EXIT: early exits count, own stake): ${(bench.botFiltered.roi * 100).toFixed(2)}% of ${usd(bench.botFiltered.totalCost)} staked, n=${bench.botFiltered.resolvedCount} settled legs — NOT comparable to the blind arm above`,
+    // tradememory-deflated-sharpe (APPROVED 2026-10-21, Lane B): the pre-registered
+    // decision rule says p >= 0.05 => every ladder/phase claim carries the
+    // "not distinguishable from selection" caveat in the report itself. Read from
+    // the measured artifact, and say NOT MEASURED if it is missing -- a missing
+    // measurement must not read as a clean verdict.
+    selectionCaveatLine(),
     ruleChangesToday.length
       ? `• Rule changes: ${ruleChangesToday.length} — ${ruleChangesToday.map((c) => `v${c.newRuleSet.version}: ${withoutOwnVersion(oneReason(c.reason), c.newRuleSet.version)}`).join("; ")}`
       : `• Rule changes: none`,
