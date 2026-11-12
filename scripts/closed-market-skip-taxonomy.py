@@ -145,6 +145,17 @@ def resolve_pre_days_window(now, days, ship_at=None):
             "ship_at": ship_at, "anchored_at_ship": True, "valid_confirmation_window": True}
 
 
+def trigger_disagreement(closed_flag, closed_ts, when_ms):
+    """True only when the `closed` flag is silent but a readable closedTime is already past.
+
+    This is the single shape on which the proposed `m.resolved` guard and the card's literal
+    "`closed` or `closedTime <= now`" trigger can disagree (review round 3). A market with no
+    closedTime at all is an OPEN market on this venue, not a missed one — counting it would
+    inflate the "guard gap" with rows neither trigger claims.
+    """
+    return closed_flag is not True and closed_ts is not None and closed_ts.timestamp() * 1000 <= when_ms
+
+
 def fetch_market(mid):
     for attempt in range(4):
         try:
@@ -233,6 +244,17 @@ def selftest():
          and T_PD_A["requested_start"] == T_NOW - timedelta(days=7)),
         ("--ship-at older than the span keeps now-N..now and stays valid (nothing pre-ship inside)",
          T_PD_B["start"] == T_NOW - timedelta(days=7) and T_PD_B["valid_confirmation_window"] is True),
+        # trigger definition (review round 3): only a readable closedTime behind a silent flag is
+        # a gap; a null clock is an open market and must not be counted as one.
+        ("trigger gap counts a readable clock on an unflagged market, and nothing else",
+         trigger_disagreement(False, datetime(2026, 10, 15, tzinfo=timezone.utc),
+                              int(datetime(2026, 10, 16, tzinfo=timezone.utc).timestamp() * 1000)) is True
+         and trigger_disagreement(True, datetime(2026, 10, 15, tzinfo=timezone.utc),
+                                  int(datetime(2026, 10, 16, tzinfo=timezone.utc).timestamp() * 1000)) is False
+         and trigger_disagreement(False, None,
+                                  int(datetime(2026, 10, 16, tzinfo=timezone.utc).timestamp() * 1000)) is False
+         and trigger_disagreement(False, datetime(2026, 10, 17, tzinfo=timezone.utc),
+                                  int(datetime(2026, 10, 16, tzinfo=timezone.utc).timestamp() * 1000)) is False),
     ]
     bad = [n for n, ok in cases if not ok]
     if bad:
@@ -312,11 +334,34 @@ def main():
         closed_flag[mid] = mm.get("closed") is True
         closed_ts[mid] = parse_venue_clock(mm.get("closedTime"))
 
+    # Trigger-definition audit (review round 3): the proposed guard tests `m.resolved`; the card
+    # says `closed` or `closedTime <= now`. The two can only disagree on a market the `closed`
+    # flag calls open while a readable closedTime is already past — so count that shape over the
+    # whole label cache and per window, instead of asserting the substitution is empty.
+    trigger_audit = {
+        "markets": len(meta),
+        "closed_flag_true": sum(1 for v in closed_flag.values() if v),
+        "closed_time_readable": sum(1 for v in closed_ts.values() if v is not None),
+        "closed_time_key_but_null": sum(1 for mm in meta.values()
+                                        if "closedTime" in mm and mm.get("closedTime") in (None, "")),
+        "readable_clock_but_flag_false": sum(1 for mid, ct in closed_ts.items()
+                                             if ct is not None and not closed_flag.get(mid)),
+        "flag_true_without_readable_clock": sum(1 for mid, cf in closed_flag.items()
+                                                if cf and closed_ts.get(mid) is None),
+        "note": "cache carries no umaResolutionStatus (slim(): outcomes/outcomePrices/closed/"
+                "closedTime only), so this audits the `closed` half of `resolved`. A market the "
+                "venue resolved through uma alone would show up here as a readable clock with "
+                "the flag false; there are none.",
+    }
+
     def live_of(mid, ts_ms):
         if mid not in closed_flag:
             return "uncached"
         return decision_liveness(datetime.fromtimestamp(ts_ms / 1000.0, timezone.utc),
                                  closed_flag[mid], closed_ts[mid])
+
+    print("trigger audit (cache-wide): %s" % {k: v for k, v in trigger_audit.items() if k != "note"},
+          flush=True)
 
     report = {
         "card": "t_d246fc66",
@@ -328,6 +373,7 @@ def main():
         "windows": {},
         "pre_days": None,
         "fetch_scope": fetch_window,
+        "trigger_audit": trigger_audit,
     }
 
     if pre is not None:
@@ -426,9 +472,27 @@ def main():
         # `resolved`-based guard, never a count of post-close decisions.
         unk = {"rows": 0, "det_zero": 0, "det_sum": 0.0, "det_n": 0, "near_cert": 0,
                "cheap": 0, "legs": 0}
+        # Trigger-definition check, per decision (review round 3): rows the `resolved` trigger
+        # would leave alone but the card's literal `closed or closedTime <= now` would catch.
+        tchk = {"decisions": len(rows), "uncached_market": 0, "closed_flag_true": 0,
+                "closed_flag_false": 0, "flag_false_with_readable_clock": 0,
+                "flag_false_clock_le_decision": 0, "flag_false_clock_le_ingest": 0}
 
         for r in rows:
             lv = live_of(r["mid"], int(r["ts"]))
+            if r["mid"] not in closed_flag:
+                tchk["uncached_market"] += 1
+            elif closed_flag[r["mid"]]:
+                tchk["closed_flag_true"] += 1
+            else:
+                tchk["closed_flag_false"] += 1
+                ct_v = closed_ts.get(r["mid"])
+                if ct_v is not None:
+                    tchk["flag_false_with_readable_clock"] += 1
+                if trigger_disagreement(closed_flag[r["mid"]], ct_v, int(r["ts"])):
+                    tchk["flag_false_clock_le_decision"] += 1
+                if trigger_disagreement(closed_flag[r["mid"]], ct_v, int(r["ingest"])):
+                    tchk["flag_false_clock_le_ingest"] += 1
             w["liveness"][lv] += 1
             d = w["decision_mix"].setdefault(lv, Counter())
             d[r["decision"]] += 1
@@ -552,6 +616,11 @@ def main():
                                     max(1, closure_class["caught_at_intake"] + closure_class["scoring_only"]), 1),
             },
         }
+        w["trigger_check"] = {
+            **tchk,
+            "note": "rows where `m.resolved` (closed flag) is silent but the card's literal "
+                    "`closed or closedTime <= now` would fire: flag_false_clock_le_ingest",
+        }
         w["zero_ttr"] = {
             "rows": ttr_zero_rows,
             "decision_mix": dict(ttr_zero_mix),
@@ -632,6 +701,12 @@ def main():
               % (w["cohort"]["cheap_lt_0_05"], w["cohort"]["cheap_lt_0_05_live_only"],
                  nc_cheap_post, nc_cheap_zero_post))
         print("   'resolves in 0.0h' rows %d mix %s" % (ttr_zero_rows, dict(ttr_zero_mix)))
+        tc = w["trigger_check"]
+        print("   trigger check: %d decisions | closed-flag true %d, false %d (readable clock %d, "
+              "clock<=decision %d, clock<=ingest %d), uncached %d"
+              % (tc["decisions"], tc["closed_flag_true"], tc["closed_flag_false"],
+                 tc["flag_false_with_readable_clock"], tc["flag_false_clock_le_decision"],
+                 tc["flag_false_clock_le_ingest"], tc["uncached_market"]))
         print("   option coverage %s (a=intake, b=scoring)"
               % pc["option_coverage"])
         print("   intake: %d copy-eligible obs; closed at TRADE clock %d, at INGEST clock %d (%s)"
