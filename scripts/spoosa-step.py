@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import math
 import os
 import sys
@@ -36,6 +37,7 @@ _gen = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_gen)
 VESA_PROFILES = _gen.VESA_PROFILES
 INSERT_PRESETS = _gen.INSERT_PRESETS
+DEFAULT_INSERT = _gen.DEFAULT_INSERT
 
 
 def build(profile: str, inserts: int, plate_t: float, margin: float, corner_r: float,
@@ -94,17 +96,66 @@ def build(profile: str, inserts: int, plate_t: float, margin: float, corner_r: f
                       insert_pilot=ins["pilot"], insert_len=ins["length"])
 
 
+def verify() -> int:
+    """Compare each STEP's recorded parameters against the STL manifest: same part or not."""
+    man_path = os.path.join(OUT_DIR, "manifest.json")
+    idx_path = os.path.join(OUT_DIR, "step-index.json")
+    if not os.path.exists(man_path):
+        print("no manifest.json -- run spoosa-generator.py first")
+        return 1
+    parts = {p["file"]: p for p in json.load(open(man_path)).get("parts", [])}
+    index = json.load(open(idx_path)) if os.path.exists(idx_path) else {}
+
+    on_disk = sorted(f for f in os.listdir(OUT_DIR) if f.endswith(".step"))
+    stale, ok, unindexed = [], [], []
+    for step in on_disk:
+        entry = index.get(step)
+        if entry is None:
+            unindexed.append(step)
+            continue
+        stl = step[:-5] + ".stl"
+        part = parts.get(stl)
+        if part is None:
+            stale.append((step, "no matching STL in the manifest"))
+            continue
+        reasons = []
+        if abs(float(entry.get("plate_t", -1)) - float(part["plate_mm"][2])) > 0.01:
+            reasons.append(f"thickness STEP {entry.get('plate_t')} vs STL {part['plate_mm'][2]}")
+        if entry.get("insert_preset") != part.get("insert_preset"):
+            reasons.append(f"preset STEP {entry.get('insert_preset')} vs STL {part.get('insert_preset')}")
+        v_step, v_stl = float(entry.get("volume_cm3", 0)), float(part["volume_cm3"])
+        if v_stl > 0 and abs(v_step - v_stl) / v_stl > 0.01:
+            reasons.append(f"volume STEP {v_step:.1f} vs STL {v_stl:.1f} cm3")
+        (stale if reasons else ok).append((step, "; ".join(reasons)) if reasons else step)
+
+    print(f"STEP files on disk: {len(on_disk)} | consistent with the STL manifest: {len(ok)} | "
+          f"STALE: {len(stale)} | no index entry: {len(unindexed)}")
+    for s, why in stale:
+        print(f"  STALE {s}\n        {why}")
+    for u in unindexed[:6]:
+        print(f"  UNINDEXED {u} (built before the index existed; rebuild it)")
+    return 0 if not stale else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", default="100x100", choices=list(VESA_PROFILES))
     ap.add_argument("--inserts", type=int, default=4, choices=[1, 2, 4, 8])
-    ap.add_argument("--plate-t", type=float, default=9.0)
+    ap.add_argument("--plate-t", type=float, default=15.0,
+                    help="must match spoosa-generator.py's default or the STEP/STL pair describes "
+                         "two different parts (found 2026-11-12: STEP was 9 mm while STL was 15 mm)")
     ap.add_argument("--margin", type=float, default=30.0)
     ap.add_argument("--corner-r", type=float, default=8.0)
-    ap.add_argument("--insert-preset", default="1/4-20 short", choices=list(INSERT_PRESETS))
+    ap.add_argument("--insert-preset", default=DEFAULT_INSERT, choices=list(INSERT_PRESETS))
     ap.add_argument("--wall", type=float, default=3.0)
     ap.add_argument("--no-relief", action="store_true")
+    ap.add_argument("--verify", action="store_true",
+                    help="do not build: compare every STEP's recorded parameters against the STL "
+                         "manifest and report any pair that describes a different part")
     args = ap.parse_args()
+
+    if args.verify:
+        return verify()
 
     os.makedirs(OUT_DIR, exist_ok=True)
     body, meta = build(args.profile, args.inserts, args.plate_t, args.margin, args.corner_r,
@@ -117,6 +168,25 @@ def main() -> int:
     cq.exporters.export(body, stl_path)
 
     vol_cm3 = body.val().Volume() / 1000.0
+
+    # Record the parameters each STEP was built with. Two kernels can only be cross-checked if we know
+    # they were asked for the SAME part -- on 2026-11-12 the STEP set was 9 mm while the STL set was
+    # 15 mm, and nothing noticed until a volume comparison happened to look.
+    index_path = os.path.join(OUT_DIR, "step-index.json")
+    index = {}
+    if os.path.exists(index_path):
+        try:
+            with open(index_path) as fh:
+                index = json.load(fh)
+        except Exception:  # noqa: BLE001
+            index = {}
+    index[base + ".step"] = {
+        "plate_t": args.plate_t, "insert_preset": args.insert_preset,
+        "margin": args.margin, "corner_r": args.corner_r, "wall": args.wall,
+        "relief": not args.no_relief, "volume_cm3": round(vol_cm3, 2),
+    }
+    with open(index_path, "w") as fh:
+        json.dump(index, fh, indent=2, sort_keys=True)
     print(f"{base}")
     print(f"  plate {meta['plate_w']:.0f} x {meta['plate_h']:.0f} x {meta['plate_t']:.0f} mm")
     print(f"  volume {vol_cm3:.1f} cm3  ->  {vol_cm3 * 1.07:.0f} g ASA")
