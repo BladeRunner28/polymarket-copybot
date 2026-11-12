@@ -1,0 +1,141 @@
+{
+ "card": "t_4d29ae55",
+ "read_at": "2026-11-12T19:43:12.648017+00:00",
+ "fix_cut_utc": "2026-11-09T15:15:16+00:00",
+ "fix_commit": "fbf9073 price-side: price the token the leg holds, by the venue's own label",
+ "windows": {
+  "pre": {
+   "start_utc": "2026-11-02T15:15:16+00:00",
+   "end_utc": "2026-11-09T15:15:16+00:00",
+   "days": 7.0,
+   "decisions": 10873,
+   "near_certainty_rows": 2588,
+   "cheap_rows_lt_0.05": 517,
+   "rich_rows_gt_0.95": 2064,
+   "cheap_below_tick": 4,
+   "cheap_exactly_zero": 4,
+   "cheap_positions": {
+    "YES_NO": 478,
+    "SECOND_LABEL": 5,
+    "FIRST_LABEL": 34
+   },
+   "cheap_on_closed_market": 4,
+   "decisions_on_closed_market": 19,
+   "strict": {
+    "SECOND_LABEL": {
+     "sibling": 17
+    },
+    "FIRST_LABEL": {
+     "consistent": 2
+    }
+   },
+   "drift": {
+    "rows": 3644,
+    "sign_checked": 15,
+    "sign_inverted": 15,
+    "second_label_rows": 15,
+    "second_label_sign_inverted": 15
+   }
+  },
+  "pre_equal": {
+   "start_utc": "2026-11-06T10:47:19.351983+00:00",
+   "end_utc": "2026-11-09T15:15:16+00:00",
+   "days": 3.19,
+   "decisions": 7279,
+   "near_certainty_rows": 2249,
+   "cheap_rows_lt_0.05": 281,
+   "rich_rows_gt_0.95": 1961,
+   "cheap_below_tick": 2,
+   "cheap_exactly_zero": 2,
+   "cheap_positions": {
+    "YES_NO": 260,
+    "FIRST_LABEL": 20,
+    "SECOND_LABEL": 1
+   },
+   "cheap_on_closed_market": 2,
+   "decisions_on_closed_market": 2,
+   "strict": {
+    "FIRST_LABEL": {
+     "consistent": 2
+    }
+   },
+   "drift": {
+    "rows": 2422,
+    "sign_checked": 0,
+    "sign_inverted": 0,
+    "second_label_rows": 0,
+    "second_label_sign_inverted": 0
+   }
+  },
+  "post": {
+   "start_utc": "2026-11-09T15:15:16+00:00",
+   "end_utc": "2026-11-12T19:43:12.648017+00:00",
+   "days": 3.19,
+   "decisions": 5588,
+   "near_certainty_rows": 1991,
+   "cheap_rows_lt_0.05": 182,
+   "rich_rows_gt_0.95": 1801,
+   "cheap_below_tick": 10,
+   "cheap_exactly_zero": 10,
+   "cheap_positions": {
+    "YES_NO": 153,
+    "FIRST_LABEL": 12,
+    "SECOND_LABEL": 17
+   },
+   "cheap_on_closed_market": 10,
+   "decisions_on_closed_market": 103,
+   "strict": {
+    "FIRST_LABEL": {
+     "consistent": 16
+    },
+    "SECOND_LABEL": {
+     "consistent": 87
+    }
+   },
+   "drift": {
+    "rows": 1834,
+    "sign_checked": 93,
+    "sign_inverted": 0,
+    "second_label_rows": 82,
+    "second_label_sign_inverted": 0
+   }
+  },
+  "custom": {
+   "start_utc": "2026-09-29T21:36:00+00:00",
+   "end_utc": "2026-10-29T21:36:00+00:00",
+   "days": 30.0,
+   "decisions": 36655,
+   "near_certainty_rows": 1983,
+   "cheap_rows_lt_0.05": 1443,
+   "rich_rows_gt_0.95": 535,
+   "cheap_below_tick": 521,
+   "cheap_exactly_zero": 521,
+   "cheap_positions": {
+    "FIRST_LABEL": 334,
+    "YES_NO": 779,
+    "SECOND_LABEL": 232,
+    "NO_LABELS": 98
+   },
+   "cheap_on_closed_market": 524,
+   "decisions_on_closed_market": 966,
+   "strict": {
+    "SECOND_LABEL": {
+     "sibling": 359
+    },
+    "FIRST_LABEL": {
+     "consistent": 371
+    },
+    "YES_NO": {
+     "consistent": 172
+    }
+   },
+   "drift": {
+    "rows": 1470,
+    "sign_checked": 32,
+    "sign_inverted": 1,
+    "second_label_rows": 1,
+    "second_label_sign_inverted": 1
+   }
+  }
+ }
+}
