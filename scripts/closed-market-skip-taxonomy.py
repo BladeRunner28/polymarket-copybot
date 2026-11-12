@@ -129,8 +129,36 @@ def slim(mm):
     return {k: mm[k] for k in ("outcomes", "outcomePrices", "closed", "closedTime", "error") if k in mm}
 
 
+def dist(vals):
+    """n / min / max / mean for one wallet-print group (4dp, matching the artifact)."""
+    if not vals:
+        return {"n": 0, "min": None, "max": None, "mean": None}
+    return {"n": len(vals), "min": round(min(vals), 4), "max": round(max(vals), 4),
+            "mean": round(sum(vals) / len(vals), 4)}
+
+
+def wallet_print_stats(pairs):
+    """The wallet-print cell for the post-close rows: pooled AND per detected-price group.
+
+    Review round 1 (t_d246fc66) caught the draft publishing `0.34 – 0.71` for this cell:
+    0.34 is the MINIMUM OF THE det=0 GROUP, not of the population (which starts at 0.1731
+    on a det=1 row). Emissions are split by group here so that mistake cannot survive a
+    re-run, and so every published cell is re-runnable instead of hand-computed.
+    """
+    pool = [p for _, p in pairs]
+    by = {}
+    for det, p in pairs:
+        key = "0.0" if det == 0.0 else ("1.0" if det == 1.0 else "other")
+        by.setdefault(key, []).append(p)
+    out = dist(pool)
+    out["below_0_34"] = sum(1 for p in pool if p < 0.34)
+    out["by_detected_price_group"] = {k: dist(v) for k, v in sorted(by.items())}
+    return out
+
+
 def selftest():
     """The three assertions the TS self-test pins, plus the boundary case."""
+    st = wallet_print_stats([(0.0, 0.34), (0.0, 0.5225), (1.0, 0.1731), (1.0, 0.71)])
     cases = [
         ("post-close recognised",
          decision_liveness(datetime(2026, 10, 16, tzinfo=timezone.utc), True, "2026-10-15 21:00:00+00") == "post-close"),
@@ -147,6 +175,10 @@ def selftest():
         ("5-digit fraction still orders correctly",
          decision_liveness(datetime(2026, 11, 10, 19, 2, tzinfo=timezone.utc), True,
                            "2026-11-10 19:01:58.31905+00") == "post-close"),
+        ("wallet-print cell splits groups: pooled min 0.1731, det=0 min 0.34 (review round 1)",
+         st["min"] == 0.1731 and st["max"] == 0.71 and st["below_0_34"] == 1
+         and st["by_detected_price_group"]["0.0"]["min"] == 0.34
+         and st["by_detected_price_group"]["1.0"]["min"] == 0.1731),
     ]
     bad = [n for n, ok in cases if not ok]
     if bad:
@@ -264,6 +296,11 @@ def main():
         det_zero = 0
         det_sum = 0.0
         det_n = 0
+        # Wallet's own print on the post-close rows (t_d246fc66 review round 1: the
+        # draft quoted 0.34–0.71 and it did not reproduce — 0.34 was the minimum of
+        # the det=0 group only). Collected as (detectedPrice, walletEntryPrice) so the
+        # emission can be split by group; see wallet_print_stats().
+        wentry_pairs = []
         ttr_zero_rows = 0
         ttr_zero_mix = Counter()
         ttr_zero_nc = 0
@@ -369,6 +406,9 @@ def main():
                 det_sum += float(r["det"])
                 if float(r["det"]) == 0.0:
                     det_zero += 1
+            if r["wentry"] is not None:
+                wentry_pairs.append((float(r["det"]) if r["det"] is not None else None,
+                                     float(r["wentry"])))
 
         w["decision_mix"] = {k: dict(v) for k, v in w["decision_mix"].items()}
         w["post_close"] = {
@@ -381,6 +421,7 @@ def main():
             "near_certainty_preceded_by_ttr_reason": nc_after_ttr,
             "detected_price_zero": det_zero,
             "detected_price_mean": round(det_sum / det_n, 4) if det_n else None,
+            "wallet_entry_price": wallet_print_stats(wentry_pairs),
             "closed_to_decision_lag_s": {
                 "n": len(lag_secs),
                 "median": sorted(lag_secs)[len(lag_secs) // 2] if lag_secs else None,
@@ -457,6 +498,11 @@ def main():
         print("   post-close lag after closedTime: %s median %ss | first risk: %s"
               % (pc["closed_to_decision_lag_s"]["buckets"], pc["closed_to_decision_lag_s"]["median"],
                  list(pc["first_risk"].items())[:2]))
+        wep = pc["wallet_entry_price"]
+        print("   wallet print on those rows: n=%d range %s – %s mean %s (below 0.34: %d) | by det %s"
+              % (wep["n"], wep["min"], wep["max"], wep["mean"], wep["below_0_34"],
+                 {k: (v["n"], v["min"], v["max"], v["mean"])
+                  for k, v in wep["by_detected_price_group"].items()}))
         print("   post-close by day %s | top markets %s"
               % (pc["by_day"], list(pc["top_markets"].items())[:3]))
         print("   unknown-clock rows %d (cheap %d, det=0 %d, legs %d) -> resolved-guard upper bound %d"

@@ -1,7 +1,7 @@
 {
  "card": "t_d246fc66",
  "lane": "A proposal \u2014 read-only, no rule/gate/size/exit touched",
- "read_at": "2026-11-12T19:57:40.787417+00:00",
+ "read_at": "2026-11-12T20:03:33.885305+00:00",
  "db": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
  "classifier": "decisionLiveness() semantics (src/lib/nearcertainty-tail.ts)",
  "selftest": [
@@ -11,7 +11,8 @@
   "decided exactly at closedTime is post-close (>=)",
   "one second before closedTime is live",
   "5-digit fractional second parses (Date.parse does; fromisoformat does not)",
-  "5-digit fraction still orders correctly"
+  "5-digit fraction still orders correctly",
+  "wallet-print cell splits groups: pooled min 0.1731, det=0 min 0.34 (review round 1)"
  ],
  "windows": {
   "post": {
@@ -52,6 +53,27 @@
     "near_certainty_preceded_by_ttr_reason": 52,
     "detected_price_zero": 10,
     "detected_price_mean": 0.9029,
+    "wallet_entry_price": {
+     "n": 103,
+     "min": 0.1731,
+     "max": 0.71,
+     "mean": 0.4793,
+     "below_0_34": 21,
+     "by_detected_price_group": {
+      "0.0": {
+       "n": 10,
+       "min": 0.34,
+       "max": 0.5225,
+       "mean": 0.4272
+      },
+      "1.0": {
+       "n": 93,
+       "min": 0.1731,
+       "max": 0.71,
+       "mean": 0.4849
+      }
+     }
+    },
     "closed_to_decision_lag_s": {
      "n": 103,
      "median": 57422.92228603363,
@@ -131,17 +153,17 @@
   },
   "post_now": {
    "start_utc": "2026-11-09T15:15:16+00:00",
-   "end_utc": "2026-11-12T19:57:40.787417+00:00",
+   "end_utc": "2026-11-12T20:03:33.885305+00:00",
    "days": 3.2,
-   "decisions": 5608,
+   "decisions": 5611,
    "liveness": {
-    "live": 5497,
+    "live": 5499,
     "post-close": 103,
-    "uncached": 8
+    "uncached": 9
    },
    "decision_mix": {
     "live": {
-     "skip": 4836,
+     "skip": 4838,
      "paper_copy": 99,
      "watchlist": 562
     },
@@ -150,7 +172,7 @@
     },
     "uncached": {
      "watchlist": 4,
-     "skip": 4
+     "skip": 5
     }
    },
    "legs_booked_on_post_close": 0,
@@ -167,6 +189,27 @@
     "near_certainty_preceded_by_ttr_reason": 52,
     "detected_price_zero": 10,
     "detected_price_mean": 0.9029,
+    "wallet_entry_price": {
+     "n": 103,
+     "min": 0.1731,
+     "max": 0.71,
+     "mean": 0.4793,
+     "below_0_34": 21,
+     "by_detected_price_group": {
+      "0.0": {
+       "n": 10,
+       "min": 0.34,
+       "max": 0.5225,
+       "mean": 0.4272
+      },
+      "1.0": {
+       "n": 93,
+       "min": 0.1731,
+       "max": 0.71,
+       "mean": 0.4849
+      }
+     }
+    },
     "closed_to_decision_lag_s": {
      "n": 103,
      "median": 57422.92228603363,
@@ -220,28 +263,28 @@
     "live_rows": 922
    },
    "cohort": {
-    "near_certainty_rows_all": 1991,
-    "near_certainty_rows_all_live_only": 1888,
+    "near_certainty_rows_all": 1992,
+    "near_certainty_rows_all_live_only": 1889,
     "cheap_lt_0_05": 182,
     "cheap_lt_0_05_live_only": 172,
     "cheap_lt_0_05_post_close": 10,
     "cheap_lt_0_05_post_close_exactly_zero": 10
    },
    "intake": {
-    "copy_eligible_observations": 5604,
+    "copy_eligible_observations": 5607,
     "liveness_at_trade_clock": {
-     "live": 5596,
-     "uncached": 8
+     "live": 5598,
+     "uncached": 9
     },
     "liveness_at_ingest_clock": {
-     "live": 5493,
+     "live": 5495,
      "post-close": 103,
-     "uncached": 8
+     "uncached": 9
     },
     "closed_at_ingest_pct": 1.84,
     "unscored_observations": 0,
     "unscored_liveness_at_ingest": {},
-    "uncached_market_rows": 8
+    "uncached_market_rows": 9
    }
   },
   "pre_equal": {
@@ -277,6 +320,21 @@
     "near_certainty_preceded_by_ttr_reason": 1,
     "detected_price_zero": 2,
     "detected_price_mean": 0.0,
+    "wallet_entry_price": {
+     "n": 2,
+     "min": 0.2342,
+     "max": 0.35,
+     "mean": 0.2921,
+     "below_0_34": 1,
+     "by_detected_price_group": {
+      "0.0": {
+       "n": 2,
+       "min": 0.2342,
+       "max": 0.35,
+       "mean": 0.2921
+      }
+     }
+    },
     "closed_to_decision_lag_s": {
      "n": 2,
      "median": 6618.602206945419,
@@ -386,6 +444,33 @@
     "near_certainty_preceded_by_ttr_reason": 820,
     "detected_price_zero": 479,
     "detected_price_mean": 0.4176,
+    "wallet_entry_price": {
+     "n": 983,
+     "min": 0.01,
+     "max": 0.9362,
+     "mean": 0.4683,
+     "below_0_34": 149,
+     "by_detected_price_group": {
+      "0.0": {
+       "n": 479,
+       "min": 0.01,
+       "max": 0.9362,
+       "mean": 0.4948
+      },
+      "1.0": {
+       "n": 355,
+       "min": 0.035,
+       "max": 0.84,
+       "mean": 0.4677
+      },
+      "other": {
+       "n": 149,
+       "min": 0.13,
+       "max": 0.78,
+       "mean": 0.3843
+      }
+     }
+    },
     "closed_to_decision_lag_s": {
      "n": 983,
      "median": 24456.694000005722,

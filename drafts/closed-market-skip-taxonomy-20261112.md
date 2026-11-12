@@ -1,8 +1,10 @@
 # A closed market is not a candidate — the 2% post-close decisions are data-api prints that arrive after settlement
 
 Card `t_d246fc66` · **Lane A proposal — nothing shipped, no rule/gate/size/exit touched** · read
-2026-11-12T19:5xZ · instrument `scripts/closed-market-skip-taxonomy.py` (read-only, `mode=ro`) →
-`data/closed-market-skip-taxonomy.json` · upstream: `drafts/nearcert-mark-guard-after-20261112.md`
+2026-11-12T19:52Z, rev 2 2026-11-12T20:03Z (review round 1: the wallet-print cell is now
+instrument-emitted and the (a) sketch is price-only) · instrument `scripts/closed-market-skip-taxonomy.py`
+(read-only, `mode=ro`) → `data/closed-market-skip-taxonomy.json` · upstream:
+`drafts/nearcert-mark-guard-after-20261112.md`
 
 ## The decision in one line
 
@@ -50,13 +52,25 @@ post-close rows (`decisionLiveness()`), so that one reader is not fooled while a
 `risksJson` is. **The real defect is narrower and cleaner than the card states: an observation that is
 not a candidate is being scored, and a settlement price is being stored as a detection price.**
 
+Scope of the 103/103: it is the **post-fix window only**. Over the 30 d the first-risk histogram is
+not 983 × liquidity — it is 915 `liquidity…`, 59 `observation-only: wallet outside the current top-N
+copy set`, 8 `price drifted … > max`, 1 `spread … > max` (the 30 d rows include wallet-filtered
+observations that were never candidates anyway). Don't generalise the post-fix cell to the wider
+window.
+
 | what is actually wrong | rows (post-fix) |
 |---|---|
 | decisions stamped on a market already closed | 103 |
 | rows storing a **settled 0/1** as `detectedPrice` | 103 (10 × `0.000`, 93 × `1.000`) |
-| wallet's own fill on those same rows | 0.34 – 0.71 (avg 0.427 on the zeros, 0.485 on the ones) |
+| wallet's own fill on those same rows | **0.1731 – 0.71**, mean 0.4793; 21 of 103 below 0.34 (group min 0.34 on the `det=0` rows, 0.1731 on the `det=1` rows) |
 | `paper_copy` / `watchlist` among them, legs booked | 0 / 0 — **admissions 0 → 0 confirmed** |
 | sub-0.05 near-certainty rows that are settled prices | 10 of 182 |
+
+The wallet-fill cell is emitted by the instrument (`post_close.wallet_entry_price` in
+`data/closed-market-skip-taxonomy.json`: `{n, min, max, mean, below_0_34,
+by_detected_price_group}`), not hand-computed. Round 1 of review caught the first draft quoting
+`0.34 – 0.71` here: 0.34 is the minimum of the `det=0` group alone, and the real range starts at
+0.1731 on a `det=1` row.
 
 ## 3. The mechanism is not scoring lag — it is the feed
 
@@ -107,7 +121,7 @@ are exactly the days with the worst decision lag (158 / 243 / 195 / 69 min avg, 
    never be copied"*. Marking a print that arrived after settlement `observationOnly` restores the
    invariant the file already documents, instead of inventing a second one.
 2. **Only intake can keep a truthful price.** `detectedPrice` is written by the monitor's fetch. Under
-   (a) it stays the wallet's print (0.34–0.71). Under (b) the stored value is already the settled
+   (a) it stays the wallet's print (0.1731–0.71). Under (b) the stored value is already the settled
    0/1 before the scorer ever sees the row, and the decision only changes the *string*.
 3. **It never touches the scoring path.** `score-trades.ts` carries every gate and every journal
    write; a branch there is the most expensive line in the repo to get wrong. Admissions are 0 either
@@ -123,22 +137,48 @@ That is 0.37 % of decisions (13.9 % of a 2.7 % class). **Pre-registered backstop
 ## Implementation sketch (for the yes — not applied)
 
 `scripts/monitor-trades.ts`, inside the existing fetch block (`!w.observationOnly && !isBlankMarket`),
-before the snapshot write:
+at the detected-price assignment only:
 
 ```
-const m = await adapter.fetchMarket(t.marketId);
+ const m = await adapter.fetchMarket(t.marketId);
 + // t_d246fc66 (Lane A, approved): a print that arrives after the venue closed the market is not a
-+ // candidate — the payload's quotes are settlement values, not a book. Same shape as
-+ // isBlankMarket: keep the row, stamp it inert, count it, never price it. Can only REMOVE
-+ // admissions, so it cannot trip the ordering hazard that comment above documents.
++ // candidate — the payload's quotes are settlement values, not a book. Same shape as isBlankMarket:
++ // keep the row, stamp it inert, count it, never price it. Can only REMOVE admissions, so it cannot
++ // trip the ordering hazard the comment above documents.
 + if (m.resolved === true) marketClosed = true;
-+ if (!marketClosed) { detectedPrice = priceForOutcome(m, t.outcome) ?? detectedPrice; /* snapshot */ }
+ // price-side-inversion (2026-11-09, user-approved): ...
+- const p = priceForOutcome(m, t.outcome);
+- if (p !== undefined) detectedPrice = p;
++ // t_d246fc66: PRICE-ONLY guard. The MarketSnapshot write below stays unconditional for these
++ // rows (see "Blast radius"): it is a shared table and suppressing it is a separate decision.
++ if (!marketClosed) {
++   const p = priceForOutcome(m, t.outcome);
++   if (p !== undefined) detectedPrice = p;
++ }
+ await prisma.marketSnapshot.create({ ... });   // unchanged, all copy-eligible fills
 ```
 
 and at the write: `observationOnly: w.observationOnly || isBlankMarket || marketClosed`,
 `detectedPrice: marketClosed ? t.price : detectedPrice`, plus `closedMarket++` and a
-`[CLOSED-MARKET] N row(s) stored observationOnly — market already resolved at ingest` line next to
-`[BLANK-MARKET]`, so the event is counted, not silent.
+`[CLOSED-MARKET] N row(s) stored observationOnly — market already resolved at ingest (price-only:
+MarketSnapshot kept)` line next to `[BLANK-MARKET]`, so the event is counted, not silent — and so the
+next reader can tell this guard from a blank-market one by what it says it touched.
+
+**Blast radius, stated rather than implied (review round 1).** The guard changes exactly one column
+on `ObservedTrade`: `detectedPrice` falls back to the wallet's own print. It does **not** touch:
+
+* **`MarketSnapshot`** — the write stays where it is and still fires once per copy-eligible fill,
+  including the closed-market ones (≈103 / 3.19 d, one per fill, no extra fetch). Wrapping it in
+  `if (!marketClosed)` was in the first draft of this sketch and is *wrong*: that table is read by
+  production code that takes the **latest** snapshot per market — `open-mtm-horizon.ts:437` (the
+  unrealised-PnL horizon the daily report quotes) and `rule-updater.ts:53` (latest snapshot per
+  resolved sample), plus the hygiene rank reads (`scripts/market-hygiene-rank-read.ts`). Suppressing
+  a fill's snapshot changes which row is "latest" for that market, i.e. it is a silent, unmeasured
+  change to a shared table in a card about the journal's wording.
+* **the fetch** — `adapter.fetchMarket()` already happens on every copy-eligible fill before the
+  guard can run, so there is no cost saving and no new request.
+* **the journal decision** — the row is `observationOnly`, so `score-trades.ts` never sees it; the
+  "admissions change: 0" claim is unchanged either way.
 
 Guard on **`m.resolved`** (the adapter already derives it: `closed === true || umaResolutionStatus ===
 "resolved"`), **not** on `ttr === 0`. The zero-TTR population is not the closed population: 955
@@ -172,8 +212,11 @@ Run `python3 scripts/closed-market-skip-taxonomy.py --pre-days 7` seven days aft
 `data/nearcert-market-meta.json` and fetches only markets missing from it. Liveness is the same
 three-state rule as `decisionLiveness()` in `src/lib/nearcertainty-tail.ts` (`closed !== true` → live;
 closed with no readable clock → unknown, never coerced to live; else compare against `closedTime`),
-pinned by seven self-test lines — including the five-digit-fraction case that broke both this read and
-the upstream one.
+pinned by eight self-test lines — including the five-digit-fraction case that broke both this read and
+the upstream one, and the wallet-print cell's pooled-vs-per-group minimum that review round 1 broke.
+The wallet-print cell (§2) is `post_close.wallet_entry_price` = `{n, min, max, mean, below_0_34,
+by_detected_price_group{0.0,1.0,other}}`, computed by `wallet_print_stats()` in the instrument — so
+that cell is re-runnable like every other figure in this write-up.
 
 ```
 python3 scripts/closed-market-skip-taxonomy.py --no-fetch        # no network, cached labels
