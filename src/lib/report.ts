@@ -468,6 +468,11 @@ export async function generateDailyReport(
         : "Watch for missed winners — filters may be too strict";
 
   const fmt = (n: number) => `${n >= 0 ? "+" : ""}$${n.toFixed(2)}`;
+  // A value printed AFTER a literal "−" must not carry its own sign: `fmt(-24.4)` there read
+  // "day +$93.22 − $-24.40" (2026-11-11 report), a double negative in an arithmetic line the
+  // reader is invited to check. Parenthesise, don't strip, so the sign of the subtracted term
+  // stays visible: "− (−$24.40)".
+  const fmtSub = (n: number) => (n < 0 ? `(−$${Math.abs(n).toFixed(2)})` : fmt(n));
   // A stake is not a signed number: `fmt` would print "$121,712.42 staked" as "+$121712.42 staked".
   const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -483,7 +488,7 @@ export async function generateDailyReport(
     `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)}`,
     winRateLine(stdPayoff, standardOpen.length),
     sizingRangeLine("STANDARD", sizingRanges),
-    `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmt(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
+    `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmtSub(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
     largestStack && largestStackShare > 0.5
       ? `• ⚠️ Largest single stack ${fmt(largestStack[1])} = ${(largestStackShare * 100).toFixed(0)}% of the day's STANDARD PnL (${largestStack[0].split("|")[1]}) — do not read it as edge`
       : undefined,
