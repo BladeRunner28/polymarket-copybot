@@ -1,0 +1,3601 @@
+{
+ "generated_at": "2026-11-12T20:09:38Z",
+ "wallet": "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+ "label": "luciebot",
+ "flood_cut": "2026-11-06T15:40:10Z",
+ "seat": {
+  "stored": {
+   "sourceRank": 304,
+   "status": "track",
+   "roi30d": 1.633293296381017,
+   "consistencyScore": 70.9,
+   "copyabilityScore": 80.2,
+   "oneHitWonderPenalty": 0.0,
+   "globalScore": 83.9,
+   "winRate30d": 0.684931506849315,
+   "tradeCount30d": 673,
+   "resolvedTradeCount30d": 73,
+   "averageTradeSize": 201.0066340128323,
+   "bestCategory": "politics"
+  },
+  "created_at": "2026-10-05T03:00:28Z",
+  "last_scanned_at": "2026-11-11T18:43:01Z",
+  "seat_rank_in_copy_set": 24,
+  "copy_set_size": 25,
+  "margin_to_last_seat": 83.4,
+  "recomputed_globalScore": 83.9,
+  "roi_score_component": 100.0,
+  "roi_score_saturated": true,
+  "tail_sample": {
+   "rows": 100,
+   "open_rows_sampled": 100,
+   "cost": 32921.14,
+   "pnl": 54249.39,
+   "roi": 1.6478590054029778,
+   "win_rate": 0.5
+  },
+  "full_record": {
+   "positions": 31991,
+   "cost": 433960.73,
+   "pnl": 76051.87,
+   "roi": 0.17525058635073282,
+   "win_rate": 0.19264793223093996
+  },
+  "observed_trades_first": "2026-10-04T03:37:44Z",
+  "first_journaled_decision": "2026-11-06T15:40:10Z",
+  "first_copy_eligible_observation": "2026-11-06T10:48:48Z",
+  "observations_before_first_journal": 20969,
+  "copy_eligible_observations_before_first_journal": 248,
+  "days_observed_before_first_journal": 33.50168981481482
+ },
+ "decision_stream": {
+  "rows": 6641,
+  "flood_rows": 6641,
+  "near_cert_rows": 4073,
+  "near_cert_sole_blocker_rows": 1104,
+  "decision_mix": {
+   "skip": 6559,
+   "paper_copy": 58,
+   "watchlist": 24
+  },
+  "outcome_mix": {
+   "NO": 6641
+  },
+  "distinct_markets": 3159,
+  "distinct_keys": 3159,
+  "rows_per_key": {
+   "max": 24,
+   "mean": 2.102247546691991,
+   "keys_observed_more_than_once": 1381,
+   "share_of_rows_that_are_repeat_observations": 0.5243186267128445
+  },
+  "repeat_key_gap_seconds": {
+   "median": 1317.906,
+   "p10": 0.118,
+   "p90": 67340.367,
+   "n": 3482
+  },
+  "marks_all": {
+   ">=0.95": 3682,
+   "<=0.05": 416,
+   "0.80-0.95": 762,
+   "0.05-0.20": 397,
+   "0.40-0.60": 533,
+   "0.20-0.40": 336,
+   "0.60-0.80": 515
+  },
+  "marks_near_cert": {
+   ">=0.95": 3644,
+   "<=0.05": 409,
+   "0.80-0.95": 14,
+   "0.05-0.20": 5,
+   "0.40-0.60": 1
+  },
+  "per_day": {
+   "2026-11-06": {
+    "decisions": 669,
+    "markets": 407,
+    "keys": 407,
+    "near": 475,
+    "copies": 5
+   },
+   "2026-11-07": {
+    "decisions": 1151,
+    "markets": 626,
+    "keys": 626,
+    "near": 695,
+    "copies": 12
+   },
+   "2026-11-08": {
+    "decisions": 1149,
+    "markets": 648,
+    "keys": 648,
+    "near": 696,
+    "copies": 9
+   },
+   "2026-11-09": {
+    "decisions": 1015,
+    "markets": 598,
+    "keys": 598,
+    "near": 651,
+    "copies": 6
+   },
+   "2026-11-10": {
+    "decisions": 1104,
+    "markets": 560,
+    "keys": 560,
+    "near": 647,
+    "copies": 14
+   },
+   "2026-11-11": {
+    "decisions": 1003,
+    "markets": 492,
+    "keys": 492,
+    "near": 592,
+    "copies": 12
+   },
+   "2026-11-12": {
+    "decisions": 550,
+    "markets": 340,
+    "keys": 340,
+    "near": 317,
+    "copies": 0
+   }
+  },
+  "decisions_per_market_per_day": [
+   1.6176470588235294,
+   1.6437346437346438,
+   1.6973244147157192,
+   1.7731481481481481,
+   1.8386581469648562,
+   1.9714285714285715,
+   2.0386178861788617
+  ]
+ },
+ "quality": {
+  "flood_window_at_detected": {
+   "n_legs": 1899,
+   "n_clusters": 1899,
+   "cost": 34375.94,
+   "pnl": -41.37,
+   "roi": -0.0012035023464706982,
+   "roi_ci": [
+    -0.020687010974937567,
+    0.01540091887792948
+   ],
+   "win_rate": 0.794102159031069,
+   "cost_top10_share": 0.08750312428621512,
+   "pnl_top10_share": -6.539292949746899,
+   "legs_cost_ge_10usd": 832,
+   "by_entry_band": {
+    "0.00-0.05": {
+     "legs": 117,
+     "cost": 1.65,
+     "pnl": 3.4,
+     "roi": 2.0639345694626656,
+     "win_rate": 0.017094017094017096
+    },
+    "0.05-0.20": {
+     "legs": 81,
+     "cost": 26.48,
+     "pnl": 1.64,
+     "roi": 0.06209914886502093,
+     "win_rate": 0.08641975308641975
+    },
+    "0.20-0.40": {
+     "legs": 86,
+     "cost": 215.36,
+     "pnl": -46.36,
+     "roi": -0.21525812206596695,
+     "win_rate": 0.22093023255813954
+    },
+    "0.40-0.60": {
+     "legs": 163,
+     "cost": 703.37,
+     "pnl": 22.71,
+     "roi": 0.03228672117479209,
+     "win_rate": 0.5276073619631901
+    },
+    "0.60-0.80": {
+     "legs": 135,
+     "cost": 1438.33,
+     "pnl": -157.37,
+     "roi": -0.10941021066145043,
+     "win_rate": 0.725925925925926
+    },
+    "0.80-0.95": {
+     "legs": 235,
+     "cost": 4532.39,
+     "pnl": 332.49,
+     "roi": 0.07335841826323956,
+     "win_rate": 0.9531914893617022
+    },
+    "0.95-1.01": {
+     "legs": 1082,
+     "cost": 27458.37,
+     "pnl": -197.89,
+     "roi": -0.007206826701473947,
+     "win_rate": 0.9907578558225508
+    }
+   },
+   "label": "flood rows, copier entry = detected mid",
+   "rows": 6641,
+   "rows_priceable": 4324,
+   "rows_unpriceable": 2317,
+   "price_field": "detectedPrice"
+  },
+  "flood_window_at_wallet": {
+   "n_legs": 1899,
+   "n_clusters": 1899,
+   "cost": 34847.69,
+   "pnl": -513.12,
+   "roi": -0.014724679248521645,
+   "roi_ci": [
+    -0.034339391815944954,
+    0.0017587291700850234
+   ],
+   "win_rate": 0.794102159031069,
+   "cost_top10_share": 0.08635236931899527,
+   "pnl_top10_share": -0.533184148388497,
+   "legs_cost_ge_10usd": 848,
+   "by_entry_band": {
+    "0.00-0.05": {
+     "legs": 141,
+     "cost": 1.73,
+     "pnl": 3.41,
+     "roi": 1.973650697478651,
+     "win_rate": 0.02127659574468085
+    },
+    "0.05-0.20": {
+     "legs": 99,
+     "cost": 33.32,
+     "pnl": 13.9,
+     "roi": 0.4173424929771866,
+     "win_rate": 0.16161616161616163
+    },
+    "0.20-0.40": {
+     "legs": 76,
+     "cost": 206.82,
+     "pnl": -18.21,
+     "roi": -0.08805509117031868,
+     "win_rate": 0.3684210526315789
+    },
+    "0.40-0.60": {
+     "legs": 92,
+     "cost": 543.67,
+     "pnl": -119.37,
+     "roi": -0.2195713453251305,
+     "win_rate": 0.42391304347826086
+    },
+    "0.60-0.80": {
+     "legs": 115,
+     "cost": 1339.59,
+     "pnl": -171.18,
+     "roi": -0.12778544684521156,
+     "win_rate": 0.6695652173913044
+    },
+    "0.80-0.95": {
+     "legs": 175,
+     "cost": 3222.87,
+     "pnl": 33.08,
+     "roi": 0.010264009602522727,
+     "win_rate": 0.8914285714285715
+    },
+    "0.95-1.01": {
+     "legs": 1201,
+     "cost": 29499.69,
+     "pnl": -254.75,
+     "roi": -0.008635850098507605,
+     "win_rate": 0.9900083263946711
+    }
+   },
+   "label": "flood rows, entry = wallet's own price",
+   "rows": 6641,
+   "rows_priceable": 4324,
+   "rows_unpriceable": 2317,
+   "price_field": "walletEntryPrice"
+  },
+  "near_cert_at_detected": {
+   "n_legs": 1367,
+   "n_clusters": 1367,
+   "cost": 28506.21,
+   "pnl": -205.5,
+   "roi": -0.0072089477367468955,
+   "roi_ci": [
+    -0.02596425339708156,
+    0.006359768424278525
+   ],
+   "win_rate": 0.8463789319678128,
+   "cost_top10_share": 0.10227939671774541,
+   "pnl_top10_share": -0.2386174634285476,
+   "legs_cost_ge_10usd": 678,
+   "by_entry_band": {
+    "0.00-0.05": {
+     "legs": 192,
+     "cost": 3.61,
+     "pnl": 1.43,
+     "roi": 0.3974461644241641,
+     "win_rate": 0.010416666666666666
+    },
+    "0.05-0.20": {
+     "legs": 9,
+     "cost": 0.42,
+     "pnl": -0.42,
+     "roi": -1.0,
+     "win_rate": 0.0
+    },
+    "0.40-0.60": {
+     "legs": 1,
+     "cost": 9.99,
+     "pnl": 9.99,
+     "roi": 1.0,
+     "win_rate": 1.0
+    },
+    "0.80-0.95": {
+     "legs": 5,
+     "cost": 62.04,
+     "pnl": -6.06,
+     "roi": -0.0976773178223785,
+     "win_rate": 0.8
+    },
+    "0.95-1.01": {
+     "legs": 1160,
+     "cost": 28430.16,
+     "pnl": -210.45,
+     "roi": -0.007402331495146657,
+     "win_rate": 0.9913793103448276
+    }
+   },
+   "label": "near-certainty rows, copier entry = detected mid",
+   "rows": 4073,
+   "rows_priceable": 2605,
+   "rows_unpriceable": 1468,
+   "price_field": "detectedPrice"
+  },
+  "near_cert_sole_blocker_at_detected": {
+   "n_legs": 486,
+   "n_clusters": 486,
+   "cost": 11104.7,
+   "pnl": -128.2,
+   "roi": -0.011544304348684357,
+   "roi_ci": [
+    -0.047891279915251925,
+    0.007146999740763282
+   ],
+   "win_rate": 0.934156378600823,
+   "cost_top10_share": 0.20029124752052813,
+   "pnl_top10_share": -0.209565057060035,
+   "legs_cost_ge_10usd": 262,
+   "by_entry_band": {
+    "0.00-0.05": {
+     "legs": 28,
+     "cost": 0.48,
+     "pnl": -0.48,
+     "roi": -1.0,
+     "win_rate": 0.0
+    },
+    "0.95-1.01": {
+     "legs": 458,
+     "cost": 11104.23,
+     "pnl": -127.72,
+     "roi": -0.011502015809327507,
+     "win_rate": 0.9912663755458515
+    }
+   },
+   "label": "near-certainty rows where the clause is the ONLY blocker",
+   "rows": 1104,
+   "rows_priceable": 937,
+   "rows_unpriceable": 167,
+   "price_field": "detectedPrice"
+  },
+  "all_rows_at_detected": {
+   "n_legs": 1899,
+   "n_clusters": 1899,
+   "cost": 34375.94,
+   "pnl": -41.37,
+   "roi": -0.0012035023464706982,
+   "roi_ci": [
+    -0.020687010974937567,
+    0.01540091887792948
+   ],
+   "win_rate": 0.794102159031069,
+   "cost_top10_share": 0.08750312428621512,
+   "pnl_top10_share": -6.539292949746899,
+   "legs_cost_ge_10usd": 832,
+   "by_entry_band": {
+    "0.00-0.05": {
+     "legs": 117,
+     "cost": 1.65,
+     "pnl": 3.4,
+     "roi": 2.0639345694626656,
+     "win_rate": 0.017094017094017096
+    },
+    "0.05-0.20": {
+     "legs": 81,
+     "cost": 26.48,
+     "pnl": 1.64,
+     "roi": 0.06209914886502093,
+     "win_rate": 0.08641975308641975
+    },
+    "0.20-0.40": {
+     "legs": 86,
+     "cost": 215.36,
+     "pnl": -46.36,
+     "roi": -0.21525812206596695,
+     "win_rate": 0.22093023255813954
+    },
+    "0.40-0.60": {
+     "legs": 163,
+     "cost": 703.37,
+     "pnl": 22.71,
+     "roi": 0.03228672117479209,
+     "win_rate": 0.5276073619631901
+    },
+    "0.60-0.80": {
+     "legs": 135,
+     "cost": 1438.33,
+     "pnl": -157.37,
+     "roi": -0.10941021066145043,
+     "win_rate": 0.725925925925926
+    },
+    "0.80-0.95": {
+     "legs": 235,
+     "cost": 4532.39,
+     "pnl": 332.49,
+     "roi": 0.07335841826323956,
+     "win_rate": 0.9531914893617022
+    },
+    "0.95-1.01": {
+     "legs": 1082,
+     "cost": 27458.37,
+     "pnl": -197.89,
+     "roi": -0.007206826701473947,
+     "win_rate": 0.9907578558225508
+    }
+   },
+   "label": "all of this wallet's journaled rows",
+   "rows": 6641,
+   "rows_priceable": 4324,
+   "rows_unpriceable": 2317,
+   "price_field": "detectedPrice"
+  }
+ },
+ "venue_subject": {
+  "all": {
+   "n": 31991,
+   "cost": 433960.73,
+   "pnl": 76051.87,
+   "roi": 0.17525058635073282,
+   "roi_ci": [
+    0.12132086856421144,
+    0.24272231753477722
+   ],
+   "win_rate": 0.19264793223093996
+  },
+  "by_entry_band": {
+   "0.00-0.05": {
+    "n": 8389,
+    "cost": 9947.13,
+    "pnl": 98036.83,
+    "roi": 9.855785423749781,
+    "roi_ci": [
+     7.685583070473831,
+     12.561831169396267
+    ],
+    "win_rate": 0.2981285016092502
+   },
+   "0.05-0.20": {
+    "n": 11118,
+    "cost": 35817.88,
+    "pnl": -17249.19,
+    "roi": -0.4815803345850202,
+    "roi_ci": [
+     -0.5472989084966786,
+     -0.4059683618123977
+    ],
+    "win_rate": 0.1090124123043713
+   },
+   "0.20-0.40": {
+    "n": 611,
+    "cost": 7412.04,
+    "pnl": 7150.25,
+    "roi": 0.964680239498635,
+    "roi_ci": [
+     0.11769066577214474,
+     1.5760414589566962
+    ],
+    "win_rate": 0.6448445171849427
+   },
+   "0.40-0.60": {
+    "n": 468,
+    "cost": 3199.36,
+    "pnl": 2288.11,
+    "roi": 0.7151768771214191,
+    "roi_ci": [
+     0.6479340785656369,
+     0.8007690092557597
+    ],
+    "win_rate": 0.9401709401709402
+   },
+   "0.60-0.80": {
+    "n": 595,
+    "cost": 12358.98,
+    "pnl": 3711.28,
+    "roi": 0.30029021151280977,
+    "roi_ci": [
+     0.267866467198526,
+     0.32566124907788213
+    ],
+    "win_rate": 0.9378151260504202
+   },
+   "0.80-0.95": {
+    "n": 1208,
+    "cost": 29397.26,
+    "pnl": 1613.38,
+    "roi": 0.05488187656388344,
+    "roi_ci": [
+     0.029863659398670802,
+     0.07279595622970081
+    ],
+    "win_rate": 0.5769867549668874
+   },
+   "0.95-1.01": {
+    "n": 9602,
+    "cost": 335828.07,
+    "pnl": -19498.79,
+    "roi": -0.058061820707051466,
+    "roi_ci": [
+     -0.07198419798400335,
+     -0.04120572145153337
+    ],
+    "win_rate": 0.03759633409706311
+   }
+  },
+  "vintage": {
+   "first_entry_before_flood": {
+    "n": 26077,
+    "cost": 382188.42,
+    "pnl": 74579.51,
+    "roi": 0.1951380583555378,
+    "roi_ci": [
+     0.131771967846292,
+     0.2752449219136686
+    ],
+    "win_rate": 0.1981056103079342
+   },
+   "first_entry_after_flood": {
+    "n": 5914,
+    "cost": 51772.31,
+    "pnl": 1472.37,
+    "roi": 0.02843925217507771,
+    "roi_ci": [
+     -0.006506358870075254,
+     0.06516937089811181
+    ],
+    "win_rate": 0.1685830233344606
+   }
+  }
+ },
+ "venue_tracked": {
+  "n_wallets_walked": 24,
+  "roi_min": 0.5364836896906591,
+  "roi_median": 0.91886901579837,
+  "roi_max": 8.578737127489779,
+  "wallet_roi_rank_worst_first": 1,
+  "wallet_n_positions_vs_median": 515.983870967742,
+  "rows": [
+   {
+    "address": "0x95581a6f5045bc6c7cd8acc017df188b05a1fd3f",
+    "globalScore": 85.4,
+    "n_positions": 8,
+    "cost": 324454.3,
+    "pnl": 174064.44,
+    "roi": 0.5364836896906591,
+    "win_rate": 1.0,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0x167d74fc517d5f7ce4c594e77c6117bbc588e531",
+    "globalScore": 85.7,
+    "n_positions": 10,
+    "cost": 140714.56,
+    "pnl": 79498.06,
+    "roi": 0.5649597312460061,
+    "win_rate": 0.6,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0xcfad110bc7b48b49bcb8c536a953f1b3c1c2fa05",
+    "globalScore": 86.8,
+    "n_positions": 1286,
+    "cost": 423944.08,
+    "pnl": 281579.07,
+    "roi": 0.6641891779689434,
+    "win_rate": 0.8888024883359253,
+    "walk": "done",
+    "pages": 26
+   },
+   {
+    "address": "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+    "globalScore": 84.6,
+    "n_positions": 3763,
+    "cost": 1552557.29,
+    "pnl": 1035700.96,
+    "roi": 0.6670935537586506,
+    "win_rate": 0.924794047302684,
+    "walk": "done",
+    "pages": 76
+   },
+   {
+    "address": "0x9c56304c8840621ef4c1e707b4c7d708d09878d1",
+    "globalScore": 90.2,
+    "n_positions": 62,
+    "cost": 780387.65,
+    "pnl": 540193.52,
+    "roi": 0.6922117744943811,
+    "win_rate": 0.967741935483871,
+    "walk": "done",
+    "pages": 2
+   },
+   {
+    "address": "0x2cff41636fe21fad120fed603d54d4fdd96259db",
+    "globalScore": 85.8,
+    "n_positions": 15,
+    "cost": 2656997.56,
+    "pnl": 1949259.61,
+    "roi": 0.7336324426282123,
+    "win_rate": 0.9333333333333333,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0x0fabca735d47e427ae47b5abe263c6918dbe4ed1",
+    "globalScore": 85.4,
+    "n_positions": 34,
+    "cost": 272453.0,
+    "pnl": 204579.83,
+    "roi": 0.75088117950619,
+    "win_rate": 1.0,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0x3df531c9dca21d8051d6f2b0be11e2b24b9bd752",
+    "globalScore": 84.9,
+    "n_positions": 25,
+    "cost": 34703.76,
+    "pnl": 26613.54,
+    "roi": 0.7668777100809826,
+    "win_rate": 0.96,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0x36a4978843cb404ce522a6183ba779174ccfb736",
+    "globalScore": 85.4,
+    "n_positions": 8,
+    "cost": 121539.15,
+    "pnl": 93961.89,
+    "roi": 0.7730997789601128,
+    "win_rate": 1.0,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0xd29312e2446a746bbd94408e1c475f1ec6d7d683",
+    "globalScore": 94.2,
+    "n_positions": 348,
+    "cost": 2409831.04,
+    "pnl": 2040679.74,
+    "roi": 0.846814447207054,
+    "win_rate": 0.9885057471264368,
+    "walk": "done",
+    "pages": 7
+   },
+   {
+    "address": "0x52b7fc8a97df5f18974c06a83909f60c81010aa1",
+    "globalScore": 85.6,
+    "n_positions": 3270,
+    "cost": 1768382.66,
+    "pnl": 1506465.66,
+    "roi": 0.8518889571106742,
+    "win_rate": 0.5678899082568807,
+    "walk": "done",
+    "pages": 66
+   },
+   {
+    "address": "0xeaac36f714563e13d88db7a4f0a0898388f2d71d",
+    "globalScore": 86.5,
+    "n_positions": 5735,
+    "cost": 1333137.77,
+    "pnl": 1145895.59,
+    "roi": 0.8595477645194916,
+    "win_rate": 0.9025283347863993,
+    "walk": "done",
+    "pages": 115
+   },
+   {
+    "address": "0x06081d47a698bff1c673d77c50c11dd4c9da3120",
+    "globalScore": 97.2,
+    "n_positions": 12,
+    "cost": 229298.34,
+    "pnl": 210695.14,
+    "roi": 0.91886901579837,
+    "win_rate": 1.0,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0xe36756aa4756928b9f501dc1acf1dccb09752104",
+    "globalScore": 91.6,
+    "n_positions": 11,
+    "cost": 106175.61,
+    "pnl": 102990.28,
+    "roi": 0.9699994188872567,
+    "win_rate": 0.9090909090909091,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0xc3744a19f42266ce6fa2736f52eae6e178b20f3e",
+    "globalScore": 84.0,
+    "n_positions": 195,
+    "cost": 618823.99,
+    "pnl": 630587.24,
+    "roi": 1.019009040034146,
+    "win_rate": 0.9948717948717949,
+    "walk": "done",
+    "pages": 4
+   },
+   {
+    "address": "0xe156c859fc8a3aace3f2f981459d8f989eea134b",
+    "globalScore": 94.5,
+    "n_positions": 104,
+    "cost": 182648.63,
+    "pnl": 190733.71,
+    "roi": 1.0442657577010022,
+    "win_rate": 0.9134615384615384,
+    "walk": "done",
+    "pages": 3
+   },
+   {
+    "address": "0x85f031d069de300055900c4055c1baeb6bde3f67",
+    "globalScore": 95.1,
+    "n_positions": 158,
+    "cost": 11277711.99,
+    "pnl": 11937128.51,
+    "roi": 1.058470771428168,
+    "win_rate": 0.9873417721518988,
+    "walk": "done",
+    "pages": 4
+   },
+   {
+    "address": "0xede186f37ead91aa618cf8101db2bfe6b6c57dd1",
+    "globalScore": 92.1,
+    "n_positions": 253,
+    "cost": 182792.34,
+    "pnl": 207177.12,
+    "roi": 1.133401541880803,
+    "win_rate": 0.9407114624505929,
+    "walk": "done",
+    "pages": 6
+   },
+   {
+    "address": "0x95c6c9a6727ed203e97230dda61ab19a020e1508",
+    "globalScore": 84.0,
+    "n_positions": 46,
+    "cost": 808677.37,
+    "pnl": 970789.64,
+    "roi": 1.2004659410711591,
+    "win_rate": 1.0,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0x80896d05a92082ac31ac4a6cd5568c8d3bbdf935",
+    "globalScore": 90.7,
+    "n_positions": 155,
+    "cost": 212110.96,
+    "pnl": 281137.04,
+    "roi": 1.3254243910828558,
+    "win_rate": 0.8129032258064516,
+    "walk": "done",
+    "pages": 4
+   },
+   {
+    "address": "0xe1c08abf3f7d340682a42811250223393df7ecf1",
+    "globalScore": 83.4,
+    "n_positions": 56,
+    "cost": 142001.36,
+    "pnl": 206673.31,
+    "roi": 1.4554319057225933,
+    "win_rate": 0.9107142857142857,
+    "walk": "done",
+    "pages": 2
+   },
+   {
+    "address": "0x3d5a9e66f15e6719927972135501c61efc53a0be",
+    "globalScore": 91.1,
+    "n_positions": 532,
+    "cost": 26245.38,
+    "pnl": 42753.65,
+    "roi": 1.6289971796941023,
+    "win_rate": 0.9511278195488722,
+    "walk": "done",
+    "pages": 11
+   },
+   {
+    "address": "0xc576775ef9167ddc38ee6a4e537545ab73d0b9d2",
+    "globalScore": 93.6,
+    "n_positions": 42,
+    "cost": 38007.76,
+    "pnl": 66498.37,
+    "roi": 1.7495998185633668,
+    "win_rate": 0.8809523809523809,
+    "walk": "done",
+    "pages": 1
+   },
+   {
+    "address": "0x3ef7342f161113628ef96129f43fded49acdcde6",
+    "globalScore": 84.3,
+    "n_positions": 32,
+    "cost": 9147.4,
+    "pnl": 78473.14,
+    "roi": 8.578737127489779,
+    "win_rate": 0.9375,
+    "walk": "done",
+    "pages": 1
+   }
+  ]
+ },
+ "score_basis_counterfactual": {
+  "basis": "roi term only: roiScore = clamp(40 + roi*90) on the FULL venue record (cost = total_size x avg_price); consistency/copyability held at their stored values; the v61 top-25 cap then decides the seat",
+  "subject": {
+   "stored_globalScore": 83.9,
+   "stored_seat": 24,
+   "full_record_roi": 0.17525058635073282,
+   "roi_score_full": 55.8,
+   "globalScore_full_roi": 68.4,
+   "seat_full_roi_basis": 25,
+   "would_keep_seat": true
+  },
+  "seats_moving": 22,
+  "rows": [
+   {
+    "address": "0x06081d47a698bff1c673d77c50c11dd4c9da3120",
+    "stored_globalScore": 97.2,
+    "cons": 96.7,
+    "copy": 99.0,
+    "roi_full": 0.91886901579837,
+    "n_positions": 12,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 98.5,
+    "seat_full_roi_basis": 1,
+    "seat_stored_basis": 1
+   },
+   {
+    "address": "0xe156c859fc8a3aace3f2f981459d8f989eea134b",
+    "stored_globalScore": 94.5,
+    "cons": 91.6,
+    "copy": 99.5,
+    "roi_full": 1.0442657577010022,
+    "n_positions": 104,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 96.9,
+    "seat_full_roi_basis": 2,
+    "seat_stored_basis": 3
+   },
+   {
+    "address": "0xe36756aa4756928b9f501dc1acf1dccb09752104",
+    "stored_globalScore": 91.6,
+    "cons": 93.2,
+    "copy": 96.4,
+    "roi_full": 0.9699994188872567,
+    "n_positions": 11,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 96.5,
+    "seat_full_roi_basis": 3,
+    "seat_stored_basis": 7
+   },
+   {
+    "address": "0x85f031d069de300055900c4055c1baeb6bde3f67",
+    "stored_globalScore": 95.1,
+    "cons": 90.2,
+    "copy": 99.5,
+    "roi_full": 1.058470771428168,
+    "n_positions": 158,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 96.4,
+    "seat_full_roi_basis": 4,
+    "seat_stored_basis": 2
+   },
+   {
+    "address": "0x2cff41636fe21fad120fed603d54d4fdd96259db",
+    "stored_globalScore": 85.8,
+    "cons": 90.8,
+    "copy": 97.4,
+    "roi_full": 0.7336324426282123,
+    "n_positions": 15,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 96.0,
+    "seat_full_roi_basis": 5,
+    "seat_stored_basis": 13
+   },
+   {
+    "address": "0x0fabca735d47e427ae47b5abe263c6918dbe4ed1",
+    "stored_globalScore": 85.4,
+    "cons": 89.0,
+    "copy": 99.5,
+    "roi_full": 0.75088117950619,
+    "n_positions": 34,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 96.0,
+    "seat_full_roi_basis": 6,
+    "seat_stored_basis": 16
+   },
+   {
+    "address": "0x9c56304c8840621ef4c1e707b4c7d708d09878d1",
+    "stored_globalScore": 90.2,
+    "cons": 88.0,
+    "copy": 99.2,
+    "roi_full": 0.6922117744943811,
+    "n_positions": 62,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 95.6,
+    "seat_full_roi_basis": 7,
+    "seat_stored_basis": 10
+   },
+   {
+    "address": "0x3d5a9e66f15e6719927972135501c61efc53a0be",
+    "stored_globalScore": 91.1,
+    "cons": 86.1,
+    "copy": 98.6,
+    "roi_full": 1.6289971796941023,
+    "n_positions": 532,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 94.7,
+    "seat_full_roi_basis": 8,
+    "seat_stored_basis": 8
+   },
+   {
+    "address": "0xd29312e2446a746bbd94408e1c475f1ec6d7d683",
+    "stored_globalScore": 94.2,
+    "cons": 85.3,
+    "copy": 97.8,
+    "roi_full": 0.846814447207054,
+    "n_positions": 348,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 94.2,
+    "seat_full_roi_basis": 9,
+    "seat_stored_basis": 4
+   },
+   {
+    "address": "0xc576775ef9167ddc38ee6a4e537545ab73d0b9d2",
+    "stored_globalScore": 93.6,
+    "cons": 84.7,
+    "copy": 96.5,
+    "roi_full": 1.7495998185633668,
+    "n_positions": 42,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 93.6,
+    "seat_full_roi_basis": 10,
+    "seat_stored_basis": 5
+   },
+   {
+    "address": "0x95581a6f5045bc6c7cd8acc017df188b05a1fd3f",
+    "stored_globalScore": 85.4,
+    "cons": 95.1,
+    "copy": 97.2,
+    "roi_full": 0.5364836896906591,
+    "n_positions": 8,
+    "roi_score_full": 88.3,
+    "globalScore_full_roi": 93.3,
+    "seat_full_roi_basis": 11,
+    "seat_stored_basis": 18
+   },
+   {
+    "address": "0xede186f37ead91aa618cf8101db2bfe6b6c57dd1",
+    "stored_globalScore": 92.1,
+    "cons": 80.2,
+    "copy": 96.8,
+    "roi_full": 1.133401541880803,
+    "n_positions": 253,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 92.1,
+    "seat_full_roi_basis": 12,
+    "seat_stored_basis": 6
+   },
+   {
+    "address": "0x80896d05a92082ac31ac4a6cd5568c8d3bbdf935",
+    "stored_globalScore": 90.7,
+    "cons": 75.0,
+    "copy": 98.4,
+    "roi_full": 1.3254243910828558,
+    "n_positions": 155,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 90.8,
+    "seat_full_roi_basis": 13,
+    "seat_stored_basis": 9
+   },
+   {
+    "address": "0xcfad110bc7b48b49bcb8c536a953f1b3c1c2fa05",
+    "stored_globalScore": 86.8,
+    "cons": 62.6,
+    "copy": 99.6,
+    "roi_full": 0.6641891779689434,
+    "n_positions": 1286,
+    "roi_score_full": 99.8,
+    "globalScore_full_roi": 86.7,
+    "seat_full_roi_basis": 14,
+    "seat_stored_basis": 11
+   },
+   {
+    "address": "0xeaac36f714563e13d88db7a4f0a0898388f2d71d",
+    "stored_globalScore": 86.5,
+    "cons": 61.9,
+    "copy": 99.5,
+    "roi_full": 0.8595477645194916,
+    "n_positions": 5735,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 86.5,
+    "seat_full_roi_basis": 15,
+    "seat_stored_basis": 12
+   },
+   {
+    "address": "0x36a4978843cb404ce522a6183ba779174ccfb736",
+    "stored_globalScore": 85.4,
+    "cons": 95.6,
+    "copy": 59.7,
+    "roi_full": 0.7730997789601128,
+    "n_positions": 8,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 86.4,
+    "seat_full_roi_basis": 16,
+    "seat_stored_basis": 17
+   },
+   {
+    "address": "0x167d74fc517d5f7ce4c594e77c6117bbc588e531",
+    "stored_globalScore": 85.7,
+    "cons": 69.8,
+    "copy": 98.3,
+    "roi_full": 0.5649597312460061,
+    "n_positions": 10,
+    "roi_score_full": 90.8,
+    "globalScore_full_roi": 85.7,
+    "seat_full_roi_basis": 17,
+    "seat_stored_basis": 14
+   },
+   {
+    "address": "0x52b7fc8a97df5f18974c06a83909f60c81010aa1",
+    "stored_globalScore": 85.6,
+    "cons": 59.4,
+    "copy": 99.5,
+    "roi_full": 0.8518889571106742,
+    "n_positions": 3270,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 85.6,
+    "seat_full_roi_basis": 18,
+    "seat_stored_basis": 15
+   },
+   {
+    "address": "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+    "stored_globalScore": 84.6,
+    "cons": 60.0,
+    "copy": 97.0,
+    "roi_full": 0.6670935537586506,
+    "n_positions": 3763,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 85.1,
+    "seat_full_roi_basis": 19,
+    "seat_stored_basis": 20
+   },
+   {
+    "address": "0x95c6c9a6727ed203e97230dda61ab19a020e1508",
+    "stored_globalScore": 84.0,
+    "cons": 91.7,
+    "copy": 59.7,
+    "roi_full": 1.2004659410711591,
+    "n_positions": 46,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 85.0,
+    "seat_full_roi_basis": 20,
+    "seat_stored_basis": 22
+   },
+   {
+    "address": "0x3df531c9dca21d8051d6f2b0be11e2b24b9bd752",
+    "stored_globalScore": 84.9,
+    "cons": 91.9,
+    "copy": 59.0,
+    "roi_full": 0.7668777100809826,
+    "n_positions": 25,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 84.9,
+    "seat_full_roi_basis": 21,
+    "seat_stored_basis": 19
+   },
+   {
+    "address": "0x3ef7342f161113628ef96129f43fded49acdcde6",
+    "stored_globalScore": 84.3,
+    "cons": 91.8,
+    "copy": 57.3,
+    "roi_full": 8.578737127489779,
+    "n_positions": 32,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 84.3,
+    "seat_full_roi_basis": 22,
+    "seat_stored_basis": 21
+   },
+   {
+    "address": "0xc3744a19f42266ce6fa2736f52eae6e178b20f3e",
+    "stored_globalScore": 84.0,
+    "cons": 89.7,
+    "copy": 59.7,
+    "roi_full": 1.019009040034146,
+    "n_positions": 195,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 84.3,
+    "seat_full_roi_basis": 23,
+    "seat_stored_basis": 23
+   },
+   {
+    "address": "0xe1c08abf3f7d340682a42811250223393df7ecf1",
+    "stored_globalScore": 83.4,
+    "cons": 88.4,
+    "copy": 58.7,
+    "roi_full": 1.4554319057225933,
+    "n_positions": 56,
+    "roi_score_full": 100.0,
+    "globalScore_full_roi": 83.5,
+    "seat_full_roi_basis": 24,
+    "seat_stored_basis": 25
+   },
+   {
+    "address": "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+    "stored_globalScore": 83.9,
+    "cons": 70.9,
+    "copy": 80.2,
+    "roi_full": 0.17525058635073282,
+    "n_positions": 31991,
+    "roi_score_full": 55.8,
+    "globalScore_full_roi": 68.4,
+    "seat_full_roi_basis": 25,
+    "seat_stored_basis": 24
+   }
+  ]
+ },
+ "legs": {
+  "legs": 68,
+  "by_status": {
+   "BANKROLL_200/closed/filled": {
+    "n": 7,
+    "size": 77.01,
+    "pnl": -46.21,
+    "wins": 0
+   },
+   "BANKROLL_200/closed/unfilled": {
+    "n": 8,
+    "size": 279.85,
+    "pnl": 0.0,
+    "wins": 0
+   },
+   "BANKROLL_200/closed/unstamped": {
+    "n": 8,
+    "size": 217.67,
+    "pnl": -61.17,
+    "wins": 0
+   },
+   "BANKROLL_200/open/filled": {
+    "n": 1,
+    "size": 50.0,
+    "pnl": 0.0,
+    "wins": 0
+   },
+   "BANKROLL_200/open/unfilled": {
+    "n": 4,
+    "size": 219.85,
+    "pnl": 0.0,
+    "wins": 0
+   },
+   "BANKROLL_200/open/unstamped": {
+    "n": 3,
+    "size": 37.89,
+    "pnl": 0.0,
+    "wins": 0
+   },
+   "BANKROLL_200/resolved/filled": {
+    "n": 10,
+    "size": 125.56,
+    "pnl": 28.13,
+    "wins": 6
+   },
+   "BANKROLL_200/resolved/unfilled": {
+    "n": 7,
+    "size": 69.57,
+    "pnl": 0.0,
+    "wins": 0
+   },
+   "BANKROLL_200/resolved/unstamped": {
+    "n": 4,
+    "size": 139.85,
+    "pnl": -110.78,
+    "wins": 2
+   },
+   "STANDARD/open/unstamped": {
+    "n": 15,
+    "size": 241.12,
+    "pnl": 0.0,
+    "wins": 0
+   },
+   "STANDARD/resolved/unstamped": {
+    "n": 1,
+    "size": 18.0,
+    "pnl": -18.0,
+    "wins": 0
+   }
+  },
+  "settled_pnl_all_legs": -208.03,
+  "settled_pnl_filled_only": -18.08,
+  "unfilled_legs": 19,
+  "near_cert_legs": 5
+ },
+ "tracking_delta": {
+  "window": "2026-11-06 -> now",
+  "decisions_all": 12666,
+  "decisions_wallet": 6641,
+  "decision_share": 0.5243170693194379,
+  "near_cert_decisions_all": 4261,
+  "near_cert_decisions_wallet": 4073,
+  "near_cert_share": 0.9558789016662755,
+  "paper_copy_all": 184,
+  "paper_copy_wallet": 58,
+  "paper_copy_share": 0.31521739130434784,
+  "settled_pnl_wallet": -208.03,
+  "settled_pnl_filled_only": -18.08,
+  "legs": 68,
+  "unfilled_legs": 19
+ },
+ "cohort": {
+  "series": [
+   {
+    "day": "2026-07-14",
+    "decisions_all": 100,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 0,
+    "near_cert_ex_wallet": 0,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-07-15",
+    "decisions_all": 6800,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 641,
+    "near_cert_ex_wallet": 641,
+    "near_cert_copy_all": 640,
+    "near_cert_copy_ex_wallet": 640,
+    "near_cert_sole_all": 305,
+    "near_cert_sole_ex_wallet": 305
+   },
+   {
+    "day": "2026-07-16",
+    "decisions_all": 19559,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 5617,
+    "near_cert_ex_wallet": 5617,
+    "near_cert_copy_all": 931,
+    "near_cert_copy_ex_wallet": 931,
+    "near_cert_sole_all": 3454,
+    "near_cert_sole_ex_wallet": 3454
+   },
+   {
+    "day": "2026-07-17",
+    "decisions_all": 13050,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2270,
+    "near_cert_ex_wallet": 2270,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1300,
+    "near_cert_sole_ex_wallet": 1300
+   },
+   {
+    "day": "2026-07-18",
+    "decisions_all": 1873,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 114,
+    "near_cert_ex_wallet": 114,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 11,
+    "near_cert_sole_ex_wallet": 11
+   },
+   {
+    "day": "2026-07-19",
+    "decisions_all": 6477,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 875,
+    "near_cert_ex_wallet": 875,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 562,
+    "near_cert_sole_ex_wallet": 562
+   },
+   {
+    "day": "2026-07-20",
+    "decisions_all": 3986,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2182,
+    "near_cert_ex_wallet": 2182,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1158,
+    "near_cert_sole_ex_wallet": 1158
+   },
+   {
+    "day": "2026-07-21",
+    "decisions_all": 1510,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 463,
+    "near_cert_ex_wallet": 463,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 306,
+    "near_cert_sole_ex_wallet": 306
+   },
+   {
+    "day": "2026-07-22",
+    "decisions_all": 1942,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 400,
+    "near_cert_ex_wallet": 400,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 96,
+    "near_cert_sole_ex_wallet": 96
+   },
+   {
+    "day": "2026-07-23",
+    "decisions_all": 1881,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 252,
+    "near_cert_ex_wallet": 252,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 175,
+    "near_cert_sole_ex_wallet": 175
+   },
+   {
+    "day": "2026-07-24",
+    "decisions_all": 2844,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 744,
+    "near_cert_ex_wallet": 744,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 561,
+    "near_cert_sole_ex_wallet": 561
+   },
+   {
+    "day": "2026-07-25",
+    "decisions_all": 3349,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 484,
+    "near_cert_ex_wallet": 484,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 238,
+    "near_cert_sole_ex_wallet": 238
+   },
+   {
+    "day": "2026-07-26",
+    "decisions_all": 3146,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 578,
+    "near_cert_ex_wallet": 578,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 336,
+    "near_cert_sole_ex_wallet": 336
+   },
+   {
+    "day": "2026-07-27",
+    "decisions_all": 580,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 212,
+    "near_cert_ex_wallet": 212,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 196,
+    "near_cert_sole_ex_wallet": 196
+   },
+   {
+    "day": "2026-07-28",
+    "decisions_all": 2331,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 128,
+    "near_cert_ex_wallet": 128,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 93,
+    "near_cert_sole_ex_wallet": 93
+   },
+   {
+    "day": "2026-07-29",
+    "decisions_all": 1767,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 374,
+    "near_cert_ex_wallet": 374,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 72,
+    "near_cert_sole_ex_wallet": 72
+   },
+   {
+    "day": "2026-07-30",
+    "decisions_all": 830,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 210,
+    "near_cert_ex_wallet": 210,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 37,
+    "near_cert_sole_ex_wallet": 37
+   },
+   {
+    "day": "2026-07-31",
+    "decisions_all": 1796,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 345,
+    "near_cert_ex_wallet": 345,
+    "near_cert_copy_all": 15,
+    "near_cert_copy_ex_wallet": 15,
+    "near_cert_sole_all": 44,
+    "near_cert_sole_ex_wallet": 44
+   },
+   {
+    "day": "2026-08-01",
+    "decisions_all": 3555,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 927,
+    "near_cert_ex_wallet": 927,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 30,
+    "near_cert_sole_ex_wallet": 30
+   },
+   {
+    "day": "2026-08-02",
+    "decisions_all": 2537,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 520,
+    "near_cert_ex_wallet": 520,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 14,
+    "near_cert_sole_ex_wallet": 14
+   },
+   {
+    "day": "2026-08-03",
+    "decisions_all": 1533,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 154,
+    "near_cert_ex_wallet": 154,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 22,
+    "near_cert_sole_ex_wallet": 22
+   },
+   {
+    "day": "2026-08-04",
+    "decisions_all": 1333,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 152,
+    "near_cert_ex_wallet": 152,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 3,
+    "near_cert_sole_ex_wallet": 3
+   },
+   {
+    "day": "2026-08-05",
+    "decisions_all": 2504,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 934,
+    "near_cert_ex_wallet": 934,
+    "near_cert_copy_all": 5,
+    "near_cert_copy_ex_wallet": 5,
+    "near_cert_sole_all": 235,
+    "near_cert_sole_ex_wallet": 235
+   },
+   {
+    "day": "2026-08-06",
+    "decisions_all": 1475,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 606,
+    "near_cert_ex_wallet": 606,
+    "near_cert_copy_all": 6,
+    "near_cert_copy_ex_wallet": 6,
+    "near_cert_sole_all": 179,
+    "near_cert_sole_ex_wallet": 179
+   },
+   {
+    "day": "2026-08-07",
+    "decisions_all": 1499,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 489,
+    "near_cert_ex_wallet": 489,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 105,
+    "near_cert_sole_ex_wallet": 105
+   },
+   {
+    "day": "2026-08-08",
+    "decisions_all": 1755,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 350,
+    "near_cert_ex_wallet": 350,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 5,
+    "near_cert_sole_ex_wallet": 5
+   },
+   {
+    "day": "2026-08-09",
+    "decisions_all": 1361,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 85,
+    "near_cert_ex_wallet": 85,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 6,
+    "near_cert_sole_ex_wallet": 6
+   },
+   {
+    "day": "2026-08-10",
+    "decisions_all": 845,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 49,
+    "near_cert_ex_wallet": 49,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-08-11",
+    "decisions_all": 1046,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 52,
+    "near_cert_ex_wallet": 52,
+    "near_cert_copy_all": 4,
+    "near_cert_copy_ex_wallet": 4,
+    "near_cert_sole_all": 14,
+    "near_cert_sole_ex_wallet": 14
+   },
+   {
+    "day": "2026-08-12",
+    "decisions_all": 2276,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 650,
+    "near_cert_ex_wallet": 650,
+    "near_cert_copy_all": 5,
+    "near_cert_copy_ex_wallet": 5,
+    "near_cert_sole_all": 233,
+    "near_cert_sole_ex_wallet": 233
+   },
+   {
+    "day": "2026-08-13",
+    "decisions_all": 2433,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 643,
+    "near_cert_ex_wallet": 643,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 365,
+    "near_cert_sole_ex_wallet": 365
+   },
+   {
+    "day": "2026-08-14",
+    "decisions_all": 3423,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1299,
+    "near_cert_ex_wallet": 1299,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 411,
+    "near_cert_sole_ex_wallet": 411
+   },
+   {
+    "day": "2026-08-15",
+    "decisions_all": 1474,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 492,
+    "near_cert_ex_wallet": 492,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 285,
+    "near_cert_sole_ex_wallet": 285
+   },
+   {
+    "day": "2026-08-16",
+    "decisions_all": 4561,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1309,
+    "near_cert_ex_wallet": 1309,
+    "near_cert_copy_all": 4,
+    "near_cert_copy_ex_wallet": 4,
+    "near_cert_sole_all": 434,
+    "near_cert_sole_ex_wallet": 434
+   },
+   {
+    "day": "2026-08-17",
+    "decisions_all": 5068,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2631,
+    "near_cert_ex_wallet": 2631,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 902,
+    "near_cert_sole_ex_wallet": 902
+   },
+   {
+    "day": "2026-08-18",
+    "decisions_all": 5026,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2894,
+    "near_cert_ex_wallet": 2894,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 1350,
+    "near_cert_sole_ex_wallet": 1350
+   },
+   {
+    "day": "2026-08-19",
+    "decisions_all": 5427,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2493,
+    "near_cert_ex_wallet": 2493,
+    "near_cert_copy_all": 7,
+    "near_cert_copy_ex_wallet": 7,
+    "near_cert_sole_all": 889,
+    "near_cert_sole_ex_wallet": 889
+   },
+   {
+    "day": "2026-08-20",
+    "decisions_all": 4615,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2379,
+    "near_cert_ex_wallet": 2379,
+    "near_cert_copy_all": 17,
+    "near_cert_copy_ex_wallet": 17,
+    "near_cert_sole_all": 1052,
+    "near_cert_sole_ex_wallet": 1052
+   },
+   {
+    "day": "2026-08-21",
+    "decisions_all": 5675,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2566,
+    "near_cert_ex_wallet": 2566,
+    "near_cert_copy_all": 9,
+    "near_cert_copy_ex_wallet": 9,
+    "near_cert_sole_all": 1125,
+    "near_cert_sole_ex_wallet": 1125
+   },
+   {
+    "day": "2026-08-22",
+    "decisions_all": 6179,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2636,
+    "near_cert_ex_wallet": 2636,
+    "near_cert_copy_all": 4,
+    "near_cert_copy_ex_wallet": 4,
+    "near_cert_sole_all": 1065,
+    "near_cert_sole_ex_wallet": 1065
+   },
+   {
+    "day": "2026-08-23",
+    "decisions_all": 3770,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1220,
+    "near_cert_ex_wallet": 1220,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 346,
+    "near_cert_sole_ex_wallet": 346
+   },
+   {
+    "day": "2026-08-24",
+    "decisions_all": 1858,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1047,
+    "near_cert_ex_wallet": 1047,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 371,
+    "near_cert_sole_ex_wallet": 371
+   },
+   {
+    "day": "2026-08-25",
+    "decisions_all": 2284,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 677,
+    "near_cert_ex_wallet": 677,
+    "near_cert_copy_all": 6,
+    "near_cert_copy_ex_wallet": 6,
+    "near_cert_sole_all": 343,
+    "near_cert_sole_ex_wallet": 343
+   },
+   {
+    "day": "2026-08-26",
+    "decisions_all": 4187,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2489,
+    "near_cert_ex_wallet": 2489,
+    "near_cert_copy_all": 12,
+    "near_cert_copy_ex_wallet": 12,
+    "near_cert_sole_all": 912,
+    "near_cert_sole_ex_wallet": 912
+   },
+   {
+    "day": "2026-08-27",
+    "decisions_all": 3200,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1829,
+    "near_cert_ex_wallet": 1829,
+    "near_cert_copy_all": 8,
+    "near_cert_copy_ex_wallet": 8,
+    "near_cert_sole_all": 872,
+    "near_cert_sole_ex_wallet": 872
+   },
+   {
+    "day": "2026-08-28",
+    "decisions_all": 6657,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3714,
+    "near_cert_ex_wallet": 3714,
+    "near_cert_copy_all": 18,
+    "near_cert_copy_ex_wallet": 18,
+    "near_cert_sole_all": 1770,
+    "near_cert_sole_ex_wallet": 1770
+   },
+   {
+    "day": "2026-08-29",
+    "decisions_all": 4176,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1694,
+    "near_cert_ex_wallet": 1694,
+    "near_cert_copy_all": 11,
+    "near_cert_copy_ex_wallet": 11,
+    "near_cert_sole_all": 1209,
+    "near_cert_sole_ex_wallet": 1209
+   },
+   {
+    "day": "2026-08-30",
+    "decisions_all": 8911,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 5264,
+    "near_cert_ex_wallet": 5264,
+    "near_cert_copy_all": 20,
+    "near_cert_copy_ex_wallet": 20,
+    "near_cert_sole_all": 3212,
+    "near_cert_sole_ex_wallet": 3212
+   },
+   {
+    "day": "2026-08-31",
+    "decisions_all": 10744,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 5209,
+    "near_cert_ex_wallet": 5209,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 1521,
+    "near_cert_sole_ex_wallet": 1521
+   },
+   {
+    "day": "2026-09-01",
+    "decisions_all": 6313,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3662,
+    "near_cert_ex_wallet": 3662,
+    "near_cert_copy_all": 9,
+    "near_cert_copy_ex_wallet": 9,
+    "near_cert_sole_all": 813,
+    "near_cert_sole_ex_wallet": 813
+   },
+   {
+    "day": "2026-09-02",
+    "decisions_all": 2761,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1117,
+    "near_cert_ex_wallet": 1117,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 291,
+    "near_cert_sole_ex_wallet": 291
+   },
+   {
+    "day": "2026-09-03",
+    "decisions_all": 2539,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1320,
+    "near_cert_ex_wallet": 1320,
+    "near_cert_copy_all": 4,
+    "near_cert_copy_ex_wallet": 4,
+    "near_cert_sole_all": 559,
+    "near_cert_sole_ex_wallet": 559
+   },
+   {
+    "day": "2026-09-04",
+    "decisions_all": 5956,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3359,
+    "near_cert_ex_wallet": 3359,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 535,
+    "near_cert_sole_ex_wallet": 535
+   },
+   {
+    "day": "2026-09-05",
+    "decisions_all": 8038,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 4485,
+    "near_cert_ex_wallet": 4485,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 990,
+    "near_cert_sole_ex_wallet": 990
+   },
+   {
+    "day": "2026-09-06",
+    "decisions_all": 6719,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3088,
+    "near_cert_ex_wallet": 3088,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 593,
+    "near_cert_sole_ex_wallet": 593
+   },
+   {
+    "day": "2026-09-07",
+    "decisions_all": 4573,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1919,
+    "near_cert_ex_wallet": 1919,
+    "near_cert_copy_all": 6,
+    "near_cert_copy_ex_wallet": 6,
+    "near_cert_sole_all": 378,
+    "near_cert_sole_ex_wallet": 378
+   },
+   {
+    "day": "2026-09-08",
+    "decisions_all": 5594,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2442,
+    "near_cert_ex_wallet": 2442,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 538,
+    "near_cert_sole_ex_wallet": 538
+   },
+   {
+    "day": "2026-09-09",
+    "decisions_all": 6118,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1997,
+    "near_cert_ex_wallet": 1997,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 243,
+    "near_cert_sole_ex_wallet": 243
+   },
+   {
+    "day": "2026-09-10",
+    "decisions_all": 5386,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2428,
+    "near_cert_ex_wallet": 2428,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 400,
+    "near_cert_sole_ex_wallet": 400
+   },
+   {
+    "day": "2026-09-11",
+    "decisions_all": 6618,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3029,
+    "near_cert_ex_wallet": 3029,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 895,
+    "near_cert_sole_ex_wallet": 895
+   },
+   {
+    "day": "2026-09-12",
+    "decisions_all": 5509,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2002,
+    "near_cert_ex_wallet": 2002,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 313,
+    "near_cert_sole_ex_wallet": 313
+   },
+   {
+    "day": "2026-09-13",
+    "decisions_all": 4836,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2012,
+    "near_cert_ex_wallet": 2012,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 352,
+    "near_cert_sole_ex_wallet": 352
+   },
+   {
+    "day": "2026-09-14",
+    "decisions_all": 3595,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1552,
+    "near_cert_ex_wallet": 1552,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 325,
+    "near_cert_sole_ex_wallet": 325
+   },
+   {
+    "day": "2026-09-15",
+    "decisions_all": 5584,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2534,
+    "near_cert_ex_wallet": 2534,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 516,
+    "near_cert_sole_ex_wallet": 516
+   },
+   {
+    "day": "2026-09-16",
+    "decisions_all": 6412,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3018,
+    "near_cert_ex_wallet": 3018,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 742,
+    "near_cert_sole_ex_wallet": 742
+   },
+   {
+    "day": "2026-09-17",
+    "decisions_all": 7786,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3910,
+    "near_cert_ex_wallet": 3910,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 840,
+    "near_cert_sole_ex_wallet": 840
+   },
+   {
+    "day": "2026-09-18",
+    "decisions_all": 6587,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2893,
+    "near_cert_ex_wallet": 2893,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 692,
+    "near_cert_sole_ex_wallet": 692
+   },
+   {
+    "day": "2026-09-19",
+    "decisions_all": 6232,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2854,
+    "near_cert_ex_wallet": 2854,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 3,
+    "near_cert_sole_all": 596,
+    "near_cert_sole_ex_wallet": 596
+   },
+   {
+    "day": "2026-09-20",
+    "decisions_all": 8475,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 2537,
+    "near_cert_ex_wallet": 2537,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 567,
+    "near_cert_sole_ex_wallet": 567
+   },
+   {
+    "day": "2026-09-21",
+    "decisions_all": 2556,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 1079,
+    "near_cert_ex_wallet": 1079,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 131,
+    "near_cert_sole_ex_wallet": 131
+   },
+   {
+    "day": "2026-09-22",
+    "decisions_all": 939,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 149,
+    "near_cert_ex_wallet": 149,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 8,
+    "near_cert_sole_ex_wallet": 8
+   },
+   {
+    "day": "2026-09-23",
+    "decisions_all": 691,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 46,
+    "near_cert_ex_wallet": 46,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-09-24",
+    "decisions_all": 1586,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 123,
+    "near_cert_ex_wallet": 123,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-09-25",
+    "decisions_all": 1153,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 57,
+    "near_cert_ex_wallet": 57,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-09-26",
+    "decisions_all": 2553,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 953,
+    "near_cert_ex_wallet": 953,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 46,
+    "near_cert_sole_ex_wallet": 46
+   },
+   {
+    "day": "2026-09-27",
+    "decisions_all": 1516,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 15,
+    "near_cert_ex_wallet": 15,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 3,
+    "near_cert_sole_ex_wallet": 3
+   },
+   {
+    "day": "2026-09-28",
+    "decisions_all": 2140,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 38,
+    "near_cert_ex_wallet": 38,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 15,
+    "near_cert_sole_ex_wallet": 15
+   },
+   {
+    "day": "2026-09-29",
+    "decisions_all": 984,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 3,
+    "near_cert_ex_wallet": 3,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-09-30",
+    "decisions_all": 905,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 22,
+    "near_cert_ex_wallet": 22,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 12,
+    "near_cert_sole_ex_wallet": 12
+   },
+   {
+    "day": "2026-10-01",
+    "decisions_all": 1239,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 7,
+    "near_cert_ex_wallet": 7,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-02",
+    "decisions_all": 1402,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 78,
+    "near_cert_ex_wallet": 78,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 13,
+    "near_cert_sole_ex_wallet": 13
+   },
+   {
+    "day": "2026-10-03",
+    "decisions_all": 1614,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 100,
+    "near_cert_ex_wallet": 100,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 9,
+    "near_cert_sole_ex_wallet": 9
+   },
+   {
+    "day": "2026-10-04",
+    "decisions_all": 1349,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 21,
+    "near_cert_ex_wallet": 21,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 6,
+    "near_cert_sole_ex_wallet": 6
+   },
+   {
+    "day": "2026-10-05",
+    "decisions_all": 1758,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 240,
+    "near_cert_ex_wallet": 240,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-06",
+    "decisions_all": 1478,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 11,
+    "near_cert_ex_wallet": 11,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-07",
+    "decisions_all": 914,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 13,
+    "near_cert_ex_wallet": 13,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-08",
+    "decisions_all": 1054,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 11,
+    "near_cert_ex_wallet": 11,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-09",
+    "decisions_all": 1062,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 23,
+    "near_cert_ex_wallet": 23,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-10",
+    "decisions_all": 1176,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 43,
+    "near_cert_ex_wallet": 43,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-11",
+    "decisions_all": 702,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 29,
+    "near_cert_ex_wallet": 29,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 2,
+    "near_cert_sole_ex_wallet": 2
+   },
+   {
+    "day": "2026-10-12",
+    "decisions_all": 901,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 21,
+    "near_cert_ex_wallet": 21,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1,
+    "near_cert_sole_ex_wallet": 1
+   },
+   {
+    "day": "2026-10-13",
+    "decisions_all": 1208,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 32,
+    "near_cert_ex_wallet": 32,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-14",
+    "decisions_all": 2407,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 143,
+    "near_cert_ex_wallet": 143,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-15",
+    "decisions_all": 1128,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 15,
+    "near_cert_ex_wallet": 15,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-16",
+    "decisions_all": 1183,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 191,
+    "near_cert_ex_wallet": 191,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-17",
+    "decisions_all": 2022,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 36,
+    "near_cert_ex_wallet": 36,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-18",
+    "decisions_all": 1399,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 13,
+    "near_cert_ex_wallet": 13,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-19",
+    "decisions_all": 762,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 28,
+    "near_cert_ex_wallet": 28,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1,
+    "near_cert_sole_ex_wallet": 1
+   },
+   {
+    "day": "2026-10-20",
+    "decisions_all": 1290,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 4,
+    "near_cert_ex_wallet": 4,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-21",
+    "decisions_all": 799,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 26,
+    "near_cert_ex_wallet": 26,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-22",
+    "decisions_all": 1031,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 110,
+    "near_cert_ex_wallet": 110,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1,
+    "near_cert_sole_ex_wallet": 1
+   },
+   {
+    "day": "2026-10-23",
+    "decisions_all": 984,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 141,
+    "near_cert_ex_wallet": 141,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-24",
+    "decisions_all": 2135,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 490,
+    "near_cert_ex_wallet": 490,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-25",
+    "decisions_all": 1484,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 53,
+    "near_cert_ex_wallet": 53,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-26",
+    "decisions_all": 815,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 6,
+    "near_cert_ex_wallet": 6,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 3,
+    "near_cert_sole_ex_wallet": 3
+   },
+   {
+    "day": "2026-10-27",
+    "decisions_all": 665,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 18,
+    "near_cert_ex_wallet": 18,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1,
+    "near_cert_sole_ex_wallet": 1
+   },
+   {
+    "day": "2026-10-28",
+    "decisions_all": 1234,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 56,
+    "near_cert_ex_wallet": 56,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-29",
+    "decisions_all": 505,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 17,
+    "near_cert_ex_wallet": 17,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-30",
+    "decisions_all": 720,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 9,
+    "near_cert_ex_wallet": 9,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 0,
+    "near_cert_sole_ex_wallet": 0
+   },
+   {
+    "day": "2026-10-31",
+    "decisions_all": 909,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 39,
+    "near_cert_ex_wallet": 39,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 2,
+    "near_cert_sole_ex_wallet": 2
+   },
+   {
+    "day": "2026-11-01",
+    "decisions_all": 1569,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 18,
+    "near_cert_ex_wallet": 18,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 6,
+    "near_cert_sole_ex_wallet": 6
+   },
+   {
+    "day": "2026-11-02",
+    "decisions_all": 706,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 30,
+    "near_cert_ex_wallet": 30,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 27,
+    "near_cert_sole_ex_wallet": 27
+   },
+   {
+    "day": "2026-11-03",
+    "decisions_all": 1011,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 177,
+    "near_cert_ex_wallet": 177,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 96,
+    "near_cert_sole_ex_wallet": 96
+   },
+   {
+    "day": "2026-11-04",
+    "decisions_all": 933,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 137,
+    "near_cert_ex_wallet": 137,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 22,
+    "near_cert_sole_ex_wallet": 22
+   },
+   {
+    "day": "2026-11-05",
+    "decisions_all": 822,
+    "decisions_wallet": 0,
+    "wallet_share": 0.0,
+    "near_cert_all": 9,
+    "near_cert_ex_wallet": 9,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 1,
+    "near_cert_sole_ex_wallet": 1
+   },
+   {
+    "day": "2026-11-06",
+    "decisions_all": 1760,
+    "decisions_wallet": 669,
+    "wallet_share": 0.3801136363636364,
+    "near_cert_all": 479,
+    "near_cert_ex_wallet": 4,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 67,
+    "near_cert_sole_ex_wallet": 4
+   },
+   {
+    "day": "2026-11-07",
+    "decisions_all": 2847,
+    "decisions_wallet": 1151,
+    "wallet_share": 0.4042852125043906,
+    "near_cert_all": 712,
+    "near_cert_ex_wallet": 17,
+    "near_cert_copy_all": 1,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 265,
+    "near_cert_sole_ex_wallet": 8
+   },
+   {
+    "day": "2026-11-08",
+    "decisions_all": 2413,
+    "decisions_wallet": 1149,
+    "wallet_share": 0.47617074181516783,
+    "near_cert_all": 706,
+    "near_cert_ex_wallet": 10,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 191,
+    "near_cert_sole_ex_wallet": 3
+   },
+   {
+    "day": "2026-11-09",
+    "decisions_all": 1531,
+    "decisions_wallet": 1015,
+    "wallet_share": 0.6629653821032006,
+    "near_cert_all": 659,
+    "near_cert_ex_wallet": 8,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 129,
+    "near_cert_sole_ex_wallet": 4
+   },
+   {
+    "day": "2026-11-10",
+    "decisions_all": 1885,
+    "decisions_wallet": 1104,
+    "wallet_share": 0.5856763925729443,
+    "near_cert_all": 675,
+    "near_cert_ex_wallet": 28,
+    "near_cert_copy_all": 3,
+    "near_cert_copy_ex_wallet": 2,
+    "near_cert_sole_all": 189,
+    "near_cert_sole_ex_wallet": 10
+   },
+   {
+    "day": "2026-11-11",
+    "decisions_all": 1560,
+    "decisions_wallet": 1003,
+    "wallet_share": 0.642948717948718,
+    "near_cert_all": 610,
+    "near_cert_ex_wallet": 18,
+    "near_cert_copy_all": 2,
+    "near_cert_copy_ex_wallet": 1,
+    "near_cert_sole_all": 225,
+    "near_cert_sole_ex_wallet": 13
+   },
+   {
+    "day": "2026-11-12",
+    "decisions_all": 1431,
+    "decisions_wallet": 550,
+    "wallet_share": 0.3843466107617051,
+    "near_cert_all": 424,
+    "near_cert_ex_wallet": 107,
+    "near_cert_copy_all": 0,
+    "near_cert_copy_ex_wallet": 0,
+    "near_cert_sole_all": 80,
+    "near_cert_sole_ex_wallet": 0
+   }
+  ],
+  "rolling7": [
+   {
+    "day": "2026-07-14",
+    "window_decisions": 100,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-15",
+    "window_decisions": 6900,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-16",
+    "window_decisions": 26459,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-17",
+    "window_decisions": 39509,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-18",
+    "window_decisions": 41382,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-19",
+    "window_decisions": 47859,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-20",
+    "window_decisions": 51845,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-21",
+    "window_decisions": 53255,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-22",
+    "window_decisions": 48397,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-23",
+    "window_decisions": 30719,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-24",
+    "window_decisions": 20513,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-25",
+    "window_decisions": 21989,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-26",
+    "window_decisions": 18658,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-27",
+    "window_decisions": 15252,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-28",
+    "window_decisions": 16073,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-29",
+    "window_decisions": 15898,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-30",
+    "window_decisions": 14847,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-07-31",
+    "window_decisions": 13799,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-01",
+    "window_decisions": 14005,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-02",
+    "window_decisions": 13396,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-03",
+    "window_decisions": 14349,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-04",
+    "window_decisions": 13351,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-05",
+    "window_decisions": 14088,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-06",
+    "window_decisions": 14733,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-07",
+    "window_decisions": 14436,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-08",
+    "window_decisions": 12636,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-09",
+    "window_decisions": 11460,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-10",
+    "window_decisions": 10772,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-11",
+    "window_decisions": 10485,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-12",
+    "window_decisions": 10257,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-13",
+    "window_decisions": 11215,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-14",
+    "window_decisions": 13139,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-15",
+    "window_decisions": 12858,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-16",
+    "window_decisions": 16058,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-17",
+    "window_decisions": 20281,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-18",
+    "window_decisions": 24261,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-19",
+    "window_decisions": 27412,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-20",
+    "window_decisions": 29594,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-21",
+    "window_decisions": 31846,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-22",
+    "window_decisions": 36551,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-23",
+    "window_decisions": 35760,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-24",
+    "window_decisions": 32550,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-25",
+    "window_decisions": 29808,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-26",
+    "window_decisions": 28568,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-27",
+    "window_decisions": 27153,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-28",
+    "window_decisions": 28135,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-29",
+    "window_decisions": 26132,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-30",
+    "window_decisions": 31273,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-08-31",
+    "window_decisions": 40159,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-01",
+    "window_decisions": 44188,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-02",
+    "window_decisions": 42762,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-03",
+    "window_decisions": 42101,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-04",
+    "window_decisions": 41400,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-05",
+    "window_decisions": 45262,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-06",
+    "window_decisions": 43070,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-07",
+    "window_decisions": 36899,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-08",
+    "window_decisions": 36180,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-09",
+    "window_decisions": 39537,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-10",
+    "window_decisions": 42384,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-11",
+    "window_decisions": 43046,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-12",
+    "window_decisions": 40517,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-13",
+    "window_decisions": 38634,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-14",
+    "window_decisions": 37656,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-15",
+    "window_decisions": 37646,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-16",
+    "window_decisions": 37940,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-17",
+    "window_decisions": 40340,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-18",
+    "window_decisions": 40309,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-19",
+    "window_decisions": 41032,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-20",
+    "window_decisions": 44671,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-21",
+    "window_decisions": 43632,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-22",
+    "window_decisions": 38987,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-23",
+    "window_decisions": 33266,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-24",
+    "window_decisions": 27066,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-25",
+    "window_decisions": 21632,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-26",
+    "window_decisions": 17953,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-27",
+    "window_decisions": 10994,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-28",
+    "window_decisions": 10578,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-29",
+    "window_decisions": 10623,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-09-30",
+    "window_decisions": 10837,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-01",
+    "window_decisions": 10490,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-02",
+    "window_decisions": 10739,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-03",
+    "window_decisions": 9800,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-04",
+    "window_decisions": 9633,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-05",
+    "window_decisions": 9251,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-06",
+    "window_decisions": 9745,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-07",
+    "window_decisions": 9754,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-08",
+    "window_decisions": 9569,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-09",
+    "window_decisions": 9229,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-10",
+    "window_decisions": 8791,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-11",
+    "window_decisions": 8144,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-12",
+    "window_decisions": 7287,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-13",
+    "window_decisions": 7017,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-14",
+    "window_decisions": 8510,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-15",
+    "window_decisions": 8584,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-16",
+    "window_decisions": 8705,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-17",
+    "window_decisions": 9551,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-18",
+    "window_decisions": 10248,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-19",
+    "window_decisions": 10109,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-20",
+    "window_decisions": 10191,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-21",
+    "window_decisions": 8583,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-22",
+    "window_decisions": 8486,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-23",
+    "window_decisions": 8287,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-24",
+    "window_decisions": 8400,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-25",
+    "window_decisions": 8485,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-26",
+    "window_decisions": 8538,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-27",
+    "window_decisions": 7913,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-28",
+    "window_decisions": 8348,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-29",
+    "window_decisions": 7822,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-30",
+    "window_decisions": 7558,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-10-31",
+    "window_decisions": 6332,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-11-01",
+    "window_decisions": 6417,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-11-02",
+    "window_decisions": 6308,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-11-03",
+    "window_decisions": 6654,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-11-04",
+    "window_decisions": 6353,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-11-05",
+    "window_decisions": 6670,
+    "wallet_decisions": 0,
+    "share": 0.0
+   },
+   {
+    "day": "2026-11-06",
+    "window_decisions": 7710,
+    "wallet_decisions": 669,
+    "share": 0.0867704280155642
+   },
+   {
+    "day": "2026-11-07",
+    "window_decisions": 9648,
+    "wallet_decisions": 1820,
+    "share": 0.18864013266998342
+   },
+   {
+    "day": "2026-11-08",
+    "window_decisions": 10492,
+    "wallet_decisions": 2969,
+    "share": 0.2829775066717499
+   },
+   {
+    "day": "2026-11-09",
+    "window_decisions": 11317,
+    "wallet_decisions": 3984,
+    "share": 0.35203675885835467
+   },
+   {
+    "day": "2026-11-10",
+    "window_decisions": 12191,
+    "wallet_decisions": 5088,
+    "share": 0.4173570666885407
+   },
+   {
+    "day": "2026-11-11",
+    "window_decisions": 12818,
+    "wallet_decisions": 6091,
+    "share": 0.4751911374629427
+   },
+   {
+    "day": "2026-11-12",
+    "window_decisions": 13427,
+    "wallet_decisions": 6641,
+    "share": 0.4946004319654428
+   }
+  ]
+ },
+ "bar": {
+  "material_share_ge_25pct_days": 5,
+  "material_share_ge_25pct_first": "2026-11-08",
+  "material_share_ge_25pct_last": "2026-11-12",
+  "material_conjunct_met": true,
+  "arms": {
+   "A_wallet_own_venue_record": {
+    "roi": 0.17525058635073282,
+    "ci": [
+     0.12132086856421144,
+     0.24272231753477722
+    ],
+    "profitable_ci_excludes_zero": true,
+    "conjunct_not_profitable": false
+   },
+   "B_wallet_own_legs_settled_entry_its_price": {
+    "roi": -0.014724679248521645,
+    "ci": [
+     -0.034339391815944954,
+     0.0017587291700850234
+    ],
+    "profitable_ci_excludes_zero": false,
+    "conjunct_not_profitable": true
+   },
+   "C_copier_legs_settled_entry_detected_mid": {
+    "roi": -0.0012035023464706982,
+    "ci": [
+     -0.020687010974937567,
+     0.01540091887792948
+    ],
+    "profitable_ci_excludes_zero": false,
+    "conjunct_not_profitable": true
+   },
+   "D_flood_vintage_only_venue": {
+    "roi": 0.02843925217507771,
+    "ci": [
+     -0.006506358870075254,
+     0.06516937089811181
+    ],
+    "profitable_ci_excludes_zero": false,
+    "conjunct_not_profitable": true
+   },
+   "E_rich_side_band_0.95_1.01_venue": {
+    "roi": -0.058061820707051466,
+    "ci": [
+     -0.07198419798400335,
+     -0.04120572145153337
+    ],
+    "profitable_ci_excludes_zero": false,
+    "conjunct_not_profitable": true
+   }
+  },
+  "roi_arm_venue_full_record": {
+   "n": 31991,
+   "cost": 433960.73,
+   "pnl": 76051.87,
+   "roi": 0.17525058635073282,
+   "roi_ci": [
+    0.12132086856421144,
+    0.24272231753477722
+   ],
+   "win_rate": 0.19264793223093996
+  },
+  "roi_arm_flood_at_detected": {
+   "n_legs": 1899,
+   "n_clusters": 1899,
+   "cost": 34375.94,
+   "pnl": -41.37,
+   "roi": -0.0012035023464706982,
+   "roi_ci": [
+    -0.020687010974937567,
+    0.01540091887792948
+   ],
+   "win_rate": 0.794102159031069,
+   "cost_top10_share": 0.08750312428621512,
+   "pnl_top10_share": -6.539292949746899,
+   "legs_cost_ge_10usd": 832,
+   "by_entry_band": {
+    "0.00-0.05": {
+     "legs": 117,
+     "cost": 1.65,
+     "pnl": 3.4,
+     "roi": 2.0639345694626656,
+     "win_rate": 0.017094017094017096
+    },
+    "0.05-0.20": {
+     "legs": 81,
+     "cost": 26.48,
+     "pnl": 1.64,
+     "roi": 0.06209914886502093,
+     "win_rate": 0.08641975308641975
+    },
+    "0.20-0.40": {
+     "legs": 86,
+     "cost": 215.36,
+     "pnl": -46.36,
+     "roi": -0.21525812206596695,
+     "win_rate": 0.22093023255813954
+    },
+    "0.40-0.60": {
+     "legs": 163,
+     "cost": 703.37,
+     "pnl": 22.71,
+     "roi": 0.03228672117479209,
+     "win_rate": 0.5276073619631901
+    },
+    "0.60-0.80": {
+     "legs": 135,
+     "cost": 1438.33,
+     "pnl": -157.37,
+     "roi": -0.10941021066145043,
+     "win_rate": 0.725925925925926
+    },
+    "0.80-0.95": {
+     "legs": 235,
+     "cost": 4532.39,
+     "pnl": 332.49,
+     "roi": 0.07335841826323956,
+     "win_rate": 0.9531914893617022
+    },
+    "0.95-1.01": {
+     "legs": 1082,
+     "cost": 27458.37,
+     "pnl": -197.89,
+     "roi": -0.007206826701473947,
+     "win_rate": 0.9907578558225508
+    }
+   },
+   "label": "flood rows, copier entry = detected mid",
+   "rows": 6641,
+   "rows_priceable": 4324,
+   "rows_unpriceable": 2317,
+   "price_field": "detectedPrice"
+  }
+ },
+ "notes": {
+  "cost_basis": "venue positions: cost = total_size x avg_price (total_cost_usdc is 0 on 87.8% of this wallet's closed rows and percent_realized_pnl reproduces on the reconstructed basis)",
+  "label_basis": "decision arms are settled-outcome: every leg settles at the venue's own 0/1 outcomePrice for the traded token; no `won`, no realizedPnl",
+  "clustering": "bootstrap resamples whole markets (condition_id), 95% percentile CI"
+ }
+}

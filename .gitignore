@@ -127,3 +127,11 @@ data/kalshi-maker-settlements.json.tmp
 # data/wallet-rank-shadow-state.json) ARE committed, so the verdicts re-read offline.
 data/wallet-fdr-truth.json
 data/wallet-fdr-truth.json.tmp
+
+# Wallet 0x17dd123a position walk (2026-11-12, card t_6d17488d): 5.6 MB of raw venue
+# positions, refetchable keyless via `python3 scripts/wallet-17dd-cohort-read.py
+# --fetch-venue --refetch-subject` and rewritten on every widening. The READ artifact
+# data/wallet-17dd-cohort-read.json and the tracked-set aggregates
+# data/wallet-tracked-positions.json ARE committed, so the verdict re-reads offline.
+data/wallet-17dd-positions.json
+data/wallet-17dd-positions.json.tmp
