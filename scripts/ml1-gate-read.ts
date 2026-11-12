@@ -4,12 +4,13 @@
  * (`scripts/ml1-fit-candidate.ts`) is judged by the same code on the same holdout instead
  * of by a forked copy of it. This file only wires the populations and writes the artifact.
  *
- * THE BAR (restated 2026-10-11, do not weaken it):
- *   A candidate promotes only if it beats the PRICE-ONLY baseline on a frozen
- *   TIME-ORDERED holdout of the decision dataset — train <= 2026-08-21, test after,
- *   label `pnl_net_entry > 0` — clearing AUC >= 0.729 AND Brier <= 0.212 with a
- *   market-CLUSTERED 95% CI on the difference that excludes 0. Beating `copyScore`
- *   proves nothing: it measures AUC 0.474-0.481, i.e. WORSE than the base rate.
+ * THE BAR — as `BAR` in src/lib/ml1-read.ts, RELATIVE since 815ecda (2026-10-28):
+ *   `AUC >= price-on-the-same-rows + 0.0005 AND Brier <= price + 0.0005`, with a market-CLUSTERED
+ *   95% CI on the difference that excludes 0, on a frozen TIME-ORDERED holdout of the decision
+ *   dataset — train <= 2026-08-21, test after, label `pnl_net_entry > 0`. The absolute
+ *   `0.729 / 0.212` is a REFERENCE line only (price's own 2026-09-13 read on the acted export,
+ *   rounded to 3dp) — see card `ml1-price-baseline-drift`. Beating `copyScore` proves nothing: it
+ *   measures AUC 0.474-0.481, i.e. WORSE than the base rate.
  *
  * WHAT THIS SCRIPT IS: the comparator and the calibration check, not a candidate.
  *

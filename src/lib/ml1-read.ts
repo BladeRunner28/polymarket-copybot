@@ -2,12 +2,14 @@
  * ML-1 promotion-gate READ, as a library — so the harness that judges a candidate and the
  * script that fits one cannot drift apart (card `phase-ml1`, gate half 2).
  *
- * THE BAR (restated 2026-10-11, do not weaken it):
- *   A candidate promotes only if it beats the PRICE-ONLY baseline on a frozen
- *   TIME-ORDERED holdout — train <= 2026-08-21, test after, label `pnl_net_entry > 0` —
- *   clearing AUC >= 0.729 AND Brier <= 0.212 with a market-CLUSTERED 95% CI on the
- *   difference that excludes 0. Beating `copyScore` proves nothing: it measures AUC
- *   0.474-0.481, i.e. WORSE than the base rate.
+ * THE BAR — see `BAR` below. In force since 815ecda (2026-10-28): RELATIVE to the price-only
+ *   baseline on the SAME scored rows — `AUC >= price + 0.0005 AND Brier <= price + 0.0005`, plus a
+ *   market-CLUSTERED 95% CI on ΔAUC that excludes 0 — on a frozen TIME-ORDERED holdout
+ *   (train <= 2026-08-21, test after, label `pnl_net_entry > 0`). The absolute
+ *   `0.729 / 0.212` is a REFERENCE line only: it is price's own read on
+ *   `data/decision-dataset.csv` (2026-09-13) rounded to 3dp, not a margin, and carried onto the
+ *   re-pointed book it becomes unreachable (card `ml1-price-baseline-drift`). Beating
+ *   `copyScore` proves nothing: it measures AUC 0.474-0.481, i.e. WORSE than the base rate.
  *
  * WHAT `readArms` IS
  *   The comparator, the calibration check and the money arm — plus an optional hook for
