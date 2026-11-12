@@ -2,7 +2,8 @@
 
 **Lane A · PROPOSAL ONLY · 2026-11-12**
 Approval: `apr-c200-realized-peak-rebase` (clicked 2026-11-12T16:45:09Z) · source card `roadmap:c200-realized-peak-rebase`
-Board card: kanban `t_12711fe0`
+Board card: kanban `t_12711fe0` · **rev 2 — review round 1 answered (§11): the apply path now writes the number it
+confirms, and no longer moves the era baseline.**
 
 > **Nothing has been applied.** `data/c200-drawdown.json` is untouched, `prisma/dev.db` was opened read-only
 > (`mode=ro`) for every measurement below, no `scripts/apply-vNN.ts` was run, no RuleSet was written (still **v72**),
@@ -171,7 +172,7 @@ not reproducible from any corrected-basis statistic; on the same definition the 
 | | target | DD now | 20% trip line | un-halts? | note |
 |---|---|---|---|---|---|
 | **B — recommended** | **7,987.32** | **5.70%** | $6,389.86 | **yes**, 14.3pp headroom | corrected ledger high-water mark; measured, order-invariant, reproducible |
-| A (as approved) | 7,548.21 | 0.22% | $6,038.57 | yes | a net-worth reading (12:07 UTC close), already stale; gives back 5.48pp of real drawdown |
+| A (as approved) | 7,548.21 | 0.22% | $6,038.57 | yes | a net-worth reading (12:07 UTC close), already stale; gives back 5.48pp of real drawdown. Reachable on purpose: `--apply --confirm 7548.21 --force` writes exactly this (§11) |
 | A′ (today's live NW) | 7,531.94 | 0.00% | $6,025.55 | yes | maximally generous; makes the watermark an intervention timestamp |
 | C (naive subtraction) | 11,068.58 − 3,843.89 = 7,224.69 | — | — | yes | **degenerate**: below NW, so the next run ratchets it to 7,531.94 and it collapses into A′ |
 | D (do nothing) | 11,068.58 | 31.95% | $8,854.86 | **no** | needs +$1,322.92 with 0 new legs — the deadlock |
@@ -187,14 +188,18 @@ Why B and not A/A′:
    corrected rows. Neither wrote "whatever NW is right now" into the peak.
 3. **It costs the lane nothing operationally.** B un-halts immediately with 6.8pp more headroom than the worst corrected
    drawdown ever observed (13.53%). A′ buys $455.38 of extra risk budget (A $439.11) for a dishonest denominator.
-4. **It is verifiable.** `--confirm` must match the computed peak to the cent (§7); A′ requires trusting a hand-typed
-   number that will be stale within the hour (it already is).
+4. **It is verifiable.** `--confirm` must match the computed peak to the cent when you take the default, and the
+   written value is always the confirmed one — a `--force`d number is still re-checked against the gate and against
+   NW before anything is written (§7, §11). A′ requires trusting a hand-typed number that will be stale within the
+   hour (it already is).
 
 ## 5. Before/after — every figure that moves
 
 | figure | now | after B | basis of the number |
 |---|---|---|---|
 | `data/c200-drawdown.json` `realizedPeak` | 11,068.58 | **7,987.32** | state file |
+| `peakResetAt` / `peakResetFrom` (audit, new keys) | absent | **added** — apply timestamp / 11,068.58 | state file; the scorer spreads unknown keys forward, so they survive |
+| `basisDeclaredAt` (era baseline) | 2026-09-18T10:05:42.444Z | **unchanged** | the basis does not change; re-stamping it forward empties the `since basisDeclaredAt` series and crashes the instrument (§11.2) |
 | gate DD, declared basis `realized` | **31.95%** | **5.70%** | `(peak − 7,531.94)/peak` |
 | gate state on next cycle | HALT (384 blocks today) | **open** | `score-trades.ts:695` |
 | NW needed to clear the gate | $8,854.86 (+$1,322.92) | **none** (5.70% vs 20%) | `peak × 0.8` |
@@ -275,15 +280,36 @@ cd ~/polymarket-copybot
 # 1. dry run (writes nothing) — re-measures everything in this document
 python3 scripts/c200-drawdown-rebase.py
 
-# 2. apply — refuses unless --confirm equals the computed peak, DD lands under the gate,
-#    and NW < target (else the ratchet would move it on the next run). Backs up first.
+# 2. apply the recommendation (the corrected ledger's own high-water mark)
 python3 scripts/c200-drawdown-rebase.py --apply --confirm 7987.32
+
+# 2'. or apply the number that was actually approved (7,548.21).
+#     --force makes the confirmed value the target; every guard is then
+#     evaluated against THAT value, and that value is what gets written.
+python3 scripts/c200-drawdown-rebase.py --apply --confirm 7548.21 --force
 ```
 
-The apply writes `data/c200-drawdown.json` only: `realizedPeak 7987.32`, `peakResetAt`, `basisDeclaredAt`, and a note
-appended after the 2026-09-18 entry (fields the scorer spreads forward, so they survive its rewrites). Every other key —
-`peak` 11,458.63, `basis` `realized`, `peakRule` — is preserved byte-for-byte. A backup lands beside it as
+Guards, evaluated against the value that would be **written** (not against the computed peak):
+
+| guard | refuses when |
+|---|---|
+| target above current NW | `target ≤ realized NW` — the ratchet would lift it on the next run |
+| DD after rebase under the gate | `(target − NW)/target > 20%` — the write would leave the lane halted |
+| confirm is the written target | `--confirm` ≠ target (to the cent) |
+| confirm matches the computed peak | **only without `--force`**: `--confirm` ≠ the measured HWM |
+
+Then it copies `data/c200-drawdown.json` to `.bak-<ts>`, writes `realizedPeak = <confirmed>`, `peakResetAt`,
+`peakResetFrom` and the appended note, **reads the file back, and restores the backup if the written value is not the
+confirmed one**, then prints `verify: realizedPeak=… DD=… basisDeclaredAt=…`.
+
+What it does **not** touch: `basis` (still `realized`), `peakRule`, the MTM `peak` 11,458.63, and `basisDeclaredAt` —
+the basis is unchanged, and re-stamping the era baseline is what broke the instrument in review round 1 (§11.2). Every
+other key is preserved byte-for-byte, and a backup lands beside the file as
 `data/c200-drawdown.json.bak-<UTC timestamp>`.
+
+One caveat the script now prints: after a `--force`d reset, the **default** dry run proposes the computed HWM
+(7,987.32) and applying it would raise the peak again. The run prints a `NOTE` line with the recipe to keep the stored
+value — `--confirm <stored> --force`.
 
 **Verify (next cycle, ~10 min):**
 
@@ -304,9 +330,12 @@ re-halts on the next cycle. Nothing else was touched, so there is nothing else t
 ## 8. Overridable flags (one line each)
 
 - **Flag 1 — watermark target.** I propose **7,987.32** (corrected-ledger high-water mark) instead of the approved
-  **7,548.21** (a net-worth reading, stale by one close). Override with `--apply --confirm 7548.21 --force`: that sets DD
-  **0.22%** instead of **5.70%** and moves the trip line to **$6,038.57** from **$6,389.86** — the gate then lets NW fall
-  $351.29 further before it trips. Any value below $7,531.94 is a no-op — the ratchet lifts it on the next run.
+  **7,548.21** (a net-worth reading, stale by one close). Override with
+  `--apply --confirm 7548.21 --force` — **verified on a sandbox ledger copy (§11.1): it writes 7,548.21**, DD **0.22%**
+  instead of **5.70%**, trip line **$6,038.57** instead of **$6,389.86**, i.e. the gate lets NW fall **$351.29**
+  further before it trips ($439.11 lower peak). That extra room is yours to grant or refuse; the script prints it on the
+  `trip line vs computed` line before it writes. Any value at or below $7,531.94 is refused (the ratchet would lift it on
+  the next run).
 - **Flag 2 — the two MTM surfaces.** Recommended: fix `src/app/page.tsx:143-146` **and** `scripts/kelly-window-report.ts:37-38,54-66`
   to read `realizedPeak`/`ddBasis` when you apply, otherwise `:3013` and the Kelly report keep printing "TRIPPED 33.8%"
   while the lane trades. Alternative: leave them and read the gate state from `logs/cron/copybot-monitor-score.log`.
@@ -339,7 +368,7 @@ re-halts on the next cycle. Nothing else was touched, so there is nothing else t
 | 8 | pre-image `data/repair-manifests/ledger-price-side-preimage-20261111T123934.json` | 233 rows; C-200 pre-sum $3,965.37 → post $121.48; `botBankroll.BANKROLL_200.pre.realizedPnl 8,913.40` |
 | 9 | `python3 scripts/c200-drawdown-attribution.py --top 6` (pre-existing instrument) | watermark implies $9,168.58 cumulative vs ledger peak $6,087.32 ⇒ **inflated $3,081.26**; corrected DD **5.70%**; era max 13.53%, "gate WOULD NOT have fired"; largest one-cycle step −$3,843 = **19.2×** the next |
 | 10 | `python3 scripts/c200-drawdown-rebase.py` (new, dry run) | full output below |
-| 11 | `python3 scripts/c200-drawdown-rebase.py --apply --confirm 7548.21` (**guard test**) | `REFUSED: --confirm 7548.21 != computed peak 7987.32`, exit 2, state file byte-identical after (`md5 aa6d80c7…`, mtime 2026-11-10) |
+| 11 | guard matrix (`--state`/`--db` overrides, sandbox copies) | **§11.3** — 8 invocations: mismatch, below-NW, above-gate, missing `--confirm`, double-apply all refused or no-op with exit codes; live state file md5 `aa6d80c7…` unchanged throughout |
 | 12 | `grep 'DRAWDOWN-SHADOW' logs/cron/copybot-monitor-score.log` | 2.3% → 37.0% at the repair minute; 32.0% now |
 | 13 | `grep -c 'PRE-LOOP HALT'` / `grep 'drawdown gate' DecisionJournal` | 81 halt lines; 384 blocked decisions today, last 16:43:56 UTC |
 | 14 | `sqlite3 … PaperTrade.openedAt > repair` | **0** rows in any lane since the repair; 1,070 `skip` + 495 `watchlist` decisions |
@@ -352,7 +381,7 @@ re-halts on the next cycle. Nothing else was touched, so there is nothing else t
 | 21 | `sed -n '99,102p' scripts/apply-v56-drawdown-basis.ts` | `next.realizedPeak = Math.max(s.realizedNW, s.st.realizedPeak)` — the documented `--reseed-peak` lever **cannot** rebase downward (§1) |
 | 22 | `sqlite3 … MAX(openedAt) WHERE botId='STANDARD'` + per-day opens | last STANDARD open **2026-11-11 17:15:56 UTC**, 0 since (5–14/day before), 409 open legs / $4,483.12 ⇒ the drawdown halt is **portfolio-wide** (`score-trades.ts:651-720`, `isPortfolioGate`) |
 
-Command 10 output (dry run, 2026-11-12T16:50:41Z):
+Command 10 output (dry run, 2026-11-12T16:59:49Z, rev 2):
 
 ```
 RuleSet                  : v72  maxDrawdownPct=0.20  ddBasis='realized'
@@ -376,16 +405,114 @@ stored -> DD on realized basis : 31.95%   gate 20.00%  -> HALTED
   exposure cap (NW-based): $3815.97  (unaffected by the peak)
 
 PROPOSED watermark       : $7987.32  -> DD 5.70%  gate 20.00% -> OPEN
+  target source          : computed corrected-ledger high-water mark
   20% trip line          : $6389.86
   sticks?                : yes (NW $7531.94 < peak $7987.32)
+
+GUARDS
+  [PASS] target above current NW            NW $7531.94 < target $7987.32
+  [PASS] DD after rebase under gate         5.70% vs 20.00% gate
+  [--] confirm is the written target      no --confirm given (dry run)
+  [--] confirm matches the computed peak  computed peak $7987.32; pass --confirm to test it
 ```
+
+(`[--]` = not tested in the dry run; on `--apply` every `[--]` must be `[PASS]` or the write is refused.)
 
 (`1057 observations` = one per close since 2026-09-18; the 56-settlement-date read in §3 is the day-bucketed version of
 the same series — median 2.9%, p90 8.1%, max 13.53%, 0 dates over 20%.)
 
 ---
 
-**Added with this proposal, committed as `1163d66`:** `scripts/c200-drawdown-rebase.py` (new; read-only unless `--apply`,
-and `--apply` refuses unless `--confirm` equals the computed peak), `drafts/c200-realized-peak-rebase-20261112.md` (this file).
-`scripts/c200-drawdown-attribution.py` was used unchanged. Nothing else is in that commit: no DB write, no state-file
-write, no RuleSet change, no dashboard edit, nothing merged beyond the doc and its report-only script.
+## 11. Review round 1 — what changed in the apply half
+
+Review round 1 reproduced the measurement and blocked on two defects **in the apply path** (the apply command *is* the
+deliverable). Both are fixed in `scripts/c200-drawdown-rebase.py`; nothing in the analysis moved — HWM 7,987.32 @
+2026-10-18 19:10:41Z, NW 7,531.94, DD 5.70%, the −$3,843.89 preimage, RuleSet v72 and state-file md5 `aa6d80c7` all
+re-derive unchanged, and nothing was applied.
+
+### 11.1 Defect 1 — the documented override wrote a different number than it said
+
+`--confirm` was only a *guard*: the value written was hard-wired as `target = stats["peak"]`
+(`1163d66:scripts/c200-drawdown-rebase.py:182,229`). So `--apply --confirm 7548.21 --force` wrote **7,987.32**, and no
+shipped path could produce the approved 7,548.21 — while §4 row A and Flag 1 promised DD 0.22% / trip line $6,038.57.
+
+**Fix.** `--force` now makes `--confirm` the target; every guard is evaluated against that value, the write is verified
+against it, and the backup is restored if the file does not match. Dry run and apply now agree, and the approved number
+is reachable:
+
+```
+$ python3 scripts/c200-drawdown-rebase.py --confirm 7548.21 --force        # dry run
+PROPOSED watermark       : $7548.21  -> DD 0.22%  gate 20.00% -> OPEN
+  target source          : --confirm (forced by operator): 7548.21 vs computed HWM 7987.32 (-439.11)
+  trip line vs computed  : $6038.57 vs $6389.86 (-351.29 of room)
+  20% trip line          : $6038.57
+  sticks?                : yes (NW $7531.94 < peak $7548.21)
+GUARDS
+  [PASS] target above current NW            NW $7531.94 < target $7548.21
+  [PASS] DD after rebase under gate         0.22% vs 20.00% gate
+  [PASS] confirm is the written target      confirm 7548.21 vs target 7548.21
+
+$ python3 scripts/c200-drawdown-rebase.py --apply --confirm 7548.21 --force   # sandbox state file
+wrote /…/c200sb-105923/state.json (backup /…/c200sb-105923/state.json.bak-20261112T165923)
+verify: realizedPeak=7548.21  DD=0.22%  gate 20.00% -> OPEN  basisDeclaredAt=2026-09-18T10:05:42.444Z
+```
+
+### 11.2 Defect 2 — the apply moved the era baseline and crashed the instrument on its next run
+
+The old apply did `after["basisDeclaredAt"] = iso_now()` even though the basis does not change (`realized` → `realized`;
+only the peak moves). Every settlement predates the new stamp, so the `since basisDeclaredAt` series came back empty: the
+next dry run died at `dds[-1]` (`IndexError`, line 208 of the old file) and `c200-drawdown-attribution.py`'s era line
+degenerated into a zero-event window that vacuously printed "gate WOULD NOT have fired" — at exactly the moment you would
+re-run it.
+
+**Fix.** `basisDeclaredAt` is left untouched. The reset is recorded by `peakResetAt`, the new `peakResetFrom` and the
+appended note (the state file's own `peakRule` asks for a note, not a new era). The era print also handles an empty
+series instead of crashing. Verified after the sandbox apply above:
+
+```
+$ python3 scripts/c200-drawdown-rebase.py --state <post-apply sandbox>
+  since basisDeclaredAt  : 1057 observations, median 3.14%, p90 9.31%, max 13.53%, over-20% days 0
+
+$ python3 scripts/c200-drawdown-attribution.py --dd-file <post-apply sandbox>
+    realized-basis era (since 2026-09-18T10:05:42.444Z): 1057 settle events, corrected max drawdown 13.53% at 2026-11-11T08:40:53Z
+    -> on a clean ledger the gate WOULD NOT have fired in this era.
+
+$ python3 scripts/c200-drawdown-rebase.py --state <state with basisDeclaredAt forced to 2099-01-01>   # empty-series guard
+  since basisDeclaredAt  : 0 settle events since 2099-01-01T00:00:00.000Z — era statistics unavailable
+  exit 0
+```
+
+### 11.3 Guard matrix, re-run end to end (sandbox state files, real DB, `mode=ro`)
+
+| invocation | result |
+|---|---|
+| `--apply` (no confirm) | `REFUSED: --apply needs --confirm <peak> — the target you intend to write`, exit 2 |
+| `--apply --confirm 7500` | `REFUSED: failed guard(s): confirm is the written target, confirm matches the computed peak`, exit 2 |
+| `--apply --confirm 8000.00` | same refusal (8,000 ≠ 7,987.32 and no `--force`), exit 2 |
+| `--apply --confirm 7987.32 --force` | wrote 7,987.32, `verify: DD=5.70% … OPEN`, exit 0 |
+| `--apply --confirm 11068.58 --force` | `REFUSED: failed guard(s): DD after rebase under gate` (31.95% > 20%), exit 2 |
+| `--apply --confirm 7000 --force` | `REFUSED: failed guard(s): target above current NW`, exit 2 |
+| `--force` (no confirm) | `REFUSED: --force needs --confirm <peak> — there is no target to write`, exit 2 |
+| repeat on an already-reset file | `already rebased to 7548.21 — nothing to do`, exit 0 |
+
+The **live** state file was never a target: `md5 data/c200-drawdown.json` is still
+`aa6d80c775f36e47be586c90a38e2d17` (mtime 2026-11-10), `data/` holds no `.bak-*`, RuleSet is still **v72**. Sandbox files
+live under `~/.hermes/cache/scratch/c200sb-105923/`. The script gained `--db` / `--state` overrides so this can be
+reproduced without touching the live files.
+
+### 11.4 Non-blocking notes from the review
+
+- The `$351.29` of extra trip-line room (peak −$439.11) is now printed by the dry run *before* the write
+  (`trip line vs computed`), so the operator sees the cost of opting for the clicked 7,548.21.
+- `82` halt lines vs `81` is a moving counter, not an error; §2/§3's figures are a snapshot at 16:50 UTC.
+- The two MTM reporting surfaces (§6.1, Flag 2) are unchanged and still report TRIPPED after any rebase — that companion
+  fix is deliberately not shipped by this card.
+
+
+---
+
+**Added with this proposal:** `scripts/c200-drawdown-rebase.py` (new; read-only unless `--apply`) and
+`drafts/c200-realized-peak-rebase-20261112.md` (this file) in `1163d66`; rev 2 fixes the apply path per §11 (the script
+now writes the confirmed value, refuses on every failed guard, verifies its own write, and leaves `basisDeclaredAt`
+alone). `scripts/c200-drawdown-attribution.py` was used unchanged. Nothing else is in those commits: no DB write, no
+state-file write, no RuleSet change, no dashboard edit, nothing merged beyond the doc and its report-only script.
