@@ -32,7 +32,20 @@
  * writes `data/ml1-fit-candidate.json` and prints the read. Promotion is a separate,
  * operator-approved step.
  *
- * Usage:  npx tsx scripts/ml1-fit-candidate.ts [--iters 2000]
+ * FIT POPULATIONS (card `ml1-fit-population-gaps`, claim (2)). Until 2026-11-12 this harness
+ * fitted every candidate on ONE window — the frozen time split, whose train side is 100%
+ * pre-kelly-v1-48 — so "the model was fitted on a single era" was true of the artifact and had
+ * no second window to answer it. It now reads TWO populations by default (`--split both`):
+ *
+ *   time  the published frozen boundary (BOUNDARY, unchanged) — single-era train by construction
+ *   era   the regime cut (eraStratifiedHoldout, holdout = exposure-v58plus) — train spans every
+ *         earlier era, purge on terminal_at, still strictly forward by ruleSetVersion
+ *
+ * `--split time` reproduces the historical artifact; `--split era` fits only on the multi-era
+ * window. A single-era train window on the era cut FAILS the run instead of printing a clean-looking
+ * read, and an unknown --split value throws rather than falling back to one era.
+ *
+ * Usage:  npx tsx scripts/ml1-fit-candidate.ts [--iters 2000] [--split time|era|both]
  */
 
 import * as fs from "fs";
@@ -40,9 +53,11 @@ import { fitRidgeLogistic, pickL2ByInnerTimeSplit, type LogisticModel } from "..
 import {
   BAR,
   BOUNDARY,
+  fitPopulations,
   fmt,
   loadDecisionDataset,
   loadTrainingData,
+  parseFitSplitMode,
   readArms,
   type CandidateSpec,
   type Leg,
@@ -187,6 +202,13 @@ function main() {
     const i = process.argv.indexOf("--iters");
     return i >= 0 ? Number(process.argv[i + 1]) : 2000;
   })();
+  // WHICH WINDOWS THE CANDIDATES ARE FITTED ON (card ml1-fit-population-gaps, claim (2)).
+  // Default `both`: the published frozen time split (single-era by construction) AND the
+  // multi-era regime cut. `--split time` reproduces the historical artifact exactly;
+  // `--split era` fits only on the multi-era window. A bad value throws instead of
+  // silently reverting to one era — that default is the defect this card exists for.
+  const splitMode = parseFitSplitMode(process.argv);
+  const populations = fitPopulations(splitMode);
   console.log("ML-1 candidate fit — a pre-registered family judged by the same harness as the static arms");
   console.log(
     `  bar (RESTATED 2026-10-27, relative): AUC >= price + ${BAR.margin} AND Brier <= price + ${BAR.margin} ` +
@@ -194,28 +216,56 @@ function main() {
   );
   console.log(`  frozen boundary: ${new Date(BOUNDARY).toISOString()} | bootstrap ${iters} iters, seed 20261011, clustered by market_id`);
   console.log("  candidates: C0 price-only (anchor) | C1 price+stored | C2 price+exec | C3 combined");
+  console.log(`  fit populations (${splitMode}): ${populations.map((p) => p.mode).join(" + ")}`);
 
   const artifact: Record<string, unknown> = {
     bar: BAR,
     iters,
     boundary: new Date(BOUNDARY).toISOString(),
+    fitSplitMode: splitMode,
+    fitPopulations: populations.map((p) => ({ mode: p.mode, label: p.label, note: p.note })),
     preregisteredFamily: candidates.map((c) => ({ name: c.spec.name, features: c.keys, note: c.spec.note })),
     fittedCandidates: {},
   };
 
   const td = loadTrainingData() as unknown as Leg[];
-  const tdLabel = "training_data.csv — the population the model is fitted on";
-  const tdSplit = readArms(td, tdLabel, iters, artifact, candidates.map((c) => c.spec));
-  calibrate(tdSplit.test, tdLabel, artifact, (artifact[tdLabel] as { arms: Record<string, unknown>[] }).arms);
+  for (const pop of populations) {
+    console.log(`\n=== FIT POPULATION ${pop.mode}: ${pop.note}`);
+    const split = readArms(td, pop.label, iters, artifact, candidates.map((c) => c.spec), pop.mode);
+    const block = artifact[pop.label] as { trainEraCount: number; trainN: number; trainEraMix: { era: string; n: number; share: number }[] };
+    // FALSIFIABLE GUARANTEE: the multi-era population must actually span >1 era. A single-era
+    // train window on the era cut is exactly the defect claim (2) names, so it fails the run
+    // rather than printing a read that looks clean.
+    if (pop.mode === "era" && block.trainEraCount < 2) {
+      throw new Error(
+        `${pop.label}: era split produced a SINGLE-era train window (${block.trainEraMix.map((e) => e.era).join(", ")}) — ` +
+          `the multi-era population is not doing its job`
+      );
+    }
+    console.log(
+      `  train window spans ${block.trainEraCount} era(s) over n=${block.trainN}: ` +
+        block.trainEraMix.map((e) => `${e.era} ${e.n} (${(e.share * 100).toFixed(1)}%)`).join(" | ")
+    );
+    calibrate(split.test, pop.label, artifact, (artifact[pop.label] as { arms: Record<string, unknown>[] }).arms);
+  }
 
+  // The bar population is always the frozen time split: it was built 2026-09-13 and holds zero
+  // exposure-v58plus rows, so an era cut there has an empty test set by construction (the split
+  // throws rather than reporting one). Same pin as scripts/ml1-gate-read.ts.
   const dd = loadDecisionDataset() as unknown as Leg[];
   const ddLabel = "decision-dataset.csv — the bar's population, same candidates";
-  const ddSplit = readArms(dd, ddLabel, iters, artifact, candidates.map((c) => c.spec));
+  console.log("\n=== BAR POPULATION (pinned to the frozen time split)");
+  const ddSplit = readArms(dd, ddLabel, iters, artifact, candidates.map((c) => c.spec), "time");
   calibrate(ddSplit.test, ddLabel, artifact, (artifact[ddLabel] as { arms: Record<string, unknown>[] }).arms);
+
+  artifact["fitPopulationSummary"] = populations.map((p) => {
+    const b = artifact[p.label] as { trainN: number; trainEraCount: number; purged: number };
+    return { mode: p.mode, label: p.label, trainN: b.trainN, trainEraCount: b.trainEraCount, purged: b.purged };
+  });
 
   fs.writeFileSync("data/ml1-fit-candidate.json", JSON.stringify(artifact, null, 2) + "\n");
   console.log(`\nwrote data/ml1-fit-candidate.json (${JSON.stringify(artifact).length} bytes)`);
-  console.log("reproduce: npx tsx scripts/ml1-fit-candidate.ts");
+  console.log(`reproduce: npx tsx scripts/ml1-fit-candidate.ts --split ${splitMode}`);
 }
 
 main();

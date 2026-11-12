@@ -10,7 +10,7 @@
  * None of these assertions encodes a market result — they are arithmetic and labelling.
  */
 import { describe, expect, it } from "vitest";
-import { BOUNDARY, eraAucRead, readArms, trainEraMix, type Leg } from "../src/lib/ml1-read";
+import { BOUNDARY, eraAucRead, fitPopulations, parseFitSplitMode, readArms, trainEraMix, type Leg } from "../src/lib/ml1-read";
 
 const day = 86_400_000;
 const base = Date.parse("2026-06-01T00:00:00Z");
@@ -137,5 +137,60 @@ describe("readArms carries the era basis into the artifact", () => {
       ["kelly-window-v49-57", false],
     ]);
     expect(price.unseenEraN).toBe(120);
+  });
+});
+
+describe("fit populations (claim (2): the fit can no longer be single-era only)", () => {
+  it("defaults to BOTH populations — a bare run does not fit on one era", () => {
+    expect(parseFitSplitMode([])).toBe("both");
+    expect(fitPopulations("both").map((p) => p.mode)).toEqual(["time", "era"]);
+    // The published time population keeps its ORIGINAL artifact label, so its numbers stay comparable.
+    expect(fitPopulations("time")[0].label).toBe("training_data.csv — the population the model is fitted on");
+    expect(fitPopulations("era").map((p) => p.mode)).toEqual(["era"]);
+    // Distinct labels, or the two reads would overwrite each other in the artifact.
+    const labels = fitPopulations("both").map((p) => p.label);
+    expect(new Set(labels).size).toBe(2);
+  });
+
+  it("throws on an unknown --split instead of falling back to a single era", () => {
+    expect(() => parseFitSplitMode(["--split", "eras"])).toThrow(/--split must be/);
+    expect(() => fitPopulations("ear" as never)).toThrow(/unknown mode/);
+  });
+
+  it("the era population fits on MULTIPLE eras and holds out only the named regime", () => {
+    // Two earlier eras in train, the named regime as test — the window claim (2) says the fit never had.
+    const t0 = Date.parse("2026-05-01T00:00:00Z");
+    const mk = (era: string, at: number, i: number, y: 0 | 1): Leg => ({
+      at,
+      readyAt: at + day,
+      market: `fp-${i}`,
+      wallet: `fpw-${i}`,
+      era,
+      price: y === 1 ? 0.8 : 0.2,
+      detected: y === 1 ? 0.75 : 0.25,
+      pnlNetEntry: y === 1 ? 1 : -1,
+      y,
+      scores: {},
+      f: {},
+    });
+    const legs: Leg[] = [
+      ...Array.from({ length: 80 }, (_, i) => mk("pre-kelly-v1-48", t0 + i * day, i, (i % 2) as 0 | 1)),
+      ...Array.from({ length: 80 }, (_, i) => mk("kelly-window-v49-57", t0 + (i + 100) * day, 200 + i, (i % 2) as 0 | 1)),
+      ...Array.from({ length: 60 }, (_, i) => mk("exposure-v58plus", t0 + (i + 300) * day, 400 + i, (i % 2) as 0 | 1)),
+    ];
+    const artifact: Record<string, unknown> = {};
+    readArms(legs, "era-population fixture", 50, artifact, [], "era");
+    const entry = artifact["era-population fixture"] as Record<string, unknown>;
+    expect(entry.splitMode).toBe("era");
+    expect(entry.trainEraCount).toBe(2);
+    expect(entry.trainEraMix).toEqual([
+      { era: "kelly-window-v49-57", n: 80, share: 0.5 },
+      { era: "pre-kelly-v1-48", n: 80, share: 0.5 },
+    ]);
+    // The held-out regime is the TEST side and only the test side — a clean regime cut.
+    expect(entry.testN).toBe(60);
+    expect((entry.eraRead as { era: string; seenInTrain: boolean }[]).map((e) => [e.era, e.seenInTrain])).toEqual([
+      ["exposure-v58plus", false],
+    ]);
   });
 });

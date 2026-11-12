@@ -246,6 +246,70 @@ export const ERA_HOLDOUT = ["exposure-v58plus"] as const;
 
 export type SplitMode = "time" | "era";
 
+/**
+ * THE FIT POPULATIONS (card `ml1-fit-population-gaps`, claim (2) — the remaining half).
+ *
+ * WHY THIS IS A CONFIG OBJECT AND NOT A DATE. The fit harness used to hand `readArms` one
+ * population implicitly: the frozen time split, whose train window (< BOUNDARY) is 100%
+ * pre-kelly-v1-48. Every candidate was therefore fitted on regime 1 and scored across regimes
+ * 1-3, and the only place that fact existed was a roadmap note — the artifact carried
+ * `trainEraCount: 1` with no second window to compare it against. Reporting the mix (option (b))
+ * made the defect visible; it did not remove it. This adds the multi-era window the question
+ * needs as a NAMED SPLIT, so "fit on a single era" can no longer be the only population in the
+ * artifact by construction.
+ *
+ * THE FROZEN TIME SPLIT IS NOT MOVED. BOUNDARY, the bar and every published number stay exactly
+ * where they were: the `time` population keeps its ORIGINAL label so its read stays comparable
+ * line-for-line. The era population is an ADDITIONAL read on the same rows, cut on regime
+ * (`eraStratifiedHoldout`), which is still strictly forward in time because eraOf() keys on
+ * ruleSetVersion and only increases.
+ *
+ * A population is one config entry; which ones run is the harness's `--split time|era|both`
+ * argument (default `both`), matching the gate CLI's flag so the two scripts cannot disagree
+ * about what "era split" means.
+ */
+export type FitSplitMode = "time" | "era" | "both";
+
+export type FitPopulationSpec = {
+  mode: SplitMode;
+  /** Artifact key. Stable: the time population's label is the published one and must not change. */
+  label: string;
+  /** What the window is, in one line, printed by the harness before it fits. */
+  note: string;
+};
+
+export const FIT_POPULATIONS: Record<"time" | "era", FitPopulationSpec> = {
+  time: {
+    mode: "time",
+    label: "training_data.csv — the population the model is fitted on",
+    note: `frozen time-ordered holdout @ ${new Date(BOUNDARY).toISOString()} — the published read; its train window is one era by construction`,
+  },
+  era: {
+    mode: "era",
+    label: "training_data.csv — era-stratified holdout (multi-era train, forward regime held out)",
+    note: `regime cut holding out [${ERA_HOLDOUT.join(", ")}] — train spans every earlier era, purge on terminal_at; still forward in time by ruleSetVersion`,
+  },
+};
+
+/** The populations a run fits on, in order. `both` = the published read first, then the multi-era one. */
+export function fitPopulations(mode: FitSplitMode): FitPopulationSpec[] {
+  if (mode === "time") return [FIT_POPULATIONS.time];
+  if (mode === "era") return [FIT_POPULATIONS.era];
+  if (mode === "both") return [FIT_POPULATIONS.time, FIT_POPULATIONS.era];
+  throw new Error(`fitPopulations: unknown mode ${String(mode)} (expected time | era | both)`);
+}
+
+/** CLI parse for the fit harness — one place, so a typo cannot silently fall back to a single era. */
+export function parseFitSplitMode(argv: readonly string[]): FitSplitMode {
+  const i = argv.indexOf("--split");
+  if (i < 0) return "both";
+  const v = String(argv[i + 1]);
+  if (v !== "time" && v !== "era" && v !== "both") {
+    throw new Error(`--split must be "time", "era" or "both" (got ${v})`);
+  }
+  return v;
+}
+
 export function readArms(
   legs: Leg[],
   label: string,
