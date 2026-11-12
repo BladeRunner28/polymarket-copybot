@@ -8,6 +8,23 @@
   ],
   "cards": [
     {
+      "id": "profit-fill-class-basis",
+      "title": "LANE A PROPOSAL \u2014 C-200 is 85% of post-flip notional and its PROVEN fills lose 46.7%; size and advance the ladder on the filled class only",
+      "column": "Scheduled",
+      "effort": "1h",
+      "dates": "Proposed 2026-11-12 by the profit review (drafts/profit-recs-20261112.md, instrument scripts/profit-fill-cohort.py). NOT APPLIED \u2014 Lane A: it changes how much the lane risks and what the ladder credits.",
+      "note": "WHY: the fill-aware booking flip (2026-10-28) split C-200 into filled / unfilled / unresolved, and no table since has split by that class. MEASURED (read-only, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk = simulatedPositionSize; market-clustered CIs; 5,842 finished legs, $67,986): post-flip C-200 = 271 legs, $6,888, -$49.70 (-0.7%). FILLED 60 legs $1,103 -$515.50 (-46.7%, CI -70.9..-14.4) \u2014 broad across legs (ex-top-1 -52.5%, ex-top-5 -69.6%) and negative in EVERY clip bucket (<=$10 -15.2%, $10-20 -28.5%, >$40 -90.4%). UNRESOLVED 79 legs $2,604 +$465.90 (+17.9%, CI -30.7..+80.1) \u2014 and that class decides the lane's sign. Filled minus unresolved -64.6pp CI -132.1..-8.0. On naturally-resolved legs only, the lane's +$467.10 is +$868.80 of unresolved legs against -$401.70 on the 51 it filled. The unresolved class IS NOT RECOVERABLE: dry run of scripts/c200-fill-resolve.ts today reads 802 artifact intents, all already stamped, 2,247 unstamped legs invisible to it, resolution coverage 0.0% of 1 \u2014 the print-through artifact is a rolling window and the venue's book history is not queryable after the fact. MIRROR: the no-fill intents re-priced at their OWN intent price return -2.3% (-12.3% at +2c), so chasing fills by paying up is not the fix either; the bid is identical in both classes (entry-intent -0.38c filled vs -0.32c unfilled), so the split is not bought with price. MIX SHIFT THAT ARRIVED WITH THE FLIP: STANDARD 34.6 -> 7.4 legs/day, C-200 clip $8.7 -> $25.4 avg, C-200 share of notional 27.0% -> 84.7%.",
+      "decision_rule": "DECISION RULE: the ROI reader and the ladder credit quote the FILLED class as the lane's record and treat unfilled + unresolved as zero exposure for sizing and for rung advancement. No C-200 clip increase, and no clip above its pre-flip average ($8-10), until the filled cohort reaches 120 legs with a clustered CI that includes zero. REFUTATION: if the venue's archived trade tape (or any surviving book capture) shows >=70% of the 79 unresolved post-flip legs printed at or below our bid, they were real positions, the proven-fill cohort is a selected minority, and the lane is not negative \u2014 withdraw. COST 1h; the tape adjudication, if attempted, is a separate 2h.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "sizing",
+        "fill-accounting"
+      ],
+      "gate": "LANE A \u2014 nothing applied. Proposal only: no RuleSet row, no apply-v*.ts, no prisma write. Re-read: python3 scripts/profit-fill-cohort.py."
+    },
+    {
       "id": "profit-band-clip-rebalance",
       "title": "LANE A PROPOSAL — clip is inverse to edge: cap 0.0-0.2 at $25 and lift 0.2-0.4 to $25 (same gross, +$935 in the live regime)",
       "column": "Scheduled",
