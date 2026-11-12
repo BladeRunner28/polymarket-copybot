@@ -1,68 +1,62 @@
 {
-  "generatedAt": "2026-11-10T04:31:09.114Z",
+  "generatedAt": "2026-11-11T04:31:09.617Z",
   "card": "kalshi-tape-repo-size-policy",
   "basis": {
     "window": {
-      "start": "2026-11-02",
-      "end": "2026-11-08",
+      "start": "2026-11-03",
+      "end": "2026-11-09",
       "days": 7,
-      "partialDayExcluded": "2026-11-09"
+      "partialDayExcluded": "2026-11-10"
     },
     "level": "blob",
     "clock": "commit dates (UTC) at HEAD when the script ran",
     "bytes": "on-disk object size of every blob newly added by that day diffs (loose zlib / delta-packed)"
   },
   "objectStore": {
-    "gitBytes": 1573384196,
+    "gitBytes": 1706601063,
     "packBytes": 1422500864,
-    "looseBytes": 140992512,
-    "looseCount": 254
+    "looseBytes": 274382848,
+    "looseCount": 429
   },
   "head": {
-    "trackedBytes": 1948515053,
-    "files": 2258,
+    "trackedBytes": 2042445563,
+    "files": 2305,
     "classes": {
       "code": {
-        "files": 1013,
-        "bytes": 17509337
+        "files": 1022,
+        "bytes": 18024000
       },
       "other": {
-        "files": 325,
-        "bytes": 108440223
+        "files": 328,
+        "bytes": 108641723
       },
       "tape-shadow": {
         "files": 8,
-        "bytes": 120831986
+        "bytes": 124165596
       },
       "tape-other": {
-        "files": 69,
-        "bytes": 213257445
+        "files": 71,
+        "bytes": 214623243
       },
       "cache": {
-        "files": 14,
-        "bytes": 2802240
+        "files": 18,
+        "bytes": 2841001
       },
       "tape-kalshi": {
-        "files": 792,
-        "bytes": 1413596739
+        "files": 821,
+        "bytes": 1501546117
       },
       "orderbook": {
         "files": 1,
-        "bytes": 3271064
+        "bytes": 3444356
       },
       "dataset": {
         "files": 36,
-        "bytes": 68806019
+        "bytes": 69159527
       }
     }
   },
   "daily": [
-    {
-      "date": "2026-11-02",
-      "raw": 368371473,
-      "disk": 41039302,
-      "churn": 1036
-    },
     {
       "date": "2026-11-03",
       "raw": 363008359,
@@ -98,32 +92,38 @@
       "raw": 346400596,
       "disk": 67256097,
       "churn": 0
+    },
+    {
+      "date": "2026-11-09",
+      "raw": 383360772,
+      "disk": 95237504,
+      "churn": 1670592
     }
   ],
   "summary": {
     "n": 7,
     "idleDays": 0,
-    "mean": 46525515,
-    "median": 42189188,
-    "trimmedMean": 44411726.4,
-    "p90": 67256097,
-    "max": 67256097,
-    "exTop1Mean": 43070418
+    "mean": 54268115.28571428,
+    "median": 45319747,
+    "trimmedMean": 49655085.4,
+    "p90": 95237504,
+    "max": 95237504,
+    "exTop1Mean": 47439883.833333336
   },
   "summaryRaw": {
     "n": 7,
     "idleDays": 0,
-    "mean": 379673263,
-    "median": 381505050,
-    "trimmedMean": 378247533.2,
+    "mean": 381814591.4285714,
+    "median": 383360772,
+    "trimmedMean": 381245393,
     "p90": 420074579,
     "max": 420074579,
-    "exTop1Mean": 372939710.3333333
+    "exTop1Mean": 375437926.8333333
   },
   "churn": {
-    "bytes": 22196,
-    "rawTotal": 2657712841,
-    "share": 0.000008351541843643445
+    "bytes": 1691752,
+    "rawTotal": 2672702140,
+    "share": 0.0006329743874863661
   },
   "policy": {
     "ceilingBytes": 2147483648,
@@ -133,63 +133,63 @@
   "verdict": {
     "level": "alarm",
     "reasons": [
-      "median 40.2 MB/day crosses the 2048.0 MB ceiling in 14 days (alarm window 90)",
-      "median 40.2 MB/day is over the 40.0 MB/day budget"
+      "median 43.2 MB/day crosses the 2048.0 MB ceiling in 10 days (alarm window 90)",
+      "median 43.2 MB/day is over the 40.0 MB/day budget"
     ],
-    "daysAtMedian": 14,
-    "daysAtMax": 9,
+    "daysAtMedian": 10,
+    "daysAtMax": 5,
     "overBudget": true
   },
   "topContributors": [
     {
       "path": "data/kalshi-macro-quotes.jsonl",
-      "bytes": 512285016,
-      "share": 0.19256420469039387
-    },
-    {
-      "path": "data/c200-printthrough.jsonl",
-      "bytes": 417185784,
-      "share": 0.15681709633314445
+      "bytes": 532117105,
+      "share": 0.19875450038083645
     },
     {
       "path": "data/jev-shadow.jsonl",
-      "bytes": 374878538,
-      "share": 0.14091411083838454
+      "bytes": 390995663,
+      "share": 0.14604331813509153
+    },
+    {
+      "path": "data/c200-printthrough.jsonl",
+      "bytes": 367431205,
+      "share": 0.13724160506756064
     },
     {
       "path": "data/drift-shadow.jsonl",
-      "bytes": 168302042,
-      "share": 0.0632635112355097
+      "bytes": 170613846,
+      "share": 0.06372708075186377
     },
     {
       "path": "data/lowconf-shadow.jsonl",
-      "bytes": 126798652,
-      "share": 0.04766268935376009
+      "bytes": 129943760,
+      "share": 0.04853613397074939
     },
     {
       "path": "data/weather-nowcast-samples.jsonl",
-      "bytes": 89136316,
-      "share": 0.033505691682326366
+      "bytes": 92815549,
+      "share": 0.034668135821471185
+    },
+    {
+      "path": "data/kalshi-1c-queue/snaps-2026-11-09.jsonl.gz",
+      "bytes": 70872619,
+      "share": 0.026472090161481235
     },
     {
       "path": "data/kalshi-1c-queue/snaps-2026-11-04.jsonl.gz",
       "bytes": 69433549,
-      "share": 0.0260995651335164
-    },
-    {
-      "path": "data/kalshi-1c-queue/snaps-2026-11-03.jsonl.gz",
-      "bytes": 65799476,
-      "share": 0.024733543572909536
+      "share": 0.025934573821233067
     },
     {
       "path": "data/kalshi-1c-queue/snaps-2026-11-08.jsonl.gz",
       "bytes": 65089067,
-      "share": 0.02446650600628686
+      "share": 0.024311838259436877
     },
     {
       "path": "data/kalshi-1c-queue/snaps-2026-11-07.jsonl.gz",
       "bytes": 64098053,
-      "share": 0.024093991064824967
+      "share": 0.023941678212729838
     }
   ]
 }
