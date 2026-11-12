@@ -134,7 +134,9 @@ def verify() -> int:
         print(f"  STALE {s}\n        {why}")
     for u in unindexed[:6]:
         print(f"  UNINDEXED {u} (built before the index existed; rebuild it)")
-    return 0 if not stale else 1
+    # An unverifiable artefact is NOT a passing one: without an index entry there is nothing to compare,
+    # so "0 stale" would otherwise read as "all checked" when a third of the set was never looked at.
+    return 0 if (not stale and not unindexed) else 1
 
 
 def main() -> int:
