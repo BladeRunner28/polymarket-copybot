@@ -112,6 +112,14 @@ pre-existing one in `scripts/apply-v73-c200-cheap-band-clip.ts`, another session
 **Revert:** `FILL_INTENT_LINK_ATTEMPTS=1` in the environment restores the single-shot lookup exactly
 (no rebuild needed — the constants are read at module load, so a `launchctl kickstart` picks it up).
 
+**Deployment state:** committed (`f93274d`), **not yet serving**. `npm run build` fails — not on this
+change, on `scripts/apply-v73-c200-cheap-band-clip.ts` (another session's untracked file), which
+Next's type-check compiles and which references `c200BandClipCaps`, a field that does not exist in
+`src/lib/rules.ts`. `tsc --noEmit` is clean for `src/` and `tests/`; the dashboard is still serving
+(`/` and `/approvals` both 200) on the 10:54 build. The fix goes live on the next successful build —
+unblock by fixing or removing that file (its own card's problem), after which
+`npm run build && launchctl kickstart -k gui/$(id -u)/com.xsnyde2.copybot-dashboard` ships it.
+
 **What it changes going forward, stated plainly:** future legs that would have been orphaned now link,
 so the resolver will stamp them, and a proven-unfilled leg books $0 at every later mark and at
 settlement. That is the approved fill-aware behaviour working as designed, not a new rule — but it
