@@ -4,12 +4,17 @@
  * Read-only. Evidence for the `category-seats-never-released` card.
  *
  * THE DEFECT THIS MEASURES: `c200CategoryCounts` is seeded from the C-200 open
- * rows once per run (~L262 of scripts/score-trades.ts) and incremented when a
- * candidate PASSES the category check (~L678). Nothing decrements it, so every
- * later refusal in the same run leaves the seat consumed. The printed
- * `would be 41/40` therefore describes seats consumed by PASSING CANDIDATES, not
- * open positions, and it seeds from C-200 rows while blocking a decision that is
- * scored for both lanes.
+ * rows once per run (~L262 of scripts/score-trades.ts) and WAS incremented when a
+ * candidate PASSED the category check, with nothing ever decrementing it, so every
+ * later refusal in the same run left the seat consumed and `would be 41/40`
+ * described seats taken by PASSING CANDIDATES, not open positions.
+ *
+ * FIXED 2026-11-12 (operator-approved): the seat is consumed at the booking point,
+ * so the counter is seed + legs dispatched this run. Refusals written after that
+ * commit carry the `open N/M on an open-position basis` form; `basisForm` reports
+ * which form each row was written in, and any post-fix row that still states an
+ * open count BELOW the cap is the card's own refutation and is counted as a
+ * VIOLATION rather than silently mixed into the phantom arm.
  *
  * BASIS (stated, never implied): population = non-demo decisions carrying a
  * category-concentration refusal in the window; level = one decision (each refusal
@@ -41,6 +46,7 @@ import {
   maxConcurrentLegsAt,
   openLegsAt,
   parseCategoryCapBlocks,
+  positionBasisViolation,
   type BlockClass,
   type Interval,
 } from "../src/lib/category-cap-blocks";
@@ -65,9 +71,11 @@ type Row = {
   category: string;
   wouldBe: number;
   cap: number;
-  basisForm: "attempts" | "attempts-labelled";
+  basisForm: "attempts" | "attempts-labelled" | "positions";
   openLegsAtDecision: number | null;
   blockClass: BlockClass;
+  /** post-fix rows only: states fewer open legs than the cap (the card's refutation) */
+  positionBasisViolation: boolean;
   otherDecisionLevelBlockers: string[];
   entry: number | null;
   settlement: "market" | "event" | "undetermined";
@@ -199,6 +207,7 @@ async function main() {
       basisForm: b.basis,
       openLegsAtDecision: openLegs,
       blockClass: classifyCategoryBlock(b, openLegs),
+      positionBasisViolation: positionBasisViolation(b),
       otherDecisionLevelBlockers: (r.risksJson ?? "").match(otherBlockerRe) ? ["yes"] : [],
       entry,
       settlement: res.src,
@@ -260,6 +269,8 @@ async function main() {
     basisForm: {
       attempts: out.filter((r) => r.basisForm === "attempts").length,
       attemptsLabelled: out.filter((r) => r.basisForm === "attempts-labelled").length,
+      positions: out.filter((r) => r.basisForm === "positions").length,
+      positionBasisViolations: out.filter((r) => r.positionBasisViolation).length,
     },
     blockClass: {
       genuine: genuine.length,
@@ -299,7 +310,7 @@ async function main() {
     `  refused ${out.length} copies across ${distinctOutcomes.length} distinct market+question outcomes | class: genuine ${summary.blockClass.genuine} / phantom ${summary.blockClass.phantom} / unknown ${summary.blockClass.unknown}`
   );
   console.log(
-    `  basis form on those rows: attempts-unlabelled ${summary.basisForm.attempts} / labelled ${summary.basisForm.attemptsLabelled}`
+    `  basis form on those rows: attempts-unlabelled ${summary.basisForm.attempts} / labelled ${summary.basisForm.attemptsLabelled} / open-position ${summary.basisForm.positions} (post-fix refutation violations: ${summary.basisForm.positionBasisViolations})`
   );
   console.log(
     `  same-run burst: ${largestBurst} refusals inside ONE second over ${bySecond.size} distinct second(s)`

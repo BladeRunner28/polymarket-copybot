@@ -20,7 +20,7 @@ import { applyBandSizeFactor, isInBandRange } from "../src/lib/band-size";
 import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
 import { appendLowConfShadow } from "../src/lib/shadow-lowconf";
 import { log, logError } from "../src/lib/redact";
-import { formatCategoryCapBlock } from "../src/lib/category-cap-blocks";
+import { formatCategoryCapBlock, categorySeatDecision } from "../src/lib/category-cap-blocks";
 import { positionIdentityKey } from "../src/lib/outcome-identity";
 import { sendDiscord } from "../src/lib/discord";
 import { join } from "path";
@@ -276,17 +276,24 @@ async function main() {
   // journaled and never copied. Excluding them here keeps the skip histogram and
   // the copy funnel exactly as they were before the observation sweep was added.
 
-  // LANE B (2026-11-06, category-seats-never-released): the map above is an
-  // ATTEMPT counter — it is incremented when a candidate PASSES the v41 gate
-  // (~L678) and never decremented, so later refusals in the same run leave their
-  // seat consumed. The refusal line used to print that number as if it were open
-  // positions ("would be 41/40" with zero legs open). Two read-only maps make the
-  // printed number name its basis without touching the gate: the seed snapshot
-  // (open C-200 legs at run start) and the legs this run actually dispatched.
-  // Moving the seat itself to the booking point is a Lane A change and is carded
-  // awaiting-approval, NOT applied here.
-  const c200CategorySeed = new Map(c200CategoryCounts);
-  const c200CategoryBooked = new Map<string, number>();
+  // LANE A APPLIED 2026-11-12 (category-seats-never-released, operator-approved
+  // via the approvals inbox): `c200CategoryCounts` is now a POSITION counter —
+  // seeded from the C-200 open rows above and incremented ONLY where a C-200 leg
+  // is actually dispatched (see the booking point in the per-leg loop). Before
+  // this change it was incremented at the moment a candidate PASSED the v41 gate
+  // and never decremented, so every refusal that fired later in the same run
+  // (drawdown, kelly no-edge, entry caps, band skips, v55 per-market, v58
+  // per-wallet, open-position cap) left its seat consumed for the rest of the run;
+  // the refusal line read "would be 41/40" against a true open book of 0 (measured
+  // 2026-11-06: 7/7 refusals lifetime phantom, 100%, all in one 0.6s burst).
+  // No decrement path is maintained — the seat is never taken until the leg books,
+  // so there is nothing to give back on a later refusal. Admissions delta measured
+  // at 0: those 7 rows were ALSO drawdown-refused in the same risksJson, and the
+  // post-v41 peak concurrent C-200 legs in any category is 15 against a cap of 40.
+  // STILL OPEN, deliberately untouched (not part of this change): the seed is
+  // C-200-only while the gate blocks a decision that is scored for BOTH lanes, so
+  // a STANDARD leg in a category at its C-200 cap is still gated by C-200 state.
+  // Rescoping it would change what the bot admits; it is not approved.
   const unscored = await prisma.observedTrade.findMany({
     where: { decisions: { none: {} }, observationOnly: false },
     orderBy: { timestamp: "desc" },
@@ -699,22 +706,20 @@ async function main() {
       }
       // v41: per-category concentration gate — max open positions per
       // research category (unmapped "Other" is heterogeneous, uncapped).
+      // LANE A 2026-11-12: the counter is a POSITION count (seed + legs dispatched
+      // this run), and the seat is consumed at the booking point below — NOT here.
+      // The gate decision is unchanged in form: block when the candidate would make
+      // the category's open legs exceed the cap.
       const tradeCat = researchCategoryFor(t.marketQuestion, t.marketCategory);
       if (rules.maxCategoryPositions > 0 && tradeCat) {
-        const projected = (c200CategoryCounts.get(tradeCat) ?? 0) + 1;
-        if (projected > rules.maxCategoryPositions) {
-          // LANE B: name the basis. `projected` counts ATTEMPTS that passed this
-          // gate this run, not positions; the true C-200 open count in the
-          // category is the run-start seed plus the legs dispatched so far. The
-          // gate decision itself is unchanged (basis repair only — moving the seat
-          // to the booking point is carded awaiting-approval).
-          const categoryTrueOpen =
-            (c200CategorySeed.get(tradeCat) ?? 0) + (c200CategoryBooked.get(tradeCat) ?? 0);
+        const seat = categorySeatDecision(
+          c200CategoryCounts.get(tradeCat) ?? 0,
+          rules.maxCategoryPositions
+        );
+        if (seat.blocked) {
           riskGates.push(
-            formatCategoryCapBlock(tradeCat, projected, rules.maxCategoryPositions, categoryTrueOpen)
+            formatCategoryCapBlock(tradeCat, seat.openPositions, rules.maxCategoryPositions)
           );
-        } else {
-          c200CategoryCounts.set(tradeCat, projected);
         }
       }
       if (riskGates.some(isPortfolioGate)) portfolioGateBlocks++;
@@ -1219,11 +1224,13 @@ async function main() {
           // since 2026-10-30, one duplicating a -$35.98 loss.
           openCopyKeys.add(positionIdentityKey(t.walletAddress, t.marketId, t.outcome));
 
-          // LANE B (2026-11-06): the C-200 leg this run actually dispatched, per
-          // research category — the truthful half of the v41 refusal line. C-200
-          // only, because the counter's own seed is C-200 open rows.
+          // LANE A 2026-11-12 (category-seats-never-released): the v41 category seat
+          // is consumed HERE, at the booking point, not when the candidate passed the
+          // gate. This is the leg that actually dispatched, so the counter the next
+          // candidate in this run reads is seed + dispatched legs — a position count.
+          // C-200 only: the counter's own seed is the C-200 open rows.
           if (botId === "BANKROLL_200" && tradeCat) {
-            c200CategoryBooked.set(tradeCat, (c200CategoryBooked.get(tradeCat) ?? 0) + 1);
+            c200CategoryCounts.set(tradeCat, (c200CategoryCounts.get(tradeCat) ?? 0) + 1);
           }
           legsOpened++;
 
