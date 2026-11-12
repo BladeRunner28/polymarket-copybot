@@ -44,7 +44,8 @@ Same settled population both columns, `botId='BANKROLL_200'`, `isDemo=0`, `close
 | same book with **no credit** (fill-aware) | $2,548.20 (−$2,435.63) | −$112.07 (−$52.90) |
 
 Read it in one line: **the flat 2¢ was 48 % of the maker-era book, and on today's book it would
-manufacture $551 of the lane's PnL — 8× the credit that actually survives measurement.** Without any
+manufacture $551 of PnL against the $52.90 the measured credit actually contributes on the same
+fill-aware basis (10×) — i.e. it would multiply by ten the one term holding the lane up.** Without any
 credit the lane is −$112 post-cutover; the measured credit is the whole distance between a losing and
 a flat month. That is exactly why the number has to stay honest: it is the only thing holding the
 lane's PnL up, so an unsupported version of it *is* the PnL story.
@@ -75,9 +76,10 @@ the process env has none (so the code default applies); the sidecar log carries 
 
 **(b) Does the booked book match the code, or is a stale process booking something else?**
 Reconstruction inverted from `entryPrice` matches the stamped `intentPrice` on **253/253** pre-cutover
-BUY legs (max error 0.0000) and on **299/304** post-cutover BUY legs, with the gap clustering exactly
-on the five band credits (145 × 0.229, 85 × 0.188, 43 × 0.084, 26 × 0.028). So the table in the binary
-is the table in the book.
+BUY legs (max error 0.0000). Post-cutover, of 330 stamped rows, **299 sit exactly on one of the five
+band credits** (145 × 0.229, 85 × 0.188, 43 × 0.084, 26 × 0.028); the other 31 are accounted for below
+(26 NO-side label artifacts + 5 cutover-day flat-2¢ legs). So the table in the binary is the table in
+the book.
 
 **(c) One implementation gap, immaterial.** 5 legs on 2026-10-10 between 04:47 and 06:26 booked a
 **flat 2¢** (`intent − entry = 0.02`) with no `[Maker Credit]` log line — the cutover window, small
@@ -143,3 +145,13 @@ Nothing was applied in this run. The booking model's revert remains exactly as s
 `launchctl kickstart -k gui/$(id -u)/com.xsnyde2.copybot-rust-sidecar` (env is read per request, so no
 rebuild and no relaunch of anything else). The script added here (`scripts/c200-maker-credit-read.py`)
 is read-only: it opens the DB `immutable=1` and writes nothing; delete the file to remove it entirely.
+
+## 7. Reproduce
+
+```
+python3 scripts/c200-maker-credit-read.py          # every figure in §2, §3(f) and §5
+```
+
+It prints the pre/post populations, the three PnL bases (raw / fill-aware / counterfactual), the
+per-band table, the reconstruction check against the stamped `intentPrice`, the copy-cost.ts
+era-correct delta, and the 7-settled-day ladder basis. `COPYBOT_DB=<path>` overrides the DB.
