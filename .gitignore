@@ -135,3 +135,10 @@ data/wallet-fdr-truth.json.tmp
 # data/wallet-tracked-positions.json ARE committed, so the verdict re-reads offline.
 data/wallet-17dd-positions.json
 data/wallet-17dd-positions.json.tmp
+
+# Lane-A seat-basis read (2026-11-12, card t_b98c4591): 13 MB of raw venue CLOSED positions for
+# the 25 seats + 15 challengers, refetchable keyless via
+# `python3 scripts/lane-a-seat-basis-read.py --fetch-venue` and rewritten on every widening.
+# The READ artifact data/lane-a-seat-basis-read.json IS committed, so the tables re-read offline.
+data/wallet-seat-positions.json
+data/wallet-seat-positions.json.tmp
