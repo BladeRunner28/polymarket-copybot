@@ -50,9 +50,15 @@ else
 ❌ Restart FAILED — inspect $PROJECT/logs/rust-sidecar.err.log manually."
 fi
 
-if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-  PAYLOAD=$(python3 -c "import json,sys; print(json.dumps({'content': sys.argv[1][:1990]}))" "$MSG")
-  curl -s -m 15 -H "content-type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL" >/dev/null 2>&1
+# Delivery is OURS to verify (self-audit 2026-11-12): this job runs deliver=local, so this
+# post is the ONLY path to Discord and the old one-liner discarded the HTTP status — a 429,
+# a deleted webhook or an unset DISCORD_WEBHOOK_URL produced no alert and still exit 0 /
+# last_status=ok. notify-discord.sh returns non-zero when the alert did not land; we then exit
+# non-zero so the job's failure_deliver (discord) carries the text instead of a silent ok.
+DELIVERED=1
+if ! /bin/bash "$PROJECT/scripts/cron-scripts/notify-discord.sh" "$MSG"; then
+  DELIVERED=0
 fi
 
 echo "$MSG"
+[ "$DELIVERED" = "1" ] || exit 1
