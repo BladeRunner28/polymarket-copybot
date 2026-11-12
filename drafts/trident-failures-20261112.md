@@ -177,9 +177,11 @@ Everything below needs the machine idle and you present. Nothing is applied with
   starting chamber temperature.
 
 **B. ASA warping controls — slicer only, no printer risk (the highest-value fix)**
-- `brim_type: no_brim → outer`, `brim_width ≈ 5 mm` for ASA.
+- `brim_type: no_brim → outer_only` (the enum value is `outer_only`; "outer" is not a valid value in
+  2.5.0), `brim_width: 0 → 5 mm` for ASA.
 - `close_fan_the_first_x_layers: 1 → 3–5`.
-- `full_fan_speed_layer: 2 → 6+`, or lower `fan_max_speed` for the ASA profile.
+- `full_fan_speed_layer: 2 → 8`, or lower `fan_max_speed` from 30 % → 20 % for the ASA profile.
+- Note the split: brim is a **process** setting, both fan fields are **filament** settings.
 - Expected: cancels-at-<35 % fall. **Refuted if** the next 10 ASA jobs still cancel early at the same
   rate with brim on and fan delayed — that would move the cause to bed prep or chamber temperature.
 
