@@ -180,6 +180,48 @@ def veto():
             "justified": False}
 
 
+# Content clocks: artefact path -> (column holding the newest real timestamp, reader kind).
+# Only paths whose evidence can be dated are listed; everything else falls back to mtime honestly.
+EVIDENCE_CLOCKS = {
+    "data/ml/market-candidates.parquet": ("resolved_at", "parquet"),
+    "data/ml/markets.csv": ("last_snapshot_at", "csv"),
+}
+
+
+def _evidence_clock(path):
+    """Newest timestamp INSIDE the artefact -> the age of the EVIDENCE, not of the file.
+
+    WHY THIS EXISTS (2026-11-12): `ageHours` is derived from os.path.getmtime, so a daily rebuild of a
+    frozen source made a 24-day-old snapshot report `ageHours: 0.0`. The /ml page printed a fresh
+    badge over stale evidence -- a printed number whose basis lies, and the most misleading kind
+    because the badge was GREEN. This reads the artefact's own clock column instead.
+
+    Returns None when no clock is known for the path, so callers can fall back to mtime honestly.
+    """
+    spec = EVIDENCE_CLOCKS.get(path)
+    if not spec:
+        return None
+    col, kind = spec
+    try:
+        if kind == "parquet":
+            series = pd.read_parquet(path, columns=[col])[col]
+        else:
+            series = pd.read_csv(path, usecols=[col])[col]
+        newest = pd.to_datetime(series, errors="coerce").max()
+        if newest is None or pd.isna(newest):
+            return {"evidenceClock": col, "evidenceZ": None, "evidenceAgeHours": None,
+                    "evidenceError": "column present but no parseable timestamps"}
+        if newest.tzinfo is None:
+            newest = newest.tz_localize("UTC")
+        age = (datetime.now(timezone.utc) - newest.to_pydatetime()).total_seconds() / 3600.0
+        return {"evidenceClock": col,
+                "evidenceZ": newest.isoformat().replace("+00:00", "Z"),
+                "evidenceAgeHours": round(age, 1)}
+    except Exception as e:  # never pretend the evidence is fresh because the read failed
+        return {"evidenceClock": col, "evidenceZ": None, "evidenceAgeHours": None,
+                "evidenceError": str(e)[:160]}
+
+
 def source_freshness():
     """When each INPUT was last measured, so the page can show data age, not just build age.
 
@@ -202,9 +244,13 @@ def source_freshness():
             out[key] = {"path": path, "role": role, "exists": False, "mtimeZ": None, "ageHours": None}
             continue
         dt = datetime.fromtimestamp(m, tz=timezone.utc)
-        out[key] = {"path": path, "role": role, "exists": True,
-                    "mtimeZ": dt.isoformat().replace("+00:00", "Z"),
-                    "ageHours": round((datetime.now(timezone.utc) - dt).total_seconds() / 3600.0, 1)}
+        entry = {"path": path, "role": role, "exists": True,
+                 "mtimeZ": dt.isoformat().replace("+00:00", "Z"),
+                 "ageHours": round((datetime.now(timezone.utc) - dt).total_seconds() / 3600.0, 1)}
+        clock = _evidence_clock(path)
+        if clock:
+            entry.update(clock)
+        out[key] = entry
     return out
 
 

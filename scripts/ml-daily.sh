@@ -108,4 +108,11 @@ if [ "$fails" -ne 0 ]; then
   grep -A 12 -E '^\s*\[FAIL' /tmp/ml-chain.$$.log | tail -40
 fi
 rm -f /tmp/ml-chain.$$.log
+# SILENT-FAILURE FIX (2026-11-12): this was an unconditional `exit 0`, so the cron job reported
+# last_status=ok no matter how many steps failed -- a stall that reads as clean. The ledger recorded
+# steps_failed but nothing alerted on it. The exit code is the alarm now.
+if [ "$fails" -ne 0 ]; then
+  printf '\nml-chain: %s step(s) FAILED -- exiting 1 so the cron failure path fires\n' "$fails"
+  exit 1
+fi
 exit 0

@@ -31,7 +31,7 @@ type Band = {
 type SubBand = { band: string; rows: number; markets: number; roiNetPct: number; ciLoPct: number | null; ciHiPct: number | null; clearsZero: boolean };
 type Art = {
   generatedAt: string;
-  sources?: Record<string, { path: string; role?: string; exists: boolean; mtimeZ: string | null; ageHours: number | null }>;
+  sources?: Record<string, { path: string; role?: string; exists: boolean; mtimeZ: string | null; ageHours: number | null; evidenceAgeHours?: number | null; evidenceClock?: string | null; evidenceZ?: string | null; evidenceError?: string }>;
   lane: { state: string; headline: string; detail: string; alphaSource: string };
   contrast: { withWalletPct: number; withoutWalletPct: number; note: string };
   marketOnly: { candidates: number; gated: number; bands: Band[] };
@@ -165,21 +165,41 @@ export default async function MlPage() {
           <code className="text-xs">scripts/ml-dashboard-artifacts.py</code>
         </p>
         {/* Data age, not just build age: a fresh rebuild over a stale parquet would otherwise
-            read as current. Each entry is the mtime of the artefact the numbers come from. */}
+            read as current. `evidenceAgeHours` is the newest timestamp INSIDE the artefact and wins
+            when present -- on 2026-11-12 marketCandidates printed 0h (mtime) over evidence frozen
+            589.6h earlier, i.e. a green badge on 24-day-old data. mtime is now only a fallback for
+            artefacts with no datable clock, and anything older than 7 days is called out. */}
         {a.sources && (
           <p className="text-dim text-xs mt-1">
             input data:{" "}
-            {Object.entries(a.sources).map(([k, s], i) => (
-              <span key={k}>
-                {i > 0 && " · "}
-                {k}{" "}
-                {s.ageHours === null
-                  ? "MISSING"
-                  : s.role === "study"
-                    ? `study ${s.mtimeZ?.slice(0, 10) ?? ""}`   /* frozen held-out artefact: date is provenance, not staleness */
-                    : s.ageHours < 24 ? `${Math.round(s.ageHours)}h` : `${(s.ageHours / 24).toFixed(1)}d`}
-              </span>
-            ))}
+            {Object.entries(a.sources).map(([k, s], i) => {
+              const ev = typeof s.evidenceAgeHours === "number" ? s.evidenceAgeHours : null;
+              const shown = ev !== null ? ev : s.ageHours;
+              const stale = ev !== null && ev > 168;
+              return (
+                <span key={k}>
+                  {i > 0 && " · "}
+                  {shown === null ? (
+                    <span>{k} MISSING</span>
+                  ) : s.role === "study" ? (
+                    <span>
+                      {k} study {s.mtimeZ?.slice(0, 10) ?? ""}
+                    </span>
+                  ) : (
+                    <span>
+                      {k}{" "}
+                      <span
+                        className={stale ? "text-red-400 font-semibold" : undefined}
+                        title={ev !== null ? `evidence clock: ${s.evidenceClock}` : "file mtime (no datable clock in this artefact)"}
+                      >
+                        {shown < 24 ? `${Math.round(shown)}h` : `${(shown / 24).toFixed(1)}d`}
+                        {stale ? " STALE" : ""}
+                      </span>
+                    </span>
+                  )}
+                </span>
+              );
+            })}
           </p>
         )}
       </div>
