@@ -200,6 +200,23 @@ literal rule, all for insufficient evidence (7–25 settled legs) — so the flo
 turnover engine with a null on its intended target. A floor built on evidence alone would drop those
 7 seats and change nothing about this wallet.
 
+### 3.1 Seat turnover over the last 30 days (what a floor's cost lands on)
+
+| Measure | Value |
+|---|---|
+| wallets whose first copy-eligible observation falls inside 30d | 70 |
+| … of those, seated today | 22 (so 48 seats were won and lost again inside the window) |
+| current seat tenure: median / min / max | 38.9 d / 1.1 d / 121 d |
+| seats held under 30 days | 12 of 25 |
+| current seats that have never produced a copy-eligible observation | 1 (`0x167D74FC517d`) |
+| challengers with <30 observed settled legs | 6 of 15 |
+
+So the seat set already churns roughly half its membership per month — a floor that drops 7–8 seats is
+*within* normal churn, which is why the volume argument is not what disqualifies it. What disqualifies
+it is that the entrants carry the same thin evidence the incumbents do (6 of 15 challengers have <30
+observed settled legs; 2 have none), so the floor moves seats around without raising the evidence base
+of the universe.
+
 ---
 
 ## 4. What this wallet actually is (and the limit of the card's premise)
