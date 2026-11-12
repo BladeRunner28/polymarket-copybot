@@ -67,35 +67,71 @@ segmented plate — a different design, which I have not built.** Today's run: *
 face, where the insert bores open — so accessories bolt on from the arm side and the monitor face
 stays flat, nothing trapped.
 
-## The 1/4″-20 heatset requirement
+## The 1/4″-20 heatset requirement — now MEASURED, not assumed
 
-Bores are sized for a **brass heatset insert**, not a 1/4″-20 tap:
+The operator supplied the actual hardware (2026-11-12): **RUTHEX 1/4-20 × 12.7**
+(amazon.com/dp/B09MTS6ZZQ). It is a **tapered knurled** insert:
 
-| preset | insert OD | length | pilot bore | plate_t needed |
-|---|---|---|---|---|
-| `1/4-20 short` ← default | 9.5 mm | 6.35 mm | **Ø9.1** | ≥ 8.4 mm |
-| `1/4-20 standard` | 9.5 mm | 9.53 mm | Ø9.1 | ≥ 11.5 mm |
-| `1/4-20 long` | 11.1 mm | 12.7 mm | Ø10.7 | ≥ 14.7 mm |
+| dimension | value |
+|---|---|
+| across the **top** | **8.7 mm** |
+| across the **bottom** | **7.9 mm** |
+| overall height | **12.7 mm** |
 
-**Defaults, not measurements.** A bore 0.2 mm oversize spins under torque; 0.2 mm undersize splits an
-ASA boss. The generator refuses a plate thinner than insert + 2 mm backing, and refuses any layout
-leaving under 2 mm between an insert bore and a VESA screw — tightest part in the set is **12.5 mm**.
-Boss OD = insert OD + 2 × 3 mm wall = **Ø15.5**.
+That taper is the whole design problem. A straight bore has to satisfy two constraints at once:
 
-## Printable set (350 mm bed, 9 mm plate, relief on)
+- **clear the small end** → bore > 7.9 mm, or the insert will not enter;
+- **stay under the large end** → bore < 8.7 mm, or the knurl has nothing to melt into and the insert
+  spins under torque.
 
-| VESA | plate (mm) | mass @ 4× |
+So the defensible band is **8.0–8.5 mm**, and the preset default is **Ø8.3**. **RUTHEX publishes no
+drill table** — their own review page contains a customer asking for one — so 8.3 is reasoned, not
+authoritative. That is exactly why the generator now ships a **fit-test coupon**:
+
+```bash
+.venv-cad/bin/python scripts/spoosa-generator.py --coupon 8.1,8.2,8.3,8.4,8.5 --plate-t 15
+```
+
+One small block, one bore per diameter, ~15 minutes of printing. Press an insert into each; the correct
+one goes in with firm pressure and will not spin once cool. **Book the winner, then build the real
+parts with `--insert-preset` matching it** — a bore 0.2 mm out is the difference between a fitting and a
+spinning joint, and ASA lot-to-lot differences are larger than that.
+
+Boss OD = top OD + 2 × 3 mm wall = **Ø14.7**.
+
+### What a 12.7 mm insert does to the plate
+
+This is the consequence worth stating plainly: **the plate thickness floor moves from 8.4 mm to 14.7 mm**
+(12.7 mm of insert + 2 mm of backing). The default `--plate-t` is therefore **15.0**, and the generator
+refuses anything thinner.
+
+| part | 9 mm plate (old, 6.35 insert) | **15 mm plate (measured 12.7 insert)** |
 |---|---|---|
-| 75×75 / 75 2-screw | 135 × 135 × 9 | 88 g |
-| 100×100 / 100 2-screw | 160 × 160 × 9 | 118 g |
-| 100×200 | 160 × 260 × 9 | 181 g |
-| 200×100 | 260 × 160 × 9 | 181 g |
-| 200×200 | 260 × 260 × 9 | 277 g |
-| 400×200 · 400×400 · 600×400 | — | **refused: exceeds the bed** |
+| 100×100 × 4 | 110 cm³ / 117 g | **141 cm³ / 151 g** |
 
-**Weight relief is on by default and is not cosmetic:** 100×100 4× drops from **227 cm³ / 243 g to
-110 cm³ / 117 g** — 52 % saved, leaving a 3 mm web. At the **41 g/h** implied by the operator's last
-completed job, 117 g is ≈ **2.9 h** of print time.
+A 15 mm spacer is still a defensible product — it *is* a spacer, and the standoff is the function — but
+it is **+28 % material** versus the earlier guess, and that is the honest cost of the real insert.
+If that mass matters, the right move is the two-part design (thin plate + separate boss ring), not a
+thinner plate with a protruding insert.
+
+## Printable set (350 mm bed, **15 mm plate**, measured insert, relief on)
+
+| VESA | plate (mm) | @4× | ≈ print time @41 g/h |
+|---|---|---|---|
+| 75×75 / 75 2-screw | 135 × 135 × 15 | 108 cm³ / **116 g** | 2.8 h |
+| 100×100 / 100 2-screw | 160 × 160 × 15 | 141 cm³ / **151 g** | 3.7 h |
+| 100×200 | 160 × 260 × 15 | 212 cm³ / **227 g** | 5.5 h |
+| 200×100 | 260 × 160 × 15 | 212 cm³ / **227 g** | 5.5 h |
+| 200×200 | 260 × 260 × 15 | 312 cm³ / **334 g** | 8.1 h |
+| 400×200 · 400×400 · 600×400 | — | **refused: exceeds the bed** | — |
+
+All 28 (10 patterns… 7 printable patterns × 4 insert counts) were rebuilt against the measured insert;
+`manifest.json` records the preset used per part. One older part (`custom110x110`, built at 9 mm with the
+pre-measurement preset) is still in the index and is flagged by its `insert_preset` field rather than
+silently mixed in.
+
+**Weight relief is on by default and is not cosmetic:** at 15 mm the pocket is 12 mm deep, which is what
+keeps a 160 × 160 plate at 141 cm³ instead of the ~270 cm³ a solid slab would cost.
 
 ## Two kernels agree — the geometry is checked, not asserted
 

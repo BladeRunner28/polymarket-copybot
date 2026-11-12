@@ -65,11 +65,20 @@ VESA_PROFILES = {
 # DEFAULTS ONLY -- measure the actual hardware before printing. A heatset bore 0.2 mm
 # too large spins under torque; 0.2 mm too small splits an ASA boss when the insert goes in.
 INSERT_PRESETS = {
-    # name:            outer dia, length,  pilot dia (bore), lead-in chamfer
+    # MEASURED by the operator 2026-11-12 (RUTHEX 1/4-20 x 12.7, amazon B09MTS6ZZQ):
+    # tapered knurled insert -- 8.7 mm across the top, 7.9 mm across the bottom, 12.7 mm tall.
+    # `od` here is the TOP diameter, because that is what the boss must clear and what the knurl
+    # bites into. The bore is a straight cylinder: it must pass the 7.9 bottom with clearance and
+    # stay under 8.7 so the taper has something to melt into. RUTHEX publishes no drill table
+    # (their own review page contains a customer asking for one), so 8.3 is a reasoned midpoint
+    # and --coupon exists to measure the right value on the operator's own ASA.
+    "ruthex-1/4-20-12.7": dict(od=8.7, od_bottom=7.9, length=12.7, pilot=8.3, lead=0.8),
+    # older presets kept for the parts already built against them
     "1/4-20 short":    dict(od=9.5,  length=6.35, pilot=9.1,  lead=1.0),
     "1/4-20 standard": dict(od=9.5,  length=9.53, pilot=9.1,  lead=1.0),
     "1/4-20 long":     dict(od=11.1, length=12.7, pilot=10.7, lead=1.2),
 }
+DEFAULT_INSERT = "ruthex-1/4-20-12.7"
 
 
 def rrect(width: float, height: float, r: float, seg: int = 24) -> np.ndarray:
@@ -234,6 +243,41 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
     return body, meta
 
 
+def build_coupon(insert_key: str, plate_t: float, wall: float,
+                 bores: list[float]) -> tuple[trimesh.Trimesh, dict]:
+    """A tiny fit-test block carrying one bore per candidate diameter.
+
+    WHY: the insert is tapered (8.7 top / 7.9 bottom) and the manufacturer publishes no bore table, so
+    the correct interference is empirical. Printing five 15-minute coupons beats discovering at
+    assembly that 8.3 splits the boss or that 8.5 spins.
+    """
+    ins = INSERT_PRESETS[insert_key]
+    pitch = max(bores) + 2 * wall + 2.0
+    width = pitch * len(bores) + 10.0
+    depth_t = max(plate_t, ins["length"] + 2.0)
+
+    body = trimesh.creation.extrude_polygon(
+        ShapelyPolygon(rrect(width, 30.0, 4.0)), height=depth_t)
+    cut, labels = [], []
+    for i, d in enumerate(bores):
+        x = -width / 2.0 + 5.0 + pitch * (i + 0.5)
+        cut.append(trimesh.creation.cylinder(radius=d / 2.0, height=depth_t + 1, sections=64)
+                   .apply_translation((x, 0, depth_t / 2)))
+        lead = trimesh.creation.cone(radius=d / 2.0 + ins["lead"], height=ins["lead"] * 1.5, sections=64)
+        lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0]))
+        cut.append(lead.apply_translation((x, 0, depth_t - ins["lead"] * 0.25)))
+        labels.append(round(d, 2))
+    body = trimesh.boolean.difference([body] + cut, engine="manifold")
+    meta = dict(kind="coupon", bores_mm=labels, plate_mm=[round(width, 2), 30.0, round(depth_t, 2)],
+                insert_preset=insert_key, insert_len=ins["length"],
+                volume_cm3=round(body.volume / 1000.0, 2),
+                mass_asa_g=round(body.volume / 1000.0 * 1.07, 1),
+                watertight=bool(body.is_watertight))
+    if not body.is_watertight:
+        raise SystemExit("REFUSING: coupon is not watertight")
+    return body, meta
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Generate SPOOSA-style VESA spacer/adapter plates with 1/4-20 heatset points.")
@@ -248,10 +292,15 @@ def main() -> int:
     ap.add_argument("--inserts", type=int, default=4, choices=[1, 2, 4, 8])
     ap.add_argument("--insert-grid", default=None,
                     help="arbitrary insert matrix as RxC (e.g. 2x3). Overrides --inserts.")
-    ap.add_argument("--plate-t", type=float, default=9.0)
+    ap.add_argument("--plate-t", type=float, default=15.0,
+                    help="plate thickness; must exceed the insert length by >=2 mm "
+                         "(the measured RUTHEX insert is 12.7 mm, so 15.0 is the floor)")
     ap.add_argument("--margin", type=float, default=30.0)
     ap.add_argument("--corner-r", type=float, default=8.0)
-    ap.add_argument("--insert-preset", default="1/4-20 short", choices=list(INSERT_PRESETS))
+    ap.add_argument("--insert-preset", default=DEFAULT_INSERT, choices=list(INSERT_PRESETS))
+    ap.add_argument("--coupon", default=None,
+                    help="build a fit-test coupon instead: comma-separated bore diameters "
+                         "(e.g. 8.1,8.2,8.3,8.4) so the interference is measured, not guessed")
     ap.add_argument("--wall", type=float, default=3.0)
     ap.add_argument("--chamfer", type=float, default=0.6)
     ap.add_argument("--relief", action="store_true", help="pocket the monitor face to save material")
@@ -274,20 +323,38 @@ def main() -> int:
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    # one target, or every named profile
-    if args.vesa:
-        targets = [resolve_profile(args)]
-    elif args.profile == "all":
-        targets = [(dict(p), name) for name, p in VESA_PROFILES.items()]
-    else:
-        if args.profile not in VESA_PROFILES:
-            raise SystemExit(f"unknown profile {args.profile!r}; choose from {', '.join(VESA_PROFILES)} "
-                             f"or pass --vesa WxH")
-        targets = [resolve_profile(args)]
-
-    counts = [1, 2, 4, 8] if (args.all_insert_counts and not grid) else [args.inserts]
-
     manifest, made, skipped = [], 0, []
+
+    if args.coupon:
+        bores = [float(x) for x in args.coupon.split(",") if x.strip()]
+        if not bores:
+            raise SystemExit("--coupon needs at least one diameter, e.g. --coupon 8.2,8.3,8.4")
+        body, meta = build_coupon(args.insert_preset, args.plate_t, args.wall, bores)
+        name = "spoosa_coupon_" + "_".join(str(b).replace(".", "p") for b in bores) + ".stl"
+        body.export(os.path.join(OUT_DIR, name))
+        meta["file"] = name
+        manifest, made = [meta], 1
+        print(f"  {name}")
+        print(f"    {len(bores)} bores: {', '.join(f'Ø{b}' for b in bores)} | block "
+              f"{meta['plate_mm'][0]:.0f}x{meta['plate_mm'][1]:.0f}x{meta['plate_mm'][2]:.0f} mm | "
+              f"{meta['mass_asa_g']:.1f} g ASA | {'WATERTIGHT' if meta['watertight'] else 'LEAKY'}")
+        print("    press the insert into each bore; the correct one goes in with firm pressure and "
+              "refuses to spin once cool")
+        targets, counts = [], []
+
+    # one target, or every named profile
+    if not args.coupon:
+        if args.vesa:
+            targets = [resolve_profile(args)]
+        elif args.profile == "all":
+            targets = [(dict(p), name) for name, p in VESA_PROFILES.items()]
+        else:
+            if args.profile not in VESA_PROFILES:
+                raise SystemExit(f"unknown profile {args.profile!r}; choose from {', '.join(VESA_PROFILES)} "
+                                 f"or pass --vesa WxH")
+            targets = [resolve_profile(args)]
+        counts = [1, 2, 4, 8] if (args.all_insert_counts and not grid) else [args.inserts]
+
     for prof, label in targets:
         for n in counts:
             try:
