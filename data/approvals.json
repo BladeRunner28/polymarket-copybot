@@ -1,46 +1,14 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-11T22:05:43-06:00",
+  "updatedAt": "2026-11-12T10:42:37-06:00",
   "counts": {
-    "pending": 26,
-    "approved": 2,
+    "pending": 20,
+    "approved": 10,
     "declined": 0,
-    "excluded": 16,
-    "retired": 7
+    "excluded": 17,
+    "retired": 9
   },
   "items": [
-    {
-      "id": "apr-standard-exit-rule-replay",
-      "lane": "A",
-      "status": "pending",
-      "title": "STANDARD exit rule \u2014 scope the 168h replay before any change",
-      "proposal": "FINDING (profit review 2026-10-20, reproduced): the ENTIRE stale-exit / capital-recycling block is scoped `botId === \"BANKROLL_200\"` (scripts/update-pnl.ts:240). STANDARD exits only on market resolution or a dead-slug 404 older than 24h (update-pnl.ts:148-156, lane-agnostic). It has no time exit and no adverse exit, so its hold time is set by market TERM, not by information decay. CONSEQUENCE: 1,269 open legs = only 357 distinct bets, $13,623 notional, weighted age 76.3 days. Stranded capital-days 1,033,886 vs 566,915 for the ENTIRE finished history \u2014 the live book holds 1.8x more capital-days than every trade ever completed. Edge per capital-day over 30d: C-200 $0.3818 (1.70d hold) vs \u2026",
-      "evidence": "DECISION RULE (pre-registered): adopt the exit when capital-days fall >=50% while booked PnL falls <$150 over 90d.",
-      "revert": "",
-      "source": "roadmap:standard-exit-rule-replay",
-      "createdAt": "2026-11-11T02:07:48-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Carded 2026-10-20 (profit review 2026-10-20, user-approved 'yes to both')",
-      "_column": "Scheduled"
-    },
-    {
-      "id": "apr-sizing-rails-dead-and-inverse",
-      "lane": "A",
-      "status": "pending",
-      "title": "Sizing: BotBankroll min/max are dead fields (0 refs); C-200 sizes with edge (+0.81) but STANDARD against it (\u22120.86)",
-      "proposal": "THREE 'max size' numbers exist and only one binds: BotBankroll.minPositionSize/maxPositionSize STANDARD 0.25/20.00 C-200 0.10/30.00 -- READ NOWHERE BOT_LIMITS (src/lib/safety.ts:18) STANDARD 0.25/20.00 C-200 0.10/20.00 -- legacy path only rules.kellyMaxSizeUsd (score-trades.ts:837) C-200 100 -- THIS BINDS DEAD-FIELD PROOF: `maxPositionSize` and `minPositionSize` each appear ZERO times repo-wide outside scripts/sizing-read.py (the script that produced this table). Declared in the Prisma schema, present in BotBankroll, consulted by nothing. clampPaperSize does `hi = maxUsd !== undefined ? Math.max(limits.min, maxUsd) : limits.max`, so when the Kelly path passes maxSizeUsd:100 the ceiling is \u2026",
-      "evidence": "",
-      "revert": "",
-      "source": "roadmap:sizing-rails-dead-and-inverse",
-      "createdAt": "2026-11-11T02:07:48-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Measured 2026-10-20",
-      "_column": "Scheduled"
-    },
     {
       "id": "apr-t_4d29ae55",
       "lane": "B",
@@ -90,22 +58,6 @@
       "kanbanTaskId": "t_59b0ffce"
     },
     {
-      "id": "apr-t_d8ec3c64",
-      "lane": "A",
-      "status": "pending",
-      "title": "APPROVAL NEEDED (Lane A): per-position cap vs concurrent-long-shot limit \u2014 concentration test FIRED",
-      "proposal": "Lane A gate. Parent card t_d7cb75e3 measured the single-loss concentration test (pre-registered 2026-10-21 as TEST ONLY; its decision rule now **FIRES**) and changed nothing. This card does not authorise a rule change: it is the approval step the parent card names (\"DO NOT implement any cap without a second approval\"). MEASURED (primary window 2026-09-07T00:41Z \u2192 2026-10-30T01:50Z, read-only, verified): - C-200 (Kelly, $100 cap, NW $8,337.95): daily peak concurrent long-shot full-loss exposure median $334.99 (4.7 %) / p90 $890.91 / max $1,120.52 (39.3 %); 16 of 54 days >10 %, 15 >15 %; worst 2026-09-15 = 23 legs / $1,090.59 = 39.3 % of $2,771.99 NW (long-shots = 83.6 % of open cost). ALL 16 \u2026",
-      "evidence": "Parent card t_d7cb75e3 measured the single-loss concentration test (pre-registered 2026-10-21 as TEST ONLY;",
-      "revert": "",
-      "source": "kanban:t_d8ec3c64",
-      "origin": "kanban",
-      "blockKind": "",
-      "createdAt": "2026-11-11T02:09:54-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": "t_d8ec3c64"
-    },
-    {
       "id": "apr-c200-fill-scoreboard-caveat",
       "lane": "B",
       "status": "pending",
@@ -119,38 +71,6 @@
       "decidedVia": null,
       "kanbanTaskId": null,
       "_card_dates": "Proposed 2026-11-03 by the profit review (drafts/profit-recs-20261103.md). Measurement card: nothing applied. | Lane B read 2026-11-03 (drafts/c200-fill-scoreboard-caveat-20261103.md): MEASURED, card figures reproduce; four corrections; NOTHING APPLIED \u2014 the EOD print is Lane A and needs an explicit yes.",
-      "_column": "Backlog"
-    },
-    {
-      "id": "apr-lane-scoped-band-factors",
-      "lane": "A",
-      "status": "pending",
-      "title": "LANE A PROPOSAL \u2014 make the C-200 band factors lane-scoped: the short-TTR lane is paying the main lane's dead-zone tax",
-      "proposal": "WHY: `src/lib/paper.ts::mapBankroll200Size` applies ONE `deadZone` (0.25) to 0.40-0.60 and ONE `premium` (0.5) to >=0.60 for every lane that routes through the C-200 mapping, including short-TTR. The two lanes DISAGREE IN SIGN in the mid band, so the rule's harshest discount lands on the only mid-band cell that clears its confidence interval. MEASURED (scripts/profit-robustness-alloc.py, read-only immutable=1, regime ruleSetVersion>=49, bet-level = first leg per wallet/market/outcome, cost basis = simulatedPositionSize DOLLARS at risk, fee 0.05): short-TTR 0.40-0.60 n=307 / 290 markets / clip $1.73 / +22.6% ROI / hit 58.0% vs hurdle 50.9% / z=2.52 / ex-top-5 +18.0% / CI [+10.2,+34.9] / \u2026",
-      "evidence": "MEASURED (scripts/profit-robustness-alloc.py, read-only immutable=1, regime ruleSetVersion>=49, bet-level = first leg per wallet/market/outcome, cost basis = simulatedPositionSize DOLLARS at risk, fee 0.05): short-TTR 0.40-0.60 n=307 / 290 markets / clip $1.73 / +22.6% ROI / hit 58.0% vs hurdle 50.9% / z=2.52 / ex-top-5 +18.0% / CI [+10.2,+34.9] / f*(hit-2SE) +5.4% / break-even entry slippage \u2026",
-      "revert": "the STANDARD booth measured median +0.50c), revert.",
-      "source": "roadmap:lane-scoped-band-factors",
-      "createdAt": "2026-11-11T06:56:00-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Proposed 2026-11-03 by the profit review (drafts/profit-recs-20261103.md). NOT APPROVED \u2014 Lane A: changes how much the bot risks.",
-      "_column": "Backlog"
-    },
-    {
-      "id": "apr-fee-booking-net-ledger",
-      "lane": "A",
-      "status": "pending",
-      "title": "LANE A PROPOSAL \u2014 book the taker fee in the ledger and in the ladder advance (27% of measured edge is unbooked)",
-      "proposal": "WHY: `PaperTrade` has no fee column, `src/lib/paper.ts` writes realizedPnl from the price path alone, and `src/lib/copy-cost.ts` says so in its header ('the paper fill crosses no spread and pays no fee'). The only fee-aware gate (`src/lib/scoring/price-edge.ts`) is `status: \"shadow\"` and wired to nothing, so the decision loop AND the scoreboard are both fee-blind. MEASURED (scripts/profit-fee-net.py, read-only, bet-level = first leg per wallet/market/outcome): finished book 4,890 bets / $52,494, gross +8.31% -> net +6.05% (2.25% of notional in fee); STANDARD 3,591 bets / $43,463, +4.16% -> +2.13% and 3.63 -> 1.86 $/1k-capital-day (49% haircut); BANKROLL_200 +28.28% -> +24.93%. Ladder rate \u2026",
-      "evidence": "MEASURED (scripts/profit-fee-net.py, read-only, bet-level = first leg per wallet/market/outcome): finished book 4,890 bets / $52,494, gross +8.31% -> net +6.05% (2.25% of notional in fee);",
-      "revert": "",
-      "source": "roadmap:fee-booking-net-ledger",
-      "createdAt": "2026-11-11T06:56:00-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Proposed 2026-11-02 by the profit review (drafts/profit-recs-20261102.md). NOT APPROVED \u2014 Lane A: changes the PnL the ladder advances on. | Lane A read 2026-11-02 (drafts/fee-booking-net-ledger-20261102.md, instrument scripts/fee-ladder-reread.py): REFUTED ON ITS OWN 30-DAY RUNG CLAUSE (0 of 30 days) \u2014 withdraw recommended, operator decision pending; NOTHING APPLIED.",
       "_column": "Backlog"
     },
     {
@@ -216,54 +136,6 @@
       "kanbanTaskId": null,
       "_card_dates": "Found 2026-10-11 while running the fit arm (card ml1-fitted-candidate-read) | measurement-only until approved | option (b) shipped 2026-10-28 (per-era reporting); option (a) still open = Lane A",
       "_column": "In Progress"
-    },
-    {
-      "id": "apr-standard-band-size-shadow",
-      "lane": "A",
-      "status": "pending",
-      "title": "STANDARD band size factor - CANNOT EXPRESS ITSELF AT THE LIVE CLIP ($20 cap eats every factor); recut 10-29: close or amend",
-      "proposal": "INSTRUMENT: scripts/profit-velocity.py \u00a7AM.7 (verified present on disk). Do NOT re-derive \"no instrument exists\" \u2014 #69 claimed the file was missing and that claim was wrong; the section is there and is the reader for this shadow. PROPOSED, NOT APPLIED. src/lib/scoring/trade.ts:381-390 reads deadZoneSizeFactor and longshotSizeFactor on STANDARD's path and BOTH ARE 1.0 in v67 (neutralised at v41 so the C-200 map would not double-apply). Kelly is C-200-only (score-trades.ts:826 guards on botId==='BANKROLL_200'), so STANDARD books sweetSpotSizeUsd=$18 in every band \u2014 live-era median clip is $18.00 in all five bands. Shadow (notional-neutral, clamp 0.25/20, net of the live 0.4-0.6 skip, below \u2026",
-      "evidence": "That is the card's own pre-registered refutation clause, firing on the window a forward shadow would measure.",
-      "revert": "",
-      "source": "roadmap:standard-band-size-shadow",
-      "createdAt": "2026-11-11T06:56:00-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Proposed 2026-10-27",
-      "_column": "Backlog"
-    },
-    {
-      "id": "apr-v66-cap-pressure-gate",
-      "lane": "A",
-      "status": "pending",
-      "title": "v66: fire the STANDARD stale exit on cap pressure, not on the calendar",
-      "proposal": "PROPOSED 2026-10-28 (profit review), nothing applied. Measurement: scripts/profit-exits.py (committed same commit), \u00a7AO.1-AO.10. WHY: v66's only function is protecting standardMaxOpenPositions = 1,300 legs -- STANDARD has NO notional cap (maxGrossExposureUsd is C-200-only, score-trades.ts:198/625; open notional $5,125 = 5.1x that base is the proof), so the 'capital-days released' justification (604,756) has no economic content for this lane. What it bought: 701 slots worth $117.97 if every slot were refilled at the ex-outlier per-leg rate ($0.168/leg), $2.69 actually earned (16 legs refilled in 4.2 days = 2.3% of the release). What it paid: exit alpha -$831.70 (-48.36% of notional) on the \u2026",
-      "evidence": "DECISION RULE: ship when unit-tested (refuses at headroom >=15% or net growth <=0) AND a 14-day shadow permits >=1 fire in the growth regime and 0 in the current one AND the leg cap blocks 0 copies on suppressed days.",
-      "revert": "REFUTATION: if the '[STANDARD] open-position cap' block counter reaches >=20 copies on gate-suppressed days in the 30 days after shipping, slot pressure was real -> revert.",
-      "source": "roadmap:v66-cap-pressure-gate",
-      "createdAt": "2026-11-11T06:56:00-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "",
-      "_column": "Scheduled"
-    },
-    {
-      "id": "apr-standard-fill-aware-booking",
-      "lane": "A",
-      "status": "pending",
-      "title": "STANDARD fill-aware booking \u2014 1c of entry is 62% of the 90d profit (10-29 profit review, Lane A)",
-      "proposal": "PROPOSED, NOTHING APPLIED. C-200 got fill-aware booking on 2026-10-28 (c6222f7); STANDARD, 72% of the book's notional, still books every entry at the mid. WHY TODAY: scripts/profit-sellside.py SS.8 prices the lever on the book itself -- 1c better entry on every settled leg = +$1,439.33 on the last 90d settled notional ($28,882) = 5.0% of notional, +$1,891.61 all-time (4.5%). The 90d realised result it would re-price is +$2,329.01 = +8.1%. One cent is 62% of the entire 90d profit. The same run measures the finished book at $11.14 per $1k-capital-day, which implies $448,858 of open capital for $5,000/day at the current edge -- 87x the $5,155 deployed. CONTEXT (new, same run): the entry is the \u2026",
-      "evidence": "DECISION RULE: adopt when, over >=300 forward legs, the resolver-stamped entry is worse than the booked mid by a median >=0.5c AND the re-booked 90d ROI falls >=1.0pp.",
-      "revert": "RECOMMENDATION: HOLD to the gate, then adopt price-honest booking as a BOOKKEEPING TRUTH (rollback FILL_AWARE_BOOKING=0), not as an edge;",
-      "source": "roadmap:standard-fill-aware-booking",
-      "createdAt": "2026-11-11T06:56:00-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Proposed 2026-10-29",
-      "_column": "Scheduled"
     },
     {
       "id": "apr-v66-retire-calendar-trigger",
@@ -426,6 +298,38 @@
       "_column": "Backlog"
     },
     {
+      "id": "apr-profit-fill-class-basis",
+      "lane": "A",
+      "status": "pending",
+      "title": "LANE A PROPOSAL \u2014 C-200 is 85% of post-flip notional and its PROVEN fills lose 46.7%; size and advance the ladder on the filled class only",
+      "proposal": "WHY: the fill-aware booking flip (2026-10-28) split C-200 into filled / unfilled / unresolved, and no table since has split by that class. MEASURED (read-only, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk = simulatedPositionSize; market-clustered CIs; 5,842 finished legs, $67,986): post-flip C-200 = 271 legs, $6,888, -$49.70 (-0.7%). FILLED 60 legs $1,103 -$515.50 (-46.7%, CI -70.9..-14.4) \u2014 broad across legs (ex-top-1 -52.5%, ex-top-5 -69.6%) and negative in EVERY clip bucket (<=$10 -15.2%, $10-20 -28.5%, >$40 -90.4%). UNRESOLVED 79 legs $2,604 +$465.90 (+17.9%, CI -30.7..+80.1) \u2014 and that class decides the lane's sign. Filled minus unresolved -64.6pp CI \u2026",
+      "evidence": "MEASURED (read-only, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk = simulatedPositionSize;",
+      "revert": "",
+      "source": "roadmap:profit-fill-class-basis",
+      "createdAt": "2026-11-12T08:05:44-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-12 by the profit review (drafts/profit-recs-20261112.md, instrument scripts/profit-fill-cohort.py). NOT APPLIED \u2014 Lane A: it changes how much the lane risks and what the ladder credits.",
+      "_column": "Scheduled"
+    },
+    {
+      "id": "apr-c200-realized-peak-rebase",
+      "lane": "A",
+      "status": "pending",
+      "title": "LANE A PROPOSAL \u2014 C-200 is HALTED and cannot restart itself: rebase the realized drawdown watermark 11,068.58 -> 7,548.21",
+      "proposal": "WHY: the approved ledger repair (d974287) repriced 233 legs to the sibling-complement price, removing $3,843.89 of C-200 PnL. Net worth fell $10,813 -> $6,970 in one tick and realized drawdown went 2.3% -> 37.0%, past the 20% gate; every cycle since 12:43 has printed [PRE-LOOP HALT] and there have been 0 copies. VERIFIED BY ME (read-only): data/c200-drawdown.json holds realizedPeak=11,068.58, basis=realized, basisDeclaredAt=2026-09-18; the last BANKROLL_200 open is 2026-11-11 18:10:56 UTC; BANKROLL_200 realizedPnl is 5,631.94 on a 1,900 principal. NOT RE-MEASURED BY ME (from the review): NW 7,548.21 against the 8,854.86 line (+1,306.65 needed) with 12 open legs / $527.64 and no admissions; \u2026",
+      "evidence": "NOT RE-MEASURED BY ME (from the review): NW 7,548.21 against the 8,854.86 line (+1,306.65 needed) with 12 open legs / $527.64 and no admissions;",
+      "revert": "",
+      "source": "roadmap:c200-realized-peak-rebase",
+      "createdAt": "2026-11-12T10:42:02-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-12 by the tuning review (drafts/tuning-review-20261112.md). NOT APPLIED \u2014 Lane A: it changes when the lane is allowed to trade.",
+      "_column": "Scheduled"
+    },
+    {
       "id": "apr-polyterm-p3-hygiene-preregistered-read",
       "lane": "B",
       "status": "approved",
@@ -456,15 +360,139 @@
       "kanbanTaskId": "t_803cc632",
       "_card_dates": "Built 2026-09-28 with P3 (single script, keyless) \u00b7 REPAIRED + VERIFIED 2026-11-11 (v1 route was 410 Gone; now `/v2/holders?conditionId=` with cursor paging and an enumerated-supply denominator \u2014 drafts/polyterm-p5-holders-concentration-20261111.md) \u00b7 read not taken \u00b7 gated behind the same pre-registered bar",
       "_column": "In Progress"
+    },
+    {
+      "id": "apr-standard-exit-rule-replay",
+      "lane": "A",
+      "status": "approved",
+      "title": "STANDARD exit rule - 168h replay RUN: whole-book exit fails its own pre-registered rule (-$763 PnL for -78% capital-days); recorded NULL",
+      "proposal": "FINDING (profit review 2026-10-20, reproduced): the ENTIRE stale-exit / capital-recycling block is scoped `botId === \"BANKROLL_200\"` (scripts/update-pnl.ts:240). STANDARD exits only on market resolution or a dead-slug 404 older than 24h (update-pnl.ts:148-156, lane-agnostic). It has no time exit and no adverse exit, so its hold time is set by market TERM, not by information decay. CONSEQUENCE: 1,269 open legs = only 357 distinct bets, $13,623 notional, weighted age 76.3 days. Stranded capital-days 1,033,886 vs 566,915 for the ENTIRE finished history \u2014 the live book holds 1.8x more capital-days than every trade ever completed. Edge per capital-day over 30d: C-200 $0.3818 (1.70d hold) vs \u2026",
+      "evidence": "DECISION RULE (pre-registered): adopt the exit when capital-days fall >=50% while booked PnL falls <$150 over 90d.",
+      "revert": "",
+      "source": "roadmap:standard-exit-rule-replay",
+      "createdAt": "2026-11-11T02:07:48-06:00",
+      "decidedAt": "2026-11-12T16:03:31.673Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_fe85261a",
+      "_card_dates": "Carded 2026-10-20 (profit review 2026-10-20, user-approved 'yes to both'); 168h replay RUN 2026-11-12 (read-only, no change applied)",
+      "_column": "Done"
+    },
+    {
+      "id": "apr-sizing-rails-dead-and-inverse",
+      "lane": "A",
+      "status": "approved",
+      "title": "Sizing: BotBankroll min/max are dead fields (0 refs); C-200 sizes with edge (+0.81) but STANDARD against it (\u22120.86)",
+      "proposal": "THREE 'max size' numbers exist and only one binds: BotBankroll.minPositionSize/maxPositionSize STANDARD 0.25/20.00 C-200 0.10/30.00 -- READ NOWHERE BOT_LIMITS (src/lib/safety.ts:18) STANDARD 0.25/20.00 C-200 0.10/20.00 -- legacy path only rules.kellyMaxSizeUsd (score-trades.ts:837) C-200 100 -- THIS BINDS DEAD-FIELD PROOF: `maxPositionSize` and `minPositionSize` each appear ZERO times repo-wide outside scripts/sizing-read.py (the script that produced this table). Declared in the Prisma schema, present in BotBankroll, consulted by nothing. clampPaperSize does `hi = maxUsd !== undefined ? Math.max(limits.min, maxUsd) : limits.max`, so when the Kelly path passes maxSizeUsd:100 the ceiling is \u2026",
+      "evidence": "Re-measured 2026-11-12: 2,133 C-200 legs +$6,210.65 on $23,151 (unweighted CI [+6.1,+19.8]);",
+      "revert": "",
+      "source": "roadmap:sizing-rails-dead-and-inverse",
+      "createdAt": "2026-11-11T02:07:48-06:00",
+      "decidedAt": "2026-11-12T16:03:40.908Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_f0836393",
+      "_card_dates": "Measured 2026-10-20",
+      "_column": "Scheduled"
+    },
+    {
+      "id": "apr-t_d8ec3c64",
+      "lane": "A",
+      "status": "approved",
+      "title": "APPROVAL NEEDED (Lane A): per-position cap vs concurrent-long-shot limit \u2014 concentration test FIRED",
+      "proposal": "Lane A gate. Parent card t_d7cb75e3 measured the single-loss concentration test (pre-registered 2026-10-21 as TEST ONLY; its decision rule now **FIRES**) and changed nothing. This card does not authorise a rule change: it is the approval step the parent card names (\"DO NOT implement any cap without a second approval\"). MEASURED (primary window 2026-09-07T00:41Z \u2192 2026-10-30T01:50Z, read-only, verified): - C-200 (Kelly, $100 cap, NW $8,337.95): daily peak concurrent long-shot full-loss exposure median $334.99 (4.7 %) / p90 $890.91 / max $1,120.52 (39.3 %); 16 of 54 days >10 %, 15 >15 %; worst 2026-09-15 = 23 legs / $1,090.59 = 39.3 % of $2,771.99 NW (long-shots = 83.6 % of open cost). ALL 16 \u2026",
+      "evidence": "Parent card t_d7cb75e3 measured the single-loss concentration test (pre-registered 2026-10-21 as TEST ONLY;",
+      "revert": "",
+      "source": "kanban:t_d8ec3c64",
+      "origin": "kanban",
+      "blockKind": "",
+      "createdAt": "2026-11-11T02:09:54-06:00",
+      "decidedAt": "2026-11-12T16:10:18.922Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_d8ec3c64"
+    },
+    {
+      "id": "apr-fee-booking-net-ledger",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 book the taker fee in the ledger and in the ladder advance (27% of measured edge is unbooked)",
+      "proposal": "WHY: `PaperTrade` has no fee column, `src/lib/paper.ts` writes realizedPnl from the price path alone, and `src/lib/copy-cost.ts` says so in its header ('the paper fill crosses no spread and pays no fee'). The only fee-aware gate (`src/lib/scoring/price-edge.ts`) is `status: \"shadow\"` and wired to nothing, so the decision loop AND the scoreboard are both fee-blind. MEASURED (scripts/profit-fee-net.py, read-only, bet-level = first leg per wallet/market/outcome): finished book 4,890 bets / $52,494, gross +8.31% -> net +6.05% (2.25% of notional in fee); STANDARD 3,591 bets / $43,463, +4.16% -> +2.13% and 3.63 -> 1.86 $/1k-capital-day (49% haircut); BANKROLL_200 +28.28% -> +24.93%. Ladder rate \u2026",
+      "evidence": "MEASURED (scripts/profit-fee-net.py, read-only, bet-level = first leg per wallet/market/outcome): finished book 4,890 bets / $52,494, gross +8.31% -> net +6.05% (2.25% of notional in fee);",
+      "revert": "Design: 4 NULLABLE columns (feeUsd, feeExitUsd, feeRate, feeBasis) + src/lib/fee.ts (imports the law from price-edge.ts, no fourth copy) + scripts/backfill-fee-usd.ts (dry-run default, exercised end-to-end on a probe DB: apply + revert verified, realizedPnl untouched) + tests/fee.test.ts (12 green) + scripts/profit-fee-booking-preflight.py (dry run) + 5 read sites (page.tsx:297, \u2026",
+      "source": "roadmap:fee-booking-net-ledger",
+      "createdAt": "2026-11-11T06:56:00-06:00",
+      "decidedAt": "2026-11-12T16:10:40.906Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_2a23291d",
+      "_card_dates": "Proposed 2026-11-02 by the profit review (drafts/profit-recs-20261102.md). NOT APPROVED \u2014 Lane A: changes the PnL the ladder advances on. | Lane A read 2026-11-02 (drafts/fee-booking-net-ledger-20261102.md, instrument scripts/fee-ladder-reread.py): REFUTED ON ITS OWN 30-DAY RUNG CLAUSE (0 of 30 days) \u2014 withdraw recommended, operator decision pending; NOTHING APPLIED. | APPROVED 2026-11-12 (apr-fee-booking-net-ledger). LANE A PROPOSAL delivered the same day: drafts/fee-booking-net-ledger-20261112.md \u2014 apply-ready in 5 operator commands, NOTHING APPLIED (no db:push, no prisma write, no RuleSet, no merge). Clause 2 re-measured on today's book: still 0 of 30.",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-v66-cap-pressure-gate",
+      "lane": "A",
+      "status": "approved",
+      "title": "v66: fire the STANDARD stale exit on cap pressure, not on the calendar",
+      "proposal": "PROPOSED 2026-10-28 (profit review), nothing applied. Measurement: scripts/profit-exits.py (committed same commit), \u00a7AO.1-AO.10. WHY: v66's only function is protecting standardMaxOpenPositions = 1,300 legs -- STANDARD has NO notional cap (maxGrossExposureUsd is C-200-only, score-trades.ts:198/625; open notional $5,125 = 5.1x that base is the proof), so the 'capital-days released' justification (604,756) has no economic content for this lane. What it bought: 701 slots worth $117.97 if every slot were refilled at the ex-outlier per-leg rate ($0.168/leg), $2.69 actually earned (16 legs refilled in 4.2 days = 2.3% of the release). What it paid: exit alpha -$831.70 (-48.36% of notional) on the \u2026",
+      "evidence": "DECISION RULE: ship when unit-tested (refuses at headroom >=15% or net growth <=0) AND a 14-day shadow permits >=1 fire in the growth regime and 0 in the current one AND the leg cap blocks 0 copies on suppressed days.",
+      "revert": "REFUTATION: if the '[STANDARD] open-position cap' block counter reaches >=20 copies on gate-suppressed days in the 30 days after shipping, slot pressure was real -> revert.",
+      "source": "roadmap:v66-cap-pressure-gate",
+      "createdAt": "2026-11-11T06:56:00-06:00",
+      "decidedAt": "2026-11-12T16:10:54.055Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_f0b144c7",
+      "_card_dates": "",
+      "_column": "Scheduled"
+    },
+    {
+      "id": "apr-standard-fill-aware-booking",
+      "lane": "A",
+      "status": "approved",
+      "title": "STANDARD fill-aware booking \u2014 1c of entry is 62% of the 90d profit (10-29 profit review, Lane A)",
+      "proposal": "PROPOSED, NOTHING APPLIED. C-200 got fill-aware booking on 2026-10-28 (c6222f7); STANDARD, 72% of the book's notional, still books every entry at the mid. WHY TODAY: scripts/profit-sellside.py SS.8 prices the lever on the book itself -- 1c better entry on every settled leg = +$1,439.33 on the last 90d settled notional ($28,882) = 5.0% of notional, +$1,891.61 all-time (4.5%). The 90d realised result it would re-price is +$2,329.01 = +8.1%. One cent is 62% of the entire 90d profit. The same run measures the finished book at $11.14 per $1k-capital-day, which implies $448,858 of open capital for $5,000/day at the current edge -- 87x the $5,155 deployed. CONTEXT (new, same run): the entry is the \u2026",
+      "evidence": "DECISION RULE: adopt when, over >=300 forward legs, the resolver-stamped entry is worse than the booked mid by a median >=0.5c AND the re-booked 90d ROI falls >=1.0pp.",
+      "revert": "RECOMMENDATION: HOLD to the gate, then adopt price-honest booking as a BOOKKEEPING TRUTH (rollback FILL_AWARE_BOOKING=0), not as an edge;",
+      "source": "roadmap:standard-fill-aware-booking",
+      "createdAt": "2026-11-11T06:56:00-06:00",
+      "decidedAt": "2026-11-12T16:28:00.682Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_6346d2b3",
+      "_card_dates": "Proposed 2026-10-29",
+      "_column": "Scheduled"
+    },
+    {
+      "id": "apr-ledger-price-side-repair",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 137 legs still carry the complement price: the book prints +$12,531 where the same exits are +$5,620, and this week's ladder gate prints PASS on it",
+      "proposal": "Restored 2026-11-12: the intake had archived this decided item into `excluded` once its roadmap card was tagged applied/done. Approved decision is recorded on the board.",
+      "evidence": "",
+      "revert": "",
+      "source": "roadmap:ledger-price-side-repair",
+      "createdAt": "2026-11-11T18:35:34.711Z",
+      "decidedAt": "2026-11-11T18:35:34.711Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_da08e8dc"
+    },
+    {
+      "id": "apr-wallet-category-fit-class-swap",
+      "lane": "B",
+      "status": "approved",
+      "title": "Swap the category dimension of wallet scoring onto the real class (token -> marketCategoryClass/Fine)",
+      "proposal": "Restored 2026-11-12: the intake had archived this decided item into `excluded` once its roadmap card was tagged applied/done. Approved decision is recorded on the board.",
+      "evidence": "",
+      "revert": "",
+      "source": "roadmap:wallet-category-fit-class-swap",
+      "createdAt": "2026-11-11T18:35:48.648Z",
+      "decidedAt": "2026-11-11T18:35:48.648Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_eb3d3136"
     }
   ],
   "excluded": [
     {
-      "id": "apr-ledger-price-side-repair",
-      "card": "ledger-price-side-repair",
-      "title": "LANE A PROPOSAL \u2014 137 legs still carry the complement price: the book prints +$12,531 where the same exits are +$5,620, \u2026",
+      "id": "apr-lane-scoped-band-factors",
+      "card": "lane-scoped-band-factors",
+      "title": "LANE-SCOPED C-200 BAND FACTORS - SHIPPED AS v71 (2026-11-03); the deadZone half is unreachable behind the v62 mid-band \u2026",
       "column": "Done",
-      "reason": "tag:applied"
+      "reason": "tag:shipped-v71"
     },
     {
       "id": "apr-lowconf-shadow-dust-floor",
@@ -544,6 +572,13 @@
       "reason": "tag:done"
     },
     {
+      "id": "apr-standard-band-size-shadow",
+      "card": "standard-band-size-shadow",
+      "title": "STANDARD band size factor - CANNOT EXPRESS ITSELF AT THE LIVE CLIP ($20 cap eats every factor); recut 10-29: close or \u2026",
+      "column": "Done",
+      "reason": "tag:closed-2026-11-12"
+    },
+    {
       "id": "apr-standard-maturity-size-factor",
       "card": "standard-maturity-size-factor",
       "title": "STANDARD maturity size factor (10-25 \u00a7AJ) \u2014 awaiting approve/kill; fillability now measured",
@@ -621,6 +656,20 @@
       "status": "approved",
       "why": "card closed, de-tagged or absent from the roadmap",
       "at": "2026-11-11T13:05:43-06:00"
+    },
+    {
+      "id": "apr-lane-scoped-band-factors",
+      "card": "lane-scoped-band-factors",
+      "status": "approved",
+      "why": "card closed, de-tagged or absent from the roadmap",
+      "at": "2026-11-12T10:41:01-06:00"
+    },
+    {
+      "id": "apr-standard-band-size-shadow",
+      "card": "standard-band-size-shadow",
+      "status": "approved",
+      "why": "card closed, de-tagged or absent from the roadmap",
+      "at": "2026-11-12T10:41:01-06:00"
     }
   ]
 }

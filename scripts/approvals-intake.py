@@ -217,6 +217,17 @@ def main():
             continue
         reason = closure_evidence(card)
         if reason:
+            # 2026-11-12 LABEL FIX: a DECIDED item is the record of the operator's choice, not pending
+            # noise. Exclusion belongs to cards that closed before anyone decided them. Applying it to a
+            # decided card archived the decision under "excluded" -- with a reason about the card's
+            # downstream state, not his choice -- and made the page's Approved count lie: two approvals
+            # (ledger-price-side-repair, wallet-category-fit-class-swap) vanished the moment their cards
+            # were tagged applied after the approved work landed. Decided items are never excluded.
+            prior_decided = existing.get(f"apr-{card.get('id')}")
+            if prior_decided is not None and str(prior_decided.get("status")) in ("approved", "declined"):
+                items.append(prior_decided)
+                kept += 1
+                continue
             skipped_closed.append({
                 "id": f"apr-{card.get('id')}",
                 "card": str(card.get("id") or ""),
@@ -254,7 +265,11 @@ def main():
             continue
         if str(it.get("source") or "").startswith("roadmap:"):
             # Not rebuilt => the roadmap no longer asserts it as a pending decision (closed, tag
-            # removed after an approval, or the card is gone). Either way it must leave the queue.
+            # removed after an approval, or the card is gone). Either way it must leave the queue --
+            # unless it was DECIDED, in which case it stays as the record of that decision.
+            if str(it.get("status")) in ("approved", "declined"):
+                items.append(it)
+                continue
             retired.append({"id": iid, "card": str(it.get("source")).split(":", 1)[1],
                             "status": it.get("status"),
                             "why": "card closed, de-tagged or absent from the roadmap"})
