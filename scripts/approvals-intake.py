@@ -94,7 +94,18 @@ def closure_evidence(card):
     # thing that shipped -- measured on the live board, "APPLIED"/"SHIPPED" mid-sentence were the
     # single most common false-closure signal (ml1-price-baseline-drift: instrument shipped, BAR
     # pending; category-seats-never-released: the C-200 half shipped, the seat release did not).
-    STAMP = re.compile(r"^[\s\-—–:|*]+(" + "|".join(CLOSED_MARKERS) + r")\b")
+    # 2026-11-12 FIX — the separator class used to be `+`, i.e. a stamp had to be PRECEDED by one of
+    # those characters. But the splitter above consumes whitespace (`\s+` after a sentence, `\n` for a
+    # line), so no segment ever BEGINS with whitespace: a note line that opens exactly on the stamp
+    # ("...not claimed falsely.\n\nDONE 2026-11-09 (Lane B ...)") could never match, and only stamps
+    # behind a literal dash/marker ("--- APPLIED ...") did. Measured consequence: card
+    # polyterm-p1-provenance-persistence sat in column Done with a `needs-approval` tag after its work
+    # shipped and verified, entered the queue as a PENDING decision, and the operator's approve on it
+    # spawned a kanban task for work already committed — a real decision slot spent on a closed card.
+    # The separator is now OPTIONAL, which changes nothing about what counts as a stamp (still a
+    # segment-leading verdict, still not a "… IF" clause): re-measured across the 41 pending-tagged
+    # cards, this closes exactly that one card and leaves the other 40 untouched.
+    STAMP = re.compile(r"^[\s\-—–:|*]*(" + "|".join(CLOSED_MARKERS) + r")\b")
     for seg in re.split(r"(?<=[.;])\s+|\n", str(card.get("note") or "")):
         up = seg.strip().upper()
         if not up:
@@ -335,5 +346,47 @@ def main():
     return 0
 
 
+def self_test():
+    """Prove the closure filter can still say YES and still says NO to the traps.
+
+    Every case here is a real shape from the live roadmap. The negative controls matter more than
+    the positive one: an over-eager closure filter silently hides decisions, which is the failure
+    direction the 2026-11-11 note rewrite was written against.
+    """
+    cases = [
+        # (label, card, expect_closed)
+        ("stamp opens a new note line (the 2026-11-12 fix)",
+         {"id": "x", "title": "some card", "tags": ["needs-approval"],
+          "note": "CONTEXT: this shipped nothing; the card exists so the claim is not false.\n\nDONE 2026-11-09 (Lane B instrument repair, commit 61487e1)."}, True),
+        ("stamp behind a dash still closes",
+         {"id": "x", "title": "some card", "tags": ["needs-approval"],
+          "note": "measured, then:\n--- APPLIED AND VERIFIED 2026-10-22"}, True),
+        ("pre-registered kill clause is not a verdict",
+         {"id": "x", "title": "some card", "tags": ["awaiting-approval"],
+          "note": "REFUTED IF the CI straddles zero. Nothing applied."}, False),
+        ("'nothing applied' is not a closure",
+         {"id": "x", "title": "some card", "tags": ["awaiting-approval"],
+          "note": "PROPOSED 2026-10-27, NOTHING APPLIED -- awaiting a one-word choice."}, False),
+        ("mid-sentence 'shipped' is prose, not a stamp",
+         {"id": "x", "title": "some card", "tags": ["awaiting-approval"],
+          "note": "The instrument shipped 2026-10-27; the bar change is still pending."}, False),
+        ("a pending card with no closure text stays pending",
+         {"id": "x", "title": "some card", "tags": ["lane-a"],
+          "note": "Cheap to finish. Decision and refutation below."}, False),
+    ]
+    ok = True
+    for label, card, expect in cases:
+        got = bool(closure_evidence(card))
+        flag = "ok " if got == expect else "FAIL"
+        if got != expect:
+            ok = False
+        print(f"  [{flag}] {label}: expected {'closed' if expect else 'pending'}, got "
+              f"{'closed' if got else 'pending'} ({closure_evidence(card) or 'no evidence'})")
+    print(f"self-test: {'PASS' if ok else 'FAIL'} ({len(cases)} cases)")
+    return 0 if ok else 1
+
+
 if __name__ == "__main__":
+    if "--self-test" in sys.argv[1:]:
+        raise SystemExit(self_test())
     raise SystemExit(main())
