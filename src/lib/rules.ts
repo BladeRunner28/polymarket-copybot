@@ -275,6 +275,23 @@ export interface Rules {
   // each other. Expressed as a fraction of the effective exposure cap, so the
   // ceiling scales with the equity-linked cap. 0 = disabled.
   maxWalletNotionalPctOfCap: number; // ceiling = pct × effective exposure cap
+  // v74 (kelly rec 4; measured 2026-11-13 on card `kelly-single-loss-concentration-test`,
+  // approved via the approvals inbox 2026-11-13): CONCURRENT LONG-SHOT rail, PER LANE.
+  // The v45/v55/v58 rails bound one slug, one marketId and one wallet; nothing bounded the SUM
+  // of simultaneous long-shot (< longshotMaxPrice) legs. With the Kelly clip at $100 = 1.32% of
+  // C-200's realised net worth, a cluster of those legs is a correlated full-loss book, and the
+  // 20% drawdown gate is too coarse to catch it (it reads the whole equity curve, not the
+  // concentration of the open book). Measured on the full non-demo book, 2026-07-14..11-13:
+  // C-200 open long-shot notional exceeded 10% of NW on 22 of 90 entry-days (peak 60.85% on
+  // 2026-09-14 = $1,121 on NW $1,842) and STANDARD on 103 of 116 (max 21.33%). Refuse a new
+  // long-shot copy when open long-shot notional + this leg would EXCEED this percentage of the
+  // lane's REALISED net worth (principal + realised PnL — the same basis ddBasis declares).
+  // Level sweep the choice rests on (blocked legs / their realised PnL): C-200 10% 74/+$1,595,
+  // 15% 58/+$1,452, 20% 33/−$850 (saves $850), 25% 30/−$643; STANDARD 10% 338/+$1,667,
+  // 15% 132/+$745, 20% 23/+$182, 25% blocks nothing. 20% is the tightest level that is
+  // value-positive where the peak occurred; 0 = disabled (a ruleset lacking the field behaves
+  // exactly as pre-v74).
+  maxConcurrentLongshotPctOfNetWorth: number; // 20 = at most 20% of realised NW in open long-shots
   // v59 (2026-09-19 daily report rec 2, user-approved): the BASIS the per-wallet
   // ceiling is measured on. "stock" (default/legacy) = the wallet's whole open
   // notional, which freezes a wallet already above the ceiling outright; "delta"
@@ -471,6 +488,9 @@ export const DEFAULT_RULES: Rules = {
   maxMarketLegsPerMarketId: 0,
   // v58: per-wallet ceiling disabled by default, same convention.
   maxWalletNotionalPctOfCap: 0,
+  // v74: concurrent long-shot ceiling disabled by default, same convention (a ruleset lacking
+  // the field reads this 0 and behaves byte-identically to pre-v74).
+  maxConcurrentLongshotPctOfNetWorth: 0,
   walletCapBasis: "stock",
   // v60: band-scoped size factor disabled by default, same convention.
   c200BandSizeFactor: 1,

@@ -14,7 +14,7 @@ import { priceForOutcome, isYesSideOutcome } from "../src/lib/outcome-price";
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails, C200_BAND_DEFAULTS } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
-import { effectiveExposureCap, marketCapDecision, walletCapDecision, isPortfolioGate } from "../src/lib/exposure-cap";
+import { effectiveExposureCap, marketCapDecision, walletCapDecision, longshotConcurrencyDecision, isPortfolioGate } from "../src/lib/exposure-cap";
 import { readWalletCapBaseline, baselineFor } from "../src/lib/wallet-cap-basis";
 import { applyBandSizeFactor, isInBandRange } from "../src/lib/band-size";
 import { appendWalletCapShadow } from "../src/lib/shadow-wallet-cap";
@@ -269,6 +269,49 @@ async function main() {
     const cat = researchCategoryFor(ot?.marketQuestion, ot?.marketCategory);
     if (cat) c200CategoryCounts.set(cat, (c200CategoryCounts.get(cat) ?? 0) + 1);
     if (ot?.marketCategory) c200SlugCounts.set(ot.marketCategory, (c200SlugCounts.get(ot.marketCategory) ?? 0) + 1);
+  }
+
+  // v74 (kelly rec 4; measured 2026-11-13, approved via the approvals inbox 2026-11-13):
+  // concurrent LONG-SHOT rail inputs, PER LANE. Two inputs the v45/v55/v58 rails never had:
+  //   * the lane's REALISED net worth (principal + realised PnL) — the basis `ddBasis` declares.
+  //     MTM is deliberately NOT used: unrealised marks raise NW and would LOOSEN the percentage,
+  //     so realised-only is the strict direction (measured both ways in the card's instrument).
+  //   * the lane's open long-shot notional (< longshotMaxPrice), summed over the open book.
+  // Seeded here and incremented ONLY at the booking point below, so a candidate the loop refuses
+  // later cannot consume headroom (the v41 category-seat defect, fixed 2026-11-12).
+  const standardBankrollRow = await prisma.botBankroll.findUnique({ where: { botId: "STANDARD" } });
+  const netWorthByLane = new Map<string, number>([
+    ["BANKROLL_200", realizedOnlyNW],
+    ["STANDARD", (standardBankrollRow?.principal ?? 0) + (standardBankrollRow?.realizedPnl ?? 0)],
+  ]);
+  const longshotOpenByLane = new Map<string, number>([
+    ["BANKROLL_200", 0],
+    ["STANDARD", 0],
+  ]);
+  {
+    const openLongshotRows = await prisma.paperTrade.findMany({
+      where: { botId: { in: ["BANKROLL_200", "STANDARD"] }, status: "open" },
+      select: { botId: true, entryPrice: true, simulatedPositionSize: true },
+    });
+    for (const row of openLongshotRows) {
+      if (row.entryPrice >= rules.longshotMaxPrice) continue;
+      longshotOpenByLane.set(
+        row.botId,
+        (longshotOpenByLane.get(row.botId) ?? 0) + (row.simulatedPositionSize ?? 0)
+      );
+    }
+  }
+  // One write-only line per lane per cycle. This is the FORWARD read the card's retirement clause
+  // needs ("retire by 2027-01-31 unless it has bound") — it prints the number the rail compares
+  // whether the rail is armed or not, so an inert rail can be told apart from an unmeasured one.
+  for (const lane of ["BANKROLL_200", "STANDARD"]) {
+    const nw = netWorthByLane.get(lane) ?? 0;
+    const ls = longshotOpenByLane.get(lane) ?? 0;
+    log(
+      `[LONGSHOT-CONCURRENCY] ${lane} open long-shot $${ls.toFixed(2)} = ${(nw > 0 ? (ls / nw) * 100 : 0).toFixed(2)}% of realised NW $${nw.toFixed(2)} | rail ${rules.maxConcurrentLongshotPctOfNetWorth}%${
+        rules.maxConcurrentLongshotPctOfNetWorth > 0 ? "" : " (disabled)"
+      }`
+    );
   }
 
   // v61 (tuning review #33 rec 1, user-approved 2026-09-22): observation-only
@@ -1161,6 +1204,36 @@ async function main() {
             c200WalletNotional.set(t.walletAddress, walletHere + walletSize);
           }
 
+          // v74 (kelly rec 4, approved via the approvals inbox 2026-11-13): CONCURRENT LONG-SHOT
+          // rail, PER LANE. Placed on the FINAL size, after v55/v58 and immediately before
+          // booking, so nothing downstream can resize past it. LANE-SCOPED on purpose: it reads
+          // one lane's own open long-shot book against that lane's own realised net worth, so it
+          // can never freeze both books the way a portfolio gate does (isPortfolioGate() must
+          // stay false for this reason string — it is checked BEFORE the per-bot loop and would
+          // leave no leg-block trail).
+          // Long-shot-ness of the INCOMING leg reads `currentPrice`, the price every band
+          // decision in this loop uses; the OPEN book is measured on booked `entryPrice`, because
+          // that is the level the book actually stores (mid − fill credit on C-200).
+          const isLongshotLeg = currentPrice < rules.longshotMaxPrice;
+          if (rules.maxConcurrentLongshotPctOfNetWorth > 0) {
+            const laneNW = netWorthByLane.get(botId) ?? 0;
+            const openLongshot = longshotOpenByLane.get(botId) ?? 0;
+            const legSize = positionSize || 0.25;
+            const lsVerdict = longshotConcurrencyDecision({
+              openLongshotNotionalUsd: openLongshot,
+              sizeUsd: isLongshotLeg ? legSize : 0,
+              pctOfNetWorth: rules.maxConcurrentLongshotPctOfNetWorth,
+              netWorthUsd: laneNW,
+            });
+            if (lsVerdict.blocked) {
+              log(
+                `[${botId}] v74 concurrent long-shot cap (${lsVerdict.why}) — skipping copy ${t.marketId}`
+              );
+              legBlocks.push(`${botId}: v74 concurrent long-shot cap (${lsVerdict.why})`);
+              continue;
+            }
+          }
+
           await openPaperTrade({
             botId,
             venue: executionVenue,
@@ -1233,6 +1306,16 @@ async function main() {
             c200CategoryCounts.set(tradeCat, (c200CategoryCounts.get(tradeCat) ?? 0) + 1);
           }
           legsOpened++;
+
+          // v74: the long-shot dollar is consumed HERE, at the booking point — a candidate that
+          // passes this gate and then fails a later step must not leave headroom spent (the same
+          // defect class as the v41 category seat, fixed 2026-11-12).
+          if (isLongshotLeg) {
+            longshotOpenByLane.set(
+              botId,
+              (longshotOpenByLane.get(botId) ?? 0) + (positionSize || 0.25)
+            );
+          }
 
           // Counters and the copy alert belong to a SUCCESSFUL open, so they live
           // inside this per-leg loop. They used to sit after it, once per scored
