@@ -142,3 +142,7 @@ data/wallet-17dd-positions.json.tmp
 # The READ artifact data/lane-a-seat-basis-read.json IS committed, so the tables re-read offline.
 data/wallet-seat-positions.json
 data/wallet-seat-positions.json.tmp
+
+# Profit review fill-tape cache (2026-11-13): raw CLOB prices-history responses, one JSON per
+# (token, dispatch minute). Refetchable keyless; scripts/profit-fill-tape.py rewrites it.
+data/fill-tape-cache/
