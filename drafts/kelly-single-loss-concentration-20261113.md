@@ -138,7 +138,7 @@ Verification (all executed):
 | `npx tsc --noEmit` | clean except the pre-existing `scripts/apply-v73-c200-cheap-band-clip.ts` error (another session's file, untouched) |
 | live loader probe (`getActiveRules` → field → helper) | v73 reads **20**; at-cap allowed, +1¢ blocked, per-lane caps $1,514.19 / $4,116.05; a ruleset lacking the field reads 0 and blocks nothing |
 | DB | v73 active, v72 inactive; `RuleChange` row is **one field**, before `{0}` → after `{20}`; v73's JSON is identical to v72's apart from that key |
-| next live cycle | `[LONGSHOT-CONCURRENCY]` line per lane (see §9) |
+| first live scoring cycle after arming (10:11:44) | printed, with no error in the run: `[LONGSHOT-CONCURRENCY] BANKROLL_200 open long-shot $350.00 = 4.62% of realised NW $7570.95 \| rail 20%` and `[LONGSHOT-CONCURRENCY] STANDARD open long-shot $2496.32 = 12.13% of realised NW $20580.25 \| rail 20%` — the armed value is being read in production, not merely stored |
 
 Nothing else moved: the $100 Kelly clip, every band/entry/exit rule, the v55/v58 rails, the
 drawdown gate and every booking/PnL path are untouched.
