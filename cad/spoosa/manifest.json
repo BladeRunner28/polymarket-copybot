@@ -715,14 +715,14 @@
         8.5
       ],
       "plate_mm": [
-        92.5,
-        30.0,
+        88.0,
+        22.0,
         15.0
       ],
       "insert_preset": "ruthex-1/4-20-12.7",
       "insert_len": 12.7,
-      "volume_cm3": 37.36,
-      "mass_asa_g": 40.0,
+      "volume_cm3": 24.78,
+      "mass_asa_g": 26.5,
       "watertight": true,
       "file": "spoosa_coupon_8p1_8p2_8p3_8p4_8p5.stl"
     },
@@ -752,20 +752,7 @@
       "file": "spoosa_custom110x110_2x1q4-20.stl"
     }
   ],
-  "skipped_this_run": [
-    "400x200 x1: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x200 x2: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x200 x4: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x200 x8: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x400 x1: plate 460x460 mm exceeds the 350x350 mm bed",
-    "400x400 x2: plate 460x460 mm exceeds the 350x350 mm bed",
-    "400x400 x4: plate 460x460 mm exceeds the 350x350 mm bed",
-    "400x400 x8: plate 460x460 mm exceeds the 350x350 mm bed",
-    "600x400 x1: plate 660x460 mm exceeds the 350x350 mm bed",
-    "600x400 x2: plate 660x460 mm exceeds the 350x350 mm bed",
-    "600x400 x4: plate 660x460 mm exceeds the 350x350 mm bed",
-    "600x400 x8: plate 660x460 mm exceeds the 350x350 mm bed"
-  ],
+  "skipped_this_run": [],
   "orphans_on_disk": [
     "spoosa_400x200_1x1q4-20.stl",
     "spoosa_400x200_2x1q4-20.stl",

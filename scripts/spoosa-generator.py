@@ -244,38 +244,53 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
 
 
 def build_coupon(insert_key: str, plate_t: float, wall: float,
-                 bores: list[float]) -> tuple[trimesh.Trimesh, dict]:
-    """A tiny fit-test block carrying one bore per candidate diameter.
+                 bores: list[float], height: float = 22.0) -> tuple[trimesh.Trimesh, dict]:
+    """A small fit-test block carrying one bore per candidate diameter.
 
     WHY: the insert is tapered (8.7 top / 7.9 bottom) and the manufacturer publishes no bore table, so
-    the correct interference is empirical. Printing five 15-minute coupons beats discovering at
-    assembly that 8.3 splits the boss or that 8.5 spins.
+    the correct interference is empirical. A coupon beats discovering at assembly that 8.3 splits the
+    boss or that 8.5 spins.
+
+    2026-11-13: the first version cut each bore with a cylinder PLUS a separate rotated cone for the
+    lead-in, and the exported STL came back as 137 disconnected shells (euler 128) while the in-memory
+    mesh claimed watertight. Bores are now plain cylinders -- the lead-in was cosmetic and it cost a
+    printable part. The lesson is in verify_coupon(): the artefact on disk is what gets checked, not the
+    object in memory.
     """
     ins = INSERT_PRESETS[insert_key]
-    pitch = max(bores) + 2 * wall + 2.0
-    width = pitch * len(bores) + 10.0
+    pitch = max(bores) + 2 * wall + 1.5
+    width = pitch * len(bores) + 8.0
     depth_t = max(plate_t, ins["length"] + 2.0)
+    height = max(height, max(bores) + 2 * wall)
 
     body = trimesh.creation.extrude_polygon(
-        ShapelyPolygon(rrect(width, 30.0, 4.0)), height=depth_t)
+        ShapelyPolygon(rrect(width, height, 4.0)), height=depth_t)
     cut, labels = [], []
     for i, d in enumerate(bores):
-        x = -width / 2.0 + 5.0 + pitch * (i + 0.5)
-        cut.append(trimesh.creation.cylinder(radius=d / 2.0, height=depth_t + 1, sections=64)
-                   .apply_translation((x, 0, depth_t / 2)))
-        lead = trimesh.creation.cone(radius=d / 2.0 + ins["lead"], height=ins["lead"] * 1.5, sections=64)
-        lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0]))
-        cut.append(lead.apply_translation((x, 0, depth_t - ins["lead"] * 0.25)))
+        x = -width / 2.0 + 4.0 + pitch * (i + 0.5)
+        cut.append(trimesh.creation.cylinder(radius=d / 2.0, height=depth_t + 2.0, sections=64)
+                   .apply_translation((x, 0, depth_t / 2.0)))
         labels.append(round(d, 2))
     body = trimesh.boolean.difference([body] + cut, engine="manifold")
-    meta = dict(kind="coupon", bores_mm=labels, plate_mm=[round(width, 2), 30.0, round(depth_t, 2)],
+    meta = dict(kind="coupon", bores_mm=labels,
+                plate_mm=[round(width, 2), round(height, 2), round(depth_t, 2)],
                 insert_preset=insert_key, insert_len=ins["length"],
                 volume_cm3=round(body.volume / 1000.0, 2),
                 mass_asa_g=round(body.volume / 1000.0 * 1.07, 1),
                 watertight=bool(body.is_watertight))
     if not body.is_watertight:
-        raise SystemExit("REFUSING: coupon is not watertight")
+        raise SystemExit("REFUSING: the coupon mesh is not watertight before export")
     return body, meta
+
+
+def verify_exported(path: str, expect_bodies: int = 1) -> tuple[bool, str]:
+    """Re-load the file we just wrote and check THAT, not the object we built it from."""
+    reload = trimesh.load(path)
+    reload.merge_vertices()
+    bodies = len(reload.split(only_watertight=False))
+    ok = reload.is_watertight and bodies == expect_bodies
+    return ok, (f"reloaded {os.path.basename(path)}: watertight={reload.is_watertight} "
+                f"bodies={bodies} euler={reload.euler_number}")
 
 
 def main() -> int:
@@ -331,7 +346,12 @@ def main() -> int:
             raise SystemExit("--coupon needs at least one diameter, e.g. --coupon 8.2,8.3,8.4")
         body, meta = build_coupon(args.insert_preset, args.plate_t, args.wall, bores)
         name = "spoosa_coupon_" + "_".join(str(b).replace(".", "p") for b in bores) + ".stl"
-        body.export(os.path.join(OUT_DIR, name))
+        out_path = os.path.join(OUT_DIR, name)
+        body.export(out_path)
+        ok, detail = verify_exported(out_path)
+        print(f"    {detail}")
+        if not ok:
+            raise SystemExit(f"REFUSING: the exported coupon is not a single watertight solid — {detail}")
         meta["file"] = name
         manifest, made = [meta], 1
         print(f"  {name}")
