@@ -1,0 +1,255 @@
+{
+ "population": 1636,
+ "big_n": 302,
+ "small_n": 1334,
+ "big_share": 0.1845965770171149,
+ "big_mean_stake": 11.659937433146114,
+ "small_mean_stake": 13.446467312166702,
+ "stake_min": 0.6202531645569621,
+ "stake_max": 100.0,
+ "raw": {
+  "pnl_per_leg": {
+   "big": 1.9520529801324504,
+   "small": 3.8723538230884555
+  },
+  "roi_per_dollar": {
+   "big": 0.05550950913595142,
+   "small": 0.14985814146102255
+  }
+ },
+ "concentration": {
+  "big_pnl": {
+   "n": 302,
+   "mean": 1.9520529801324473,
+   "median": -0.04,
+   "trimmed_mean_10pct": -1.5790495867768617,
+   "ex_top10_mean": -3.3067465753424687,
+   "top10_share_of_sum": 2.6378918442122448,
+   "win_share": 0.4205298013245033
+  },
+  "small_pnl": {
+   "n": 1334,
+   "mean": 3.872353823088455,
+   "median": -0.22,
+   "trimmed_mean_10pct": -1.7010674157303325,
+   "ex_top10_mean": -0.7987311178247739,
+   "top10_share_of_sum": 1.204718800089823,
+   "win_share": 0.3853073463268366
+  },
+  "big_roi": {
+   "n": 302,
+   "mean": 0.05550950913595099,
+   "median": -0.00802030456852792,
+   "trimmed_mean_10pct": -0.11180466167014473,
+   "ex_top10_mean": -0.06921280455697325,
+   "top10_share_of_sum": 2.2055770421720764,
+   "win_share": 0.4205298013245033
+  },
+  "small_roi": {
+   "n": 1334,
+   "mean": 0.14985814146102394,
+   "median": -0.11829949238578683,
+   "trimmed_mean_10pct": -0.15584559683430851,
+   "ex_top10_mean": 0.048144182579490186,
+   "top10_share_of_sum": 0.6811432385671803,
+   "win_share": 0.3853073463268366
+  }
+ },
+ "matched_roi": {
+  "table": "roi",
+  "n_big": 302,
+  "n_matched": 298,
+  "coverage": 0.9867549668874173,
+  "gap": 0.12948320335089397,
+  "gap_median": 0.1290891439823573,
+  "se2": 0.21562889222588563,
+  "ci95": [
+   -0.04695897933592899,
+   0.36668731400846694
+  ],
+  "dropped_resamples": 0,
+  "p_gap_positive": 0.9105,
+  "cell_gap_positive_share": null
+ },
+ "matched_pnl": {
+  "table": "pnl",
+  "n_big": 302,
+  "n_matched": 298,
+  "coverage": 0.9867549668874173,
+  "gap": 4.587576949307998,
+  "gap_median": 0.5187499999999999,
+  "se2": 7.685462268632273,
+  "ci95": [
+   -2.2829828160780523,
+   13.052191515871867
+  ],
+  "dropped_resamples": 0,
+  "p_gap_positive": 0.9095,
+  "cell_gap_positive_share": null
+ },
+ "ladder": [
+  {
+   "bucket": "0-25",
+   "n": 972,
+   "pnl_per_leg": 5.238117283950617,
+   "roi_per_dollar": 0.16099751338206308,
+   "median_roi": -0.15176943048793123,
+   "big_bucket": false
+  },
+  {
+   "bucket": "25-250",
+   "n": 362,
+   "pnl_per_leg": 0.20516574585635353,
+   "roi_per_dollar": 0.11994800470065953,
+   "median_roi": 0.0,
+   "big_bucket": false
+  },
+  {
+   "bucket": "250-1000",
+   "n": 149,
+   "pnl_per_leg": -2.1236912751677854,
+   "roi_per_dollar": -0.0011236698570132961,
+   "median_roi": -0.18446700507614208,
+   "big_bucket": true
+  },
+  {
+   "bucket": "1000+",
+   "n": 153,
+   "pnl_per_leg": 5.92124183006536,
+   "roi_per_dollar": 0.11066208214217196,
+   "median_roi": 0.0,
+   "big_bucket": true
+  }
+ ],
+ "era": {
+  "v51-55|big": {
+   "n": 45,
+   "pnl_per_leg": 0.12688888888888855,
+   "roi_per_dollar": 0.10341191569690474
+  },
+  "v51-55|small": {
+   "n": 364,
+   "pnl_per_leg": 2.834615384615382,
+   "roi_per_dollar": 0.0832237623339949
+  },
+  "v56-60|big": {
+   "n": 125,
+   "pnl_per_leg": 4.715199999999996,
+   "roi_per_dollar": 0.15453132706607908
+  },
+  "v56-60|small": {
+   "n": 452,
+   "pnl_per_leg": 8.074756637168147,
+   "roi_per_dollar": 0.2014738068440567
+  },
+  "v61-65|big": {
+   "n": 38,
+   "pnl_per_leg": -1.2936842105263153,
+   "roi_per_dollar": -0.01755219514283866
+  },
+  "v61-65|small": {
+   "n": 91,
+   "pnl_per_leg": 2.9278021978021953,
+   "roi_per_dollar": 0.1981788278001232
+  },
+  "v66-70|big": {
+   "n": 30,
+   "pnl_per_leg": -10.712333333333335,
+   "roi_per_dollar": -0.45947870004615976
+  },
+  "v66-70|small": {
+   "n": 59,
+   "pnl_per_leg": -5.146779661016951,
+   "roi_per_dollar": 0.1058797252610892
+  },
+  "v71+|big": {
+   "n": 39,
+   "pnl_per_leg": 5.717692307692309,
+   "roi_per_dollar": -0.11118032084544162
+  },
+  "v71+|small": {
+   "n": 184,
+   "pnl_per_leg": 0.2771195652173909,
+   "roi_per_dollar": 0.0882929225773213
+  },
+  "v<=50|big": {
+   "n": 25,
+   "pnl_per_leg": 5.678,
+   "roi_per_dollar": 0.4632518639688648
+  },
+  "v<=50|small": {
+   "n": 184,
+   "pnl_per_leg": 2.5563586956521736,
+   "roi_per_dollar": 0.206652585062357
+  }
+ },
+ "print_cluster_prints_mean": 1.9144254278728607,
+ "print_cluster_prints_max": 58,
+ "cluster_arm": {
+  "big_n": 381,
+  "small_n": 1255,
+  "big_roi": 0.07263924753263686,
+  "small_roi": 0.15059687582320858,
+  "matched_roi": {
+   "table": "roi",
+   "n_big": 381,
+   "n_matched": 367,
+   "coverage": 0.963254593175853,
+   "gap": 0.14278740421825667,
+   "gap_median": 0.16832031084367308,
+   "se2": 0.2422599450045643,
+   "ci95": [
+    -0.0542701831096804,
+    0.40191437236390903
+   ],
+   "dropped_resamples": 0,
+   "p_gap_positive": 0.902,
+   "cell_gap_positive_share": null
+  }
+ },
+ "wallet_arm": {
+  "wallets": 16,
+  "big_legs_in_them": 206,
+  "median_wallet_gap": -0.011310997663763173,
+  "mean_wallet_gap": 0.13028940352620683,
+  "wallets_big_worse": 8,
+  "wallets_big_better": 8
+ },
+ "rule": {
+  "gate_per_leg": 1.5,
+  "gate_big_n": 60,
+  "big_n": 302,
+  "threshold_in_roi_at_big_mean_stake": 0.1286456302703561,
+  "primary_basis": "matched, per-$1 staked (roi)",
+  "matched_roi_gap": 0.12948320335089397,
+  "matched_roi_2se": 0.21562889222588563,
+  "matched_roi_gap_in_per_leg_at_big_stake": 1.509766049714759,
+  "matched_pnl_gap_per_leg": 4.587576949307998,
+  "matched_pnl_2se": 7.685462268632273,
+  "raw_pnl_gap_per_leg": 1.9203008429560051,
+  "coverage": 0.9867549668874173,
+  "conditions": {
+   "n_big_ge_60": true,
+   "coverage_ge_0.80": true,
+   "primary_gap_ge_1.50_per_leg_at_big_stake": true,
+   "primary_2se_below_gap": false,
+   "literal_raw_gap_ge_1.50_per_leg": true,
+   "literal_matched_2se_below_gap": false
+  },
+  "fires": false,
+  "decision": "record sourcePrintNotional as a liquidity/era proxy and DROP the axis -- nothing is added, nothing is tagged"
+ },
+ "power": {
+  "sd_roi": 1.1901495441298218,
+  "n_now": 302,
+  "n_needed_for_2se_below_gap": 338
+ },
+ "basis": {
+  "population": "non-demo C-200 legs (BANKROLL_200) with realizedPnl, joined to their admitting DecisionJournal row and the non-observationOnly ObservedTrade print",
+  "level": "one leg; cluster arm = one print cluster (+-300s)",
+  "clock": "leg clock, openedAt >= 2026-09-04; era = journal.ruleSetVersion",
+  "return": "realizedPnl / simulatedPositionSize, per $1 staked, GROSS of fees",
+  "notional": "ObservedTrade.size = USDC (adapter writes usdcSize), never size*price"
+ },
+ "generated_at": "2026-11-13T02:07:25.755822+00:00"
+}
