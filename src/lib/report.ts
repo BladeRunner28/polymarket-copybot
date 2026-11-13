@@ -63,11 +63,21 @@ function driftDecayLine(): string | undefined {
     // against its requirement and name which of the two pre-registered conditions
     // is holding the bar shut.
     const barThreshold = b?.thresholdUsd ?? 0.5;
+    // 2026-11-13 self-audit: this line carries TWO cohort7d values — the per-poll
+    // arm's and the per-signal arm's — and both printed under the bare label
+    // "cohort7d". Live text: "... per-signal ... cohort7d $-0.81) · decay bar: 39
+    // consecutive days ... · cohort7d $-0.73 — TRIPPED". Two numbers, one label,
+    // no way for a reader (or a scraper) to say which population a cohort7d
+    // figure belongs to; the per-signal arm also printed "bar 0/7d" with no
+    // verdict at all, so its tripped state was invisible. Every cohort now names
+    // its arm, every arm prints its verdict, and a negative amount renders
+    // "-$0.81" instead of "$-0.81".
+    const usdSigned = (v: number) => `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(2)}`;
     const cohort = b?.cohort7d;
-    const cohortTxt = cohort === null || cohort === undefined ? "—" : "$" + cohort.toFixed(2);
+    const cohortTxt = cohort === null || cohort === undefined ? "—" : usdSigned(cohort);
     const bar = b
-      ? ` · decay bar: ${b.consecutiveDaysAtOrBelow ?? 0} consecutive days at ≤$${barThreshold.toFixed(2)}` +
-        ` (needs ${b.daysRequired ?? 7}) · cohort7d ${cohortTxt}` +
+      ? ` · decay bar (per-poll): ${b.consecutiveDaysAtOrBelow ?? 0} consecutive days at ≤$${barThreshold.toFixed(2)}` +
+        ` (needs ${b.daysRequired ?? 7}) · cohort7d(per-poll) ${cohortTxt}` +
         (cohort !== null && cohort !== undefined && cohort > barThreshold
           ? ` (> bar, so the cohort gate holds it shut)`
           : "") +
@@ -81,7 +91,7 @@ function driftDecayLine(): string | undefined {
       typeof s.avgPnlPerTradeExDustPerSignal === "number"
         ? ` · per-signal ${s.avgPnlPerTradeExDustPerSignal >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDustPerSignal).toFixed(2)}/trade` +
           ` ex-dust (${s.signalsSettled ?? 0} settled signals` +
-          `${s.decayBarPerSignal ? `, bar ${s.decayBarPerSignal.consecutiveDaysAtOrBelow ?? 0}/${s.decayBarPerSignal.daysRequired ?? 7}d, cohort7d ${s.decayBarPerSignal.cohort7d === null || s.decayBarPerSignal.cohort7d === undefined ? "—" : "$" + s.decayBarPerSignal.cohort7d.toFixed(2)}` : ""})`
+          `${s.decayBarPerSignal ? `, bar ${s.decayBarPerSignal.consecutiveDaysAtOrBelow ?? 0}/${s.decayBarPerSignal.daysRequired ?? 7}d, cohort7d(per-signal) ${s.decayBarPerSignal.cohort7d === null || s.decayBarPerSignal.cohort7d === undefined ? "—" : usdSigned(s.decayBarPerSignal.cohort7d)} — ${s.decayBarPerSignal.tripped ? "TRIPPED" : "not tripped"}` : ""})`
         : "";
     return `• Drift gate counterfactual: ${s.avgPnlPerTradeExDust >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDust).toFixed(2)}/trade ex-dust per poll (${s.marked ?? 0} marked)${ps}${bar}`;
   } catch {
@@ -163,7 +173,25 @@ async function walletScanLine(now: Date): Promise<string | undefined> {
  */
 const SIZING_RANGE_DAYS = 7;
 
-async function observedSizingRanges(now: Date): Promise<Map<string, { min: number; max: number; n: number }>> {
+/**
+ * `failed` is carried OUT of the read, not swallowed.
+ *
+ * 2026-11-13 self-audit: this returned an empty map on any error, and
+ * sizingRangeLine renders an empty map as "no <BOT> trade opened in the last
+ * 7d" — so a failed aggregate read printed as a CLEAN ZERO, visibly identical
+ * to a quiet week. The neighbouring wallet-scan read was fixed for exactly this
+ * on 2026-10-21 ("the old `catch { partials7d = 0 }` printed a clean 0 either
+ * way"); this one kept the defect. Live on 2026-11-13 the line reads
+ * "$4.00–$20.00 (opened last 7d, n=56)", so the happy path is exercised — the
+ * failure path is what had no denominator.
+ */
+type SizingRanges = {
+  ranges: Map<string, { min: number; max: number; n: number }>;
+  failed: boolean;
+  error?: string;
+};
+
+async function observedSizingRanges(now: Date): Promise<SizingRanges> {
   const since = new Date(now.getTime() - SIZING_RANGE_DAYS * 86400000);
   const out = new Map<string, { min: number; max: number; n: number }>();
   try {
@@ -180,14 +208,18 @@ async function observedSizingRanges(now: Date): Promise<Map<string, { min: numbe
       if (min === null || max === null || r._count._all === 0) continue;
       out.set(r.botId, { min, max, n: r._count._all });
     }
-  } catch {
-    return out;
+  } catch (e) {
+    return { ranges: out, failed: true, error: e instanceof Error ? e.message : String(e) };
   }
-  return out;
+  return { ranges: out, failed: false };
 }
 
-function sizingRangeLine(botId: string, ranges: Map<string, { min: number; max: number; n: number }>): string {
-  const s = ranges.get(botId);
+export function sizingRangeLine(botId: string, r: SizingRanges): string {
+  if (r.failed) {
+    const why = (r.error ?? "unknown").replace(/\s+/g, " ").slice(0, 90);
+    return `• Sizing Range: UNAVAILABLE — the opened-window read FAILED (${why}); this is NOT "no trades"`;
+  }
+  const s = r.ranges.get(botId);
   if (!s) return `• Sizing Range: no ${botId} trade opened in the last ${SIZING_RANGE_DAYS}d`;
   const span = s.min === s.max ? `$${s.min.toFixed(2)}` : `$${s.min.toFixed(2)}–$${s.max.toFixed(2)}`;
   return `• Sizing Range: ${span} (opened last ${SIZING_RANGE_DAYS}d, n=${s.n})`;
@@ -428,7 +460,8 @@ export async function generateDailyReport(
   const largestStackShare = largestStack && stdPnlToday !== 0 ? Math.abs(largestStack[1] / stdPnlToday) : 0;
 
   const best = [...stdResolvedToday].sort((a, b) => (b.realizedPnl ?? 0) - (a.realizedPnl ?? 0))[0];
-  const worst = [...stdResolvedToday].sort((a, b) => (a.realizedPnl ?? 0) - (b.realizedPnl ?? 0))[0];
+  // (a `worst` twin was computed here and never printed anywhere — removed
+  // 2026-11-13 so the line a reader trusts is not sitting next to dead code)
 
   // Wallet performance today (Standard strategy used for benchmarks)
   const byWallet = new Map<string, number>();
@@ -468,7 +501,11 @@ export async function generateDailyReport(
         ? "Filtering is avoiding more losers than it misses winners — filters are earning their keep"
         : "Watch for missed winners — filters may be too strict";
 
-  const fmt = (n: number) => `${n >= 0 ? "+" : ""}$${n.toFixed(2)}`;
+  // 2026-11-13 self-audit: `fmt` printed the sign AFTER the dollar sign — live
+  // 2026-11-12 report read "PnL Today: $-9.00" and "Best trade: ... $-9.00" — so
+  // the one number a reader parses at a glance was malformed on every losing
+  // lane. Sign now leads: "−$9.00". Zero still prints without a sign.
+  const fmt = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}$${Math.abs(n).toFixed(2)}`;
   // A value printed AFTER a literal "−" must not carry its own sign: `fmt(-24.4)` there read
   // "day +$93.22 − $-24.40" (2026-11-11 report), a double negative in an arithmetic line the
   // reader is invited to check. Parenthesise, don't strip, so the sign of the subtracted term
@@ -504,7 +541,13 @@ export async function generateDailyReport(
     ``,
     `**System Activity:**`,
     `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})${dayElapsed ? "" : ` — counted 00:00→${localHm(now)} local; the rest of the day is not in this count`}`,
-    best ? `• Best trade: ${short(best.walletAddress)} ${fmt(best.realizedPnl ?? 0)} on ${best.marketId}` : `• Best trade: none resolved today`,
+    // 2026-11-13 self-audit: this read "Best trade: 0x885f…8ed9 $-9.00" on 2026-11-12 —
+    // the day's best STANDARD trade was a LOSS, because the day had exactly ONE
+    // resolved STANDARD trade. "Best" over a sample of one is arithmetically right and
+    // reads as a winner; the population and the lane were both unstated. Name them.
+    best
+      ? `• Best trade (STANDARD, best of ${stdResolvedToday.length} resolved today): ${short(best.walletAddress)} ${fmt(best.realizedPnl ?? 0)} on ${best.marketId}`
+      : `• Best trade: none resolved today`,
     `• Bot vs blind copy (matched basis: hold to resolution, flat $10 both sides): ${beatBlind ? "✅ bot beat blind copying" : "⚠️ blind copy did better"} per dollar staked — copied decisions ${(bench.botFilteredOutcome.roi * 100).toFixed(2)}% of ${usd(bench.botFilteredOutcome.totalCost)} (n=${bench.botFilteredOutcome.resolvedCount} reviewed copies of ${bench.botFilteredOutcome.count}; unreviewed copies are not imputed) vs blind ${(bench.blindCopy.roi * 100).toFixed(2)}% of ${usd(bench.blindCopy.totalCost)} (n=${bench.blindCopy.resolvedCount} of ${bench.blindCopy.count} signals — the reviewed ones)`,
     `• Book on its own basis (EXIT: early exits count, own stake): ${(bench.botFiltered.roi * 100).toFixed(2)}% of ${usd(bench.botFiltered.totalCost)} staked, n=${bench.botFiltered.resolvedCount} settled legs — NOT comparable to the blind arm above`,
     // tradememory-deflated-sharpe (APPROVED 2026-10-21, Lane B): the pre-registered
