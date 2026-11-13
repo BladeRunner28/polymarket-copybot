@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-12T02:23:08Z",
+ "generated_at": "2026-11-12T11:53:42Z",
  "mode": "shadow",
  "lane": "A / shadow-only -- no selection, status, size or rule changes",
  "shadow_start_ms": 1794248012000,
@@ -17,21 +17,21 @@
   "rule_fix": "2026-11-11: verdict() was keyed on the arm's own excess CI. It printed PASS for hard_q with the arm-minus-baseline CI at [-2.91, +5.99]. Now binds on the difference; that case reads TIE."
  },
  "truth": {
-  "markets": 31498,
-  "settled": 26897,
-  "coverage_pct": 6.506
+  "markets": 32584,
+  "settled": 27856,
+  "coverage_pct": 6.694
  },
- "bets_joined": 459331,
- "bets_fit": 438775,
- "bets_forward": 20556,
+ "bets_joined": 468738,
+ "bets_fit": 439261,
+ "bets_forward": 29477,
  "wallets_fit": 1537,
  "bh_family_m": 1353,
  "eligible_neff8": 1132,
  "eb": {
-  "tau2": 22.488618285040154,
-  "tau": 4.742216600392706,
-  "var_x": 78.74399749358587,
-  "mean_se2": 56.25537920854571,
+  "tau2": 22.2125043732278,
+  "tau": 4.713014361661526,
+  "var_x": 78.47806973999593,
+  "mean_se2": 56.26556536676813,
   "note": null
  },
  "arms": {
@@ -94,7 +94,7 @@
     "0xfd0b70ec885499eb7e1bee28f51a112c46675df6"
    ],
    "of_track": 2,
-   "refit_admitted": 55
+   "refit_admitted": 56
   },
   "shrunk": {
    "admitted": 589,
@@ -690,7 +690,7 @@
     "0x66c1a6fe836ff555ca32848646acedbbe93bfa3f"
    ],
    "of_track": 13,
-   "refit_admitted": 595
+   "refit_admitted": 594
   }
  },
  "baseline": {
@@ -751,84 +751,84 @@
  },
  "forward": {
   "baseline": {
-   "bets": 439,
-   "markets": 416,
-   "mean": 1.4234945894641104,
-   "t": 0.827801315223745,
-   "df": 415,
-   "p_pos": 0.20412939922929596,
-   "ci_lo": -2.020284548615686,
-   "ci_hi": 4.740072487336568
+   "bets": 601,
+   "markets": 568,
+   "mean": 0.041164095713956794,
+   "t": 0.028002971525295444,
+   "df": 567,
+   "p_pos": 0.48883481714809834,
+   "ci_lo": -2.715952251817599,
+   "ci_hi": 2.863954583359037
   },
   "baseline_measurable_only": {
-   "bets": 439,
-   "markets": 416,
-   "mean": 1.4234945894641104,
-   "t": 0.827801315223745,
-   "df": 415,
-   "p_pos": 0.20412939922929596,
-   "ci_lo": -2.020284548615686,
-   "ci_hi": 4.740072487336568
+   "bets": 601,
+   "markets": 568,
+   "mean": 0.041164095713956794,
+   "t": 0.028002971525295444,
+   "df": 567,
+   "p_pos": 0.48883481714809834,
+   "ci_lo": -2.715952251817599,
+   "ci_hi": 2.863954583359037
   },
   "arms": {
    "hard_q": {
     "admitted": 54,
     "read": {
-     "bets": 1634,
-     "markets": 733,
-     "mean": 2.202611813289157,
-     "t": 2.6026905629516457,
-     "df": 732,
-     "p_pos": 0.004718368317247616,
-     "ci_lo": 0.48704571999142576,
-     "ci_hi": 3.861081141098518
+     "bets": 2206,
+     "markets": 1012,
+     "mean": 1.3709752055134958,
+     "t": 1.8730171913310283,
+     "df": 1011,
+     "p_pos": 0.030677196792660053,
+     "ci_lo": -0.05431264616665715,
+     "ci_hi": 2.777921492403324
     },
     "vs_baseline": {
-     "mean": 0.7791172238250466,
-     "ci_lo": -3.041924707955972,
-     "ci_hi": 4.630151654004809,
+     "mean": 1.329811109799539,
+     "ci_lo": -1.8624036992218789,
+     "ci_hi": 4.508258663498652,
      "unpaired": true,
      "paired_shared": {
-      "markets": 398,
-      "mean": 1.1728621570425897,
-      "ci_lo": -1.3746753605895043,
-      "ci_hi": 3.892525638536716
+      "markets": 534,
+      "mean": 0.9691326953946553,
+      "ci_lo": -1.2713827147780647,
+      "ci_hi": 3.2278114006370147
      }
     },
     "verdict": "TIE",
-    "why": "forward excess +2.20pp vs baseline +1.42pp, arm CI [+0.49, +3.86], n=1634; TIE: beats the baseline point estimate by +0.78pp but the arm-minus-baseline CI [-1.37, +3.89] includes zero (paired on 398 shared markets)",
+    "why": "forward excess +1.37pp vs baseline +0.04pp, arm CI [-0.05, +2.78], n=2206; TIE: beats the baseline point estimate by +1.33pp but the arm-minus-baseline CI [-1.27, +3.23] includes zero (paired on 534 shared markets); arm CI includes zero [-0.05, +2.78]",
     "scored_frozen": true,
-    "refit_admitted": 55,
-    "refit_of_track": 2
+    "refit_admitted": 56,
+    "refit_of_track": 3
    },
    "shrunk": {
     "admitted": 589,
     "read": {
-     "bets": 9109,
-     "markets": 1155,
-     "mean": 0.18901167406494185,
-     "t": 0.35748826234364806,
-     "df": 1154,
-     "p_pos": 0.36039583980413054,
-     "ci_lo": -0.8421615537836145,
-     "ci_hi": 1.2148843810042755
+     "bets": 11963,
+     "markets": 1668,
+     "mean": 0.006357852090058624,
+     "t": 0.013289829595101922,
+     "df": 1667,
+     "p_pos": 0.49469907627158255,
+     "ci_lo": -0.9397242596553493,
+     "ci_hi": 0.9248939507311806
     },
     "vs_baseline": {
-     "mean": -1.2344829153991685,
-     "ci_lo": -4.714709345293945,
-     "ci_hi": 2.362153635936876,
+     "mean": -0.03480624362389817,
+     "ci_lo": -3.0646816007576954,
+     "ci_hi": 2.9078106024530763,
      "unpaired": true,
      "paired_shared": {
-      "markets": 415,
-      "mean": -0.7193746035357463,
-      "ci_lo": -3.6037697834071074,
-      "ci_hi": 2.2581690665690353
+      "markets": 565,
+      "mean": 0.110594976864834,
+      "ci_lo": -2.461242527735515,
+      "ci_hi": 2.6429194148091906
      }
     },
     "verdict": "FAIL",
-    "why": "forward excess +0.19pp vs baseline +1.42pp, arm CI [-0.84, +1.21], n=9109; does not beat keep-the-set (+0.19pp vs +1.42pp); arm CI includes zero [-0.84, +1.21]",
+    "why": "forward excess +0.01pp vs baseline +0.04pp, arm CI [-0.94, +0.92], n=11963; does not beat keep-the-set (+0.01pp vs +0.04pp); arm CI includes zero [-0.94, +0.92]",
     "scored_frozen": true,
-    "refit_admitted": 595,
+    "refit_admitted": 594,
     "refit_of_track": 13
    }
   }
@@ -837,13 +837,13 @@
  "selection_drift": {
   "hard_q": {
    "added": [
-    "0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b"
+    "0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b",
+    "0x9c56304c8840621ef4c1e707b4c7d708d09878d1"
    ],
    "removed": []
   },
   "shrunk": {
    "added": [
-    "0x033f0346c007323030eb420305ffede19a95618e",
     "0x12e321c11e950ce18a226f453750bb8964b67982",
     "0x49e0265d1a3636870df298e2ef5e681e246e9af1",
     "0x64511822c851d4d56d8c6e5376ecfd724c36b57a",
@@ -863,24 +863,24 @@
  "decision": {
   "hard_q": {
    "verdict": "TIE",
-   "why": "forward excess +2.20pp vs baseline +1.42pp, arm CI [+0.49, +3.86], n=1634; TIE: beats the baseline point estimate by +0.78pp but the arm-minus-baseline CI [-1.37, +3.89] includes zero (paired on 398 shared markets)",
+   "why": "forward excess +1.37pp vs baseline +0.04pp, arm CI [-0.05, +2.78], n=2206; TIE: beats the baseline point estimate by +1.33pp but the arm-minus-baseline CI [-1.27, +3.23] includes zero (paired on 534 shared markets); arm CI includes zero [-0.05, +2.78]",
    "diff_ci_excludes_zero": true,
    "diff_ci": [
-    -1.3746753605895043,
-    3.892525638536716
+    -1.2713827147780647,
+    3.2278114006370147
    ],
-   "diff_ci_basis": "paired on 398 shared markets",
+   "diff_ci_basis": "paired on 534 shared markets",
    "binding": true
   },
   "shrunk": {
    "verdict": "FAIL",
-   "why": "forward excess +0.19pp vs baseline +1.42pp, arm CI [-0.84, +1.21], n=9109; does not beat keep-the-set (+0.19pp vs +1.42pp); arm CI includes zero [-0.84, +1.21]",
+   "why": "forward excess +0.01pp vs baseline +0.04pp, arm CI [-0.94, +0.92], n=11963; does not beat keep-the-set (+0.01pp vs +0.04pp); arm CI includes zero [-0.94, +0.92]",
    "diff_ci_excludes_zero": true,
    "diff_ci": [
-    -3.6037697834071074,
-    2.2581690665690353
+    -2.461242527735515,
+    2.6429194148091906
    ],
-   "diff_ci_basis": "paired on 415 shared markets",
+   "diff_ci_basis": "paired on 565 shared markets",
    "binding": true
   }
  }

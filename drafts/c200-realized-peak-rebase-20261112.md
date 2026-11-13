@@ -516,3 +516,78 @@ reproduced without touching the live files.
 now writes the confirmed value, refuses on every failed guard, verifies its own write, and leaves `basisDeclaredAt`
 alone). `scripts/c200-drawdown-attribution.py` was used unchanged. Nothing else is in those commits: no DB write, no
 state-file write, no RuleSet change, no dashboard edit, nothing merged beyond the doc and its report-only script.
+
+---
+
+## 12. Re-measure 2026-11-12T17:22Z — the analysis holds; the *card* did not
+
+Re-run on the live DB (`mode=ro`) one tick later, and on the roadmap card that feeds the approval queue. Two results: the
+measurement re-derives to the cent, and the **card the operator approves was still carrying the superseded instruction**.
+
+### 12.1 Every figure re-derives (drift only in the moving parts)
+
+| figure | §3/§5 snapshot (16:50Z) | now (17:21:48Z) | Δ |
+|---|---|---|---|
+| `BotBankroll.realizedPnl` | 5,631.94 | **5,638.38** | +6.44 (one settlement) |
+| ledger sum / drift | — | **5,638.38 / $0.00** | row still equals its rows |
+| realized NW | 7,531.94 | **7,538.38** | +6.44 |
+| stored watermark | 11,068.58 | **11,068.58** | **unchanged** |
+| DD on the stored watermark | 31.95% | **31.89%** | gate 20% → still HALTED |
+| NW to clear it | 8,854.86 (+1,322.92) | **8,854.86 (+1,316.48)** | deadlock intact |
+| corrected HWM | 7,987.32 @ 10-18 19:10:41 | **7,987.32 @ 2026-10-18T19:10:41Z** | **identical** |
+| corrected DD | 5.70% | **5.62%** | the doc's 5.70% was that close's NW |
+| era max DD (since `basisDeclaredAt`) | 13.53% | **13.53%**, 1,058 settle events | identical |
+| watermark excess over the ledger's own peak | 3,081.26 | **3,081.26** | identical |
+| discontinuity scan | −3,843.89 @ 12:43:43, 19.2× the next | **−3,843.00, 19.2×**, 7,467 runs | **identical** |
+| `[PRE-LOOP HALT]` lines | 81 | **84** | a moving counter (§11.4) |
+
+**0 opens on either book since the halt**, now measured directly rather than inferred:
+
+```
+$ CUT=$(sqlite3 -readonly prisma/dev.db "SELECT CAST(strftime('%s','2026-11-11T18:43:00Z') AS INTEGER)*1000;")
+$ sqlite3 -readonly prisma/dev.db "SELECT botId, COUNT(*) FROM PaperTrade WHERE openedAt > $CUT GROUP BY botId;"
+   (no rows — 0 for BANKROLL_200 and 0 for STANDARD)
+$ SELECT botId, MAX(openedAt) … GROUP BY botId;
+   BANKROLL_200|2026-11-11 18:10:56     STANDARD|2026-11-11 17:15:56
+```
+
+Nothing was applied: `md5 data/c200-drawdown.json` is still `aa6d80c775f36e47be586c90a38e2d17` (mtime 2026-11-10), `data/`
+holds no `.bak-*`, RuleSet is still **v72**, and the dry run prints
+`PROPOSED watermark : $7987.32 -> DD 5.62% gate 20.00% -> OPEN` with all four guards `[PASS]` on the value it would write.
+
+### 12.2 The defect this round: the card said the superseded thing
+
+The roadmap card is the approval surface, and it had been updated only in its `note` — the fields an approver actually reads
+were still round-1's. Three defects, all now corrected in `data/roadmap.json` (title, `dates`, `decision_rule`; `tags`
+untouched, `awaiting-approval` still on the card):
+
+1. **Title carried the wrong target** — `… 11,068.58 -> 7,548.21`, i.e. the number §4 rejects. Now
+   `-> 7,987.32 (corrected-ledger high-water mark, NOT today's NW)`.
+2. **`decision_rule` said "rebase to current realized NW with a note and a fresh basisDeclaredAt".** Both halves are wrong:
+   the target is the one §4/Flag 1 argues against, and re-stamping `basisDeclaredAt` is **the change that crashes the
+   instrument** (§11.2) — the rule would have instructed an approver to reintroduce the round-1 defect on purpose.
+3. **`decision_rule`'s refutation self-refutes on success.** It read "REFUTED IF … the next DRAWDOWN-SHADOW read still
+   reports the old basis **or a non-zero drawdown**". After a *correct* rebase the drawdown is 5.62% — non-zero by design,
+   since the correct watermark is above current NW by $448.94. A gate that "refutes" its own correct outcome cannot fail,
+   which means it cannot pass either.
+
+The card now carries the original rule marked `SUPERSEDED … ORIGINAL:` for the record and a governing **REV 2 RULE** with
+four refutation arms:
+
+- **(a)** the next `DRAWDOWN-SHADOW` line does not print `basis=realized`, peak **7987.32**, DD **5.5–5.7%** — what was
+  written is not what the gate reads;
+- **(b)** `[PRE-LOOP HALT]` keeps rising after the rebase cycle — the watermark was not what was gating the lane;
+- **(c)** 0 new `BANKROLL_200` opens in the 24h after the rebase **while at least one candidate passes the per-leg rules** —
+  the halt was necessary but not sufficient;
+- **(d)** the corrected HWM recomputed later is not within **$1** of 7,987.32 — the measurement, not the gate, was broken.
+
+**Explicitly not a refutation:** a non-zero drawdown after the rebase. 5.62% is the right value and the era's own maximum
+is 13.53%, so any reading above 20% (the only value that would matter) is already excluded by arm (a).
+
+### 12.3 What would still change the recommendation
+
+Nothing in this re-measure moved it. The two ways this proposal dies are unchanged and both are cheap to test **before**
+applying: (i) if `c200-drawdown-rebase.py` stops reproducing 7,987.32 @ 2026-10-18T19:10:41Z on a re-run, the HWM is not
+order-invariant and the target reverts to the clicked 7,548.21 (`--force`); (ii) if the lane is **not** in fact gated by this
+watermark — e.g. a cycle opens with DD above 20%, or the halt persists with the peak at 7,987.32 — then the gate is
+downstream of something else and the card is refuted by arm (b), not by the analysis.

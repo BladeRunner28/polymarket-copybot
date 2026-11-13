@@ -45,7 +45,8 @@ import sqlite3
 import sys
 import time
 
-DB = "prisma/dev.db"
+import os
+DB = os.environ.get("COPYBOT_DB", "prisma/dev.db")
 FIX_EPOCH = "2026-11-09 09:15:16"      # fbf9073 commit time, local (CST)
 REGIME = "2026-10-26 00:00:00"         # drift gate went directional
 BANDS = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.0001)]
@@ -65,7 +66,7 @@ def band_of(p):
 
 
 def con():
-    c = sqlite3.connect(DB)
+    c = sqlite3.connect(DB, uri=DB.startswith("file:"))
     c.row_factory = sqlite3.Row
     return c
 

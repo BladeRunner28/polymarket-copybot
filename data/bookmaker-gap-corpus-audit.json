@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-11-12T11:04:24",
+  "rows": 567,
+  "first_ts": "2026-09-02T01:03:41.577870+00:00",
+  "last_ts": "2026-10-28T11:06:36.934701+00:00",
+  "sports": {
+    "baseball_mlb": 567
+  },
+  "distinct_markets": 227,
+  "moneyline_markets": 101,
+  "line_markets": 126,
+  "moneyline_rows": 254,
+  "line_rows": 313,
+  "de_vigged": false,
+  "abs_book_implied_gt_0_95_rows": 23,
+  "markets_found_in_db": 227,
+  "side_identity": {
+    "n_rows": 254,
+    "median_abs_gap_as_stored": 0.226,
+    "median_abs_gap_flipped": 0.034,
+    "rows_closer_when_flipped": 235,
+    "share_closer_when_flipped": 0.9252,
+    "verdict": "stored pmProb is on the OPPOSITE side of the book quote"
+  },
+  "label_basis": "gamma /events?slug= (closed + uma resolved + outcomePrices 1/0)",
+  "moneyline_markets_labelled": 86,
+  "moneyline_markets_unlabelled": 15,
+  "label_failures": [
+    [
+      "200",
+      15
+    ]
+  ],
+  "mapping_matrix_market_level": {
+    "pmProb_vs_first_named_won": {
+      "n": 86,
+      "hits": 53,
+      "hit_rate": 0.6163,
+      "brier": 0.2286
+    },
+    "pmProb_vs_second_named_won": {
+      "n": 86,
+      "hits": 33,
+      "hit_rate": 0.3837,
+      "brier": 0.3444
+    },
+    "bookImplied_vs_second_named_won": {
+      "n": 86,
+      "hits": 58,
+      "hit_rate": 0.6744,
+      "brier": 0.1973
+    },
+    "bookImplied_vs_first_named_won": {
+      "n": 86,
+      "hits": 28,
+      "hit_rate": 0.3256,
+      "brier": 0.4276
+    }
+  },
+  "row_level_pmProb_vs_first_named_won": {
+    "n": 206,
+    "hits": 129,
+    "hit_rate": 0.6262,
+    "brier": 0.233
+  },
+  "row_level_bookImplied_vs_first_named_won": {
+    "n": 206,
+    "hits": 72,
+    "hit_rate": 0.3495,
+    "brier": 0.3604
+  },
+  "prematch_first_obs_market_level": {
+    "markets": 45,
+    "pm_as_stored": {
+      "n": 45,
+      "hits": 25,
+      "hit_rate": 0.5556,
+      "brier": 0.2533
+    },
+    "book_side_corrected": {
+      "n": 45,
+      "hits": 26,
+      "hit_rate": 0.5778,
+      "brier": 0.248
+    },
+    "note": "target = first-named side won; both arms on that side; book mapped by the matrix"
+  },
+  "favourite_agreement_side_corrected": {
+    "n_agree": 81,
+    "n_markets": 86,
+    "rate": 0.9419
+  }
+}

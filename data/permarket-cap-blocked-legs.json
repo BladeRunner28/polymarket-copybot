@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T01:05:04.737Z",
+  "generatedAt": "2026-11-12T16:49:28.521Z",
   "days": 0,
   "basis": {
     "population": "C-200 non-demo decisions carrying a v55 per-market-cap refusal",
@@ -9,38 +9,38 @@
     "settlement": "market winning label (adapter -> event fallback), else undetermined",
     "railSeatBasis": "open C-200 legs per marketId at decision time, from booked open/close intervals"
   },
-  "refused": 79,
-  "distinctMarkets": 11,
-  "distinctOutcomes": 11,
-  "topMarketShareOfRefusals": 0.5443,
-  "sizesRecorded": 2,
+  "refused": 81,
+  "distinctMarkets": 13,
+  "distinctOutcomes": 13,
+  "topMarketShareOfRefusals": 0.5309,
+  "sizesRecorded": 4,
   "clause": {
-    "legs": 58,
+    "legs": 60,
     "notional": 21
   },
   "blockClass": {
-    "genuine": 53,
+    "genuine": 55,
     "phantom": 5,
     "unknown": 21
   },
   "settlement": {
-    "market": 79,
+    "market": 81,
     "event": 0,
     "undetermined": 0
   },
   "priced": {
-    "n": 79,
-    "meanPerDollar": 2.4665,
+    "n": 81,
+    "meanPerDollar": 2.4546,
     "medianPerDollar": 2.2787,
-    "sumPerDollar": 194.85,
-    "exTop10PerDollar": 140.85,
-    "exTopOutcomePerDollar": 96.42,
-    "slipSensitivitySum": 184.08
+    "sumPerDollar": 198.83,
+    "exTop10PerDollar": 144.82,
+    "exTopOutcomePerDollar": 100.4,
+    "slipSensitivitySum": 187.88
   },
   "genuineOnly": {
-    "n": 53,
-    "meanPerDollar": 1.9834,
-    "sumPerDollar": 105.12
+    "n": 55,
+    "meanPerDollar": 1.9835,
+    "sumPerDollar": 109.09
   },
   "perOutcome": [
     {
@@ -100,6 +100,20 @@
       "won": true
     },
     {
+      "marketId": "ucl-vil-psg-2026-11-03-spread-away-1pt5",
+      "outcome": "PARIS SAINT-GERMAIN FC",
+      "refusals": 1,
+      "sumPerDollar": 2.08,
+      "won": true
+    },
+    {
+      "marketId": "atp-jacquet-machac-2026-11-02",
+      "outcome": "TOMAS MACHAC",
+      "refusals": 1,
+      "sumPerDollar": 1.9,
+      "won": true
+    },
+    {
       "marketId": "highest-temperature-in-hong-kong-on-september-20-2026-32c",
       "outcome": "NO",
       "refusals": 1,
@@ -122,6 +136,44 @@
     }
   ],
   "rows": [
+    {
+      "decidedAt": "2026-11-03T09:25:54.367Z",
+      "observedTradeId": "cmw0hfwme0008mllybf0se81i",
+      "marketId": "ucl-vil-psg-2026-11-03-spread-away-1pt5",
+      "marketQuestion": "Spread: Paris Saint-Germain FC (-1.5)",
+      "outcome": "PARIS SAINT-GERMAIN FC",
+      "venue": "Polymarket",
+      "why": "legs 3 > max 2",
+      "clause": "legs",
+      "sizeUsd": 18,
+      "openLegsAtDecision": 2,
+      "openNotionalAtDecision": 35.99,
+      "blockClass": "genuine",
+      "entry": 0.325,
+      "settlement": "market",
+      "won": true,
+      "ret": 2.076923076923077,
+      "slipRet": 1.9850746268656716
+    },
+    {
+      "decidedAt": "2026-11-02T14:11:03.558Z",
+      "observedTradeId": "cmvzc6jay000hugig0gmb074d",
+      "marketId": "atp-jacquet-machac-2026-11-02",
+      "marketQuestion": "Rolex Paris Masters: Kyrian Jacquet vs Tomas Machac",
+      "outcome": "TOMAS MACHAC",
+      "venue": "Polymarket",
+      "why": "legs 3 > max 2",
+      "clause": "legs",
+      "sizeUsd": 18,
+      "openLegsAtDecision": 2,
+      "openNotionalAtDecision": 35.99,
+      "blockClass": "genuine",
+      "entry": 0.345,
+      "settlement": "market",
+      "won": true,
+      "ret": 1.8985507246376814,
+      "slipRet": 1.8169014084507045
+    },
     {
       "decidedAt": "2026-10-30T17:14:53.527Z",
       "observedTradeId": "cmvv8fkpf000bln9su2rrp28o",

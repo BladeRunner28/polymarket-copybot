@@ -1,0 +1,513 @@
+{
+  "db": "/Users/xsnyde2/polymarket-copybot/prisma/dev.db",
+  "snapshotAt": "2026-11-12T16:31:10.826Z",
+  "artifactLegs": 1004,
+  "settledStamped": 339,
+  "repairedInPopulation": 48,
+  "residualExposure": 0,
+  "strictlyClean": 291,
+  "forwardClean": 62,
+  "repairLedgerRows": 233,
+  "preimageRows": 233,
+  "cells": {
+    "all/as-of-today": {
+      "basis": "as-of-today",
+      "n": 339,
+      "notionalUsd": 5455.18,
+      "bookedPnlUsd": 816.52,
+      "bookedRoiPct": 14.968,
+      "rebookedPnlUsd": 962.59,
+      "rebookedRoiPct": 17.645,
+      "roiDeltaPp": 2.678,
+      "rec1cBetterPnlUsd": 1063.04,
+      "delta": {
+        "n": 339,
+        "meanC": -0.3824,
+        "medianC": 0.5,
+        "p10C": -0.5,
+        "p90C": 2.0,
+        "minC": -68.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.1327,
+        "shareWorseBy1C": 0.3363,
+        "shareWithinBand": 0.0501
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 665.44,
+        "fillAwareRoiPct": 12.198,
+        "roiDeltaPp": -2.769,
+        "resolvedLegs": 339,
+        "reachableLegs": 110,
+        "reachRate": 0.3245
+      },
+      "combined": {
+        "pnlUsd": 931.75,
+        "roiPct": 17.08,
+        "roiDeltaPp": 2.112
+      }
+    },
+    "all/as-booked": {
+      "basis": "as-booked",
+      "n": 339,
+      "notionalUsd": 5455.18,
+      "bookedPnlUsd": 2479.6,
+      "bookedRoiPct": 45.454,
+      "rebookedPnlUsd": 962.63,
+      "rebookedRoiPct": 17.646,
+      "roiDeltaPp": -27.808,
+      "rec1cBetterPnlUsd": 2876.88,
+      "delta": {
+        "n": 339,
+        "meanC": 6.7252,
+        "medianC": 0.5,
+        "p10C": 0.05,
+        "p90C": 31.5,
+        "minC": -23.5,
+        "maxC": 90.0,
+        "shareAtOrBetter": 0.0944,
+        "shareWorseBy1C": 0.4159,
+        "shareWithinBand": 0.0501
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 715.87,
+        "fillAwareRoiPct": 13.123,
+        "roiDeltaPp": -32.331,
+        "resolvedLegs": 339,
+        "reachableLegs": 93,
+        "reachRate": 0.2743
+      },
+      "combined": {
+        "pnlUsd": 603.49,
+        "roiPct": 11.063,
+        "roiDeltaPp": -34.391
+      }
+    },
+    "clean/as-of-today": {
+      "basis": "as-of-today",
+      "n": 291,
+      "notionalUsd": 4852.78,
+      "bookedPnlUsd": 774.93,
+      "bookedRoiPct": 15.969,
+      "rebookedPnlUsd": 560.33,
+      "rebookedRoiPct": 11.547,
+      "roiDeltaPp": -4.422,
+      "rec1cBetterPnlUsd": 1012.48,
+      "delta": {
+        "n": 291,
+        "meanC": 1.1593,
+        "medianC": 0.5,
+        "p10C": 0.0,
+        "p90C": 2.0,
+        "minC": -23.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.11,
+        "shareWorseBy1C": 0.354,
+        "shareWithinBand": 0.0584
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 694.33,
+        "fillAwareRoiPct": 14.308,
+        "roiDeltaPp": -1.661,
+        "resolvedLegs": 291,
+        "reachableLegs": 91,
+        "reachRate": 0.3127
+      },
+      "combined": {
+        "pnlUsd": 595.87,
+        "roiPct": 12.279,
+        "roiDeltaPp": -3.69
+      }
+    },
+    "clean/as-booked": {
+      "basis": "as-booked",
+      "n": 291,
+      "notionalUsd": 4852.78,
+      "bookedPnlUsd": 774.93,
+      "bookedRoiPct": 15.969,
+      "rebookedPnlUsd": 560.33,
+      "rebookedRoiPct": 11.547,
+      "roiDeltaPp": -4.422,
+      "rec1cBetterPnlUsd": 1012.48,
+      "delta": {
+        "n": 291,
+        "meanC": 1.1593,
+        "medianC": 0.5,
+        "p10C": 0.0,
+        "p90C": 2.0,
+        "minC": -23.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.11,
+        "shareWorseBy1C": 0.354,
+        "shareWithinBand": 0.0584
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 694.33,
+        "fillAwareRoiPct": 14.308,
+        "roiDeltaPp": -1.661,
+        "resolvedLegs": 291,
+        "reachableLegs": 91,
+        "reachRate": 0.3127
+      },
+      "combined": {
+        "pnlUsd": 595.87,
+        "roiPct": 12.279,
+        "roiDeltaPp": -3.69
+      }
+    },
+    "repaired/as-of-today": {
+      "basis": "as-of-today",
+      "n": 48,
+      "notionalUsd": 602.4,
+      "bookedPnlUsd": 41.59,
+      "bookedRoiPct": 6.904,
+      "rebookedPnlUsd": 402.26,
+      "rebookedRoiPct": 66.776,
+      "roiDeltaPp": 59.872,
+      "rec1cBetterPnlUsd": 50.56,
+      "delta": {
+        "n": 48,
+        "meanC": -9.7292,
+        "medianC": 0.5,
+        "p10C": -46.5,
+        "p90C": 1.5,
+        "minC": -68.5,
+        "maxC": 3.0,
+        "shareAtOrBetter": 0.2708,
+        "shareWorseBy1C": 0.2292,
+        "shareWithinBand": 0.0
+      },
+      "pfill": {
+        "fillAwarePnlUsd": -28.89,
+        "fillAwareRoiPct": -4.796,
+        "roiDeltaPp": -11.7,
+        "resolvedLegs": 48,
+        "reachableLegs": 19,
+        "reachRate": 0.3958
+      },
+      "combined": {
+        "pnlUsd": 335.88,
+        "roiPct": 55.757,
+        "roiDeltaPp": 48.853
+      }
+    },
+    "repaired/as-booked": {
+      "basis": "as-booked",
+      "n": 48,
+      "notionalUsd": 602.4,
+      "bookedPnlUsd": 1704.67,
+      "bookedRoiPct": 282.98,
+      "rebookedPnlUsd": 402.3,
+      "rebookedRoiPct": 66.783,
+      "roiDeltaPp": -216.197,
+      "rec1cBetterPnlUsd": 1864.4,
+      "delta": {
+        "n": 48,
+        "meanC": 40.4688,
+        "medianC": 37.5,
+        "p10C": 0.5,
+        "p90C": 77.5,
+        "minC": 0.5,
+        "maxC": 90.0,
+        "shareAtOrBetter": 0.0,
+        "shareWorseBy1C": 0.7917,
+        "shareWithinBand": 0.0
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 21.54,
+        "fillAwareRoiPct": 3.576,
+        "roiDeltaPp": -279.404,
+        "resolvedLegs": 48,
+        "reachableLegs": 2,
+        "reachRate": 0.0417
+      },
+      "combined": {
+        "pnlUsd": 7.62,
+        "roiPct": 1.265,
+        "roiDeltaPp": -281.715
+      }
+    },
+    "taker60/as-of-today": {
+      "basis": "as-of-today",
+      "n": 232,
+      "notionalUsd": 3663.18,
+      "bookedPnlUsd": 1097.65,
+      "bookedRoiPct": 29.964,
+      "rebookedPnlUsd": 1275.31,
+      "rebookedRoiPct": 34.814,
+      "roiDeltaPp": 4.85,
+      "rec1cBetterPnlUsd": 1315.14,
+      "delta": {
+        "n": 232,
+        "meanC": -1.1614,
+        "medianC": 0.5,
+        "p10C": -0.3,
+        "p90C": 2.0,
+        "minC": -68.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.1164,
+        "shareWorseBy1C": 0.3405,
+        "shareWithinBand": 0.0388
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 673.91,
+        "fillAwareRoiPct": 18.397,
+        "roiDeltaPp": -11.568,
+        "resolvedLegs": 232,
+        "reachableLegs": 75,
+        "reachRate": 0.3233
+      },
+      "combined": {
+        "pnlUsd": 945.05,
+        "roiPct": 25.799,
+        "roiDeltaPp": -4.166
+      }
+    },
+    "taker60/as-booked": {
+      "basis": "as-booked",
+      "n": 232,
+      "notionalUsd": 3663.18,
+      "bookedPnlUsd": 2643.12,
+      "bookedRoiPct": 72.154,
+      "rebookedPnlUsd": 1275.35,
+      "rebookedRoiPct": 34.815,
+      "roiDeltaPp": -37.338,
+      "rec1cBetterPnlUsd": 3003.94,
+      "delta": {
+        "n": 232,
+        "meanC": 8.1123,
+        "medianC": 0.5,
+        "p10C": 0.45,
+        "p90C": 37.0,
+        "minC": -23.5,
+        "maxC": 90.0,
+        "shareAtOrBetter": 0.069,
+        "shareWorseBy1C": 0.431,
+        "shareWithinBand": 0.0388
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 725.05,
+        "fillAwareRoiPct": 19.793,
+        "roiDeltaPp": -52.361,
+        "resolvedLegs": 232,
+        "reachableLegs": 61,
+        "reachRate": 0.2629
+      },
+      "combined": {
+        "pnlUsd": 617.76,
+        "roiPct": 16.864,
+        "roiDeltaPp": -55.29
+      }
+    },
+    "taker60-clean/as-booked": {
+      "basis": "as-booked",
+      "n": 191,
+      "notionalUsd": 3134.78,
+      "bookedPnlUsd": 1048.98,
+      "bookedRoiPct": 33.463,
+      "rebookedPnlUsd": 866.0,
+      "rebookedRoiPct": 27.626,
+      "roiDeltaPp": -5.837,
+      "rec1cBetterPnlUsd": 1258.48,
+      "delta": {
+        "n": 191,
+        "meanC": 1.0448,
+        "medianC": 0.5,
+        "p10C": 0.1,
+        "p90C": 2.0,
+        "minC": -23.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.0838,
+        "shareWorseBy1C": 0.3613,
+        "shareWithinBand": 0.0471
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 703.51,
+        "fillAwareRoiPct": 22.442,
+        "roiDeltaPp": -11.021,
+        "resolvedLegs": 191,
+        "reachableLegs": 59,
+        "reachRate": 0.3089
+      },
+      "combined": {
+        "pnlUsd": 610.14,
+        "roiPct": 19.464,
+        "roiDeltaPp": -13.999
+      }
+    },
+    "strict/as-of-today": {
+      "basis": "as-of-today",
+      "n": 291,
+      "notionalUsd": 4852.78,
+      "bookedPnlUsd": 774.93,
+      "bookedRoiPct": 15.969,
+      "rebookedPnlUsd": 560.33,
+      "rebookedRoiPct": 11.547,
+      "roiDeltaPp": -4.422,
+      "rec1cBetterPnlUsd": 1012.48,
+      "delta": {
+        "n": 291,
+        "meanC": 1.1593,
+        "medianC": 0.5,
+        "p10C": 0.0,
+        "p90C": 2.0,
+        "minC": -23.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.11,
+        "shareWorseBy1C": 0.354,
+        "shareWithinBand": 0.0584
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 694.33,
+        "fillAwareRoiPct": 14.308,
+        "roiDeltaPp": -1.661,
+        "resolvedLegs": 291,
+        "reachableLegs": 91,
+        "reachRate": 0.3127
+      },
+      "combined": {
+        "pnlUsd": 595.87,
+        "roiPct": 12.279,
+        "roiDeltaPp": -3.69
+      }
+    },
+    "strict/as-booked": {
+      "basis": "as-booked",
+      "n": 291,
+      "notionalUsd": 4852.78,
+      "bookedPnlUsd": 774.93,
+      "bookedRoiPct": 15.969,
+      "rebookedPnlUsd": 560.33,
+      "rebookedRoiPct": 11.547,
+      "roiDeltaPp": -4.422,
+      "rec1cBetterPnlUsd": 1012.48,
+      "delta": {
+        "n": 291,
+        "meanC": 1.1593,
+        "medianC": 0.5,
+        "p10C": 0.0,
+        "p90C": 2.0,
+        "minC": -23.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.11,
+        "shareWorseBy1C": 0.354,
+        "shareWithinBand": 0.0584
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 694.33,
+        "fillAwareRoiPct": 14.308,
+        "roiDeltaPp": -1.661,
+        "resolvedLegs": 291,
+        "reachableLegs": 91,
+        "reachRate": 0.3127
+      },
+      "combined": {
+        "pnlUsd": 595.87,
+        "roiPct": 12.279,
+        "roiDeltaPp": -3.69
+      }
+    },
+    "taker60-strict/as-booked": {
+      "basis": "as-booked",
+      "n": 191,
+      "notionalUsd": 3134.78,
+      "bookedPnlUsd": 1048.98,
+      "bookedRoiPct": 33.463,
+      "rebookedPnlUsd": 866.0,
+      "rebookedRoiPct": 27.626,
+      "roiDeltaPp": -5.837,
+      "rec1cBetterPnlUsd": 1258.48,
+      "delta": {
+        "n": 191,
+        "meanC": 1.0448,
+        "medianC": 0.5,
+        "p10C": 0.1,
+        "p90C": 2.0,
+        "minC": -23.5,
+        "maxC": 25.0,
+        "shareAtOrBetter": 0.0838,
+        "shareWorseBy1C": 0.3613,
+        "shareWithinBand": 0.0471
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 703.51,
+        "fillAwareRoiPct": 22.442,
+        "roiDeltaPp": -11.021,
+        "resolvedLegs": 191,
+        "reachableLegs": 59,
+        "reachRate": 0.3089
+      },
+      "combined": {
+        "pnlUsd": 610.14,
+        "roiPct": 19.464,
+        "roiDeltaPp": -13.999
+      }
+    },
+    "residual/as-booked": {
+      "basis": "as-booked",
+      "n": 0,
+      "notionalUsd": 0.0,
+      "bookedPnlUsd": 0.0,
+      "bookedRoiPct": null,
+      "rebookedPnlUsd": 0.0,
+      "rebookedRoiPct": null,
+      "roiDeltaPp": null,
+      "rec1cBetterPnlUsd": 0.0,
+      "delta": {
+        "n": 0,
+        "meanC": null,
+        "medianC": null,
+        "p10C": null,
+        "p90C": null
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 0.0,
+        "fillAwareRoiPct": null,
+        "roiDeltaPp": null,
+        "resolvedLegs": 0,
+        "reachableLegs": 0,
+        "reachRate": null
+      },
+      "combined": {
+        "pnlUsd": 0.0,
+        "roiPct": null,
+        "roiDeltaPp": null
+      }
+    },
+    "forward-clean/as-booked": {
+      "basis": "as-booked",
+      "n": 62,
+      "notionalUsd": 766.0,
+      "bookedPnlUsd": 200.99,
+      "bookedRoiPct": 26.239,
+      "rebookedPnlUsd": 148.59,
+      "rebookedRoiPct": 19.398,
+      "roiDeltaPp": -6.841,
+      "rec1cBetterPnlUsd": 236.24,
+      "delta": {
+        "n": 62,
+        "meanC": 1.6782,
+        "medianC": 0.5,
+        "p10C": 0.5,
+        "p90C": 7.05,
+        "minC": -1.5,
+        "maxC": 22.0,
+        "shareAtOrBetter": 0.0645,
+        "shareWorseBy1C": 0.2742,
+        "shareWithinBand": 0.0161
+      },
+      "pfill": {
+        "fillAwarePnlUsd": 41.69,
+        "fillAwareRoiPct": 5.443,
+        "roiDeltaPp": -20.796,
+        "resolvedLegs": 62,
+        "reachableLegs": 20,
+        "reachRate": 0.3226
+      },
+      "combined": {
+        "pnlUsd": 29.72,
+        "roiPct": 3.88,
+        "roiDeltaPp": -22.359
+      }
+    }
+  }
+}

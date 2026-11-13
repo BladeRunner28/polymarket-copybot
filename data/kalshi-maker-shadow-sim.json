@@ -1,0 +1,1563 @@
+{
+ "generated_at": "2026-11-12T17:25:11Z",
+ "card": "kalshi-maker-read-prereg",
+ "instrument": "scripts/kalshi-maker-shadow-sim.py",
+ "pre_registration": {
+  "source": "card note (a), verbatim: rest a NO bid at (1-p)-$0.01 for 100 ct, 60s lifetime, fill by a LATER print at that price, maker fee $0, mark to the venue result",
+  "our_size_contracts": 100.0,
+  "lifetime_seconds": 60.0,
+  "tick": 0.01,
+  "maker_fee_per_contract": 0.0,
+  "credit_rule": "min(1, our_size/print_contracts) * our_size at OUR resting price",
+  "fill_rule_primary": "later print, same ticker, taker_side=yes, yes_price == our target, ts <= trigger+60s; a print BELOW our price is NOT a fill",
+  "fill_rule_sweep": "later print at yes_price >= our target fills at OUR target (sensitivity)",
+  "control_arm": "same machinery resting at the trigger print's own implied NO price (1-p)",
+  "bootstrap": {
+   "unit": "ticker",
+   "n": 2000,
+   "seed": 20261112,
+   "interval": "percentile 2.5/97.5"
+  },
+  "decision_rule": {
+   "min_legs": 2000,
+   "ev_positive": true,
+   "ci95_excludes_zero": true,
+   "min_positive_ticker_share": 0.6,
+   "quote": "card (c): graduate only if >=2,000 filled legs AND fill-weighted EV>0 with a 95% ticker-clustered CI excluding zero AND >=60% of filled tickers positive; otherwise the lane CLOSES"
+  }
+ },
+ "tape": {
+  "print_file_glob": "data/kalshi-tape/prints-*.jsonl.gz",
+  "files_read": 735,
+  "qualifying_print_rows": 18015141,
+  "unparseable_print_rows": 0,
+  "coverage_rows": 2624,
+  "captured_hours": 613.31,
+  "print_size_floor_contracts": 100,
+  "note": "L1 large-print fills only; L3 a hole can only lose fills"
+ },
+ "settlement": {
+  "cached_tickers": 240389
+ },
+ "families": {
+  "KXBTCD": {
+   "A_at": {
+    "legs": 231742,
+    "settled_legs": 231177,
+    "unsettled_legs": 565,
+    "credited_contracts": 12777450.53,
+    "pnl": 233142.6824,
+    "ev_per_contract": 0.01825,
+    "ci95": [
+     0.00554,
+     0.0309
+    ],
+    "tickers": 8843,
+    "positive_ticker_share": 0.5119,
+    "positive_ticker_share_min5_legs": 0.5272,
+    "positive_ticker_share_min20_legs": 0.5203,
+    "tickers_min20_legs": 3465,
+    "ticker_ev_median": 0.03,
+    "ticker_ev_trimmed_mean_5pct": 0.01374,
+    "legs_per_ticker_median": 12,
+    "legs_per_ticker_p90": 73,
+    "pnl_ex_top10_tickers": 175827.57,
+    "ev_ex_top10_tickers": 0.01388,
+    "top10_share_of_pnl": 0.2458,
+    "halves": {
+     "ev_first_half": 0.01157,
+     "ev_second_half": 0.02516,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 35440,
+      "contracts": 1919159.48,
+      "ev_per_contract": 0.00699,
+      "ci95": [
+       -0.00181,
+       0.01644
+      ],
+      "band_tickers": 4392
+     },
+     "0.10-0.25": {
+      "legs": 31616,
+      "contracts": 1767650.76,
+      "ev_per_contract": 0.00741,
+      "ci95": [
+       -0.0113,
+       0.02575
+      ],
+      "band_tickers": 3431
+     },
+     "0.25-0.50": {
+      "legs": 46496,
+      "contracts": 2516614.61,
+      "ev_per_contract": 0.01189,
+      "ci95": [
+       -0.01134,
+       0.03598
+      ],
+      "band_tickers": 3361
+     },
+     "0.50-0.75": {
+      "legs": 48061,
+      "contracts": 2705910.64,
+      "ev_per_contract": 0.03284,
+      "ci95": [
+       0.01116,
+       0.05402
+      ],
+      "band_tickers": 3365
+     },
+     "0.75-0.90": {
+      "legs": 36201,
+      "contracts": 2045689.46,
+      "ev_per_contract": 0.02485,
+      "ci95": [
+       0.00781,
+       0.04138
+      ],
+      "band_tickers": 3532
+     },
+     "0.90-1.00": {
+      "legs": 33363,
+      "contracts": 1822425.58,
+      "ev_per_contract": 0.0203,
+      "ci95": [
+       0.01269,
+       0.02803
+      ],
+      "band_tickers": 4506
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 82168,
+      "contracts": 4246998.55,
+      "ev_per_contract": 0.02704
+     },
+     "10-30s": {
+      "legs": 54456,
+      "contracts": 3119881.19,
+      "ev_per_contract": 0.01341
+     },
+     "2-10s": {
+      "legs": 62229,
+      "contracts": 3571711.98,
+      "ev_per_contract": 0.01498
+     },
+     "30-60s": {
+      "legs": 32324,
+      "contracts": 1838858.82,
+      "ev_per_contract": 0.01248
+     }
+    },
+    "latency_median_s": 5.24,
+    "verdict": "CLOSE",
+    "reason": "51.2% of tickers positive (<60%)",
+    "orders_generated": 3304450,
+    "dedupe_skips": 11772537,
+    "fill_rate": 0.0701
+   },
+   "A_one": {
+    "legs": 417669,
+    "settled_legs": 416607,
+    "unsettled_legs": 1062,
+    "credited_contracts": 23152226.08,
+    "pnl": 117603.0483,
+    "ev_per_contract": 0.00508,
+    "ci95": [
+     -0.00833,
+     0.01904
+    ],
+    "tickers": 9040,
+    "positive_ticker_share": 0.5086,
+    "positive_ticker_share_min5_legs": 0.5198,
+    "positive_ticker_share_min20_legs": 0.5181,
+    "tickers_min20_legs": 4306,
+    "ticker_ev_median": 0.03,
+    "ticker_ev_trimmed_mean_5pct": 0.00994,
+    "legs_per_ticker_median": 17,
+    "legs_per_ticker_p90": 136,
+    "pnl_ex_top10_tickers": 13405.96,
+    "ev_ex_top10_tickers": 0.00058,
+    "top10_share_of_pnl": 0.886,
+    "halves": {
+     "ev_first_half": -0.00131,
+     "ev_second_half": 0.01158,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 49480,
+      "contracts": 2667387.04,
+      "ev_per_contract": 0.0026,
+      "ci95": [
+       -0.00603,
+       0.01207
+      ],
+      "band_tickers": 4550
+     },
+     "0.10-0.25": {
+      "legs": 61092,
+      "contracts": 3418318.99,
+      "ev_per_contract": -0.00851,
+      "ci95": [
+       -0.02426,
+       0.00806
+      ],
+      "band_tickers": 3662
+     },
+     "0.25-0.50": {
+      "legs": 99322,
+      "contracts": 5423627.86,
+      "ev_per_contract": -0.00671,
+      "ci95": [
+       -0.02751,
+       0.01527
+      ],
+      "band_tickers": 3560
+     },
+     "0.50-0.75": {
+      "legs": 99530,
+      "contracts": 5655767.46,
+      "ev_per_contract": 0.01619,
+      "ci95": [
+       -0.00513,
+       0.03762
+      ],
+      "band_tickers": 3553
+     },
+     "0.75-0.90": {
+      "legs": 62643,
+      "contracts": 3551579.61,
+      "ev_per_contract": 0.01342,
+      "ci95": [
+       -0.0038,
+       0.03056
+      ],
+      "band_tickers": 3679
+     },
+     "0.90-1.00": {
+      "legs": 44540,
+      "contracts": 2435545.12,
+      "ev_per_contract": 0.01517,
+      "ci95": [
+       0.00648,
+       0.02323
+      ],
+      "band_tickers": 4655
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 113796,
+      "contracts": 5865310.18,
+      "ev_per_contract": 0.02545
+     },
+     "10-30s": {
+      "legs": 113026,
+      "contracts": 6466623.93,
+      "ev_per_contract": -0.00384
+     },
+     "2-10s": {
+      "legs": 106721,
+      "contracts": 6059120.13,
+      "ev_per_contract": 0.00869
+     },
+     "30-60s": {
+      "legs": 83064,
+      "contracts": 4761171.83,
+      "ev_per_contract": -0.0125
+     }
+    },
+    "latency_median_s": 8.7,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.008332692839872483); 50.9% of tickers positive (<60%)",
+    "orders_generated": 3190298,
+    "dedupe_skips": 0,
+    "fill_rate": 0.1309
+   },
+   "A_sweep": {
+    "legs": 269491,
+    "settled_legs": 268790,
+    "unsettled_legs": 701,
+    "credited_contracts": 15045829.29,
+    "pnl": -163533.5811,
+    "ev_per_contract": -0.01087,
+    "ci95": [
+     -0.02703,
+     0.00599
+    ],
+    "tickers": 7243,
+    "positive_ticker_share": 0.4992,
+    "positive_ticker_share_min5_legs": 0.4965,
+    "positive_ticker_share_min20_legs": 0.4842,
+    "tickers_min20_legs": 3292,
+    "ticker_ev_median": -0.02,
+    "ticker_ev_trimmed_mean_5pct": 0.00438,
+    "legs_per_ticker_median": 15,
+    "legs_per_ticker_p90": 106,
+    "pnl_ex_top10_tickers": -244046.23,
+    "ev_ex_top10_tickers": -0.01639,
+    "top10_share_of_pnl": -0.4923,
+    "halves": {
+     "ev_first_half": -0.01665,
+     "ev_second_half": -0.00507,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 18945,
+      "contracts": 1015872.69,
+      "ev_per_contract": -0.00122,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 42566,
+      "contracts": 2389189.59,
+      "ev_per_contract": -0.01913,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 80261,
+      "contracts": 4450661.6,
+      "ev_per_contract": -0.02326,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 74016,
+      "contracts": 4237975.11,
+      "ev_per_contract": 3e-05,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 37259,
+      "contracts": 2108499.16,
+      "ev_per_contract": -0.00609,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 15743,
+      "contracts": 843631.13,
+      "ev_per_contract": -0.00043,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 59658,
+      "contracts": 3040499.51,
+      "ev_per_contract": 0.01384
+     },
+     "10-30s": {
+      "legs": 80713,
+      "contracts": 4656605.09,
+      "ev_per_contract": -0.0228
+     },
+     "2-10s": {
+      "legs": 73825,
+      "contracts": 4159718.79,
+      "ev_per_contract": -0.00481
+     },
+     "30-60s": {
+      "legs": 54594,
+      "contracts": 3189005.9,
+      "ev_per_contract": -0.02491
+     }
+    },
+    "latency_median_s": 10.14,
+    "verdict": "CLOSE",
+    "reason": "EV<=0 (-0.01087); CI includes zero (lo=-0.027031800996628275); 49.9% of tickers positive (<60%)",
+    "orders_generated": 3304450,
+    "dedupe_skips": 0,
+    "fill_rate": 0.0816
+   },
+   "B_print": {
+    "legs": 638858,
+    "settled_legs": 636549,
+    "unsettled_legs": 2309,
+    "credited_contracts": 35570717.29,
+    "pnl": 569425.8945,
+    "ev_per_contract": 0.01601,
+    "ci95": [
+     0.00436,
+     0.02767
+    ],
+    "tickers": 10584,
+    "positive_ticker_share": 0.5236,
+    "positive_ticker_share_min5_legs": 0.5373,
+    "positive_ticker_share_min20_legs": 0.5561,
+    "tickers_min20_legs": 5762,
+    "ticker_ev_median": 0.02,
+    "ticker_ev_trimmed_mean_5pct": 0.00775,
+    "legs_per_ticker_median": 25,
+    "legs_per_ticker_p90": 173,
+    "pnl_ex_top10_tickers": 425492.85,
+    "ev_ex_top10_tickers": 0.01206,
+    "top10_share_of_pnl": 0.2528,
+    "halves": {
+     "ev_first_half": 0.00993,
+     "ev_second_half": 0.02195,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 96320,
+      "contracts": 5205474.34,
+      "ev_per_contract": 0.00217,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 67262,
+      "contracts": 3794047.0,
+      "ev_per_contract": -0.00114,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 100980,
+      "contracts": 5601333.23,
+      "ev_per_contract": 0.01314,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 128939,
+      "contracts": 7393719.34,
+      "ev_per_contract": 0.02993,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 107414,
+      "contracts": 6122027.05,
+      "ev_per_contract": 0.02208,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 135634,
+      "contracts": 7454116.32,
+      "ev_per_contract": 0.01776,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 359127,
+      "contracts": 19696040.59,
+      "ev_per_contract": 0.01405
+     },
+     "10-30s": {
+      "legs": 99223,
+      "contracts": 5676894.7,
+      "ev_per_contract": 0.01694
+     },
+     "2-10s": {
+      "legs": 112271,
+      "contracts": 6429913.88,
+      "ev_per_contract": 0.02027
+     },
+     "30-60s": {
+      "legs": 65928,
+      "contracts": 3767868.12,
+      "ev_per_contract": 0.01756
+     }
+    },
+    "latency_median_s": 0.72,
+    "verdict": "CLOSE",
+    "reason": "52.4% of tickers positive (<60%)",
+    "orders_generated": 6686547,
+    "dedupe_skips": 9229775,
+    "fill_rate": 0.0955
+   },
+   "R_print": {
+    "legs": 1039454,
+    "settled_legs": 1034462,
+    "unsettled_legs": 4992,
+    "credited_contracts": 57833211.13,
+    "pnl": 964046.0793,
+    "ev_per_contract": 0.01667,
+    "ci95": [
+     0.00559,
+     0.02736
+    ],
+    "tickers": 12994,
+    "positive_ticker_share": 0.5565,
+    "positive_ticker_share_min5_legs": 0.5538,
+    "positive_ticker_share_min20_legs": 0.5584,
+    "tickers_min20_legs": 7194,
+    "ticker_ev_median": 0.01,
+    "ticker_ev_trimmed_mean_5pct": 0.00506,
+    "legs_per_ticker_median": 27,
+    "legs_per_ticker_p90": 242,
+    "pnl_ex_top10_tickers": 760812.17,
+    "ev_ex_top10_tickers": 0.01325,
+    "top10_share_of_pnl": 0.2108,
+    "halves": {
+     "ev_first_half": 0.01052,
+     "ev_second_half": 0.02274,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 139213,
+      "contracts": 7582427.83,
+      "ev_per_contract": 0.00254,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 112747,
+      "contracts": 6354482.48,
+      "ev_per_contract": 0.00067,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 177477,
+      "contracts": 9826836.81,
+      "ev_per_contract": 0.01194,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 212754,
+      "contracts": 12289969.49,
+      "ev_per_contract": 0.03197,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 163627,
+      "contracts": 9362113.1,
+      "ev_per_contract": 0.02431,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 228644,
+      "contracts": 12417381.41,
+      "ev_per_contract": 0.01632,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 1034462,
+      "contracts": 57833211.13,
+      "ev_per_contract": 0.01667
+     }
+    },
+    "latency_median_s": 0.0,
+    "verdict": "CLOSE",
+    "reason": "55.6% of tickers positive (<60%)",
+    "orders_generated": 0,
+    "dedupe_skips": 0,
+    "fill_rate": null
+   }
+  },
+  "KXBTC15M": {
+   "A_at": {
+    "legs": 1385176,
+    "settled_legs": 1384119,
+    "unsettled_legs": 1057,
+    "credited_contracts": 73955218.32,
+    "pnl": 959995.4039,
+    "ev_per_contract": 0.01298,
+    "ci95": [
+     -0.00421,
+     0.02945
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5149,
+    "positive_ticker_share_min5_legs": 0.5149,
+    "positive_ticker_share_min20_legs": 0.5149,
+    "tickers_min20_legs": 2915,
+    "ticker_ev_median": 0.18501,
+    "ticker_ev_trimmed_mean_5pct": 0.0195,
+    "legs_per_ticker_median": 445,
+    "legs_per_ticker_p90": 790,
+    "pnl_ex_top10_tickers": 606454.54,
+    "ev_ex_top10_tickers": 0.00826,
+    "top10_share_of_pnl": 0.3683,
+    "halves": {
+     "ev_first_half": 0.00569,
+     "ev_second_half": 0.02029,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 28734,
+      "contracts": 1654118.36,
+      "ev_per_contract": -0.00281,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 211063,
+      "contracts": 11383288.97,
+      "ev_per_contract": 0.009,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 450316,
+      "contracts": 23388461.04,
+      "ev_per_contract": 0.01637,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 462363,
+      "contracts": 24898813.03,
+      "ev_per_contract": 0.01867,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 213173,
+      "contracts": 11557947.75,
+      "ev_per_contract": 0.00228,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 18470,
+      "contracts": 1072589.17,
+      "ev_per_contract": -0.01114,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 1092486,
+      "contracts": 58559452.04,
+      "ev_per_contract": 0.01424
+     },
+     "10-30s": {
+      "legs": 71799,
+      "contracts": 3777742.72,
+      "ev_per_contract": 0.00669
+     },
+     "2-10s": {
+      "legs": 191604,
+      "contracts": 10139543.68,
+      "ev_per_contract": 0.00936
+     },
+     "30-60s": {
+      "legs": 28230,
+      "contracts": 1478479.88,
+      "ev_per_contract": 0.00393
+     }
+    },
+    "latency_median_s": 0.41,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.00421452293901651); 51.5% of tickers positive (<60%)",
+    "orders_generated": 3304450,
+    "dedupe_skips": 11772537,
+    "fill_rate": 0.4192
+   },
+   "A_one": {
+    "legs": 1752971,
+    "settled_legs": 1751678,
+    "unsettled_legs": 1293,
+    "credited_contracts": 92396262.29,
+    "pnl": 634832.8531,
+    "ev_per_contract": 0.00687,
+    "ci95": [
+     -0.01003,
+     0.02376
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5149,
+    "positive_ticker_share_min5_legs": 0.5149,
+    "positive_ticker_share_min20_legs": 0.5149,
+    "tickers_min20_legs": 2915,
+    "ticker_ev_median": 0.18184,
+    "ticker_ev_trimmed_mean_5pct": 0.01926,
+    "legs_per_ticker_median": 548,
+    "legs_per_ticker_p90": 1035,
+    "pnl_ex_top10_tickers": 182690.66,
+    "ev_ex_top10_tickers": 0.00199,
+    "top10_share_of_pnl": 0.7122,
+    "halves": {
+     "ev_first_half": -1e-05,
+     "ev_second_half": 0.01391,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 58066,
+      "contracts": 3034969.64,
+      "ev_per_contract": -0.00475,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 260096,
+      "contracts": 13921561.02,
+      "ev_per_contract": 0.00291,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 570701,
+      "contracts": 29327743.33,
+      "ev_per_contract": 0.00965,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 569528,
+      "contracts": 30333998.5,
+      "ev_per_contract": 0.01326,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 248818,
+      "contracts": 13379845.87,
+      "ev_per_contract": -0.00304,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 44469,
+      "contracts": 2398143.94,
+      "ev_per_contract": -0.01498,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 1300496,
+      "contracts": 68995131.35,
+      "ev_per_contract": 0.01011
+     },
+     "10-30s": {
+      "legs": 113046,
+      "contracts": 5844022.08,
+      "ev_per_contract": -0.00573
+     },
+     "2-10s": {
+      "legs": 294821,
+      "contracts": 15334200.27,
+      "ev_per_contract": -0.00076
+     },
+     "30-60s": {
+      "legs": 43315,
+      "contracts": 2222908.59,
+      "ev_per_contract": -0.00781
+     }
+    },
+    "latency_median_s": 0.5,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.010030835160307259); 51.5% of tickers positive (<60%)",
+    "orders_generated": 3190298,
+    "dedupe_skips": 0,
+    "fill_rate": 0.5495
+   },
+   "A_sweep": {
+    "legs": 485657,
+    "settled_legs": 485331,
+    "unsettled_legs": 326,
+    "credited_contracts": 25072589.98,
+    "pnl": -219219.5979,
+    "ev_per_contract": -0.00874,
+    "ci95": [
+     -0.02871,
+     0.01047
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5149,
+    "positive_ticker_share_min5_legs": 0.5143,
+    "positive_ticker_share_min20_legs": 0.5044,
+    "tickers_min20_legs": 2825,
+    "ticker_ev_median": 0.14885,
+    "ticker_ev_trimmed_mean_5pct": 0.01687,
+    "legs_per_ticker_median": 123,
+    "legs_per_ticker_p90": 355,
+    "pnl_ex_top10_tickers": -439238.28,
+    "ev_ex_top10_tickers": -0.01782,
+    "top10_share_of_pnl": -1.0036,
+    "halves": {
+     "ev_first_half": -0.01245,
+     "ev_second_half": -0.00469,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 30693,
+      "contracts": 1472367.13,
+      "ev_per_contract": -0.00624,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 63658,
+      "contracts": 3382988.03,
+      "ev_per_contract": -0.01755,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 161793,
+      "contracts": 8274631.72,
+      "ev_per_contract": -0.00703,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 146306,
+      "contracts": 7637397.54,
+      "ev_per_contract": 0.00143,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 53438,
+      "contracts": 2783296.91,
+      "ev_per_contract": -0.02634,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 29443,
+      "contracts": 1521908.65,
+      "ev_per_contract": -0.01978,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 335840,
+      "contracts": 17270204.49,
+      "ev_per_contract": -0.00954
+     },
+     "10-30s": {
+      "legs": 38335,
+      "contracts": 1996369.77,
+      "ev_per_contract": -0.01207
+     },
+     "2-10s": {
+      "legs": 95357,
+      "contracts": 4985303.57,
+      "ev_per_contract": -0.00356
+     },
+     "30-60s": {
+      "legs": 15799,
+      "contracts": 820712.15,
+      "ev_per_contract": -0.01536
+     }
+    },
+    "latency_median_s": 0.67,
+    "verdict": "CLOSE",
+    "reason": "EV<=0 (-0.00874); CI includes zero (lo=-0.028713208425795507); 51.5% of tickers positive (<60%)",
+    "orders_generated": 3304450,
+    "dedupe_skips": 0,
+    "fill_rate": 0.147
+   },
+   "B_print": {
+    "legs": 4536871,
+    "settled_legs": 4533834,
+    "unsettled_legs": 3037,
+    "credited_contracts": 233573276.24,
+    "pnl": 2810762.3351,
+    "ev_per_contract": 0.01203,
+    "ci95": [
+     -0.00395,
+     0.02836
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5149,
+    "positive_ticker_share_min5_legs": 0.5149,
+    "positive_ticker_share_min20_legs": 0.5149,
+    "tickers_min20_legs": 2915,
+    "ticker_ev_median": 0.17137,
+    "ticker_ev_trimmed_mean_5pct": 0.0107,
+    "legs_per_ticker_median": 1466,
+    "legs_per_ticker_p90": 2524,
+    "pnl_ex_top10_tickers": 1747473.76,
+    "ev_ex_top10_tickers": 0.00754,
+    "top10_share_of_pnl": 0.3783,
+    "halves": {
+     "ev_first_half": 0.00385,
+     "ev_second_half": 0.02091,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 168560,
+      "contracts": 9223491.42,
+      "ev_per_contract": -0.00493,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 583710,
+      "contracts": 30053352.83,
+      "ev_per_contract": 0.00474,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 1224678,
+      "contracts": 61042675.74,
+      "ev_per_contract": 0.01299,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 1621959,
+      "contracts": 83715427.01,
+      "ev_per_contract": 0.02013,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 812720,
+      "contracts": 42544266.88,
+      "ev_per_contract": 0.00621,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 122207,
+      "contracts": 6994062.34,
+      "ev_per_contract": -0.00407,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 3873989,
+      "contracts": 198119366.69,
+      "ev_per_contract": 0.01214
+     },
+     "10-30s": {
+      "legs": 188578,
+      "contracts": 10104255.33,
+      "ev_per_contract": 0.00999
+     },
+     "2-10s": {
+      "legs": 385231,
+      "contracts": 20748625.61,
+      "ev_per_contract": 0.01242
+     },
+     "30-60s": {
+      "legs": 86036,
+      "contracts": 4601028.6,
+      "ev_per_contract": 0.01024
+     }
+    },
+    "latency_median_s": 0.12,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.003950490618842956); 51.5% of tickers positive (<60%)",
+    "orders_generated": 6686547,
+    "dedupe_skips": 9229775,
+    "fill_rate": 0.6785
+   },
+   "R_print": {
+    "legs": 7508433,
+    "settled_legs": 7502979,
+    "unsettled_legs": 5454,
+    "credited_contracts": 372613444.2,
+    "pnl": 2757818.6302,
+    "ev_per_contract": 0.0074,
+    "ci95": [
+     -0.00398,
+     0.01897
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5149,
+    "positive_ticker_share_min5_legs": 0.5149,
+    "positive_ticker_share_min20_legs": 0.5149,
+    "tickers_min20_legs": 2915,
+    "ticker_ev_median": 0.08289,
+    "ticker_ev_trimmed_mean_5pct": 0.0028,
+    "legs_per_ticker_median": 2517,
+    "legs_per_ticker_p90": 3709,
+    "pnl_ex_top10_tickers": 1479672.15,
+    "ev_ex_top10_tickers": 0.00399,
+    "top10_share_of_pnl": 0.4635,
+    "halves": {
+     "ev_first_half": 0.00033,
+     "ev_second_half": 0.01491,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 1333633,
+      "contracts": 63401084.79,
+      "ev_per_contract": -0.00474,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 611116,
+      "contracts": 31514758.38,
+      "ev_per_contract": 0.0048,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 1288283,
+      "contracts": 64243164.37,
+      "ev_per_contract": 0.01293,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 1671222,
+      "contracts": 86323129.36,
+      "ev_per_contract": 0.02018,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 824891,
+      "contracts": 43192192.49,
+      "ev_per_contract": 0.00614,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 1773834,
+      "contracts": 83939114.82,
+      "ev_per_contract": 0.00083,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 7502979,
+      "contracts": 372613444.2,
+      "ev_per_contract": 0.0074
+     }
+    },
+    "latency_median_s": 0.0,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.003983721075114947); 51.5% of tickers positive (<60%)",
+    "orders_generated": 0,
+    "dedupe_skips": 0,
+    "fill_rate": null
+   }
+  },
+  "KXETH15M": {
+   "A_at": {
+    "legs": 100445,
+    "settled_legs": 100396,
+    "unsettled_legs": 49,
+    "credited_contracts": 5487535.64,
+    "pnl": 44467.6054,
+    "ev_per_contract": 0.0081,
+    "ci95": [
+     -0.01014,
+     0.02691
+    ],
+    "tickers": 2914,
+    "positive_ticker_share": 0.5141,
+    "positive_ticker_share_min5_legs": 0.5147,
+    "positive_ticker_share_min20_legs": 0.5079,
+    "tickers_min20_legs": 1843,
+    "ticker_ev_median": 0.1174,
+    "ticker_ev_trimmed_mean_5pct": 0.02317,
+    "legs_per_ticker_median": 26,
+    "legs_per_ticker_p90": 72,
+    "pnl_ex_top10_tickers": -561.39,
+    "ev_ex_top10_tickers": -0.0001,
+    "top10_share_of_pnl": 1.0126,
+    "halves": {
+     "ev_first_half": 0.01157,
+     "ev_second_half": 0.00548,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 5219,
+      "contracts": 322724.6,
+      "ev_per_contract": 0.00493,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 18144,
+      "contracts": 1000827.89,
+      "ev_per_contract": 0.00935,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 28260,
+      "contracts": 1488291.73,
+      "ev_per_contract": 0.00576,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 27471,
+      "contracts": 1486678.93,
+      "ev_per_contract": 0.01025,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 17674,
+      "contracts": 974841.77,
+      "ev_per_contract": 0.00989,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 3628,
+      "contracts": 214170.72,
+      "ev_per_contract": 0.0003,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 49584,
+      "contracts": 2556378.05,
+      "ev_per_contract": 0.0069
+     },
+     "10-30s": {
+      "legs": 16210,
+      "contracts": 937862.59,
+      "ev_per_contract": 0.00983
+     },
+     "2-10s": {
+      "legs": 27426,
+      "contracts": 1579922.23,
+      "ev_per_contract": 0.00945
+     },
+     "30-60s": {
+      "legs": 7176,
+      "contracts": 413372.77,
+      "ev_per_contract": 0.00648
+     }
+    },
+    "latency_median_s": 2.07,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.010136047673167912); 51.4% of tickers positive (<60%)",
+    "orders_generated": 3304450,
+    "dedupe_skips": 11772537,
+    "fill_rate": 0.0304
+   },
+   "A_one": {
+    "legs": 242834,
+    "settled_legs": 242707,
+    "unsettled_legs": 127,
+    "credited_contracts": 13477198.28,
+    "pnl": -260968.0111,
+    "ev_per_contract": -0.01936,
+    "ci95": [
+     -0.03698,
+     -0.00233
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5139,
+    "positive_ticker_share_min5_legs": 0.5134,
+    "positive_ticker_share_min20_legs": 0.498,
+    "tickers_min20_legs": 2723,
+    "ticker_ev_median": 0.10475,
+    "ticker_ev_trimmed_mean_5pct": 0.02305,
+    "legs_per_ticker_median": 64,
+    "legs_per_ticker_p90": 166,
+    "pnl_ex_top10_tickers": -356413.69,
+    "ev_ex_top10_tickers": -0.02677,
+    "top10_share_of_pnl": -0.3657,
+    "halves": {
+     "ev_first_half": -0.01945,
+     "ev_second_half": -0.01929,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 24839,
+      "contracts": 1518693.01,
+      "ev_per_contract": -0.00685,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 39668,
+      "contracts": 2219499.14,
+      "ev_per_contract": -0.01223,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 65716,
+      "contracts": 3523512.68,
+      "ev_per_contract": -0.02581,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 61977,
+      "contracts": 3390480.32,
+      "ev_per_contract": -0.02622,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 33277,
+      "contracts": 1834906.54,
+      "ev_per_contract": -0.01764,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 17230,
+      "contracts": 990106.58,
+      "ev_per_contract": -0.01134,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 87114,
+      "contracts": 4557003.66,
+      "ev_per_contract": -0.00333
+     },
+     "10-30s": {
+      "legs": 54945,
+      "contracts": 3157150.62,
+      "ev_per_contract": -0.03041
+     },
+     "2-10s": {
+      "legs": 68108,
+      "contracts": 3899730.6,
+      "ev_per_contract": -0.01144
+     },
+     "30-60s": {
+      "legs": 32540,
+      "contracts": 1863313.4,
+      "ev_per_contract": -0.05645
+     }
+    },
+    "latency_median_s": 4.85,
+    "verdict": "CLOSE",
+    "reason": "EV<=0 (-0.01936); CI includes zero (lo=-0.036975381347942746); 51.4% of tickers positive (<60%)",
+    "orders_generated": 3190298,
+    "dedupe_skips": 0,
+    "fill_rate": 0.0761
+   },
+   "A_sweep": {
+    "legs": 204464,
+    "settled_legs": 204334,
+    "unsettled_legs": 130,
+    "credited_contracts": 11625638.4,
+    "pnl": -367216.7308,
+    "ev_per_contract": -0.03159,
+    "ci95": [
+     -0.04939,
+     -0.01397
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5139,
+    "positive_ticker_share_min5_legs": 0.5127,
+    "positive_ticker_share_min20_legs": 0.4782,
+    "tickers_min20_legs": 2610,
+    "ticker_ev_median": 0.09192,
+    "ticker_ev_trimmed_mean_5pct": 0.01126,
+    "legs_per_ticker_median": 55,
+    "legs_per_ticker_p90": 138,
+    "pnl_ex_top10_tickers": -446058.14,
+    "ev_ex_top10_tickers": -0.03884,
+    "top10_share_of_pnl": -0.2147,
+    "halves": {
+     "ev_first_half": -0.02966,
+     "ev_second_half": -0.0334,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 20558,
+      "contracts": 1249078.33,
+      "ev_per_contract": -0.0103,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 29283,
+      "contracts": 1696954.82,
+      "ev_per_contract": -0.02077,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 56509,
+      "contracts": 3144453.54,
+      "ev_per_contract": -0.03918,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 54711,
+      "contracts": 3065126.58,
+      "ev_per_contract": -0.04402,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 26492,
+      "contracts": 1493348.11,
+      "ev_per_contract": -0.02968,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 16781,
+      "contracts": 976677.02,
+      "ev_per_contract": -0.01703,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 67591,
+      "contracts": 3597658.14,
+      "ev_per_contract": -0.02443
+     },
+     "10-30s": {
+      "legs": 49999,
+      "contracts": 2967695.04,
+      "ev_per_contract": -0.03506
+     },
+     "2-10s": {
+      "legs": 63789,
+      "contracts": 3700755.23,
+      "ev_per_contract": -0.03052
+     },
+     "30-60s": {
+      "legs": 22955,
+      "contracts": 1359529.99,
+      "ev_per_contract": -0.04584
+     }
+    },
+    "latency_median_s": 5.22,
+    "verdict": "CLOSE",
+    "reason": "EV<=0 (-0.03159); CI includes zero (lo=-0.049385474821943456); 51.4% of tickers positive (<60%)",
+    "orders_generated": 3304450,
+    "dedupe_skips": 0,
+    "fill_rate": 0.0619
+   },
+   "B_print": {
+    "legs": 222800,
+    "settled_legs": 222692,
+    "unsettled_legs": 108,
+    "credited_contracts": 12116133.23,
+    "pnl": 109190.3499,
+    "ev_per_contract": 0.00901,
+    "ci95": [
+     -0.00952,
+     0.02733
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5139,
+    "positive_ticker_share_min5_legs": 0.5145,
+    "positive_ticker_share_min20_legs": 0.5236,
+    "tickers_min20_legs": 2603,
+    "ticker_ev_median": 0.10411,
+    "ticker_ev_trimmed_mean_5pct": 0.01873,
+    "legs_per_ticker_median": 59,
+    "legs_per_ticker_p90": 161,
+    "pnl_ex_top10_tickers": 7007.98,
+    "ev_ex_top10_tickers": 0.00059,
+    "top10_share_of_pnl": 0.9358,
+    "halves": {
+     "ev_first_half": 0.00748,
+     "ev_second_half": 0.01015,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 13325,
+      "contracts": 811108.8,
+      "ev_per_contract": 0.00067,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 37462,
+      "contracts": 2038552.43,
+      "ev_per_contract": 0.00988,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 56618,
+      "contracts": 2978537.45,
+      "ev_per_contract": 0.01156,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 61299,
+      "contracts": 3308839.45,
+      "ev_per_contract": 0.00843,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 43127,
+      "contracts": 2352236.45,
+      "ev_per_contract": 0.01085,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 10861,
+      "contracts": 626858.65,
+      "ev_per_contract": 0.00109,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 112034,
+      "contracts": 5931125.88,
+      "ev_per_contract": 0.00883
+     },
+     "10-30s": {
+      "legs": 38438,
+      "contracts": 2134603.43,
+      "ev_per_contract": 0.00752
+     },
+     "2-10s": {
+      "legs": 46853,
+      "contracts": 2641458.22,
+      "ev_per_contract": 0.01334
+     },
+     "30-60s": {
+      "legs": 25367,
+      "contracts": 1408945.69,
+      "ev_per_contract": 0.00393
+     }
+    },
+    "latency_median_s": 1.95,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.009519482118019146); 51.4% of tickers positive (<60%)",
+    "orders_generated": 6686547,
+    "dedupe_skips": 9229775,
+    "fill_rate": 0.0333
+   },
+   "R_print": {
+    "legs": 599116,
+    "settled_legs": 598701,
+    "unsettled_legs": 415,
+    "credited_contracts": 32411764.19,
+    "pnl": 218063.2849,
+    "ev_per_contract": 0.00673,
+    "ci95": [
+     -0.00426,
+     0.0174
+    ],
+    "tickers": 2915,
+    "positive_ticker_share": 0.5139,
+    "positive_ticker_share_min5_legs": 0.5139,
+    "positive_ticker_share_min20_legs": 0.5137,
+    "tickers_min20_legs": 2914,
+    "ticker_ev_median": 0.04736,
+    "ticker_ev_trimmed_mean_5pct": 0.00937,
+    "legs_per_ticker_median": 190,
+    "legs_per_ticker_p90": 330,
+    "pnl_ex_top10_tickers": 67283.74,
+    "ev_ex_top10_tickers": 0.00209,
+    "top10_share_of_pnl": 0.6914,
+    "halves": {
+     "ev_first_half": 0.00643,
+     "ev_second_half": 0.00698,
+     "split_ts_utc": "2026-10-28T07:34:49Z"
+    },
+    "bands": {
+     "0.00-0.10": {
+      "legs": 133957,
+      "contracts": 7530615.92,
+      "ev_per_contract": 0.00162,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.10-0.25": {
+      "legs": 54062,
+      "contracts": 2972994.22,
+      "ev_per_contract": 0.01021,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.25-0.50": {
+      "legs": 92637,
+      "contracts": 4934274.67,
+      "ev_per_contract": 0.00907,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.50-0.75": {
+      "legs": 97788,
+      "contracts": 5368980.85,
+      "ev_per_contract": 0.01228,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.75-0.90": {
+      "legs": 58654,
+      "contracts": 3240846.12,
+      "ev_per_contract": 0.01277,
+      "ci95": null,
+      "band_tickers": null
+     },
+     "0.90-1.00": {
+      "legs": 161603,
+      "contracts": 8364052.41,
+      "ev_per_contract": 0.0028,
+      "ci95": null,
+      "band_tickers": null
+     }
+    },
+    "latency_buckets": {
+     "0-2s": {
+      "legs": 598701,
+      "contracts": 32411764.19,
+      "ev_per_contract": 0.00673
+     }
+    },
+    "latency_median_s": 0.0,
+    "verdict": "CLOSE",
+    "reason": "CI includes zero (lo=-0.00426112865014939); 51.4% of tickers positive (<60%)",
+    "orders_generated": 0,
+    "dedupe_skips": 0,
+    "fill_rate": null
+   }
+  }
+ },
+ "limits": [
+  "L1 print floor 100 contracts",
+  "L2 no book/queue/partials/cancels",
+  "L3 duty cycle: holes lose fills, never create them",
+  "L4 NO side only (card (a)); L5 paper only, no key exists"
+ ],
+ "runtime_seconds": 106.7
+}

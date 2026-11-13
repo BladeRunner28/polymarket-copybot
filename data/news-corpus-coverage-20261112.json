@@ -1,0 +1,150 @@
+{
+  "cards": {
+    "llm-vs-prediction-markets-news": {
+      "id": "SuperAGI/llm-vs-prediction-markets-news",
+      "sha": "f96f3741e139d8ab7440ab21285f69eeba924b00",
+      "last_modified": "2026-10-01T08:45:41.000Z",
+      "licence_tags": [
+        "license:cc-by-4.0",
+        "license:cc-by-nc-sa-4.0"
+      ],
+      "card_license": [
+        "cc-by-4.0",
+        "cc-by-nc-sa-4.0"
+      ],
+      "files": 7
+    },
+    "llm-vs-prediction-markets": {
+      "id": "SuperAGI/llm-vs-prediction-markets",
+      "sha": "da455cd2b82cc0f43b03e72a181076d072dc58a1",
+      "last_modified": "2026-10-01T08:45:38.000Z",
+      "licence_tags": [
+        "license:cc-by-4.0",
+        "license:cc-by-nc-sa-4.0"
+      ],
+      "card_license": [
+        "cc-by-4.0",
+        "cc-by-nc-sa-4.0"
+      ],
+      "files": 75
+    },
+    "us-news-headlines-enriched": {
+      "id": "dnakhla/us-news-headlines-enriched",
+      "sha": "06e3248aa480de282e72d9a4419e6355507b4b2f",
+      "last_modified": "2026-03-22T18:39:11.000Z",
+      "licence_tags": [
+        "license:cc-by-4.0"
+      ],
+      "card_license": "cc-by-4.0",
+      "files": 4
+    }
+  },
+  "sa_texts": {
+    "rows": 5317,
+    "kind_counts": {
+      "article_text": 3477,
+      "row_news_text": 1840
+    },
+    "distinct_sha256": 5317,
+    "words_median": 385,
+    "words_p90": 1082,
+    "redacted_rows": 73,
+    "columns": [
+      "sha256",
+      "kind",
+      "text",
+      "words",
+      "redacted"
+    ],
+    "window_a_fetched": false
+  },
+  "window_b": {
+    "market_moments": 3619,
+    "distinct_markets": 3619,
+    "forecast_range": [
+      "2026-07-15T18:00:01Z",
+      "2026-08-09T18:59:44Z"
+    ],
+    "moments_with_news": 1010,
+    "news_share": 0.2791,
+    "empty_sha_sentinel_rows": 2609,
+    "empty_sha_is_empty_string_hash": true,
+    "article_count_dist": {
+      "0": 2609,
+      "3": 678,
+      "1": 209,
+      "2": 123
+    },
+    "news_articles_rows": 2489,
+    "news_articles_distinct_urls": 1538,
+    "news_capture_range": [
+      "2026-07-01T21:37:12Z",
+      "2026-08-09T17:27:28Z"
+    ],
+    "ladder_share": 0.2625
+  },
+  "dnakhla": {
+    "rows": 143142,
+    "date_range": [
+      "2015-01-01",
+      "2026-03-22"
+    ],
+    "era": {
+      "current": 118113,
+      "historical": 25029
+    },
+    "outlets": 13,
+    "datetime_null": 37252,
+    "datetime_null_share": 0.2602,
+    "rows_inside_our_decision_window": 0,
+    "collected_at_range": [
+      "2026-03-20 20:44:05.212587+00:00",
+      "2026-03-22 16:15:58.611543+00:00"
+    ],
+    "collected_at_is_single_bulk_snapshot": true
+  },
+  "our_book": {
+    "observed_trade_rows": 6534613,
+    "observed_trade_null_condition_id": 24,
+    "condition_id_first_ts": "2026-07-13 20:13:14",
+    "window_b_span_rows": 88415,
+    "window_b_span_distinct_condition_ids": 8442,
+    "regulatory_signal_rows": 2810,
+    "regulatory_signal_first": "2026-08-16 21:05:45",
+    "regulatory_signal_last": "2026-11-12 15:32:07",
+    "regulatory_signal_by_source": {
+      "congress_gov_api": 1455,
+      "govinfo_fr_notice": 1164,
+      "quiver_congress_trade": 190,
+      "reddit_trumpstrades": 1
+    },
+    "overlap_markets": 245,
+    "overlap_share_of_our_markets": 0.029,
+    "overlap_moments": 245,
+    "overlap_moments_with_news": 59,
+    "overlap_share_with_news": 0.2408,
+    "overlap_share_of_span_book": 0.029,
+    "decisions": {
+      "rows": 80209,
+      "cols": 52,
+      "text_or_join_columns_present": [],
+      "date_range": [
+        "2026-07-14 20:13:10+00:00",
+        "2026-10-19 08:47:42+00:00"
+      ],
+      "distinct_markets": 49205,
+      "acted_rows": 4863,
+      "category_class_non_null": 5344,
+      "category_class_non_null_acted": 587,
+      "distinct_slug_prefixes": 372,
+      "slug_prefix_question_word_rows": 54568,
+      "slug_prefix_top20_share": 0.8704
+    },
+    "sentiment_export": {
+      "rows": 12822,
+      "has_sentiment_true": 315,
+      "has_sentiment_share": 0.0246,
+      "note": "the only as-of text-derived feature in the export today"
+    }
+  }
+}
