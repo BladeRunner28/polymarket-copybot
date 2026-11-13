@@ -1,0 +1,2794 @@
+{
+  "generated_at": "2026-11-13T15:04:31Z",
+  "read_window": "2026-07-14..2026-11-13",
+  "ruleset_version": 72,
+  "longshot_max_price": 0.2,
+  "bases": "isDemo=0; level=one open-position set at one entry instant; clock=openedAt (exit closedAt??resolvedAt); at-risk=simulatedPositionSize; NW=principal+realised PnL closed before entry; days=UTC",
+  "lanes": {
+    "BANKROLL_200": {
+      "open_book": {
+        "open_legs": 6,
+        "open_cost": 377.92,
+        "longshot_legs": 4,
+        "longshot_cost": 350.0,
+        "net_worth": 7570.95,
+        "longshot_pct_nw": 4.62
+      },
+      "net_worth_realized_only": 7570.95,
+      "legs": 2830,
+      "days": [
+        {
+          "day": "2026-07-24",
+          "peak_pct": 0.23,
+          "concurrent_cost": 3.98,
+          "opened": 1,
+          "opened_cost": 3.98,
+          "realised": -3.97,
+          "worst_leg": -3.97
+        },
+        {
+          "day": "2026-07-27",
+          "peak_pct": 0.7,
+          "concurrent_cost": 11.18,
+          "opened": 2,
+          "opened_cost": 11.18,
+          "realised": -4.32,
+          "worst_leg": -2.16
+        },
+        {
+          "day": "2026-07-31",
+          "peak_pct": 1.61,
+          "concurrent_cost": 25.64,
+          "opened": 3,
+          "opened_cost": 14.46,
+          "realised": 2.21,
+          "worst_leg": -2.5
+        },
+        {
+          "day": "2026-08-01",
+          "peak_pct": 2.19,
+          "concurrent_cost": 30.43,
+          "opened": 1,
+          "opened_cost": 4.79,
+          "realised": 0.0,
+          "worst_leg": 0.0
+        },
+        {
+          "day": "2026-08-03",
+          "peak_pct": 2.52,
+          "concurrent_cost": 35.21,
+          "opened": 1,
+          "opened_cost": 4.79,
+          "realised": -4.77,
+          "worst_leg": -4.77
+        },
+        {
+          "day": "2026-08-10",
+          "peak_pct": 2.14,
+          "concurrent_cost": 35.31,
+          "opened": 1,
+          "opened_cost": 4.89,
+          "realised": 0.67,
+          "worst_leg": 0.67
+        },
+        {
+          "day": "2026-08-11",
+          "peak_pct": 6.28,
+          "concurrent_cost": 103.81,
+          "opened": 15,
+          "opened_cost": 68.49,
+          "realised": 103.72,
+          "worst_leg": -4.57
+        },
+        {
+          "day": "2026-08-12",
+          "peak_pct": 9.31,
+          "concurrent_cost": 146.79,
+          "opened": 11,
+          "opened_cost": 51.05,
+          "realised": 3.78,
+          "worst_leg": -1.07
+        },
+        {
+          "day": "2026-08-16",
+          "peak_pct": 8.0,
+          "concurrent_cost": 125.94,
+          "opened": 1,
+          "opened_cost": 4.99,
+          "realised": 63.8,
+          "worst_leg": 63.8
+        },
+        {
+          "day": "2026-08-28",
+          "peak_pct": 9.52,
+          "concurrent_cost": 169.64,
+          "opened": 10,
+          "opened_cost": 54.38,
+          "realised": -10.84,
+          "worst_leg": -3.95
+        },
+        {
+          "day": "2026-08-30",
+          "peak_pct": 7.63,
+          "concurrent_cost": 144.28,
+          "opened": 18,
+          "opened_cost": 130.88,
+          "realised": 67.33,
+          "worst_leg": -4.99
+        },
+        {
+          "day": "2026-08-31",
+          "peak_pct": 8.59,
+          "concurrent_cost": 156.82,
+          "opened": 4,
+          "opened_cost": 19.95,
+          "realised": -19.81,
+          "worst_leg": -4.99
+        },
+        {
+          "day": "2026-09-03",
+          "peak_pct": 4.53,
+          "concurrent_cost": 81.44,
+          "opened": 4,
+          "opened_cost": 49.46,
+          "realised": -49.23,
+          "worst_leg": -19.48
+        },
+        {
+          "day": "2026-09-05",
+          "peak_pct": 3.35,
+          "concurrent_cost": 57.94,
+          "opened": 2,
+          "opened_cost": 34.96,
+          "realised": 7.01,
+          "worst_leg": 0.0
+        },
+        {
+          "day": "2026-09-06",
+          "peak_pct": 10.88,
+          "concurrent_cost": 184.84,
+          "opened": 7,
+          "opened_cost": 149.87,
+          "realised": 326.48,
+          "worst_leg": -59.1
+        },
+        {
+          "day": "2026-09-07",
+          "peak_pct": 53.45,
+          "concurrent_cost": 878.13,
+          "opened": 16,
+          "opened_cost": 818.03,
+          "realised": 298.87,
+          "worst_leg": -91.49
+        },
+        {
+          "day": "2026-09-09",
+          "peak_pct": 22.05,
+          "concurrent_cost": 429.9,
+          "opened": 8,
+          "opened_cost": 309.85,
+          "realised": 19.28,
+          "worst_leg": -19.95
+        },
+        {
+          "day": "2026-09-10",
+          "peak_pct": 32.5,
+          "concurrent_cost": 611.41,
+          "opened": 7,
+          "opened_cost": 201.46,
+          "realised": 782.91,
+          "worst_leg": -19.86
+        },
+        {
+          "day": "2026-09-11",
+          "peak_pct": 48.27,
+          "concurrent_cost": 866.47,
+          "opened": 7,
+          "opened_cost": 324.88,
+          "realised": -161.31,
+          "worst_leg": -69.72
+        },
+        {
+          "day": "2026-09-12",
+          "peak_pct": 55.21,
+          "concurrent_cost": 923.52,
+          "opened": 8,
+          "opened_cost": 207.98,
+          "realised": -141.59,
+          "worst_leg": -39.44
+        },
+        {
+          "day": "2026-09-13",
+          "peak_pct": 53.75,
+          "concurrent_cost": 1030.96,
+          "opened": 6,
+          "opened_cost": 187.27,
+          "realised": 3.92,
+          "worst_leg": -18.32
+        },
+        {
+          "day": "2026-09-14",
+          "peak_pct": 60.85,
+          "concurrent_cost": 1120.52,
+          "opened": 8,
+          "opened_cost": 355.8,
+          "realised": -183.88,
+          "worst_leg": -75.12
+        },
+        {
+          "day": "2026-09-15",
+          "peak_pct": 60.21,
+          "concurrent_cost": 1044.33,
+          "opened": 8,
+          "opened_cost": 207.43,
+          "realised": -50.94,
+          "worst_leg": -50.04
+        },
+        {
+          "day": "2026-09-16",
+          "peak_pct": 57.51,
+          "concurrent_cost": 910.86,
+          "opened": 4,
+          "opened_cost": 93.12,
+          "realised": -85.36,
+          "worst_leg": -31.8
+        },
+        {
+          "day": "2026-09-18",
+          "peak_pct": 10.74,
+          "concurrent_cost": 257.39,
+          "opened": 5,
+          "opened_cost": 329.97,
+          "realised": 1833.95,
+          "worst_leg": -16.13
+        },
+        {
+          "day": "2026-09-19",
+          "peak_pct": 20.15,
+          "concurrent_cost": 677.42,
+          "opened": 7,
+          "opened_cost": 330.0,
+          "realised": -115.72,
+          "worst_leg": -43.75
+        },
+        {
+          "day": "2026-09-20",
+          "peak_pct": 20.16,
+          "concurrent_cost": 677.42,
+          "opened": 11,
+          "opened_cost": 369.97,
+          "realised": 62.66,
+          "worst_leg": -68.57
+        },
+        {
+          "day": "2026-09-21",
+          "peak_pct": 25.18,
+          "concurrent_cost": 799.97,
+          "opened": 6,
+          "opened_cost": 280.0,
+          "realised": 1644.25,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-09-22",
+          "peak_pct": 14.73,
+          "concurrent_cost": 519.97,
+          "opened": 2,
+          "opened_cost": 19.95,
+          "realised": -11.48,
+          "worst_leg": -9.95
+        },
+        {
+          "day": "2026-09-23",
+          "peak_pct": 6.78,
+          "concurrent_cost": 289.95,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-09-24",
+          "peak_pct": 10.53,
+          "concurrent_cost": 450.0,
+          "opened": 2,
+          "opened_cost": 200.0,
+          "realised": -118.11,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-09-25",
+          "peak_pct": 17.93,
+          "concurrent_cost": 770.0,
+          "opened": 4,
+          "opened_cost": 320.0,
+          "realised": -274.19,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-09-26",
+          "peak_pct": 13.68,
+          "concurrent_cost": 560.0,
+          "opened": 9,
+          "opened_cost": 260.0,
+          "realised": 285.8,
+          "worst_leg": -56.25
+        },
+        {
+          "day": "2026-09-27",
+          "peak_pct": 12.45,
+          "concurrent_cost": 500.0,
+          "opened": 2,
+          "opened_cost": 22.38,
+          "realised": -15.73,
+          "worst_leg": -12.41
+        },
+        {
+          "day": "2026-09-28",
+          "peak_pct": 4.32,
+          "concurrent_cost": 240.0,
+          "opened": 3,
+          "opened_cost": 220.0,
+          "realised": 459.33,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-09-29",
+          "peak_pct": 2.41,
+          "concurrent_cost": 140.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-09-30",
+          "peak_pct": 2.08,
+          "concurrent_cost": 120.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-01",
+          "peak_pct": 2.08,
+          "concurrent_cost": 120.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": 180.0,
+          "worst_leg": 180.0
+        },
+        {
+          "day": "2026-10-02",
+          "peak_pct": 5.83,
+          "concurrent_cost": 352.41,
+          "opened": 9,
+          "opened_cost": 252.41,
+          "realised": 285.51,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-03",
+          "peak_pct": 6.3,
+          "concurrent_cost": 380.0,
+          "opened": 6,
+          "opened_cost": 120.0,
+          "realised": -120.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-05",
+          "peak_pct": 3.7,
+          "concurrent_cost": 229.97,
+          "opened": 2,
+          "opened_cost": 29.97,
+          "realised": 40.13,
+          "worst_leg": -3.81
+        },
+        {
+          "day": "2026-10-06",
+          "peak_pct": 5.3,
+          "concurrent_cost": 360.0,
+          "opened": 5,
+          "opened_cost": 260.0,
+          "realised": 510.12,
+          "worst_leg": -29.17
+        },
+        {
+          "day": "2026-10-07",
+          "peak_pct": 5.3,
+          "concurrent_cost": 360.0,
+          "opened": 7,
+          "opened_cost": 129.97,
+          "realised": 309.61,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-08",
+          "peak_pct": 3.13,
+          "concurrent_cost": 229.97,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-09",
+          "peak_pct": 3.76,
+          "concurrent_cost": 280.0,
+          "opened": 3,
+          "opened_cost": 140.0,
+          "realised": -85.16,
+          "worst_leg": -45.16
+        },
+        {
+          "day": "2026-10-10",
+          "peak_pct": 3.62,
+          "concurrent_cost": 280.0,
+          "opened": 3,
+          "opened_cost": 140.0,
+          "realised": 79.05,
+          "worst_leg": -71.43
+        },
+        {
+          "day": "2026-10-11",
+          "peak_pct": 0.65,
+          "concurrent_cost": 50.0,
+          "opened": 1,
+          "opened_cost": 50.0,
+          "realised": -50.0,
+          "worst_leg": -50.0
+        },
+        {
+          "day": "2026-10-16",
+          "peak_pct": 0.26,
+          "concurrent_cost": 20.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-17",
+          "peak_pct": 4.67,
+          "concurrent_cost": 354.73,
+          "opened": 6,
+          "opened_cost": 354.73,
+          "realised": -121.43,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-10-18",
+          "peak_pct": 1.6,
+          "concurrent_cost": 120.0,
+          "opened": 2,
+          "opened_cost": 120.0,
+          "realised": 492.29,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-19",
+          "peak_pct": 0.25,
+          "concurrent_cost": 20.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -17.48,
+          "worst_leg": -17.48
+        },
+        {
+          "day": "2026-10-20",
+          "peak_pct": 1.51,
+          "concurrent_cost": 120.0,
+          "opened": 2,
+          "opened_cost": 120.0,
+          "realised": -119.8,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-10-21",
+          "peak_pct": 0.26,
+          "concurrent_cost": 20.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": 110.45,
+          "worst_leg": 110.45
+        },
+        {
+          "day": "2026-10-22",
+          "peak_pct": 0.26,
+          "concurrent_cost": 20.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-23",
+          "peak_pct": 0.25,
+          "concurrent_cost": 20.0,
+          "opened": 1,
+          "opened_cost": 20.0,
+          "realised": -20.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-24",
+          "peak_pct": 0.76,
+          "concurrent_cost": 60.0,
+          "opened": 4,
+          "opened_cost": 110.0,
+          "realised": -110.0,
+          "worst_leg": -50.0
+        },
+        {
+          "day": "2026-10-25",
+          "peak_pct": 0.51,
+          "concurrent_cost": 40.0,
+          "opened": 2,
+          "opened_cost": 40.0,
+          "realised": -40.0,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-10-26",
+          "peak_pct": 3.1,
+          "concurrent_cost": 240.0,
+          "opened": 5,
+          "opened_cost": 260.0,
+          "realised": -260.0,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-10-28",
+          "peak_pct": 2.65,
+          "concurrent_cost": 200.0,
+          "opened": 2,
+          "opened_cost": 200.0,
+          "realised": -161.62,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-01",
+          "peak_pct": 2.95,
+          "concurrent_cost": 220.0,
+          "opened": 3,
+          "opened_cost": 220.0,
+          "realised": -167.82,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-02",
+          "peak_pct": 1.37,
+          "concurrent_cost": 100.0,
+          "opened": 1,
+          "opened_cost": 100.0,
+          "realised": 0.0,
+          "worst_leg": 0.0
+        },
+        {
+          "day": "2026-11-03",
+          "peak_pct": 5.85,
+          "concurrent_cost": 427.37,
+          "opened": 7,
+          "opened_cost": 327.37,
+          "realised": 38.27,
+          "worst_leg": -91.66
+        },
+        {
+          "day": "2026-11-04",
+          "peak_pct": 4.73,
+          "concurrent_cost": 360.0,
+          "opened": 6,
+          "opened_cost": 200.0,
+          "realised": 0.0,
+          "worst_leg": 0.0
+        },
+        {
+          "day": "2026-11-05",
+          "peak_pct": 2.69,
+          "concurrent_cost": 197.99,
+          "opened": 5,
+          "opened_cost": 177.99,
+          "realised": 85.7,
+          "worst_leg": -20.9
+        },
+        {
+          "day": "2026-11-06",
+          "peak_pct": 2.28,
+          "concurrent_cost": 170.0,
+          "opened": 2,
+          "opened_cost": 150.0,
+          "realised": -108.07,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-07",
+          "peak_pct": 2.29,
+          "concurrent_cost": 167.37,
+          "opened": 7,
+          "opened_cost": 137.37,
+          "realised": -60.92,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-11-08",
+          "peak_pct": 8.66,
+          "concurrent_cost": 627.37,
+          "opened": 9,
+          "opened_cost": 580.0,
+          "realised": -116.27,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-09",
+          "peak_pct": 9.87,
+          "concurrent_cost": 710.0,
+          "opened": 5,
+          "opened_cost": 260.0,
+          "realised": -100.0,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-10",
+          "peak_pct": 14.79,
+          "concurrent_cost": 1050.0,
+          "opened": 12,
+          "opened_cost": 709.97,
+          "realised": -215.33,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-11",
+          "peak_pct": 13.21,
+          "concurrent_cost": 930.0,
+          "opened": 10,
+          "opened_cost": 357.37,
+          "realised": 660.25,
+          "worst_leg": -100.0
+        }
+      ],
+      "threshold_days": {
+        "gt5": 40,
+        "gt10": 22,
+        "gt15": 13
+      },
+      "leg_count": {
+        "n": 2830,
+        "median": 11.0,
+        "p90": 27,
+        "p99": 33,
+        "max": 35
+      },
+      "worst_days": [
+        {
+          "day": "2026-09-14",
+          "pct": 60.85,
+          "legs": 25,
+          "cost": 1120.52,
+          "nw": 1841.57,
+          "distinct_events": 16
+        },
+        {
+          "day": "2026-09-15",
+          "pct": 60.21,
+          "legs": 22,
+          "cost": 1044.33,
+          "nw": 1734.47,
+          "distinct_events": 15
+        },
+        {
+          "day": "2026-09-16",
+          "pct": 57.51,
+          "legs": 22,
+          "cost": 910.86,
+          "nw": 1583.81,
+          "distinct_events": 17
+        },
+        {
+          "day": "2026-09-12",
+          "pct": 55.21,
+          "legs": 20,
+          "cost": 923.52,
+          "nw": 1672.87,
+          "distinct_events": 15
+        },
+        {
+          "day": "2026-09-13",
+          "pct": 53.75,
+          "legs": 23,
+          "cost": 1030.96,
+          "nw": 1918.09,
+          "distinct_events": 17
+        }
+      ],
+      "days_30d": {
+        "n": 29,
+        "median": 1.6,
+        "p90": 9.87,
+        "p99": 14.79,
+        "max": 14.79
+      },
+      "settled_legs": 340,
+      "loss_share_pct": {
+        "n": 340,
+        "median": 0.23,
+        "p90": 1.26,
+        "p99": 5.45,
+        "max": 5.52
+      },
+      "full_loss_legs": 87,
+      "breaches_over_bar_all": [
+        {
+          "id": "cmtq0xoi6006hu1i6n2bk89w2",
+          "day": "2026-09-06",
+          "share": 3.47,
+          "loss": 59.1,
+          "cost": 60.0,
+          "closed": "2026-09-07",
+          "marketId": "will-grune-win-at-least-7-of-all-valid-second-votes-sachsen-anhalt"
+        },
+        {
+          "id": "cmtqsseas009cu1i6s5l4isdd",
+          "day": "2026-09-07",
+          "share": 5.45,
+          "loss": 90.35,
+          "cost": 91.49,
+          "closed": "2026-09-08",
+          "marketId": "bkfibaw-nig-fra-2026-09-07"
+        },
+        {
+          "id": "cmtqssegh009fu1i6habgfspg",
+          "day": "2026-09-07",
+          "share": 5.45,
+          "loss": 90.35,
+          "cost": 91.49,
+          "closed": "2026-09-08",
+          "marketId": "bkfibaw-nig-fra-2026-09-07"
+        },
+        {
+          "id": "cmtqssem0009iu1i6ccy4w66s",
+          "day": "2026-09-07",
+          "share": 5.45,
+          "loss": 90.35,
+          "cost": 91.49,
+          "closed": "2026-09-08",
+          "marketId": "bkfibaw-nig-fra-2026-09-07"
+        },
+        {
+          "id": "cmtqssesn009lu1i658cm3zvo",
+          "day": "2026-09-07",
+          "share": 5.45,
+          "loss": 90.35,
+          "cost": 91.49,
+          "closed": "2026-09-08",
+          "marketId": "bkfibaw-nig-fra-2026-09-07"
+        },
+        {
+          "id": "cmtqssgoj009ou1i6b1gclpja",
+          "day": "2026-09-07",
+          "share": 5.52,
+          "loss": 91.49,
+          "cost": 91.49,
+          "closed": "2026-09-07",
+          "marketId": "elon-musk-of-tweets-september-5-september-7-2026-0-39"
+        },
+        {
+          "id": "cmtweiyge00tbu1i6oc9ahskx",
+          "day": "2026-09-11",
+          "share": 3.74,
+          "loss": 69.72,
+          "cost": 76.61,
+          "closed": "2026-09-15",
+          "marketId": "will-dtf-stpt-louis-win-emmys-2026-outstanding-limited-or-anthology-series-20260710152711975"
+        },
+        {
+          "id": "cmtwhyf3m00u2u1i6joyjei6t",
+          "day": "2026-09-11",
+          "share": 2.75,
+          "loss": 51.13,
+          "cost": 51.13,
+          "closed": "2026-09-11",
+          "marketId": "elon-musk-of-tweets-september-4-september-11-2026-160-179"
+        },
+        {
+          "id": "cmtxwxcky0028u8dku6fu15oc",
+          "day": "2026-09-12",
+          "share": 2.26,
+          "loss": 39.44,
+          "cost": 39.88,
+          "closed": "2026-09-13",
+          "marketId": "will-the-price-of-xrp-be-between-1pt30-1pt40-on-september-12-2026"
+        },
+        {
+          "id": "cmu0n6yi40028kfy453dlww19",
+          "day": "2026-09-14",
+          "share": 3.94,
+          "loss": 75.12,
+          "cost": 75.12,
+          "closed": "2026-09-14",
+          "marketId": "highest-temperature-in-wellington-on-september-14-2026-16c"
+        },
+        {
+          "id": "cmu2fht4y007rkfy4gv55vlb5",
+          "day": "2026-09-15",
+          "share": 2.87,
+          "loss": 50.04,
+          "cost": 50.3,
+          "closed": "2026-09-16",
+          "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-september-2026-meeting-649"
+        },
+        {
+          "id": "cmu48susn00etkfy4q9jz5dr9",
+          "day": "2026-09-16",
+          "share": 1.99,
+          "loss": 31.8,
+          "cost": 33.22,
+          "closed": "2026-09-17",
+          "marketId": "will-the-fed-decide-differently-in-the-next-three-decisions-julsepoct-20260617191211945"
+        },
+        {
+          "id": "cmua7ub9c002t12nolswq2vbi",
+          "day": "2026-09-20",
+          "share": 2.15,
+          "loss": 68.57,
+          "cost": 100.0,
+          "closed": "2026-09-21",
+          "marketId": "will-spd-win-26-29-seats-in-the-2026-mecklenburg-vorpommern-parliamentary-elections-20260805193138008"
+        },
+        {
+          "id": "cmufyli5a00co12nodo816h26",
+          "day": "2026-09-24",
+          "share": 2.34,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-09-25",
+          "marketId": "elon-musk-of-tweets-september-18-september-25-2026-220-239"
+        },
+        {
+          "id": "cmugu0nop00e312nokiobhhx8",
+          "day": "2026-09-25",
+          "share": 2.35,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-09-25",
+          "marketId": "elon-musk-of-tweets-september-18-september-25-2026-200-219"
+        },
+        {
+          "id": "cmugueq2g00e612nolqdtf7mq",
+          "day": "2026-09-25",
+          "share": 2.35,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-09-25",
+          "marketId": "elon-musk-of-tweets-september-18-september-25-2026-180-199"
+        },
+        {
+          "id": "cmuh50ujh00f412no9n8s5urw",
+          "day": "2026-09-25",
+          "share": 2.33,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-09-25",
+          "marketId": "dota2-xtreme-lgd-2026-09-25-game1"
+        },
+        {
+          "id": "cmuiesqnn001rd8p1onom77qy",
+          "day": "2026-09-26",
+          "share": 1.37,
+          "loss": 56.25,
+          "cost": 100.0,
+          "closed": "2026-09-27",
+          "marketId": "cfb-south-jackst-2026-09-26"
+        },
+        {
+          "id": "cmullam59006zd8p19baieo4g",
+          "day": "2026-09-28",
+          "share": 1.8,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-09-29",
+          "marketId": "elon-musk-of-tweets-september-22-september-29-2026-160-179"
+        },
+        {
+          "id": "cmvby29sq00835clowjmxwi4t",
+          "day": "2026-10-17",
+          "share": 1.32,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-17",
+          "marketId": "cfb-mspst-lsu-2026-10-17"
+        },
+        {
+          "id": "cmvc4qok5008i5clos66ubnwo",
+          "day": "2026-10-17",
+          "share": 1.31,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-17",
+          "marketId": "elc-wre-pne-2026-10-17-pne"
+        },
+        {
+          "id": "cmvca8spg008r5clo66yb9ux8",
+          "day": "2026-10-17",
+          "share": 1.31,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-17",
+          "marketId": "bkcba-nin-bei2-2026-10-17"
+        },
+        {
+          "id": "cmvs5mmjd001mhnixctv5mgr8",
+          "day": "2026-10-28",
+          "share": 1.32,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-28",
+          "marketId": "scop-cel-dun-2026-10-28-dun"
+        },
+        {
+          "id": "cmvy4yr4h004f13i0vqe334ii",
+          "day": "2026-11-01",
+          "share": 1.34,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-02",
+          "marketId": "will-bitcoin-dip-to-76k-october-26-november-1-2026"
+        },
+        {
+          "id": "cmw5c7e4w00hd13i0qnr31dex",
+          "day": "2026-11-06",
+          "share": 1.34,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-06",
+          "marketId": "will-susie-wiles-be-the-next-to-leave-the-trump-cabinet-before-2027-628"
+        },
+        {
+          "id": "cmw85lasm00nr13i0qdjyt9nu",
+          "day": "2026-11-08",
+          "share": 1.38,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-08",
+          "marketId": "dota2-playti-legion1-2026-11-07-game2"
+        },
+        {
+          "id": "cmw9l62w70008771l09pofofj",
+          "day": "2026-11-09",
+          "share": 1.39,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-10",
+          "marketId": "nba-was-det-2026-11-09"
+        },
+        {
+          "id": "cmwa7yhb0001t771lqt9zlmib",
+          "day": "2026-11-10",
+          "share": 1.4,
+          "loss": 99.06,
+          "cost": 100.0,
+          "closed": "2026-11-11",
+          "marketId": "will-kai-cenat-finish-his-gta-marathon-by-november-10-20261105"
+        },
+        {
+          "id": "cmwajr246002p771lj55wn64o",
+          "day": "2026-11-10",
+          "share": 1.41,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-10",
+          "marketId": "dota2-frogli-pr1-2026-11-10-game1"
+        },
+        {
+          "id": "cmwc3jqrk0011by8u366q57ye",
+          "day": "2026-11-11",
+          "share": 1.44,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-12",
+          "marketId": "nhl-nsh-ana-2026-11-11-total-3pt5"
+        }
+      ],
+      "breaches_over_bar_30d": [
+        {
+          "id": "cmvby29sq00835clowjmxwi4t",
+          "day": "2026-10-17",
+          "share": 1.32,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-17",
+          "marketId": "cfb-mspst-lsu-2026-10-17"
+        },
+        {
+          "id": "cmvc4qok5008i5clos66ubnwo",
+          "day": "2026-10-17",
+          "share": 1.31,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-17",
+          "marketId": "elc-wre-pne-2026-10-17-pne"
+        },
+        {
+          "id": "cmvca8spg008r5clo66yb9ux8",
+          "day": "2026-10-17",
+          "share": 1.31,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-17",
+          "marketId": "bkcba-nin-bei2-2026-10-17"
+        },
+        {
+          "id": "cmvs5mmjd001mhnixctv5mgr8",
+          "day": "2026-10-28",
+          "share": 1.32,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-10-28",
+          "marketId": "scop-cel-dun-2026-10-28-dun"
+        },
+        {
+          "id": "cmvy4yr4h004f13i0vqe334ii",
+          "day": "2026-11-01",
+          "share": 1.34,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-02",
+          "marketId": "will-bitcoin-dip-to-76k-october-26-november-1-2026"
+        },
+        {
+          "id": "cmw5c7e4w00hd13i0qnr31dex",
+          "day": "2026-11-06",
+          "share": 1.34,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-06",
+          "marketId": "will-susie-wiles-be-the-next-to-leave-the-trump-cabinet-before-2027-628"
+        },
+        {
+          "id": "cmw85lasm00nr13i0qdjyt9nu",
+          "day": "2026-11-08",
+          "share": 1.38,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-08",
+          "marketId": "dota2-playti-legion1-2026-11-07-game2"
+        },
+        {
+          "id": "cmw9l62w70008771l09pofofj",
+          "day": "2026-11-09",
+          "share": 1.39,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-10",
+          "marketId": "nba-was-det-2026-11-09"
+        },
+        {
+          "id": "cmwa7yhb0001t771lqt9zlmib",
+          "day": "2026-11-10",
+          "share": 1.4,
+          "loss": 99.06,
+          "cost": 100.0,
+          "closed": "2026-11-11",
+          "marketId": "will-kai-cenat-finish-his-gta-marathon-by-november-10-20261105"
+        },
+        {
+          "id": "cmwajr246002p771lj55wn64o",
+          "day": "2026-11-10",
+          "share": 1.41,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-10",
+          "marketId": "dota2-frogli-pr1-2026-11-10-game1"
+        },
+        {
+          "id": "cmwc3jqrk0011by8u366q57ye",
+          "day": "2026-11-11",
+          "share": 1.44,
+          "loss": 100.0,
+          "cost": 100.0,
+          "closed": "2026-11-12",
+          "marketId": "nhl-nsh-ana-2026-11-11-total-3pt5"
+        }
+      ],
+      "peak_days_realised": [
+        {
+          "day": "2026-09-06",
+          "peak_pct": 10.88,
+          "concurrent_cost": 184.84,
+          "opened": 7,
+          "opened_cost": 149.87,
+          "realised": 326.48,
+          "worst_leg": -59.1
+        },
+        {
+          "day": "2026-09-07",
+          "peak_pct": 53.45,
+          "concurrent_cost": 878.13,
+          "opened": 16,
+          "opened_cost": 818.03,
+          "realised": 298.87,
+          "worst_leg": -91.49
+        },
+        {
+          "day": "2026-09-09",
+          "peak_pct": 22.05,
+          "concurrent_cost": 429.9,
+          "opened": 8,
+          "opened_cost": 309.85,
+          "realised": 19.28,
+          "worst_leg": -19.95
+        },
+        {
+          "day": "2026-09-10",
+          "peak_pct": 32.5,
+          "concurrent_cost": 611.41,
+          "opened": 7,
+          "opened_cost": 201.46,
+          "realised": 782.91,
+          "worst_leg": -19.86
+        },
+        {
+          "day": "2026-09-11",
+          "peak_pct": 48.27,
+          "concurrent_cost": 866.47,
+          "opened": 7,
+          "opened_cost": 324.88,
+          "realised": -161.31,
+          "worst_leg": -69.72
+        },
+        {
+          "day": "2026-09-12",
+          "peak_pct": 55.21,
+          "concurrent_cost": 923.52,
+          "opened": 8,
+          "opened_cost": 207.98,
+          "realised": -141.59,
+          "worst_leg": -39.44
+        },
+        {
+          "day": "2026-09-13",
+          "peak_pct": 53.75,
+          "concurrent_cost": 1030.96,
+          "opened": 6,
+          "opened_cost": 187.27,
+          "realised": 3.92,
+          "worst_leg": -18.32
+        },
+        {
+          "day": "2026-09-14",
+          "peak_pct": 60.85,
+          "concurrent_cost": 1120.52,
+          "opened": 8,
+          "opened_cost": 355.8,
+          "realised": -183.88,
+          "worst_leg": -75.12
+        },
+        {
+          "day": "2026-09-15",
+          "peak_pct": 60.21,
+          "concurrent_cost": 1044.33,
+          "opened": 8,
+          "opened_cost": 207.43,
+          "realised": -50.94,
+          "worst_leg": -50.04
+        },
+        {
+          "day": "2026-09-16",
+          "peak_pct": 57.51,
+          "concurrent_cost": 910.86,
+          "opened": 4,
+          "opened_cost": 93.12,
+          "realised": -85.36,
+          "worst_leg": -31.8
+        },
+        {
+          "day": "2026-09-18",
+          "peak_pct": 10.74,
+          "concurrent_cost": 257.39,
+          "opened": 5,
+          "opened_cost": 329.97,
+          "realised": 1833.95,
+          "worst_leg": -16.13
+        },
+        {
+          "day": "2026-09-19",
+          "peak_pct": 20.15,
+          "concurrent_cost": 677.42,
+          "opened": 7,
+          "opened_cost": 330.0,
+          "realised": -115.72,
+          "worst_leg": -43.75
+        },
+        {
+          "day": "2026-09-20",
+          "peak_pct": 20.16,
+          "concurrent_cost": 677.42,
+          "opened": 11,
+          "opened_cost": 369.97,
+          "realised": 62.66,
+          "worst_leg": -68.57
+        },
+        {
+          "day": "2026-09-21",
+          "peak_pct": 25.18,
+          "concurrent_cost": 799.97,
+          "opened": 6,
+          "opened_cost": 280.0,
+          "realised": 1644.25,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-09-22",
+          "peak_pct": 14.73,
+          "concurrent_cost": 519.97,
+          "opened": 2,
+          "opened_cost": 19.95,
+          "realised": -11.48,
+          "worst_leg": -9.95
+        },
+        {
+          "day": "2026-09-24",
+          "peak_pct": 10.53,
+          "concurrent_cost": 450.0,
+          "opened": 2,
+          "opened_cost": 200.0,
+          "realised": -118.11,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-09-25",
+          "peak_pct": 17.93,
+          "concurrent_cost": 770.0,
+          "opened": 4,
+          "opened_cost": 320.0,
+          "realised": -274.19,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-09-26",
+          "peak_pct": 13.68,
+          "concurrent_cost": 560.0,
+          "opened": 9,
+          "opened_cost": 260.0,
+          "realised": 285.8,
+          "worst_leg": -56.25
+        },
+        {
+          "day": "2026-09-27",
+          "peak_pct": 12.45,
+          "concurrent_cost": 500.0,
+          "opened": 2,
+          "opened_cost": 22.38,
+          "realised": -15.73,
+          "worst_leg": -12.41
+        },
+        {
+          "day": "2026-11-10",
+          "peak_pct": 14.79,
+          "concurrent_cost": 1050.0,
+          "opened": 12,
+          "opened_cost": 709.97,
+          "realised": -215.33,
+          "worst_leg": -100.0
+        },
+        {
+          "day": "2026-11-11",
+          "peak_pct": 13.21,
+          "concurrent_cost": 930.0,
+          "opened": 10,
+          "opened_cost": 357.37,
+          "realised": 660.25,
+          "worst_leg": -100.0
+        }
+      ],
+      "cap_counterfactual": {
+        "10.0": {
+          "blocked": 74,
+          "blocked_cost": 3975.13,
+          "blocked_realised": 1594.98,
+          "net_effect": -1594.98,
+          "worst3_pnl": -300.0
+        },
+        "15.0": {
+          "blocked": 58,
+          "blocked_cost": 2741.87,
+          "blocked_realised": 1451.81,
+          "net_effect": -1451.81,
+          "worst3_pnl": -290.55
+        },
+        "20.0": {
+          "blocked": 33,
+          "blocked_cost": 1661.32,
+          "blocked_realised": -849.76,
+          "net_effect": 849.76,
+          "worst3_pnl": -272.19
+        },
+        "25.0": {
+          "blocked": 30,
+          "blocked_cost": 1454.73,
+          "blocked_realised": -643.32,
+          "net_effect": 643.32,
+          "worst3_pnl": -272.19
+        }
+      },
+      "rule_fired_concurrency": true,
+      "rule_fired_single_leg_30d": true,
+      "cap_legs": 60,
+      "max_longshot_cost_pct_nw": 1.32
+    },
+    "STANDARD": {
+      "open_book": {
+        "open_legs": 391,
+        "open_cost": 4317.52,
+        "longshot_legs": 243,
+        "longshot_cost": 2442.32,
+        "net_worth": 20580.25,
+        "longshot_pct_nw": 11.87
+      },
+      "net_worth_realized_only": 20580.25,
+      "legs": 10396,
+      "days": [
+        {
+          "day": "2026-07-15",
+          "peak_pct": 2.55,
+          "concurrent_cost": 282.8,
+          "opened": 27,
+          "opened_cost": 244.2,
+          "realised": 677.07,
+          "worst_leg": -10.77
+        },
+        {
+          "day": "2026-07-16",
+          "peak_pct": 13.5,
+          "concurrent_cost": 1498.2,
+          "opened": 81,
+          "opened_cost": 693.2,
+          "realised": 1681.8,
+          "worst_leg": -12.0
+        },
+        {
+          "day": "2026-07-17",
+          "peak_pct": 13.71,
+          "concurrent_cost": 1522.2,
+          "opened": 3,
+          "opened_cost": 24.0,
+          "realised": -16.89,
+          "worst_leg": -5.63
+        },
+        {
+          "day": "2026-07-18",
+          "peak_pct": 12.26,
+          "concurrent_cost": 1387.6,
+          "opened": 1,
+          "opened_cost": 8.0,
+          "realised": -7.98,
+          "worst_leg": -7.98
+        },
+        {
+          "day": "2026-07-20",
+          "peak_pct": 5.39,
+          "concurrent_cost": 1171.0,
+          "opened": 3,
+          "opened_cost": 28.8,
+          "realised": -28.74,
+          "worst_leg": -12.8
+        },
+        {
+          "day": "2026-07-21",
+          "peak_pct": 5.71,
+          "concurrent_cost": 1245.6,
+          "opened": 10,
+          "opened_cost": 107.6,
+          "realised": 219.31,
+          "worst_leg": -13.36
+        },
+        {
+          "day": "2026-07-22",
+          "peak_pct": 5.79,
+          "concurrent_cost": 1244.8,
+          "opened": 2,
+          "opened_cost": 20.0,
+          "realised": -19.94,
+          "worst_leg": -9.97
+        },
+        {
+          "day": "2026-07-24",
+          "peak_pct": 6.12,
+          "concurrent_cost": 1307.2,
+          "opened": 11,
+          "opened_cost": 118.2,
+          "realised": -117.9,
+          "worst_leg": -12.37
+        },
+        {
+          "day": "2026-07-25",
+          "peak_pct": 6.23,
+          "concurrent_cost": 1318.8,
+          "opened": 6,
+          "opened_cost": 62.6,
+          "realised": -62.37,
+          "worst_leg": -11.57
+        },
+        {
+          "day": "2026-07-26",
+          "peak_pct": 6.46,
+          "concurrent_cost": 1374.4,
+          "opened": 4,
+          "opened_cost": 32.0,
+          "realised": -31.92,
+          "worst_leg": -7.98
+        },
+        {
+          "day": "2026-07-27",
+          "peak_pct": 6.42,
+          "concurrent_cost": 1348.6,
+          "opened": 8,
+          "opened_cost": 87.4,
+          "realised": 418.45,
+          "worst_leg": -8.97
+        },
+        {
+          "day": "2026-07-28",
+          "peak_pct": 7.0,
+          "concurrent_cost": 1468.0,
+          "opened": 15,
+          "opened_cost": 139.2,
+          "realised": 294.54,
+          "worst_leg": -7.98
+        },
+        {
+          "day": "2026-07-29",
+          "peak_pct": 6.91,
+          "concurrent_cost": 1468.0,
+          "opened": 7,
+          "opened_cost": 62.0,
+          "realised": 77.91,
+          "worst_leg": -7.97
+        },
+        {
+          "day": "2026-07-30",
+          "peak_pct": 7.24,
+          "concurrent_cost": 1548.4,
+          "opened": 17,
+          "opened_cost": 161.8,
+          "realised": 452.4,
+          "worst_leg": -9.17
+        },
+        {
+          "day": "2026-07-31",
+          "peak_pct": 8.78,
+          "concurrent_cost": 1834.2,
+          "opened": 19,
+          "opened_cost": 176.8,
+          "realised": -175.54,
+          "worst_leg": -9.6
+        },
+        {
+          "day": "2026-08-01",
+          "peak_pct": 10.24,
+          "concurrent_cost": 2035.4,
+          "opened": 7,
+          "opened_cost": 66.6,
+          "realised": -2.78,
+          "worst_leg": -10.75
+        },
+        {
+          "day": "2026-08-02",
+          "peak_pct": 11.11,
+          "concurrent_cost": 2176.2,
+          "opened": 17,
+          "opened_cost": 150.2,
+          "realised": -89.11,
+          "worst_leg": -9.77
+        },
+        {
+          "day": "2026-08-03",
+          "peak_pct": 11.44,
+          "concurrent_cost": 2214.4,
+          "opened": 6,
+          "opened_cost": 67.0,
+          "realised": -66.76,
+          "worst_leg": -12.37
+        },
+        {
+          "day": "2026-08-04",
+          "peak_pct": 10.99,
+          "concurrent_cost": 2160.2,
+          "opened": 1,
+          "opened_cost": 11.0,
+          "realised": -10.95,
+          "worst_leg": -10.95
+        },
+        {
+          "day": "2026-08-05",
+          "peak_pct": 11.18,
+          "concurrent_cost": 2299.6,
+          "opened": 21,
+          "opened_cost": 195.4,
+          "realised": 78.03,
+          "worst_leg": -13.35
+        },
+        {
+          "day": "2026-08-06",
+          "peak_pct": 11.53,
+          "concurrent_cost": 2340.4,
+          "opened": 15,
+          "opened_cost": 128.4,
+          "realised": -104.79,
+          "worst_leg": -10.11
+        },
+        {
+          "day": "2026-08-07",
+          "peak_pct": 11.57,
+          "concurrent_cost": 2364.0,
+          "opened": 6,
+          "opened_cost": 59.8,
+          "realised": -33.4,
+          "worst_leg": -6.5
+        },
+        {
+          "day": "2026-08-08",
+          "peak_pct": 12.72,
+          "concurrent_cost": 2603.8,
+          "opened": 13,
+          "opened_cost": 140.8,
+          "realised": -36.97,
+          "worst_leg": -15.36
+        },
+        {
+          "day": "2026-08-09",
+          "peak_pct": 13.46,
+          "concurrent_cost": 2784.6,
+          "opened": 6,
+          "opened_cost": 78.0,
+          "realised": -77.81,
+          "worst_leg": -14.96
+        },
+        {
+          "day": "2026-08-10",
+          "peak_pct": 14.06,
+          "concurrent_cost": 2880.4,
+          "opened": 2,
+          "opened_cost": 17.6,
+          "realised": -17.51,
+          "worst_leg": -9.57
+        },
+        {
+          "day": "2026-08-11",
+          "peak_pct": 14.54,
+          "concurrent_cost": 2952.0,
+          "opened": 7,
+          "opened_cost": 63.2,
+          "realised": 169.42,
+          "worst_leg": -9.6
+        },
+        {
+          "day": "2026-08-12",
+          "peak_pct": 14.73,
+          "concurrent_cost": 2919.8,
+          "opened": 11,
+          "opened_cost": 105.6,
+          "realised": 353.53,
+          "worst_leg": -8.2
+        },
+        {
+          "day": "2026-08-16",
+          "peak_pct": 14.46,
+          "concurrent_cost": 2867.8,
+          "opened": 2,
+          "opened_cost": 18.2,
+          "realised": 119.73,
+          "worst_leg": -8.2
+        },
+        {
+          "day": "2026-08-18",
+          "peak_pct": 14.53,
+          "concurrent_cost": 2917.8,
+          "opened": 2,
+          "opened_cost": 16.8,
+          "realised": -16.8,
+          "worst_leg": -8.4
+        },
+        {
+          "day": "2026-08-19",
+          "peak_pct": 14.4,
+          "concurrent_cost": 2897.6,
+          "opened": 9,
+          "opened_cost": 117.4,
+          "realised": -41.16,
+          "worst_leg": -19.6
+        },
+        {
+          "day": "2026-08-20",
+          "peak_pct": 14.92,
+          "concurrent_cost": 3049.0,
+          "opened": 5,
+          "opened_cost": 55.2,
+          "realised": -54.07,
+          "worst_leg": -12.56
+        },
+        {
+          "day": "2026-08-21",
+          "peak_pct": 14.88,
+          "concurrent_cost": 3049.0,
+          "opened": 4,
+          "opened_cost": 49.0,
+          "realised": 158.54,
+          "worst_leg": -12.2
+        },
+        {
+          "day": "2026-08-22",
+          "peak_pct": 14.99,
+          "concurrent_cost": 3069.4,
+          "opened": 4,
+          "opened_cost": 39.8,
+          "realised": -36.91,
+          "worst_leg": -14.56
+        },
+        {
+          "day": "2026-08-23",
+          "peak_pct": 14.96,
+          "concurrent_cost": 3077.4,
+          "opened": 1,
+          "opened_cost": 8.0,
+          "realised": -8.0,
+          "worst_leg": -8.0
+        },
+        {
+          "day": "2026-08-24",
+          "peak_pct": 15.35,
+          "concurrent_cost": 3101.2,
+          "opened": 2,
+          "opened_cost": 23.8,
+          "realised": -23.75,
+          "worst_leg": -14.35
+        },
+        {
+          "day": "2026-08-25",
+          "peak_pct": 15.34,
+          "concurrent_cost": 3101.2,
+          "opened": 4,
+          "opened_cost": 38.0,
+          "realised": 43.4,
+          "worst_leg": -11.0
+        },
+        {
+          "day": "2026-08-26",
+          "peak_pct": 15.66,
+          "concurrent_cost": 3146.0,
+          "opened": 7,
+          "opened_cost": 75.2,
+          "realised": 163.35,
+          "worst_leg": -13.8
+        },
+        {
+          "day": "2026-08-27",
+          "peak_pct": 15.97,
+          "concurrent_cost": 3202.6,
+          "opened": 6,
+          "opened_cost": 56.6,
+          "realised": -56.54,
+          "worst_leg": -11.6
+        },
+        {
+          "day": "2026-08-28",
+          "peak_pct": 17.03,
+          "concurrent_cost": 3421.8,
+          "opened": 22,
+          "opened_cost": 219.2,
+          "realised": 259.4,
+          "worst_leg": -17.2
+        },
+        {
+          "day": "2026-08-29",
+          "peak_pct": 18.19,
+          "concurrent_cost": 3661.8,
+          "opened": 19,
+          "opened_cost": 278.0,
+          "realised": -92.32,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-08-30",
+          "peak_pct": 19.54,
+          "concurrent_cost": 3871.8,
+          "opened": 17,
+          "opened_cost": 306.0,
+          "realised": 495.71,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-08-31",
+          "peak_pct": 21.33,
+          "concurrent_cost": 4172.2,
+          "opened": 14,
+          "opened_cost": 256.0,
+          "realised": 145.95,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-09-01",
+          "peak_pct": 21.01,
+          "concurrent_cost": 4033.2,
+          "opened": 13,
+          "opened_cost": 234.0,
+          "realised": -62.37,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-02",
+          "peak_pct": 19.15,
+          "concurrent_cost": 3860.2,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -43.71,
+          "worst_leg": -14.57
+        },
+        {
+          "day": "2026-09-03",
+          "peak_pct": 19.91,
+          "concurrent_cost": 3817.2,
+          "opened": 7,
+          "opened_cost": 126.0,
+          "realised": -125.51,
+          "worst_leg": -17.95
+        },
+        {
+          "day": "2026-09-04",
+          "peak_pct": 18.76,
+          "concurrent_cost": 3655.2,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": -36.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-06",
+          "peak_pct": 18.72,
+          "concurrent_cost": 3629.2,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": 186.25,
+          "worst_leg": -17.92
+        },
+        {
+          "day": "2026-09-07",
+          "peak_pct": 19.47,
+          "concurrent_cost": 3773.2,
+          "opened": 8,
+          "opened_cost": 144.0,
+          "realised": -50.31,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-09",
+          "peak_pct": 20.02,
+          "concurrent_cost": 3647.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": -27.2,
+          "worst_leg": -6.8
+        },
+        {
+          "day": "2026-09-10",
+          "peak_pct": 20.27,
+          "concurrent_cost": 3683.4,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": 66.81,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-11",
+          "peak_pct": 20.39,
+          "concurrent_cost": 3703.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -17.87,
+          "worst_leg": -17.87
+        },
+        {
+          "day": "2026-09-12",
+          "peak_pct": 20.56,
+          "concurrent_cost": 3739.4,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -44.86,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-14",
+          "peak_pct": 18.42,
+          "concurrent_cost": 3561.2,
+          "opened": 5,
+          "opened_cost": 90.0,
+          "realised": -89.83,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-15",
+          "peak_pct": 18.57,
+          "concurrent_cost": 3552.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": -71.92,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-16",
+          "peak_pct": 18.52,
+          "concurrent_cost": 3534.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -17.4,
+          "worst_leg": -17.4
+        },
+        {
+          "day": "2026-09-18",
+          "peak_pct": 17.78,
+          "concurrent_cost": 3430.4,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": 93.17,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-19",
+          "peak_pct": 18.16,
+          "concurrent_cost": 3502.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": -71.67,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-20",
+          "peak_pct": 18.47,
+          "concurrent_cost": 3556.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": 228.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-21",
+          "peak_pct": 17.9,
+          "concurrent_cost": 3440.4,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": 171.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-24",
+          "peak_pct": 15.89,
+          "concurrent_cost": 3203.8,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-26",
+          "peak_pct": 16.0,
+          "concurrent_cost": 3213.6,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -11.7,
+          "worst_leg": -11.7
+        },
+        {
+          "day": "2026-09-28",
+          "peak_pct": 15.93,
+          "concurrent_cost": 3195.6,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": 132.0,
+          "worst_leg": 132.0
+        },
+        {
+          "day": "2026-10-01",
+          "peak_pct": 14.86,
+          "concurrent_cost": 2965.8,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -54.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-04",
+          "peak_pct": 14.65,
+          "concurrent_cost": 2947.8,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-06",
+          "peak_pct": 13.63,
+          "concurrent_cost": 2812.4,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": 73.09,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-09",
+          "peak_pct": 13.45,
+          "concurrent_cost": 2786.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-10",
+          "peak_pct": 13.54,
+          "concurrent_cost": 2804.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-17",
+          "peak_pct": 13.11,
+          "concurrent_cost": 2725.0,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -54.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-18",
+          "peak_pct": 13.06,
+          "concurrent_cost": 2689.0,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": 91.09,
+          "worst_leg": 91.09
+        },
+        {
+          "day": "2026-10-24",
+          "peak_pct": 13.13,
+          "concurrent_cost": 2689.0,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-26",
+          "peak_pct": 13.63,
+          "concurrent_cost": 2707.0,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": -36.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-28",
+          "peak_pct": 13.45,
+          "concurrent_cost": 2632.98,
+          "opened": 2,
+          "opened_cost": 21.78,
+          "realised": 66.36,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-01",
+          "peak_pct": 12.4,
+          "concurrent_cost": 2440.0,
+          "opened": 1,
+          "opened_cost": 9.0,
+          "realised": -9.0,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-02",
+          "peak_pct": 12.37,
+          "concurrent_cost": 2432.2,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-03",
+          "peak_pct": 12.52,
+          "concurrent_cost": 2454.4,
+          "opened": 2,
+          "opened_cost": 27.0,
+          "realised": 21.65,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-04",
+          "peak_pct": 12.39,
+          "concurrent_cost": 2445.4,
+          "opened": 1,
+          "opened_cost": 4.0,
+          "realised": -4.0,
+          "worst_leg": -4.0
+        },
+        {
+          "day": "2026-11-06",
+          "peak_pct": 11.7,
+          "concurrent_cost": 2368.6,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-08",
+          "peak_pct": 11.95,
+          "concurrent_cost": 2431.6,
+          "opened": 2,
+          "opened_cost": 18.0,
+          "realised": 32.0,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-09",
+          "peak_pct": 12.0,
+          "concurrent_cost": 2439.72,
+          "opened": 1,
+          "opened_cost": 9.0,
+          "realised": -9.0,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-10",
+          "peak_pct": 12.35,
+          "concurrent_cost": 2510.72,
+          "opened": 4,
+          "opened_cost": 45.0,
+          "realised": -45.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-11",
+          "peak_pct": 12.35,
+          "concurrent_cost": 2510.72,
+          "opened": 2,
+          "opened_cost": 29.0,
+          "realised": 100.03,
+          "worst_leg": -9.0
+        }
+      ],
+      "threshold_days": {
+        "gt5": 115,
+        "gt10": 103,
+        "gt15": 36
+      },
+      "leg_count": {
+        "n": 10396,
+        "median": 169.0,
+        "p90": 347,
+        "p99": 381,
+        "max": 396
+      },
+      "worst_days": [
+        {
+          "day": "2026-08-31",
+          "pct": 21.33,
+          "legs": 396,
+          "cost": 4172.2,
+          "nw": 19562.61,
+          "distinct_events": 86
+        },
+        {
+          "day": "2026-09-01",
+          "pct": 21.01,
+          "legs": 381,
+          "cost": 4033.2,
+          "nw": 19199.53,
+          "distinct_events": 74
+        },
+        {
+          "day": "2026-09-12",
+          "pct": 20.56,
+          "legs": 358,
+          "cost": 3739.4,
+          "nw": 18184.38,
+          "distinct_events": 65
+        },
+        {
+          "day": "2026-09-13",
+          "pct": 20.56,
+          "legs": 358,
+          "cost": 3739.4,
+          "nw": 18185.43,
+          "distinct_events": 65
+        },
+        {
+          "day": "2026-09-11",
+          "pct": 20.39,
+          "legs": 356,
+          "cost": 3703.4,
+          "nw": 18163.05,
+          "distinct_events": 64
+        }
+      ],
+      "days_30d": {
+        "n": 27,
+        "median": 12.86,
+        "p90": 13.44,
+        "p99": 13.63,
+        "max": 13.63
+      },
+      "settled_legs": 548,
+      "loss_share_pct": {
+        "n": 548,
+        "median": 0.04,
+        "p90": 0.09,
+        "p99": 0.1,
+        "max": 0.11
+      },
+      "full_loss_legs": 143,
+      "breaches_over_bar_all": [],
+      "breaches_over_bar_30d": [],
+      "peak_days_realised": [
+        {
+          "day": "2026-07-16",
+          "peak_pct": 13.5,
+          "concurrent_cost": 1498.2,
+          "opened": 81,
+          "opened_cost": 693.2,
+          "realised": 1681.8,
+          "worst_leg": -12.0
+        },
+        {
+          "day": "2026-07-17",
+          "peak_pct": 13.71,
+          "concurrent_cost": 1522.2,
+          "opened": 3,
+          "opened_cost": 24.0,
+          "realised": -16.89,
+          "worst_leg": -5.63
+        },
+        {
+          "day": "2026-07-18",
+          "peak_pct": 12.26,
+          "concurrent_cost": 1387.6,
+          "opened": 1,
+          "opened_cost": 8.0,
+          "realised": -7.98,
+          "worst_leg": -7.98
+        },
+        {
+          "day": "2026-08-01",
+          "peak_pct": 10.24,
+          "concurrent_cost": 2035.4,
+          "opened": 7,
+          "opened_cost": 66.6,
+          "realised": -2.78,
+          "worst_leg": -10.75
+        },
+        {
+          "day": "2026-08-02",
+          "peak_pct": 11.11,
+          "concurrent_cost": 2176.2,
+          "opened": 17,
+          "opened_cost": 150.2,
+          "realised": -89.11,
+          "worst_leg": -9.77
+        },
+        {
+          "day": "2026-08-03",
+          "peak_pct": 11.44,
+          "concurrent_cost": 2214.4,
+          "opened": 6,
+          "opened_cost": 67.0,
+          "realised": -66.76,
+          "worst_leg": -12.37
+        },
+        {
+          "day": "2026-08-04",
+          "peak_pct": 10.99,
+          "concurrent_cost": 2160.2,
+          "opened": 1,
+          "opened_cost": 11.0,
+          "realised": -10.95,
+          "worst_leg": -10.95
+        },
+        {
+          "day": "2026-08-05",
+          "peak_pct": 11.18,
+          "concurrent_cost": 2299.6,
+          "opened": 21,
+          "opened_cost": 195.4,
+          "realised": 78.03,
+          "worst_leg": -13.35
+        },
+        {
+          "day": "2026-08-06",
+          "peak_pct": 11.53,
+          "concurrent_cost": 2340.4,
+          "opened": 15,
+          "opened_cost": 128.4,
+          "realised": -104.79,
+          "worst_leg": -10.11
+        },
+        {
+          "day": "2026-08-07",
+          "peak_pct": 11.57,
+          "concurrent_cost": 2364.0,
+          "opened": 6,
+          "opened_cost": 59.8,
+          "realised": -33.4,
+          "worst_leg": -6.5
+        },
+        {
+          "day": "2026-08-08",
+          "peak_pct": 12.72,
+          "concurrent_cost": 2603.8,
+          "opened": 13,
+          "opened_cost": 140.8,
+          "realised": -36.97,
+          "worst_leg": -15.36
+        },
+        {
+          "day": "2026-08-09",
+          "peak_pct": 13.46,
+          "concurrent_cost": 2784.6,
+          "opened": 6,
+          "opened_cost": 78.0,
+          "realised": -77.81,
+          "worst_leg": -14.96
+        },
+        {
+          "day": "2026-08-10",
+          "peak_pct": 14.06,
+          "concurrent_cost": 2880.4,
+          "opened": 2,
+          "opened_cost": 17.6,
+          "realised": -17.51,
+          "worst_leg": -9.57
+        },
+        {
+          "day": "2026-08-11",
+          "peak_pct": 14.54,
+          "concurrent_cost": 2952.0,
+          "opened": 7,
+          "opened_cost": 63.2,
+          "realised": 169.42,
+          "worst_leg": -9.6
+        },
+        {
+          "day": "2026-08-12",
+          "peak_pct": 14.73,
+          "concurrent_cost": 2919.8,
+          "opened": 11,
+          "opened_cost": 105.6,
+          "realised": 353.53,
+          "worst_leg": -8.2
+        },
+        {
+          "day": "2026-08-16",
+          "peak_pct": 14.46,
+          "concurrent_cost": 2867.8,
+          "opened": 2,
+          "opened_cost": 18.2,
+          "realised": 119.73,
+          "worst_leg": -8.2
+        },
+        {
+          "day": "2026-08-18",
+          "peak_pct": 14.53,
+          "concurrent_cost": 2917.8,
+          "opened": 2,
+          "opened_cost": 16.8,
+          "realised": -16.8,
+          "worst_leg": -8.4
+        },
+        {
+          "day": "2026-08-19",
+          "peak_pct": 14.4,
+          "concurrent_cost": 2897.6,
+          "opened": 9,
+          "opened_cost": 117.4,
+          "realised": -41.16,
+          "worst_leg": -19.6
+        },
+        {
+          "day": "2026-08-20",
+          "peak_pct": 14.92,
+          "concurrent_cost": 3049.0,
+          "opened": 5,
+          "opened_cost": 55.2,
+          "realised": -54.07,
+          "worst_leg": -12.56
+        },
+        {
+          "day": "2026-08-21",
+          "peak_pct": 14.88,
+          "concurrent_cost": 3049.0,
+          "opened": 4,
+          "opened_cost": 49.0,
+          "realised": 158.54,
+          "worst_leg": -12.2
+        },
+        {
+          "day": "2026-08-22",
+          "peak_pct": 14.99,
+          "concurrent_cost": 3069.4,
+          "opened": 4,
+          "opened_cost": 39.8,
+          "realised": -36.91,
+          "worst_leg": -14.56
+        },
+        {
+          "day": "2026-08-23",
+          "peak_pct": 14.96,
+          "concurrent_cost": 3077.4,
+          "opened": 1,
+          "opened_cost": 8.0,
+          "realised": -8.0,
+          "worst_leg": -8.0
+        },
+        {
+          "day": "2026-08-24",
+          "peak_pct": 15.35,
+          "concurrent_cost": 3101.2,
+          "opened": 2,
+          "opened_cost": 23.8,
+          "realised": -23.75,
+          "worst_leg": -14.35
+        },
+        {
+          "day": "2026-08-25",
+          "peak_pct": 15.34,
+          "concurrent_cost": 3101.2,
+          "opened": 4,
+          "opened_cost": 38.0,
+          "realised": 43.4,
+          "worst_leg": -11.0
+        },
+        {
+          "day": "2026-08-26",
+          "peak_pct": 15.66,
+          "concurrent_cost": 3146.0,
+          "opened": 7,
+          "opened_cost": 75.2,
+          "realised": 163.35,
+          "worst_leg": -13.8
+        },
+        {
+          "day": "2026-08-27",
+          "peak_pct": 15.97,
+          "concurrent_cost": 3202.6,
+          "opened": 6,
+          "opened_cost": 56.6,
+          "realised": -56.54,
+          "worst_leg": -11.6
+        },
+        {
+          "day": "2026-08-28",
+          "peak_pct": 17.03,
+          "concurrent_cost": 3421.8,
+          "opened": 22,
+          "opened_cost": 219.2,
+          "realised": 259.4,
+          "worst_leg": -17.2
+        },
+        {
+          "day": "2026-08-29",
+          "peak_pct": 18.19,
+          "concurrent_cost": 3661.8,
+          "opened": 19,
+          "opened_cost": 278.0,
+          "realised": -92.32,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-08-30",
+          "peak_pct": 19.54,
+          "concurrent_cost": 3871.8,
+          "opened": 17,
+          "opened_cost": 306.0,
+          "realised": 495.71,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-08-31",
+          "peak_pct": 21.33,
+          "concurrent_cost": 4172.2,
+          "opened": 14,
+          "opened_cost": 256.0,
+          "realised": 145.95,
+          "worst_leg": -20.0
+        },
+        {
+          "day": "2026-09-01",
+          "peak_pct": 21.01,
+          "concurrent_cost": 4033.2,
+          "opened": 13,
+          "opened_cost": 234.0,
+          "realised": -62.37,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-02",
+          "peak_pct": 19.15,
+          "concurrent_cost": 3860.2,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -43.71,
+          "worst_leg": -14.57
+        },
+        {
+          "day": "2026-09-03",
+          "peak_pct": 19.91,
+          "concurrent_cost": 3817.2,
+          "opened": 7,
+          "opened_cost": 126.0,
+          "realised": -125.51,
+          "worst_leg": -17.95
+        },
+        {
+          "day": "2026-09-04",
+          "peak_pct": 18.76,
+          "concurrent_cost": 3655.2,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": -36.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-06",
+          "peak_pct": 18.72,
+          "concurrent_cost": 3629.2,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": 186.25,
+          "worst_leg": -17.92
+        },
+        {
+          "day": "2026-09-07",
+          "peak_pct": 19.47,
+          "concurrent_cost": 3773.2,
+          "opened": 8,
+          "opened_cost": 144.0,
+          "realised": -50.31,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-09",
+          "peak_pct": 20.02,
+          "concurrent_cost": 3647.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": -27.2,
+          "worst_leg": -6.8
+        },
+        {
+          "day": "2026-09-10",
+          "peak_pct": 20.27,
+          "concurrent_cost": 3683.4,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": 66.81,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-11",
+          "peak_pct": 20.39,
+          "concurrent_cost": 3703.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -17.87,
+          "worst_leg": -17.87
+        },
+        {
+          "day": "2026-09-12",
+          "peak_pct": 20.56,
+          "concurrent_cost": 3739.4,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -44.86,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-14",
+          "peak_pct": 18.42,
+          "concurrent_cost": 3561.2,
+          "opened": 5,
+          "opened_cost": 90.0,
+          "realised": -89.83,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-15",
+          "peak_pct": 18.57,
+          "concurrent_cost": 3552.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": -71.92,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-16",
+          "peak_pct": 18.52,
+          "concurrent_cost": 3534.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -17.4,
+          "worst_leg": -17.4
+        },
+        {
+          "day": "2026-09-18",
+          "peak_pct": 17.78,
+          "concurrent_cost": 3430.4,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": 93.17,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-19",
+          "peak_pct": 18.16,
+          "concurrent_cost": 3502.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": -71.67,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-20",
+          "peak_pct": 18.47,
+          "concurrent_cost": 3556.4,
+          "opened": 4,
+          "opened_cost": 72.0,
+          "realised": 228.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-21",
+          "peak_pct": 17.9,
+          "concurrent_cost": 3440.4,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": 171.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-24",
+          "peak_pct": 15.89,
+          "concurrent_cost": 3203.8,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-09-26",
+          "peak_pct": 16.0,
+          "concurrent_cost": 3213.6,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -11.7,
+          "worst_leg": -11.7
+        },
+        {
+          "day": "2026-09-28",
+          "peak_pct": 15.93,
+          "concurrent_cost": 3195.6,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": 132.0,
+          "worst_leg": 132.0
+        },
+        {
+          "day": "2026-10-01",
+          "peak_pct": 14.86,
+          "concurrent_cost": 2965.8,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -54.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-04",
+          "peak_pct": 14.65,
+          "concurrent_cost": 2947.8,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-06",
+          "peak_pct": 13.63,
+          "concurrent_cost": 2812.4,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": 73.09,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-09",
+          "peak_pct": 13.45,
+          "concurrent_cost": 2786.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-10",
+          "peak_pct": 13.54,
+          "concurrent_cost": 2804.4,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-17",
+          "peak_pct": 13.11,
+          "concurrent_cost": 2725.0,
+          "opened": 3,
+          "opened_cost": 54.0,
+          "realised": -54.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-18",
+          "peak_pct": 13.06,
+          "concurrent_cost": 2689.0,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": 91.09,
+          "worst_leg": 91.09
+        },
+        {
+          "day": "2026-10-24",
+          "peak_pct": 13.13,
+          "concurrent_cost": 2689.0,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-26",
+          "peak_pct": 13.63,
+          "concurrent_cost": 2707.0,
+          "opened": 2,
+          "opened_cost": 36.0,
+          "realised": -36.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-10-28",
+          "peak_pct": 13.45,
+          "concurrent_cost": 2632.98,
+          "opened": 2,
+          "opened_cost": 21.78,
+          "realised": 66.36,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-01",
+          "peak_pct": 12.4,
+          "concurrent_cost": 2440.0,
+          "opened": 1,
+          "opened_cost": 9.0,
+          "realised": -9.0,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-02",
+          "peak_pct": 12.37,
+          "concurrent_cost": 2432.2,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-03",
+          "peak_pct": 12.52,
+          "concurrent_cost": 2454.4,
+          "opened": 2,
+          "opened_cost": 27.0,
+          "realised": 21.65,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-04",
+          "peak_pct": 12.39,
+          "concurrent_cost": 2445.4,
+          "opened": 1,
+          "opened_cost": 4.0,
+          "realised": -4.0,
+          "worst_leg": -4.0
+        },
+        {
+          "day": "2026-11-06",
+          "peak_pct": 11.7,
+          "concurrent_cost": 2368.6,
+          "opened": 1,
+          "opened_cost": 18.0,
+          "realised": -18.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-08",
+          "peak_pct": 11.95,
+          "concurrent_cost": 2431.6,
+          "opened": 2,
+          "opened_cost": 18.0,
+          "realised": 32.0,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-09",
+          "peak_pct": 12.0,
+          "concurrent_cost": 2439.72,
+          "opened": 1,
+          "opened_cost": 9.0,
+          "realised": -9.0,
+          "worst_leg": -9.0
+        },
+        {
+          "day": "2026-11-10",
+          "peak_pct": 12.35,
+          "concurrent_cost": 2510.72,
+          "opened": 4,
+          "opened_cost": 45.0,
+          "realised": -45.0,
+          "worst_leg": -18.0
+        },
+        {
+          "day": "2026-11-11",
+          "peak_pct": 12.35,
+          "concurrent_cost": 2510.72,
+          "opened": 2,
+          "opened_cost": 29.0,
+          "realised": 100.03,
+          "worst_leg": -9.0
+        }
+      ],
+      "cap_counterfactual": {
+        "10.0": {
+          "blocked": 338,
+          "blocked_cost": 4038.2,
+          "blocked_realised": 1667.42,
+          "net_effect": -1667.42,
+          "worst3_pnl": -59.6
+        },
+        "15.0": {
+          "blocked": 132,
+          "blocked_cost": 2009.6,
+          "blocked_realised": 744.94,
+          "net_effect": -744.94,
+          "worst3_pnl": -58.0
+        },
+        "20.0": {
+          "blocked": 23,
+          "blocked_cost": 418.0,
+          "blocked_realised": 182.2,
+          "net_effect": -182.2,
+          "worst3_pnl": -58.0
+        },
+        "25.0": {
+          "blocked": 0,
+          "blocked_cost": 0,
+          "blocked_realised": 0,
+          "net_effect": 0,
+          "worst3_pnl": 0
+        }
+      },
+      "rule_fired_concurrency": true,
+      "rule_fired_single_leg_30d": false,
+      "cap_legs": 0,
+      "max_longshot_cost_pct_nw": 0.1
+    }
+  },
+  "verdict": "FIRED -- proposal required"
+}
