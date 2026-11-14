@@ -270,6 +270,16 @@ def main():
         render([(detail, PLATE)], f"{OUT}/bore-detail.png", w=1200, h=900, azim=42, elev=34)
         print("rim: monitor face + bore detail")
 
+    if which in ("new", "all"):
+        for fn, oz, el, out in [
+            ("spoosa_100x100_8x1q4-20_win36_c2.stl", 30, 34, "new-spacer-window.png"),
+            ("spoosa_100x100_8x1q4-20_d75-100_c2.stl", 34, 32, "new-adapter-75-100.png"),
+        ]:
+            path = f"cad/spoosa/{fn}"
+            if os.path.exists(path):
+                render([(load(path), PLATE)], f"{OUT}/{out}", w=1300, h=1000, azim=oz, elev=el)
+                print(f"new: {out}")
+
     if which in ("family", "all"):
         family([
             ("cad/spoosa/spoosa_75x75_8x1q4-20.stl", PLATE),

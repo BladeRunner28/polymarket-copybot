@@ -118,6 +118,71 @@
       "file": "spoosa_100x100_8x1q4-20.stl"
     },
     {
+      "profile": "100x100",
+      "vesa": "100x100",
+      "plate_mm": [
+        160.0,
+        160.0,
+        15.0
+      ],
+      "inserts": 8,
+      "insert_preset": "ruthex-1/4-20-12.7",
+      "insert_od": 8.7,
+      "insert_len": 12.7,
+      "pilot_d": 8.3,
+      "boss_d": 14.7,
+      "rim_w_mm": 6.0,
+      "rim_h_mm": 3.0,
+      "total_height_mm": 20.0,
+      "window_mm": 0.0,
+      "collar_mm": 2.0,
+      "dual_vesa": [
+        75,
+        100
+      ],
+      "vesa_screw_d": 4.4,
+      "vesa_screws": 4,
+      "volume_cm3": 152.44,
+      "mass_asa_g": 163.1,
+      "watertight": true,
+      "bodies": 1,
+      "min_insert_to_vesa_wall_mm": 21.44,
+      "screw_shortfall_mm": 15.0,
+      "faces": 12898,
+      "file": "spoosa_100x100_8x1q4-20_d75-100_c2.stl"
+    },
+    {
+      "profile": "100x100",
+      "vesa": "100x100",
+      "plate_mm": [
+        160.0,
+        160.0,
+        15.0
+      ],
+      "inserts": 8,
+      "insert_preset": "ruthex-1/4-20-12.7",
+      "insert_od": 8.7,
+      "insert_len": 12.7,
+      "pilot_d": 8.3,
+      "boss_d": 14.7,
+      "rim_w_mm": 6.0,
+      "rim_h_mm": 3.0,
+      "total_height_mm": 20.0,
+      "window_mm": 36.0,
+      "collar_mm": 2.0,
+      "dual_vesa": [],
+      "vesa_screw_d": 4.4,
+      "vesa_screws": 4,
+      "volume_cm3": 129.64,
+      "mass_asa_g": 138.7,
+      "watertight": true,
+      "bodies": 1,
+      "min_insert_to_vesa_wall_mm": 21.44,
+      "screw_shortfall_mm": 15.0,
+      "faces": 11500,
+      "file": "spoosa_100x100_8x1q4-20_win36_c2.stl"
+    },
+    {
       "profile": "100x200",
       "vesa": "100x200",
       "plate_mm": [
@@ -312,6 +377,40 @@
       "screw_shortfall_mm": 15.0,
       "faces": 4766,
       "file": "spoosa_100x2screw_4x1q4-20.stl"
+    },
+    {
+      "profile": "100x2screw",
+      "vesa": "100x(2-screw)",
+      "plate_mm": [
+        136.0,
+        136.0,
+        15.0
+      ],
+      "inserts": 4,
+      "insert_preset": "ruthex-1/4-20-12.7",
+      "insert_od": 8.7,
+      "insert_len": 12.7,
+      "pilot_d": 8.3,
+      "boss_d": 14.7,
+      "rim_w_mm": 6.0,
+      "rim_h_mm": 3.0,
+      "total_height_mm": 20.0,
+      "window_mm": 0.0,
+      "collar_mm": 2.0,
+      "dual_vesa": [
+        75,
+        100
+      ],
+      "vesa_screw_d": 4.4,
+      "vesa_screws": 2,
+      "volume_cm3": 118.84,
+      "mass_asa_g": 127.2,
+      "watertight": true,
+      "bodies": 1,
+      "min_insert_to_vesa_wall_mm": 51.81,
+      "screw_shortfall_mm": 15.0,
+      "faces": 9824,
+      "file": "spoosa_100x2screw_4x1q4-20_d75-100_c2.stl"
     },
     {
       "profile": "100x2screw",
@@ -836,20 +935,7 @@
       "file": "spoosa_custom110x110_2x1q4-20.stl"
     }
   ],
-  "skipped_this_run": [
-    "400x200 x1: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x200 x2: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x200 x4: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x200 x8: plate 460x260 mm exceeds the 350x350 mm bed",
-    "400x400 x1: plate 460x460 mm exceeds the 350x350 mm bed",
-    "400x400 x2: plate 460x460 mm exceeds the 350x350 mm bed",
-    "400x400 x4: plate 460x460 mm exceeds the 350x350 mm bed",
-    "400x400 x8: plate 460x460 mm exceeds the 350x350 mm bed",
-    "600x400 x1: plate 660x460 mm exceeds the 350x350 mm bed",
-    "600x400 x2: plate 660x460 mm exceeds the 350x350 mm bed",
-    "600x400 x4: plate 660x460 mm exceeds the 350x350 mm bed",
-    "600x400 x8: plate 660x460 mm exceeds the 350x350 mm bed"
-  ],
+  "skipped_this_run": [],
   "orphans_on_disk": [
     "spoosa_400x200_1x1q4-20.stl",
     "spoosa_400x200_2x1q4-20.stl",

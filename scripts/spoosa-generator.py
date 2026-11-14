@@ -131,6 +131,29 @@ def insert_points(count: int, pw: float, ph: float, inset: float,
     raise ValueError(f"insert count must be 1, 2, 4 or 8 -- or use --insert-grid RxC (got {count})")
 
 
+def combo_holes(sizes) -> list[tuple[float, float]]:
+    """Square hole sets for SEVERAL VESA spacings in one plate -- the 75+100 corner pockets.
+
+    The reference parts put a 75 mm hole and a 100 mm hole in the same corner, close enough that their
+    counterbores merge into a figure-8 pocket. That is one part covering both monitors instead of two.
+    """
+    out: list[tuple[float, float]] = []
+    for s in sizes:
+        a = float(s) / 2.0
+        for p in ((-a, -a), (a, -a), (-a, a), (a, a)):
+            if p not in out:
+                out.append(p)
+    return out
+
+
+def parse_dual(s: str):
+    """'75,100' or '75+100' -> (75, 100). Empty -> None."""
+    vals = [float(v) for v in (s or "").replace("+", ",").split(",") if v.strip()]
+    if not vals:
+        return None
+    return tuple(int(v) if float(v).is_integer() else v for v in vals)
+
+
 def plate_size(prof: dict, margin: float, boss_r: float) -> tuple[float, float]:
     """Plate dimensions for a VESA pattern: pattern + margins, but never smaller than a boss needs."""
     h = prof["h"] if prof["h"] else prof["w"]      # a 2-screw pattern has no vertical spacing
@@ -164,7 +187,9 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
           corner_r: float, insert_key: str, wall: float, chamfer: float,
           relief: bool, grid: tuple[int, int] | None = None,
           bed: tuple[float, float] | None = None,
-          rim_w: float = 6.0, rim_h: float = 3.0) -> tuple[trimesh.Trimesh, dict]:
+          rim_w: float = 6.0, rim_h: float = 3.0,
+          window: float = 0.0, collar: float = 0.0,
+          dual: tuple[float, ...] | None = None) -> tuple[trimesh.Trimesh, dict]:
     ins = INSERT_PRESETS[insert_key]
     boss_r = ins["od"] / 2.0 + wall
 
@@ -184,32 +209,21 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
     plate = trimesh.creation.extrude_polygon(
         ShapelyPolygon(rrect(pw, ph, corner_r)), height=plate_t)
 
-    cutters = []
-    # VESA clearance bores, chamfered both faces for printability
-    for (x, y) in vesa_holes(prof):
-        cutters.append(trimesh.creation.cylinder(radius=prof["screw_d"] / 2.0, height=plate_t + 2,
-                                                 sections=64).apply_translation((x, y, plate_t / 2)))
-    # insert bores, opening on the ARM face (z = plate_t), with a lead-in chamfer
     pts = insert_points(inserts, pw, ph, boss_r + 3.0, grid=grid)
-    for (x, y) in pts:
-        depth = ins["length"] + 0.5
-        z_top = plate_t
-        cutters.append(trimesh.creation.cylinder(radius=ins["pilot"] / 2.0, height=depth + 1,
-                                                 sections=64).apply_translation((x, y, z_top - depth / 2)))
-        lead = trimesh.creation.cone(radius=ins["pilot"] / 2.0 + ins["lead"], height=ins["lead"] * 1.5,
-                                     sections=64)
-        # cone apex up: widen the mouth at the arm face
-        lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0]))
-        cutters.append(lead.apply_translation((x, y, z_top - ins["lead"] * 0.25)))
+    solid = plate
 
-    body = trimesh.boolean.difference([plate] + cutters, engine="manifold")
+    # ---- raised collar around each 1/4"-20 insert, on the ARM face
+    # The reference parts carry each insert in a proud collar rather than a flush bore: the collar is
+    # the material the knurl bites into and it takes the bending load of whatever hangs off the arm.
+    if collar > 0:
+        rings = [trimesh.creation.cylinder(radius=boss_r, height=collar + 1.0, sections=64)
+                 .apply_translation((x, y, plate_t - 0.5 + collar / 2.0)) for (x, y) in pts]
+        solid = trimesh.boolean.union([solid] + rings, engine="manifold")
 
     # ---- perimeter rim on the MONITOR face (z < 0)
-    # A flat 15 mm slab bears on the monitor only where it is flat, and a 333 g ASA plate that warps by
-    # a millimetre rocks on the VESA screws instead of spreading the clamp load. A continuous raised
-    # ring turns that point load into a perimeter bearing surface and stiffens the plate against
-    # flexing. It goes on the monitor face because the insert bores open on the ARM face and stop
-    # ~1.8 mm above z=0, so nothing intersects.
+    # A flat slab bears on the monitor only where it is flat, and a heavy ASA plate that warps by a
+    # millimetre rocks on the VESA screws instead of spreading the clamp load. A continuous raised
+    # ring turns that point load into a perimeter bearing surface and stiffens the plate.
     if rim_w > 0 and rim_h > 0:
         overlap = 0.5                                  # overlap into the plate so the union is one solid
         outer = trimesh.creation.extrude_polygon(
@@ -223,7 +237,50 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
             height=rim_h + 2.5
         ).apply_translation((0, 0, -rim_h - 1.0))
         frame = trimesh.boolean.difference([outer, inner], engine="manifold")
-        body = trimesh.boolean.union([body, frame], engine="manifold")
+        solid = trimesh.boolean.union([solid, frame], engine="manifold")
+
+    cutters = []
+    # VESA clearance bores, each with a counterbore recess so the screw head sits inside the plate.
+    # On a dual-pattern plate (75 AND 100 in one part) the two neighbouring counterbores merge into the
+    # figure-8 corner pockets the reference parts show.
+    vesa_pts = list(vesa_holes(prof))
+    if dual:
+        vesa_pts += [h for h in combo_holes(dual) if h not in vesa_pts]
+    for (x, y) in vesa_pts:
+        cutters.append(trimesh.creation.cylinder(radius=prof["screw_d"] / 2.0, height=plate_t + 2,
+                                                 sections=64).apply_translation((x, y, plate_t / 2)))
+        cutters.append(trimesh.creation.cylinder(radius=prof["screw_d"] / 2.0 + 2.0, height=3.0,
+                                                 sections=48).apply_translation((x, y, plate_t)))
+
+    # insert bores opening on the collar top (or the arm face), with a lead-in chamfer
+    top = plate_t + (collar if collar > 0 else 0.0)
+    for (x, y) in pts:
+        depth = ins["length"] + 0.5
+        cutters.append(trimesh.creation.cylinder(radius=ins["pilot"] / 2.0, height=depth + 2,
+                                                 sections=64).apply_translation((x, y, top - depth / 2)))
+        lead = trimesh.creation.cone(radius=ins["pilot"] / 2.0 + ins["lead"], height=ins["lead"] * 1.5,
+                                     sections=64)
+        lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0]))
+        cutters.append(lead.apply_translation((x, y, top - ins["lead"] * 0.25)))
+
+    # ---- central window: the reference plates are FRAMES, not slabs
+    # It removes the mass nobody needs, gives cables and monitor standoffs somewhere to pass, and
+    # leaves a stiff ring around the VESA pattern. Refuse any window that would eat a screw hole.
+    if window > 0:
+        win_w, win_h = pw - 2 * window, ph - 2 * window
+        if win_w <= 8 or win_h <= 8:
+            raise SystemExit(f"window {window} mm leaves no frame in a {pw:.0f}x{ph:.0f} mm plate")
+        for (x, y) in vesa_pts:
+            need = max(abs(x) - win_w / 2.0, abs(y) - win_h / 2.0)
+            if need < prof["screw_d"] / 2.0 + 2.0:
+                raise SystemExit(
+                    f"window {window} mm would leave {need:.1f} mm between the window edge and the "
+                    f"VESA hole at ({x:.0f},{y:.0f}); needs >= {prof['screw_d'] / 2.0 + 2.0:.1f} mm")
+        cutters.append(trimesh.creation.extrude_polygon(
+            ShapelyPolygon(rrect(win_w, win_h, max(2.0, corner_r - window / 2.0))),
+            height=plate_t + 6).apply_translation((0, 0, -3)))
+
+    body = trimesh.boolean.difference([solid] + cutters, engine="manifold")
 
     if relief:
         # weight relief: pocket the MONITOR face between the VESA pattern and the insert ring,
@@ -250,7 +307,10 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
         inserts=inserts, insert_preset=insert_key, insert_od=ins["od"], insert_len=ins["length"],
         pilot_d=ins["pilot"], boss_d=round(2 * boss_r, 2),
         rim_w_mm=round(rim_w, 2), rim_h_mm=round(rim_h, 2),
-        total_height_mm=round(plate_t + (rim_h if rim_w > 0 and rim_h > 0 else 0.0), 2),
+        total_height_mm=round(plate_t + (rim_h if rim_w > 0 and rim_h > 0 else 0.0)
+                              + (collar if collar > 0 else 0.0), 2),
+        window_mm=round(window, 2), collar_mm=round(collar, 2),
+        dual_vesa=list(dual) if dual else [],
         vesa_screw_d=prof["screw_d"], vesa_screws=prof["screws"],
         volume_cm3=round(vol_cm3, 2), mass_asa_g=round(vol_cm3 * 1.07, 1),
         watertight=bool(body.is_watertight), bodies=int(body.body_count),
@@ -347,6 +407,14 @@ def main() -> int:
                     help="width of the raised perimeter rim on the monitor face, mm (0 disables)")
     ap.add_argument("--rim-h", type=float, default=3.0,
                     help="height of that rim, mm -- it is the standoff that spreads clamp load")
+    ap.add_argument("--window", type=float, default=0.0,
+                    help="central window: frame width from the plate edge to the opening, mm "
+                         "(0 = solid plate). Matches the reference plates, which are frames.")
+    ap.add_argument("--collar", type=float, default=0.0,
+                    help="height of a raised collar around each 1/4-20 insert, mm (0 = flush bore)")
+    ap.add_argument("--dual-vesa", default="",
+                    help="extra VESA spacings to put in the SAME plate, comma separated "
+                         "(e.g. 75,100 for the 75+100 portable-monitor adapter)")
     ap.add_argument("--bed", default="350x350",
                     help="build volume as WxD; plates larger than this are refused (default 350x350)")
     ap.add_argument("--no-bed-check", action="store_true")
@@ -410,13 +478,24 @@ def main() -> int:
                                    corner_r=args.corner_r, insert_key=args.insert_preset,
                                    wall=args.wall, chamfer=args.chamfer, relief=args.relief,
                                    grid=grid, bed=bed,
-                                   rim_w=args.rim_w, rim_h=args.rim_h)
+                                   rim_w=args.rim_w, rim_h=args.rim_h,
+                                   window=args.window, collar=args.collar,
+                                   dual=parse_dual(args.dual_vesa))
             except TooBig as e:
                 skipped.append(f"{label} x{n}: {e}")
                 print(f"  SKIP {label:11s} x{n}  -- {e}")
                 continue
             suffix = f"{n}x" if not grid else f"{grid[0]}x{grid[1]}x"
-            name = f"spoosa_{label}_{suffix}1q4-20.stl"
+            # variant suffixes so a windowed/dual/collared part cannot clobber the plain one
+            variant = ""
+            _dual = parse_dual(args.dual_vesa)
+            if _dual:
+                variant += "_d" + "-".join(f"{s:g}" for s in _dual)
+            if args.window > 0:
+                variant += f"_win{args.window:g}"
+            if args.collar > 0:
+                variant += f"_c{args.collar:g}"
+            name = f"spoosa_{label}_{suffix}1q4-20{variant}.stl"
             body.export(os.path.join(OUT_DIR, name))
             meta["file"] = name
             manifest.append(meta)
