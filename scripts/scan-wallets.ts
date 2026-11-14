@@ -36,9 +36,44 @@ const SCAN_STATE_FILE = join(__dirname, "..", "data", "scan-wallets-state.json")
 const SCAN_PARTIALS_FILE = join(__dirname, "..", "data", "scan-partials.jsonl");
 const PARTIAL_ALERT_EVERY_MS = 6 * 3_600_000;
 
+// 2026-11-14 self-audit: a run that is KILLED writes NOTHING.
+//
+// Between 2026-11-13 11:08 and 2026-11-14 05:17 every scheduled run of this job was
+// killed at the harness' 3600 s ceiling — 10 consecutive, 20 h with zero wallets
+// profiled. Nothing anywhere said so: the [SCAN PARTIAL] line, the append-only partials
+// log and the state file are ALL written after the loop, so a killed run left
+// `scan-partials.jsonl` untouched since 2026-09-22 (the daily report read that as
+// "0 partials in 7d") and left the state file pointing at the last GOOD run, which the
+// report rendered as a bare `(11:08)` with no date. Two repairs, both stage-1 only:
+//   (1) mark the ATTEMPT before the first fetch, so a run that never finishes is visible;
+//   (2) stop the LOOP at a wall-clock budget strictly below the harness kill, so the
+//       partial artifacts that already exist actually get written for the run that
+//       needs them most. Budget default 45 min < the 60 min harness ceiling.
+const SCAN_BUDGET_MS = Number(process.env.SCAN_BUDGET_MS ?? 45 * 60_000);
+
+
 async function main() {
+  const startedAt = Date.now();
   const adapter = getAdapter();
   const { rules } = await getActiveRules();
+
+  // Attempt marker FIRST (see SCAN_BUDGET_MS): a killed run must leave a trace, or the
+  // report cannot tell "last run was 20 h ago" from "last run finished 20 h ago".
+  // Read-merge-write so a marker never destroys the previous run's figures.
+  try {
+    let prev: Record<string, unknown> = {};
+    try {
+      prev = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
+    } catch {
+      prev = {};
+    }
+    fs.writeFileSync(
+      SCAN_STATE_FILE,
+      JSON.stringify({ ...prev, lastAttemptAt: new Date(startedAt).toISOString() }, null, 2)
+    );
+  } catch (e) {
+    logError(`[SCAN ATTEMPT] could not write the attempt marker: ${e instanceof Error ? e.message : e}`);
+  }
 
   // Profile the least-recently-scanned wallets first. Demo wallets are never
   // profiled against the live API (their addresses don't exist on-chain).
@@ -65,7 +100,28 @@ async function main() {
   let depthCensoredWallets = 0;
   let depthAboveSample = 0;
 
+  let attempted = 0;
+  // Set when the wall-clock budget stopped the loop. Kept OUT of `failures` on purpose:
+  // a deferral is not a fetch failure, and it must not reach the `profiled === 0` throw
+  // ("All wallet profile fetches failed") which would name the wrong cause.
+  let budgetStop: string | null = null;
   for (const w of wallets) {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed > SCAN_BUDGET_MS) {
+      // Stop STARTING new wallets. The run is then a partial by construction, so the
+      // existing partial accounting below names the reason and writes both artifacts —
+      // which is exactly what a harness kill cannot do.
+      const budgetMin = Math.round(SCAN_BUDGET_MS / 60_000);
+      budgetStop =
+        `budget: ${budgetMin}m wall-clock budget reached after ${Math.round(elapsed / 1000)}s — ` +
+        `${wallets.length - attempted} of ${wallets.length} wallet(s) DEFERRED to the next run`;
+      log(
+        `[SCAN BUDGET] stopped at the ${budgetMin}m wall-clock budget: ${attempted}/${wallets.length} attempted, ` +
+          `${profiled} profiled — the rest are deferred, see [SCAN PARTIAL] below`
+      );
+      break;
+    }
+    attempted++;
     try {
       // TR-17 (tuning review #15, approved): retry-once after a short pause —
       // the 02:11 all-fetch data-api failure was transient (self-recovered
@@ -177,7 +233,7 @@ async function main() {
     // entries are joined, keeping the info and the tail budget.
     const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
     logError(`Failures (${failures.length}): ` + failures.slice(0, 5).map(oneLine).join(" | "));
-    if (profiled === 0) {
+    if (profiled === 0 && !budgetStop) {
       throw new Error("All wallet profile fetches failed — see errors above.");
     }
   }
@@ -196,18 +252,20 @@ async function main() {
   // emitted AFTER the completion line so the runner's `tail -6` keeps it.
   const partial = profiled < wallets.length;
   const nowIso = new Date().toISOString();
+  // The reason the batch fell short: a fetch failure if there was one, else the budget.
+  const shortReason = failures[0] ?? budgetStop ?? "unknown";
   try {
     if (partial) {
       log(
         `[SCAN PARTIAL] profiled ${profiled}/${wallets.length} — ${wallets.length - profiled} wallet(s) NOT profiled this run ` +
-          `(first failure: ${failures[0] ?? "unknown"})`
+          `(reason: ${shortReason})`
       );
       fs.appendFileSync(
         SCAN_PARTIALS_FILE,
-        JSON.stringify({ ts: nowIso, profiled, target: wallets.length, failures: failures.slice(0, 5) }) + "\n"
+        JSON.stringify({ ts: nowIso, profiled, target: wallets.length, failures: failures.slice(0, 5), budgetStop }) + "\n"
       );
     }
-    let prev: { lastAlertAtMs?: number; lastPartialAt?: string | null } = {};
+    let prev: { lastAlertAtMs?: number; lastPartialAt?: string | null; lastAttemptAt?: string } = {};
     try {
       prev = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
     } catch {
@@ -219,10 +277,14 @@ async function main() {
       JSON.stringify(
         {
           lastRunAt: nowIso,
+          // Preserved so the report can print "attempt X / completion Y" rather than
+          // only the completion (2026-11-14).
+          lastAttemptAt: prev.lastAttemptAt ?? new Date(startedAt).toISOString(),
           profiled,
           target: wallets.length,
           partial,
           failures: failures.slice(0, 5),
+          budgetStop,
           lastPartialAt: partial ? nowIso : prev.lastPartialAt ?? null,
           lastAlertAtMs,
         },
@@ -235,7 +297,7 @@ async function main() {
         [
           "⚠️ **Wallet scan PARTIAL** _(paper only)_",
           `**Profiled:** ${profiled}/${wallets.length} — ${wallets.length - profiled} wallet(s) skipped this cycle`,
-          `**First failure:** ${(failures[0] ?? "unknown").slice(0, 180)}`,
+          `**First failure:** ${shortReason.slice(0, 180)}`,
           "_Those wallets keep their last scores until the next hourly run; repeated partials mean an API or DB fault, not a quiet cycle._",
         ].join("\n")
       );
@@ -246,6 +308,12 @@ async function main() {
   } catch (e) {
     logError(`[SCAN PARTIAL] reporting failed: ${e instanceof Error ? e.message : e}`);
   }
+
+  // A budget stop that profiled NOTHING must not read as ok: cron's last_status is the
+  // only signal the health watcher reads, and "0/25 profiled, exit 0" is exactly the
+  // pass condition that cannot fail. Partial-with-progress stays exit 0 by design (the
+  // artifacts and the 6h-rate-limited Discord alert carry it).
+  if (budgetStop && profiled === 0) process.exitCode = 1;
 }
 
 main()

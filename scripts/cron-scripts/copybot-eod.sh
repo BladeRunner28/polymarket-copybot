@@ -8,17 +8,31 @@ echo "=== run $(date "+%Y-%m-%dT%H:%M:%S") ==="
 cd /Users/xsnyde2/polymarket-copybot
 unset DATABASE_URL
 set -a; source .env; set +a
-npm run --silent scan:leaderboard 2>&1 | tail -1
+# 2026-11-14 self-audit: EVERY pre-report step is BOUNDED.
+#
+# On 2026-11-13 this chain was killed by the harness at its 3600 s ceiling inside one
+# step, so `report:daily` — six lines down — never ran: DailyReport has NO row for
+# 2026-11-13 (every prior day has one) and no Discord report went out. The offending
+# step could not be identified after the fact because each step's output is piped
+# through `tail -N`, which flushes only at EOF, and a killed step never reaches EOF.
+# Bounding each step (scripts/run-bounded.py kills the whole process group, so no orphan
+# holds the SQLite DB) makes a slow step cost its OWN output and nothing else.
+BOUNDED="python3 $PWD/scripts/run-bounded.py"
+$BOUNDED --timeout 300 --label "scan:leaderboard" -- npm run --silent scan:leaderboard 2>&1 | tail -1 \
+  || echo "[EOD] scan:leaderboard BOUNDED OUT or failed — continuing so the report still runs"
 # v41 (tuning review #12, approved): ML-1 review/export output must be visible
 # in the EOD log — tail -5 keeps the counts (previously tail -1 hid them).
-npm run --silent review:outcomes 2>&1 | tail -5
+$BOUNDED --timeout 900 --label "review:outcomes" -- npm run --silent review:outcomes 2>&1 | tail -5 \
+  || echo "[EOD] review:outcomes BOUNDED OUT or failed — labels deferred to the next run"
 # tuning review #54 rec 2 (approved 2026-10-13): the export block grew past `tail -5`, so the
 # EXPORT ROW COUNT and the PER-ERA lines were being cut from the capture (last seen 10-10).
 # Select those lines by PATTERN rather than by position, so growth cannot push them out again.
 # Log-only: no report, PnL figure, rule or gate reads this block; `|| true` keeps `set -o pipefail`
 # from failing the whole EOD when a pattern is absent (grep exits 1 on no match).
-npm run --silent export:training 2>&1 | grep -E "Exported [0-9]+ rows|: n=[0-9]+ y_net_entry=|^(  (label arms|market features|columns|target distribution|sums):)|pnl_(gross|net_entry|net_full):|reconciliation:|reproduce:" || true
-npm run --silent update:rules 2>&1 | tail -2
+$BOUNDED --timeout 300 --label "export:training" -- npm run --silent export:training 2>&1 \
+  | grep -E "Exported [0-9]+ rows|: n=[0-9]+ y_net_entry=|^(  (label arms|market features|columns|target distribution|sums):)|pnl_(gross|net_entry|net_full):|reconciliation:|reproduce:" || true
+$BOUNDED --timeout 300 --label "update:rules" -- npm run --silent update:rules 2>&1 | tail -2 \
+  || echo "[EOD] update:rules BOUNDED OUT or failed — the rules pass is deferred, the report is NOT"
 # polycopy-edge-cost-pair (2026-09-23): the report body grew 23 → 28 lines when
 # the edge/copy-cost block landed, so `tail -20` would have dropped the report
 # HEADER and the whole STANDARD block from the log (the report itself is

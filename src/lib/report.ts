@@ -100,6 +100,94 @@ function driftDecayLine(): string | undefined {
 }
 const SCAN_PARTIALS_FILE = join(__dirname, "..", "..", "data", "scan-partials.jsonl");
 
+/** Shape of data/scan-wallets-state.json — the scan job's own summary of its last run. */
+export type WalletScanState = {
+  lastRunAt?: string;
+  /** Written at the START of a run (2026-11-14); absent in state files older than that. */
+  lastAttemptAt?: string;
+  profiled?: number;
+  target?: number;
+};
+
+/** Compact age. A reader must be able to see a 20 h gap at a glance. */
+function scanAgeText(iso: string, now: Date): string {
+  const ms = now.getTime() - new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return "?";
+  if (ms < 0) return "in the future";
+  if (ms < 3_600_000) return `${Math.max(1, Math.round(ms / 60_000))}m ago`;
+  if (ms < 48 * 3_600_000) return `${(ms / 3_600_000).toFixed(1)}h ago`;
+  return `${(ms / 86_400_000).toFixed(1)}d ago`;
+}
+
+/**
+ * A bare HH:MM is only readable if the reader knows it is TODAY. The old line printed
+ * `last run (11:08)` for a run 20 h old (2026-11-13 11:08, read on 11-14), which is the
+ * same "figure with no clock" defect the 2026-11-13 audit repaired elsewhere: it made a
+ * dead job look like a fresh one. Off-day stamps carry MM-DD.
+ */
+function scanStampText(iso: string, now: Date): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "?";
+  const hhmm = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+  if (d.toDateString() === now.toDateString()) return hhmm;
+  const mmdd = `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${mmdd} ${hhmm}`;
+}
+
+/**
+ * Wallet-scan line, PURE (2026-11-14 self-audit).
+ *
+ * The defect this closes: `lastRunAt` is written only when a run REACHES ITS END, so a
+ * run killed at the harness ceiling left the report pointing at the last good run with
+ * no date on it. Between 2026-11-13 11:08 and 2026-11-14 05:17 ten scheduled runs were
+ * killed and the daily line still read `25 profiled last run (11:08)` — i.e. a job that
+ * had profiled nothing for 20 h rendered as a job that had just finished. The state file
+ * now carries `lastAttemptAt` (written before the first fetch), so an attempt that never
+ * completed is a THIRD state with its own string, never a clean quiet cycle.
+ *
+ * The warning has a FLOOR (SCAN_ATTEMPT_SILENT_MS = the harness' 3600 s ceiling): a run
+ * that is simply in progress (the scan legitimately takes ~9 min) must not print
+ * "did NOT complete" — that would be the mirror-image lie. An attempt older than the
+ * ceiling can only be one that was killed.
+ */
+export const SCAN_ATTEMPT_SILENT_MS = 60 * 60_000;
+
+export function walletScanLineText(
+  state: WalletScanState,
+  opts: { pool: number; stale7d: number; partials: string; now: Date }
+): string | undefined {
+  const { pool, stale7d, partials, now } = opts;
+  const hasFigures = typeof state.profiled === "number";
+  const hasAttempt = typeof state.lastAttemptAt === "string" && state.lastAttemptAt.length > 0;
+  if (!hasFigures && !hasAttempt) return undefined;
+
+  const completedAt = state.lastRunAt ? new Date(state.lastRunAt) : null;
+  const attemptAt = hasAttempt ? new Date(state.lastAttemptAt as string) : null;
+  // "did not complete" = an attempt started AFTER the last completion finished AND it is
+  // older than the harness ceiling, i.e. it cannot still be running.
+  const attemptIncomplete =
+    attemptAt !== null &&
+    now.getTime() - attemptAt.getTime() > SCAN_ATTEMPT_SILENT_MS &&
+    (!completedAt || attemptAt.getTime() > completedAt.getTime());
+
+  const poolTxt = pool ? ` · pool ${pool.toLocaleString("en-US")}, ${stale7d} stale >7d` : " · pool count UNAVAILABLE";
+  const short = hasFigures && typeof state.target === "number" && (state.profiled as number) < state.target;
+
+  if (attemptIncomplete) {
+    const attemptTxt = `${scanStampText(state.lastAttemptAt as string, now)} (${scanAgeText(state.lastAttemptAt as string, now)})`;
+    const lastTxt = state.lastRunAt
+      ? `last completion ${scanStampText(state.lastRunAt, now)} (${scanAgeText(state.lastRunAt, now)})`
+      : "no completed run on record";
+    return `• Wallet scan: ⚠️ last attempt ${attemptTxt} did NOT complete — ${lastTxt}${poolTxt} · ${partials}`;
+  }
+
+  const when = state.lastRunAt ? scanStampText(state.lastRunAt, now) : "?";
+  const age = state.lastRunAt ? ` (${scanAgeText(state.lastRunAt, now)})` : "";
+  return `• Wallet scan: ${short ? "⚠️ " : ""}${state.profiled} profiled last run ${when}${age}${
+    short ? ` of ${state.target} attempted` : ""
+  }${poolTxt} · ${partials}`;
+}
+
 /**
  * Wallet-scan coverage line (2026-09-20 tuning review #31 rec 3, user-approved).
  *
@@ -109,13 +197,13 @@ const SCAN_PARTIALS_FILE = join(__dirname, "..", "..", "data", "scan-partials.js
  * and event log (one row per partial) — measurement only, no behavior change.
  */
 async function walletScanLine(now: Date): Promise<string | undefined> {
-  let state: { lastRunAt?: string; profiled?: number; target?: number } | null = null;
+  let state: WalletScanState | null = null;
   try {
-    state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
+    state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8")) as WalletScanState;
   } catch {
     return undefined;
   }
-  if (!state || typeof state.profiled !== "number") return undefined;
+  if (!state) return undefined;
   // 2026-10-21 self-audit: this used to print `${profiled}/${target}` — but target
   // IS WALLET_SCAN_LIMIT (the per-run batch cap), not the pool the scan rotates
   // through. On live data that rendered "25/25 profiled", which reads as "every
@@ -151,12 +239,7 @@ async function walletScanLine(now: Date): Promise<string | undefined> {
   } catch {
     partials = "partials log UNREADABLE";
   }
-  const short = typeof state.target === "number" && state.profiled < state.target;
-  const when = state.lastRunAt
-    ? new Date(state.lastRunAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
-    : "?";
-  const poolTxt = pool ? ` · pool ${pool.toLocaleString("en-US")}, ${stale7d} stale >7d` : " · pool count UNAVAILABLE";
-  return `• Wallet scan: ${short ? "⚠️ " : ""}${state.profiled} profiled last run (${when}${short ? ` of ${state.target} attempted` : ""})${poolTxt} · ${partials}`;
+  return walletScanLineText(state, { pool, stale7d, partials, now });
 }
 
 /**

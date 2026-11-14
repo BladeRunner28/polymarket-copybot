@@ -17,4 +17,8 @@ trap "rmdir \"$LOCKDIR\"" EXIT
 cd /Users/xsnyde2/polymarket-copybot
 unset DATABASE_URL
 set -a; source .env; set +a
-WALLET_SCAN_LIMIT=25 API_DELAY_MS=200 npm run --silent scan:wallets 2>&1 | tail -6
+# `tail -8` (was -6): 2026-11-14 self-audit. The [SCAN BUDGET] line and the
+# [SCAN PARTIAL] line can now both appear on a truncated run, and with up to 25
+# censored [DEPTH] lines above them a -6 window could drop the budget line — the one
+# line that says why the batch stopped. Everything the old window kept is still kept.
+WALLET_SCAN_LIMIT=25 API_DELAY_MS=200 npm run --silent scan:wallets 2>&1 | tail -8
