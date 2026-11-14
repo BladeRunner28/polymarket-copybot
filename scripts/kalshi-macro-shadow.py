@@ -14,7 +14,21 @@ lane; it is a venue-quality measurement.
 Each run appends:
   data/kalshi-macro-quotes.jsonl    one row per open market per run
   data/kalshi-macro-settled.jsonl   one row per market the moment we first see a result
-  data/kalshi-macro-news.jsonl      per-run GDELT story counts per family (context column)
+  data/kalshi-macro-news.jsonl      per-run GDELT row/story counts per family (context column,
+                                    stamped column_status=UNMEASURABLE - see KALSHI-GDELT CONTEXT
+                                    below and scripts/kalshi-macro-news-read.py)
+
+KALSHI-GDELT CONTEXT COLUMN (repaired 2026-11-14, card kalshi-gdelt-context-v2)
+-----------------------------------------------------------------------------
+The column printed "counts" that read like story counts and were not: the dedupe keyed on
+item_id, so one story syndicated across outlets was N rows, and the "top" headline was taken from
+any geography (the 2026-11-14 row's KXGDP representative was a Lithuania GDP story). It also
+printed us_country_counts as a US-relevance column while the matches behind KXCPI were
+overwhelmingly CPI(M), the Indian party (27 of 44 all-geo KXCPI stories over the 44-day corpus,
+1 US CPI story). The card's own fallback, after measurement, is DROP:
+no family can be built at its gate from a corpus that carries no article titles, and 5 of 6
+families cannot even be sampled. The field names now state their basis and the column declares
+itself UNMEASURABLE in every row; data/kalshi-macro-news-read.json carries the measurement.
 
 PRE-REGISTERED READ (written before the data existed — do not move it)
 ---------------------------------------------------------------------
@@ -147,10 +161,10 @@ def gdelt_counts(day_stamp):
         if not candidates:
             return None, None
         path = Path(candidates[-1])
-    counts = {fam: 0 for fam in FAMILIES}
-    us_counts = {fam: 0 for fam in FAMILIES}
+    matched_rows = {fam: 0 for fam in FAMILIES}
+    us_rows = {fam: 0 for fam in FAMILIES}
+    stories = {fam: set() for fam in FAMILIES}
     top = {fam: None for fam in FAMILIES}
-    hashes = {fam: set() for fam in FAMILIES}
     total = 0
     with gzip.open(str(path), "rt") as fh:
         for line in fh:
@@ -159,29 +173,47 @@ def gdelt_counts(day_stamp):
             except Exception:
                 continue
             total += 1
-            title = (row.get("title") or row.get("title_derived") or "").lower()
-            text = (row.get("url") or "") + "|" + title
+            title = row.get("title") or row.get("title_derived") or ""
+            low = title.lower()
+            url = row.get("url") or row.get("item_id") or ""
+            # one story = one canonical URL; the old item_id key counted a story once per
+            # outlet AND once per port/scheme variant of the same URL.
+            key = url.lower()
+            key = re.sub(r"^https?://", "", key)
+            key = re.sub(r":443(?=/|$)", "", key)
+            key = key.rstrip("/")
+            is_us = (row.get("action_country") or "").upper() in ("USA", "US")
             for fam in FAMILIES:
-                if KEY_RES[fam].search(title):
-                    # dedupe: the same story is syndicated across outlets, so a raw
-                    # headline count is an OUTLET count, not a story count.
-                    key = row.get("item_id") or text
-                    if key in hashes[fam]:
-                        continue
-                    hashes[fam].add(key)
-                    counts[fam] += 1
-                    if (row.get("action_country") or "") in ("USA", "US"):
-                        us_counts[fam] += 1
-                    if top[fam] is None and not GARBLED_TITLE.match(title):
-                        top[fam] = (row.get("title") or row.get("title_derived") or "")[:110]
+                if not KEY_RES[fam].search(low):
+                    continue
+                matched_rows[fam] += 1
+                if is_us:
+                    us_rows[fam] += 1
+                    stories[fam].add(key)
+                    if top[fam] is None and not GARBLED_TITLE.match(low):
+                        top[fam] = title[:110]
     return (
         {
             "source_file": path.name,
             "match_rule": "word_boundary_headline_v2",
+            "column_status": "UNMEASURABLE",
+            "column_reason": (
+                "no title-bearing US-news surface reachable from this host: the held corpus is an "
+                "event table (slug-only titles) pre-filtered by six unrelated topic queries, GDELT "
+                "Cloud answers 403 on the free plan and the DOC API 429s; see "
+                "data/kalshi-macro-news-read.json"
+            ),
+            "basis": ("matched_rows = event ROWS whose slug-reconstructed title matches a family "
+                      "keyword (word-boundary); matched_stories = those rows collapsed to one "
+                      "canonical URL; both US-scoped on action_country==US; NEITHER is a validated "
+                      "story count - precision on the only samplable family is 95.2% at the point "
+                      "estimate with a 77.3% Wilson lower bound and volume is 0-22 per family per "
+                      "44 days"),
             "stories_total": total,
-            "counts": counts,
-            "us_country_counts": us_counts,
-            "top": top,
+            "matched_rows": matched_rows,
+            "matched_stories": {fam: len(stories[fam]) for fam in FAMILIES},
+            "us_matched_rows": us_rows,
+            "top_us_only": top,
         },
         path.name,
     )
@@ -308,7 +340,12 @@ def main():
             % (fam, len(fam_quotes), oi, ("%.3f" % sorted(spreads)[len(spreads) // 2]) if spreads else "n/a")
         )
     if news:
-        print("  GDELT context (%s, %d stories): %s" % (news_file, news["stories_total"], ", ".join("%s=%d" % (k, v) for k, v in sorted(news["counts"].items()))))
+        print("  GDELT context (%s, %d event rows read): status=%s" % (
+            news_file, news["stories_total"], news["column_status"]))
+        print("    matched ROWS     : %s" % ", ".join("%s=%d" % (k, v) for k, v in sorted(news["matched_rows"].items())))
+        print("    matched STORIES  : %s (one canonical URL each; US-scoped)" % ", ".join(
+            "%s=%d" % (k, v) for k, v in sorted(news["matched_stories"].items())))
+        print("    not a validated story count - see %s" % "data/kalshi-macro-news-read.json")
 
     # ---- descriptive calibration from everything we hold so far ----
     all_settled = tail_rows(SETTLED_FILE, limit=40000) + settled_rows

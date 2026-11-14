@@ -1,0 +1,620 @@
+{
+ "generated_at": "2026-11-14T15:14:45.131282+00:00",
+ "card": "kalshi-gdelt-context-v2",
+ "basis": {
+  "population": "data/gdelt-bulk/*.jsonl.gz, one row per GDELT event; story = one canonical SOURCE URL (scheme/:443/trailing-slash stripped)",
+  "clock": "daily capture file stamp 20261002..20261114",
+  "level": "one article for story counts; one event row for row counts",
+  "days_read": 44,
+  "rows": 1367615,
+  "events": 1280691,
+  "articles": 303504,
+  "us_event_rows": 409332,
+  "us_articles": 105159
+ },
+ "surfaces_measured": {
+  "gdelt_cloud": "HTTP 403 - API keys not included in current plan (free); plan error",
+  "gdelt_doc": "HTTP 429 at >=7s spacing (2/2 this run; 5/5 on 2026-10-10)",
+  "gdelt_bulk": "HTTP 200 - held corpus; EVENT table, no article title"
+ },
+ "gate": {
+  "precision_floor": 0.9,
+  "min_labelled_per_family": 50
+ },
+ "families": {
+  "KXCPI": {
+   "rows_substring": 379,
+   "rows_wordboundary": 212,
+   "us_rows": 31,
+   "us_share_of_matches": 0.1462,
+   "stories_us": 9,
+   "stories_any_geo": 46,
+   "v3_stories_us": 0,
+   "days_to_50_us_stories": 244.4,
+   "gate": "UNDERPOWERED(matched=0<50)",
+   "score": {
+    "family": "KXCPI",
+    "population": 46,
+    "labelled": 45,
+    "unlabelled": 1,
+    "labels_outside_population": 1,
+    "truth_on": 1,
+    "truth_on_lenient_extra": 7,
+    "live_rule_precision_from_labels": 0.0222,
+    "arms": {
+     "live_keyword_rule": {
+      "arm": "live_keyword_rule",
+      "kept": 45,
+      "tp": 1,
+      "fp": 44,
+      "fn": 0,
+      "precision": 0.0222,
+      "precision_ci95": [
+       0.0039,
+       0.1157
+      ],
+      "recall": 1.0,
+      "design": {
+       "tp": 0,
+       "fp": 33,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": 0.0
+      },
+      "holdout": {
+       "tp": 1,
+       "fp": 11,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": 0.0833
+      }
+     },
+     "targeted_query_v3": {
+      "arm": "targeted_query_v3",
+      "kept": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "precision_ci95": [
+       0.2065,
+       1.0
+      ],
+      "recall": 1.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 1,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": 1.0
+      }
+     }
+    },
+    "population_basis": "all_geographies"
+   },
+   "example_v3": []
+  },
+  "KXFED": {
+   "rows_substring": 10796,
+   "rows_wordboundary": 812,
+   "us_rows": 496,
+   "us_share_of_matches": 0.6108,
+   "stories_us": 99,
+   "stories_any_geo": 160,
+   "v3_stories_us": 22,
+   "days_to_50_us_stories": 22.2,
+   "gate": "UNDERPOWERED(matched=22<50)",
+   "score": {
+    "family": "KXFED",
+    "population": 99,
+    "labelled": 98,
+    "unlabelled": 1,
+    "labels_outside_population": 1,
+    "truth_on": 22,
+    "truth_on_lenient_extra": 0,
+    "live_rule_precision_from_labels": 0.2245,
+    "arms": {
+     "live_keyword_rule": {
+      "arm": "live_keyword_rule",
+      "kept": 98,
+      "tp": 22,
+      "fp": 76,
+      "fn": 0,
+      "precision": 0.2245,
+      "precision_ci95": [
+       0.1532,
+       0.3166
+      ],
+      "recall": 1.0,
+      "design": {
+       "tp": 19,
+       "fp": 38,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": 0.3333
+      },
+      "holdout": {
+       "tp": 3,
+       "fp": 38,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": 0.0732
+      }
+     },
+     "targeted_query_v3": {
+      "arm": "targeted_query_v3",
+      "kept": 21,
+      "tp": 20,
+      "fp": 1,
+      "fn": 2,
+      "precision": 0.9524,
+      "precision_ci95": [
+       0.7733,
+       0.9915
+      ],
+      "recall": 0.9091,
+      "design": {
+       "tp": 17,
+       "fp": 1,
+       "fn": 2,
+       "day_max": "20261031",
+       "precision": 0.9444
+      },
+      "holdout": {
+       "tp": 3,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": 1.0
+      }
+     }
+    }
+   },
+   "example_v3": [
+    {
+     "title": "fed approves isabella bank corporation 1755340",
+     "domain": "www.miragenews.com",
+     "day": "20261005",
+     "country": "US"
+    },
+    {
+     "title": "the federal reserve board announced approval of an application by isabella bank corporation releasing the order through ",
+     "domain": "newsroomamerica.com",
+     "day": "20261005",
+     "country": "US"
+    },
+    {
+     "title": "new york fed reviews major banks private credit exposure after jpmorgan loan markdowns",
+     "domain": "investinglive.com",
+     "day": "20261005",
+     "country": "US"
+    }
+   ]
+  },
+  "KXU3": {
+   "rows_substring": 229,
+   "rows_wordboundary": 225,
+   "us_rows": 119,
+   "us_share_of_matches": 0.5289,
+   "stories_us": 19,
+   "stories_any_geo": 61,
+   "v3_stories_us": 18,
+   "days_to_50_us_stories": 115.8,
+   "gate": "UNDERPOWERED(matched=18<50)",
+   "score": {
+    "family": "KXU3",
+    "population": 19,
+    "labelled": 0,
+    "unlabelled": 19,
+    "labels_outside_population": 0,
+    "truth_on": 0,
+    "truth_on_lenient_extra": 0,
+    "live_rule_precision_from_labels": null,
+    "arms": {
+     "live_keyword_rule": {
+      "arm": "live_keyword_rule",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     },
+     "targeted_query_v3": {
+      "arm": "targeted_query_v3",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     }
+    }
+   },
+   "example_v3": [
+    {
+     "title": "lawmakers plan legislation to make locked out workers automatically eligible for unemployment",
+     "domain": "www.insideindianabusiness.com",
+     "day": "20261005",
+     "country": "US"
+    },
+    {
+     "title": "jobs employment economy unemployment benefits",
+     "domain": "www.npr.org",
+     "day": "20261011",
+     "country": "US"
+    },
+    {
+     "title": "bp oil refinery workers lockout unemployment appeal benefits",
+     "domain": "inthesetimes.com",
+     "day": "20261013",
+     "country": "US"
+    }
+   ]
+  },
+  "KXGDP": {
+   "rows_substring": 1581,
+   "rows_wordboundary": 1572,
+   "us_rows": 238,
+   "us_share_of_matches": 0.1514,
+   "stories_us": 44,
+   "stories_any_geo": 310,
+   "v3_stories_us": 37,
+   "days_to_50_us_stories": 50.0,
+   "gate": "UNDERPOWERED(matched=37<50)",
+   "score": {
+    "family": "KXGDP",
+    "population": 44,
+    "labelled": 0,
+    "unlabelled": 44,
+    "labels_outside_population": 0,
+    "truth_on": 0,
+    "truth_on_lenient_extra": 0,
+    "live_rule_precision_from_labels": null,
+    "arms": {
+     "live_keyword_rule": {
+      "arm": "live_keyword_rule",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     },
+     "targeted_query_v3": {
+      "arm": "targeted_query_v3",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     }
+    }
+   },
+   "example_v3": [
+    {
+     "title": "texas expands electrician reciprocity with tennessee to support skilled workforce and economic growth 2",
+     "domain": "www.gilmermirror.com",
+     "day": "20261006",
+     "country": "US"
+    },
+    {
+     "title": "louisiana lawsuit reform lawmakers discuss legal changes insurance costs and economic growth",
+     "domain": "talk1073.com",
+     "day": "20261008",
+     "country": "US"
+    },
+    {
+     "title": "emory and georgia tech invest over 1b ai drive states jobs economic growth",
+     "domain": "news.emory.edu",
+     "day": "20261008",
+     "country": "US"
+    }
+   ]
+  },
+  "KXRECSSNBER": {
+   "rows_substring": 1384,
+   "rows_wordboundary": 112,
+   "us_rows": 63,
+   "us_share_of_matches": 0.5625,
+   "stories_us": 9,
+   "stories_any_geo": 25,
+   "v3_stories_us": 7,
+   "days_to_50_us_stories": 244.4,
+   "gate": "UNDERPOWERED(matched=7<50)",
+   "score": {
+    "family": "KXRECSSNBER",
+    "population": 9,
+    "labelled": 0,
+    "unlabelled": 9,
+    "labels_outside_population": 0,
+    "truth_on": 0,
+    "truth_on_lenient_extra": 0,
+    "live_rule_precision_from_labels": null,
+    "arms": {
+     "live_keyword_rule": {
+      "arm": "live_keyword_rule",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     },
+     "targeted_query_v3": {
+      "arm": "targeted_query_v3",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     }
+    }
+   },
+   "example_v3": [
+    {
+     "title": "democrats midterms elections support poll recession races 12526693",
+     "domain": "www.newsweek.com",
+     "day": "20261006",
+     "country": "US"
+    },
+    {
+     "title": "318806 blackrocks larry fink warns that halting ai data center construction could trigger a us recession",
+     "domain": "www.crowdfundinsider.com",
+     "day": "20261016",
+     "country": "US"
+    },
+    {
+     "title": "blackrock ceo larry fink data center recession",
+     "domain": "www.fool.com",
+     "day": "20261020",
+     "country": "US"
+    }
+   ]
+  },
+  "KXPAYROLLS": {
+   "rows_substring": 393,
+   "rows_wordboundary": 367,
+   "us_rows": 134,
+   "us_share_of_matches": 0.3651,
+   "stories_us": 37,
+   "stories_any_geo": 84,
+   "v3_stories_us": 8,
+   "days_to_50_us_stories": 59.5,
+   "gate": "UNDERPOWERED(matched=8<50)",
+   "score": {
+    "family": "KXPAYROLLS",
+    "population": 37,
+    "labelled": 0,
+    "unlabelled": 37,
+    "labels_outside_population": 0,
+    "truth_on": 0,
+    "truth_on_lenient_extra": 0,
+    "live_rule_precision_from_labels": null,
+    "arms": {
+     "live_keyword_rule": {
+      "arm": "live_keyword_rule",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     },
+     "targeted_query_v3": {
+      "arm": "targeted_query_v3",
+      "kept": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "precision_ci95": [
+       0.0,
+       0.0
+      ],
+      "recall": 0.0,
+      "design": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_max": "20261031",
+       "precision": null
+      },
+      "holdout": {
+       "tp": 0,
+       "fp": 0,
+       "fn": 0,
+       "day_min": "20261031",
+       "precision": null
+      }
+     }
+    }
+   },
+   "example_v3": [
+    {
+     "title": "the wall street journal s editorial board weighed in on a supreme court climate case september job growth trump family b",
+     "domain": "newsroomamerica.com",
+     "day": "20261003",
+     "country": "US"
+    },
+    {
+     "title": "healthcare drives arizonas job growth but can employers keep up",
+     "domain": "azbigmedia.com",
+     "day": "20261024",
+     "country": "US"
+    },
+    {
+     "title": "healthcare drives arizonas job growth but can employers keep up",
+     "domain": "azcapitoltimes.com",
+     "day": "20261027",
+     "country": "US"
+    }
+   ]
+  }
+ },
+ "latest_live_row": {
+  "ts": "2026-11-14T15:01:44.812898+00:00",
+  "source_file": "20261114.jsonl.gz",
+  "match_rule": "word_boundary_headline_v2",
+  "stories_total": 10103,
+  "counts": {
+   "KXCPI": 0,
+   "KXFED": 15,
+   "KXU3": 0,
+   "KXGDP": 13,
+   "KXRECSSNBER": 0,
+   "KXPAYROLLS": 0
+  },
+  "us_country_counts": {
+   "KXCPI": 0,
+   "KXFED": 0,
+   "KXU3": 0,
+   "KXGDP": 0,
+   "KXRECSSNBER": 0,
+   "KXPAYROLLS": 0
+  },
+  "top": {
+   "KXCPI": null,
+   "KXFED": "federal reserve",
+   "KXU3": null,
+   "KXGDP": "lithuania records eu s steepest quarterly gdp decline in third quarter",
+   "KXRECSSNBER": null,
+   "KXPAYROLLS": null
+  }
+ }
+}

@@ -1,0 +1,885 @@
+{
+ "card": "kalshi-gdelt-context-v2",
+ "labelled_at": "2026-11-14",
+ "labeler": "hermes backlog worker, single reviewer (rule-label + hand reading)",
+ "split_day": "20261031",
+ "window": "data/gdelt-bulk captures 20261002..20261114",
+ "rule": "ON = the story's subject is the US macro concept the family prices (KXFED: the Federal Reserve as an institution or US monetary policy; KXCPI: US CPI / consumer-price statistics). on_lenient = US inflation DISCOURSE that is not the statistic itself (reported separately, never folded in). OFF classes are named in `reason`: a person named Powell, Lake Powell, 'fed up', 'fed' as federal-government shorthand, a utility's rate hike, CPI(M) the Indian party, a company called CPI, foreign inflation, a non-CPI price index, a garbled slug.",
+ "population_note": "KXFED population = word-boundary family match AND action_country==US, one row per canonical URL (98 rows -> 96 stories: 2 pairs differed only by a :443 port). KXCPI population = word-boundary match, ALL geographies, because the US-scoped KXCPI set is 9 stories over 44 days and cannot be sampled to 50. Five rows landed in the corpus AFTER the first labelling pass (the day file is append-rewritten) and were labelled on a second pass; any future append shows up as UNLABELLED rather than being silently dropped from the denominator.",
+ "items": {
+  "KXFED": {
+   "www.scotsmanguide.com/news/doj-declines-to-reopen-powell-probe-likely-putting-fed-renovation-uproar-to-rest": {
+    "label": "on",
+    "reason": "on",
+    "title": "doj declines to reopen powell probe likely putting fed renovation uproar to rest",
+    "day": "61003.j"
+   },
+   "www.miragenews.com/fed-approves-isabella-bank-corporation-1755340": {
+    "label": "on",
+    "reason": "on",
+    "title": "fed approves isabella bank corporation 1755340",
+    "day": "61005.j"
+   },
+   "newsroomamerica.com/a/9pz6r3rawzheobggwbfyecpjxhz/the_federal_reserve_board_announced_approval_of_an_application_by_isabella_bank_corporation_releasing_the_order_through_its_official_press_release_channel.html": {
+    "label": "on",
+    "reason": "on",
+    "title": "the federal reserve board announced approval of an application by isabella bank corporation releasing the order through ",
+    "day": "61005.j"
+   },
+   "investinglive.com/stocks/new-york-fed-reviews-major-banks-private-credit-exposure-after-jpmorgan-loan-markdowns": {
+    "label": "on",
+    "reason": "on",
+    "title": "new york fed reviews major banks private credit exposure after jpmorgan loan markdowns",
+    "day": "61005.j"
+   },
+   "www.americanbanker.com/news/fed-supervision-reform-funnels-more-authority-to-washington": {
+    "label": "on",
+    "reason": "on",
+    "title": "fed supervision reform funnels more authority to washington",
+    "day": "61008.j"
+   },
+   "nypost.com/2026/10/09/business/trump-establishes-committee-to-investigate-fed-governor-lisa-cooks-mortgage-fraud-statements": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump establishes committee to investigate fed governor lisa cooks mortgage fraud statements",
+    "day": "61009.j"
+   },
+   "www.foxnews.com/politics/trump-sets-up-committee-investigate-fed-governor-lisa-cook-mortgage-fraud-allegations": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump sets up committee investigate fed governor lisa cook mortgage fraud allegations",
+    "day": "61009.j"
+   },
+   "komonews.com/news/nation-world/trump-announces-white-house-probe-into-federal-reserve-governor-lisa-d-cook-new-york-times-housing": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump announces white house probe into federal reserve governor lisa d cook new york times housing",
+    "day": "61009.j"
+   },
+   "newrepublic.com/post/216460/trump-crusade-federal-reserve-lisa-cook-committee": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump crusade federal reserve lisa cook committee",
+    "day": "61009.j"
+   },
+   "www.dailykos.com/stories/2026/10/9/800110036/courts/trump-wont-let-go-racist-attack-fed-board-member": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump wont let go racist attack fed board member",
+    "day": "61009.j"
+   },
+   "www.americanbanker.com/news/ex-fed-nominee-shelton-tapped-to-advise-treasurys-bessent": {
+    "label": "on",
+    "reason": "on",
+    "title": "ex fed nominee shelton tapped to advise treasurys bessent",
+    "day": "61009.j"
+   },
+   "radaronline.com/p/trump-new-plot-fed-governor-lisa-cook-white-house-closed-door-hearing": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump new plot fed governor lisa cook white house closed door hearing",
+    "day": "61010.j"
+   },
+   "www.nationalmortgagenews.com/news/ex-fed-nominee-shelton-tapped-to-advise-treasurys-bessent": {
+    "label": "on",
+    "reason": "on",
+    "title": "ex fed nominee shelton tapped to advise treasurys bessent",
+    "day": "61011.j"
+   },
+   "www.rigzone.com/news/dallas_fed_examines_theft_in_the_oil_field-13-oct-2026-184838-article": {
+    "label": "on",
+    "reason": "on",
+    "title": "dallas fed examines theft in the oil field 13 oct 2026 184838 article",
+    "day": "61013.j"
+   },
+   "mmbiztoday.com/wall-street-and-fed-fly-blind-as-coronavirus-upends-annual-stress-tests": {
+    "label": "on",
+    "reason": "on",
+    "title": "wall street and fed fly blind as coronavirus upends annual stress tests",
+    "day": "61015.j"
+   },
+   "seekingalpha.com/article/4957159-sp500-earnings-fomc-announcement-september-pce-3-hyperscalers-report-this-coming-week": {
+    "label": "on",
+    "reason": "on",
+    "title": "4957159 sp500 earnings fomc announcement september pce 3 hyperscalers report this coming week",
+    "day": "61024.j"
+   },
+   "www.agrinews-pubs.com/business/2026/10/26/federal-reserve-survey-commodity-diesel-prices-hamper-ag-outlook": {
+    "label": "on",
+    "reason": "on",
+    "title": "federal reserve survey commodity diesel prices hamper ag outlook",
+    "day": "61027.j"
+   },
+   "www.pymnts.com/news/banking/2026/scotiabank-wins-fed-approval-to-buy-oklahoma-based-maplemark-bank": {
+    "label": "on",
+    "reason": "on",
+    "title": "scotiabank wins fed approval to buy oklahoma based maplemark bank",
+    "day": "61031.j"
+   },
+   "natlawreview.com/article/trump-committee-hold-hearing-possible-removal-lisa-d-cook-federal-reserve-board": {
+    "label": "on",
+    "reason": "on",
+    "title": "trump committee hold hearing possible removal lisa d cook federal reserve board",
+    "day": "61110.j"
+   },
+   "www.arkansasonline.com/news/2026/nov/12/fed-officials-debate-term-limits": {
+    "label": "on",
+    "reason": "on",
+    "title": "fed officials debate term limits",
+    "day": "61112.j"
+   },
+   "www.theepochtimes.com/epochtv/live-now-federal-reserve-bank-boston-holds-conference-on-us-housing-market-day-1-post-6124679": {
+    "label": "on",
+    "reason": "on",
+    "title": "live now federal reserve bank boston holds conference on us housing market day 1 post 6124679",
+    "day": "61113.j"
+   },
+   "newsbusters.org/blogs/nb/pj-gladnick/2008/10/20/powell-endorses-mccain-endorsement-ignored-msm": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "powell endorses mccain endorsement ignored msm",
+    "day": "61010.j"
+   },
+   "www.knopnews2.com/2026/10/10/election-2026-hillary-clinton-visits-nebraska-stump-lynne-walz-denise-powell": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "election 2026 hillary clinton visits nebraska stump lynne walz denise powell",
+    "day": "61010.j"
+   },
+   "www.ktiv.com/2026/10/10/election-2026-hillary-clinton-visits-nebraska-stump-lynne-walz-denise-powell": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "election 2026 hillary clinton visits nebraska stump lynne walz denise powell",
+    "day": "61012.j"
+   },
+   "klin.com/2026/10/15/harding-powell-split-on-health-care-immigration-and-social-security-in-nebraska-house-debate": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "harding powell split on health care immigration and social security in nebraska house debate",
+    "day": "61015.j"
+   },
+   "www.prpeak.com/in-the-community/powell-river-action-centre-food-bank-receives-coat-donations-12903617": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "powell river action centre food bank receives coat donations 12903617",
+    "day": "61018.j"
+   },
+   "www.wowt.com/2026/10/20/election-2026-fact-check-harding-powell-spar-over-tax-claims-closing-days-nebraskas-2nd-district-race": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "election 2026 fact check harding powell spar over tax claims closing days nebraskas 2nd district race",
+    "day": "61021.j"
+   },
+   "nebraska.tv/news/local/powell-harding-make-final-push-in-nebraskas-2nd-district-ahead-of-midterms": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "powell harding make final push in nebraskas 2nd district ahead of midterms",
+    "day": "61022.j"
+   },
+   "www.wowt.com/2026/10/29/election-2026-harding-powell-campaign-with-house-members-six-days-before-midterms": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "election 2026 harding powell campaign with house members six days before midterms",
+    "day": "61029.j"
+   },
+   "www.winnipegfreepress.com/world/2026/11/03/democrat-denise-powell-wins-election-to-u-s-house-in-nebraskas-2nd-congressional-district": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "democrat denise powell wins election to u s house in nebraskas 2nd congressional district",
+    "day": "61104.j"
+   },
+   "nebraska.tv/news/local/denise-powell-wins-nebraskas-2nd-congressional-district-seat-in-historic-victory": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "denise powell wins nebraskas 2nd congressional district seat in historic victory",
+    "day": "61105.j"
+   },
+   "www.mirror.co.uk/news/politics/russell-brand-rape-lucy-powell-37860871": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "russell brand rape lucy powell 37860871",
+    "day": "61110.j"
+   },
+   "www.ibtimes.co.uk/nvidia-jensen-huang-affair-allegation-powell-1831741": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "nvidia jensen huang affair allegation powell 1831741",
+    "day": "61111.j"
+   },
+   "www.hindustantimes.com/world-news/us-news/jensen-huang-had-affair-with-nvidia-vp-kimberly-powell-who-reports-directly-to-him-report-101794435968288.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "jensen huang had affair with nvidia vp kimberly powell who reports directly to him report 101794435968288.html",
+    "day": "61112.j"
+   },
+   "www.ibtimes.co.uk/nvidia-kimberly-powell-unverified-allegations-investigation-1831743": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "nvidia kimberly powell unverified allegations investigation 1831743",
+    "day": "61112.j"
+   },
+   "www.businessinsider.com/kimberly-powell-nvidia-exec-tied-to-jensen-huang-2026-11": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "kimberly powell nvidia exec tied to jensen huang 2026 11",
+    "day": "61112.j"
+   },
+   "www.hindustantimes.com/world-news/us-news/kimberly-powell-who-ceo-jensen-huang-allegedly-had-affair-with-studied-at-northeastern-university-has-worked-at-nvidia-for-over-18-years-101794445677456.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "kimberly powell who ceo jensen huang allegedly had affair with studied at northeastern university has worked at nvidia f",
+    "day": "61112.j"
+   },
+   "www.channelnewsasia.com/business/nvidia-ceo-jensen-huang-relationship-executive-kimberly-powell-6544021": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "nvidia ceo jensen huang relationship executive kimberly powell 6544021",
+    "day": "61112.j"
+   },
+   "www.moneycontrol.com/world/who-is-kimberly-powell-nvidia-executive-linked-to-jensen-huang-in-fresh-affair-report-article-14077455.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell nvidia executive linked to jensen huang in fresh affair report article 14077455.html",
+    "day": "61112.j"
+   },
+   "www.jagranjosh.com/general-knowledge/who-is-kimberly-powell-nvidia-executive-named-in-jensen-huangs-love-affair-check-her-education-career-and-link-with-nvidia-ceo-1820013758-1": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell nvidia executive named in jensen huangs love affair check her education career and link with nvid",
+    "day": "61112.j"
+   },
+   "www.ibtimes.com.au/kimberly-powell-nvidia-jensen-huang-reports-1878448": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "kimberly powell nvidia jensen huang reports 1878448",
+    "day": "61112.j"
+   },
+   "www.newsx.com/regionals/another-affair-for-nvidia-ceo-jensen-huang-allegedly-had-extramarital-relationship-with-kimberly-powell-who-is-she-291678": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "another affair for nvidia ceo jensen huang allegedly had extramarital relationship with kimberly powell who is she 29167",
+    "day": "61112.j"
+   },
+   "www.hindustantimes.com/world-news/who-is-kimberly-powell-nvidia-scandal-what-happened-jensen-huang-kimberly-powell-linkedin-101794459479142.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell nvidia scandal what happened jensen huang kimberly powell linkedin 101794459479142.html",
+    "day": "61112.j"
+   },
+   "www.livemint.com/companies/people/who-is-kimberly-powell-what-we-know-about-the-nvidia-executive-with-whom-ceo-jensen-huang-had-an-extramarital-affair-11794449089054.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell what we know about the nvidia executive with whom ceo jensen huang had an extramarital affair 117",
+    "day": "61112.j"
+   },
+   "www.oneindia.com/international/who-is-kimberly-powell-nvidia-executive-named-in-second-jensen-huang-affair-report-8257411.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell nvidia executive named in second jensen huang affair report 8257411.html",
+    "day": "61112.j"
+   },
+   "www.ibtimes.co.uk/nvidia-board-jensen-huang-future-kimberly-powell-allegation-1831805": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "nvidia board jensen huang future kimberly powell allegation 1831805",
+    "day": "61112.j"
+   },
+   "www.ibtimes.co.uk/kimberly-powell-nvidia-healthcare-jensen-huang-1831808": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "kimberly powell nvidia healthcare jensen huang 1831808",
+    "day": "61112.j"
+   },
+   "newstodaynet.com/2026/11/12/who-is-kimberly-powell-nvidia-vp-linked-to-ceo-jensen-huang": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell nvidia vp linked to ceo jensen huang",
+    "day": "61112.j"
+   },
+   "www.asiaone.com/malaysia/kimberly-powell-nvidia-ceo-jensen-huang-second-affair": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "kimberly powell nvidia ceo jensen huang second affair",
+    "day": "61112.j"
+   },
+   "www.newsweek.com/who-is-kimberly-powell-nvidia-exec-alleged-to-have-had-affair-with-jenson-huang-12703600": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "who is kimberly powell nvidia exec alleged to have had affair with jenson huang 12703600",
+    "day": "61112.j"
+   },
+   "nypost.com/2026/11/12/business/meet-jensen-huangs-alleged-nvidia-mistress-kimberly-powell": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "meet jensen huangs alleged nvidia mistress kimberly powell",
+    "day": "61112.j"
+   },
+   "www.oneindia.com/international/after-alice-huang-and-kimberly-powell-jensen-huang-reportedly-had-third-affair-with-another-nvidia-8258409.html": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "after alice huang and kimberly powell jensen huang reportedly had third affair with another nvidia 8258409.html",
+    "day": "61113.j"
+   },
+   "katu.com/news/local/man-stabbed-portland-bike-theft-goodwill-southeast-powell-boulevard-suspect-arrested-multnomah-county-district-attorneys-office-police-bureau": {
+    "label": "off",
+    "reason": "off_place_powell",
+    "title": "man stabbed portland bike theft goodwill southeast powell boulevard suspect arrested multnomah county district attorneys",
+    "day": "61007.j"
+   },
+   "gizmodo.com/lake-powell-is-hiding-something-spectacular-and-draining-it-would-bring-it-back-2000832986": {
+    "label": "off",
+    "reason": "off_place_powell",
+    "title": "lake powell is hiding something spectacular and draining it would bring it back 2000832986",
+    "day": "61030.j"
+   },
+   "www.azfamily.com/2026/11/06/rain-boosts-lake-powell-lake-mead-heres-why-drought-concerns-remain": {
+    "label": "off",
+    "reason": "off_place_powell",
+    "title": "rain boosts lake powell lake mead heres why drought concerns remain",
+    "day": "61107.j"
+   },
+   "grist.org/drought/as-the-colorado-river-shrinks-calls-to-drain-lake-powell-grow": {
+    "label": "off",
+    "reason": "off_place_powell",
+    "title": "as the colorado river shrinks calls to drain lake powell grow",
+    "day": "61108.j"
+   },
+   "knpr.org/daily-rundown/2026-11-09/nevada-tribal-legislation-lake-powell-rebound-and-seat-belt-campaign": {
+    "label": "off",
+    "reason": "off_place_powell",
+    "title": "nevada tribal legislation lake powell rebound and seat belt campaign",
+    "day": "61109.j"
+   },
+   "www.click2houston.com/news/texas/2026/10/23/fed-up-with-data-centers-and-big-tech-rural-republican-crossover-could-decide-democrats-fate-in-texas": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "fed up with data centers and big tech rural republican crossover could decide democrats fate in texas",
+    "day": "61023.j"
+   },
+   "www.ketr.org/stories-from-texas-stations/2026-10-23/fed-up-with-data-centers-and-big-tech-rural-republican-crossover-could-decide-democrats-fate-in-texas": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "fed up with data centers and big tech rural republican crossover could decide democrats fate in texas",
+    "day": "61023.j"
+   },
+   "www.sacurrent.com/news/texas-news/fed-up-with-data-centers-and-big-tech-rural-republican-crossover-could-decide-democrats-fate-in-texas": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "fed up with data centers and big tech rural republican crossover could decide democrats fate in texas",
+    "day": "61023.j"
+   },
+   "www.krgv.com/news/fed-up-with-data-centers-and-big-tech-rural-republican-crossover-could-decide-democrats-fate-in-texas": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "fed up with data centers and big tech rural republican crossover could decide democrats fate in texas",
+    "day": "61025.j"
+   },
+   "www.westhawaiitoday.com/2026/11/08/top-news/fed-up-with-politics-and-struggle-young-voters-rose-up": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "fed up with politics and struggle young voters rose up",
+    "day": "61108.j"
+   },
+   "www.samaa.tv/2087359928-araghchi-says-americans-middle-east-fed-up-with-israel-s-forever-wars": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "2087359928 araghchi says americans middle east fed up with israel s forever wars",
+    "day": "61109.j"
+   },
+   "www.wfae.org/health/2026-11-13/fed-up-with-the-healthcare-industry-this-red-state-capped-insulin-prices-for-patients": {
+    "label": "off",
+    "reason": "off_fed_up",
+    "title": "fed up with the healthcare industry this red state capped insulin prices for patients",
+    "day": "61113.j"
+   },
+   "foxbaltimore.com/news/local/baltimore-city-council-president-cohen-bge-156-million-rate-hike-request": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "baltimore city council president cohen bge 156 million rate hike request",
+    "day": "61004.j"
+   },
+   "www.sunjournal.com/2026/10/06/maine-regulators-deny-cmps-7-rate-hike-as-utility-weighs-potential-layoffs": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "maine regulators deny cmps 7 rate hike as utility weighs potential layoffs",
+    "day": "61006.j"
+   },
+   "www.bangordailynews.com/2026/10/07/business/business-energy/central-maine-power-temporary-rate-hike-denied": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "central maine power temporary rate hike denied",
+    "day": "61007.j"
+   },
+   "www.tnonline.com/20261007/ppl-demand-causing-rate-hike": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "ppl demand causing rate hike",
+    "day": "61008.j"
+   },
+   "www.clickondetroit.com/news/local/2026/10/16/state-regulators-approve-nearly-dollar140m-rate-hike-for-consumers-energy-natural-gas-customers": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "state regulators approve nearly dollar140m rate hike for consumers energy natural gas customers",
+    "day": "61016.j"
+   },
+   "www.fox17online.com/news/local-news/michigan-ag-criticizes-consumers-energys-new-natural-gas-rate-hike-case-days-after-mpsc-approval": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "michigan ag criticizes consumers energys new natural gas rate hike case days after mpsc approval",
+    "day": "61020.j"
+   },
+   "www.wnem.com/2026/10/20/consumers-energy-plans-seek-another-rate-hike": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "consumers energy plans seek another rate hike",
+    "day": "61020.j"
+   },
+   "myfox28columbus.com/news/local/columbus-data-centers-could-pay-more-under-proposed-rate-hike-for-high-usage-customers": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "columbus data centers could pay more under proposed rate hike for high usage customers",
+    "day": "61027.j"
+   },
+   "foxbaltimore.com/news/local/baltimore-city-council-president-psc-bge-rate-hike": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "baltimore city council president psc bge rate hike",
+    "day": "61027.j"
+   },
+   "www.wisbusiness.com/2026/mon-am-news-dem-legislative-leaders-plan-new-guardrails-on-data-centers-psc-signs-off-on-smaller-we-energies-rate-hike-than-requested": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "mon am news dem legislative leaders plan new guardrails on data centers psc signs off on smaller we energies rate hike t",
+    "day": "61109.j"
+   },
+   "nypost.com/2026/11/10/us-news/san-diego-utility-customers-erupt-over-proposed-270-a-year-rate-hike": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "san diego utility customers erupt over proposed 270 a year rate hike",
+    "day": "61111.j"
+   },
+   "www.westernmassnews.com/2026/11/11/steep-utility-rate-hike-conn-prompts-fears-another-mass": {
+    "label": "off",
+    "reason": "off_utility_rate_hike",
+    "title": "steep utility rate hike conn prompts fears another mass",
+    "day": "61112.j"
+   },
+   "gothamist.com/news/ny-officials-worry-migrants-will-skip-healthcare-amid-fed-policy-change": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "ny officials worry migrants will skip healthcare amid fed policy change",
+    "day": "61006.j"
+   },
+   "www.investmentwatchblog.com/florida-identifies-177000-medicaid-enrollees-who-could-lose-coverage-while-california-faces-another-148000-under-new-federal-rules": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "florida identifies 177000 medicaid enrollees who could lose coverage while california faces another 148000 under new fed",
+    "day": "61008.j"
+   },
+   "www.theepochtimes.com/business/refinery-outages-pushing-up-gas-prices-more-than-cost-of-crude-oil-fed-says-6101589": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "refinery outages pushing up gas prices more than cost of crude oil fed says 6101589",
+    "day": "61009.j"
+   },
+   "www.samoanews.com/local-news/house-tables-senate-passed-concurrent-resolution-fed-review-questioned-156-million": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "house tables senate passed concurrent resolution fed review questioned 156 million",
+    "day": "61014.j"
+   },
+   "talkingpointsmemo.com/where-things-stand/wisconsin-election-officials-forced-to-issue-guidance-about-how-to-deal-with-fed-agents-at-polls": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "wisconsin election officials forced to issue guidance about how to deal with fed agents at polls",
+    "day": "61015.j"
+   },
+   "mynewsla.com/government/2026/10/20/amid-fed-crackdown-on-alleged-illegal-votes-laco-leaders-urge-early-balloting": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "amid fed crackdown on alleged illegal votes laco leaders urge early balloting",
+    "day": "61020.j"
+   },
+   "www.ksl.com/article/51640411/judge-blocks-fed-effort-to-obtain-utah-voter-rolls": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "judge blocks fed effort to obtain utah voter rolls",
+    "day": "61024.j"
+   },
+   "www.pasadenastarnews.com/2026/10/26/fed-court-california-questions-doj-mail-in-ballots": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "fed court california questions doj mail in ballots",
+    "day": "61027.j"
+   },
+   "fox23maine.com/newsletter-daily/6-people-accused-of-conducting-years-long-healthcare-fraud-scheme-in-south-portland-maine-community-home-health-care-fedearl-government-medicaid-fraud": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "6 people accused of conducting years long healthcare fraud scheme in south portland maine community home health care fed",
+    "day": "61027.j"
+   },
+   "www.ocregister.com/2026/10/28/oc-says-it-cannot-comply-with-justice-departments-request-to-verify-citizenship-of-potential-voters-citing-state-and-federal-law": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "oc says it cannot comply with justice departments request to verify citizenship of potential voters citing state and fed",
+    "day": "61029.j"
+   },
+   "www.click2houston.com/news/local/2026/10/30/houston-prosecutors-charge-5-noncitizens-with-voting-in-fed-election": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "houston prosecutors charge 5 noncitizens with voting in fed election",
+    "day": "61030.j"
+   },
+   "foxsanantonio.com/news/nation-world/trump-administration-asks-supreme-court-to-set-aside-20000-disputed-ballots-in-california-noncitizens-illegal-voters-federal-appeals-court-midterms-election": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "trump administration asks supreme court to set aside 20000 disputed ballots in california noncitizens illegal voters fed",
+    "day": "61102.j"
+   },
+   "pjmedia.com/catherinesalgado/2026/11/05/blue-switch-fed-report-shows-millions-of-newer-texas-voters-registered-without-id-n4959057": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "blue switch fed report shows millions of newer texas voters registered without id n4959057",
+    "day": "61106.j"
+   },
+   "103weup.com/2026/11/06/lil-durks-attorneys-blast-fed-prosecutors-hypocrisy": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "lil durks attorneys blast fed prosecutors hypocrisy",
+    "day": "61106.j"
+   },
+   "myk104.com/6801/lil-durks-attorneys-bast-fed-prosecutors-hypocrisy": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "lil durks attorneys bast fed prosecutors hypocrisy",
+    "day": "61107.j"
+   },
+   "blackamericaweb.com/2026/11/06/lil-durks-attorneys-bast-fed-prosecutors-hypocrisy": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "lil durks attorneys bast fed prosecutors hypocrisy",
+    "day": "61108.j"
+   },
+   "english.pravda.ru/news/world/172690-fed-aid-accreditation-intellectual-diversity-rule": {
+    "label": "off",
+    "reason": "off_fed_govt_shorthand",
+    "title": "172690 fed aid accreditation intellectual diversity rule",
+    "day": "61113.j"
+   },
+   "www.yahoo.com/news/politics/articles/fed-trump-maine-mulls-sticking-012103563.html": {
+    "label": "off",
+    "reason": "off_garbled",
+    "title": "fed trump maine mulls sticking 012103563.html",
+    "day": "61021.j"
+   },
+   "nypost.com/2026/10/13/business/pharma-bro-martin-shkreli-broke-lifetime-ban-on-drug-industry-trades-fed-say": {
+    "label": "off",
+    "reason": "off_other",
+    "title": "pharma bro martin shkreli broke lifetime ban on drug industry trades fed say",
+    "day": "61013.j"
+   },
+   "www.cvilletomorrow.org/through-a-historic-drought-virginia-cattle-farmers-fight-to-keep-herds-fed-and-farms-alive": {
+    "label": "off",
+    "reason": "off_other",
+    "title": "through a historic drought virginia cattle farmers fight to keep herds fed and farms alive",
+    "day": "61030.j"
+   },
+   "www.opednews.com/populum/page.php?f=naacp-pine-bluff-branch-as-banking-violations_exploitation_feder": {
+    "label": "on",
+    "reason": "on",
+    "title": "NAACP Pine Bluff branch as banking violations exploitation Federal Reserve HBCU",
+    "day": "late-append"
+   },
+   "econotimes.com/federal-reserve-ends-three-enforcement-actions-tied-to-closed-kansas-bank-1755707": {
+    "label": "on",
+    "reason": "on",
+    "title": "Federal Reserve Ends Three Enforcement Actions Tied to Closed Kansas Bank",
+    "day": "late-append"
+   },
+   "econotimes.com/meta-s-joel-kaplan-plans-2027-exit-as-powell-mccormick-adds-external-affairs-1758422": {
+    "label": "off",
+    "reason": "off_person_powell",
+    "title": "Meta's Joel Kaplan Plans 2027 Exit as Powell McCormick Adds External Affairs",
+    "day": "late-append"
+   }
+  },
+  "KXCPI": {
+   "investinglive.com/news/investinglive-european-news-wrap-markets-await-fresh-us-iran-developments-us-cpi-data": {
+    "label": "on",
+    "reason": "on",
+    "title": "investinglive european news wrap markets await fresh us iran developments us cpi data",
+    "day": "61109.j"
+   },
+   "newrepublic.com/post/216248/dr-oz-inflation-fact-check-fox-news-butter": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "dr oz inflation fact check fox news butter",
+    "day": "61006.j"
+   },
+   "www.kcur.org/politics-elections-and-government/2026-10-14/midwest-affordability-inflation-spending-midterm-elections": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "midwest affordability inflation spending midterm elections",
+    "day": "61014.j"
+   },
+   "www.dailymail.com/yourmoney/article-16211887/inflation-halloween-spending-cutbacks.html": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "inflation halloween spending cutbacks.html",
+    "day": "61019.j"
+   },
+   "www.iowapublicradio.org/2026-10-14/midwest-affordability-inflation-spending-midterm-elections": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "midwest affordability inflation spending midterm elections",
+    "day": "61019.j"
+   },
+   "www.nhpr.org/business/2026-10-19/young-housing-nh-newhampshire-manchester-economy-inflation": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "young housing nh newhampshire manchester economy inflation",
+    "day": "61019.j"
+   },
+   "www.cbc.ca/news/world/us-midterms-foreign-policy-inflation-9.7400163": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "us midterms foreign policy inflation 9.7400163",
+    "day": "61030.j"
+   },
+   "www.alternet.org/trump-economy-tariffs-inflation": {
+    "label": "on_lenient",
+    "reason": "on_lenient",
+    "title": "trump economy tariffs inflation",
+    "day": "61030.j"
+   },
+   "www.hindustantimes.com/india-news/keralam-cm-slams-alleged-communal-remarks-by-cpi-m-leader-against-malappuram-101791100507252.html": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "keralam cm slams alleged communal remarks by cpi m leader against malappuram 101791100507252.html",
+    "day": "61004.j"
+   },
+   "www.freepressjournal.in/mumbai/cpi-stages-protest-outside-bncmc-over-water-crisis-poor-roads-drainage-and-streetlights": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi stages protest outside bncmc over water crisis poor roads drainage and streetlights",
+    "day": "61006.j"
+   },
+   "aninews.in/news/national/politics/turning-delhi-into-cantonment-will-not-deter-us-cpi-mp-sandosh-kumar-writes-letter-to-pm-modi-demands-access-to-jantar-mantar20261009170427": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "turning delhi into cantonment will not deter us cpi mp sandosh kumar writes letter to pm modi demands access to jantar m",
+    "day": "61009.j"
+   },
+   "www.indiagazette.com/news/279361793/turning-delhi-into-cantonment-will-not-deter-us-cpi-mp-sandosh-kumar-writes-letter-to-pm-modi-demands-access-to-jantar-mantar": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "turning delhi into cantonment will not deter us cpi mp sandosh kumar writes letter to pm modi demands access to jantar m",
+    "day": "61009.j"
+   },
+   "www.mangalorean.com/fake-signature-row-turns-into-battle-between-bjp-cpi-m-in-thiruvananthapuram-corporation": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "fake signature row turns into battle between bjp cpi m in thiruvananthapuram corporation",
+    "day": "61009.j"
+   },
+   "www.hindustantimes.com/india-news/tmc-worker-held-cpi-m-leader-cannot-blame-hindus-for-vandalism-says-cm-adhikari-101791561692790.html": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "tmc worker held cpi m leader cannot blame hindus for vandalism says cm adhikari 101791561692790.html",
+    "day": "61009.j"
+   },
+   "www.bignewsnetwork.com/news/279363317/govt-should-not-act-like-cowards-should-face-dissenting-voice-cpi-mp-sandosh-kumar": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "govt should not act like cowards should face dissenting voice cpi mp sandosh kumar",
+    "day": "61010.j"
+   },
+   "www.asiabulletin.com/news/279363317/govt-should-not-act-like-cowards-should-face-dissenting-voice-cpi-mp-sandosh-kumar": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "govt should not act like cowards should face dissenting voice cpi mp sandosh kumar",
+    "day": "61010.j"
+   },
+   "www.orissapost.com/cpi-mp-writes-to-union-home-minister-over-detention-harassment-of-journalists-in-delhi": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi mp writes to union home minister over detention harassment of journalists in delhi",
+    "day": "61012.j"
+   },
+   "www.deccanchronicle.com/nation/cpi-mp-writes-to-home-minister-over-detention-harassment-of-delhi-journalists-1995160": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi mp writes to home minister over detention harassment of delhi journalists 1995160",
+    "day": "61012.j"
+   },
+   "aninews.in/news/national/politics/govt-attempting-to-conceal-police-excesses-cpi-mp-writes-to-amit-shah-over-alleged-harassment-detention-of-journalists-during-delhi-protests20261012171826": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "govt attempting to conceal police excesses cpi mp writes to amit shah over alleged harassment detention of journalists d",
+    "day": "61012.j"
+   },
+   "aninews.in/news/national/general-news/8216police-action-will-intensify-campaign-against-gyanesh-kumar8217-cpi-mp-p-sandosh-criticise-cjp-activists8217-remand20261014120304": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "8216police action will intensify campaign against gyanesh kumar8217 cpi mp p sandosh criticise cjp activists8217 remand2",
+    "day": "61014.j"
+   },
+   "www.deccanchronicle.com/southern-states/tamil-nadu/tvk-congress-cpi-vmk-india-bloc-begin-protest-demanding-cec-gyanesh-kumar-resignation-1996011": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "tvk congress cpi vmk india bloc begin protest demanding cec gyanesh kumar resignation 1996011",
+    "day": "61015.j"
+   },
+   "newstodaynet.com/2026/10/17/amend-laws-to-extend-reservation-to-all-converts-urges-cpi": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "amend laws to extend reservation to all converts urges cpi",
+    "day": "61017.j"
+   },
+   "scroll.in/latest/1096482/west-bengal-left-parties-force-bulldozer-to-retreat-from-cpi-m-stall-in-jadavpur": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "west bengal left parties force bulldozer to retreat from cpi m stall in jadavpur",
+    "day": "61018.j"
+   },
+   "aninews.in/news/national/politics/cpi-leader-ramakrishna-alleges-attacks-on-opposition-candidates-irregularities-in-nomination-process-in-andhra16020261022145851": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi leader ramakrishna alleges attacks on opposition candidates irregularities in nomination process in andhra1602026102",
+    "day": "61022.j"
+   },
+   "aninews.in/news/national/politics/tamil-nadu-cpi-launches-signature-campaign-against-new-secretariat-at-pattinapakkam20261025135437": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "tamil nadu cpi launches signature campaign against new secretariat at pattinapakkam20261025135437",
+    "day": "61025.j"
+   },
+   "www.orissapost.com/cpi-odisha-calls-for-intensified-change-is-necessary-campaign": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi odisha calls for intensified change is necessary campaign",
+    "day": "61026.j"
+   },
+   "theindianawaaz.com/cpi-forms-human-chain-demanding-cecs-resignation-sir-rollback": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi forms human chain demanding cecs resignation sir rollback",
+    "day": "61027.j"
+   },
+   "www.calcuttanews.net/news/279406367/gyanesh-kumar-will-have-to-go-cpi-mp-sandosh-kumar-hits-out-ahead-of-india-bloc-rally-bjp-calls-it-rahul-relaunch-attempt-101": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "gyanesh kumar will have to go cpi mp sandosh kumar hits out ahead of india bloc rally bjp calls it rahul relaunch attemp",
+    "day": "61101.j"
+   },
+   "www.indiagazette.com/news/279406415/cpi-m-mp-amra-ram-calls-alleged-voter-deletions-brutal-murder-of-democracy-at-india-bloc-rally": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi m mp amra ram calls alleged voter deletions brutal murder of democracy at india bloc rally",
+    "day": "61101.j"
+   },
+   "www.indiagazette.com/news/279406294/ec-acting-as-extended-arm-of-regime-cpi-binoy-viswam-targets-poll-body-as-india-bloc-passes-resolution-against-cec": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "ec acting as extended arm of regime cpi binoy viswam targets poll body as india bloc passes resolution against cec",
+    "day": "61101.j"
+   },
+   "aninews.in/news/national/politics/trying-to-divert-attention-cpi-mp-hits-out-at-bjp-over-foreign-funding-claims-backs-rahul-gandhis-debate-challenge20261104114440": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "trying to divert attention cpi mp hits out at bjp over foreign funding claims backs rahul gandhis debate challenge202611",
+    "day": "61104.j"
+   },
+   "www.hindustantimes.com/india-news/buying-power-from-private-company-will-cause-huge-loss-to-keralam-cpi-m-leader-p-rajeev-101793856535816.html": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "buying power from private company will cause huge loss to keralam cpi m leader p rajeev 101793856535816.html",
+    "day": "61105.j"
+   },
+   "organiser.org/2026/11/05/424236/bharat/chhattisgarh/chhattisgarh-special-court-sentences-three-cpi-maoist-members-to-10-years-of-rigorous-imprisonment-in-uapa-case": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "chhattisgarh special court sentences three cpi maoist members to 10 years of rigorous imprisonment in uapa case",
+    "day": "61105.j"
+   },
+   "www.moneycontrol.com/news/business/bjp-wins-77-seats-in-tripura-before-voting-even-begins-cpi-m-alleges-intimidation-14076981.html": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "bjp wins 77 seats in tripura before voting even begins cpi m alleges intimidation 14076981.html",
+    "day": "61111.j"
+   },
+   "www.calcuttanews.net/news/279426345/cpi-d-raja-re-demand-for-gyanesh-kumar-resignation-targets-bjp-over-sonia-gandhi-memoir-popularity": {
+    "label": "off",
+    "reason": "off_party_cpim",
+    "title": "cpi d raja re demand for gyanesh kumar resignation targets bjp over sonia gandhi memoir popularity",
+    "day": "61111.j"
+   },
+   "www.prnewswire.com/news-releases/cpi-receives-significant-contract-to-support-intelligence-surveillance-and-reconnaissance-program-for-us-government-302905363.html": {
+    "label": "off",
+    "reason": "off_company_cpi",
+    "title": "cpi receives significant contract to support intelligence surveillance and reconnaissance program for us government 3029",
+    "day": "61013.j"
+   },
+   "www.finanznachrichten.de/nachrichten-2026-10/69885880-eqs-news-cpi-property-group-cpi-property-group-kingstown-litigation-dismissed-023.htm": {
+    "label": "off",
+    "reason": "off_company_cpi",
+    "title": "69885880 eqs news cpi property group cpi property group kingstown litigation dismissed 023.htm",
+    "day": "61020.j"
+   },
+   "itbusinessnet.com/2026/11/best-ai-training-company-in-the-usa-palorens-us-ai-training-price-index-compares-corporate-ai-training-chatgpt-claude-and-copilot-course-costs": {
+    "label": "off",
+    "reason": "off_company_cpi",
+    "title": "best ai training company in the usa palorens us ai training price index compares corporate ai training chatgpt claude an",
+    "day": "61113.j"
+   },
+   "www.potatopro.com/news/2026/fao-food-price-index-edges-september-higher-sugar-cereal-and-vegetable-oil-prices": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "fao food price index edges september higher sugar cereal and vegetable oil prices",
+    "day": "61003.j"
+   },
+   "www.geo.tv/latest/686235-saudi-attacks-stronger-dollar-shape-oil-market-as-inflation-worries-mount": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "686235 saudi attacks stronger dollar shape oil market as inflation worries mount",
+    "day": "61013.j"
+   },
+   "www.theguardian.com/australia-news/live/2026/oct/28/inflation-abs-labor-anthony-albanese-parliament-greens-david-shoebridge-one-nation-ntwnfb": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "inflation abs labor anthony albanese parliament greens david shoebridge one nation ntwnfb",
+    "day": "61027.j"
+   },
+   "www.independent.co.uk/news/uk/home-news/yorkshire-tea-price-rise-inflation-uk-supermarkets-b3080774.html": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "yorkshire tea price rise inflation uk supermarkets b3080774.html",
+    "day": "61107.j"
+   },
+   "www.independent.co.uk/news/uk/home-news/yorkshire-tea-price-rise-bags-inflation-uk-supermarkets-b3081591.html": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "yorkshire tea price rise bags inflation uk supermarkets b3081591.html",
+    "day": "61109.j"
+   },
+   "www.worldpropertyjournal.com/real-estate-news/united-states/los-angeles-real-estate-news/cotality-august-2026-home-price-index-selma-hepp-rising-mortgage-rates-home-buyer-data-august-2026-14861.php": {
+    "label": "off",
+    "reason": "off_price_index_not_cpi",
+    "title": "cotality august 2026 home price index selma hepp rising mortgage rates home buyer data august 2026 14861.php",
+    "day": "61007.j"
+   },
+   "econotimes.com/france-protests-draw-disputed-turnout-estimates-energy-prices-rose-21-3-year-over-yea": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "France Protests Draw Disputed Turnout Estimates, Energy Prices Rose 21.3% Year Over Year",
+    "day": "late-append"
+   },
+   "econotimes.com/bank-of-japan-uses-services-price-index-to-track-market-conditions-1764104": {
+    "label": "off",
+    "reason": "off_foreign_inflation",
+    "title": "Bank of Japan Uses Services Price Index to Track Market Conditions",
+    "day": "late-append"
+   }
+  }
+ }
+}

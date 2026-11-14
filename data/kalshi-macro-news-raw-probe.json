@@ -1,0 +1,49 @@
+{
+ "measured_at": "2026-11-14T15:11:33.668358+00:00",
+ "day": "20261113",
+ "basis": "published 15-minute .export.CSV.zip exports for one UTC day; level = one article (canonical SOURCE URL) for story counts, one event row for rows; this is the UNFILTERED stream, unlike data/gdelt-bulk which is topic-filtered at collection",
+ "stamps_requested": 96,
+ "stamps_fetched": 96,
+ "events": 111095,
+ "distinct_articles": 21792,
+ "us_events": 34687,
+ "us_event_share": 0.3122,
+ "families": {
+  "KXCPI": {
+   "rows": 0,
+   "articles": 0,
+   "us_articles": 0,
+   "days_to_50_us_articles": null
+  },
+  "KXFED": {
+   "rows": 63,
+   "articles": 11,
+   "us_articles": 7,
+   "days_to_50_us_articles": 7.1
+  },
+  "KXU3": {
+   "rows": 18,
+   "articles": 7,
+   "us_articles": 2,
+   "days_to_50_us_articles": 25.0
+  },
+  "KXGDP": {
+   "rows": 5,
+   "articles": 3,
+   "us_articles": 1,
+   "days_to_50_us_articles": 50.0
+  },
+  "KXRECSSNBER": {
+   "rows": 0,
+   "articles": 0,
+   "us_articles": 0,
+   "days_to_50_us_articles": null
+  },
+  "KXPAYROLLS": {
+   "rows": 33,
+   "articles": 5,
+   "us_articles": 4,
+   "days_to_50_us_articles": 12.5
+  }
+ }
+}
