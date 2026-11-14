@@ -163,7 +163,8 @@ def resolve_profile(args) -> tuple[dict, str]:
 def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float,
           corner_r: float, insert_key: str, wall: float, chamfer: float,
           relief: bool, grid: tuple[int, int] | None = None,
-          bed: tuple[float, float] | None = None) -> tuple[trimesh.Trimesh, dict]:
+          bed: tuple[float, float] | None = None,
+          rim_w: float = 6.0, rim_h: float = 3.0) -> tuple[trimesh.Trimesh, dict]:
     ins = INSERT_PRESETS[insert_key]
     boss_r = ins["od"] / 2.0 + wall
 
@@ -203,6 +204,27 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
 
     body = trimesh.boolean.difference([plate] + cutters, engine="manifold")
 
+    # ---- perimeter rim on the MONITOR face (z < 0)
+    # A flat 15 mm slab bears on the monitor only where it is flat, and a 333 g ASA plate that warps by
+    # a millimetre rocks on the VESA screws instead of spreading the clamp load. A continuous raised
+    # ring turns that point load into a perimeter bearing surface and stiffens the plate against
+    # flexing. It goes on the monitor face because the insert bores open on the ARM face and stop
+    # ~1.8 mm above z=0, so nothing intersects.
+    if rim_w > 0 and rim_h > 0:
+        overlap = 0.5                                  # overlap into the plate so the union is one solid
+        outer = trimesh.creation.extrude_polygon(
+            ShapelyPolygon(rrect(pw, ph, corner_r)), height=rim_h + overlap
+        ).apply_translation((0, 0, -rim_h))
+        inner_w, inner_h = pw - 2 * rim_w, ph - 2 * rim_w
+        if inner_w <= 2 or inner_h <= 2:
+            raise SystemExit(f"rim_w {rim_w} leaves no window in a {pw:.0f}x{ph:.0f} mm plate")
+        inner = trimesh.creation.extrude_polygon(
+            ShapelyPolygon(rrect(inner_w, inner_h, max(1.0, corner_r - rim_w / 2.0))),
+            height=rim_h + 2.5
+        ).apply_translation((0, 0, -rim_h - 1.0))
+        frame = trimesh.boolean.difference([outer, inner], engine="manifold")
+        body = trimesh.boolean.union([body, frame], engine="manifold")
+
     if relief:
         # weight relief: pocket the MONITOR face between the VESA pattern and the insert ring,
         # leaving a rim, four VESA pads and the bosses intact.
@@ -227,6 +249,8 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
         plate_mm=[round(pw, 2), round(ph, 2), round(plate_t, 2)],
         inserts=inserts, insert_preset=insert_key, insert_od=ins["od"], insert_len=ins["length"],
         pilot_d=ins["pilot"], boss_d=round(2 * boss_r, 2),
+        rim_w_mm=round(rim_w, 2), rim_h_mm=round(rim_h, 2),
+        total_height_mm=round(plate_t + (rim_h if rim_w > 0 and rim_h > 0 else 0.0), 2),
         vesa_screw_d=prof["screw_d"], vesa_screws=prof["screws"],
         volume_cm3=round(vol_cm3, 2), mass_asa_g=round(vol_cm3 * 1.07, 1),
         watertight=bool(body.is_watertight), bodies=int(body.body_count),
@@ -319,6 +343,10 @@ def main() -> int:
     ap.add_argument("--wall", type=float, default=3.0)
     ap.add_argument("--chamfer", type=float, default=0.6)
     ap.add_argument("--relief", action="store_true", help="pocket the monitor face to save material")
+    ap.add_argument("--rim-w", type=float, default=6.0,
+                    help="width of the raised perimeter rim on the monitor face, mm (0 disables)")
+    ap.add_argument("--rim-h", type=float, default=3.0,
+                    help="height of that rim, mm -- it is the standoff that spreads clamp load")
     ap.add_argument("--bed", default="350x350",
                     help="build volume as WxD; plates larger than this are refused (default 350x350)")
     ap.add_argument("--no-bed-check", action="store_true")
@@ -381,7 +409,8 @@ def main() -> int:
                 body, meta = build(prof, label, n, plate_t=args.plate_t, margin=args.margin,
                                    corner_r=args.corner_r, insert_key=args.insert_preset,
                                    wall=args.wall, chamfer=args.chamfer, relief=args.relief,
-                                   grid=grid, bed=bed)
+                                   grid=grid, bed=bed,
+                                   rim_w=args.rim_w, rim_h=args.rim_h)
             except TooBig as e:
                 skipped.append(f"{label} x{n}: {e}")
                 print(f"  SKIP {label:11s} x{n}  -- {e}")
@@ -393,7 +422,8 @@ def main() -> int:
             manifest.append(meta)
             made += 1
             print(f"  {name:34s} plate {meta['plate_mm'][0]:.0f}x{meta['plate_mm'][1]:.0f}x"
-                  f"{meta['plate_mm'][2]:.0f} mm | {meta['volume_cm3']:6.1f} cm3 | "
+                  f"{meta['plate_mm'][2]:.0f} mm | rim {meta['rim_w_mm']:.0f}x{meta['rim_h_mm']:.0f}"
+                  f" | {meta['volume_cm3']:6.1f} cm3 | "
                   f"{meta['mass_asa_g']:5.1f} g ASA | wall {meta['min_insert_to_vesa_wall_mm']:4.1f} mm | "
                   f"{'WATERTIGHT' if meta['watertight'] else 'LEAKY'}")
 

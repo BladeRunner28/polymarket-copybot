@@ -257,6 +257,19 @@ def main():
         render([(p, PLATE)], f"{OUT}/plate-200x200-8-iso.png", w=1400, h=1050, azim=36, elev=30)
         print("hero: iso")
 
+    if which in ("rim", "all"):
+        p = load("cad/spoosa/spoosa_200x200_8x1q4-20.stl")
+        # camera always sits above (+z), so flip the part to look at the MONITOR face where the rim is
+        flip = p.copy()
+        flip.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [1, 0, 0]))
+        render([(flip, PLATE)], f"{OUT}/plate-monitor-face-rim.png", w=1400, h=1050,
+               azim=30, elev=64)
+        # corner detail: one insert bore, its depth, and the rim edge together
+        box = trimesh.creation.box(extents=[54, 54, 26]).apply_translation([119.6, 119.6, 9.0])
+        detail = p.intersection(box, engine="manifold")
+        render([(detail, PLATE)], f"{OUT}/bore-detail.png", w=1200, h=900, azim=42, elev=34)
+        print("rim: monitor face + bore detail")
+
     if which in ("family", "all"):
         family([
             ("cad/spoosa/spoosa_75x75_8x1q4-20.stl", PLATE),

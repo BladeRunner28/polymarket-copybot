@@ -41,7 +41,8 @@ DEFAULT_INSERT = _gen.DEFAULT_INSERT
 
 
 def build(profile: str, inserts: int, plate_t: float, margin: float, corner_r: float,
-          insert_key: str, wall: float, relief: bool):
+          insert_key: str, wall: float, relief: bool,
+          rim_w: float = 6.0, rim_h: float = 3.0):
     prof = VESA_PROFILES[profile]
     ins = INSERT_PRESETS[insert_key]
     boss_r = ins["od"] / 2.0 + wall
@@ -91,9 +92,24 @@ def build(profile: str, inserts: int, plate_t: float, margin: float, corner_r: f
         if pock_w > 10 and pock_h > 10 and d > 0.5:
             body = (body.faces("<Z").workplane(origin=(0, 0, 0))
                     .rect(pock_w, pock_h).cutBlind(-d))
+
+    # Perimeter rim on the MONITOR face, matching spoosa-generator.py. This has to be built here too:
+    # without it the STEP and the STL describe two different parts, which --verify reports as
+    # "STALE ... volume STEP 106.2 vs STL 115.8 cm3" -- exactly the defect it exists to catch.
+    if rim_w > 0 and rim_h > 0:
+        overlap = 0.5
+        outer = cq.Workplane("XY").rect(pw, ph).extrude(rim_h + overlap)
+        outer = outer.edges("|Z").fillet(min(corner_r, min(pw, ph) / 2.0 - 0.5))
+        inner_w, inner_h = pw - 2 * rim_w, ph - 2 * rim_w
+        window = cq.Workplane("XY").rect(inner_w, inner_h).extrude(rim_h + 2.5)
+        window = window.edges("|Z").fillet(max(1.0, corner_r - rim_w / 2.0))
+        frame = outer.cut(window.translate((0, 0, -1.0))).translate((0, 0, -rim_h))
+        body = body.union(frame)
+
     return body, dict(plate_w=round(pw, 2), plate_h=round(ph, 2), plate_t=plate_t,
                       boss_d=round(2 * boss_r, 2),
-                      insert_pilot=ins["pilot"], insert_len=ins["length"])
+                      insert_pilot=ins["pilot"], insert_len=ins["length"],
+                      rim_w=rim_w, rim_h=rim_h)
 
 
 def verify() -> int:
@@ -123,6 +139,10 @@ def verify() -> int:
             reasons.append(f"thickness STEP {entry.get('plate_t')} vs STL {part['plate_mm'][2]}")
         if entry.get("insert_preset") != part.get("insert_preset"):
             reasons.append(f"preset STEP {entry.get('insert_preset')} vs STL {part.get('insert_preset')}")
+        for key, mk in (("rim_w", "rim_w_mm"), ("rim_h", "rim_h_mm")):
+            if key in entry and mk in part:
+                if abs(float(entry[key]) - float(part[mk])) > 0.01:
+                    reasons.append(f"{key} STEP {entry[key]} vs STL {part[mk]}")
         v_step, v_stl = float(entry.get("volume_cm3", 0)), float(part["volume_cm3"])
         if v_stl > 0 and abs(v_step - v_stl) / v_stl > 0.01:
             reasons.append(f"volume STEP {v_step:.1f} vs STL {v_stl:.1f} cm3")
@@ -151,6 +171,10 @@ def main() -> int:
     ap.add_argument("--insert-preset", default=DEFAULT_INSERT, choices=list(INSERT_PRESETS))
     ap.add_argument("--wall", type=float, default=3.0)
     ap.add_argument("--no-relief", action="store_true")
+    ap.add_argument("--rim-w", type=float, default=6.0,
+                    help="must match spoosa-generator.py: the raised perimeter rim width, mm")
+    ap.add_argument("--rim-h", type=float, default=3.0,
+                    help="must match spoosa-generator.py: the rim height, mm")
     ap.add_argument("--verify", action="store_true",
                     help="do not build: compare every STEP's recorded parameters against the STL "
                          "manifest and report any pair that describes a different part")
@@ -161,7 +185,8 @@ def main() -> int:
 
     os.makedirs(OUT_DIR, exist_ok=True)
     body, meta = build(args.profile, args.inserts, args.plate_t, args.margin, args.corner_r,
-                       args.insert_preset, args.wall, not args.no_relief)
+                       args.insert_preset, args.wall, not args.no_relief,
+                       rim_w=args.rim_w, rim_h=args.rim_h)
 
     base = f"spoosa_{args.profile}_{args.inserts}x1q4-20"
     step_path = os.path.join(OUT_DIR, base + ".step")
@@ -185,7 +210,8 @@ def main() -> int:
     index[base + ".step"] = {
         "plate_t": args.plate_t, "insert_preset": args.insert_preset,
         "margin": args.margin, "corner_r": args.corner_r, "wall": args.wall,
-        "relief": not args.no_relief, "volume_cm3": round(vol_cm3, 2),
+        "relief": not args.no_relief, "rim_w": args.rim_w, "rim_h": args.rim_h,
+        "volume_cm3": round(vol_cm3, 2),
     }
     with open(index_path, "w") as fh:
         json.dump(index, fh, indent=2, sort_keys=True)
