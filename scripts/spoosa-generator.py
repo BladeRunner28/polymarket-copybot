@@ -190,6 +190,8 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
                    rim_w: float = 6.0, rim_h: float = 3.0,
                    boss_w: float = 36.0, boss_h: float = 28.0, boss_hgt: float = 4.0,
                    inserts: int = 1, lug: float = 18.0, lug_out: float = 5.0, lug_ch: float = 0.0,
+                   side_inserts: int = 4, side_pad: float = 4.0, side_pad_len: float = 26.0,
+                   side_pad_deep: float = 18.0,
                    side_d: float = 4.4, side_depth: float = 12.0,
                    pocket_r: float = 9.0, pocket_depth: float = 1.5,
                    groove_w: float = 0.0, groove_d: float = 0.0,
@@ -266,18 +268,75 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
                                                  sections=48)
                        .apply_translation((x, y, plate_t - pocket_depth / 2.0 + 0.5)))
 
-    # ---- side bores in the corner lugs, axis in the plate plane, drilled from the OUTER face
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            cx, cy = sx * (w / 2.0 - lug / 2.0 + lug_out), sy * (h / 2.0 - lug / 2.0 + lug_out)
-            start = cx + sx * (lug / 2.0 + 1.0)
-            bore = trimesh.creation.cylinder(radius=side_d / 2.0, height=side_depth + 2, sections=48)
-            bore.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
-            cutters.append(bore.apply_translation((start - sx * (side_depth + 2) / 2.0,
-                                                   cy, plate_t / 2.0)))
-            cb = trimesh.creation.cylinder(radius=side_d / 2.0 + 1.5, height=4.0, sections=48)
-            cb.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
-            cutters.append(cb.apply_translation((cx + sx * (lug / 2.0 - 1.0), cy, plate_t / 2.0)))
+    # ---- 1/4"-20 INSERT POCKETS, ONE PER SIDE, AT THE MIDPOINT OF EACH EDGE
+    # The owner's correction: these belong in the centre of each side, not in the corners. They are
+    # edge-facing (axis in the plate plane) so an arm or accessory bolts on radially.
+    #
+    # The reason each one gets a PAD: a Ø8.7 insert centred in a 15 mm plate leaves 3.15 mm of wall
+    # top and bottom, which splits under a hand-torqued 1/4-20. Adding side_pad on BOTH faces takes
+    # the local thickness to plate_t + 2*side_pad and the wall to (that - 8.7)/2 -- 7.15 mm at 4 mm
+    # pads -- while leaving the plate light everywhere else.
+    def _edge_inserts(n: int):
+        """(x, y, outward) triples for n insert points, centred on the sides."""
+        E = [((w / 2.0, 0.0), (1.0, 0.0)), ((-w / 2.0, 0.0), (-1.0, 0.0)),
+             ((0.0, h / 2.0), (0.0, 1.0)), ((0.0, -h / 2.0), (0.0, -1.0))]
+        if n <= 0:
+            return []
+        if n == 1:
+            return [E[0] + (0.0,)]
+        if n == 2:
+            return [E[0] + (0.0,), E[1] + (0.0,)]
+        if n == 4:
+            return [e + (0.0,) for e in E]
+        # 8 -> two per side, at +-quarter
+        out = []
+        for (pos, nrm) in E:
+            half = (w / 4.0) if nrm[1] else (h / 4.0)
+            for s in (-1.0, 1.0):
+                if nrm[0]:
+                    out.append(((pos[0], s * half), nrm, s * half))
+                else:
+                    out.append(((s * half, pos[1]), nrm, s * half))
+        return out
+
+    side_pts = _edge_inserts(side_inserts)
+    pads = []
+    for (px, py), (nx, ny), _off in side_pts:
+        # pad footprint: side_pad_len along the edge, side_pad_deep inward, side_pad proud on BOTH faces
+        sx_len = side_pad_len if ny else side_pad_deep
+        sy_len = side_pad_deep if ny else side_pad_len
+        cx = px - nx * (side_pad_deep / 2.0 - 1.0)
+        cy = py - ny * (side_pad_deep / 2.0 - 1.0)
+        pads.append(trimesh.creation.box(extents=[sx_len, sy_len, plate_t + 2 * side_pad])
+                    .apply_translation((cx, cy, plate_t / 2.0)))
+    if pads:
+        solid = trimesh.boolean.union([solid] + pads, engine="manifold")
+
+    for (px, py), (nx, ny), _off in side_pts:
+        depth = ins["length"] + 0.5
+        cyl = trimesh.creation.cylinder(radius=ins["pilot"] / 2.0, height=depth + 2, sections=64)
+        # lay the cylinder's axis along the outward normal
+        if ny:
+            cyl.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [1, 0, 0]))
+        else:
+            cyl.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
+        # start just outside the edge face and bore inward
+        start = (px + nx * 1.0, py + ny * 1.0)
+        cutters.append(cyl.apply_translation((start[0] - nx * (depth + 2) / 2.0,
+                                              start[1] - ny * (depth + 2) / 2.0,
+                                              plate_t / 2.0)))
+        # lead-in chamfer at the mouth
+        lead = trimesh.creation.cone(radius=ins["pilot"] / 2.0 + ins["lead"],
+                                     height=ins["lead"] * 1.5, sections=64)
+        if ny:
+            lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [1, 0, 0]))
+        else:
+            lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
+        if not ny:
+            lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [0, 1, 0]))
+        cutters.append(lead.apply_translation((px + nx * (1.0 - ins["lead"] * 0.25),
+                                               py + ny * (1.0 - ins["lead"] * 0.25),
+                                               plate_t / 2.0)))
 
     # ---- perimeter groove: a shallow ring cut into the ARM face just inside the rim, the step that
     # reads as a panel line on every reference plate
@@ -303,7 +362,8 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
                 chamfer_mm=chamfer, rim_w_mm=rim_w, rim_h_mm=rim_h,
                 boss_mm=[boss_w, boss_h, boss_hgt], inserts=len(pts), insert_preset=insert_key,
                 pilot_d=ins["pilot"], lug_mm=lug, lug_out_mm=lug_out,
-                side_bore_d=side_d, side_bore_depth=side_depth,
+                side_inserts=len(side_pts), side_pad_mm=side_pad,
+                side_wall_mm=round((plate_t + 2 * side_pad - ins["od"]) / 2.0, 2),
                 dual_vesa=list(vesa), pocket_r=pocket_r, pocket_depth=pocket_depth,
                 volume_cm3=round(vol, 2), mass_asa_g=round(vol * 1.07, 1),
                 watertight=bool(body.is_watertight), bodies=int(body.body_count),
@@ -678,8 +738,8 @@ def main() -> int:
         manifest, made = [meta], 1
         print(f"  {name}")
         print(f"    {meta['plate_mm'][0]:.0f}x{meta['plate_mm'][1]:.0f}x{meta['plate_mm'][2]:.0f} mm | "
-              f"chamfer {meta['chamfer_mm']:.0f} | lugs {meta['lug_mm']:.0f} with "
-              f"Ø{meta['side_bore_d']} side bores | boss {meta['boss_mm']} | "
+              f"chamfer {meta['chamfer_mm']:.0f} | {meta['side_inserts']} side 1/4-20 pockets "
+              f"(wall {meta['side_wall_mm']:.1f} mm) | boss {meta['boss_mm']} | "
               f"{meta['volume_cm3']:.1f} cm3 | {meta['mass_asa_g']:.1f} g ASA | WATERTIGHT")
         targets, counts = [], []
 
