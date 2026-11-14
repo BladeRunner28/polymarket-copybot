@@ -272,13 +272,17 @@ def main():
 
     if which in ("new", "all"):
         for fn, oz, el, out in [
-            ("spoosa_100x100_8x1q4-20_win36_c2.stl", 30, 34, "new-spacer-window.png"),
-            ("spoosa_100x100_8x1q4-20_d75-100_c2.stl", 34, 32, "new-adapter-75-100.png"),
+            ("spoosa_100x100_8x1q4-20_win36_c2_e8.stl", 30, 34, "new-spacer-window.png"),
+            ("spoosa_100x100_8x1q4-20_d75-100_c2_e8.stl", 34, 32, "new-adapter-75-100.png"),
         ]:
             path = f"cad/spoosa/{fn}"
             if os.path.exists(path):
-                render([(load(path), PLATE)], f"{OUT}/{out}", w=1300, h=1000, azim=oz, elev=el)
-                print(f"new: {out}")
+                m = load(path)
+                render([(m, PLATE)], f"{OUT}/{out}", w=1300, h=1000, azim=oz, elev=el)
+                # plan view: the only way to read an outline with ears
+                render([(m, PLATE)], f"{OUT}/{out.replace('.png', '-plan.png')}", w=1200, h=1000,
+                       azim=0, elev=4)
+                print(f"new: {out} + plan")
 
     if which in ("family", "all"):
         family([

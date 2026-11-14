@@ -146,6 +146,23 @@ def combo_holes(sizes) -> list[tuple[float, float]]:
     return out
 
 
+def outline_with_ears(pw: float, ph: float, corner_r: float, ear_r: float):
+    """Rounded rectangle plus a rounded EAR at each corner — the lobed outline of the reference plates.
+
+    The ears are not decoration: each one carries its own through-hole, so a plate can be fixed to the
+    monitor's own standoffs or zip-tied where the VESA pattern has nothing to bite. They are discs
+    unioned into the outline rather than tabs added to the path, so the rim can follow the same curve.
+    """
+    base = ShapelyPolygon(rrect(pw, ph, corner_r))
+    if ear_r <= 0:
+        return base
+    from shapely.geometry import Point
+    from shapely.ops import unary_union
+    ears = [Point(x, y).buffer(ear_r, resolution=32)
+            for x in (-pw / 2.0, pw / 2.0) for y in (-ph / 2.0, ph / 2.0)]
+    return unary_union([base] + ears)
+
+
 def parse_dual(s: str):
     """'75,100' or '75+100' -> (75, 100). Empty -> None."""
     vals = [float(v) for v in (s or "").replace("+", ",").split(",") if v.strip()]
@@ -189,7 +206,8 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
           bed: tuple[float, float] | None = None,
           rim_w: float = 6.0, rim_h: float = 3.0,
           window: float = 0.0, collar: float = 0.0,
-          dual: tuple[float, ...] | None = None) -> tuple[trimesh.Trimesh, dict]:
+          dual: tuple[float, ...] | None = None,
+          ear_r: float = 0.0, ear_hole: float = 0.0) -> tuple[trimesh.Trimesh, dict]:
     ins = INSERT_PRESETS[insert_key]
     boss_r = ins["od"] / 2.0 + wall
 
@@ -207,7 +225,12 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
                          f"(needs >= {min_t:.1f} mm)")
 
     plate = trimesh.creation.extrude_polygon(
-        ShapelyPolygon(rrect(pw, ph, corner_r)), height=plate_t)
+        outline_with_ears(pw, ph, corner_r, ear_r), height=plate_t)
+
+    if ear_r > 0 and ear_hole <= 0:
+        raise SystemExit("--ear needs --ear-hole: a corner ear with no fixing hole is decoration")
+    if ear_hole > 0 and ear_r <= 0:
+        raise SystemExit("--ear-hole needs --ear: there is no material at the corner to drill")
 
     pts = insert_points(inserts, pw, ph, boss_r + 3.0, grid=grid)
     solid = plate
@@ -227,7 +250,7 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
     if rim_w > 0 and rim_h > 0:
         overlap = 0.5                                  # overlap into the plate so the union is one solid
         outer = trimesh.creation.extrude_polygon(
-            ShapelyPolygon(rrect(pw, ph, corner_r)), height=rim_h + overlap
+            outline_with_ears(pw, ph, corner_r, ear_r), height=rim_h + overlap
         ).apply_translation((0, 0, -rim_h))
         inner_w, inner_h = pw - 2 * rim_w, ph - 2 * rim_w
         if inner_w <= 2 or inner_h <= 2:
@@ -262,6 +285,14 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
                                      sections=64)
         lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0]))
         cutters.append(lead.apply_translation((x, y, top - ins["lead"] * 0.25)))
+
+    # ear fixing holes -- one through-bore at each corner lobe
+    if ear_r > 0 and ear_hole > 0:
+        for ex_ in (-pw / 2.0, pw / 2.0):
+            for ey_ in (-ph / 2.0, ph / 2.0):
+                cutters.append(trimesh.creation.cylinder(radius=ear_hole / 2.0, height=plate_t + 6,
+                                                         sections=48)
+                               .apply_translation((ex_, ey_, plate_t / 2.0)))
 
     # ---- central window: the reference plates are FRAMES, not slabs
     # It removes the mass nobody needs, gives cables and monitor standoffs somewhere to pass, and
@@ -311,6 +342,7 @@ def build(prof: dict, label: str, inserts: int, *, plate_t: float, margin: float
                               + (collar if collar > 0 else 0.0), 2),
         window_mm=round(window, 2), collar_mm=round(collar, 2),
         dual_vesa=list(dual) if dual else [],
+        ear_r_mm=round(ear_r, 2), ear_hole_mm=round(ear_hole, 2),
         vesa_screw_d=prof["screw_d"], vesa_screws=prof["screws"],
         volume_cm3=round(vol_cm3, 2), mass_asa_g=round(vol_cm3 * 1.07, 1),
         watertight=bool(body.is_watertight), bodies=int(body.body_count),
@@ -415,6 +447,11 @@ def main() -> int:
     ap.add_argument("--dual-vesa", default="",
                     help="extra VESA spacings to put in the SAME plate, comma separated "
                          "(e.g. 75,100 for the 75+100 portable-monitor adapter)")
+    ap.add_argument("--ear", type=float, default=0.0,
+                    help="radius of a rounded ear at each corner, mm (0 = plain rounded corners). "
+                         "Requires --ear-hole.")
+    ap.add_argument("--ear-hole", type=float, default=0.0,
+                    help="through-hole diameter in each corner ear, mm (e.g. 4.4)")
     ap.add_argument("--bed", default="350x350",
                     help="build volume as WxD; plates larger than this are refused (default 350x350)")
     ap.add_argument("--no-bed-check", action="store_true")
@@ -480,7 +517,8 @@ def main() -> int:
                                    grid=grid, bed=bed,
                                    rim_w=args.rim_w, rim_h=args.rim_h,
                                    window=args.window, collar=args.collar,
-                                   dual=parse_dual(args.dual_vesa))
+                                   dual=parse_dual(args.dual_vesa),
+                                   ear_r=args.ear, ear_hole=args.ear_hole)
             except TooBig as e:
                 skipped.append(f"{label} x{n}: {e}")
                 print(f"  SKIP {label:11s} x{n}  -- {e}")
@@ -495,6 +533,8 @@ def main() -> int:
                 variant += f"_win{args.window:g}"
             if args.collar > 0:
                 variant += f"_c{args.collar:g}"
+            if args.ear > 0:
+                variant += f"_e{args.ear:g}"
             name = f"spoosa_{label}_{suffix}1q4-20{variant}.stl"
             body.export(os.path.join(OUT_DIR, name))
             meta["file"] = name
