@@ -388,7 +388,7 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
 
 def build_tray(w: float, h: float, *, base_t: float = 8.0, chamfer: float = 10.0,
                rim_w: float = 6.0, rim_h: float = 3.0,
-               cut_w: float = 60.0, cut_h: float = 56.0, cut_r: float = 6.0,
+               cut_w: float = 61.0, cut_h: float = 61.0, cut_r: float = 8.0,
                vesa: tuple[float, ...] = (75.0, 100.0), screw_d: float = 4.4,
                pocket_r: float = 9.0, pocket_depth: float = 1.5,
                lug_w: float = 38.0, lug_pro: float = 8.0, lug_deep: float = 18.0,
