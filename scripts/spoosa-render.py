@@ -284,6 +284,15 @@ def main():
                        azim=0, elev=4)
                 print(f"new: {out} + plan")
 
+    if which in ("tray", "portable", "new", "all"):
+        import glob
+        for tp in sorted(glob.glob("cad/spoosa/spoosa_tray_*.stl")):
+            tag = tp.split("spoosa_tray_")[-1].replace(".stl", "")
+            m = load(tp)
+            render([(m, PLATE)], f"{OUT}/tray-{tag}-iso.png", w=1500, h=1000, azim=34, elev=40)
+            render([(m, PLATE)], f"{OUT}/tray-{tag}-plan.png", w=1300, h=950, azim=0, elev=4)
+            print(f"tray {tag}: iso + plan")
+
     if which in ("portable", "new", "all"):
         import glob
         for pp in sorted(glob.glob("cad/spoosa/spoosa_portable_*.stl")):

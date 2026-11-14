@@ -386,6 +386,106 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
     return body, meta
 
 
+def build_tray(w: float, h: float, *, base_t: float = 8.0, chamfer: float = 10.0,
+               rim_w: float = 6.0, rim_h: float = 3.0,
+               cut_w: float = 60.0, cut_h: float = 56.0, cut_r: float = 6.0,
+               vesa: tuple[float, ...] = (75.0, 100.0), screw_d: float = 4.4,
+               pocket_r: float = 9.0, pocket_depth: float = 1.5,
+               lug_w: float = 26.0, lug_pro: float = 8.0, lug_deep: float = 14.0,
+               lug_h: float = 20.0, lug_r: float = 8.0,
+               insert_key: str = DEFAULT_INSERT,
+               bed: tuple[float, float] | None = None) -> tuple[trimesh.Trimesh, dict]:
+    """The part in the reference photographs, built to those photographs.
+
+    Read off the owner's marked-up photo and dimensions:
+      - THIN WEB (base_t), not a solid slab -- thickness only where an insert or a screw lives
+      - a CENTRAL CUTOUT: the VESA bracket passes through it, so there is no central insert boss
+      - a raised rim on BOTH faces, so the silhouette reads as a tray
+      - four figure-8 VESA pockets carrying 75 AND 100 mm patterns
+      - ONE 1/4-20 insert at the middle of each side, in a rounded TAB that protrudes past the edge,
+        with the bore in the tab's outward face (the red boxes in the owner's photo)
+
+    The tab is lug_h tall rather than base_t: a Ø8.7 insert needs wall around it, and (lug_h - 8.7)/2
+    at lug_h=20 is 5.65 mm. On an 8 mm web it would be negative -- there would be no material at all.
+    """
+    ins = INSERT_PRESETS[insert_key]
+    if bed and (w + 2 * lug_pro > bed[0] or h + 2 * lug_pro > bed[1]):
+        raise TooBig(f"plate {w + 2 * lug_pro:.0f}x{h + 2 * lug_pro:.0f} mm exceeds the bed")
+
+    # ---- thin web
+    solid = trimesh.creation.extrude_polygon(chamfered_rect(w, h, chamfer), height=base_t)
+
+    # ---- rim on BOTH faces
+    for z0 in (-rim_h, base_t):
+        o = trimesh.creation.extrude_polygon(chamfered_rect(w, h, chamfer), height=rim_h + 0.5)
+        i = trimesh.creation.extrude_polygon(
+            chamfered_rect(w - 2 * rim_w, h - 2 * rim_w, max(1.0, chamfer - rim_w / 2)),
+            height=rim_h + 3.0).apply_translation((0, 0, -1.0))
+        solid = trimesh.boolean.union(
+            [solid, trimesh.boolean.difference([o, i], engine="manifold")
+             .apply_translation((0, 0, z0))], engine="manifold")
+
+    # ---- four rounded insert tabs, one centred on each side, protruding past the edge
+    edges = [((w / 2.0 - lug_deep / 2.0 + lug_pro, 0.0), (1.0, 0.0)),
+             ((-w / 2.0 + lug_deep / 2.0 - lug_pro, 0.0), (-1.0, 0.0)),
+             ((0.0, h / 2.0 - lug_deep / 2.0 + lug_pro), (0.0, 1.0)),
+             ((0.0, -h / 2.0 + lug_deep / 2.0 - lug_pro), (0.0, -1.0))]
+    tabs = []
+    for (cx, cy), (nx, ny) in edges:
+        footprint = chamfered_rect(lug_deep, lug_w, min(lug_r, lug_w / 2 - 1)) if nx else \
+                    chamfered_rect(lug_w, lug_deep, min(lug_r, lug_w / 2 - 1))
+        tabs.append(trimesh.creation.extrude_polygon(footprint, height=lug_h)
+                    .apply_translation((cx, cy, (base_t - lug_h) / 2.0)))
+    solid = trimesh.boolean.union([solid] + tabs, engine="manifold")
+
+    cutters = []
+    # ---- central cutout (the VESA bracket passes through)
+    if cut_w > 0 and cut_h > 0:
+        cutters.append(trimesh.creation.extrude_polygon(
+            ShapelyPolygon(rrect(cut_w, cut_h, cut_r)), height=base_t + lug_h + 10)
+            .apply_translation((0, 0, -lug_h - 5)))
+
+    # ---- VESA pockets carrying BOTH patterns
+    for (x, y) in combo_holes(vesa):
+        cutters.append(trimesh.creation.cylinder(radius=screw_d / 2.0, height=base_t + lug_h + 10,
+                                                 sections=48)
+                       .apply_translation((x, y, base_t / 2.0)))
+        cutters.append(trimesh.creation.cylinder(radius=pocket_r, height=pocket_depth + 1.0,
+                                                 sections=48)
+                       .apply_translation((x, y, base_t - pocket_depth / 2.0 + 0.5)))
+
+    # ---- 1/4-20 bores in the tabs, opening on the OUTWARD face
+    depth = ins["length"] + 0.5
+    for (cx, cy), (nx, ny) in edges:
+        outer = (cx + nx * (lug_deep / 2.0), cy + ny * (lug_deep / 2.0))
+        bore = trimesh.creation.cylinder(radius=ins["pilot"] / 2.0, height=depth + 2, sections=64)
+        if ny:
+            bore.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [1, 0, 0]))
+        else:
+            bore.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
+        cutters.append(bore.apply_translation((outer[0] - nx * depth / 2.0,
+                                               outer[1] - ny * depth / 2.0, base_t / 2.0)))
+
+    body = trimesh.boolean.difference([solid] + cutters, engine="manifold")
+    body = clean_solid(body)
+
+    vol = body.volume / 1000.0
+    meta = dict(kind="tray", profile=f"tray{int(w)}x{int(h)}",
+                plate_mm=[round(w, 2), round(h, 2), round(base_t, 2)],
+                chamfer_mm=chamfer, rim_w_mm=rim_w, rim_h_mm=rim_h,
+                cutout_mm=[cut_w, cut_h], dual_vesa=list(vesa),
+                lug_mm=[lug_w, lug_pro, lug_deep, lug_h], side_inserts=len(edges),
+                insert_preset=insert_key, pilot_d=ins["pilot"],
+                tab_wall_mm=round((lug_h - ins["od"]) / 2.0, 2),
+                volume_cm3=round(vol, 2), mass_asa_g=round(vol * 1.07, 1),
+                watertight=bool(body.is_watertight), bodies=int(body.body_count),
+                total_height_mm=round(base_t + 2 * rim_h, 2))
+    if not body.is_watertight or body.body_count != 1:
+        raise SystemExit(f"REFUSING: tray is not one watertight solid "
+                         f"(watertight={body.is_watertight}, bodies={body.body_count})")
+    return body, meta
+
+
 def parse_dual(s: str):
     """'75,100' or '75+100' -> (75, 100). Empty -> None."""
     vals = [float(v) for v in (s or "").replace("+", ",").split(",") if v.strip()]
@@ -675,8 +775,12 @@ def main() -> int:
                          "Requires --ear-hole.")
     ap.add_argument("--ear-hole", type=float, default=0.0,
                     help="through-hole diameter in each corner ear, mm (e.g. 4.4)")
+    ap.add_argument("--tray", default="",
+                    help="build the PHOTOGRAPH layout: thin web, central cutout, rim on both faces, "
+                         "figure-8 75+100 VESA pockets, and a rounded 1/4-20 tab centred on each "
+                         "side. Takes WxH, e.g. 175x125.")
     ap.add_argument("--portable", default="",
-                    help="build the REFERENCE layout instead: a landscape chamfered frame with "
+                    help="build the earlier REFERENCE layout: a landscape chamfered frame with "
                          "side-bored corner lugs, a central insert boss and figure-8 dual-VESA "
                          "pockets. Takes WxH, e.g. 160x120.")
     ap.add_argument("--bed", default="350x350",
@@ -720,6 +824,38 @@ def main() -> int:
               f"{meta['mass_asa_g']:.1f} g ASA | {'WATERTIGHT' if meta['watertight'] else 'LEAKY'}")
         print("    press the insert into each bore; the correct one goes in with firm pressure and "
               "refuses to spin once cool")
+        targets, counts = [], []
+
+    # ---- PHOTOGRAPH layout: thin tray, central cutout, mid-side 1/4-20 tabs
+    if getattr(args, "tray", ""):
+        import re as _re2
+        m = _re2.match(r"^\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*$", args.tray, _re2.I)
+        if not m:
+            raise SystemExit(f"--tray expects WxH (e.g. 175x125), got {args.tray!r}")
+        tw, th = float(m.group(1)), float(m.group(2))
+        tbed = None
+        if not args.no_bed_check:
+            try:
+                bw, bh = (float(v) for v in args.bed.lower().split("x"))
+                tbed = (bw, bh)
+            except Exception:
+                raise SystemExit(f"--bed expects WxH (e.g. 350x350), got {args.bed!r}")
+        body, meta = build_tray(tw, th, insert_key=args.insert_preset, bed=tbed)
+        tname = f"spoosa_tray_{int(tw)}x{int(th)}.stl"
+        tout = os.path.join(OUT_DIR, tname)
+        body.export(tout)
+        ok, detail = verify_exported(tout)
+        print(f"    {detail}")
+        if not ok:
+            raise SystemExit(f"REFUSING: the exported tray is not one solid — {detail}")
+        meta["file"] = tname
+        manifest, made = [meta], 1
+        print(f"  {tname}")
+        print(f"    {meta['plate_mm'][0]:.0f}x{meta['plate_mm'][1]:.0f}x{meta['plate_mm'][2]:.0f} mm web | "
+              f"cutout {meta['cutout_mm'][0]:.0f}x{meta['cutout_mm'][1]:.0f} | "
+              f"{meta['side_inserts']} side tabs Ø{meta['pilot_d']} 1/4-20 "
+              f"(wall {meta['tab_wall_mm']:.1f} mm) | {meta['volume_cm3']:.1f} cm3 | "
+              f"{meta['mass_asa_g']:.0f} g ASA | WATERTIGHT")
         targets, counts = [], []
 
     # ---- reference-layout portable adapter (chamfered frame, side-bored lugs, central boss)
