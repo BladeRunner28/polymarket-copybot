@@ -163,6 +163,157 @@ def outline_with_ears(pw: float, ph: float, corner_r: float, ear_r: float):
     return unary_union([base] + ears)
 
 
+def chamfered_rect(w: float, h: float, ch: float):
+    """Rectangle with 45-degree chamfered corners -- the outline of the reference plates."""
+    hx, hy = w / 2.0, h / 2.0
+    ch = max(0.0, min(ch, min(w, h) / 2.0 - 1e-6))
+    return ShapelyPolygon([(hx - ch, -hy), (hx, -hy + ch), (hx, hy - ch), (hx - ch, hy),
+                           (-hx + ch, hy), (-hx, hy - ch), (-hx, -hy + ch), (-hx + ch, -hy)])
+
+
+def clean_solid(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Weld the boolean output into one closed shell.
+
+    manifold3d leaves ZERO-AREA faces behind (measured: 64 of them on the 160x120 portable plate).
+    They survive as separate vertices, so the mesh looks fine in memory and then splits into 33
+    disconnected shells the moment the STL is reloaded -- same volume, unusable mesh. Drop the
+    degenerate faces, then weld what is left.
+    """
+    mesh.merge_vertices()
+    mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.remove_unreferenced_vertices()
+    mesh.merge_vertices()
+    return mesh
+
+
+def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float = 12.0,
+                   rim_w: float = 6.0, rim_h: float = 3.0,
+                   boss_w: float = 36.0, boss_h: float = 28.0, boss_hgt: float = 4.0,
+                   inserts: int = 1, lug: float = 18.0, lug_out: float = 5.0, lug_ch: float = 0.0,
+                   side_d: float = 4.4, side_depth: float = 12.0,
+                   pocket_r: float = 9.0, pocket_depth: float = 1.5,
+                   groove_w: float = 0.0, groove_d: float = 0.0,
+                   vesa: tuple[float, ...] = (75.0, 100.0),
+                   insert_key: str = DEFAULT_INSERT,
+                   bed: tuple[float, float] | None = None) -> tuple[trimesh.Trimesh, dict]:
+    """The reference layout: landscape chamfered frame, side-bored corner lugs, central insert boss,
+    figure-8 dual-VESA corner pockets and a stepped perimeter rim.
+
+    This is a SEPARATE builder from build() on purpose. build() grows a plate around a VESA pattern;
+    this copies a layout off the supplied reference images, where the accessory bores are in the
+    CORNER LUGS pointing outward -- not on the face.
+    """
+    ins = INSERT_PRESETS[insert_key]
+    if bed and (w + 2 * lug_out > bed[0] or h + 2 * lug_out > bed[1]):
+        raise TooBig(f"plate {w + 2 * lug_out:.0f}x{h + 2 * lug_out:.0f} mm exceeds the bed")
+
+    plate = trimesh.creation.extrude_polygon(chamfered_rect(w, h, chamfer), height=plate_t)
+    solid = plate
+
+    # ---- corner lugs: a CHAMFERED block at each corner standing proud of the outline
+    lug_solids = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cx, cy = sx * (w / 2.0 - lug / 2.0 + lug_out), sy * (h / 2.0 - lug / 2.0 + lug_out)
+            if lug_ch > 0:
+                lug_solids.append(trimesh.creation.extrude_polygon(chamfered_rect(lug, lug, lug_ch),
+                                                                  height=plate_t)
+                                  .apply_translation((cx, cy, 0)))
+            else:
+                lug_solids.append(trimesh.creation.box(extents=[lug, lug, plate_t])
+                                  .apply_translation((cx, cy, plate_t / 2.0)))
+    solid = trimesh.boolean.union([solid] + lug_solids, engine="manifold")
+
+    # ---- stepped perimeter rim on the MONITOR face
+    if rim_w > 0 and rim_h > 0:
+        outer = trimesh.creation.extrude_polygon(chamfered_rect(w, h, chamfer),
+                                                 height=rim_h + 0.5).apply_translation((0, 0, -rim_h))
+        inner = trimesh.creation.extrude_polygon(
+            chamfered_rect(w - 2 * rim_w, h - 2 * rim_w, max(1.0, chamfer - rim_w / 2)),
+            height=rim_h + 3.0).apply_translation((0, 0, -rim_h - 1.0))
+        solid = trimesh.boolean.union(
+            [solid, trimesh.boolean.difference([outer, inner], engine="manifold")], engine="manifold")
+
+    # ---- central boss carrying the 1/4-20 insert ON ITS FACE
+    if boss_w > 0 and boss_hgt > 0:
+        boss = trimesh.creation.box(extents=[boss_w, boss_h, boss_hgt + 1.0]).apply_translation(
+            (0, 0, plate_t - 0.5 + boss_hgt / 2.0))
+        solid = trimesh.boolean.union([solid, boss], engine="manifold")
+
+    cutters = []
+    # insert bores, opening on the boss face
+    if inserts <= 1:
+        pts = [(0.0, 0.0)]
+    else:
+        pts = [(-boss_w / 4.0, 0.0), (boss_w / 4.0, 0.0)][:inserts]
+    top = plate_t + (boss_hgt if boss_w > 0 else 0.0)
+    for (x, y) in pts:
+        depth = ins["length"] + 0.5
+        cutters.append(trimesh.creation.cylinder(radius=ins["pilot"] / 2.0, height=depth + 2,
+                                                 sections=64).apply_translation((x, y, top - depth / 2)))
+        lead = trimesh.creation.cone(radius=ins["pilot"] / 2.0 + ins["lead"], height=ins["lead"] * 1.5,
+                                     sections=64)
+        lead.apply_transform(trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0]))
+        cutters.append(lead.apply_translation((x, y, top - ins["lead"] * 0.25)))
+
+    # ---- figure-8 corner pockets: 75 and 100 mm holes sharing one recessed lobe pair
+    vpts = combo_holes(vesa)
+    for (x, y) in vpts:
+        cutters.append(trimesh.creation.cylinder(radius=side_d / 2.0, height=plate_t + 6,
+                                                 sections=48).apply_translation((x, y, plate_t / 2.0)))
+        # shallow recess from the ARM face down: spans (plate_t - pocket_depth) .. (plate_t + 1)
+        cutters.append(trimesh.creation.cylinder(radius=pocket_r, height=pocket_depth + 1.0,
+                                                 sections=48)
+                       .apply_translation((x, y, plate_t - pocket_depth / 2.0 + 0.5)))
+
+    # ---- side bores in the corner lugs, axis in the plate plane, drilled from the OUTER face
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cx, cy = sx * (w / 2.0 - lug / 2.0 + lug_out), sy * (h / 2.0 - lug / 2.0 + lug_out)
+            start = cx + sx * (lug / 2.0 + 1.0)
+            bore = trimesh.creation.cylinder(radius=side_d / 2.0, height=side_depth + 2, sections=48)
+            bore.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
+            cutters.append(bore.apply_translation((start - sx * (side_depth + 2) / 2.0,
+                                                   cy, plate_t / 2.0)))
+            cb = trimesh.creation.cylinder(radius=side_d / 2.0 + 1.5, height=4.0, sections=48)
+            cb.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [0, 1, 0]))
+            cutters.append(cb.apply_translation((cx + sx * (lug / 2.0 - 1.0), cy, plate_t / 2.0)))
+
+    # ---- perimeter groove: a shallow ring cut into the ARM face just inside the rim, the step that
+    # reads as a panel line on every reference plate
+    if groove_w > 0 and groove_d > 0:
+        # keep the groove OFF the rim's inner wall: coincidence there produced a non-manifold shell
+        # (watertight=False) because the two coplanar faces meet tangentially
+        g_out = chamfered_rect(w - 2 * rim_w - 1.0, h - 2 * rim_w - 1.0,
+                               max(1.0, chamfer - rim_w / 2))
+        g_in = chamfered_rect(w - 2 * rim_w - 1.0 - 2 * groove_w,
+                              h - 2 * rim_w - 1.0 - 2 * groove_w,
+                              max(1.0, chamfer - rim_w / 2 - groove_w / 2))
+        g_out_s = trimesh.creation.extrude_polygon(g_out, height=groove_d + 1.0)
+        g_in_s = trimesh.creation.extrude_polygon(g_in, height=groove_d + 3.0).apply_translation((0, 0, -1))
+        groove = trimesh.boolean.difference([g_out_s, g_in_s], engine="manifold")
+        cutters.append(groove.apply_translation((0, 0, plate_t - groove_d)))
+
+    body = trimesh.boolean.difference([solid] + cutters, engine="manifold")
+    body = clean_solid(body)
+
+    vol = body.volume / 1000.0
+    meta = dict(kind="portable", profile=f"portable{int(w)}x{int(h)}",
+                plate_mm=[round(w, 2), round(h, 2), round(plate_t, 2)],
+                chamfer_mm=chamfer, rim_w_mm=rim_w, rim_h_mm=rim_h,
+                boss_mm=[boss_w, boss_h, boss_hgt], inserts=len(pts), insert_preset=insert_key,
+                pilot_d=ins["pilot"], lug_mm=lug, lug_out_mm=lug_out,
+                side_bore_d=side_d, side_bore_depth=side_depth,
+                dual_vesa=list(vesa), pocket_r=pocket_r, pocket_depth=pocket_depth,
+                volume_cm3=round(vol, 2), mass_asa_g=round(vol * 1.07, 1),
+                watertight=bool(body.is_watertight), bodies=int(body.body_count),
+                total_height_mm=round(plate_t + rim_h + boss_hgt, 2))
+    if not body.is_watertight or body.body_count != 1:
+        raise SystemExit(f"REFUSING: portable part is not one watertight solid "
+                         f"(watertight={body.is_watertight}, bodies={body.body_count})")
+    return body, meta
+
+
 def parse_dual(s: str):
     """'75,100' or '75+100' -> (75, 100). Empty -> None."""
     vals = [float(v) for v in (s or "").replace("+", ",").split(",") if v.strip()]
@@ -452,6 +603,10 @@ def main() -> int:
                          "Requires --ear-hole.")
     ap.add_argument("--ear-hole", type=float, default=0.0,
                     help="through-hole diameter in each corner ear, mm (e.g. 4.4)")
+    ap.add_argument("--portable", default="",
+                    help="build the REFERENCE layout instead: a landscape chamfered frame with "
+                         "side-bored corner lugs, a central insert boss and figure-8 dual-VESA "
+                         "pockets. Takes WxH, e.g. 160x120.")
     ap.add_argument("--bed", default="350x350",
                     help="build volume as WxD; plates larger than this are refused (default 350x350)")
     ap.add_argument("--no-bed-check", action="store_true")
@@ -493,6 +648,39 @@ def main() -> int:
               f"{meta['mass_asa_g']:.1f} g ASA | {'WATERTIGHT' if meta['watertight'] else 'LEAKY'}")
         print("    press the insert into each bore; the correct one goes in with firm pressure and "
               "refuses to spin once cool")
+        targets, counts = [], []
+
+    # ---- reference-layout portable adapter (chamfered frame, side-bored lugs, central boss)
+    if getattr(args, "portable", ""):
+        import re as _re
+        m = _re.match(r"^\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*$", args.portable, _re.I)
+        if not m:
+            raise SystemExit(f"--portable expects WxH (e.g. 160x120), got {args.portable!r}")
+        w, h = float(m.group(1)), float(m.group(2))
+        pbed = None
+        if not args.no_bed_check:
+            try:
+                bw, bh = (float(v) for v in args.bed.lower().split("x"))
+                pbed = (bw, bh)
+            except Exception:
+                raise SystemExit(f"--bed expects WxH (e.g. 350x350), got {args.bed!r}")
+        body, meta = build_portable(w, h, plate_t=args.plate_t, insert_key=args.insert_preset,
+                                    inserts=args.inserts if args.inserts in (1, 2) else 1,
+                                    bed=pbed)
+        name = f"spoosa_portable_{int(w)}x{int(h)}.stl"
+        out_path = os.path.join(OUT_DIR, name)
+        body.export(out_path)
+        ok, detail = verify_exported(out_path)
+        print(f"    {detail}")
+        if not ok:
+            raise SystemExit(f"REFUSING: the exported portable part is not one solid — {detail}")
+        meta["file"] = name
+        manifest, made = [meta], 1
+        print(f"  {name}")
+        print(f"    {meta['plate_mm'][0]:.0f}x{meta['plate_mm'][1]:.0f}x{meta['plate_mm'][2]:.0f} mm | "
+              f"chamfer {meta['chamfer_mm']:.0f} | lugs {meta['lug_mm']:.0f} with "
+              f"Ø{meta['side_bore_d']} side bores | boss {meta['boss_mm']} | "
+              f"{meta['volume_cm3']:.1f} cm3 | {meta['mass_asa_g']:.1f} g ASA | WATERTIGHT")
         targets, counts = [], []
 
     # one target, or every named profile
