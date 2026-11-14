@@ -146,3 +146,7 @@ data/wallet-seat-positions.json.tmp
 # Profit review fill-tape cache (2026-11-13): raw CLOB prices-history responses, one JSON per
 # (token, dispatch minute). Refetchable keyless; scripts/profit-fill-tape.py rewrites it.
 data/fill-tape-cache/
+
+# Profit review cheap-funnel cache (2026-11-14): one JSON per conditionId holding the venue
+# archive's tokens[].winner. Refetchable keyless; scripts/profit-cheap-funnel.py rewrites it.
+data/cheap-funnel-cache/

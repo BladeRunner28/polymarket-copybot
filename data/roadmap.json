@@ -8,6 +8,23 @@
   ],
   "cards": [
     {
+      "id": "profit-cheap-refusal-ask-price",
+      "title": "LANE A PROPOSAL — 189 cheap candidates are refused BEFORE the spread is read; the ones priced at the ask lose, the ones never priced carry +13.9pp. Measure the 189 at the ask, then re-order the checks",
+      "column": "Backlog",
+      "effort": "2h measure + 1h change",
+      "dates": "Proposed 2026-11-14 by the profit review (drafts/profit-recs-20261114.md; new read-only instrument scripts/profit-cheap-funnel.py, self-tests 15/15). NOT APPLIED — Lane A: it would change what the bot copies. No threshold moves: the ask is to re-order the hard-skip checks, not to relax any of them.",
+      "note": "WHY: the cheap tail is the only band with a positive calibration edge, it admits 3.88% of its candidates (88 of 2,269 in the live regime), and 79% of its refusals are recorded under a reason that carries no fill information. MEASURED (read-only; level = one candidate, deduped to the first sighting per market+outcome; candidate price = ObservedTrade.detectedPrice; resolutions from clob.polymarket.com/markets/<conditionId> tokens[].winner, keyless, 320/385 = 83% coverage): REFUSED cheap cohort (0.05<=p<0.20) n=320 across 319 markets, hit 23.1% vs breakeven 12.0% = +11.1pp CI [+6.8,+16.0], equal-weight ROI +108.5% AT THE DETECTION MID. ADMITTED control (39 positions) hit 23.1%, +11.0pp, eqw +61.6%. THE MID IS THE WHOLE STORY: the 131 refusals that DO carry a quoted spread (median 10.0c) go from +7.1pp / +47.8% at the mid to -2.9% paying half the spread and -26.5% paying all of it — so the spread gate is CORRECT on its own population and must not be relaxed. The other 189 (refused for drift/confidence/timing/blacklist, i.e. before the spread check fires in src/lib/scoring/trade.ts) read +13.9pp and +150.6% at the mid and are UNPRICED. Sensitivity: the 65 unresolved booked as losses still leaves +7.2pp. Breakeven entry for the cohort is 23.1c vs a 12.0c detection mid. CROSS-CHECK, independent: the long-shot shadow ladder (data/longshot-shadow-summary.json, since 2026-09-12) reads 133 would-admit of 9,785, 113 resolved, 24 wins (21.2%), +$1,845.52 on $20 stakes = +81.7%.",
+      "decision_rule": "MEASURE FIRST: join the 189 to MarketSnapshot.bestAsk within +/-2h of the decision and recompute at the ask. DECISION RULE: if >=120 of 189 resolve to an ask AND their ask-adjusted mean ROI is >= +20%, propose ONE change — move the spread check ahead of drift/confidence in the hard-skip order in src/lib/scoring/trade.ts so a candidate is refused by the gate that costs money rather than by the first gate that fires. No threshold moves; the drift HOLD and the liquidity NO-CHANGE are untouched by an ordering change. REFUTATION: ask-adjusted mean ROI < +5% on the 189 -> the refusals were right for reasons the row never recorded, withdraw. Also withdrawn if MarketSnapshot coverage on those 189 is < 60%, because then the measurement cannot be made.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "long-shot",
+        "funnel"
+      ],
+      "gate": "LANE A — nothing applied. No RuleSet read or write, no prisma write, no gate/threshold/size changed. Re-read: python3 scripts/profit-cheap-funnel.py --resolve (read-only, DB mode=ro, 384 cached venue responses under data/cheap-funnel-cache, gitignored)."
+    },
+    {
       "id": "profit-fill-never-reachable",
       "title": "LANE A PROPOSAL — 96% of C-200's booked profit is on 236 legs the market never brought to our price in 24h; book the reachable basis and stop dispatching into an undercut market",
       "column": "Scheduled",
