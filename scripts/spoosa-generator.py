@@ -191,7 +191,7 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
                    boss_w: float = 36.0, boss_h: float = 28.0, boss_hgt: float = 4.0,
                    inserts: int = 1, lug: float = 18.0, lug_out: float = 5.0, lug_ch: float = 0.0,
                    side_inserts: int = 4, side_pad: float = 4.0, side_pad_len: float = 26.0,
-                   side_pad_deep: float = 18.0,
+                   side_pad_deep: float = 18.0, rim_top_h: float = 3.0,
                    side_d: float = 4.4, side_depth: float = 12.0,
                    pocket_r: float = 9.0, pocket_depth: float = 1.5,
                    groove_w: float = 0.0, groove_d: float = 0.0,
@@ -235,6 +235,18 @@ def build_portable(w: float, h: float, *, plate_t: float = 15.0, chamfer: float 
             height=rim_h + 3.0).apply_translation((0, 0, -rim_h - 1.0))
         solid = trimesh.boolean.union(
             [solid, trimesh.boolean.difference([outer, inner], engine="manifold")], engine="manifold")
+
+    # ---- raised lip on the ARM face as well.
+    # The references read as a TRAY from above: the rim is visible on the top face, not just the
+    # underside. Without it the plate silhouette is a flat slab and does not match.
+    if rim_top_h > 0 and rim_w > 0:
+        t_out = trimesh.creation.extrude_polygon(chamfered_rect(w, h, chamfer),
+                                                 height=rim_top_h + 0.5).apply_translation((0, 0, plate_t - 0.5))
+        t_in = trimesh.creation.extrude_polygon(
+            chamfered_rect(w - 2 * rim_w, h - 2 * rim_w, max(1.0, chamfer - rim_w / 2)),
+            height=rim_top_h + 3.0).apply_translation((0, 0, plate_t - 1.5))
+        solid = trimesh.boolean.union(
+            [solid, trimesh.boolean.difference([t_out, t_in], engine="manifold")], engine="manifold")
 
     # ---- central boss carrying the 1/4-20 insert ON ITS FACE
     if boss_w > 0 and boss_hgt > 0:

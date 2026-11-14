@@ -285,16 +285,13 @@ def main():
                 print(f"new: {out} + plan")
 
     if which in ("portable", "new", "all"):
-        pp = "cad/spoosa/spoosa_portable_160x120.stl"
-        if os.path.exists(pp):
+        import glob
+        for pp in sorted(glob.glob("cad/spoosa/spoosa_portable_*.stl")):
+            tag = pp.split("spoosa_portable_")[-1].replace(".stl", "")
             m = load(pp)
-            render([(m, PLATE)], f"{OUT}/portable-iso.png", w=1400, h=1000, azim=34, elev=38)
-            render([(m, PLATE)], f"{OUT}/portable-plan.png", w=1200, h=1000, azim=0, elev=4)
-            flip = m.copy()
-            flip.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [1, 0, 0]))
-            render([(flip, PLATE)], f"{OUT}/portable-monitor-face.png", w=1400, h=1000,
-                   azim=30, elev=44)
-            print("portable: iso + plan + monitor face")
+            render([(m, PLATE)], f"{OUT}/portable-{tag}-iso.png", w=1500, h=1000, azim=34, elev=38)
+            render([(m, PLATE)], f"{OUT}/portable-{tag}-plan.png", w=1300, h=1000, azim=0, elev=4)
+            print(f"portable {tag}: iso + plan")
 
     if which in ("family", "all"):
         family([
