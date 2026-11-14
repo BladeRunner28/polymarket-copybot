@@ -34,15 +34,31 @@
  *   npx tsx scripts/apply-v73-c200-cheap-band-clip.ts --revert   # set the field back to ""
  */
 
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { prisma } from "../src/lib/db";
-import { applyRuleChanges } from "../src/lib/rules";
+import { applyRuleChanges, DEFAULT_RULES, type RuleChangeProposal, type Rules } from "../src/lib/rules";
 import { log } from "../src/lib/redact";
+import {
+  assertRuleFieldHasReader,
+  assertRuleFieldImplemented,
+  countRuleFieldReaders,
+} from "../src/lib/rule-field-guard";
 
 const VALUE = "0.0-0.2:25";
 
-const PROPOSALS = [
+/**
+ * INTERLOCK (moved from compile time to run time 2026-11-13): this field does not
+ * exist in `Rules` yet, and applying it before the consumers land would store a
+ * value nothing reads. That used to be enforced by the type checker, which also
+ * turned `tsc --noEmit` red for the entire repo — see src/lib/rule-field-guard.ts.
+ * The same refusal now happens in main() before any write.
+ */
+const FIELD = "c200BandClipCaps";
+
+const PROPOSALS: RuleChangeProposal[] = [
   {
-    field: "c200BandClipCaps" as const,
+    field: FIELD as keyof Rules,
     newValue: VALUE,
     reason:
       "v73 (Lane A proposal 2026-11-12): cap C-200 clips at $25 in 0.0-0.2 — a drawdown rail, not an edge trade. Regime closed-leg max drawdown −$776.58 → −$225.35 (−71%), all-time −$890.49 → −$547.82, against a $1,900 lane principal (41% → 12%). PnL cost is not distinguishable from zero: all-time −$2,421.93 (CI −6,320.80…+877.42), regime +$476.08 (CI −661.04…+1,362.64), and the all-time cost flips to +$550.45 ex-top-5 wallets.",
@@ -51,9 +67,9 @@ const PROPOSALS = [
   },
 ];
 
-const REVERT = [
+const REVERT: RuleChangeProposal[] = [
   {
-    field: "c200BandClipCaps" as const,
+    field: FIELD as keyof Rules,
     newValue: "",
     reason:
       "v73 revert (Lane A write-up §5.5): c200BandClipCaps back to \"\" — no cap, byte-identical to pre-v73. No PaperTrade row is retro-edited.",
@@ -62,11 +78,31 @@ const REVERT = [
   },
 ];
 
+/** Every .ts/.tsx file under a source root, as {path,text} for the reader count. */
+function readSourceTree(root: string): Array<{ path: string; text: string }> {
+  const out: Array<{ path: string; text: string }> = [];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      const st = statSync(p);
+      if (st.isDirectory()) walk(p);
+      else if (/\.tsx?$/.test(name)) out.push({ path: p, text: readFileSync(p, "utf8") });
+    }
+  };
+  walk(root);
+  return out;
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const apply = argv.includes("--yes");
   const revert = argv.includes("--revert");
   const proposals = revert ? REVERT : PROPOSALS;
+
+  // INTERLOCK — refuses in dry run too, because a plan for a no-op write is worse
+  // than no plan. Throws UnimplementedRuleFieldError, caught by the catch() below.
+  assertRuleFieldImplemented(FIELD);
+  assertRuleFieldHasReader(FIELD, countRuleFieldReaders(FIELD, readSourceTree("src")));
 
   const before = await prisma.ruleSet.findFirst({ where: { active: true }, orderBy: { version: "desc" } });
   if (before) {
