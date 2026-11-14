@@ -391,8 +391,8 @@ def build_tray(w: float, h: float, *, base_t: float = 8.0, chamfer: float = 10.0
                cut_w: float = 60.0, cut_h: float = 56.0, cut_r: float = 6.0,
                vesa: tuple[float, ...] = (75.0, 100.0), screw_d: float = 4.4,
                pocket_r: float = 9.0, pocket_depth: float = 1.5,
-               lug_w: float = 26.0, lug_pro: float = 8.0, lug_deep: float = 14.0,
-               lug_h: float = 20.0, lug_r: float = 8.0,
+               lug_w: float = 38.0, lug_pro: float = 8.0, lug_deep: float = 18.0,
+               lug_h: float = 26.0, lug_r: float = 10.0,
                insert_key: str = DEFAULT_INSERT,
                bed: tuple[float, float] | None = None) -> tuple[trimesh.Trimesh, dict]:
     """The part in the reference photographs, built to those photographs.
@@ -406,7 +406,13 @@ def build_tray(w: float, h: float, *, base_t: float = 8.0, chamfer: float = 10.0
         with the bore in the tab's outward face (the red boxes in the owner's photo)
 
     The tab is lug_h tall rather than base_t: a Ø8.7 insert needs wall around it, and (lug_h - 8.7)/2
-    at lug_h=20 is 5.65 mm. On an 8 mm web it would be negative -- there would be no material at all.
+    at lug_h=26 is 8.65 mm. On an 8 mm web it would be negative -- there would be no material at all.
+
+    Sized for LOAD, not just for the insert. These tabs carry an accessory arm with cameras and small
+    monitors, so the bending moment lands on the tab and the web behind it. lug_w is the width along
+    the edge, lug_h the height, and lug_deep how far the tab runs back into the web: at lug_deep=18
+    the 13.2 mm insert bore finishes 4.8 mm short of the tab's inner end, so the insert is buried in
+    solid material rather than a wall.
     """
     ins = INSERT_PRESETS[insert_key]
     if bed and (w + 2 * lug_pro > bed[0] or h + 2 * lug_pro > bed[1]):
@@ -779,6 +785,13 @@ def main() -> int:
                     help="build the PHOTOGRAPH layout: thin web, central cutout, rim on both faces, "
                          "figure-8 75+100 VESA pockets, and a rounded 1/4-20 tab centred on each "
                          "side. Takes WxH, e.g. 175x125.")
+    ap.add_argument("--tab-w", type=float, default=38.0,
+                    help="1/4-20 tab width along the edge, mm -- these carry an arm, so wider is stronger")
+    ap.add_argument("--tab-h", type=float, default=26.0,
+                    help="tab height through the plate, mm. Wall around a Ø8.7 insert = (tab_h-8.7)/2")
+    ap.add_argument("--tab-pro", type=float, default=8.0, help="tab protrusion past the edge, mm")
+    ap.add_argument("--tab-deep", type=float, default=18.0,
+                    help="how far the tab runs back into the web, mm; must exceed the insert length")
     ap.add_argument("--portable", default="",
                     help="build the earlier REFERENCE layout: a landscape chamfered frame with "
                          "side-bored corner lugs, a central insert boss and figure-8 dual-VESA "
@@ -840,7 +853,9 @@ def main() -> int:
                 tbed = (bw, bh)
             except Exception:
                 raise SystemExit(f"--bed expects WxH (e.g. 350x350), got {args.bed!r}")
-        body, meta = build_tray(tw, th, insert_key=args.insert_preset, bed=tbed)
+        body, meta = build_tray(tw, th, insert_key=args.insert_preset, bed=tbed,
+                                lug_w=args.tab_w, lug_h=args.tab_h,
+                                lug_pro=args.tab_pro, lug_deep=args.tab_deep)
         tname = f"spoosa_tray_{int(tw)}x{int(th)}.stl"
         tout = os.path.join(OUT_DIR, tname)
         body.export(tout)
