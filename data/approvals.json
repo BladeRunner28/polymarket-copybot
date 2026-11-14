@@ -1,30 +1,14 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-12T22:05:44-06:00",
+  "updatedAt": "2026-11-13T22:05:44-06:00",
   "counts": {
-    "pending": 1,
-    "approved": 32,
-    "declined": 0,
+    "pending": 0,
+    "approved": 34,
+    "declined": 1,
     "excluded": 17,
     "retired": 9
   },
   "items": [
-    {
-      "id": "apr-t_4c19adfb",
-      "lane": "B",
-      "status": "pending",
-      "title": "Capture 3 whine clips with a synchronized rpm timeline",
-      "proposal": "GOAL: Produce the audio + rpm dataset that lets an order analysis name the whining component. Context: the 2026-10-04 cabin park-rev clip contained NO rpm-locked tone from 250 Hz to 8 kHz, so the whine is likely load-, speed-, or cold-coupled \u2014 a stationary rev cannot reproduce it. You must get it under real driving conditions. PRECONDITIONS: the preflight task is complete \u2014 rpm method is proven, phone is dash-mounted, capture directory ~/video-in/captures/whine-drive-<YYYYMMDD>/ exists. SETUP BEFORE DRIVING: windows up; note HVAC state per clip. Start the rpm log (or start the tach-in-frame video) within a few seconds of starting audio so the timelines overlap; write down the approximate \u2026",
-      "evidence": "",
-      "revert": "",
-      "source": "kanban:t_4c19adfb",
-      "origin": "kanban",
-      "blockKind": "capability",
-      "createdAt": "2026-11-12T16:05:44-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": "t_4c19adfb"
-    },
     {
       "id": "apr-polyterm-p3-hygiene-preregistered-read",
       "lane": "B",
@@ -482,7 +466,7 @@
       "decidedAt": "2026-11-12T16:45:09.679Z",
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_39df3d54",
-      "_card_dates": "Proposed 2026-11-12 by the profit review (drafts/profit-recs-20261112.md, instrument scripts/profit-fill-cohort.py). NOT APPLIED \u2014 Lane A: it changes how much the lane risks and what the ladder credits. | LANE A READ 2026-11-12 (drafts/c200-fill-class-basis-20261112.md, new read-only instrument scripts/c200-ladder-fill-basis.py): the card REPRODUCES \u2014 the filled class is identical (60 legs, $1,103, -$515.50, -46.7%, CI -70.9..-14.4), with one day of drift on the unresolved class (80 legs now, +$449.60). NEW: the ladder read split by class \u2014 settled 7d -$203.47 booked / -$286.42 fills-only vs $1,750 needed, so all three credit arms fail and the basis change moves NO advance today; all-time published +$5,631.94 = +$4,897.92 unresolved + $828.66 pre-flip unfilled - $94.64 filled, and the booked arm clears the cheapest rung in 8 of 107 rolling windows while the provable arm does in 0. SCOPE NARROWED to the READ PATH: the ledger channel would cut the C-200 exposure cap $3,841 -> $1,392 and move realized-basis drawdown 32.0% -> 76.2% (gate already firing at 20%), so it is excluded and priced in the draft. NOTHING APPLIED \u2014 no apply-v*, no prisma write, no merge.",
+      "_card_dates": "Proposed 2026-11-12 by the profit review (drafts/profit-recs-20261112.md, instrument scripts/profit-fill-cohort.py). NOT APPLIED \u2014 Lane A: it changes how much the lane risks and what the ladder credits. | LANE A READ 2026-11-12 (drafts/c200-fill-class-basis-20261112.md, new read-only instrument scripts/c200-ladder-fill-basis.py): the card REPRODUCES \u2014 the filled class is identical (60 legs, $1,103, -$515.50, -46.7%, CI -70.9..-14.4), with one day of drift on the unresolved class (80 legs now, +$449.60). NEW: the ladder read split by class \u2014 settled 7d -$203.47 booked / -$286.42 fills-only vs $1,750 needed, so all three credit arms fail and the basis change moves NO advance today; all-time published +$5,631.94 = +$4,897.92 unresolved + $828.66 pre-flip unfilled - $94.64 filled, and the booked arm clears the cheapest rung in 8 of 107 rolling windows while the provable arm does in 0. SCOPE NARROWED to the READ PATH: the ledger channel would cut the C-200 exposure cap $3,841 -> $1,392 and move realized-basis drawdown 32.0% -> 76.2% (gate already firing at 20%), so it is excluded and priced in the draft. NOTHING APPLIED \u2014 no apply-v*, no prisma write, no merge. | PROFIT REVIEW 2026-11-13 (drafts/profit-recs-20261113.md, scripts/profit-fill-tape.py): THE -46.7% FIGURE ON THIS CARD DOES NOT REPRODUCE. Scored against the venue's own minute tape (clob prices-history, keyless, retroactive, 100% coverage over 2,274 legs), the C-200 filled cohort since 2026-09-01 is 515 legs / $8,415 / -7.7% (CI -29.3..+17.6): the direction survives, the magnitude was a 60-leg artifact. The 'unresolved class can never be adjudicated' claim is FALSE \u2014 the tape adjudicates 83/83 unresolved legs, 67.5% touched within 60m (below the >=70% refutation bar, so the condition is not met; the 56 that newly fill read +$201.3 / +8.8%, CI -39.7..+77.3). The class that actually decides the lane is 236 legs / $3,321 / +$5,709.8 that never printed within 1c of our bid in 24h = 96% of the lane's booked profit; reachable-only the lane is +1.1%. SUPERSEDED BY card profit-fill-never-reachable; this card's READ-PATH scope is subsumed by it.",
       "_column": "Scheduled"
     },
     {
@@ -532,6 +516,54 @@
       "decidedAt": "2026-11-12T21:31:58.630Z",
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_cc586e83"
+    },
+    {
+      "id": "apr-profit-fill-never-reachable",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 96% of C-200's booked profit is on 236 legs the market never brought to our price in 24h; book the reachable basis and stop dispatching into an undercut market",
+      "proposal": "WHY: the fill-aware booking flip (2026-10-28) only zeroes rows the resolver explicitly stamps `unfilled`; rows it cannot see (562 with fillStatus NULL) keep booking at p(fill)=1. The venue tape settles what the artifact could not. MEASURED (read-only, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk, market-clustered CIs; 2,274 finished non-demo legs opened 2026-09-01..11-13, $32,065): C-200 booked +$5,922.5 (+29.6%); 236 legs / $3,321 / +$5,709.8 of that (-96%) never printed within 1c of our bid in TWENTY-FOUR hours (5-min fidelity; 7.5% reverse rate on an 80-leg 1-minute re-check) \u2014 restated +1.1%. STANDARD booked +$3.4%, restated +2.5%, 90% fill rate, \u2026",
+      "evidence": "MEASURED (read-only, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk, market-clustered CIs;",
+      "revert": "",
+      "source": "roadmap:profit-fill-never-reachable",
+      "createdAt": "2026-11-13T08:05:44-06:00",
+      "decidedAt": "2026-11-13T16:07:22.229Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_830c1b9c",
+      "_card_dates": "Proposed 2026-11-13 by the profit review (drafts/profit-recs-20261113.md, new read-only instrument scripts/profit-fill-tape.py, self-tests 6/6). NOT APPLIED \u2014 Lane A: it changes what the bot books and what it risks. It also SUPERSEDES the load-bearing figure on card profit-fill-class-basis: the -46.7% filled-class ROI does not reproduce at larger n (515 tape-filled C-200 legs since 2026-09-01 read -7.7%, CI -29.3..+17.6), and the claim that the unresolved class can never be adjudicated is FALSE \u2014 clob.polymarket.com/prices-history serves the venue's minute tape retroactively, keyless, giving 100% fill coverage (2,274 legs).",
+      "_column": "Scheduled"
+    },
+    {
+      "id": "apr-kelly-single-loss-concentration-test",
+      "lane": "B",
+      "status": "approved",
+      "title": "Pre-register the single-loss concentration test: per-position cap or concurrent-long-shot limit (kelly rec 4, approved 10-21)",
+      "proposal": "APPROVED 2026-10-21 as the TEST only - its own wording gates the rule change on separate approval ('per-position cap or concurrent-long-shot limit is the next test, with your approval'). HYPOTHESIS: the $100 cap binds on every long-shot Kelly position (= 1.3% of net worth per full loss at 7,831 NW), so a cluster of concurrent long-shots can produce a correlated drawdown the current 20% drawdown gate is too coarse to catch. MEASUREMENT: distribution of concurrent open long-shot positions and of per-position loss as a share of net worth; count days where simulated concurrent full-loss exposure exceeded 5/10/15% of net worth; replay against realized outcomes. DECISION RULE: propose a \u2026",
+      "evidence": "DECISION RULE: propose a per-position cap or a concurrent-long-shot limit ONLY if the measured concurrent-full-loss exposure exceeded 10% of net worth on >=1 day in the read window, or a single leg lost >1.3% of net worth twice in 30 days.",
+      "revert": "e) ROLLBACK: set maxConcurrentLongshotPctOfNetWorth = 0 \u2014 one config value;",
+      "source": "roadmap:kelly-single-loss-concentration-test",
+      "createdAt": "2026-11-13T10:05:44-06:00",
+      "decidedAt": "2026-11-13T16:07:22.677Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_e0a4c4ad",
+      "_card_dates": "",
+      "_column": "Scheduled"
+    },
+    {
+      "id": "apr-t_4c19adfb",
+      "lane": "B",
+      "status": "declined",
+      "title": "Capture 3 whine clips with a synchronized rpm timeline",
+      "proposal": "GOAL: Produce the audio + rpm dataset that lets an order analysis name the whining component. Context: the 2026-10-04 cabin park-rev clip contained NO rpm-locked tone from 250 Hz to 8 kHz, so the whine is likely load-, speed-, or cold-coupled \u2014 a stationary rev cannot reproduce it. You must get it under real driving conditions. PRECONDITIONS: the preflight task is complete \u2014 rpm method is proven, phone is dash-mounted, capture directory ~/video-in/captures/whine-drive-<YYYYMMDD>/ exists. SETUP BEFORE DRIVING: windows up; note HVAC state per clip. Start the rpm log (or start the tach-in-frame video) within a few seconds of starting audio so the timelines overlap; write down the approximate \u2026",
+      "evidence": "",
+      "revert": "",
+      "source": "kanban:t_4c19adfb",
+      "origin": "kanban",
+      "blockKind": "capability",
+      "createdAt": "2026-11-12T16:05:44-06:00",
+      "decidedAt": "2026-11-13T16:07:11.280Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_4c19adfb"
     }
   ],
   "excluded": [

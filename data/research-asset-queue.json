@@ -284,10 +284,20 @@
    "audited": "2026-10-23 08:23 CDT",
    "claimed": "2026-10-23 08:20 CDT",
    "claimed_ts": 1792761632.777018,
+   "decay": {
+    "action": "stalled",
+    "clause": "stalled-ask",
+    "days": 21,
+    "rule": "asset-queue-decay-v1",
+    "since": "2026-10-23 08:23",
+    "since_event": "audited",
+    "stalled_at": "2026-11-13 12:20 CST",
+    "ttl": 21
+   },
    "discovered": "2026-10-23 08:20 CDT",
    "id": "xyonium/reach-mcp",
    "license": "MIT",
-   "note": "\u4e00\u6b21\u67e5\u8be2\u6a2a\u8de8 33 \u4e2d\u82f1\u6587\u4fe1\u606f\u6e90 \u2014\u2014 \u793e\u5a92\uff08\u5168\u7f51\u641c\u7d22\u3001\u5c0f\u7ea2\u4e66\u3001\u5fae\u535a\u3001\u77e5\u4e4e\u3001\u8c46\u74e3\u3001\u5934\u6761\u3001linux.do\u3001B\u7ad9\u3001X\u3001Reddit\u3001Instagram\u3001Threads\u3001TikTo",
+   "note": "\u4e00\u6b21\u67e5\u8be2\u6a2a\u8de8 33 \u4e2d\u82f1\u6587\u4fe1\u606f\u6e90 \u2014\u2014 \u793e\u5a92\uff08\u5168\u7f51\u641c\u7d22\u3001\u5c0f\u7ea2\u4e66\u3001\u5fae\u535a\u3001\u77e5\u4e4e\u3001\u8c46\u74e3\u3001\u5934\u6761\u3001linux.do\u3001B\u7ad9\u3001X\u3001Reddit\u3001Instagram\u3001Threads\u3001TikTo \u00b7 STALLED 21d at 2026-11-13 12:20 CST (stalled-ask, ttl 21d): the ask is still open on the user's side and is re-surfaced, never auto-withdrawn",
    "pushed": "2026-10-23",
    "recommendation": {
     "decision_rule": "read-only: after 14 daily runs (by 2026-11-06) read data/cache/research-recon/factsheet-status.jsonl; if >=1 block was gated_off or void-with-rows in those runs while the same run fact sheet carried no line about it, promote the typed states into the fact sheet header; else drop",
@@ -433,6 +443,34 @@
    "status": "audited",
    "url": "https://github.com/hurley451/KalshiSharp",
    "verdict": "drop"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-11-13 08:24 CST",
+    "state": "pending"
+   },
+   "audited": "2026-11-13 08:24 CST",
+   "claimed": "2026-11-13 08:20 CST",
+   "claimed_ts": 1794579644.563004,
+   "discovered": "2026-11-13 08:20 CST",
+   "id": "YichengYang-Ethan/oracle3-prediction-market-agent",
+   "license": "Apache-2.0",
+   "note": "Oracle3: open-source trading engine and MCP server for prediction markets. Finds fee-adj",
+   "pushed": "2026-11-13",
+   "recommendation": {
+    "decision_rule": "If isotonic-price beats raw price by >= 0.002 Brier on the frozen ML-1 test legs, propose restating BAR in src/lib/ml1-read.ts as candidate-vs-price+isotonic and re-read the gate; else record raw price as defended and close the question",
+    "effort": "~1h, read-only replay on data/decision-dataset.csv + training_data.csv, no new data capture",
+    "reversibility": "Delete the artifact data/ml1-isotonic-read.json; BAR and every published number untouched unless the measurement passes",
+    "text": "Rebuild the ML-1 comparator as price+isotonic (train-fitted) in scripts/ml1-gate-read.ts: an isotonic-price arm beside raw price on the frozen 2026-08-21 boundary, artifact only, no BAR change"
+   },
+   "report": "drafts/oracle3-reaudit-20261113.md",
+   "source": "radar-seed",
+   "stars": 569,
+   "status": "audited",
+   "url": "https://github.com/YichengYang-Ethan/oracle3-prediction-market-agent",
+   "verdict": "watch"
   }
  ],
  "version": 1

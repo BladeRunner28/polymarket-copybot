@@ -1,19 +1,19 @@
 {
-  "analyzedAt": "2026-11-13T04:01:09.231817+00:00",
+  "analyzedAt": "2026-11-14T00:00:49.189773+00:00",
   "bot": "BANKROLL_200",
   "since": null,
   "deduped": false,
   "dedupedFromRows": null,
   "method": "excess return = win_rate - mean entry price; se=sqrt(wr(1-wr)/N); |z|>=2 significant (port of jon-becker/prediction-market-analysis, MIT)",
   "total": {
-    "n": 2730,
-    "winRate": 0.4476,
-    "avgEntry": 0.4685,
-    "excessReturn": -0.0209,
-    "z": -2.196,
-    "p": 0.028059,
+    "n": 2731,
+    "winRate": 0.4475,
+    "avgEntry": 0.4686,
+    "excessReturn": -0.0211,
+    "z": -2.22,
+    "p": 0.026403,
     "significant": true,
-    "realizedPnl": 5721.29
+    "realizedPnl": 5718.58
   },
   "totalOutcome": {
     "n": 1555,
@@ -25,8 +25,8 @@
     "significant": false,
     "realizedPnl": 2402.7
   },
-  "outcomeCoverage": 0.5696,
-  "outcomeUnknownLegs": 1175,
+  "outcomeCoverage": 0.5694,
+  "outcomeUnknownLegs": 1176,
   "labelBasis": {
     "arm_total_bands_hours": "EXIT = realizedPnl > 0 (the book, every finished leg)",
     "arm_totalOutcome_band_outcome": "OUTCOME = OutcomeReview.finalOutcome vs the trade outcome (settlement-knowable legs only)",
@@ -107,14 +107,14 @@
       }
     },
     {
-      "n": 585,
-      "winRate": 0.5658,
-      "avgEntry": 0.6902,
-      "excessReturn": -0.1244,
-      "z": -6.069,
+      "n": 586,
+      "winRate": 0.5648,
+      "avgEntry": 0.6901,
+      "excessReturn": -0.1252,
+      "z": -6.114,
       "p": 0.0,
       "significant": true,
-      "realizedPnl": -24.61,
+      "realizedPnl": -27.32,
       "band": "0.60-0.80",
       "basis": "exit",
       "outcome": {
@@ -277,14 +277,14 @@
       }
     },
     {
-      "n": 88,
-      "winRate": 0.3977,
-      "avgEntry": 0.4696,
-      "excessReturn": -0.0719,
-      "z": -1.378,
-      "p": 0.168132,
+      "n": 89,
+      "winRate": 0.3933,
+      "avgEntry": 0.4714,
+      "excessReturn": -0.0781,
+      "z": -1.509,
+      "p": 0.131285,
       "significant": false,
-      "realizedPnl": -298.45,
+      "realizedPnl": -301.16,
       "hour": 5,
       "basis": "exit",
       "outcome": {
@@ -362,8 +362,8 @@
       "outcome": {
         "n": 8,
         "winRate": 0.5,
-        "avgEntry": 0.5587,
-        "excessReturn": -0.0587,
+        "avgEntry": 0.5588,
+        "excessReturn": -0.0588,
         "z": -0.332,
         "p": 0.739632,
         "significant": false,
