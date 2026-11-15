@@ -11,6 +11,7 @@ import { decodeCategoryStrengths, categoryWinRateFor } from "../src/lib/scoring/
 import { researchCategoryFor } from "../src/lib/research-categories";
 import { aggregateSentimentForCategory } from "../src/lib/forecasting/sentiment";
 import { priceForOutcome, isYesSideOutcome } from "../src/lib/outcome-price";
+import { decisionProvenanceFields } from "../src/lib/decision-provenance";
 import { openPaperTrade, mapBankroll200Size, applyKellyBandRails, C200_BAND_DEFAULTS } from "../src/lib/paper";
 import { assertPaperOnly, clampPaperSize } from "../src/lib/safety";
 import { c200HourPolicy, etHourNow, isHourBlackedOut } from "../src/lib/hour-policy";
@@ -660,6 +661,15 @@ async function main() {
         thesisScore: result.breakdown.thesisScore,
         simulatedPositionSize: result.simulatedPositionSize,
         ruleSetVersion: version,
+        // data2-per-decision-provenance (2026-11-14, Lane B): persist the inputs this
+        // decision was actually taken on. `sentimentDelta` is the trade-direction-signed
+        // edge the scorer received (null when the layer was silent — never 0 by default,
+        // because "no evidence" and "evidence that nets to zero" are different rows);
+        // `priceAtDecision` is the price of the token the leg holds, i.e. the price the
+        // copy would pay, from the same read feeding scoreTrade; `alreadyDecidedAtEntry`
+        // flags price >= 0.995 so that class can be excluded from training later WITHOUT
+        // re-deriving it from a proxy.
+        ...decisionProvenanceFields(currentPrice, sentimentDelta),
         isDemo: t.isDemo,
       },
     });

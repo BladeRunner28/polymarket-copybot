@@ -21,6 +21,8 @@
     "capture:fees": "tsx scripts/capture-fee-schedules.ts",
     "audit:print-types": "tsx scripts/audit-print-types.ts",
     "review:outcomes": "tsx scripts/review-outcomes.ts",
+    "backfill:horizon-prices": "tsx scripts/backfill-horizon-prices.ts",
+    "decision:provenance-read": "tsx scripts/decision-provenance-read.ts",
     "export:training": "tsx scripts/export-training-data.ts",
     "update:rules": "tsx scripts/update-rules.ts",
     "report:daily": "tsx scripts/report-daily.ts",

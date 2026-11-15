@@ -172,6 +172,14 @@ model DecisionJournal {
   // Additive + nullable: existing `confidence`/`copyScore` semantics are unchanged.
   rawConfidence         Float? // confidence as computed, before any zeroing
   adjustedCopyScore     Float? // post-boost decision score, unrounded
+  // data2-per-decision-provenance (2026-11-14, Lane B): the numbers the decision was
+  // actually taken on. Before this, sentiment survived only as English inside
+  // reasonsJson and no row could answer "at what price, and was it already decided?".
+  // NULL = row written before this change — no backfill, because neither value is
+  // derivable from the stored row and an invented label is the defect this card is about.
+  sentimentDelta        Float? // trade-direction-signed sentiment edge at scoring (-1..1); null = layer silent
+  priceAtDecision       Float? // price of the token the leg holds, as scored
+  alreadyDecidedAtEntry Boolean @default(false) // priceAtDecision >= 0.995
   isDemo                Boolean  @default(false)
   createdAt             DateTime @default(now())
 

@@ -9,10 +9,31 @@ import { getAdapter } from "../src/lib/adapters";
 import { computePnl } from "../src/lib/paper";
 import { didOutcomeWin } from "../src/lib/resolution";
 import { log, logError } from "../src/lib/redact";
+import { type HorizonRead } from "../src/lib/decision-provenance";
+import { horizonPricesFor } from "../src/lib/clob-horizon";
 
 const HYPOTHETICAL_SIZE = 10;
 const CLOB_API = "https://clob.polymarket.com";
 
+/**
+ * data2-per-decision-provenance (2026-11-14, Lane B): the horizon prices.
+ *
+ * OutcomeReview.priceAfter1h/6h/24h shipped in the schema and then had NO writer
+ * and NO reader anywhere in the repo (verified 2026-11-14: 11,774 rows, 0 populated).
+ * A binary label was all that existed, so nothing downstream could learn timing.
+ *
+ * BASIS: the venue's own fill tape for the token the decision HELD, via CLOB
+ * /prices-history (keyless), window [decidedAt, decidedAt+24h], fidelity 1 minute.
+ * The value written is the LAST print at or before the horizon within 90 minutes
+ * (src/lib/decision-provenance.ts owns that rule, so writer and probe cannot
+ * disagree); a print exactly at 0 or 1 is the settlement mark, not a horizon price,
+ * and is recorded as NULL rather than as a certainty. NULL therefore always means
+ * "the tape cannot say", never "zero".
+ *
+ * NOT usable as the basis: our own MarketSnapshot table. Measured on 400 decisions
+ * (14d to 2026-11-14T02:00Z): a snapshot within +/-20min of +1h exists for 21.0%,
+ * +6h for 5.5%, +24h for 0.0% — the snapshot writer bursts and never revisits.
+ */
 /**
  * Resolve archived markets via the CLOB API. Gamma 404s dead/renamed slugs
  * (the root cause of the empty OutcomeReview table), but CLOB keeps every
@@ -179,6 +200,14 @@ async function main() {
 
   let reviewed = 0;
   const failures: string[] = [];
+  // Horizon-price coverage, printed as ONE line: a count with its basis, so a thin
+  // tape is visible rather than inferred from a lot of NULLs later.
+  const horizonsFilled = { "1h": 0, "6h": 0, "24h": 0 };
+  let horizonsAttempted = 0;
+  let horizonsUnavailable = 0;
+  let horizonsCapped = 0;
+  let horizonsFetched = 0;
+  const HORIZON_FETCH_MAX = Number(process.env.HORIZON_FETCH_MAX ?? 400);
 
   for (const d of pending) {
     try {
@@ -228,6 +257,30 @@ async function main() {
         );
       }
 
+      // Horizon prices (data2-per-decision-provenance). Best-effort and NON-FATAL:
+      // a venue hiccup must not lose the label this row exists for. Capped per run so
+      // a widened review pool can never turn this into hundreds of venue reads: the
+      // skipped rows stay NULL (visible in the [HORIZONS] line), they are not guessed.
+      let horizons: Record<"1h" | "6h" | "24h", HorizonRead> | null = null;
+      if (horizonsFetched < HORIZON_FETCH_MAX) {
+        try {
+          horizons = await horizonPricesFor(d.observedTrade.conditionId, d.observedTrade.outcome, d.createdAt.getTime());
+          if (horizons) horizonsFetched++;
+        } catch {
+          horizons = null;
+        }
+      } else {
+        horizonsCapped++;
+      }
+      if (horizons) {
+        if (horizons["1h"].reason === "ok") horizonsFilled["1h"]++;
+        if (horizons["6h"].reason === "ok") horizonsFilled["6h"]++;
+        if (horizons["24h"].reason === "ok") horizonsFilled["24h"]++;
+        horizonsAttempted++;
+      } else {
+        horizonsUnavailable++;
+      }
+
       await prisma.outcomeReview.create({
         data: {
           decisionJournalId: d.id,
@@ -236,6 +289,9 @@ async function main() {
           simulatedPnl,
           wasDecisionGood: good,
           lessonsJson: JSON.stringify(lessons),
+          priceAfter1h: horizons?.["1h"].price ?? null,
+          priceAfter6h: horizons?.["6h"].price ?? null,
+          priceAfter24h: horizons?.["24h"].price ?? null,
         },
       });
       reviewed++;
@@ -245,6 +301,12 @@ async function main() {
   }
 
   log(`Outcome review complete: ${reviewed} decisions judged.`);
+  log(
+    `[HORIZONS] token resolved + tape read for ${horizonsAttempted}/${reviewed} judged decisions; ` +
+      `price present 1h ${horizonsFilled["1h"]}, 6h ${horizonsFilled["6h"]}, 24h ${horizonsFilled["24h"]}; ` +
+      `${horizonsUnavailable} had no conditionId/token label and ${horizonsCapped} hit the per-run fetch cap ` +
+      `(${HORIZON_FETCH_MAX}) — all left NULL, never guessed`
+  );
   // ONE line, always. A multi-line block printed AFTER the summary is what `tail -5` cuts
   // first, so the run looked like it never reported. Keep the count, the first five, and an
   // explicit elision marker on the same line.
