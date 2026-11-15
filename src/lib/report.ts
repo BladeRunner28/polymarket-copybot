@@ -120,6 +120,159 @@ function scanAgeText(iso: string, now: Date): string {
 }
 
 /**
+ * Instrument heartbeat — 2026-11-15 self-audit.
+ *
+ * The defect this closes: the EOD report proved exactly ONE job's liveness (the wallet
+ * scan, via its state file). The four stages that actually produce the numbers the report
+ * prints — monitor:trades, score:trades, paper:update-pnl, review:outcomes — had no
+ * freshness line at all. On 2026-11-13 the PnL stage stopped producing rows: the last
+ * mark before the outage was 09:34 and the next was 2026-11-14 06:45 — 21 h with zero
+ * writes, while the hourly job logged nine consecutive
+ * `breaking stale lock (>45 min) and continuing` and then hung again, each run killed at
+ * the harness' 3600 s ceiling. Nothing in the report said so; the EOD printed
+ * `PnL Today` and `Signals today` off a frozen book exactly as it did on a healthy day.
+ * `select count(*) from PnlSnapshot where collectedAt between ...` shows the hole in one
+ * query (11-13 10 → 11-14 05: no rows at all) and the fact had to be found by hand.
+ *
+ * BASIS, stated on the line because all three axes drift: population `isDemo=0` (the same
+ * population every other figure in this report reads), clock = WRITE time of the stage's
+ * own output table (not the day being reported, not openedAt), level = one row per stage.
+ *
+ * "last write" is deliberately NOT called "last successful run": a stage that writes some
+ * rows and then dies still refreshes this clock. That is what the wallet-scan line's
+ * attempt-vs-completion pair is for; this line only answers "is the plumbing moving".
+ *
+ * A missing measurement must never render as a clean one: an unreadable table prints
+ * UNREADABLE and a table with no rows prints NEVER, never "0m ago" or a healthy 0.
+ */
+export type StageHeartbeat = {
+  key: string;
+  label: string;
+  /** null = queried fine, no rows on record. */
+  lastWriteAt: Date | null;
+  /** The stage's own schedule, for the "N× its cadence" multiple. */
+  cadenceMs: number;
+  /** Threshold for calling it stale. NOT a blanket multiple of cadence — see STAGE_POLICY. */
+  staleAfterMs: number;
+  /** The query itself failed — the stage's freshness is UNKNOWN, not fresh. */
+  unreadable?: boolean;
+};
+
+/**
+ * Measured from `~/.hermes/cron/jobs.json` on 2026-11-15, not from HERMES.md — the two
+ * disagree and the doc is the wrong one:
+ *   monitor-score  schedule {"kind":"interval","minutes":10}   (HERMES.md says every 2 h)
+ *   update-pnl     schedule {"kind":"interval","minutes":60}   (hourly, as documented)
+ *   review         NO standalone job. `review:outcomes` runs only as a step of the 22:00
+ *                  EOD chain (copybot-eod.sh line 25), so it writes at most once a day —
+ *                  HERMES.md's "every 6 h" job does not exist in the fleet.
+ *
+ * Stale thresholds are therefore per stage, and none of them is a guessed multiple:
+ *   monitor/score 45 min — the wrapper scripts' OWN stale-lock ceiling ("breaking stale
+ *     lock (>45 min)"): past that, a run that has not finished is a hung run by the
+ *     project's own definition. Runs are also duration-bound (~17 min effective, v37
+ *     note), so a 10-min schedule does NOT mean a write every 10 min.
+ *   pnl 130 min — one missed hourly cycle (120) plus the measured +1 min/hour drift.
+ *   review 48 h — one full missed day of the only job that writes it. A 6 h threshold
+ *     here would have flagged every afternoon, because the stage is silent by design
+ *     between 22:00 runs.
+ */
+export const STAGE_POLICY: Record<string, { cadenceMs: number; staleAfterMs: number }> = {
+  monitor: { cadenceMs: 10 * 60_000, staleAfterMs: 45 * 60_000 },
+  score: { cadenceMs: 10 * 60_000, staleAfterMs: 45 * 60_000 },
+  pnl: { cadenceMs: 60 * 60_000, staleAfterMs: 130 * 60_000 },
+  review: { cadenceMs: 24 * 3_600_000, staleAfterMs: 48 * 3_600_000 },
+};
+
+function cadenceText(ms: number): string {
+  if (ms % 3_600_000 === 0) return `${ms / 3_600_000}h`;
+  return `${Math.round(ms / 60_000)}m`;
+}
+
+/** PURE: renders the heartbeat line from measured ages. Undefined only if there is nothing to say. */
+export function instrumentHeartbeatText(stages: StageHeartbeat[], now: Date): string | undefined {
+  if (stages.length === 0) return undefined;
+  const stale: string[] = [];
+  const parts: string[] = [];
+  for (const s of stages) {
+    if (s.unreadable) {
+      parts.push(`${s.label} UNREADABLE`);
+      continue;
+    }
+    if (s.lastWriteAt === null) {
+      parts.push(`${s.label} NEVER`);
+      continue;
+    }
+    const ageMs = now.getTime() - s.lastWriteAt.getTime();
+    if (ageMs > s.staleAfterMs) {
+      const mult = ageMs / s.cadenceMs;
+      const age = ageMs < 3_600_000 ? `${Math.round(ageMs / 60_000)}m` : `${(ageMs / 3_600_000).toFixed(1)}h`;
+      stale.push(
+        `${s.label} has written nothing for ${age} (${mult >= 10 ? Math.round(mult) : mult.toFixed(1)}× its ${cadenceText(s.cadenceMs)} cadence)`
+      );
+      continue;
+    }
+    parts.push(`${s.label} ${scanAgeText(s.lastWriteAt.toISOString(), now)}`);
+  }
+  const rest = parts.join(" · ");
+  if (stale.length > 0) {
+    return `• ⚠️ Instrument heartbeat: ${stale.join("; ")}${rest ? ` — other stages: ${rest}` : ""}`;
+  }
+  return `• Instrument heartbeat (last write per stage, isDemo=0): ${rest}`;
+}
+
+/**
+ * Reads each stage's newest output row. Every query here is index-backed or rowid-bounded
+ * on purpose: `select max(createdAt) from ObservedTrade` has no usable index and took
+ * 25 s on the live 6.7 M-row table (measured 2026-11-15), which is exactly the kind of
+ * unbounded scan that turns one slow step into a killed cron run. `order by rowid desc
+ * limit 1` returns the identical row in 0.00 s (same value verified against the scan).
+ */
+async function instrumentHeartbeat(now: Date): Promise<string | undefined> {
+  const newest = <T>(fn: () => Promise<T | null>): Promise<T | "unreadable" | null> =>
+    fn().catch(() => "unreadable" as const);
+
+  const [monitor, score, pnl, review] = await Promise.all([
+    newest(async () => {
+      const r = await prisma.$queryRaw<Array<{ createdAt: bigint | number }>>`
+        SELECT createdAt FROM ObservedTrade ORDER BY rowid DESC LIMIT 1`;
+      return r[0] ? new Date(Number(r[0].createdAt)) : null;
+    }),
+    newest(async () => {
+      const r = await prisma.decisionJournal.findFirst({
+        where: { isDemo: false },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      });
+      return r?.createdAt ?? null;
+    }),
+    newest(async () => {
+      const r = await prisma.pnlSnapshot.findFirst({ orderBy: { collectedAt: "desc" }, select: { collectedAt: true } });
+      return r?.collectedAt ?? null;
+    }),
+    newest(async () => {
+      const r = await prisma.outcomeReview.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } });
+      return r?.createdAt ?? null;
+    }),
+  ]);
+
+  const mk = (key: string, label: string, v: Date | null | "unreadable"): StageHeartbeat => ({
+    key,
+    label,
+    cadenceMs: STAGE_POLICY[key].cadenceMs,
+    staleAfterMs: STAGE_POLICY[key].staleAfterMs,
+    lastWriteAt: v === "unreadable" ? null : v,
+    unreadable: v === "unreadable",
+  });
+
+  return instrumentHeartbeatText(
+    [mk("monitor", "monitor", monitor), mk("score", "score", score), mk("pnl", "pnl", pnl), mk("review", "review", review)],
+    now
+  );
+}
+
+
+/**
  * A bare HH:MM is only readable if the reader knows it is TODAY. The old line printed
  * `last run (11:08)` for a run 20 h old (2026-11-13 11:08, read on 11-14), which is the
  * same "figure with no clock" defect the 2026-11-13 audit repaired elsewhere: it made a
@@ -600,6 +753,7 @@ export async function generateDailyReport(
   // Derived, not hardcoded (2026-10-21 self-audit — see observedSizingRanges).
   const sizingRanges = await observedSizingRanges(now);
   const walletScan = await walletScanLine(now);
+  const heartbeat = await instrumentHeartbeat(now);
 
   const summary = [
     `**📊 CopyBot Comparative EOD Report — ${date}**`,
@@ -644,6 +798,7 @@ export async function generateDailyReport(
       : `• Rule changes: none`,
     `• Top lesson: ${lesson}`,
     walletScan,
+    heartbeat,
     driftDecayLine(),
     tailRows.length > 0
       ? `• Late tail carried from ${localDate(tailStart)} (booked after its previous report): C-200 ${fmt(tailCmp)} / STANDARD ${fmt(tailStd)} — ${tailRows.length} trades`
