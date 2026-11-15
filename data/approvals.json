@@ -1,14 +1,30 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T22:05:44-06:00",
+  "updatedAt": "2026-11-14T22:05:45-06:00",
   "counts": {
-    "pending": 0,
-    "approved": 34,
+    "pending": 1,
+    "approved": 35,
     "declined": 1,
     "excluded": 17,
     "retired": 9
   },
   "items": [
+    {
+      "id": "apr-training-exclude-already-decided-rows",
+      "lane": "A",
+      "status": "pending",
+      "title": "LANE A PROPOSAL \u2014 exclude already-decided entries (price >= 0.995) from the ML training population; the flag is now persisted, the exclusion is not wired",
+      "proposal": "WHY: the card data2-per-decision-provenance asked for entries where the market was already decided (price >= 0.995) to be flagged 'so it stays out of training'. The FLAG now exists and is written at the scoring site (DecisionJournal.alreadyDecidedAtEntry, shipped 2026-11-14, Lane B). The EXCLUSION does not exist: scripts/export-training-data.ts has no such filter (grep 2026-11-14), so a row entered at 0.998 is still a training row with a nearly predetermined label and an edge of ~0. That is the dilution the card named. (a) EXACT CHANGE: in scripts/export-training-data.ts, drop acted legs whose DecisionJournal.alreadyDecidedAtEntry is true. Until the column has history (its live epoch starts \u2026",
+      "evidence": "(b) MEASURED BASIS (population/clock/level stated): the column's effect TODAY is exactly 0 rows, because the column has 0 post-epoch rows -- no copy-eligible trade has been journaled since it shipped (monitor 2026-11-15T02:07Z: 532 new observed, 0 copy-eligible;",
+      "revert": "(e) ROLLBACK: revert the filter lines in scripts/export-training-data.ts and re-export;",
+      "source": "roadmap:training-exclude-already-decided-rows",
+      "createdAt": "2026-11-14T21:05:45-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-14 by the backlog worker from the data2-per-decision-provenance measurement. NOT APPLIED \u2014 Lane A: it changes the population the model fits on, which changes what the bot decides. No threshold, size or rule changes.",
+      "_column": "Backlog"
+    },
     {
       "id": "apr-polyterm-p3-hygiene-preregistered-read",
       "lane": "B",
@@ -548,6 +564,22 @@
       "kanbanTaskId": "t_e0a4c4ad",
       "_card_dates": "",
       "_column": "Scheduled"
+    },
+    {
+      "id": "apr-profit-cheap-refusal-ask-price",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 189 cheap candidates are refused BEFORE the spread is read; the ones priced at the ask lose, the ones never priced carry +13.9pp. Measure the 189 at the ask, then re-order the checks",
+      "proposal": "WHY: the cheap tail is the only band with a positive calibration edge, it admits 3.88% of its candidates (88 of 2,269 in the live regime), and 79% of its refusals are recorded under a reason that carries no fill information. MEASURED (read-only; level = one candidate, deduped to the first sighting per market+outcome; candidate price = ObservedTrade.detectedPrice; resolutions from clob.polymarket.com/markets/<conditionId> tokens[].winner, keyless, 320/385 = 83% coverage): REFUSED cheap cohort (0.05<=p<0.20) n=320 across 319 markets, hit 23.1% vs breakeven 12.0% = +11.1pp CI [+6.8,+16.0], equal-weight ROI +108.5% AT THE DETECTION MID. ADMITTED control (39 positions) hit 23.1%, +11.0pp, eqw \u2026",
+      "evidence": "MEASURED (read-only;",
+      "revert": "",
+      "source": "roadmap:profit-cheap-refusal-ask-price",
+      "createdAt": "2026-11-14T08:05:45-06:00",
+      "decidedAt": "2026-11-14T16:42:39.430Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_eafa7261",
+      "_card_dates": "Proposed 2026-11-14 by the profit review (drafts/profit-recs-20261114.md; new read-only instrument scripts/profit-cheap-funnel.py, self-tests 15/15). NOT APPLIED \u2014 Lane A: it would change what the bot copies. No threshold moves: the ask is to re-order the hard-skip checks, not to relax any of them.",
+      "_column": "Backlog"
     },
     {
       "id": "apr-t_4c19adfb",
