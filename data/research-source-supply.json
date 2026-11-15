@@ -1,0 +1,204 @@
+{
+  "generatedAt": "2026-11-15T15:06:23.201Z",
+  "windowDays": 7,
+  "basis": {
+    "population": "RegulatorySignal rows (all sources)",
+    "clock": "processedAt UTC",
+    "level": "one signal row (live) / one distinct disclosure (deduped, signed)",
+    "opinionatedThreshold": 0.3,
+    "prior": 0.5
+  },
+  "allTime": [
+    {
+      "source": "congress_gov_api",
+      "rows": 1510,
+      "distinctEvents": 351,
+      "reEmission": 4.301994301994302,
+      "opinionatedRows": 1510,
+      "opinionatedEvents": 351,
+      "modal": 0.5,
+      "modalShare": 0.8410596026490066,
+      "distinctValues": 7,
+      "firstEmit": "2026-08-16T21:19:32.690Z",
+      "lastEmit": "2026-11-15T09:43:53.321Z"
+    },
+    {
+      "source": "govinfo_fr_notice",
+      "rows": 1204,
+      "distinctEvents": 61,
+      "reEmission": 19.737704918032787,
+      "opinionatedRows": 0,
+      "opinionatedEvents": 0,
+      "modal": 0,
+      "modalShare": 1,
+      "distinctValues": 1,
+      "firstEmit": "2026-08-16T21:21:38.677Z",
+      "lastEmit": "2026-11-15T09:43:56.287Z"
+    },
+    {
+      "source": "quiver_congress_trade",
+      "rows": 190,
+      "distinctEvents": 25,
+      "reEmission": 7.6,
+      "opinionatedRows": 190,
+      "opinionatedEvents": 25,
+      "modal": -0.8,
+      "modalShare": 0.6210526315789474,
+      "distinctValues": 4,
+      "firstEmit": "2026-08-16T21:05:45.430Z",
+      "lastEmit": "2026-09-06T22:46:13.968Z"
+    },
+    {
+      "source": "reddit_trumpstrades",
+      "rows": 1,
+      "distinctEvents": 1,
+      "reEmission": 1,
+      "opinionatedRows": 0,
+      "opinionatedEvents": 0,
+      "modal": 0,
+      "modalShare": 1,
+      "distinctValues": 1,
+      "firstEmit": "2026-10-18T21:04:49.479Z",
+      "lastEmit": "2026-10-18T21:04:49.479Z"
+    }
+  ],
+  "window": [
+    {
+      "source": "congress_gov_api",
+      "rows": 120,
+      "distinctEvents": 41,
+      "reEmission": 2.926829268292683,
+      "opinionatedRows": 120,
+      "opinionatedEvents": 41,
+      "modal": 0.5,
+      "modalShare": 0.95,
+      "distinctValues": 2,
+      "firstEmit": "2026-11-08T15:14:54.411Z",
+      "lastEmit": "2026-11-15T09:43:53.321Z"
+    },
+    {
+      "source": "govinfo_fr_notice",
+      "rows": 99,
+      "distinctEvents": 8,
+      "reEmission": 12.375,
+      "opinionatedRows": 0,
+      "opinionatedEvents": 0,
+      "modal": 0,
+      "modalShare": 1,
+      "distinctValues": 1,
+      "firstEmit": "2026-11-08T15:14:54.934Z",
+      "lastEmit": "2026-11-15T09:43:56.287Z"
+    }
+  ],
+  "categories": [
+    {
+      "category": "Crypto",
+      "live": null,
+      "deduped": null,
+      "signed": null,
+      "rowsOpinionated": 0,
+      "eventsOpinionated": 0,
+      "signedEvents": 0,
+      "constantSources": [],
+      "signedSources": []
+    },
+    {
+      "category": "Tech/AI",
+      "live": {
+        "pNeutral": 0.6633796527378127,
+        "pAware": 0.6633796527378127,
+        "delta": 0.16337965273781274,
+        "prior": 0.5,
+        "n": 6,
+        "clusterCount": 1
+      },
+      "deduped": {
+        "pNeutral": 0.6113170686062807,
+        "pAware": 0.6113170686062807,
+        "delta": 0.11131706860628066,
+        "prior": 0.5,
+        "n": 1,
+        "clusterCount": 1
+      },
+      "signed": null,
+      "rowsOpinionated": 6,
+      "eventsOpinionated": 1,
+      "signedEvents": 0,
+      "constantSources": [
+        "congress_gov_api"
+      ],
+      "signedSources": []
+    },
+    {
+      "category": "Defense/Geopolitics",
+      "live": null,
+      "deduped": null,
+      "signed": null,
+      "rowsOpinionated": 0,
+      "eventsOpinionated": 0,
+      "signedEvents": 0,
+      "constantSources": [],
+      "signedSources": []
+    },
+    {
+      "category": "Healthcare",
+      "live": null,
+      "deduped": null,
+      "signed": null,
+      "rowsOpinionated": 0,
+      "eventsOpinionated": 0,
+      "signedEvents": 0,
+      "constantSources": [],
+      "signedSources": []
+    },
+    {
+      "category": "Energy/Climate",
+      "live": null,
+      "deduped": null,
+      "signed": null,
+      "rowsOpinionated": 0,
+      "eventsOpinionated": 0,
+      "signedEvents": 0,
+      "constantSources": [],
+      "signedSources": []
+    },
+    {
+      "category": "Finance",
+      "live": null,
+      "deduped": null,
+      "signed": null,
+      "rowsOpinionated": 0,
+      "eventsOpinionated": 0,
+      "signedEvents": 0,
+      "constantSources": [],
+      "signedSources": []
+    },
+    {
+      "category": "Macro/Politics",
+      "live": {
+        "pNeutral": 0.6237139364717371,
+        "pAware": 0.623713936471737,
+        "delta": 0.12371393647173701,
+        "prior": 0.5,
+        "n": 114,
+        "clusterCount": 1
+      },
+      "deduped": {
+        "pNeutral": 0.6226163722119116,
+        "pAware": 0.6226163722119116,
+        "delta": 0.12261637221191157,
+        "prior": 0.5,
+        "n": 40,
+        "clusterCount": 1
+      },
+      "signed": null,
+      "rowsOpinionated": 114,
+      "eventsOpinionated": 40,
+      "signedEvents": 0,
+      "constantSources": [
+        "congress_gov_api"
+      ],
+      "signedSources": []
+    }
+  ]
+}
