@@ -8,6 +8,40 @@
   ],
   "cards": [
     {
+      "id": "ladder-credit-positions-only",
+      "title": "LANE A PROPOSAL — the settled 7d sum that advances the ladder counts 182 legs that never filled (+$370.8); credit positions only and the regime reads $7.1/day, not $26.8/day",
+      "column": "Backlog",
+      "effort": "1h (read path + a printed two-basis week before the switch)",
+      "dates": "Proposed 2026-11-15 by the profit review (drafts/profit-recs-20261115.md; instrument scripts/profit-supply-ladder.py S5). NOT APPLIED — Lane A: it changes what the bot advances on. No rule value, no clip, no gate.",
+      "note": "WHY: the advance rule reads a settled 7-day sum, so the first question is which legs are inside it. MEASURED (read-only, settle clock = COALESCE(closedAt,resolvedAt), cost = dollars at risk, regime v68+, 17.8d): last 7d BOOKED ROWS 169 legs $3,843 +$424 = $60.6/day; last 7d POSITIONS ONLY 82 legs $1,645 +$303 = $43.4/day. Last 14d booked 350 legs $7,631 +$293 = +$20.9/day; positions only 182 legs $3,406 -$84 = -$6.0/day. Regime booked 404 legs $8,757 +$505 = $26.8/day; positions only 222 legs $4,288 +$134 = $7.1/day. 182 settled rows are stamped fillStatus='unfilled' and STILL carry +$370.8 of realizedPnl on $4,469 of notional. src/lib/paper.ts::bookedPnl() already zeroes them; the realizedPnl column does not, so any surface that sums the column counts fiction. The rung is 35.09x away on the positions-only rate (11.8 settled bets/day x $19.32/bet x +3.1%).",
+      "decision_rule": "Pin every surface feeding the ladder and the EOD to bookedPnl(); if any sums the realizedPnl column directly, change that one and print both bases for one week before publishing positions-only alone. Bootstrap bar if a rung change is ever considered: at today's volume the median simulated 7-day settled sum is -$22.7 with P(>= $1,750) = 0.1%; 10x volume gives 16.9% -- so no rung may be 'reached' on a booked basis.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "ladder",
+        "fill-accounting"
+      ],
+      "gate": "LANE A — nothing applied. DB mode=ro, no RuleSet row, no prisma write. Re-read: python3 scripts/profit-supply-ladder.py --regime 68. REFUTATION: if the venue tape shows >= 70% of those 182 legs filled within 24h of dispatch they were real positions, the booked basis stands and this change is withdrawn (2026-11-13 tape read measured 7.5% touch on an 80-leg 1-minute re-check, but C-200-only and a different sample -- this is the test, not a settled fact)."
+    },
+    {
+      "id": "profit-c200-clip-cap-25",
+      "title": "LANE A PROPOSAL — cap C-200's per-leg clip at $25, lane-wide (not band-scoped): the $100 tier is 37% of live notional and the only losing dollar tier",
+      "column": "Backlog",
+      "effort": "1h (new RuleSet field defaulted 0 = off, + apply script)",
+      "dates": "Proposed 2026-11-15 by the profit review (drafts/profit-recs-20261115.md; new read-only instrument scripts/profit-supply-ladder.py, self-tests 5/5). NOT APPLIED — Lane A: it changes how much the lane risks. No gate, threshold or band change.",
+      "note": "WHY: the pending card profit-band-clip-rebalance caps 0.0-0.2 at $25 on the C-200 path. Measured today, the defect is NOT band-specific — it is clip-specific, so the band-scoped cap under-reaches. EVIDENCE (read-only; level = one settled leg, cost = dollars at risk = simulatedPositionSize; regime = journal.ruleSetVersion >= 68, 2026-10-27..11-15, 17.8d, 222 settled positions): CLIP TIERS — $100: 16 legs, $1,600 = 37.3% of the regime's notional, -$135.6 (-8.5%); $40-99: 3 legs $150, -1.6%; $20-40: 31 legs $620, +30.6%; $12-20: 45 legs $804, +12.0%; <$12: 127 legs $1,114, -1.2%. CAP SHADOW (linear rescale above the cap, no re-selection): $25 -> +$102.9 on 19 touched legs, book ROI +3.1% -> +7.9%; $40 -> +$81.9; $60 -> +$54.3. SECOND INSTRUMENT, already committed: scripts/profit-clip-effect.py §4 fixed effects (band + 2c price bin + wallet, market-clustered SE) put clip>=$18 at -12.1pp vs clip<$10 (SE 6.3, t -1.92); §3 within-wallet paired is -58.1pp, CI [-108.1,-16.6], only 16 of 43 wallets better at the big clip; §5 per-band FE puts 0.00-0.20 clip>=18 at -103.1pp (t -2.12). DISAGREEMENT STATED: the live window's $20-40 tier (+30.6%) is the best cell in the book, which the pooled FE read does not predict; a $25 cap sits above that whole cell, so it does not bet on which reading is right.",
+      "decision_rule": "Apply (new RuleSet field c200ClipCapUsd, default 0 = off = byte-identical today, applied after clampPaperSize so it bites Kelly legs) if on the re-read the $25 shadow is >= +$50 over the regime AND the clip>=$18 FE coefficient stays <= -8pp with price and wallet held. Both hold on the 2026-11-15 read.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "sizing",
+        "clip"
+      ],
+      "gate": "LANE A — nothing applied. No RuleSet read or write, no prisma write, no apply-v*, DB opened mode=ro. Re-read: python3 scripts/profit-supply-ladder.py && python3 scripts/profit-clip-effect.py. REFUTATION: a forward 40-leg $100-tier sample earning >= the sub-$40 tiers' ROI, or a month in which the capped book underperforms its own uncapped shadow by >= $50 -> withdraw (a cap is variance reduction bought with expected PnL)."
+    },
+    {
       "id": "training-exclude-already-decided-rows",
       "title": "LANE A PROPOSAL — exclude already-decided entries (price >= 0.995) from the ML training population; the flag is now persisted, the exclusion is not wired",
       "column": "Backlog",
