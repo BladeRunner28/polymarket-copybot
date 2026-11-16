@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-15T04:29:45.809Z",
+  "asOf": "2026-11-16T04:29:46.191Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,12 +12,12 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1603,
-    "inWindow": 1208,
+    "copiesSeen": 1610,
+    "inWindow": 1215,
     "withKalshiQuote": 2,
     "crossListRate": 0.002,
     "staleSkips": 395,
-    "quoteFailures": 1108,
+    "quoteFailures": 1115,
     "unverifiedMatches": 98,
     "rejectionReasons": {
       "pre_guard_quote": 1,

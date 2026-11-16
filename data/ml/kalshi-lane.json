@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-15T04:29:48Z",
+  "builtAt": "2026-11-16T03:57:47Z",
   "status": "CLOSED",
   "closedOn": "2026-10-22",
   "reason": "pre-registered refutation triggered on both forms",
@@ -7,14 +7,14 @@
     "form": "complete pair: cost to buy a $1 payout",
     "byDirection": {
       "A": {
-        "n": 52835,
+        "n": 54493,
         "medianNet": -0.117,
         "netPositivePct": 0.9
       },
       "B": {
-        "n": 53907,
+        "n": 55571,
         "medianNet": -0.1188,
-        "netPositivePct": 0.89
+        "netPositivePct": 0.88
       }
     },
     "medianNetAll": -0.1182,
@@ -22,17 +22,17 @@
   },
   "information": {
     "form": "predictive AUC for P(up), mid-window quote",
-    "windows": 2752,
-    "labelled": 1639,
-    "aucPm": 0.924,
-    "aucKalshi": 0.932,
-    "nPm": 1515,
-    "nKalshi": 1639,
+    "windows": 2838,
+    "labelled": 1686,
+    "aucPm": 0.9252,
+    "aucKalshi": 0.9326,
+    "nPm": 1560,
+    "nKalshi": 1686,
     "disagreementMedian": 0.0,
-    "disagreementOverOneFeePct": 20.53
+    "disagreementOverOneFeePct": 20.45
   },
   "coverage": {
-    "copiesSeen": 1603,
+    "copiesSeen": 1610,
     "withKalshiQuote": 2,
     "crossListPct": 0.2,
     "unverifiedMatches": 98
