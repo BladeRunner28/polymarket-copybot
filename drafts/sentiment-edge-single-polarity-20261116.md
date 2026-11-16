@@ -376,9 +376,11 @@ without any code change.
 
 ## 8. What this does NOT do
 
-- **Does not fix the keyword table** in `~/political-research-bot/src/congress_api.py`. Separate card;
-  it is Lane A (it changes what the bot decides) and it needs a pre-registered bar, because the shadow
-  that motivates it is sub-threshold and unvalidated.
+- **Does not fix the keyword table** in `~/political-research-bot/src/congress_api.py`. Parked as roadmap
+  card **`sentiment-keyword-table-constant`** (Lane A, awaiting approval): the per-bill scorer needs a
+  pre-registered validation bar, because the shadow that motivates it is sub-threshold and unvalidated
+  (≥200 opinionated rows, ≥2 polarities per category, hit-vs-price edge positive with a
+  market-clustered CI excluding zero — otherwise the layer stays silent).
 - **Does not touch the legacy sentiment branch** (`scripts/score-trades.ts:568-585`, the
   `sentimentEvidenceEnabled === 0` path). That branch reads the *same* constant with
   `findFirst` and applies a flat **±25 / +10 / −20** copyScore boost — worse than the aggregator. It is
