@@ -1,0 +1,232 @@
+{
+ "generated_at": "2026-11-16T15:09:33Z",
+ "basis": {
+  "level": "one first-print bet (wallet, conditionId, outcome) at detection price",
+  "truth": "venue settlement from the shared truth caches",
+  "excess": "bet edge minus its band's leave-one-wallet-out mean over the whole join",
+  "concentration": "median / trim10 / ex10 / top10% are per-BET xedge; the mean, t and CI are per-MARKET clustered",
+  "clock": "ObservedTrade.timestamp UTC",
+  "population": "isDemo=0 BUY prints joined to settled markets",
+  "windows": {
+   "IN": "ts < 2026-10-29",
+   "F1": "ts >= 2026-10-29",
+   "F2": "ts >= 2026-11-09T18:13:32Z"
+  }
+ },
+ "parent_split_iso": "2026-10-29",
+ "arm_iso": "2026-11-09T18:13:32Z",
+ "cohorts": {
+  "parent": 25,
+  "frozen": 34,
+  "demoted": 14,
+  "kept": 11,
+  "added": 23
+ },
+ "join": {
+  "bets": 523547,
+  "wallets": 1598,
+  "settled_markets": 32001
+ },
+ "churn": {
+  "track_today": 25,
+  "frozen34_still_track": 15,
+  "parent25_still_track": 10
+ },
+ "arms": {
+  "demoted": {
+   "IN": {
+    "bets": 1803,
+    "markets": 1686,
+    "mean": 4.476283507230623,
+    "t": 3.7442560396730875,
+    "df": 1685,
+    "p_pos": 9.350436062973943e-05,
+    "ci_lo": 1.9866917881858481,
+    "ci_hi": 6.734658768224478,
+    "raw_mean": 5.146285421292291,
+    "concentration": {
+     "n": 1803,
+     "median": 29.634204572014887,
+     "trimmed_mean": 5.525444081991893,
+     "ex_top10_mean": 4.172910670138115,
+     "top10_share_pct": 10.6250114820845
+    }
+   },
+   "F1": {
+    "bets": 606,
+    "markets": 505,
+    "mean": 1.2822697364452795,
+    "t": 0.6273454772508572,
+    "df": 504,
+    "p_pos": 0.2653584492435552,
+    "ci_lo": -2.4805069550113625,
+    "ci_hi": 5.446343423800189,
+    "raw_mean": 2.307502535214521,
+    "concentration": {
+     "n": 606,
+     "median": 2.1883192934948896,
+     "trimmed_mean": 1.716081877610448,
+     "ex_top10_mean": 0.49841202109964594,
+     "top10_share_pct": 72.991446387456
+    }
+   },
+   "F2": {
+    "bets": 299,
+    "markets": 254,
+    "mean": 1.0462240792660977,
+    "t": 0.36757927679760416,
+    "df": 253,
+    "p_pos": 0.3567471374108654,
+    "ci_lo": -4.78934083977263,
+    "ci_hi": 6.428089274158738,
+    "raw_mean": 1.50248998180602,
+    "concentration": {
+     "n": 299,
+     "median": -2.3302024320516916,
+     "trimmed_mean": 1.1288554475208943,
+     "ex_top10_mean": -1.1120199751908368,
+     "top10_share_pct": 204.56406708138022
+    }
+   }
+  },
+  "kept": {
+   "IN": {
+    "bets": 813,
+    "markets": 786,
+    "mean": -2.237093402542769,
+    "t": -1.286326342296214,
+    "df": 785,
+    "p_pos": 0.900645780782527,
+    "ci_lo": -5.688039506708354,
+    "ci_hi": 1.0201079461042595,
+    "raw_mean": -1.6809524521402217,
+    "concentration": {
+     "n": 813,
+     "median": -17.732420958053822,
+     "trimmed_mean": -2.820113103479676,
+     "ex_top10_mean": -3.5445883514667718,
+     "top10_share_pct": -44.69748524806606
+    }
+   },
+   "F1": {
+    "bets": 547,
+    "markets": 526,
+    "mean": -1.5558308561743772,
+    "t": -0.7493306940553908,
+    "df": 525,
+    "p_pos": 0.7730032360168444,
+    "ci_lo": -5.570128704078135,
+    "ci_hi": 2.515992843574636,
+    "raw_mean": -0.7140139756124316,
+    "concentration": {
+     "n": 547,
+     "median": -15.72855378980907,
+     "trimmed_mean": -2.3009304265682857,
+     "ex_top10_mean": -3.1537854526668228,
+     "top10_share_pct": -99.19651350693209
+    }
+   },
+   "F2": {
+    "bets": 133,
+    "markets": 126,
+    "mean": -5.024157710654132,
+    "t": -1.2436142291499817,
+    "df": 125,
+    "p_pos": 0.8920155821037445,
+    "ci_lo": -12.70035402626955,
+    "ci_hi": 3.0069661507715457,
+    "raw_mean": -3.508012343082707,
+    "concentration": {
+     "n": 133,
+     "median": -23.552361306086176,
+     "trimmed_mean": -7.225132802887802,
+     "ex_top10_mean": -10.77924399036829,
+     "top10_share_pct": -122.63260506989201
+    }
+   }
+  },
+  "added": {
+   "IN": {
+    "bets": 10318,
+    "markets": 9769,
+    "mean": -0.13344557707138763,
+    "t": -0.32551334313007846,
+    "df": 9768,
+    "p_pos": 0.6276002210803057,
+    "ci_lo": -0.940442346772744,
+    "ci_hi": 0.6699928026989722,
+    "raw_mean": 0.13853120905311114,
+    "concentration": {
+     "n": 10318,
+     "median": 0.9080699153824868,
+     "trimmed_mean": -0.35105429236858054,
+     "ex_top10_mean": -0.2840339855540692,
+     "top10_share_pct": -49.445616182417126
+    }
+   },
+   "F1": {
+    "bets": 6667,
+    "markets": 6441,
+    "mean": 0.8988976476140311,
+    "t": 2.1447164905319864,
+    "df": 6440,
+    "p_pos": 0.016006413022633052,
+    "ci_lo": 0.08285527517202367,
+    "ci_hi": 1.7055163417189467,
+    "raw_mean": 0.8968304149812508,
+    "concentration": {
+     "n": 6667,
+     "median": 1.2580699153824817,
+     "trimmed_mean": 1.2820288511268316,
+     "ex_top10_mean": 0.7631974175273485,
+     "top10_share_pct": 15.826232816750544
+    }
+   },
+   "F2": {
+    "bets": 1628,
+    "markets": 1564,
+    "mean": 0.5412742369315036,
+    "t": 0.6462725985716672,
+    "df": 1563,
+    "p_pos": 0.25909885424591184,
+    "ci_lo": -1.106264937138359,
+    "ci_hi": 2.243587213106249,
+    "raw_mean": 0.966938951259213,
+    "concentration": {
+     "n": 1628,
+     "median": 1.5080699153824875,
+     "trimmed_mean": 1.5857627870003448,
+     "ex_top10_mean": 0.4677183546446099,
+     "top10_share_pct": 53.83035280658459
+    }
+   }
+  }
+ },
+ "demoted_forward_wallet_split": {
+  "wallets": 10,
+  "positive": 4,
+  "with_5plus_bets": 7
+ },
+ "cross_check_frozen_forward_bets": {
+  "instrument": 1761,
+  "shadow_artifact": 1761
+ },
+ "mechanism": {
+  "wallets": 1216,
+  "min_bets": 8,
+  "track_in_population": 21,
+  "rho": {
+   "globalScore": -0.012270894438983677,
+   "roi30d": -0.00618067468497776,
+   "winRate30d": -0.03769251510874488
+  }
+ },
+ "verdict": {
+  "in_sample_pp": 4.476283507230623,
+  "post_selection_pp": 1.2822697364452795,
+  "post_demotion_pp": 1.0462240792660977,
+  "forward_ci_excludes_zero": false,
+  "reading": "NOT ESTABLISHED FORWARD: the demoted cohort's in-sample excess does not survive the post-selection windows, so the card's +4.95pp must not be read as discarded alpha",
+  "mechanism_reading": "no usable rank information -- the drop score cannot see a wallet's own settled band-excess (|rho| < 0.1 on every arm)"
+ }
+}
