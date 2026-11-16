@@ -15,6 +15,7 @@ import {
   dedupeByEvent,
   eventKeyFor,
   polarityConcentration,
+  signedEvidence,
   supplyStats,
   type SupplyRow,
 } from "../src/lib/research-source-supply";
@@ -177,5 +178,58 @@ describe("supplyStats", () => {
   it("marks a single-polarity source per source, which is the level the aggregation runs at", () => {
     const [s] = supplyStats([bill(1, "2026-11-01T00:00:00Z"), bill(2, "2026-11-02T00:00:00Z")]);
     expect(s.distinctValues).toBe(1);
+  });
+});
+
+/**
+ * `signedEvidence` — the filter the LIVE aggregation would read its evidence
+ * through (card `sentiment-edge-single-polarity`). The failure this pins is not
+ * "no rows": it is a large, healthy-looking set whose polarity was assigned per
+ * CATEGORY, so every row agrees and the resulting edge can only tilt the category.
+ */
+describe("signedEvidence (single-polarity exclusion)", () => {
+  it("drops a source whose polarity is one value across DIFFERENT disclosures", () => {
+    // Two distinct bills, same polarity — dedupe does not merge them, so the only
+    // reason this set is empty is the constancy test.
+    expect(signedEvidence([bill(1, "2026-11-01T00:00:00Z"), bill(2, "2026-11-02T00:00:00Z")])).toEqual(
+      []
+    );
+  });
+
+  it("keeps a source that varies across disclosures and drops the constant one beside it", () => {
+    const rows = [
+      bill(1, "2026-11-01T00:00:00Z"),
+      bill(2, "2026-11-02T00:00:00Z"),
+      trade("A1", "NVDA", "2026-11-01", "2026-11-02T00:00:00Z"),
+      { ...trade("B2", "NVDA", "2026-11-01", "2026-11-03T00:00:00Z"), sentimentScore: 0.6 },
+    ];
+    const kept = signedEvidence(rows);
+    expect(kept.map((r) => r.source)).toEqual(["quiver_congress_trade", "quiver_congress_trade"]);
+  });
+
+  it("collapses re-emissions of one bill before the constancy test", () => {
+    const rows = Array.from({ length: 5 }, (_, i) => bill(7, `2026-11-0${i + 1}T00:00:00Z`));
+    expect(dedupeByEvent(rows)).toHaveLength(1);
+    expect(signedEvidence(rows)).toEqual([]);
+  });
+
+  it("implies the variance gate: a non-empty result always holds >= 2 distinct polarities", () => {
+    const rows = [
+      bill(1, "2026-11-01T00:00:00Z"),
+      bill(2, "2026-11-02T00:00:00Z"),
+      trade("A1", "NVDA", "2026-11-01", "2026-11-02T00:00:00Z"),
+      { ...trade("B2", "NVDA", "2026-11-01", "2026-11-03T00:00:00Z"), sentimentScore: 0.6 },
+    ];
+    const kept = signedEvidence(rows);
+    expect(kept.length).toBeGreaterThan(0);
+    expect(polarityConcentration(kept).distinctValues).toBeGreaterThanOrEqual(2);
+  });
+
+  it("never merges two unparseable payloads to manufacture a constant", () => {
+    const rows: SupplyRow[] = [
+      { ...bill(1, "2026-11-01T00:00:00Z"), rawPayload: "not json" },
+      { ...bill(2, "2026-11-01T00:00:00Z"), rawPayload: "also not json", sentimentScore: -0.5 },
+    ];
+    expect(signedEvidence(rows)).toHaveLength(2);
   });
 });

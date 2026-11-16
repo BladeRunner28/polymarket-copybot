@@ -1,0 +1,369 @@
+{
+  "generatedAt": "2026-11-16T17:03:44.158Z",
+  "ruleSetVersion": 73,
+  "windowDays": 7,
+  "basis": {
+    "population": "RegulatorySignal rows (all sources)",
+    "clock": "processedAt UTC",
+    "level": "one signal row (LIVE) / one distinct disclosure (A, A+B)",
+    "opinionatedThreshold": 0.3,
+    "sizeBasis": "scoreTrade STANDARD curve; C-200 Kelly sizing bypasses it"
+  },
+  "rules": {
+    "minCopyScore": 80,
+    "longshotMinCopyScore": 70,
+    "regulatoryScoreCap": 79,
+    "sentimentScale": 100,
+    "sweetSpotMinScore": 70,
+    "highScoreCapMin": 80,
+    "sweetSpotSizeUsd": 18,
+    "highScoreCapUsd": 18,
+    "baseSizeUsd": 8
+  },
+  "supply": [
+    {
+      "category": "Tech/AI",
+      "source": "congress_gov_api",
+      "rows": 6,
+      "disclosures": 1,
+      "distinctPolarities": 1,
+      "modal": 0.8,
+      "modalShare": 1
+    },
+    {
+      "category": "Macro/Politics",
+      "source": "congress_gov_api",
+      "rows": 119,
+      "disclosures": 35,
+      "distinctPolarities": 1,
+      "modal": 0.5,
+      "modalShare": 1
+    }
+  ],
+  "arms": [
+    {
+      "category": "Tech/AI",
+      "rows": 6,
+      "disclosures": 1,
+      "setPolarities": 1,
+      "livePp": 16.304247598115985,
+      "liveN": 6,
+      "aPp": null,
+      "bPp": null,
+      "abPp": null
+    },
+    {
+      "category": "Macro/Politics",
+      "rows": 119,
+      "disclosures": 35,
+      "setPolarities": 1,
+      "livePp": 12.379371942128515,
+      "liveN": 119,
+      "aPp": null,
+      "bPp": null,
+      "abPp": null
+    }
+  ],
+  "replay": {
+    "decisions": 637,
+    "copies": 115,
+    "unparsed": 0,
+    "verifyTried": 637,
+    "verifyOk": 533,
+    "sizeChecked": 115,
+    "sizeMatched": 33,
+    "setZeroedDecisions": 431,
+    "setZeroedCopies": 91,
+    "bandChanges": 47,
+    "sizeBefore": 1363.83,
+    "sizeAfter": 1222.68,
+    "sizeDelta": -141.15,
+    "admittedLost": 16,
+    "admittedGained": 54,
+    "clampBounded": 240,
+    "sizesUp": 10,
+    "sizesDown": 29,
+    "byCategory": [
+      {
+        "category": "Macro/Politics",
+        "decisions": 380,
+        "copies": 70,
+        "setZeroedDecisions": 203,
+        "setZeroedCopies": 48,
+        "meanPp": 1.7884210526315798,
+        "bandChanges": 25,
+        "sizeBefore": 751.55,
+        "sizeAfter": 750.79
+      },
+      {
+        "category": "Crypto",
+        "decisions": 128,
+        "copies": 16,
+        "setZeroedDecisions": 128,
+        "setZeroedCopies": 16,
+        "meanPp": -3.219531250000003,
+        "bandChanges": 6,
+        "sizeBefore": 208.52,
+        "sizeAfter": 208
+      },
+      {
+        "category": "Finance",
+        "decisions": 84,
+        "copies": 26,
+        "setZeroedDecisions": 84,
+        "setZeroedCopies": 26,
+        "meanPp": 8.557142857142859,
+        "bandChanges": 16,
+        "sizeBefore": 349.76,
+        "sizeAfter": 219.88
+      },
+      {
+        "category": "Tech/AI",
+        "decisions": 44,
+        "copies": 3,
+        "setZeroedDecisions": 15,
+        "setZeroedCopies": 1,
+        "meanPp": 3.0340909090909105,
+        "bandChanges": 0,
+        "sizeBefore": 54,
+        "sizeAfter": 44.01
+      },
+      {
+        "category": "Defense/Geopolitics",
+        "decisions": 1,
+        "copies": 0,
+        "setZeroedDecisions": 1,
+        "setZeroedCopies": 0,
+        "meanPp": 17.5,
+        "bandChanges": 0,
+        "sizeBefore": 0,
+        "sizeAfter": 0
+      }
+    ]
+  },
+  "shadow": [
+    {
+      "source": "congress_gov_api",
+      "items": 1485,
+      "ruleDistinct": 7,
+      "localDistinct": 11,
+      "oppositeSign": 17,
+      "localCounts": {
+        "0": 66,
+        "0.1": 51,
+        "-0.2": 467,
+        "0.2": 76,
+        "0.3": 27,
+        "-0.1": 523,
+        "0.65": 6,
+        "-0.3": 10,
+        "0.8": 2,
+        "-0.6": 2,
+        "0.4": 5
+      }
+    },
+    {
+      "source": "govinfo_fr_notice",
+      "items": 1167,
+      "ruleDistinct": 1,
+      "localDistinct": 1,
+      "oppositeSign": 0,
+      "localCounts": {
+        "0": 964
+      }
+    },
+    {
+      "source": "quiver_congress_trade",
+      "items": 130,
+      "ruleDistinct": 4,
+      "localDistinct": 6,
+      "oppositeSign": 0,
+      "localCounts": {
+        "1": 20,
+        "-0.3": 17,
+        "-0.6": 12,
+        "-1": 32,
+        "-0.2": 40,
+        "-0.5": 9
+      }
+    },
+    {
+      "source": "reddit_trumpstrades",
+      "items": 1,
+      "ruleDistinct": 0,
+      "localDistinct": 1,
+      "oppositeSign": 0,
+      "localCounts": {
+        "0": 1
+      }
+    }
+  ],
+  "outcome": [
+    {
+      "category": "Crypto",
+      "edgeRemoved": true,
+      "legs": 20,
+      "markets": 13,
+      "medianDate": "2026-09-20",
+      "settledLegs": 18,
+      "meanPrice": 0.161275,
+      "marketHits": 6,
+      "marketN": 14,
+      "marketHitRate": 0.42857142857142855,
+      "wilson": [
+        0.21380798780428648,
+        0.6740935558247105
+      ],
+      "edgePerShare": 0.2633628571428571,
+      "edgePerShareBoot": [
+        0.06125000000000001,
+        0.46757714285714297
+      ],
+      "pnlHits": 6,
+      "pnlN": 18
+    },
+    {
+      "category": "Tech/AI",
+      "edgeRemoved": true,
+      "legs": 2,
+      "markets": 1,
+      "medianDate": "2026-09-12",
+      "settledLegs": 2,
+      "meanPrice": 0.042499999999999996,
+      "marketHits": 0,
+      "marketN": 1,
+      "marketHitRate": 0,
+      "wilson": [
+        0,
+        0.7934506882081973
+      ],
+      "edgePerShare": -0.0525,
+      "edgePerShareBoot": [
+        -0.0525,
+        -0.0525
+      ],
+      "pnlHits": 0,
+      "pnlN": 2
+    },
+    {
+      "category": "Tech/AI",
+      "edgeRemoved": false,
+      "legs": 4,
+      "markets": 1,
+      "medianDate": "2026-09-05",
+      "settledLegs": 2,
+      "meanPrice": 0.37,
+      "marketHits": 0,
+      "marketN": 0,
+      "marketHitRate": null,
+      "wilson": [
+        0,
+        0
+      ],
+      "edgePerShare": null,
+      "edgePerShareBoot": [
+        0,
+        0
+      ],
+      "pnlHits": 2,
+      "pnlN": 2
+    },
+    {
+      "category": "Finance",
+      "edgeRemoved": true,
+      "legs": 37,
+      "markets": 11,
+      "medianDate": "2026-09-09",
+      "settledLegs": 35,
+      "meanPrice": 0.2769459459459459,
+      "marketHits": 6,
+      "marketN": 20,
+      "marketHitRate": 0.3,
+      "wilson": [
+        0.14547724402157294,
+        0.518972820052479
+      ],
+      "edgePerShare": -0.14545000000000002,
+      "edgePerShareBoot": [
+        -0.32399999999999995,
+        0.045549999999999986
+      ],
+      "pnlHits": 13,
+      "pnlN": 35
+    },
+    {
+      "category": "Macro/Politics",
+      "edgeRemoved": true,
+      "legs": 60,
+      "markets": 38,
+      "medianDate": "2026-10-02",
+      "settledLegs": 55,
+      "meanPrice": 0.30561066666666664,
+      "marketHits": 8,
+      "marketN": 31,
+      "marketHitRate": 0.25806451612903225,
+      "wilson": [
+        0.13701705836780645,
+        0.4324613595393015
+      ],
+      "edgePerShare": -0.0754541935483871,
+      "edgePerShareBoot": [
+        -0.19086258064516132,
+        0.04570451612903225
+      ],
+      "pnlHits": 18,
+      "pnlN": 55
+    },
+    {
+      "category": "Macro/Politics",
+      "edgeRemoved": false,
+      "legs": 23,
+      "markets": 13,
+      "medianDate": "2026-09-09",
+      "settledLegs": 23,
+      "meanPrice": 0.4152173913043477,
+      "marketHits": 14,
+      "marketN": 22,
+      "marketHitRate": 0.6363636363636364,
+      "wilson": [
+        0.42951707936135647,
+        0.8026679542917856
+      ],
+      "edgePerShare": 0.20931818181818185,
+      "edgePerShareBoot": [
+        -0.02568181818181818,
+        0.43227272727272736
+      ],
+      "pnlHits": 18,
+      "pnlN": 23
+    }
+  ],
+  "signTest": [
+    {
+      "label": "pushed toward (+)",
+      "legs": 66,
+      "markets": 33,
+      "meanPrice": 0.2724509090909091,
+      "marketHits": 11,
+      "marketN": 37,
+      "edgePerShare": -0.08454432432432434,
+      "edgePerShareBoot": [
+        -0.22013675675675673,
+        0.047279999999999996
+      ]
+    },
+    {
+      "label": "pushed against (−)",
+      "legs": 53,
+      "markets": 33,
+      "meanPrice": 0.2624977358490566,
+      "marketHits": 9,
+      "marketN": 29,
+      "edgePerShare": 0.05222896551724138,
+      "edgePerShareBoot": [
+        -0.07040482758620689,
+        0.197756551724138
+      ]
+    }
+  ]
+}

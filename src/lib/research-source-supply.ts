@@ -124,6 +124,40 @@ export function dedupeByEvent<T extends SupplyRow>(rows: T[]): T[] {
 }
 
 /**
+ * THE EVIDENCE A CONSTANT POLARITY CANNOT SUPPLY (card
+ * `sentiment-edge-single-polarity`, 2026-11-16).
+ *
+ * One row per distinct disclosure, minus every source whose polarity is a SINGLE
+ * value within this set. A source that can only ever print one number has no
+ * direction to contribute: whatever it adds to a posterior is a template default,
+ * and because it is the same for every market in the category it can only tilt
+ * the whole category, never distinguish one leg from another.
+ *
+ * Measured on the live feed (2026-11-16): Macro/Politics is 119 rows / 35
+ * disclosures, 100% +0.50; Tech/AI is 6 rows / 1 disclosure, 100% +0.80. Both are
+ * dropped here, so `signedEvidence` returns empty and the caller must emit no
+ * edge at all.
+ *
+ * Two properties worth keeping straight:
+ *   - The variance gate is IMPLIED, not added: every surviving source holds >= 2
+ *     distinct values, so a non-empty result always holds >= 2 distinct values.
+ *     There is no extra condition to write, and none to get wrong.
+ *   - Dedupe is NOT the fix. The aggregation already cluster-corrects re-emission
+ *     (rho=0.6 collapses 119 rows of one source to 1.66 effective items), so
+ *     dedupe alone moves the delta by 0.16pp. The EXCLUSION is what removes it.
+ */
+export function signedEvidence<T extends SupplyRow>(rows: T[]): T[] {
+  const deduped = dedupeByEvent(rows);
+  const polarities = new Map<string, Set<number>>();
+  for (const r of deduped) {
+    const set = polarities.get(r.source) ?? new Set<number>();
+    set.add(r.sentimentScore);
+    polarities.set(r.source, set);
+  }
+  return deduped.filter((r) => (polarities.get(r.source)?.size ?? 0) > 1);
+}
+
+/**
  * Can this set express more than one direction? `modalShare` near 1 with
  * `distinctValues` 1 means the set is a constant — its "signal" is a template
  * default, and any edge computed from it is a category prior, not evidence.
