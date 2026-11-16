@@ -1,0 +1,203 @@
+{
+  "generated_at": "2026-11-16T16:17:57",
+  "stored": {
+    "stored_by_cat": {
+      "Crypto": {
+        "rows": 124,
+        "distinct": 1,
+        "modal": -0.9,
+        "modal_share": 1.0
+      },
+      "Defense/Geopolitics": {
+        "rows": 7,
+        "distinct": 1,
+        "modal": 0.85,
+        "modal_share": 1.0
+      },
+      "Finance": {
+        "rows": 48,
+        "distinct": 2,
+        "modal": -0.7,
+        "modal_share": 0.9375
+      },
+      "Healthcare": {
+        "rows": 51,
+        "distinct": 1,
+        "modal": 0.7,
+        "modal_share": 1.0
+      },
+      "Macro/Politics": {
+        "rows": 1302,
+        "distinct": 2,
+        "modal": 0.5,
+        "modal_share": 0.9984639016897081
+      },
+      "Tech/AI": {
+        "rows": 8,
+        "distinct": 1,
+        "modal": 0.8,
+        "modal_share": 1.0
+      }
+    },
+    "stored_all_time": {
+      "rows": 1540,
+      "modal": 0.5,
+      "modal_share": 0.8441558441558441,
+      "distinct_values": 7
+    },
+    "stored_action_classes": {
+      "not_advanced": 1312,
+      "other": 90,
+      "became_law": 2,
+      "reported": 67,
+      "passed_chamber": 57,
+      "procedural": 12
+    },
+    "action_age_at_ingest": {
+      "n": 1540,
+      "median": 902,
+      "p90": 1258,
+      "fresh_share": 0.0
+    },
+    "proposed_reader": {
+      "routed": 190,
+      "kept": 0,
+      "dropped": {
+        "unrouted": 1180,
+        "stale_action": 159,
+        "non_binding_resolution": 191,
+        "ceremonial": 10
+      },
+      "by_class": {},
+      "category_changes": 52,
+      "by_cat": {}
+    },
+    "proposed_reader+subject": {
+      "routed": 460,
+      "kept": 0,
+      "dropped": {
+        "stale_action": 427,
+        "unrouted": 912,
+        "non_binding_resolution": 191,
+        "ceremonial": 10
+      },
+      "by_class": {},
+      "category_changes": 295,
+      "by_cat": {}
+    },
+    "misroutes": {
+      "Macro/Politics-><unrouted>": 1231,
+      "Crypto-><unrouted>": 111,
+      "Macro/Politics->Energy/Climate": 32,
+      "Crypto->Tech/AI": 10,
+      "Macro/Politics->Defense/Geopolitics": 8,
+      "Finance-><unrouted>": 6,
+      "Tech/AI-><unrouted>": 2,
+      "Crypto->Finance": 2
+    },
+    "stored_7d": {
+      "Macro/Politics": {
+        "rows": 114,
+        "distinct": 1,
+        "values": {
+          "+0.50": 114
+        }
+      },
+      "Tech/AI": {
+        "rows": 6,
+        "distinct": 1,
+        "values": {
+          "+0.80": 6
+        }
+      }
+    }
+  },
+  "live": {
+    "congress_118": {
+      "bills": 250,
+      "fresh_7d": 0,
+      "fresh_30d": 0,
+      "classes": {
+        "not_advanced": 222,
+        "other": 23,
+        "reported": 4,
+        "passed_chamber": 1
+      },
+      "kept": 0,
+      "drop_funnel": {
+        "non_binding_resolution": 47,
+        "unrouted": 186,
+        "stale_action": 15,
+        "ceremonial": 2
+      },
+      "dupe_keys": 0,
+      "by_cat": {},
+      "items": {}
+    },
+    "congress_119": {
+      "bills": 250,
+      "fresh_7d": 99,
+      "fresh_30d": 113,
+      "classes": {
+        "not_advanced": 201,
+        "reported": 10,
+        "procedural": 6,
+        "other": 18,
+        "passed_chamber": 8,
+        "became_law": 6,
+        "blocked": 1
+      },
+      "kept": 1,
+      "drop_funnel": {
+        "unrouted": 178,
+        "non_binding_resolution": 55,
+        "stale_action": 4,
+        "not_news": 11,
+        "ceremonial": 1
+      },
+      "dupe_keys": 0,
+      "by_cat": {
+        "Macro/Politics": {
+          "+0.30": 1
+        }
+      },
+      "items": {
+        "Macro/Politics": [
+          {
+            "bill": "S675",
+            "pol": 0.3,
+            "cls": "reported",
+            "age": 18,
+            "title": "Theodore Roosevelt Presidential Library Act"
+          }
+        ]
+      }
+    }
+  },
+  "mirror": {
+    "toward": {
+      "legs": 66,
+      "settled": 62,
+      "markets": 33,
+      "hit": "11/37",
+      "rate": 0.297,
+      "edge_share": -0.08,
+      "ci": [
+        -0.22,
+        0.05
+      ]
+    },
+    "against": {
+      "legs": 53,
+      "settled": 48,
+      "markets": 33,
+      "hit": "9/29",
+      "rate": 0.31,
+      "edge_share": 0.05,
+      "ci": [
+        -0.07,
+        0.2
+      ]
+    }
+  }
+}
