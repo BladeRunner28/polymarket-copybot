@@ -4417,7 +4417,7 @@
       "title": "LANE A PROPOSAL — the rung must print four bases and credit only the confirmed-filled one; the book's +$20.5/day is the class with NO fill adjudication, and the 89 legs with a fill stamp run −$23.0/day",
       "column": "Backlog",
       "effort": "1h (read path + a printed four-basis week before the credit moves)",
-      "dates": "Proposed 2026-11-16 by the profit review (drafts/profit-recs-20261116.md; instrument scripts/profit-supply-ladder.py SS6, submitted with this card). NOT APPLIED — Lane A: it changes what the bot advances on. No rule value, no clip, no gate.",
+      "dates": "Proposed 2026-11-16 by the profit review (drafts/profit-recs-20261116.md; instrument scripts/profit-supply-ladder.py SS6, submitted with this card). NOT APPLIED — Lane A: it changes what the bot advances on. No rule value, no clip, no gate. PROPOSAL WRITTEN 2026-11-16 11:05 CST: drafts/ladder-credit-basis-20261116.md (served at :3013/drafts/ladder-credit-basis-20261116) + instrument scripts/ladder-credit-basis-audit.py — three stages (print / credit / coverage), five overridable flags; apply is the operator's.",
       "note": "WHY: card ladder-credit-positions-only (2026-11-15) fixed the 'unfilled' artifact (191 rows, +$370.8) and stopped there. Measured today (read-only; regime = journal.ruleSetVersion >= 68, cost = dollars at risk, settle clock = COALESCE(closedAt,resolvedAt)): booked rows 421 legs $9,141 +$406.3 (+4.4%, +$20.5/day); positions only 230 legs $4,387 +$35.5 (+0.8%, +$1.8/day); UNADJUDICATED (fillStatus NULL) 141 legs $2,281 +$490.9 (+21.5%, +$24.8/day); CONFIRMED FILLED 89 legs $2,106 -$455.4 (-21.6%, -$23.0/day). Every dollar of the regime's positive positions-only number is inside the 141 unadjudicated legs; remove them and the book is -$455.\nTHE LANE ASYMMETRY (the part that is new): C-200 is fill-adjudicated end to end (scripts/c200-fill-resolve.ts, botId scoped) and reads -12.3% on positions-only (107 legs, $2,883, -$354.3, -$17.9/day). STANDARD carries 123 of 123 legs unadjudicated because its booth (src/lib/standard-fill-stamp.ts) is measurement-only by design, and reads +25.9% ($389.7). Yesterday's brief compared those two books and credited the cheap band; the difference is adjudication, not the band.\nDECAY ON THE SAME BASIS: positions-only $7.1/day (2026-11-15 read) -> $1.8/day (today); last 14d on that basis -$5.6/day. The mechanism is mechanical: as legs are adjudicated they move from the positive unadjudicated class into the negative filled class, so the published rate converges DOWN onto the filled class every time the resolver runs.",
       "decision_rule": "Ship as a READ-PATH change, no rule value: every surface feeding the rung or the EOD prints filled / unadjudicated / unfilled counts beside its number, and no rung is reported 'reached' on a basis that includes unadjudicated legs. Approve together with (not instead of) ladder-credit-positions-only, which is the prerequisite. Print all four bases for one week before the credit line moves alone.",
       "tags": [
@@ -4447,6 +4447,23 @@
         "booking-basis"
       ],
       "gate": "LANE A — nothing applied. No RuleSet row, no prisma write, no apply-v*, DB read-only. Re-read: python3 scripts/standard-fill-stamp-merge.py ... (UNIONREF line, meanAskC and moneyAtAskUsd). REFUTATION: a forward 150-leg sample with the best ask within +-0.3c of the booked price on >=50% of legs -> the bookings are attainable at the ask and this cost is withdrawn. Second refutation: if the lane's realised PnL does not move when the read path is restated, the 4.23% is not reaching the ledger and the change is cosmetic."
+    },
+    {
+      "id": "kalshi-lip-universe-gap",
+      "title": "Kalshi LIP: the pay and the capture are disjoint — 0 of 1,006 programs we can see clear the gate; find the families that pay >= $0.0131/contract-hour before touching this leg again",
+      "column": "Backlog",
+      "effort": "1-2h read-only (schedule + program feed are keyless; no new capture needed for the first cut)",
+      "dates": "Proposed 2026-11-16 by the weekly research pass, from drafts/lip-ledger-20261109.md sec 4. Reopens the question the Done card closed, on a different population. NOT STARTED.",
+      "note": "WHY: `lip-ledger-kalshi-reward` (Done, 2026-11-09) closed the LIP reward leg at $0.000096/contract-hour net — 1/137th of the $0.0131 gate — over 17,405 counted program-hours. Its own sec 4 says the gate was never a test of adverse selection but of PROGRAM SELECTION: none of the 473 programs in the macro quote universe and none of the 533 programs on the 13 print-tape families has a structural ceiling above $0.0131 (best $0.001120), and 7 of the 13 tape families (KXBTC15M, KXETH15M, KXBTCD, KXNFLGAME, KXNBAGAME, KXMLBGAME, KXWTI) return ZERO rows across 231,158 programs — Kalshi pays no LIP on its own volume leaders. Meanwhile the feed's own ceiling distribution says the money is elsewhere: p75 ceiling $0.04, p90 $0.133, p99 $0.333, and 84,605 of 229,636 usable programs clear $0.0131 — almost all in <=2h windows (median ceiling $0.04, 83,580 above gate). So the leg is not dead; our universe is wrong for it. WHAT THIS CARD ASKS: read /incentive_schedules + /incentive_programs, rank families by median ceiling and by program-count, and answer one question — is there a family where (a) the ceiling clears $0.0131, (b) our tape records prints, and (c) the 15-minute/crypto families we do not record are reachable under the existing kalshi tape capture? No capture expansion without a yes on all three.",
+      "gate": "Read-only. Reopen condition for the whole LIP leg: a family must show a median measured ceiling >= $0.0131/contract-hour AND >= 20 counted program-hours in our capture before any maker-routing proposal. Verify: `jq -r \".feed.ceiling_percentiles, .gate\" data/lip-ledger.json` (today: p50 0.00313, p90 0.133, verdict CLOSE) and `curl -s \"https://api.elections.kalshi.com/trade-api/v2/incentive_schedules\" | jq \"[.schedules[]|select(.window_days>0)|{s:.series_ticker,ceil:(.reward/10000)/(.window_days*24*1000*2)}]|sort_by(.ceil)|reverse|.[0:10]\"`. The adverse-selection half is measured and stays measured.",
+      "tags": [
+        "research",
+        "kalshi",
+        "lip",
+        "reward-leg",
+        "universe",
+        "read-only"
+      ]
     }
   ],
   "dates": {
