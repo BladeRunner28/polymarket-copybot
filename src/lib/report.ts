@@ -630,9 +630,16 @@ export async function generateDailyReport(
   const cmpFinished = allFinished.filter((t) => t.botId === "BANKROLL_200");
 
   const stdPnlToday = stdResolvedToday.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
-  const stdTotalPnl =
-    stdFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
-    standardOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
+  // 2026-11-16 self-audit: this was one anonymous sum of settled realized PLUS the
+  // mark-to-market on every open leg, printed as "Total PnL" one line above a Win Rate
+  // line whose ROI is realized-only on settled legs. The two cannot be reconciled:
+  // live 2026-11-15, STANDARD printed "Total PnL +$8960.15" beside "ROI +8.0% on
+  // $115,224" (8.0% x 115,224 = $9,218). The $258 gap is exactly the open-book MTM
+  // (-$265.06) — a reader checking the arithmetic had no way to find it. Split the
+  // components and name them so both bases are visible on the same line.
+  const stdRealized = stdFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
+  const stdOpenMtm = standardOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
+  const stdTotalPnl = stdRealized + stdOpenMtm;
   const stdPayoff = payoffStats(stdFinished);
   const cmpPayoff = payoffStats(cmpFinished);
   // Win rate and its companions now share one source, so the printed rate cannot drift from the
@@ -640,9 +647,9 @@ export async function generateDailyReport(
   const stdWinRate = stdPayoff.winRate;
 
   const cmpPnlToday = cmpResolvedToday.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
-  const cmpTotalPnl =
-    cmpFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0) +
-    compoundOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
+  const cmpRealized = cmpFinished.reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
+  const cmpOpenMtm = compoundOpen.reduce((a, t) => a + t.unrealizedPnl, 0);
+  const cmpTotalPnl = cmpRealized + cmpOpenMtm;
   const cmpWinRate = cmpPayoff.winRate;
 
   // Tail totals reported separately so the two bots' day figures stay clean.
@@ -767,7 +774,7 @@ export async function generateDailyReport(
     `_${date} 00:00 → 24:00 local · calendar day (closedAt ?? resolvedAt)${dayOffset < 0 ? " — day that just ended" : ""}_`,
     ``, 
     `**🤖 STANDARD Bot (Infinite Pool):**`,
-    `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)}`,
+    `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)} = settled realized ${fmt(stdRealized)} + open MTM ${fmt(stdOpenMtm)} (${standardOpen.length} open legs; the ROI below is realized-only, so Total PnL is NOT ROI x cost)`,
     winRateLine(stdPayoff, standardOpen.length),
     sizingRangeLine("STANDARD", sizingRanges),
     `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmtSub(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
@@ -776,7 +783,7 @@ export async function generateDailyReport(
       : undefined,
     ``,
     `**⚖️ BANKROLL_200 Bot (Compounding Pool):**`,
-    `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)}`,
+    `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)} = settled realized ${fmt(cmpRealized)} + open MTM ${fmt(cmpOpenMtm)} (${compoundOpen.length} open legs)`,
     winRateLine(cmpPayoff, compoundOpen.length),
     sizingRangeLine("BANKROLL_200", sizingRanges),
     `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
