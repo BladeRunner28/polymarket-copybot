@@ -13,14 +13,15 @@
       "column": "Backlog",
       "effort": "1h (read path + a printed two-basis week before the switch)",
       "dates": "Proposed 2026-11-15 by the profit review (drafts/profit-recs-20261115.md; instrument scripts/profit-supply-ladder.py S5). NOT APPLIED — Lane A: it changes what the bot advances on. No rule value, no clip, no gate.",
-      "note": "WHY: the advance rule reads a settled 7-day sum, so the first question is which legs are inside it. MEASURED (read-only, settle clock = COALESCE(closedAt,resolvedAt), cost = dollars at risk, regime v68+, 17.8d): last 7d BOOKED ROWS 169 legs $3,843 +$424 = $60.6/day; last 7d POSITIONS ONLY 82 legs $1,645 +$303 = $43.4/day. Last 14d booked 350 legs $7,631 +$293 = +$20.9/day; positions only 182 legs $3,406 -$84 = -$6.0/day. Regime booked 404 legs $8,757 +$505 = $26.8/day; positions only 222 legs $4,288 +$134 = $7.1/day. 182 settled rows are stamped fillStatus='unfilled' and STILL carry +$370.8 of realizedPnl on $4,469 of notional. src/lib/paper.ts::bookedPnl() already zeroes them; the realizedPnl column does not, so any surface that sums the column counts fiction. The rung is 35.09x away on the positions-only rate (11.8 settled bets/day x $19.32/bet x +3.1%).",
+      "note": "WHY: the advance rule reads a settled 7-day sum, so the first question is which legs are inside it. MEASURED (read-only, settle clock = COALESCE(closedAt,resolvedAt), cost = dollars at risk, regime v68+, 17.8d): last 7d BOOKED ROWS 169 legs $3,843 +$424 = $60.6/day; last 7d POSITIONS ONLY 82 legs $1,645 +$303 = $43.4/day. Last 14d booked 350 legs $7,631 +$293 = +$20.9/day; positions only 182 legs $3,406 -$84 = -$6.0/day. Regime booked 404 legs $8,757 +$505 = $26.8/day; positions only 222 legs $4,288 +$134 = $7.1/day. 182 settled rows are stamped fillStatus='unfilled' and STILL carry +$370.8 of realizedPnl on $4,469 of notional. src/lib/paper.ts::bookedPnl() already zeroes them; the realizedPnl column does not, so any surface that sums the column counts fiction. The rung is 35.09x away on the positions-only rate (11.8 settled bets/day x $19.32/bet x +3.1%). | 2026-11-16 PROFIT REVIEW: NECESSARY BUT NOT SUFFICIENT. Read with card ladder-credit-confirmed-filled. In the live regime (v68+, 230 settled positions) positions-only still includes 141 legs with fillStatus NULL that carry +$490.9 of the book's +$35.5; the only class with a fill stamp (89 legs, $2,106) is -$455.4 (-21.6%, -$23.0/day). Shipping this card alone publishes $1.8/day as if it were a measurement. Approve it together with the four-basis print. Re-read: python3 scripts/profit-supply-ladder.py --regime 68 (new SS6).",
       "decision_rule": "Pin every surface feeding the ladder and the EOD to bookedPnl(); if any sums the realizedPnl column directly, change that one and print both bases for one week before publishing positions-only alone. Bootstrap bar if a rung change is ever considered: at today's volume the median simulated 7-day settled sum is -$22.7 with P(>= $1,750) = 0.1%; 10x volume gives 16.9% -- so no rung may be 'reached' on a booked basis.",
       "tags": [
         "profit-review",
         "lane-a",
         "awaiting-approval",
         "ladder",
-        "fill-accounting"
+        "fill-accounting",
+        "superseded-in-part"
       ],
       "gate": "LANE A — nothing applied. DB mode=ro, no RuleSet row, no prisma write. Re-read: python3 scripts/profit-supply-ladder.py --regime 68. REFUTATION: if the venue tape shows >= 70% of those 182 legs filled within 24h of dispatch they were real positions, the booked basis stands and this change is withdrawn (2026-11-13 tape read measured 7.5% touch on an 80-leg 1-minute re-check, but C-200-only and a different sample -- this is the test, not a settled fact)."
     },
@@ -4392,6 +4393,60 @@
         "done-2026-11-15"
       ],
       "gate": ""
+    },
+    {
+      "id": "standard-fill-union-verdict",
+      "title": "LANE B DONE — the STANDARD fill booth had met its own 300-leg gate and the file still said 'n=1 NOT EVALUABLE'; the union verdict now prints, and it FIRES the card's refutation",
+      "column": "Done",
+      "effort": "1h (merge script + verification against the live artifact)",
+      "dates": "APPLIED and VERIFIED 2026-11-16 by the profit review (drafts/profit-recs-20261116.md; scripts/standard-fill-stamp-merge.py, new unionRefutation block). Lane B: instrument repair only — no rule value, no clip, no gate, no pricer, no prisma write.",
+      "note": "WHY: the booth's pre-registered rule is 'ship a booking change only once stamped fills exist on >=300 STANDARD legs; the 1c-improvement claim is refuted if stamped fills land within +-0.3c of the mid on >=300 legs'. The hourly chain stamps only the legs opened since the previous tick and merges into a union, and the merge kept the NEWEST TICK's refutation block (declared via aggregatesCover). So each run printed n=1, gateMet:false, while the union underneath held 1,011 legs, 380 of them with a book snapshot AND a mid — 80 past the gate. An unfalsifiable probe: a condition the instrument structurally could not cross. Third instance of this defect class in three days (see also: the ladder's booked basis, the copybot repo-size alarm).\nFIX: scripts/standard-fill-stamp-merge.py computes unionRefutation over the merged legs, taking gate and bandC FROM the snapshot's own refutation block so there is no second definition of the test, prints it every merge, and stores it in the artifact.\nVERDICT ON THE UNION (data/standard-fill-stamp.jsonl, 2026-11-16): gate MET, n=380/1011 stamped. (attainable - mid) mean +0.26c, median +0.00c, 70% within +-0.3c => REFUTATION FIRES: there is no cent to harvest; the '+$1,439.33 for a 1c better entry' claim is dead. (attainable - booked) mean +1.05c, median +0.50c, at-or-better 10.0%, worse-by-1c-or-more 35.5%; money weight +$257.52 on $6,091 = +4.23% of notional. It is SPREAD not drift: the 0-10s bucket (165 legs) already reads +0.97c.\nCONSEQUENCE (fed to Lane A card standard-book-at-ask): the lane books the mid and a taker pays ~1c above it, so STANDARD's reported +25.9% in the live regime is ~+21.7% at the ask. The lane's edge survives; its size is 4.2pp smaller than every surface reports.\nCOVERAGE THAT TRAVELS: 380 stamped of standardLegsAll 10,403 (3.7%). 'Attainable' is reachability, not a fill — a best ask at or below a price ignores queue and size.",
+      "decision_rule": "Re-read: python3 scripts/standard-fill-stamp-merge.py data/standard-fill-stamp.jsonl data/standard-fill-stamp-<UTC day>.jsonl data/standard-fill-stamp.jsonl. The UNIONREF line is the verdict; the aggregates block above it is still one tick and must not be quoted as the population.",
+      "tags": [
+        "profit-review",
+        "lane-b",
+        "instrument-repair",
+        "fill-model",
+        "standard",
+        "unfalsifiable-probe"
+      ],
+      "gate": "LANE B — applied. No RuleSet read/write, no prisma write, DB read-only. Revert = drop the unionRefutation block from the merge; no schema, no data migration, the artifact remains valid JSON either way. REFUTATION OF THE VERDICT ITSELF: if a forward 150-leg sample puts the best ask within +-0.3c of the booked price on >=50% of legs, the booked price is attainable and the ask-arm cost is withdrawn (today: 10.0%)."
+    },
+    {
+      "id": "ladder-credit-confirmed-filled",
+      "title": "LANE A PROPOSAL — the rung must print four bases and credit only the confirmed-filled one; the book's +$20.5/day is the class with NO fill adjudication, and the 89 legs with a fill stamp run −$23.0/day",
+      "column": "Backlog",
+      "effort": "1h (read path + a printed four-basis week before the credit moves)",
+      "dates": "Proposed 2026-11-16 by the profit review (drafts/profit-recs-20261116.md; instrument scripts/profit-supply-ladder.py SS6, submitted with this card). NOT APPLIED — Lane A: it changes what the bot advances on. No rule value, no clip, no gate.",
+      "note": "WHY: card ladder-credit-positions-only (2026-11-15) fixed the 'unfilled' artifact (191 rows, +$370.8) and stopped there. Measured today (read-only; regime = journal.ruleSetVersion >= 68, cost = dollars at risk, settle clock = COALESCE(closedAt,resolvedAt)): booked rows 421 legs $9,141 +$406.3 (+4.4%, +$20.5/day); positions only 230 legs $4,387 +$35.5 (+0.8%, +$1.8/day); UNADJUDICATED (fillStatus NULL) 141 legs $2,281 +$490.9 (+21.5%, +$24.8/day); CONFIRMED FILLED 89 legs $2,106 -$455.4 (-21.6%, -$23.0/day). Every dollar of the regime's positive positions-only number is inside the 141 unadjudicated legs; remove them and the book is -$455.\nTHE LANE ASYMMETRY (the part that is new): C-200 is fill-adjudicated end to end (scripts/c200-fill-resolve.ts, botId scoped) and reads -12.3% on positions-only (107 legs, $2,883, -$354.3, -$17.9/day). STANDARD carries 123 of 123 legs unadjudicated because its booth (src/lib/standard-fill-stamp.ts) is measurement-only by design, and reads +25.9% ($389.7). Yesterday's brief compared those two books and credited the cheap band; the difference is adjudication, not the band.\nDECAY ON THE SAME BASIS: positions-only $7.1/day (2026-11-15 read) -> $1.8/day (today); last 14d on that basis -$5.6/day. The mechanism is mechanical: as legs are adjudicated they move from the positive unadjudicated class into the negative filled class, so the published rate converges DOWN onto the filled class every time the resolver runs.",
+      "decision_rule": "Ship as a READ-PATH change, no rule value: every surface feeding the rung or the EOD prints filled / unadjudicated / unfilled counts beside its number, and no rung is reported 'reached' on a basis that includes unadjudicated legs. Approve together with (not instead of) ladder-credit-positions-only, which is the prerequisite. Print all four bases for one week before the credit line moves alone.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "ladder",
+        "fill-accounting",
+        "credit-basis"
+      ],
+      "gate": "LANE A — nothing applied. No RuleSet read or write, no prisma write, DB mode=ro, no apply-v* script. Re-read: python3 scripts/profit-supply-ladder.py --regime 68 (SS6). REFUTATION: a 150-leg forward sample of the unadjudicated class, adjudicated against the venue tape, showing >=60% actually filled at a non-negative ROI -> that class is real positions, belongs in the credit, and this change is withdrawn."
+    },
+    {
+      "id": "standard-book-at-ask",
+      "title": "LANE A PROPOSAL — STANDARD books the mid and a taker pays ~1c above it: the lane's realisable PnL is 4.23% of notional lower than every surface reports (+25.9% -> ~+21.7% in the live regime)",
+      "column": "Backlog",
+      "effort": "2h (per-leg realisable price on the read path + one week printing both bases)",
+      "dates": "Proposed 2026-11-16 by the profit review (drafts/profit-recs-20261116.md; measurement scripts/standard-fill-stamp-merge.py unionRefutation, card standard-fill-union-verdict). NOT APPLIED — Lane A: it changes the number the ladder credits and the EOD publishes. No change to entryPrice, no decision, no size.",
+      "note": "WHY: STANDARD books entryPrice = currentPrice (a quote read at scoring time) and books it at p(fill)=1; it has never carried a fill model. The booth now has 380 stamped legs (gate 300 MET). Measured, first snapshot at/after the decision, no hindsight: (attainable ask - booked) mean +1.05c, median +0.50c, at-or-better 10.0%, worse-by-1c-or-more 35.5%; on $6,091 of booked notional the same-legs money weight is +$257.52 = +4.23%. It is SPREAD, not drift: the 0-10s bucket (165 legs) reads +0.97c and 10-30s +0.92c. Applied to the live regime's STANDARD legs ($1,504, +$389.7) the lane reads ~+21.7% and the regime book moves from +$35.5 to ~-$27.\nTHE OTHER HALF OF THE SAME READ, which must not be lost: (attainable mid - booked) mean +0.26c, 70% within +-0.3c -> the pre-registered refutation FIRES, so there is NO cent to harvest and the lane should NOT be re-priced upward to chase a better entry. This card is a COST, not an opportunity.",
+      "decision_rule": "Apply if, on a forward re-read of >=150 newly stamped legs, mean (ask - booked) >= +0.8c AND the money weight is >= +3% of notional. Both hold today (+1.05c, +4.23%). Implement as a per-leg realisable price for reporting and for the ladder credit; entryPrice stays the decision price, so the paper book keeps its decision and its fill separate.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "awaiting-approval",
+        "fill-model",
+        "standard",
+        "booking-basis"
+      ],
+      "gate": "LANE A — nothing applied. No RuleSet row, no prisma write, no apply-v*, DB read-only. Re-read: python3 scripts/standard-fill-stamp-merge.py ... (UNIONREF line, meanAskC and moneyAtAskUsd). REFUTATION: a forward 150-leg sample with the best ask within +-0.3c of the booked price on >=50% of legs -> the bookings are attainable at the ask and this cost is withdrawn. Second refutation: if the lane's realised PnL does not move when the read path is restated, the 4.23% is not reaching the ledger and the change is cosmetic."
     }
   ],
   "dates": {

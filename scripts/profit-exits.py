@@ -689,7 +689,252 @@ def gate_backtest(c, cap_legs):
           f"the flat/declining regime, which is the one the 2026-10-24 sweep happened in.")
 
 
+# --------------------------------------------------------------------------- AO.11
+def live_close_alpha(c, rules, ver, since="2026-10-27"):
+    """EXIT ALPHA OVER **ALL** EARLY CLOSES IN THE LIVE REGIME (2026-11-16).
+
+    WHY THIS IS A NEW SECTION AND NOT A NEW FILE: §AO.5 answers the same question --
+    "did the marks the rail sold at beat what those markets actually settled at" -- for
+    ONE sweep cohort (the 2026-10-24 v66 disposal, 701 STANDARD legs). It has never been
+    asked of the population that actually matters now: every `closed` leg since the live
+    regime began, which is almost entirely the C-200 rail (tier-1 adverse-only, v53) and
+    the C-200 hard max-age (v33). Those two rails are the only exit mechanism running:
+    STANDARD's `standardStaleExitHours` is 0, and `standardStaleExitFires()` returns false
+    on hours <= 0, so STANDARD never early-exits.
+
+    THE TRAP THIS SECTION EXISTS TO AVOID: conditioning on `closed` and reading its ROI is
+    the exit policy's own selection. A rail that only sells losers will always look like it
+    lost money. The only question with content is the COUNTERFACTUAL: what would those legs
+    have realised if we had held them to settlement. That is exit alpha:
+
+        alpha_i = hold_i - exit_i = ntl*(s/px - 1) - realizedPnl
+
+    alpha > 0 means holding would have been better and the exit DESTROYED value.
+    Both arms are measured on the same legs, same cost basis (dollars at risk).
+
+    TWO INDEPENDENT TRUTH BASES, deliberately:
+      (1) archived CLOB /markets/<conditionId> tokens[].winner (keyless), as in AO.5;
+      (2) data/exit-recovery.jsonl 'final' marks written by src/lib/exit-recovery.ts,
+          which are post-exit observations and therefore a different mechanism and a
+          different clock. Agreement between them is printed; disagreement is the
+          instrument warning, not something to average away.
+
+    INSTRUMENT DEFECT CAUGHT HERE (kept in the file because it recurred): the first draft of
+    this section passed `pv.boot_delta(legs)` legs whose `pnl` was the EXIT arm, and boot_delta
+    is defined as (stop_pnl - pnl)/ntl -- so it computed 0 - 0 and printed a CI of [+0.00%,
+    +0.00%]. A CI that cannot move is worse than no CI: it renders as a precise null. The
+    bootstrap below therefore uses pv._boot_sum on a pre-computed 'alpha' field, and every group
+    CI is printed in DOLLARS on the alpha itself.
+    """
+    print("\n" + "=" * 100)
+    print(f"AO.11  EXIT ALPHA OVER ALL EARLY CLOSES -- live regime since {since} (RuleSet v{ver})")
+    print("=" * 100)
+    since_ms = int(datetime(*[int(x) for x in since.split("-")], tzinfo=timezone.utc).timestamp() * 1000)
+    raw = c.execute(
+        """SELECT id, botId, marketId, outcome, entryPrice px, currentPrice cur,
+                  simulatedPositionSize ntl, realizedPnl pnl, openedAt, closedAt, fillStatus
+           FROM PaperTrade
+           WHERE isDemo=0 AND status='closed' AND realizedPnl IS NOT NULL AND openedAt >= ?""",
+        (since_ms,)).fetchall()
+    legs, skipped = [], {"unfilled": 0, "bad_cost": 0, "no_close_time": 0}
+    for r in raw:
+        if (r["fillStatus"] or "") == "unfilled":
+            skipped["unfilled"] += 1           # books 0, is not a position (2026-11-14 finding)
+            continue
+        if not r["px"] or r["px"] <= 0 or not r["ntl"] or r["ntl"] <= 0:
+            skipped["bad_cost"] += 1
+            continue
+        if not r["closedAt"]:
+            skipped["no_close_time"] += 1
+            continue
+        age_h = (r["closedAt"] - r["openedAt"]) / 3_600_000.0
+        legs.append({"id": r["id"], "bot": r["botId"], "marketId": r["marketId"],
+                     "market": r["marketId"],
+                     "outcome": r["outcome"], "px": r["px"], "cur": r["cur"], "ntl": r["ntl"],
+                     "pnl": r["pnl"], "age_h": age_h, "band": band2(r["px"]),
+                     "move": (r["cur"] - r["px"]) / r["px"] if r["px"] else 0.0})
+    print(f"   closed legs since {since}: {len(raw)}; positions: {len(legs)} "
+          f"(skipped {skipped['unfilled']} unfilled / {skipped['bad_cost']} bad cost /"
+          f" {skipped['no_close_time']} no close time)")
+    if not legs:
+        print("   nothing to measure")
+        return
+    nt_all = sum(l["ntl"] for l in legs)
+    pnl_all = sum(l["pnl"] for l in legs)
+    print(f"   exited: {len(legs)} legs  ${nt_all:,.2f} cost  ${pnl_all:+,.2f} realised "
+          f"({100 * pnl_all / nt_all:+.2f}%)  median clip ${median([l['ntl'] for l in legs]):.2f}")
+    print(f"\n   {'bot':13} {'age bucket':12} {'legs':>5} {'cost':>9} {'realised':>10} "
+          f"{'ROI':>8} {'medMove':>8}")
+    for bot in ("BANKROLL_200", "STANDARD"):
+        for lo, hi, nm in ((0, 24, "<24h"), (24, 168, "24-168h"), (168, 1e9, ">=168h")):
+            g = [l for l in legs if l["bot"] == bot and lo <= l["age_h"] < hi]
+            if not g:
+                continue
+            n = sum(l["ntl"] for l in g)
+            p = sum(l["pnl"] for l in g)
+            print(f"   {bot:13} {nm:12} {len(g):>5} {n:>9,.0f} {p:>+10,.2f} "
+                  f"{100 * p / n:>+7.2f}% {100 * median([l['move'] for l in g]):>+7.1f}%")
+
+    # ---- truth (1): archived CLOB, refetch any unsettled record (a snapshot is not a verdict)
+    m2c, stats = {}, {"name_match": 0, "index_fallback": 0, "no_match": 0, "no_record": 0}
+    cache = {"markets": {}}
+    if os.path.exists(pv.TRUTH_CACHE):
+        cache = json.load(open(pv.TRUTH_CACHE))
+    if "markets" not in cache:
+        cache = {"markets": {}}
+    for m in {l["marketId"] for l in legs}:
+        r = c.execute("""SELECT conditionId FROM MarketSnapshot WHERE marketId=?
+                         AND conditionId IS NOT NULL AND conditionId<>'' LIMIT 1""", (m,)).fetchone()
+        if r and r[0]:
+            m2c[m] = r[0]
+    want = [cid for cid in set(m2c.values())
+            if cid not in cache["markets"] or cache["markets"][cid].get("unsettled")]
+    if want and not NO_FETCH:
+        from concurrent.futures import ThreadPoolExecutor
+        print(f"\n   fetching settlement truth for {len(want)} markets (keyless CLOB)…")
+        for cid in want:
+            p = os.path.join(pv.TRUTH_RAW_DIR, cid + ".json")
+            if os.path.exists(p):
+                os.remove(p)
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for cid, rec in ex.map(pv._fetch_one, want):
+                if rec:
+                    cache["markets"][cid] = rec
+        with open(pv.TRUTH_CACHE, "w") as f:
+            json.dump(cache, f, indent=0, sort_keys=True)
+
+    # ---- truth (2): exit-recovery 'final' marks (post-exit observation, independent clock)
+    rec_final = {}
+    if os.path.exists("data/exit-recovery.jsonl"):
+        for line in open("data/exit-recovery.jsonl"):
+            try:
+                j = json.loads(line)
+            except Exception:
+                continue
+            if j.get("type") == "mark" and j.get("bucket") == "final" and j.get("resolved"):
+                rec_final[j.get("tradeId")] = j.get("tokenPrice")
+
+    for l in legs:
+        s = pv.truth_of(cache, m2c.get(l["marketId"]), l["outcome"], stats)
+        l["s_clob"] = s
+        r = rec_final.get(l["id"])
+        l["s_rec"] = None if r is None else (1.0 if r >= 0.5 else 0.0)
+    got = [l for l in legs if l["s_clob"] is not None]
+    both = [l for l in got if l["s_rec"] is not None]
+    agree = [l for l in both if l["s_clob"] == l["s_rec"]]
+    print(f"\n   truth coverage: CLOB {len(got)}/{len(legs)} legs "
+          f"({len({l['marketId'] for l in got})} markets; {stats}); "
+          f"exit-recovery {sum(1 for l in legs if l['s_rec'] is not None)}/{len(legs)}")
+    if both:
+        print(f"   bases agree on {len(agree)}/{len(both)} ({100 * len(agree) / len(both):.1f}%) "
+              f"-- disagreement is an instrument warning, not a rounding error")
+
+    for l in got:
+        l["hold_pnl"] = l["ntl"] * (l["s_clob"] / l["px"] - 1.0)
+        l["alpha"] = l["hold_pnl"] - l["pnl"]
+        l["stop_pnl"] = l["pnl"]
+    if not got:
+        print("   no settlement truth -- cannot measure alpha")
+        return
+
+    nt = sum(l["ntl"] for l in got)
+    exit_p = sum(l["pnl"] for l in got)
+    hold_p = sum(l["hold_pnl"] for l in got)
+    alpha = hold_p - exit_p
+    lo, hi = pv._boot_sum(got, "alpha")
+    wins = sum(1 for l in got if l["s_clob"] == 1.0)
+    print(f"\n   EXIT ALPHA on the {len(got)} legs with truth (${nt:,.0f} = "
+          f"{100 * nt / nt_all:.0f}% of the closed book):")
+    print(f"     held to settlement : ${hold_p:+,.2f}  ({100 * hold_p / nt:+.2f}%)")
+    print(f"     exited             : ${exit_p:+,.2f}  ({100 * exit_p / nt:+.2f}%)")
+    print(f"     ALPHA (hold - exit): ${alpha:+,.2f}  ({100 * alpha / nt:+.2f}% of cost)  "
+          f"market-clustered 95% CI [${lo:+,.0f}, ${hi:+,.0f}] "
+          f"= [{100 * lo / nt:+.2f}%, {100 * hi / nt:+.2f}%]")
+    print(f"     settled winners    : {wins}/{len(got)} ({100 * wins / len(got):.1f}%), "
+          f"mean entry {100 * sum(l['px'] for l in got) / len(got):.1f}c")
+    print(f"     READ: alpha > 0 means the exits SOLD BELOW settlement and destroyed value; "
+          f"alpha < 0 means they dodged losses.")
+
+    print(f"\n   {'bot':13} {'band':10} {'legs':>5} {'cost':>8} {'exited':>9} {'held':>9} "
+          f"{'alpha':>9} {'alpha%':>8} {'win%':>5}")
+    for bot in ("BANKROLL_200", "STANDARD"):
+        for b in ("<0.60", "0.60-0.80", "0.80-1.00"):
+            g = [l for l in got if l["bot"] == bot and l["band"] == b]
+            if not g:
+                continue
+            n = sum(l["ntl"] for l in g)
+            e = sum(l["pnl"] for l in g)
+            h = sum(l["hold_pnl"] for l in g)
+            w = sum(1 for l in g if l["s_clob"] == 1.0)
+            print(f"   {bot:13} {b:10} {len(g):>5} {n:>8,.0f} {e:>+9,.2f} {h:>+9,.2f} "
+                  f"{h - e:>+9,.2f} {100 * (h - e) / n:>+7.2f}% {100 * w / len(g):>4.0f}%")
+
+    # ex-top-market on alpha: one event must not carry the verdict
+    agg = defaultdict(lambda: [0.0, 0.0])
+    for l in got:
+        agg[l["marketId"]][0] += l["ntl"]
+        agg[l["marketId"]][1] += l["alpha"]
+    top = sorted(agg.items(), key=lambda kv: -abs(kv[1][1]))[:5]
+    print(f"\n   {len(agg)} markets contribute. Largest |alpha| markets:")
+    for m, (n, a) in top:
+        print(f"     {m[:64]:64} ${n:>8,.0f} alpha ${a:>+9,.2f}")
+    if len(agg) > 1:
+        big = max(agg.items(), key=lambda kv: abs(kv[1][1]))
+        print(f"   ALPHA EX-TOP-MARKET: ${alpha - big[1][1]:+,.2f} "
+              f"({100 * (alpha - big[1][1]) / max(nt - big[1][0], 1e-9):+.2f}% of the rest)")
+
+    # ---- which rail fired? tier-1 (adverse-only, v53) vs hard max-age (v33, >=168h)
+    print(f"\n   RAIL ATTRIBUTION (proxy from the recorded predicate, since PaperTrade has no")
+    print(f"   closeReason column): tier1 = age 24-168h AND move <= staleExitAdverseMove;")
+    print(f"   hard = age >= staleExitHardHours ({rules.get('staleExitHardHours')}h); "
+          f"other = everything else")
+    for nm, pred in (("tier1 adverse", lambda l: 24 <= l["age_h"] < (rules.get("staleExitHardHours") or 168)
+                      and l["move"] <= (rules.get("staleExitAdverseMove") or -0.15)),
+                     ("hard max-age", lambda l: l["age_h"] >= (rules.get("staleExitHardHours") or 168)),
+                     ("other", None)):
+        if pred is None:
+            g = [l for l in got if not (24 <= l["age_h"] < (rules.get("staleExitHardHours") or 168)
+                                        and l["move"] <= (rules.get("staleExitAdverseMove") or -0.15))
+                 and not (l["age_h"] >= (rules.get("staleExitHardHours") or 168))]
+        else:
+            g = [l for l in got if pred(l)]
+        if not g:
+            continue
+        n = sum(l["ntl"] for l in g)
+        e = sum(l["pnl"] for l in g)
+        h = sum(l["hold_pnl"] for l in g)
+        w = sum(1 for l in g if l["s_clob"] == 1.0)
+        lo2, hi2 = pv._boot_sum(g, "alpha")
+        print(f"   {nm:13} {len(g):>3} legs ${n:>8,.0f}  exited ${e:>+8,.2f}  held ${h:>+8,.2f}  "
+              f"alpha ${h - e:>+8,.2f} ({100 * (h - e) / n:+.2f}%)  "
+              f"CI [${lo2:+,.0f},${hi2:+,.0f}]  win {100 * w / len(g):.0f}%")
+
+    # ---- the book counterfactual: does disabling the rail change the regime's finished ROI?
+    fin = c.execute(
+        """SELECT status, simulatedPositionSize ntl, realizedPnl pnl
+           FROM PaperTrade WHERE isDemo=0 AND status IN ('closed','resolved')
+             AND realizedPnl IS NOT NULL AND openedAt >= ?""", (since_ms,)).fetchall()
+    fin = [dict(r) for r in fin if (r["ntl"] or 0) > 0]
+    nf = sum(r["ntl"] for r in fin)
+    pf = sum(r["pnl"] for r in fin)
+    swap = pf - exit_p + hold_p
+    print(f"\n   BOOK COUNTERFACTUAL (finished legs since {since}):")
+    print(f"     as booked (exits as they happened) : ${pf:+,.2f} on ${nf:,.0f} = {100 * pf / nf:+.2f}%")
+    print(f"     the {len(got)} exit legs held to settlement   : ${swap:+,.2f} = {100 * swap / nf:+.2f}%")
+    print(f"     difference                          : ${swap - pf:+,.2f} "
+          f"({100 * (swap - pf) / nf:+.2f}% of the regime's finished notional)")
+    return got
+
 def main():
+    if "--live-closes" in sys.argv:
+        c = con()
+        ver, rules = live_rules(c)
+        since = "2026-10-27"
+        for a in sys.argv:
+            if a.startswith("--since="):
+                since = a.split("=", 1)[1]
+        live_close_alpha(c, rules, ver, since=since)
+        return
     c = con()
     ver, rules = live_rules(c)
     rules["_v"] = ver

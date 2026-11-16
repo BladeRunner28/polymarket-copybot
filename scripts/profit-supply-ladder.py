@@ -345,6 +345,73 @@ def s5_clocks(c, leg_days):
     print("  positions-only rate in the last 7 days. Quote the basis or the ladder reads fiction.")
 
 
+def s6_credit_basis(c, leg_days):
+    """S6. THE BASIS THE LADDER ACTUALLY READS -- four candidates, one table (2026-11-16).
+
+    S5 compares 'booked rows' with 'positions only'. Both still admit one class nobody has
+    adjudicated: rows whose fillStatus is NULL, which book at p(fill)=1 (the 2026-11-13 fill-tape
+    card named them; it never split them out of the ladder's own credit). This section prints all
+    four bases on the same legs, per lane, because the lanes are not on the same accounting:
+
+      booked rows          every settled row, as the realizedPnl column sums it
+      positions only       booked rows minus fillStatus='unfilled'
+      unadjudicated        fillStatus IS NULL  (no fill model has ever looked at these)
+      confirmed filled     fillStatus='filled' (the only class we can prove we own)
+
+    WHY IT MATTERS: in the live regime the sign of the book is decided by which of these you
+    read, and the split is not random -- the C-200 lane is fill-adjudicated end to end while
+    STANDARD carries no stamp at all (its booth, src/lib/standard-fill-stamp.ts, is a
+    measurement that deliberately writes nothing). A cross-lane comparison on 'positions only'
+    is therefore a comparison between an adjudicated book and an unadjudicated one.
+    """
+    print()
+    print("=" * 100)
+    print("S6. WHICH BASIS THE LADDER READS -- four candidates, same legs, same clock")
+    print("=" * 100)
+    q = """
+      SELECT p.botId AS bot, p.fillStatus AS fs, p.simulatedPositionSize AS cost,
+             COALESCE(p.realizedPnl, 0) AS pnl
+        FROM PaperTrade p JOIN DecisionJournal d ON d.id = p.decisionJournalId
+       WHERE p.isDemo = 0 AND d.ruleSetVersion >= ? AND p.status <> 'open'
+         AND p.realizedPnl IS NOT NULL
+    """
+    rows = [dict(r) for r in c.execute(q, (REGIME,))]
+    rows = [r for r in rows if (r["cost"] or 0) > 0]
+    classes = ("booked rows", "positions only", "unadjudicated", "confirmed filled")
+
+    def keep(r, basis):
+        fs = r["fs"] or ""
+        if basis == "booked rows":
+            return True
+        if basis == "positions only":
+            return fs != "unfilled"
+        if basis == "unadjudicated":
+            return fs == ""
+        return fs == "filled"
+
+    print(f"  {'basis':<19} {'lane':<13} {'n':>4} {'cost':>9} {'pnl':>9} {'ROI':>8} {'$/day':>8}")
+    for basis in classes:
+        for bot in ("BANKROLL_200", "STANDARD", None):
+            xs = [r for r in rows if keep(r, basis) and (bot is None or r["bot"] == bot)]
+            if not xs:
+                continue
+            cst = sum(r["cost"] for r in xs)
+            p = sum(r["pnl"] for r in xs)
+            lane = bot or "ALL"
+            print(f"  {basis:<19} {lane:<13} {len(xs):>4} {usd(cst):>9} {usd(p):>9} "
+                  f"{pct(p / cst if cst else 0):>7} {usd_s(p / leg_days):>8}")
+        print()
+    filled = [r for r in rows if keep(r, "confirmed filled")]
+    unadj = [r for r in rows if keep(r, "unadjudicated")]
+    f_pnl, u_pnl = sum(r["pnl"] for r in filled), sum(r["pnl"] for r in unadj)
+    print(f"  READ: {len(filled)} confirmed-filled legs carry {usd(f_pnl)}; "
+          f"{len(unadj)} unadjudicated legs carry {usd(u_pnl)}.")
+    if f_pnl < 0 <= u_pnl:
+        print("  The book's positive number is the class with NO fill adjudication. Any basis that")
+        print("  includes it is crediting positions that no fill model has ever looked at, and")
+        print("  'positions only' is not a fix -- it is a second unadjudicated basis.")
+
+
 def main():
     if SELF_TEST:
         self_test()
@@ -368,6 +435,7 @@ def main():
     s3_clips(settled)
     s4_advance(settled, len(settled) / leg_days)
     s5_clocks(c, leg_days)
+    s6_credit_basis(c, leg_days)
     print()
     print("READ-ONLY: DB opened mode=ro. No RuleSet read/write, no prisma write.")
 
