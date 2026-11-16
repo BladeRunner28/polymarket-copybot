@@ -26,6 +26,7 @@
 import { prisma } from "./db";
 import { computeBenchmarks, beatBlindOnMatchedBasis } from "./benchmarks";
 import { computeEdgeCostSnapshot, edgeCostLines } from "./copy-cost";
+import { researchLivenessLine } from "./source-liveness-read";
 import { sendDiscord } from "./discord";
 import { dayWindow, reportDayOffset, rowsFinishedIn } from "./day-pnl";
 import { payoffSummary, payoffCompanionText, type Payoff } from "./payoff";
@@ -754,6 +755,12 @@ export async function generateDailyReport(
   const sizingRanges = await observedSizingRanges(now);
   const walletScan = await walletScanLine(now);
   const heartbeat = await instrumentHeartbeat(now);
+  // 2026-11-15 (card research-source-silent-death): the sentiment layer's supply had no
+  // liveness surface at all. `quiver_congress_trade` had been silent 70 days and
+  // `govinfo_fr_notice` had written 1,210 rows of pure 0.0 — both invisible, because every
+  // surface printed ROW counts. This line answers "is it still arriving, and can it move a
+  // number at all", and it prints a LOUD failure if the read itself fails.
+  const researchSupply = await researchLivenessLine(now);
 
   const summary = [
     `**📊 CopyBot Comparative EOD Report — ${date}**`,
@@ -799,6 +806,7 @@ export async function generateDailyReport(
     `• Top lesson: ${lesson}`,
     walletScan,
     heartbeat,
+    researchSupply,
     driftDecayLine(),
     tailRows.length > 0
       ? `• Late tail carried from ${localDate(tailStart)} (booked after its previous report): C-200 ${fmt(tailCmp)} / STANDARD ${fmt(tailStd)} — ${tailRows.length} trades`

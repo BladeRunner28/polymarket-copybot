@@ -116,6 +116,10 @@ data/cache/data-feed-scout/
 # caches 76,359 ticker->result rows (8.2 MB) that are refetchable from the keyless venue
 # in ~4 minutes (13 series, cursor-paged /markets?status=settled). It churns on every run
 # and would re-enter the 22:30 `git add -A` backup forever. The READ artifact
+# Research-source liveness (2026-11-15): the READ artifact
+# data/research-source-liveness.json IS committed so the alarm state re-reads offline; the
+# alarm dedupe state is runtime (it changes every run and is meaningless off this host).
+data/source-liveness-alarm.json
 # data/kalshi-maker-read.json IS committed, so the verdict re-reads offline.
 data/kalshi-maker-settlements.json
 data/kalshi-maker-settlements.json.tmp
