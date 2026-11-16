@@ -177,4 +177,21 @@ describe("budgetVerdict", () => {
     expect(v.level).toBe("alarm");
     expect(v.daysAtMedian).toBe(0);
   });
+
+  // 2026-11-16 self-audit: live .git was 2518 MB against a 2048 MB ceiling, and the
+  // cron line read "crosses the ... ceiling in 0 days" — which is not a forecast, it is
+  // "already over", and it printed identically every night after the crossing. The
+  // breach has to carry its magnitude or the alarm cannot report progress.
+  it("states the breach and its size once the ceiling has been passed", () => {
+    const v = budgetVerdict({ currentGitBytes: 3 * GB2, daily: [MB], ceilingBytes: GB2 });
+    const r = v.reasons.join("; ");
+    expect(r).toContain("ALREADY EXCEEDED");
+    expect(r).not.toContain("in 0 days");
+  });
+
+  it("still forecasts in days when the ceiling is ahead", () => {
+    const v = budgetVerdict({ currentGitBytes: 0, daily: [MB], ceilingBytes: GB2, alarmDaysToCeiling: 9000 });
+    expect(v.reasons.join("; ")).toContain("crosses the");
+    expect(v.reasons.join("; ")).not.toContain("ALREADY EXCEEDED");
+  });
 });

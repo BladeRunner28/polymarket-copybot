@@ -232,7 +232,24 @@ const report = {
 fs.writeFileSync(OUT, JSON.stringify(report, null, 2));
 
 if (QUIET) {
-  if (verdict.level !== "ok") console.log("⚠️ repo growth " + verdict.level.toUpperCase() + ": " + verdict.reasons.join("; ") + " | .git " + mib(gitBytes) + ", median " + mb(summary.median) + "/day");
+  // 2026-11-16 self-audit: the cron/Discord line printed only the verdict and the
+  // .git size, while `contributors` (line 180) — the one thing that makes the alarm
+  // actionable — was computed and thrown away. Live read: data/kalshi-macro-quotes.jsonl
+  // alone is 530 MB of the 7-day window (20% of all growth) because it is an append-only
+  // file re-committed in full every night. An alarm that says "over budget" without
+  // naming the file cannot be acted on.
+  if (verdict.level !== "ok") {
+    const top = contributors
+      .slice(0, 3)
+      .filter((c) => c.bytes > 0)
+      .map((c) => c.path + " " + mb(c.bytes) + "/" + completeDates.length + "d (" + (c.share * 100).toFixed(0) + "%)")
+      .join(", ");
+    console.log(
+      "⚠️ repo growth " + verdict.level.toUpperCase() + ": " + verdict.reasons.join("; ") +
+      " | .git " + mib(gitBytes) + ", median " + mb(summary.median) + "/day" +
+      " | top contributors: " + (top || "none attributed")
+    );
+  }
 } else {
   console.log(lines.join("\n"));
   console.log("  wrote " + OUT.replace(REPO + "/", ""));

@@ -210,9 +210,21 @@ export function budgetVerdict(input: {
   const overBudget = summary.median > budget;
   const reasons: string[] = [];
   let level: VerdictLevel = "ok";
+  // 2026-11-16 self-audit: `daysToCeiling` returns 0 for "already over", so this
+  // reason read "crosses the 2048.0 MB ceiling in 0 days" on EVERY night after the
+  // crossing — identical text on the night it crossed and 400 MiB later, forever.
+  // Live: .git 2518 MB vs a 2048 MB ceiling (353 MiB over), and the nightly Discord
+  // line had printed the same saturated sentence 4 nights running (2026-11-12..15),
+  // so the one alarm whose whole job is "the repo is too big" could not say how big.
+  // A forecast of 0 days is not a measurement; state the breach instead.
+  const overCeiling = input.currentGitBytes >= ceiling;
   if (daysAtMedian !== null && daysAtMedian <= alarmDays) {
     level = "alarm";
-    reasons.push(`median ${mbFmt(summary.median)}/day crosses the ${mbFmt(ceiling)} ceiling in ${daysAtMedian} days (alarm window ${alarmDays})`);
+    reasons.push(
+      overCeiling
+        ? `the ${mbFmt(ceiling)} ceiling is ALREADY EXCEEDED by ${mbFmt(input.currentGitBytes - ceiling)} (object store ${mbFmt(input.currentGitBytes)}, ceiling ${mbFmt(ceiling)}), and the median day adds another ${mbFmt(summary.median)} on top of it`
+        : `median ${mbFmt(summary.median)}/day crosses the ${mbFmt(ceiling)} ceiling in ${daysAtMedian} days (alarm window ${alarmDays})`
+    );
   }
   if (overBudget) {
     level = "alarm";
