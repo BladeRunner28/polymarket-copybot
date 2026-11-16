@@ -94,8 +94,8 @@ if oe and re_:
     print("  OOS clock exTop1 (biggest winner removed): selected n=%d pnl=$%.2f roi=%+.1f%% (dropped %s +$%.2f) | rejected n=%d pnl=$%.2f roi=%+.1f%% (dropped %s +$%.2f)"
           % (oe["n_settled"], oe["pnl"], oe["roi_pct"], oe["droppedTradeId"] or "-", oe["droppedPnl"],
              re_["n_settled"], re_["pnl"], re_["roi_pct"], re_["droppedTradeId"] or "-", re_["droppedPnl"]))
-    print("    retop1 spread: selected %+.1f%% vs rejected %+.1f%% = %+.1fpp (raw spread %+.1fpp)"
-          % (oe["roi_pct"], re_["roi_pct"], re_["roi_pct"] - oe["roi_pct"], r["roi_pct"] - o["roi_pct"]))
+    print("    exTop1 spread (selected minus rejected) = %+.1fpp (selected %+.1f%% vs rejected %+.1f%%); raw spread (selected minus rejected) = %+.1fpp"
+          % (oe["roi_pct"] - re_["roi_pct"], oe["roi_pct"], re_["roi_pct"], o["roi_pct"] - r["roi_pct"]))
 print("candidate venue rules (attribution of the C-200 book — BOTH venues, not PM-only):")
 for k, v in s["variants"].items():
     sel = v["selected"]
