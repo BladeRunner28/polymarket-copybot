@@ -3,8 +3,9 @@
 **LANE A — PROPOSAL ONLY. Nothing applied: no `apply-v*`, no prisma write, no RuleSet change, no
 merge. The card this answers is `ladder-credit-confirmed-filled`.**
 
-Read at **2026-11-16 10:57 CST** (regime = `journal.ruleSetVersion >= 68`, cost =
-`PaperTrade.simulatedPositionSize` = dollars at risk, settle clock = `COALESCE(closedAt, resolvedAt)`).
+Read at **2026-11-16 10:57 CST, re-read 11:01 CST with identical figures** (regime =
+`journal.ruleSetVersion >= 68`, cost = `PaperTrade.simulatedPositionSize` = dollars at risk, settle
+clock = `COALESCE(closedAt, resolvedAt)`).
 
 Re-read / verify every number in this doc with:
 
@@ -272,8 +273,9 @@ Pre-registered, all re-read with the commands at the top:
 
 ## 10. Lane discipline
 
-Lane A, nothing applied: no RuleSet read or write, no `apply-v*`, no prisma write, DB opened
-`mode=ro`, the booth artifact read-only, no merge. Instrument committed with this doc:
+Lane A, nothing applied: no `apply-v*`, no prisma write, **no RuleSet write** (the only RuleSet read is
+the v73 `ddBasis`/`maxGrossExposureUsd` pair quoted in §6, read-only sqlite, for the cap arithmetic),
+DB opened `mode=ro`, the booth artifact read-only, no merge. Instrument committed with this doc:
 `scripts/ladder-credit-basis-audit.py` (§L0-L9 above; every table in this document comes from it, and
 §L2b reproduces the production report's own day buckets to the cent). The card's instrument
 `scripts/profit-supply-ladder.py` §S6 was re-run and agrees on all four bases.
