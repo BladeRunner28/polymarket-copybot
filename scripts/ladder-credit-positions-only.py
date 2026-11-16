@@ -51,7 +51,7 @@ def day(ts_ms):
 
 def load(c):
     q = """
-      SELECT p.id, p.fillStatus, p.fillResolvedAt, p.status, p.realizedPnl,
+      SELECT p.id, p.marketId, p.fillStatus, p.fillResolvedAt, p.status, p.realizedPnl,
              p.simulatedPositionSize, p.openedAt, p.closedAt, p.resolvedAt,
              d.ruleSetVersion AS rv
         FROM PaperTrade p
@@ -63,6 +63,7 @@ def load(c):
         end = r["closedAt"] if r["closedAt"] is not None else r["resolvedAt"]
         r["end"] = end
         r["day"] = day(end) if end is not None else None
+        r["stamp"] = day(r["fillResolvedAt"]) if r["fillResolvedAt"] is not None else None
         r["pnl"] = r["realizedPnl"] or 0.0
         r["pos_pnl"] = 0.0 if r["fillStatus"] == "unfilled" else r["pnl"]
         r["stamped_after_settle"] = bool(
@@ -138,6 +139,25 @@ def main():
               f"-> rung {g['goal'][0]:<8} {verdict} | window {g['window'][0]} .. {g['window'][1]} "
               f"| {g['legs']} legs | T+0 {g['t0_sum']:>+9.2f}")
 
+    print("\nS2b. THE GATE WINDOW SPLIT FOUR WAYS (what F2 prints beside the figure)")
+    gws, gwe = gb["window"][0], gb["window"][1]
+    gw = [r for r in rows if r["day"] and gws <= r["day"] <= gwe]
+
+    def four(sub, note=""):
+        pnl = sum(r["pnl"] for r in sub)
+        cost = sum(r["simulatedPositionSize"] for r in sub)
+        credited = sum(1 for r in sub if abs(r["pnl"]) >= 0.005)
+        roi = pnl / cost * 100 if cost else 0.0
+        print(f"  {note:<26} {len(sub):>4} legs ({credited:>4} credited) ${cost:>9,.2f} "
+              f"{pnl:>+9.2f} ROI {roi:>+6.2f}%")
+
+    four(gw, "booked rows (live)")
+    four([{**r, "pnl": 0.0 if r["fillStatus"] == "unfilled" else r["pnl"]} for r in gw], "positions only (F1)")
+    four([r for r in gw if r["fillStatus"] == "filled"], "  of which confirmed filled")
+    four([r for r in gw if r["fillStatus"] is None], "  of which unadjudicated NULL")
+    four([r for r in gw if r["fillStatus"] == "unfilled"], "  of which stamped unfilled")
+    print("  identity: filled + unadjudicated = positions only; booked - unfilled = positions only")
+
     print("\nS3. THE WINDOWS QUOTED IN THE CARD")
     today = ref.strftime("%Y-%m-%d")
     lo7 = (ref - timedelta(days=6)).strftime("%Y-%m-%d")
@@ -182,6 +202,30 @@ def main():
     print(f"  sign split: {len(pos_carry)} winners {sum(r['pnl'] for r in pos_carry):+,.2f} · "
           f"{len(carry) - len(pos_carry)} losers {sum(r['pnl'] for r in carry if r['pnl'] <= 0):+,.2f}")
 
+    print("\nS4b. WHERE THE PHANTOM SITS — biggest carriers (ALL-TIME scope) and when they were stamped")
+    total_carry = sum(r["pnl"] for r in carry)
+    top = sorted(carry, key=lambda r: -r["pnl"])
+    print(f"  {'settled':<12} {'marketId':<56} {'PnL':>9} {'risk':>7} {'rv':>4} {'stamped':<12}")
+    for r in top[:10]:
+        print(f"  {r['day']:<12} {r['marketId'][:56]:<56} {r['pnl']:>+9.2f} "
+              f"${r['simulatedPositionSize']:>6.2f} {str(r['rv'] or '-'):>4} {str(r['stamp']):<12}")
+    t3 = sum(r["pnl"] for r in top[:3])
+    print(f"  top 3 of the class = {t3:+,.2f} = {t3 / total_carry * 100:.1f}% of {total_carry:+,.2f}"
+          f" (ruleSetVersion of those three: {', '.join(str(r['rv']) for r in top[:3])})")
+    hist = {}
+    for r in carry:
+        hist[r["stamp"]] = hist.get(r["stamp"], 0) + 1
+    print("  stamp histogram (fillResolvedAt date): "
+          + " | ".join(f"{k} {v} legs" for k, v in sorted(hist.items())))
+    rtop = sorted((r for r in carry if r["rv"] is not None and r["rv"] >= REGIME_MIN_VERSION),
+                  key=lambda r: -r["pnl"])
+    if rtop:
+        rsum = sum(r["pnl"] for r in rtop)
+        rt3 = sum(r["pnl"] for r in rtop[:3])
+        print(f"  regime v>={REGIME_MIN_VERSION} subset: {len(rtop)} carriers {rsum:+,.2f}; "
+              f"its top 3 = {rt3:+,.2f} ({rt3 / total_carry * 100:.1f}% of the all-time class, "
+              f"{rt3 / rsum * 100:.0f}% of the regime net — losers offset the rest)")
+
     print("\nS5. EVERY PUBLISHED FIGURE THAT MOVES (all-time + the ledger)")
     tot = sum(r["pnl"] for r in rows)
     totp = sum(r["pos_pnl"] for r in rows)
@@ -191,6 +235,21 @@ def main():
         print(f"  BotBankroll.realizedPnl (ledger, NOT a row sum) {b['realizedPnl']:+,.2f} "
               f"-- a read-path fix does not touch it; principal ${b['principal']:,.2f} cash ${b['cashBalance']:,.2f}")
     print(f"  ledger-vs-rows gap {((b['realizedPnl'] if b else 0) - tot):+,.2f}")
+
+    print("\nS6. READERS THAT SUM THE STORED COLUMN WITHOUT A FILL FILTER")
+    hits = []
+    for rel in ("query_bankroll.js", "src/app/page.tsx", "src/app/analytics/page.tsx", "src/lib/report.ts"):
+        p = os.path.join(ROOT, rel)
+        try:
+            txt = open(p, encoding="utf-8").read()
+        except OSError:
+            continue
+        n = txt.count("realizedPnl")
+        f = txt.count("fillStatus")
+        hits.append(f"  {rel:<28} realizedPnl x{n:<3} fillStatus x{f}")
+    print("\n".join(hits))
+    print("  (fillStatus x0 on every read path = the gate, the overview ladder, the analytics ladder")
+    print("   and the EOD all credit a proven-unfilled leg; only src/lib/paper.ts applies bookedPnl)")
 
     print("\nS7. THE PAYOFF FIGURES THAT MOVE WITH THE SAME COLUMN (win rate / ROI, settled rows)")
     def payoff(sub, key):
@@ -228,21 +287,6 @@ def main():
                   f"({open_n / capf(nw) * 100:.1f}% of the booked cap), so the ledger channel is deferred, not urgent.")
     except Exception as e:  # noqa: BLE001 - instrument must not fail on a missing table
         print(f"  cap read skipped: {e}")
-
-    print("\nS6. READERS THAT SUM THE STORED COLUMN WITHOUT A FILL FILTER")
-    hits = []
-    for rel in ("query_bankroll.js", "src/app/page.tsx", "src/app/analytics/page.tsx", "src/lib/report.ts"):
-        p = os.path.join(ROOT, rel)
-        try:
-            txt = open(p, encoding="utf-8").read()
-        except OSError:
-            continue
-        n = txt.count("realizedPnl")
-        f = txt.count("fillStatus")
-        hits.append(f"  {rel:<28} realizedPnl x{n:<3} fillStatus x{f}")
-    print("\n".join(hits))
-    print("  (fillStatus x0 on every read path = the gate, the overview ladder, the analytics ladder")
-    print("   and the EOD all credit a proven-unfilled leg; only src/lib/paper.ts applies bookedPnl)")
 
 
 if __name__ == "__main__":

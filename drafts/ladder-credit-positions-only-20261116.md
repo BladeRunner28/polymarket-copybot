@@ -7,7 +7,8 @@ write, no RuleSet row, no merge to main. The apply belongs to the operator after
 2026-11-16T16:54:04Z.
 
 **Instrument:** `python3 scripts/ladder-credit-positions-only.py` (read-only, sqlite `mode=ro`), committed
-with this file. Reference date 2026-11-16, local calendar days, settle clock `COALESCE(closedAt, resolvedAt)`,
+with this file. Reference date 2026-11-16, **all figures read 2026-11-16T11:02–11:06 local**, local calendar
+days, settle clock `COALESCE(closedAt, resolvedAt)`,
 cost = `simulatedPositionSize` (dollars at risk), `SETTLE_DAYS=3`, `GATE_DAYS=7` — the same constants
 `query_bankroll.js` runs.
 
@@ -59,21 +60,35 @@ Measured proof of the ordering defect — the split is clean:
 - **376** unfilled legs carry money, and **376 of 376** were stamped **after** they settled: the stamp
   arrived too late to be applied to a stored settlement.
 
-The stamp event is **batched**, not continuous. The largest phantom legs carry `fillResolvedAt = 2026-11-15`
-while settling days earlier:
+The stamp event is **batched**, and there are **two backfill sweeps**, not one. `fillResolvedAt` over the
+376 carriers: **246 stamped 2026-10-28** (the fill-aware flip day — the first sweep ran across the whole
+already-settled book), **129 stamped 2026-11-15**, 1 on 2026-10-30.
 
-| settled | market | PnL | risk | stamped |
-|---|---|---|---|---|
-| 2026-11-12 | `cbb-utsa-sea-2026-11-11` (UTSA ROADRUNNERS) | **+$268.02** | $20 | 2026-11-15 |
-| 2026-11-03 | `ucl-vil-psg-2026-11-03-spread-away-2pt5` (PSG) | +$222.75 | $50 | 2026-11-15 |
-| 2026-11-06 | `col-kob-sab-2026-11-05-btts-first-half` (YES) | +$124.59 | $20 | 2026-11-15 |
-| 2026-11-10 | `dota2-huliga-ic-2026-11-09` (INNER CIRCLE) | +$41.07 | $10 | 2026-11-15 |
-| 2026-11-01 | `ufc-dhope-fra8-2026-10-31` (DAKOTA HOPE) | +$39.06 | $18 | 2026-11-15 |
-| … 371 more | | | | |
+Biggest carriers of the class — **all-time scope**, i.e. every one of the 376, not the regime subset
+(`rv` = `DecisionJournal.ruleSetVersion`):
 
-The top 3 legs are **$615.36 = 27%** of the entire all-time phantom. So the defect is not a slow leak
-spread evenly over the book; it is one sweep's worth of pre-stamped-settlement history, plus whatever the
-next sweep adds.
+| settled | market | PnL | risk | rv | stamped |
+|---|---|---|---|---|---|
+| 2026-10-06 | `ufc-prelag-nelari-2026-10-06` | **+$589.66** | $100 | 60 | 2026-11-15 |
+| 2026-10-05 | `will-anthropic-have-the-best-ai-model-at-the-end-of-octob…` | **+$575.00** | $100 | 60 | 2026-10-28 |
+| 2026-09-28 | `will-forgotten-island-opening-weekend-box-office-be-betw…` | **+$380.00** | $20 | 60 | 2026-11-15 |
+| 2026-10-03 | `fif-arg-bur-2026-10-03-total-5pt5` | +$287.69 | $20 | 60 | 2026-11-15 |
+| 2026-11-12 | `cbb-utsa-sea-2026-11-11` | +$268.02 | $20 | 71 | 2026-11-15 |
+| 2026-11-03 | `ucl-vil-psg-2026-11-03-spread-away-2pt5` | +$222.75 | $50 | 71 | 2026-11-15 |
+| 2026-10-17 | `cfb-charlt-templ-2026-10-17` | +$215.94 | $17.37 | 62 | 2026-10-28 |
+| 2026-10-09 | `highest-temperature-in-chicago-on-october-8-2026-72-73f` | +$215.29 | $20 | 60 | 2026-10-28 |
+| … 368 more | | | | | |
+
+The top 3 legs are **$1,544.66 = 67.2%** of the entire all-time phantom, and **all three are rv=60** —
+pre-regime history, stamped on one of the two sweep days (the $575.00 leg on the flip-day sweep, the other
+two on 11-15). So the defect is not a slow leak spread evenly over the book: it is two backfill sweeps over
+history that had already settled, and three legs carry two-thirds of the money.
+
+Inside the regime (v68+) the class is smaller and more diffuse: 191 stamped-unfilled rows, **43 of them
+carrying +$370.83**. Its top 3 are $615.36 — 26.8% of the all-time class and **166% of the regime net**,
+because the regime's other 40 carriers net −$244.53 and cancel most of it. So the card's regime-scoped read
+sees **16.1%** of the class's money. That number is exact; it is just a much more dilutive view of the same
+defect.
 
 ---
 
@@ -123,7 +138,8 @@ pair stops reconciling — the exact defect class the 2026-11-16 self-audit fixe
 | … of which carry zero (stamped before settling) | 150 | $0 | — |
 | sign split of the 376 | 143 winners / 233 losers | +$4,845.18 / −$2,548.11 | — |
 | by settle month | 09: 54 · 10: 283 · 11: 39 | +$251.72 · +$1,668.72 · +$376.63 | — |
-| regime v68+ subset | 191 unfilled, **43 carrying** | **+$370.83** | $4,753 |
+| regime v68+ stamped unfilled | **191** | — | $4,753 |
+| … of which carry money | **43** | **+$370.83** | $1,112 |
 
 ---
 
@@ -169,9 +185,9 @@ defect exists.
 
 | # | file | change |
 |---|---|---|
-| 1 | `query_bankroll.js:112` | add `fillStatus: true` to the `select`; bucket `bookedPnl(t, t.realizedPnl ?? 0)` |
+| 1 | `query_bankroll.js:115` | add `fillStatus: true` to the `select`; bucket `bookedPnl(t, t.realizedPnl ?? 0)` |
 | 2 | `query_bankroll.js:321` | reproduction SQL gains `AND (fillStatus IS NULL OR fillStatus <> 'unfilled')` so the printed line reproduces the printed number |
-| 3 | `src/app/page.tsx:316-336` | `c200Daily` and the ladder walk use the predicate; the C-200 realized card (`cmpRealizedPnl`, `:108`) does too |
+| 3 | `src/app/page.tsx:316-336` | `c200Daily` and the ladder walk use the predicate; the C-200 realized card (`cmpRealizedPnl`, `:112`) does too |
 | 4 | `src/app/analytics/page.tsx:150-170` | the daily series feeding `activePhase()` uses the predicate; `:313` aggregate likewise |
 | 5 | `src/lib/report.ts:640-660` | `cmpRealized`, `cmpPnlToday`, and the C-200 payoff rows (`:530-534`) use the predicate; the printed line names the basis |
 | 6 | both reviewer prompts (`copybot-c200-daily-report` 18:00, `copybot-tuning-review-daily` 07:00) | the advance-basis text is duplicated across both prompts — **5 occurrences of `rolling 7d`** in `~/.hermes/cron/jobs.json`. Update in the same change or the reviewers re-litigate the old basis the next morning. |
@@ -179,17 +195,38 @@ defect exists.
 
 ### 5.3 Print all four bases (the 11-16 review's requirement)
 
-Beside the gate figure, print the same settled 7d window split four ways. Measured today:
+Beside the gate figure, print the **gate window** split four ways. On the ladder's own window — C-200,
+settled **11-07 .. 11-13, 163 legs** — measured today (instrument block `S2b`):
 
-| basis | legs | cost | PnL | ROI | $/day (regime) |
+| basis | legs | of which credited | cost | PnL | ROI |
 |---|---|---|---|---|---|
-| booked rows | 421 (both lanes) | $9,141 | +$406.3 | +4.4% | +$20.5 |
-| positions only | 230 | $4,387 | +$35.5 | +0.8% | +$1.8 |
-| unadjudicated (`fillStatus IS NULL`) | 141 | $2,281 | +$490.9 | +21.5% | +$24.8 |
-| confirmed filled | 89 | $2,106 | −$455.4 | −21.6% | −$23.0 |
+| booked rows (live today) | 163 | 82 | $3,898.79 | **+$207.01** | +5.31% |
+| positions only (F1) | 163 | 62 | $3,898.79 | **+$106.14** | +2.72% |
+| … confirmed filled | 57 | 57 | $1,224.47 | +$96.10 | +7.85% |
+| … unadjudicated (`fillStatus IS NULL`) | 5 | 5 | $277.97 | +$10.04 | +3.61% |
+| … stamped unfilled (credited 0 under F1) | 101 | 20 | $2,396.36 | +$100.87 | +4.21% |
 
-Four lines cost nothing and they are the difference between "the ladder is honest now" and "the ladder is
-honest about one of its two inflators". **Do not adopt positions-only as the sole printed basis.**
+Two identities make the four-basis print self-checking: `filled + unadjudicated = positions only`
+(57 + 5 = 62 legs, $96.10 + $10.04 = $106.14) and `booked − stamped unfilled = positions only`
+(163 − 101 = 62 legs, $207.01 − $100.87 = $106.14). So F1 does not publish a third number; it splits the
+live one into the three classes it already contains.
+
+For contrast — and this is the population the first draft of this section mislabelled as the gate window —
+the **regime** (v68+, **both lanes**, 10-27 .. 11-16, 422 legs, `drafts/profit-recs-20261116.md` §1's
+population, a different clock and a different lane set):
+
+| basis | legs | of which credited | cost | PnL | ROI | $/day (21d) |
+|---|---|---|---|---|---|---|
+| booked rows | 422 | 274 | $9,158.79 | +$441.97 | +4.83% | +$21.05 |
+| positions only | 422 | 231 | $9,158.79 | +$71.14 | +0.78% | +$3.39 |
+| unadjudicated | 141 | 141 | $2,281.07 | +$490.87 | +21.52% | +$23.37 |
+| confirmed filled | 90 | 90 | $2,124.38 | −$419.73 | −19.76% | −$19.99 |
+
+That second table is the argument for F2 in one line: on the wider book the **confirmed** fills are
+−$419.73 while the unadjudicated legs are +$490.87, so a bare "positions only" total would be a third
+number again — accurate to its predicate and still not a measurement of fill quality. The four lines cost
+nothing and they are the difference between "the ladder is honest now" and "the ladder is honest about one
+of its two inflators". **Do not adopt positions-only as the sole printed basis.**
 
 ---
 
@@ -199,7 +236,7 @@ honest about one of its two inflators". **Do not adopt positions-only as the sol
 |---|---|---|---|---|
 | `query_bankroll.js` → 18:00 report | Phase gate, settled 7d | +$207.01 (11.8%) | +$106.14 (6.1%) | −$100.87 |
 | `query_bankroll.js` | T+0 7d sum | +$459.78 | +$321.44 | −$138.34 |
-| `query_bankroll.js` | 14-day daily series | 14 numbers | 14 numbers: 7 lower, 4 higher, 3 unchanged (a day can move up when a phantom leg was a loser) | see §3.1 |
+| `query_bankroll.js` | 14-day daily series | 14 numbers | 14 numbers: **6 lower, 5 higher, 3 unchanged** (a day can move *up* when a phantom leg was a loser — 11-13, 11-11, 11-08, 11-07, 11-04) | see §3.1 |
 | `query_bankroll.js` | Today's realized | +$17.66 (3 legs) | +$17.66 | **no change today** |
 | `query_bankroll.js` | Phase stability streaks | 0/7 both | 0/7 | none |
 | `page.tsx` overview | C-200 realized (all-time) | +$5,659.57 | +$3,362.50 | −$2,297.07 |
@@ -303,7 +340,13 @@ cd ~/polymarket-copybot && DATABASE_URL="file:./dev.db" node query_bankroll.js  
 sqlite3 prisma/dev.db "SELECT COALESCE(fillStatus,'NULL'), COUNT(*), ROUND(SUM(simulatedPositionSize)), ROUND(SUM(realizedPnl),2) FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0 AND status IN ('closed','resolved') GROUP BY 1;"
 ```
 
+The instrument's named blocks map to this document: `S2`/`S2b` = §3 and §5.3 (gate, four bases on the gate
+window), `S3` = §3.1/§4, `S4`/`S4b` = §3.3 and §2 (the class, its biggest carriers, its stamp histogram),
+`S5`/`S8` = §6/§7a (ledger and cap), `S6` = §2's read-path table, `S7` = §3.2.
+
 Related, not superseded: `scripts/c200-ladder-fill-basis.py` (the unresolved-class read),
 `scripts/profit-supply-ladder.py` §S5/§S6 (the four-basis table), `drafts/profit-fill-reachable-basis-20261113.md`
 (the booking-basis contract this proposal finally enforces on the read side),
-`drafts/profit-recs-20261116.md` §1–2 (why positions-only must not be printed alone).
+`drafts/profit-recs-20261116.md` §1–2 (why positions-only must not be printed alone),
+`drafts/ladder-credit-basis-20261116.md` (the sibling Lane A card on the **confirmed-filled** basis: same
+column, stricter predicate, its own approval).
