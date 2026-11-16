@@ -120,22 +120,27 @@ source returns (§3).
 
 ### 2.3 Is the layer live right now? No — because of flow, not a defect
 
-Last decision carrying an edge: `DecisionJournal` 2026-11-14T12:50Z. Last `[SENTIMENT]` log line:
-2026-11-14T08:39Z. There have been **zero decisions in any research category since 2026-11-14** —
-the copied flow moved to sports/novelty markets (`Spread: Jaguars (-10.5)` ×147, `Will Spain win on
-2026-11-15?` ×94, …). Checked rather than assumed: a silent path here would have been a defect, and
-it is not one.
+Ground truth is the journal, not the log: the last decision carrying an edge is
+**2026-11-14T12:50:22Z** (`will-the-republicans-win-wisconsin-in-the-2028-presidential-election`,
+prior 0.420 → posterior 0.537, deltaYes +11.75 pp, n = 104, clusters = 1, copyScore 73.2 — a
+mid-priced politics market, exactly where §1 says the tilt bites). Since then there have been **zero
+decisions in any research category** — the copied flow moved to sports/novelty markets
+(`Spread: Jaguars (-10.5)` ×147, `Will Spain win on 2026-11-15?` ×94, …). I checked rather than
+assumed, because a silent path here would have been a defect; it is not one.
 
-In the 2026-11-13 → 11-16 window the layer made **100 evaluations, 88 Macro/Politics and 12 Tech/AI,
-46 of them above the 0.005 noise floor**, median +3.33 pp, max +16.38 pp. All 46 are positive
-(upward) boosts. Those are the decisions that stop receiving one under option A.
+In the last window in which the layer evaluated anything at all (2026-11-13 → 11-14T08:28Z) it made
+**100 evaluations, 88 Macro/Politics and 12 Tech/AI, 46 of them above the 0.005 noise floor**, median
++3.33 pp, max +16.38 pp — all 46 positive (upward) boosts, ≈37/day while politics flow exists. Those
+are the decisions that stop receiving one under option A. *(Log attribution is per run block: this
+log's lines are not in strict time order — the 12:50Z edge's `[SENTIMENT]` line sits earlier in the
+file than the 08:28Z block — so any read of this log must anchor on the journal.)*
 
 ### 2.4 The attribution is one row deep
 
-`DecisionJournal.sentimentDelta` (added 2026-11-14) is populated on **0 of 1,616** post-change rows —
-not a defect, simply because no research-category decision has been scored since it landed. So the
-replay below parses the edge out of `reasonsJson` prose, and the *first* thing to read after this
-change ships is whether that column starts filling.
+`DecisionJournal.sentimentDelta` (added 2026-11-14, first stamped row 2026-11-15T02:12Z) is populated
+on **0 of 1,616** post-change rows — not a defect, simply because no research-category decision has
+been scored since it landed. So the replay below parses the edge out of `reasonsJson` prose, and the
+*first* thing to read after this change ships is whether that column starts filling.
 
 ---
 
@@ -190,7 +195,7 @@ export interface SentimentAggregationOpts {
 |---|---|
 | `scripts/score-trades.ts:561` (the live gate) | the edge becomes null in both constant categories → no `[SENTIMENT]` line, no `sentimentDelta`, no copyScore change |
 | `scripts/export-sentiment-features.ts:104-105` (ML feature columns) | `agg` null → the code's existing `nullAgg` path; the ML sentiment columns go from a per-category constant to **null** for those categories. That is the honest value, but the ML lane should then *drop* the column rather than keep an all-null one |
-| `scripts/sentiment-edge-read.ts:83` (before/after instrument) | prints the new basis; pass `{ evidenceBasis: "rows" }` to price the old one |
+| `scripts/sentiment-edge-read.ts:83` (before/after instrument) | it calls the shipped function, so at apply time it gets one optional `--basis rows\|deduped-signed` arg (3 lines) and prints which basis it is reading; without that arg it reads the new default |
 
 **Cost:** the select gains `rawPayload` (congress ≈ 507 B/row, govinfo ≈ 276 B/row; ~90 KB per call
 at today's window). Negligible for the 10-minute scorer; the nightly ML export makes two calls per
@@ -336,8 +341,8 @@ this showed up, and it showed up. What it changes, and what it does not:
   silently); the keyword table is what would give the layer a *direction* worth pricing again.
 
 Applying A therefore means: **the sentiment layer contributes nothing until a varying source
-returns.** That is the real cost, and §4 says it is worth −$141 on a $1,364 counterfactual of the
-cohort it touches, with no measured loss in outcome quality.
+returns.** That is the real cost. §4 prices it at −$141.15 of clip on a $1,363.83 v73 counterfactual of
+the cohort it touches, and §5 finds no measured loss in outcome quality to set against it.
 
 ---
 
@@ -348,19 +353,20 @@ An `apply` that leaves the file changed proves nothing. Four checks, in order:
 1. **Unit:** `npx vitest run tests/research-source-supply.test.ts` → 21 pass, including "a non-empty
    result always holds ≥2 distinct polarities" and "never merges two unparseable payloads to
    manufacture a constant".
-2. **Boundary, through the live reader:** `npx tsx scripts/sentiment-edge-dryrun.ts` → the **A**
-   column must read `none` for Macro/Politics and Tech/AI, and the **LIVE** column must equal A on
-   every category (i.e. the default really is the new basis).
+2. **Through the SHIPPED function, not through my instrument.** `scripts/sentiment-edge-read.ts` calls
+   `aggregateSentimentForCategory` itself, so it is the only existing probe that can prove the wiring:
+   its default arm must read `none` for Macro/Politics and Tech/AI, and `--basis rows` must reproduce
+   **+12.38 pp / +16.30 pp**. (The dry run's `LIVE` column builds evidence from raw rows on purpose —
+   it is the reference arm, so it keeps printing the legacy numbers after the change and proves
+   nothing about wiring.)
 3. **Production evidence, not silence:** the *absence* of `[SENTIMENT]` lines is equally consistent
    with "no candidate" (today's state, §2.3) — so do not read it as proof. Proof is
-   `npx tsx scripts/sentiment-edge-read.ts` printing `SINGLE POLARITY` with no edge, plus
    `SELECT COUNT(*) FROM DecisionJournal WHERE createdAt > <apply ms> AND reasonsJson LIKE '%Sentiment
    evidence edge%'` = 0 while the feed is constant, on the next window in which a research-category
-   market is copied at all.
-4. **Revert is one field:** an instrument can prove the legacy arm still works before and after the
-   change — `aggregateSentimentForCategory(cat, p, { evidenceBasis: "rows" })` must reproduce
-   +12.38 pp / +16.30 pp. If it does not, the option is not wired and the "revert is one field" claim
-   is false.
+   market is copied at all, and `sentimentDelta` starting to fill again once a varying source returns.
+4. **Revert is one field, and it is testable:** the `--basis rows` arm in (2) is the revert guarantee.
+   If it does not reproduce both pp figures, the option is not wired and "revert is one field" is
+   false.
 
 ---
 
