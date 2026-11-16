@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T16:17:57",
+  "generated_at": "2026-11-16T16:20:53",
   "stored": {
     "stored_by_cat": {
       "Crypto": {
@@ -114,48 +114,51 @@
   },
   "live": {
     "congress_118": {
-      "bills": 250,
+      "bills": 1000,
       "fresh_7d": 0,
       "fresh_30d": 0,
       "classes": {
-        "not_advanced": 222,
-        "other": 23,
-        "reported": 4,
-        "passed_chamber": 1
+        "not_advanced": 865,
+        "other": 86,
+        "reported": 23,
+        "passed_chamber": 18,
+        "procedural": 5,
+        "became_law": 2,
+        "blocked": 1
       },
       "kept": 0,
       "drop_funnel": {
-        "non_binding_resolution": 47,
-        "unrouted": 186,
-        "stale_action": 15,
-        "ceremonial": 2
+        "non_binding_resolution": 133,
+        "unrouted": 766,
+        "stale_action": 90,
+        "ceremonial": 11
       },
       "dupe_keys": 0,
       "by_cat": {},
       "items": {}
     },
     "congress_119": {
-      "bills": 250,
-      "fresh_7d": 99,
-      "fresh_30d": 113,
+      "bills": 1000,
+      "fresh_7d": 203,
+      "fresh_30d": 289,
       "classes": {
-        "not_advanced": 201,
-        "reported": 10,
-        "procedural": 6,
-        "other": 18,
-        "passed_chamber": 8,
-        "became_law": 6,
+        "not_advanced": 850,
+        "reported": 39,
+        "procedural": 14,
+        "other": 76,
+        "passed_chamber": 12,
+        "became_law": 8,
         "blocked": 1
       },
       "kept": 1,
       "drop_funnel": {
-        "unrouted": 178,
-        "non_binding_resolution": 55,
-        "stale_action": 4,
-        "not_news": 11,
-        "ceremonial": 1
+        "unrouted": 787,
+        "non_binding_resolution": 101,
+        "stale_action": 77,
+        "not_news": 29,
+        "ceremonial": 5
       },
-      "dupe_keys": 0,
+      "dupe_keys": 2,
       "by_cat": {
         "Macro/Politics": {
           "+0.30": 1
@@ -173,6 +176,221 @@
         ]
       }
     }
+  },
+  "sensitivity": {
+    "congress_118_reader": {
+      "7": 0,
+      "30": 0,
+      "90": 0,
+      "365": 0
+    },
+    "congress_118_reader+subject": {
+      "7": 0,
+      "30": 0,
+      "90": 0,
+      "365": 0
+    },
+    "congress_119_reader": {
+      "7": 0,
+      "30": 1,
+      "90": 2,
+      "365": 5
+    },
+    "congress_119_reader+subject": {
+      "7": 2,
+      "30": 5,
+      "90": 6,
+      "365": 12
+    }
+  },
+  "routing_119": {
+    "candidates": 22,
+    "buckets": {
+      "Finance": [
+        {
+          "bill": "HR997",
+          "pol": 0.9,
+          "cls": "became_law",
+          "age": 6,
+          "policyArea": "Taxation",
+          "title": "National Taxpayer Advocate Enhancement Act of 2025"
+        },
+        {
+          "bill": "HR7730",
+          "pol": 0.9,
+          "cls": "became_law",
+          "age": 6,
+          "policyArea": "Finance and Financial Sector",
+          "title": "Bankruptcy Threshold Adjustment Act"
+        }
+      ],
+      "Macro/Politics": [
+        {
+          "bill": "HR3100",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 11,
+          "policyArea": "Crime and Law Enforcement",
+          "title": "CHILD Act of 2026"
+        },
+        {
+          "bill": "HR9269",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Civil Rights and Liberties, Minority Issues",
+          "title": "Renewing the African American Civil Rights Network Act"
+        },
+        {
+          "bill": "HR4598",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Native Americans",
+          "title": "Technical Corrections to the Northwestern New Mexico Rural Wat"
+        },
+        {
+          "bill": "HR8483",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Native Americans",
+          "title": "Barona Group of Capitan Grande Band of Mission Indians Land Tr"
+        },
+        {
+          "bill": "HR9605",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 11,
+          "policyArea": "Education",
+          "title": "Less Bureaucracy, Better Foreign Medical Accreditation Act"
+        },
+        {
+          "bill": "HR7954",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Native Americans",
+          "title": "Don Young Doug LaMalfa Indian Buffalo Management Act"
+        }
+      ],
+      "Defense/Geopolitics": [
+        {
+          "bill": "HR5723",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 11,
+          "policyArea": "Armed Forces and National Security",
+          "title": "FRAUD in VA Disability Exams Act"
+        }
+      ],
+      "Energy/Climate": [
+        {
+          "bill": "S2887",
+          "pol": 0.5,
+          "cls": "passed_chamber",
+          "age": 4,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "Route 66 National Historic Trail Designation Act"
+        },
+        {
+          "bill": "S432",
+          "pol": 0.5,
+          "cls": "passed_chamber",
+          "age": 4,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "Fort Ontario Holocaust Refugee Shelter National Historical Par"
+        },
+        {
+          "bill": "S1353",
+          "pol": 0.5,
+          "cls": "passed_chamber",
+          "age": 4,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "A bill to extend the authority for modifications to the Second"
+        },
+        {
+          "bill": "S3493",
+          "pol": 0.5,
+          "cls": "passed_chamber",
+          "age": 4,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "Carson City Public Land Correction Act"
+        },
+        {
+          "bill": "HR1945",
+          "pol": 0.9,
+          "cls": "became_law",
+          "age": 6,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "America's National Churchill Museum National Historic Landmark"
+        },
+        {
+          "bill": "HR7254",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "To amend the National Trails System Act to direct the Secretar"
+        },
+        {
+          "bill": "HR9785",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Water Resources Development",
+          "title": "South Dakota Water Feasibility Studies Act"
+        },
+        {
+          "bill": "HR9600",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "Common Sense 250 Act of 2026"
+        },
+        {
+          "bill": "HR10136",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Public Lands and Natural Resources",
+          "title": "Crossett Experimental Forest Act of 2026"
+        },
+        {
+          "bill": "HR9640",
+          "pol": 0.3,
+          "cls": "reported",
+          "age": 18,
+          "policyArea": "Energy",
+          "title": "Earth MRI Reauthorization Act of 2026"
+        }
+      ],
+      "Healthcare": [
+        {
+          "bill": "HR1703",
+          "pol": 0.9,
+          "cls": "became_law",
+          "age": 6,
+          "policyArea": "Health",
+          "title": "Choices for Increased Mobility Act of 2026"
+        }
+      ]
+    },
+    "unrouted": [
+      {
+        "bill": "S675",
+        "pol": 0.3,
+        "policyArea": "Arts, Culture, Religion",
+        "title": "Theodore Roosevelt Presidential Library Act"
+      },
+      {
+        "bill": "HR8195",
+        "pol": 0.3,
+        "policyArea": "Animals",
+        "title": "Responsible Cormorant Management and Control Act of 2026"
+      }
+    ]
   },
   "mirror": {
     "toward": {

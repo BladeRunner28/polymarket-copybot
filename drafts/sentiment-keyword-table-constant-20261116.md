@@ -444,17 +444,17 @@ silent feed immediately, which is the fail-safe direction.
 
 ```bash
 cd ~/polymarket-copybot
-python3 scripts/congress-polarity-dryrun.py --self-test                  # 19/19
-python3 scripts/congress-polarity-dryrun.py --stored                     # §2.1–2.4
-python3 scripts/congress-polarity-dryrun.py --live --pages 4 --limit 250 # §2.5, 118 vs 119
-python3 scripts/congress-polarity-dryrun.py --live --pages 4 --cat-mode reader+subject
-python3 scripts/congress-polarity-dryrun.py --all --json                 # writes data/congress-polarity-dryrun.json
-
-# the freshness × routing sensitivity table (§2.5) is the same instrument with FRESH_DAYS swept:
-#   python3 - <<'PY' … dry.FRESH_DAYS = fd; proposed_row(...) …
-# the policyArea routing table (§2.5) additionally fetches /bill/{congress}/{type}/{number} per
-#   candidate — ~22 detail calls for the numbers quoted.
+python3 scripts/congress-polarity-dryrun.py --self-test                    # 19/19
+python3 scripts/congress-polarity-dryrun.py --stored                       # §2.1–2.4
+python3 scripts/congress-polarity-dryrun.py --live --pages 4 --limit 250   # §2.5, 118 vs 119 yield
+python3 scripts/congress-polarity-dryrun.py --sensitivity --pages 4 --limit 250   # §2.5 sweep table
+python3 scripts/congress-polarity-dryrun.py --routing --pages 4 --limit 250       # §2.5 policyArea table
+python3 scripts/congress-polarity-dryrun.py --all --json                   # writes data/congress-polarity-dryrun.json
 ```
+
+`--routing` makes one extra GET per candidate (~22 detail calls for the numbers quoted) to read
+`policyArea`; everything else is one list call per Congress. The measurement clock is pinned to
+2026-11-16 so a re-run reproduces these figures rather than drifting with the calendar.
 
 The instrument opens `prisma/dev.db` with `immutable=1` (read-only, no lock contention with the
 10-minute scorer), makes only GET requests to congress.gov, and writes nothing except the optional

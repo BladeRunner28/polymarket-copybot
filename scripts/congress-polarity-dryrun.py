@@ -41,6 +41,9 @@ DB = os.path.expanduser("~/polymarket-copybot/prisma/dev.db")
 ARTIFACT = os.path.expanduser("~/polymarket-copybot/data/congress-polarity-dryrun.json")
 OPINIONATED = 0.3          # the aggregator's threshold (sentiment.ts)
 FRESH_DAYS = 30            # an action older than this is history, not news
+# The measurement clock. Pinned so a re-run reproduces the published figures;
+# the live path would use date.today().
+NOW_DATE = datetime.date(2026, 11, 16)
 
 # ---------------------------------------------------------------- scoring ---
 
@@ -586,6 +589,133 @@ def live_report(limit, key, pages=1, cat_mode="reader"):
     return res
 
 
+# ------------------------------------------- sensitivity + policyArea route ---
+def load_bills(cong, pages, limit, key):
+    bills = []
+    for pg in range(pages):
+        st, body = http_get(
+            "https://api.congress.gov/v3/bill/%d?limit=%d&offset=%d&sort=updateDate+desc"
+            % (cong, limit, pg * limit), key)
+        if st != 200:
+            print("   congress %d page %d: HTTP %s %s" % (cong, pg, st, body))
+            return bills
+        bills.extend(body.get("bills", []))
+    return bills
+
+
+def sensitivity_report(congresses, pages, limit, key, windows=(7, 30, 90, 365)):
+    """Yield vs (freshness window, routing vocabulary) — the §2.5 table."""
+    res = {}
+    print("\n" + "=" * 78)
+    print("2b. SENSITIVITY — kept opinionated items per %d polled bills"
+          % (limit * pages))
+    print("=" * 78)
+    cache = {c: load_bills(c, pages, limit, key) for c in congresses}
+    print("%-7s %-16s %s" % ("cong", "routing", "  ".join("%4dd" % w for w in windows)))
+    for cong in congresses:
+        for mode in ("reader", "reader+subject"):
+            row = []
+            for fd in windows:
+                keep = FRESH_DAYS
+                try:
+                    globals()["FRESH_DAYS"] = fd
+                    n = 0
+                    for b in cache[cong]:
+                        la = b.get("latestAction") or {}
+                        if proposed_row(b.get("title") or "", la.get("text") or "",
+                                        la.get("actionDate") or "", NOW_DATE, mode, b.get("type")):
+                            n += 1
+                    row.append(n)
+                finally:
+                    globals()["FRESH_DAYS"] = keep
+            print("%-7d %-16s %s" % (cong, mode, "  ".join("%5d" % v for v in row)))
+            res["congress_%d_%s" % (cong, mode)] = dict(zip([str(w) for w in windows], row))
+    print("\n  (the same sample the live report uses; a bill re-polled in a later run is"
+          " de-duplicated by the ledger, so these are events, not emissions)")
+    return res
+
+
+# Subject-level mapping used ONLY for the measurement in §2.5 — it routes the
+# API's policyArea onto our seven market buckets as a reader would, including
+# Public Lands -> Energy/Climate, and the point of the measurement is that this
+# is what a "correct" table looks like while still being meaningless.
+PA_TO_BUCKET_MEASURE = {
+    "Health": "Healthcare",
+    "Finance and Financial Sector": "Finance", "Taxation": "Finance",
+    "Economics and Public Finance": "Finance", "Foreign Trade and International Finance": "Finance",
+    "Energy": "Energy/Climate", "Environmental Protection": "Energy/Climate",
+    "Water Resources Development": "Energy/Climate",
+    "Public Lands and Natural Resources": "Energy/Climate",
+    "Armed Forces and National Security": "Defense/Geopolitics",
+    "International Affairs": "Defense/Geopolitics", "Immigration": "Defense/Geopolitics",
+    "Science, Technology, Communications": "Tech/AI",
+    "Government Operations and Politics": "Macro/Politics", "Congress": "Macro/Politics",
+    "Civil Rights and Liberties, Minority Issues": "Macro/Politics",
+    "Crime and Law Enforcement": "Macro/Politics", "Education": "Macro/Politics",
+    "Labor and Employment": "Macro/Politics", "Social Welfare": "Macro/Politics",
+    "Housing and Community Development": "Macro/Politics", "Emergency Management": "Macro/Politics",
+    "Agriculture and Food": "Macro/Politics", "Transportation and Public Works": "Macro/Politics",
+    "Commerce": "Macro/Politics", "Law": "Macro/Politics", "Native Americans": "Macro/Politics",
+}
+
+
+def routing_report(cong, pages, limit, key):
+    """Candidates routed by the API's controlled vocabulary (§2.5 detail table)."""
+    res = {}
+    print("\n" + "=" * 78)
+    print("2c. policyArea ROUTING — congress %d, %d bills" % (cong, limit * pages))
+    print("=" * 78)
+    bills = load_bills(cong, pages, limit, key)
+    cands = []
+    for b in bills:
+        t = b.get("type") or ""
+        la = b.get("latestAction") or {}
+        if t.lower() in NON_BINDING_TYPES:
+            continue
+        cls, pol, conf = action_class(la.get("text"))
+        if abs(pol) < OPINIONATED:
+            continue
+        age = action_age_days(la.get("actionDate"), NOW_DATE)
+        if age is None or age > 30:
+            continue
+        cands.append((b, pol, cls, age))
+    print("   %d bills -> %d candidates (binding + fresh<=30d + opinionated action)"
+          % (len(bills), len(cands)))
+    buckets = collections.defaultdict(list)
+    unrouted = []
+    subj_populated = 0
+    for b, pol, cls, age in cands:
+        st, d = http_get("https://api.congress.gov/v3/bill/%d/%s/%s?format=json"
+                         % (cong, (b.get("type") or "").lower(), b.get("number")), key)
+        if st != 200:
+            print("   detail HTTP %s for %s%s" % (st, b.get("type"), b.get("number")))
+            continue
+        bb = d.get("bill") or {}
+        if ((bb.get("subjects") or {}).get("legislativeSubjects") or []):
+            subj_populated += 1
+        pa = ((bb.get("policyArea") or {}) or {}).get("name")
+        rec = (b.get("type") + str(b.get("number")), pol, cls, age, pa, (b.get("title") or "")[:62])
+        bucket = PA_TO_BUCKET_MEASURE.get(pa)
+        if bucket is None:
+            unrouted.append(rec)
+        else:
+            buckets[bucket].append(rec)
+    print("   legislativeSubjects populated: %d of %d" % (subj_populated, len(cands)))
+    for bk in sorted(buckets):
+        signs = collections.Counter("+" if r[1] > 0 else "-" for r in buckets[bk])
+        print("   %-22s n=%d %s" % (bk, len(buckets[bk]), dict(signs)))
+        for r in buckets[bk][:5]:
+            print("        %-9s %+.2f %-14s age=%-3s %-38s %s" % r)
+    print("   unrouted by policyArea: %d" % len(unrouted))
+    for r in unrouted[:4]:
+        print("        %-9s %+.2f %-14s age=%-3s %-38s %s" % r)
+    res["candidates"] = len(cands)
+    res["buckets"] = {k: [{"bill": x[0], "pol": x[1], "cls": x[2], "age": x[3],
+                           "policyArea": x[4], "title": x[5]} for x in v] for k, v in buckets.items()}
+    res["unrouted"] = [{"bill": x[0], "pol": x[1], "policyArea": x[4], "title": x[5]} for x in unrouted]
+    return res
+
+
 # ------------------------------------------------------- sign-test mirror ---
 def mirror_report():
     """A near-constant feed flips cohort identities wholesale. Arithmetic on the
@@ -612,13 +742,15 @@ def main():
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--stored", action="store_true")
     ap.add_argument("--live", action="store_true")
+    ap.add_argument("--sensitivity", action="store_true")
+    ap.add_argument("--routing", action="store_true")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--limit", type=int, default=250)
     ap.add_argument("--pages", type=int, default=1)
     ap.add_argument("--cat-mode", default="reader", choices=["reader", "reader+subject"])
     a = ap.parse_args()
-    do_all = a.all or not (a.self_test or a.stored or a.live)
+    do_all = a.all or not (a.self_test or a.stored or a.live or a.sensitivity or a.routing)
 
     if a.self_test:
         sys.exit(0 if self_test() else 1)
@@ -628,12 +760,17 @@ def main():
     if do_all or a.stored:
         now_ms = datetime.datetime(2026, 11, 16, 22, 30).timestamp() * 1000
         out["stored"] = stored_report(load_stored(), now_ms)
-    if do_all or a.live:
+    if do_all or a.live or a.sensitivity or a.routing:
         key = load_key()
         if not key:
             print("\n[skip live] CONGRESS_GOV_API_KEY missing from ~/.hermes/.env")
         else:
-            out["live"] = live_report(a.limit, key, a.pages, a.cat_mode)
+            if do_all or a.live:
+                out["live"] = live_report(a.limit, key, a.pages, a.cat_mode)
+            if do_all or a.sensitivity:
+                out["sensitivity"] = sensitivity_report((118, 119), a.pages, a.limit, key)
+            if do_all or a.routing:
+                out["routing_119"] = routing_report(119, a.pages, a.limit, key)
     if do_all:
         out["mirror"] = mirror_report()
 
