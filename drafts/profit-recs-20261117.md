@@ -50,7 +50,9 @@ positive PnL is in the 37% that never traded.**
 
 `+$4,458 + $2,269.5 = $6,727` against a published `+$6,059`. The two positive classes are *exactly*
 the two that have no evidence of a fill — one because the market never came to our price, the other
-because the resolver said it did not and the read path (`bookedPnl()`) already zeroes it.
+because the resolver said it did not and the read path (`bookedPnl()`) already zeroes it. The
+arithmetic closes exactly: +4,458.0 − 609.3 (resolver-filled) − 343.2 (near-miss) + 284.2
+(tape-touched) + 2,269.5 = **$6,059.2**, the published number.
 
 And the phantom is not a broad edge, it is a lottery ticket: **ex-top-1 +$2,944.6, ex-top-5 +$291.9,
 ex-top-10 −$311.9; 260 of 500 legs positive.** Half the legs win, as they must when you book a
