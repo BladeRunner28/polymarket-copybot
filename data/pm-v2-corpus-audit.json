@@ -1,0 +1,266 @@
+{
+  "booking_note": {
+    "basis": "fillStatus='unfilled' but realizedPnl != 0 -- pre-flag rows; the fill-aware booking flip is a Lane A question, not a recorder defect",
+    "sum": 1500.31,
+    "unfilled_legs_with_nonzero_booked_pnl": 221
+  },
+  "corpus": {
+    "dataset": "TimeSeventeen/Polymarket-v2 (mirror xfox25/Polymarket-v2), layer daily_aligned",
+    "first_partition": "2026_08_15",
+    "last_partition": "2026_11_10",
+    "license": "CC BY 4.0",
+    "markets_matched_in_corpus": 863,
+    "partitions": 87
+  },
+  "corpus_validation": {
+    "agree": 40,
+    "basis": "one market, seeded random draw from the corpus-decided markets our book holds; venue = CLOB tokens[].winner",
+    "detail": [],
+    "mismatch": 0,
+    "pool": 774,
+    "sample": 40,
+    "seed": 20261116,
+    "unreadable": 0
+  },
+  "coverage": {
+    "leg_coverage_pct": 11.9,
+    "legs_in_book": 12863,
+    "legs_joined": 1531,
+    "market_coverage_pct": 19.79,
+    "markets_in_book": 4361,
+    "markets_joined": 863
+  },
+  "generated_at": "2026-11-17T02:14:35Z",
+  "label_set": {
+    "definitive": 1,
+    "detail": [
+      {
+        "definitive": false,
+        "marketId": "will-iran-target-a-arab-country-on-august-11-2026-20260801004719128",
+        "outcome": "NO",
+        "realizedPnl": 2.33,
+        "tokens_seen": [
+          "YES"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "cfb-abchr-txtech-2026-09-05-spread-home-42pt5",
+        "outcome": "TEXAS TECH",
+        "realizedPnl": -4.99,
+        "tokens_seen": [
+          "ABILENECHRISTIAN"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "cfb-utsa-tx-2026-09-19-total-56pt5",
+        "outcome": "OVER",
+        "realizedPnl": -1.25,
+        "tokens_seen": [
+          "UNDER"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "ufc-suy-cod12-2026-10-17-totals-2pt5",
+        "outcome": "OVER",
+        "realizedPnl": 0.78,
+        "tokens_seen": [
+          "UNDER"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "nba-was-cle-2026-10-28-rebounds-jarrett-allen-7pt5",
+        "outcome": "YES",
+        "realizedPnl": 0.0,
+        "tokens_seen": [
+          "NO"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "swe-hif-sir-2026-10-29-total-2pt5",
+        "outcome": "OVER",
+        "realizedPnl": -9.0,
+        "tokens_seen": [
+          "UNDER"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "atp-zverev-minaur-2026-10-31-set-totals-2pt5",
+        "outcome": "OVER 2.5",
+        "realizedPnl": 30.0,
+        "tokens_seen": [
+          "UNDER25"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "atp-zverev-minaur-2026-10-31-set-totals-2pt5",
+        "outcome": "OVER 2.5",
+        "realizedPnl": 0.0,
+        "tokens_seen": [
+          "UNDER25"
+        ]
+      },
+      {
+        "definitive": true,
+        "marketId": "ufc-jon5-jos27-2026-11-07",
+        "outcome": "JOSE SOUZA",
+        "realizedPnl": 4.14,
+        "tokens_seen": [
+          "JONNYPARSONS",
+          "JOSEHENRIQUE"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "dota2-xe-legion1-2026-11-11",
+        "outcome": "XIPTO ESPORTS",
+        "realizedPnl": -9.97,
+        "tokens_seen": [
+          "LEGION"
+        ]
+      },
+      {
+        "definitive": false,
+        "marketId": "cbb-flam-umkc-2026-11-11",
+        "outcome": "KANSAS CITY ROOS",
+        "realizedPnl": 3.29,
+        "tokens_seen": [
+          "FLORIDAAMRATTLERS"
+        ]
+      }
+    ],
+    "legs_with_unseen_label": 11
+  },
+  "price": {
+    "by_lane": [
+      {
+        "botId": "BANKROLL_200",
+        "mean_c": -0.7,
+        "median_c": -0.87,
+        "n": 598,
+        "p10_c": -2.5,
+        "p90_c": 1.5,
+        "within_1c_pct": 39.0
+      },
+      {
+        "botId": "STANDARD",
+        "mean_c": 0.12,
+        "median_c": 0.5,
+        "n": 416,
+        "p10_c": -2.5,
+        "p90_c": 1.5,
+        "within_1c_pct": 62.3
+      }
+    ],
+    "legs_considered": 1520,
+    "legs_with_venue_read": 1014,
+    "sign_convention": "diff = (our entryPrice - venue print) in cents; POSITIVE = we booked WORSE than the tape traded",
+    "stale_seconds_max": 900
+  },
+  "read_at_unix": 1794881675,
+  "rule": {
+    "leg_pct": 0.28,
+    "market_pct": 0.19,
+    "reason": "0.28% of knowable legs disagree (<= 0.5%) on 537 markets",
+    "verdict": "REFUTED_INSTRUMENT_RETIRES"
+  },
+  "settlement_pnl": {
+    "booked_on_population": 984.06,
+    "delta_from_verdict_only": 0.0,
+    "delta_pct_of_abs_booked": 0.0
+  },
+  "verdict": {
+    "agree_legs": 713,
+    "disagree_leg_pct": 0.28,
+    "disagree_legs": 2,
+    "disagree_market_pct": 0.19,
+    "disagree_markets": 1,
+    "disagreements": [
+      {
+        "botId": "STANDARD",
+        "entryPrice": 0.685,
+        "fillStatus": null,
+        "id": "cmw6tnghc000gn949rbs1477a",
+        "marketId": "ufc-jon5-jos27-2026-11-07",
+        "ours": 0,
+        "outcome": "JOSE HENRIQUE",
+        "realizedPnl": -9.0,
+        "resolvedAt": 1794093662145,
+        "size": 9.0,
+        "theirs": 1,
+        "winningLabel": "Jose Henrique"
+      },
+      {
+        "botId": "STANDARD",
+        "entryPrice": 0.685,
+        "fillStatus": null,
+        "id": "cmw6wsm4b000612exju8qr2ns",
+        "marketId": "ufc-jon5-jos27-2026-11-07",
+        "ours": 1,
+        "outcome": "JOSE SOUZA",
+        "realizedPnl": 4.14,
+        "resolvedAt": 1794093662149,
+        "size": 9.0,
+        "theirs": 0,
+        "winningLabel": "Jose Henrique"
+      }
+    ],
+    "disputes_resolved": [
+      {
+        "booked_on_wrong_legs": -9.0,
+        "corpus_right": false,
+        "corpus_win": "Jose Henrique",
+        "legs": [
+          {
+            "botId": "STANDARD",
+            "entryPrice": 0.685,
+            "fillStatus": null,
+            "id": "cmw6tnghc000gn949rbs1477a",
+            "marketId": "ufc-jon5-jos27-2026-11-07",
+            "ours": 0,
+            "outcome": "JOSE HENRIQUE",
+            "realizedPnl": -9.0,
+            "resolvedAt": 1794093662145,
+            "size": 9.0,
+            "theirs": 1,
+            "winningLabel": "Jose Henrique"
+          },
+          {
+            "botId": "STANDARD",
+            "entryPrice": 0.685,
+            "fillStatus": null,
+            "id": "cmw6wsm4b000612exju8qr2ns",
+            "marketId": "ufc-jon5-jos27-2026-11-07",
+            "ours": 1,
+            "outcome": "JOSE SOUZA",
+            "realizedPnl": 4.14,
+            "resolvedAt": 1794093662149,
+            "size": 9.0,
+            "theirs": 0,
+            "winningLabel": "Jose Henrique"
+          }
+        ],
+        "market": "ufc-jon5-jos27-2026-11-07",
+        "our_legs_right": [
+          "JOSE SOUZA"
+        ],
+        "our_legs_wrong": [
+          "JOSE HENRIQUE"
+        ],
+        "venue_tokens": [
+          "Jonny Parsons",
+          "Jose Souza"
+        ],
+        "venue_win": "Jose Souza"
+      }
+    ],
+    "knowable_legs": 715,
+    "knowable_markets": 537
+  }
+}

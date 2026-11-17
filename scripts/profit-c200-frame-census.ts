@@ -33,6 +33,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { kellySizeForCopy } from "../src/lib/kelly";
 import { getBandLambda } from "../src/lib/premium";
+import type { PremiumBand, PremiumCalibration } from "../src/lib/premium";
 
 const args = process.argv.slice(2);
 const arg = (n: string, d?: string) => {
@@ -67,8 +68,8 @@ const rules = q<{ version: number; rulesJson: string }>(
   `SELECT version, rulesJson FROM RuleSet WHERE active=1`
 )[0];
 const R = rules ? JSON.parse(rules.rulesJson) : {};
-const cal = JSON.parse(readFileSync(join(__dirname, "..", "data", "premium-calibration.json"), "utf8"));
-const bands = cal.bands as { lo: number; hi: number; lambda: number }[];
+const cal = JSON.parse(readFileSync(join(__dirname, "..", "data", "premium-calibration.json"), "utf8")) as PremiumCalibration;
+const bands: PremiumBand[] = cal.bands;
 // The calibration LIVE when these legs were sized (2026-11-01 refit, superseded 2026-11-15) — the
 // skip verdict must hold on the table the scorer actually read, not only on today's.
 const calHist = (() => {
@@ -76,7 +77,7 @@ const calHist = (() => {
     const sha = arg("calib", "93a8b23")!;
     return JSON.parse(
       execFileSync("git", ["show", `${sha}:data/premium-calibration.json`], { encoding: "utf8" })
-    ) as { calibratedAt: string; bands: { lo: number; hi: number; lambda: number }[] };
+    ) as PremiumCalibration;
   } catch {
     return null;
   }
@@ -117,7 +118,7 @@ const KELLY = {
   minBetUsd: Number(R.kellyMinBetUsd ?? 1),
   minEdgePct: Number(R.kellyMinEdgePct ?? 0.02),
 };
-function kelly(price: number, table: { lo: number; hi: number; lambda: number }[] = bands) {
+function kelly(price: number, table: PremiumBand[] = bands) {
   const lam = getBandLambda(price, table);
   return {
     lam,
