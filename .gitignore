@@ -124,6 +124,12 @@ data/source-liveness-alarm.json
 data/kalshi-maker-settlements.json
 data/kalshi-maker-settlements.json.tmp
 
+# Kalshi LIP family gap (2026-11-17, card kalshi-lip-universe-gap): the live-menu snapshot is
+# 7,610 programs / 3.5 MB, refetchable keyless in ~40 s by
+# python3 scripts/kalshi-lip-family-gap.py --fetch-live, and stale the moment it is written.
+# data/kalshi-lip-family-gap.json IS committed, so the verdict re-reads offline.
+data/kalshi-lip-live.json
+
 # Wallet-FDR truth cache (2026-11-11, card crowdintel-wallet-fdr-audit): 4.6 MB of
 # conditionId -> settled outcome that is refetchable keyless via
 # `python3 scripts/wallet-fdr-audit.py --fetch N` and is rewritten on every widening.
