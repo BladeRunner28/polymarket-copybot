@@ -44,57 +44,94 @@ const DRIFT_SUMMARY_FILE = join(__dirname, "..", "..", "data", "drift-shadow-sum
  * but the ex-dust figure is written by the hourly shadow marker into
  * copybot-shadow-longshot.log — so the number the bar is judged on never reached the
  * report. Surfaced here, read-only.
+ *
+ * 2026-11-17 self-audit: both arms rendered a MISSING measurement as a PASSING one.
+ * `consecutiveDaysAtOrBelow ?? 0` printed "bar 0/7d" for an absent streak and
+ * `tripped ? "TRIPPED" : "not tripped"` printed "not tripped" for an undefined
+ * verdict — so a summary that had never computed the arm read exactly like one that
+ * computed it and found the bar holding. The two arms genuinely disagree today
+ * (per-poll 43 days / TRIPPED vs per-signal 0 days / not tripped), which is a
+ * basis difference and is correct; but the reader has no way to tell that from
+ * "this arm was never measured", so an unmeasured arm now says so and prints no
+ * verdict at all. Rendering for a complete artifact is byte-identical.
  */
+type DriftArm = {
+  thresholdUsd?: number;
+  daysRequired?: number;
+  consecutiveDaysAtOrBelow?: number | null;
+  cohort7d?: number | null;
+  tripped?: boolean | null;
+};
+
+export type DriftSummary = {
+  avgPnlPerTradeExDust?: number;
+  marked?: number;
+  avgPnlPerTradeExDustPerSignal?: number | null;
+  signalsSettled?: number;
+  decayBar?: DriftArm;
+  decayBarPerSignal?: DriftArm;
+};
+
+const UNMEASURED = "UNMEASURED (the arm carries no value — this is not a pass)";
+
+/** PURE: the drift/decay line from a parsed summary. Undefined if the base figure is absent. */
+export function driftDecayText(s: DriftSummary): string | undefined {
+  if (typeof s.avgPnlPerTradeExDust !== "number") return undefined;
+  const b = s.decayBar;
+  // 2026-10-21 self-audit: this printed `${consecutiveDaysAtOrBelow}/${daysRequired}
+  // days` — on live data "16/7 days", a ratio above 1 that reads as "bar met"
+  // while tripped=false, with the reason (the trailing-7d COHORT gate) left off
+  // the line and a stray backslash from a mis-escaped `\\)`. State the streak
+  // against its requirement and name which of the two pre-registered conditions
+  // is holding the bar shut.
+  const barThreshold = b?.thresholdUsd ?? 0.5;
+  // 2026-11-13 self-audit: this line carries TWO cohort7d values — the per-poll
+  // arm's and the per-signal arm's — and both printed under the bare label
+  // "cohort7d". Live text: "... per-signal ... cohort7d $-0.81) · decay bar: 39
+  // consecutive days ... · cohort7d $-0.73 — TRIPPED". Two numbers, one label,
+  // no way for a reader (or a scraper) to say which population a cohort7d
+  // figure belongs to; the per-signal arm also printed "bar 0/7d" with no
+  // verdict at all, so its tripped state was invisible. Every cohort now names
+  // its arm, every arm prints its verdict, and a negative amount renders
+  // "-$0.81" instead of "$-0.81".
+  const usdSigned = (v: number) => `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(2)}`;
+  const cohort = b?.cohort7d;
+  const cohortTxt = cohort === null || cohort === undefined ? "—" : usdSigned(cohort);
+  const bar = b
+    ? ` · decay bar (per-poll): ` +
+      (typeof b.consecutiveDaysAtOrBelow === "number"
+        ? `${b.consecutiveDaysAtOrBelow} consecutive days at ≤$${barThreshold.toFixed(2)}`
+        : `streak ${UNMEASURED}`) +
+      ` (needs ${b.daysRequired ?? 7}) · cohort7d(per-poll) ${cohortTxt}` +
+      (cohort !== null && cohort !== undefined && cohort > barThreshold
+        ? ` (> bar, so the cohort gate holds it shut)`
+        : "") +
+      (typeof b.tripped === "boolean" ? `${b.tripped ? " — TRIPPED" : " — not tripped"}` : ` — verdict ${UNMEASURED}`)
+    : "";
+  // Instrument v2 (2026-10-11): the same counterfactual on its per-signal basis
+  // (one row per market|outcome|wallet). The line above is a per-poll average —
+  // a market that stays drifted is counted once per 10-minute tick — so quote
+  // both, and never compare one against the other.
+  const psa = s.decayBarPerSignal;
+  const psArm = psa
+    ? `, bar ` +
+      (typeof psa.consecutiveDaysAtOrBelow === "number"
+        ? `${psa.consecutiveDaysAtOrBelow}/${psa.daysRequired ?? 7}d`
+        : UNMEASURED) +
+      `, cohort7d(per-signal) ${psa.cohort7d === null || psa.cohort7d === undefined ? "—" : usdSigned(psa.cohort7d)}` +
+      (typeof psa.tripped === "boolean" ? ` — ${psa.tripped ? "TRIPPED" : "not tripped"}` : ` — verdict ${UNMEASURED}`)
+    : "";
+  const ps =
+    typeof s.avgPnlPerTradeExDustPerSignal === "number"
+      ? ` · per-signal ${s.avgPnlPerTradeExDustPerSignal >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDustPerSignal).toFixed(2)}/trade` +
+        ` ex-dust (${s.signalsSettled ?? 0} settled signals${psArm})`
+      : "";
+  return `• Drift gate counterfactual: ${s.avgPnlPerTradeExDust >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDust).toFixed(2)}/trade ex-dust per poll (${s.marked ?? 0} marked)${ps}${bar}`;
+}
+
 function driftDecayLine(): string | undefined {
   try {
-    const s = JSON.parse(fs.readFileSync(DRIFT_SUMMARY_FILE, "utf-8")) as {
-      avgPnlPerTradeExDust?: number;
-      marked?: number;
-      avgPnlPerTradeExDustPerSignal?: number | null;
-      signalsSettled?: number;
-      decayBar?: { thresholdUsd?: number; daysRequired?: number; consecutiveDaysAtOrBelow?: number; cohort7d?: number | null; tripped?: boolean };
-      decayBarPerSignal?: { consecutiveDaysAtOrBelow?: number; daysRequired?: number; cohort7d?: number | null; tripped?: boolean };
-    };
-    if (typeof s.avgPnlPerTradeExDust !== "number") return undefined;
-    const b = s.decayBar;
-    // 2026-10-21 self-audit: this printed `${consecutiveDaysAtOrBelow}/${daysRequired}
-    // days` — on live data "16/7 days", a ratio above 1 that reads as "bar met"
-    // while tripped=false, with the reason (the trailing-7d COHORT gate) left off
-    // the line and a stray backslash from a mis-escaped `\\)`. State the streak
-    // against its requirement and name which of the two pre-registered conditions
-    // is holding the bar shut.
-    const barThreshold = b?.thresholdUsd ?? 0.5;
-    // 2026-11-13 self-audit: this line carries TWO cohort7d values — the per-poll
-    // arm's and the per-signal arm's — and both printed under the bare label
-    // "cohort7d". Live text: "... per-signal ... cohort7d $-0.81) · decay bar: 39
-    // consecutive days ... · cohort7d $-0.73 — TRIPPED". Two numbers, one label,
-    // no way for a reader (or a scraper) to say which population a cohort7d
-    // figure belongs to; the per-signal arm also printed "bar 0/7d" with no
-    // verdict at all, so its tripped state was invisible. Every cohort now names
-    // its arm, every arm prints its verdict, and a negative amount renders
-    // "-$0.81" instead of "$-0.81".
-    const usdSigned = (v: number) => `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(2)}`;
-    const cohort = b?.cohort7d;
-    const cohortTxt = cohort === null || cohort === undefined ? "—" : usdSigned(cohort);
-    const bar = b
-      ? ` · decay bar (per-poll): ${b.consecutiveDaysAtOrBelow ?? 0} consecutive days at ≤$${barThreshold.toFixed(2)}` +
-        ` (needs ${b.daysRequired ?? 7}) · cohort7d(per-poll) ${cohortTxt}` +
-        (cohort !== null && cohort !== undefined && cohort > barThreshold
-          ? ` (> bar, so the cohort gate holds it shut)`
-          : "") +
-        `${b.tripped ? " — TRIPPED" : " — not tripped"}`
-      : "";
-    // Instrument v2 (2026-10-11): the same counterfactual on its per-signal basis
-    // (one row per market|outcome|wallet). The line above is a per-poll average —
-    // a market that stays drifted is counted once per 10-minute tick — so quote
-    // both, and never compare one against the other.
-    const ps =
-      typeof s.avgPnlPerTradeExDustPerSignal === "number"
-        ? ` · per-signal ${s.avgPnlPerTradeExDustPerSignal >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDustPerSignal).toFixed(2)}/trade` +
-          ` ex-dust (${s.signalsSettled ?? 0} settled signals` +
-          `${s.decayBarPerSignal ? `, bar ${s.decayBarPerSignal.consecutiveDaysAtOrBelow ?? 0}/${s.decayBarPerSignal.daysRequired ?? 7}d, cohort7d(per-signal) ${s.decayBarPerSignal.cohort7d === null || s.decayBarPerSignal.cohort7d === undefined ? "—" : usdSigned(s.decayBarPerSignal.cohort7d)} — ${s.decayBarPerSignal.tripped ? "TRIPPED" : "not tripped"}` : ""})`
-        : "";
-    return `• Drift gate counterfactual: ${s.avgPnlPerTradeExDust >= 0 ? "+" : "−"}$${Math.abs(s.avgPnlPerTradeExDust).toFixed(2)}/trade ex-dust per poll (${s.marked ?? 0} marked)${ps}${bar}`;
+    return driftDecayText(JSON.parse(fs.readFileSync(DRIFT_SUMMARY_FILE, "utf-8")) as DriftSummary);
   } catch {
     return undefined;
   }
