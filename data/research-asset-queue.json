@@ -471,6 +471,34 @@
    "status": "audited",
    "url": "https://github.com/YichengYang-Ethan/oracle3-prediction-market-agent",
    "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-11-16 08:22 CST",
+    "state": "pending"
+   },
+   "audited": "2026-11-16 08:22 CST",
+   "claimed": "2026-11-16 08:20 CST",
+   "claimed_ts": 1794838846.298321,
+   "discovered": "2026-11-16 07:18 CST",
+   "id": "polyrank/PolyRank-MCP",
+   "license": "MIT",
+   "note": "MCP over a paid SaaS that ranks Polymarket traders by Brier/calibration/edge-vs-price \u2014 a possible external cross-check for the wallet-rank shadow arm (hard_q v",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "At the >=200-forward-bet shadow read: Spearman rho >= 0.5 with market-clustered bootstrap 95% CI excluding 0 => keep Polyrank as a standing corroboration source and cite it in the shadow verdict; rho < 0.5 or CI straddles 0 => record 'no external agreement' and drop the source. Neither branch changes a rule, size or lane.",
+    "effort": "~1-2h read-only",
+    "reversibility": "Delete the footnote; no code or dependency exists to revert.",
+    "text": "Cross-check the wallet-rank shadow's shrunk-arm ordering against Polyrank's free-tier public calibration/rank on the shared wallets, read-only, as a footnote in drafts/wallet-rank-shadow-<date>.md (no lane change, no dependency)"
+   },
+   "report": "drafts/asset-audit-polyrank-mcp-20261116.md",
+   "source": "agent",
+   "stars": 2,
+   "status": "audited",
+   "url": "https://github.com/polyrank/PolyRank-MCP",
+   "verdict": "watch"
   }
  ],
  "version": 1

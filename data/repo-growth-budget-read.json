@@ -1,74 +1,62 @@
 {
-  "generatedAt": "2026-11-15T04:31:14.136Z",
+  "generatedAt": "2026-11-16T12:54:49.728Z",
   "card": "kalshi-tape-repo-size-policy",
   "basis": {
     "window": {
-      "start": "2026-11-07",
-      "end": "2026-11-13",
+      "start": "2026-11-09",
+      "end": "2026-11-15",
       "days": 7,
-      "partialDayExcluded": "2026-11-14"
+      "partialDayExcluded": "2026-11-16"
     },
     "level": "blob",
     "clock": "commit dates (UTC) at HEAD when the script ran",
     "bytes": "on-disk object size of every blob newly added by that day diffs (loose zlib / delta-packed)"
   },
   "objectStore": {
-    "gitBytes": 2370793690,
+    "gitBytes": 2518022884,
     "packBytes": 1422500864,
-    "looseBytes": 940793856,
-    "looseCount": 2295
+    "looseBytes": 1087463424,
+    "looseCount": 2489
   },
   "head": {
-    "trackedBytes": 2458899714,
-    "files": 2795,
+    "trackedBytes": 2549719844,
+    "files": 2844,
     "classes": {
       "code": {
-        "files": 1214,
-        "bytes": 22552611
+        "files": 1228,
+        "bytes": 23045438
       },
       "other": {
-        "files": 491,
-        "bytes": 168425239
+        "files": 495,
+        "bytes": 168469575
       },
       "tape-shadow": {
         "files": 9,
-        "bytes": 135712465
+        "bytes": 138369591
       },
       "tape-other": {
-        "files": 83,
-        "bytes": 219077795
+        "files": 85,
+        "bytes": 221201574
       },
       "cache": {
         "files": 19,
-        "bytes": 2882202
+        "bytes": 2874222
       },
       "tape-kalshi": {
-        "files": 942,
-        "bytes": 1836216290
+        "files": 971,
+        "bytes": 1921461986
       },
       "orderbook": {
         "files": 1,
-        "bytes": 3833029
+        "bytes": 3877090
       },
       "dataset": {
         "files": 36,
-        "bytes": 70200083
+        "bytes": 70420368
       }
     }
   },
   "daily": [
-    {
-      "date": "2026-11-07",
-      "raw": 420074579,
-      "disk": 52331387,
-      "churn": 13752
-    },
-    {
-      "date": "2026-11-08",
-      "raw": 346400596,
-      "disk": 67256097,
-      "churn": 0
-    },
     {
       "date": "2026-11-09",
       "raw": 383360772,
@@ -98,32 +86,44 @@
       "raw": 369861670,
       "disk": 75993638,
       "churn": 2921163
+    },
+    {
+      "date": "2026-11-14",
+      "raw": 320344116,
+      "disk": 75928650,
+      "churn": 1678266
+    },
+    {
+      "date": "2026-11-15",
+      "raw": 300816278,
+      "disk": 74527739,
+      "churn": 1027640
     }
   ],
   "summary": {
     "n": 7,
     "idleDays": 0,
-    "mean": 79455542.14285715,
+    "mean": 83865385.71428572,
     "median": 86112649,
-    "trimmedMean": 81723980.8,
+    "trimmedMean": 83458491.4,
     "p90": 95237504,
     "max": 95237504,
-    "exTop1Mean": 76825215.16666667
+    "exTop1Mean": 81970032.66666667
   },
   "summaryRaw": {
     "n": 7,
     "idleDays": 0,
-    "mean": 387466723,
-    "median": 383360772,
-    "trimmedMean": 386617780.4,
+    "mean": 366707468.5714286,
+    "median": 372809777,
+    "trimmedMean": 366671687.8,
     "p90": 432777563,
     "max": 432777563,
-    "exTop1Mean": 379914916.3333333
+    "exTop1Mean": 355695786.1666667
   },
   "churn": {
-    "bytes": 15726056,
-    "rawTotal": 2712267061,
-    "share": 0.0057981222520919005
+    "bytes": 18418210,
+    "rawTotal": 2566952280,
+    "share": 0.007175127540742596
   },
   "policy": {
     "ceilingBytes": 2147483648,
@@ -133,7 +133,7 @@
   "verdict": {
     "level": "alarm",
     "reasons": [
-      "median 82.1 MB/day crosses the 2048.0 MB ceiling in 0 days (alarm window 90)",
+      "the 2048.0 MB ceiling is ALREADY EXCEEDED by 353.4 MB (object store 2401.4 MB, ceiling 2048.0 MB), and the median day adds another 82.1 MB on top of it",
       "median 82.1 MB/day is over the 40.0 MB/day budget"
     ],
     "daysAtMedian": 0,
@@ -142,54 +142,54 @@
   },
   "topContributors": [
     {
-      "path": "data/kalshi-macro-quotes.jsonl",
-      "bytes": 608607820,
-      "share": 0.22372530644911282
+      "path": "data/jev-shadow.jsonl",
+      "bytes": 493766243,
+      "share": 0.19175231041836036
     },
     {
-      "path": "data/jev-shadow.jsonl",
-      "bytes": 463381247,
-      "share": 0.17033976245630073
+      "path": "data/kalshi-macro-quotes.jsonl",
+      "bytes": 448096840,
+      "share": 0.17401676517842948
     },
     {
       "path": "data/drift-shadow.jsonl",
-      "bytes": 180563992,
-      "share": 0.06637564144981764
+      "bytes": 185183462,
+      "share": 0.07191531862126638
     },
     {
       "path": "data/lowconf-shadow.jsonl",
-      "bytes": 145169253,
-      "share": 0.053364473059866024
+      "bytes": 152828387,
+      "share": 0.05935034385240732
     },
     {
       "path": "data/weather-nowcast-samples.jsonl",
-      "bytes": 107467009,
-      "share": 0.03950506176817538
-    },
-    {
-      "path": "data/c200-printthrough.jsonl",
-      "bytes": 89827890,
-      "share": 0.03302089055958433
-    },
-    {
-      "path": "data/kalshi-1c-queue/snaps-2026-11-09.jsonl.gz",
-      "bytes": 70872619,
-      "share": 0.026052899557922563
+      "bytes": 114279299,
+      "share": 0.04437994684104117
     },
     {
       "path": "data/kalshi-1c-queue/snaps-2026-11-10.jsonl.gz",
       "bytes": 67344369,
-      "share": 0.024755908644333774
+      "share": 0.026152938829835323
     },
     {
-      "path": "data/kalshi-1c-queue/snaps-2026-11-08.jsonl.gz",
-      "bytes": 65089067,
-      "share": 0.02392685565732927
+      "path": "data/kalshi-1c-queue/snaps-2026-11-15.jsonl.gz",
+      "bytes": 65230719,
+      "share": 0.02533211060056375
     },
     {
       "path": "data/kalshi-1c-queue/snaps-2026-11-11.jsonl.gz",
       "bytes": 64846084,
-      "share": 0.023837534678612757
+      "share": 0.025182739008310598
+    },
+    {
+      "path": "data/weather-nowcast-samples-dfw.jsonl",
+      "bytes": 64098246,
+      "share": 0.02489231886243877
+    },
+    {
+      "path": "data/kalshi-1c-queue/snaps-2026-11-14.jsonl.gz",
+      "bytes": 59650771,
+      "share": 0.023165158249764204
     }
   ]
 }
