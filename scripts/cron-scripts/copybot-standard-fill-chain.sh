@@ -99,14 +99,19 @@ if [ -n "${STANDARD_FILL_REPORT_ONLY:-}" ]; then
 fi
 
 RUN_START_MS=$(( $(date +%s) * 1000 ))
-# Overlap 2 min behind the previous run's start so a leg opened while that run was scanning is not
-# lost. Re-scanning is harmless: the merge counts NEW ids, and a re-stamp only upgrades evidence.
+# SCOPE ANCHOR — always the epoch (DEFAULT_SINCE_MS), NEVER the previous run.
+# The booth is idempotent per leg and the union merge keeps newer evidence, so re-scanning the whole
+# in-scope population every tick is correct as well as cheap (~2-4 min). This used to advance to
+# `prev - 120000`; once the one-time backfill was consumed that left only legs opened since the
+# previous tick in scope, so on a lane that opens few legs it measured 0 every run and stamped
+# nothing from 2026-11-15 to 2026-11-17 while still exiting 0. A MOVING anchor can only ever narrow
+# the population -- the one thing an instrument must never silently do.
 SINCE_MS=$DEFAULT_SINCE_MS
+PREV_SINCE_MS=$DEFAULT_SINCE_MS
 if [ -f "$STATE" ]; then
   prev=$(sed -n 's/.*"nextSinceMs": *\([0-9][0-9]*\).*/\1/p' "$STATE" | head -1)
-  if [ -n "$prev" ] && [ "$prev" -gt "$SINCE_MS" ]; then
-    SINCE_MS=$(( prev - 120000 ))
-  fi
+  # observability only: recorded below, never used to scope the scan
+  [ -n "$prev" ] && PREV_SINCE_MS=$prev
 fi
 [ "$SINCE_MS" -ge "$RUN_START_MS" ] && SINCE_MS=$(( RUN_START_MS - 120000 ))
 
@@ -149,6 +154,15 @@ MLINE=$(printf '%s' "$MERGE_OUT" | grep -oE 'MERGE old=.*' | head -1)
 if [ $MRC -ne 0 ] || [ -z "$MLINE" ]; then
   echo "standard fill chain: union merge FAILED (rc=$MRC) — this tick's snapshot exists in $OUT_PATH but $UNION was not advanced"
   printf '%s\n' "$MERGE_OUT" | tail -8
+  exit 1
+fi
+
+# GUARD — a zero-sized population must never read as a clean tick. This is exactly the failure class
+# that held STANDARD at 0% fill adjudication for three days while the chain exited 0 every time.
+SCOPE_N=$(tail -1 "$OUT_PATH" | python3 -c "import json,sys;print(json.load(sys.stdin).get('coverage',{}).get('standardLegsInScope',-1))" 2>/dev/null || echo -1)
+ALL_N=$(tail -1 "$OUT_PATH" | python3 -c "import json,sys;print(json.load(sys.stdin).get('coverage',{}).get('standardLegsAll',-1))" 2>/dev/null || echo -1)
+if [ "${SCOPE_N:--1}" -eq 0 ] && [ "${ALL_N:-0}" -gt 0 ]; then
+  echo "standard fill chain: ZERO legs in scope (inScope=0 of all=$ALL_N) while legs exist — the scope anchor is mis-set, nothing was stampable. Refusing to report this as a clean tick."
   exit 1
 fi
 
