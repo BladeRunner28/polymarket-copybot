@@ -24,6 +24,8 @@
  * a past day.
  */
 
+import { payoffSummary, type Payoff } from "./payoff";
+
 export type FinishedRow = {
   realizedPnl: number | null;
   unrealizedPnl?: number | null;
@@ -126,4 +128,49 @@ export function summarizeDayPnl(rows: FinishedRow[]): DayPnlSummary {
 /** Goal-Trajectory figure: realized + today's residual unrealized + open MTM. */
 export function combinedTodayPnl(summary: DayPnlSummary, openMtm: number): number {
   return summary.realized + summary.residualUnrealized + openMtm;
+}
+
+// ---------------------------------------------------------------------------
+// DAY-SCOPED PAYOFF — 2026-11-17 self-audit.
+//
+// The /reports page rendered `DailyReport.winRate` under the bare label "Win
+// rate", beside "Day PnL". That column holds the LIFETIME win rate as of the run
+// that wrote the row: live rows move 0.633 → 0.635 across ten days while the
+// day's own rate on those same days ran 0.0% (11-15, 6 legs) → 50.0% (11-16, 4
+// legs). Two numbers on one card, one a day figure and one a running total, with
+// nothing saying so — and a "win rate trend" read off the column can only move as
+// the lifetime denominator grows.
+//
+// So the page computes the day's OWN rate from the same rows the day's PnL was
+// summed from (closedAt ?? resolvedAt, local calendar day, level=leg), and keeps
+// the stored lifetime value on a line that says it is lifetime. Nothing stored
+// changes: old rows stay lifetime, and are labelled as what they are.
+// ---------------------------------------------------------------------------
+
+/** Local calendar date key (YYYY-MM-DD) — the same label the EOD report stamps on a day. */
+export function localDayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export type LaneSettledRow = FinishedRow & { botId: string; simulatedPositionSize?: number | null };
+
+/** Settled rows bucketed by `<local day>|<botId>` — one lookup per card, one query for the page. */
+export function bucketByDayAndBot<T extends LaneSettledRow>(rows: T[]): Map<string, T[]> {
+  const out = new Map<string, T[]>();
+  for (const row of rows) {
+    const at = finishedAt(row);
+    if (!at) continue;
+    const key = `${localDayKey(at)}|${row.botId}`;
+    const list = out.get(key);
+    if (list) list.push(row);
+    else out.set(key, [row]);
+  }
+  return out;
+}
+
+/** Payoff for ONE lane on ONE day, from the rows that day's PnL was summed over. */
+export function dayPayoff(rows: LaneSettledRow[]): Payoff {
+  return payoffSummary(
+    rows.map((r) => ({ pnl: r.realizedPnl, stake: r.simulatedPositionSize ?? 0, at: finishedAt(r) }))
+  );
 }
