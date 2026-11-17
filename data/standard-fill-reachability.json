@@ -1,0 +1,59 @@
+{
+ "stamp": "/Users/xsnyde2/polymarket-copybot/scripts/../data/standard-fill-stamp-backfill-20261117.jsonl",
+ "n_evaluable": 353,
+ "reachable_tolerance 0": {
+  "n": 104,
+  "cost": 1748.95,
+  "pnl": 674.11,
+  "roi_pct": 38.5,
+  "ex_top3": 151.08,
+  "ci95": [
+   -1.1,
+   85.7
+  ]
+ },
+ "unreachable_tolerance 0": {
+  "n": 249,
+  "cost": 3861.23,
+  "pnl": 67.29,
+  "roi_pct": 1.7,
+  "ex_top3": -283.99,
+  "ci95": [
+   -18.1,
+   24.3
+  ]
+ },
+ "reachable_+1c slack": {
+  "n": 306,
+  "cost": 4873.06,
+  "pnl": 740.25,
+  "roi_pct": 15.2,
+  "ex_top3": 177.23,
+  "ci95": [
+   -5.7,
+   38.6
+  ]
+ },
+ "unreachable_+1c slack": {
+  "n": 47,
+  "cost": 737.12,
+  "pnl": 1.15,
+  "roi_pct": 0.2,
+  "ex_top3": -102.06,
+  "ci95": [
+   -41.4,
+   40.4
+  ]
+ },
+ "all": {
+  "n": 353,
+  "cost": 5610.18,
+  "pnl": 741.4,
+  "roi_pct": 13.2,
+  "ex_top3": 178.38,
+  "ci95": [
+   -5.7,
+   35.2
+  ]
+ }
+}
