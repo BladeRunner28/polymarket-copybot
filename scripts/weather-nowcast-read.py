@@ -22,6 +22,7 @@ without a separate approval carrying its own before/after.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import random
@@ -73,6 +74,7 @@ def bracket_contains(row: dict, value: int) -> bool:
 
 
 # ---------------------------------------------------------------- settlement outcomes
+@functools.lru_cache(maxsize=None)
 def kalshi_outcome(event_ticker: str):
     """Observed whole F bracket for the cycle, from the venue's own settled markets."""
     try:
@@ -93,6 +95,7 @@ def kalshi_outcome(event_ticker: str):
     return (f, c)
 
 
+@functools.lru_cache(maxsize=None)
 def pm_outcome(event_slug: str):
     try:
         d = jget(f"{GAMMA}/events?slug={event_slug}")
