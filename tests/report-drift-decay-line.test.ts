@@ -9,8 +9,11 @@
  * populations), so "not tripped" must never also mean "unknown".
  */
 
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { driftDecayText, type DriftSummary } from "../src/lib/report";
+import { driftDecayLine, driftDecayText, type DriftSummary } from "../src/lib/report";
 
 const complete: DriftSummary = {
   avgPnlPerTradeExDust: 0.03,
@@ -67,5 +70,59 @@ describe("drift decay line", () => {
 
   it("no base figure means no line at all (an absent line is honest)", () => {
     expect(driftDecayText({ marked: 10 })).toBeUndefined();
+  });
+});
+
+/**
+ * 2026-11-18 self-audit: `driftDecayText`'s undefined is correct as a PURE function, but
+ * the report used it as "drop the line", so an unreadable summary removed the drift
+ * counterfactual from the EOD with no trace. `driftDecayLine` now always returns text.
+ */
+describe("drift decay line as emitted (never absent)", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "driftline-"));
+  const write = (name: string, body: unknown) => {
+    const f = path.join(dir, name);
+    writeFileSync(f, typeof body === "string" ? body : JSON.stringify(body));
+    return f;
+  };
+  const now = new Date("2026-11-18T12:50:00Z");
+
+  it("a fresh, complete summary renders byte-identically to the pre-fix line", () => {
+    const f = write("fresh.json", { ...complete, generatedAt: "2026-11-18T12:26:11.134Z" });
+    expect(driftDecayLine(f, now)).toBe(driftDecayText(complete));
+  });
+
+  it("an unreadable summary says UNAVAILABLE instead of vanishing", () => {
+    const f = write("broken.json", "{not json");
+    const line = driftDecayLine(f, now);
+    expect(line).toContain("UNAVAILABLE");
+    expect(line).toContain("NOT a clean counterfactual");
+  });
+
+  it("a missing summary says UNAVAILABLE instead of vanishing", () => {
+    const line = driftDecayLine(path.join(dir, "absent.json"), now);
+    expect(line).toContain("UNAVAILABLE");
+    expect(line).not.toContain("Drift gate counterfactual: −$");
+  });
+
+  it("a summary with no base figure says UNMEASURED, not nothing", () => {
+    const f = write("nobase.json", { generatedAt: "2026-11-18T12:26:11.134Z", marked: 45056 });
+    const line = driftDecayLine(f, now);
+    expect(line).toContain("UNMEASURED");
+    expect(line).toContain("45056 marked");
+  });
+
+  it("a 7-day-old summary is flagged STALE in place — a dead shadow:mark is visible", () => {
+    const f = write("old.json", { ...complete, generatedAt: "2026-11-11T12:26:11.134Z" });
+    const line = driftDecayLine(f, now);
+    expect(line).toContain("summary STALE");
+    expect(line).toContain("7.0d old");
+    // the figures are still shown — the flag is additive, not a replacement
+    expect(line).toContain("+$0.03/trade ex-dust per poll");
+  });
+
+  it("an undated summary cannot establish freshness and says so", () => {
+    const f = write("undated.json", complete);
+    expect(driftDecayLine(f, now)).toContain("summary UNDATED");
   });
 });
