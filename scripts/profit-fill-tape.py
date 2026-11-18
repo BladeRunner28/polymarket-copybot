@@ -22,15 +22,20 @@ So this instrument asks a question yesterday could not: with a tape verdict on *
 
 MODEL (stated so it can be wrong)
 ---------------------------------
-For a leg bought at price L on token T, dispatched at t0, window W:
-    touch      = min(p) over [t0, t0+W] <= L + TICK      -> "filled_tape"
-    no_touch   = min(p) over [t0, t0+W] >  L + TOUCH_EPS -> "unfilled_tape"
-    ambiguous  = min(p) within (L + TICK, L + TOUCH_EPS] -> "near_miss"
-A touch is POSITIVE evidence (someone traded at or below our bid -> our bid was at or inside the
-touch). No touch is a *weaker* negative: a resting bid can be filled by a seller crossing to it
-without a later print below it, and a 1-minute series samples the interval. So "unfilled_tape" is an
-upper bound on non-fills, and the touch rate is a LOWER bound on fill rate. Every conclusion below
-is stated in that direction. A tape cross-check against raw prints (§1b) bounds the sampling error.
+The venue series returned by `clob.polymarket.com/prices-history` is a MINUTE PRICE SERIES, and
+measured on 2026-11-18 it behaves like the book's MIDPOINT, not like executed prints: on markets
+quoted with a 1c spread, ~90% of tape points sit exactly at the half-cent the midpoint must sit at
+(§1b measures this on whatever window you run). So read the verdict as
+
+    touch      = the MIDPOINT over [t0, t0+W] reached L + TICK   -> "filled_tape"
+
+which means our resting bid became the best bid at or inside the market, i.e. a seller arriving would
+have hit us. That is a *weaker* claim than "a trade printed at our bid" and stronger than nothing; the
+2026-11-18 review found the old wording here ("a print at or below our resting bid") overstated it and
+corrected this paragraph. Direction of every conclusion is unchanged -- a midpoint that never reached
+our bid is still an upper bound on non-fills -- but quote these verdicts as midpoint-confirmed fills,
+not tape-confirmed trades.
+
 
 COST BASIS
 ----------
@@ -386,6 +391,51 @@ def sec_validate(legs):
     print("  READ: a high touch rate on resolver-'filled' legs and a low one on 'unfilled' means the")
     print("  tape is measuring the same object. Disagreement in the low-touch direction is expected")
     print("  (1-minute sampling misses intra-minute troughs); disagreement the other way is not.")
+
+
+def sec_series_kind(legs):
+    """§1b — is the venue series prints or midpoints? Measured, not assumed.
+
+    On a market quoted at a 1c spread the midpoint must sit at the half-cent. If the series is
+    midpoints, nearly every point lands there; if it is executed prices, points spread over the penny
+    (buyers cross to the ask, sellers to the bid). This decides whether a "touch" is evidence of a
+    trade or only of the market's mark reaching our bid, so it is printed rather than described.
+    """
+    print()
+    print("=" * 90)
+    print("1b. WHAT IS THE TAPE? — half-cent concentration on 1c-spread markets")
+    print("=" * 90)
+    c = _con()
+    mods, npts, used = {}, 0, 0
+    for l in legs:
+        row = c.execute(
+            "SELECT bestBid, bestAsk FROM MarketSnapshot WHERE marketId=? AND bestBid>0 AND bestAsk>0 "
+            "AND collectedAt BETWEEN ? AND ? ORDER BY ABS(collectedAt-?) LIMIT 1",
+            (l["marketId"], l["openedTs"] - 60000, l["openedTs"] + 60000, l["openedTs"])).fetchone()
+        if not row:
+            continue
+        b, a = row
+        if abs((a - b) - 0.01) > 0.0021:
+            continue
+        s = l.get("tape_series")
+        if not s:
+            continue
+        used += 1
+        for _t, p in s:
+            k = round((p * 100) % 1.0, 3)
+            mods[k] = mods.get(k, 0) + 1
+            npts += 1
+    if not npts:
+        print("  no 1c-spread legs with a snapshot and tape — cannot answer")
+        return
+    tot = sum(mods.values())
+    top = sorted(mods.items(), key=lambda kv: -kv[1])[:4]
+    for k, v in top:
+        print(f"  cents fraction {k:.3f}   {v:>6} pts   {v / tot * 100:5.1f}%")
+    half = mods.get(0.5, 0) / tot * 100
+    print(f"\n  legs {used}, points {npts}. Half-cent share {half:.1f}%.")
+    print("  READ: a majority at the half-cent means the series is the book's MIDPOINT. The verdicts")
+    print("  below are then midpoint-confirmed fills (our bid became the best bid), not trades.")
 
 
 def sec_unresolved(legs):
@@ -907,6 +957,7 @@ def main():
         sec_coverage(legs)
     if want is None or "1" in want:
         sec_validate(legs)
+        sec_series_kind(legs)
     if want is None or "2" in want:
         sec_unresolved(legs)
     if want is None or "3" in want:
