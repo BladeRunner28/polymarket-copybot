@@ -74,6 +74,21 @@ describe("selection caveat (deflated Sharpe -> report text)", () => {
     expect(line).toContain("NOT MEASURED");
   });
 
+  it("a 5.9-day-old read carries a STALE flag and names the script to re-run", () => {
+    const now = new Date("2026-11-18T12:50:00Z");
+    const line = selectionCaveatLine(write(artifact()), now);
+    expect(line).toContain("read 2026-11-12 15:03Z");
+    expect(line).toContain("⚠️ STALE (5.9d old)");
+    expect(line).toContain("scripts/deflated-sharpe-read.py");
+  });
+
+  it("a fresh read carries no STALE flag — the flag can only fire on age", () => {
+    const now = new Date("2026-11-12T20:00:00Z");
+    const line = selectionCaveatLine(write(artifact()), now);
+    expect(line).not.toContain("STALE");
+    expect(line).toContain("read 2026-11-12 15:03Z");
+  });
+
   it("picks the leg-clock claim for a lane even when a day claim appears first", () => {
     const a = artifact();
     a.claims!.unshift({

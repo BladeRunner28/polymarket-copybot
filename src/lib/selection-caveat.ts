@@ -53,8 +53,23 @@ export function pickClaim(read: SelectionRead, lane: string): SelectionClaim | u
 /**
  * One report line. Returns a NOT-MEASURED line (never undefined) when the
  * measurement is absent or unreadable.
+ *
+ * 2026-11-18 self-audit: the artifact carries generatedAt and an N (committed rule
+ * variants), and this printed both verbatim with no freshness test. On the live
+ * 2026-11-18 report the read was 5.9 days old (generatedAt 2026-11-12T15:05Z) while
+ * the book had moved on by one rule version (journal at v73, read at N=72) — so
+ * "N=72 committed rule variants" was already an undercount of the selection the
+ * p-value is deflated for, printed daily as if current, and nothing else regenerates
+ * this file (no cron job runs scripts/deflated-sharpe-read.py). A stale caveat is
+ * worse than none: it certifies the book with a measurement taken before the
+ * settlements it is being read against.
  */
-export function selectionCaveatLine(file: string = SELECTION_CAVEAT_FILE): string {
+export const SELECTION_CAVEAT_STALE_MS = 48 * 3_600_000;
+
+export function selectionCaveatLine(
+  file: string = SELECTION_CAVEAT_FILE,
+  now: Date = new Date()
+): string {
   let read: SelectionRead;
   try {
     read = JSON.parse(readFileSync(file, "utf8")) as SelectionRead;
@@ -79,5 +94,15 @@ export function selectionCaveatLine(file: string = SELECTION_CAVEAT_FILE): strin
       ? ` · STANDARD p=${f(std.p, 4)}`
       : "";
   const surv = survivors.length ? ` · survives: ${survivors.join("; ")}` : " · no claim survives";
-  return `${head}${body}${stdTxt}${surv} · basis: ${n ?? "?"} settled legs, regime=journal ruleSetVersion, per $1 staked gross of fees, read ${read.generatedAt?.slice(0, 16).replace("T", " ") ?? "undated"}Z`;
+  const stamp = read.generatedAt?.slice(0, 16).replace("T", " ") ?? "undated";
+  return `${head}${body}${stdTxt}${surv} · basis: ${n ?? "?"} settled legs, regime=journal ruleSetVersion, per $1 staked gross of fees, read ${stamp}Z${stalenessNote(read.generatedAt, now)}`;
+}
+
+/** Age flag for the multiple-testing read. Empty when fresh or undatable (undated already prints). */
+function stalenessNote(generatedAt: string | undefined, now: Date): string {
+  if (!generatedAt) return "";
+  const ms = now.getTime() - new Date(generatedAt).getTime();
+  if (!Number.isFinite(ms) || ms <= SELECTION_CAVEAT_STALE_MS) return "";
+  const age = ms < 48 * 3_600_000 ? `${(ms / 3_600_000).toFixed(1)}h` : `${(ms / 86_400_000).toFixed(1)}d`;
+  return ` · ⚠️ STALE (${age} old): N predates rules committed since it was read and the book has settled legs it never saw — re-run scripts/deflated-sharpe-read.py before quoting this verdict`;
 }
