@@ -34,7 +34,8 @@
     "shadow:forward-read": "tsx scripts/shadow-forward-read.ts",
     "shadow:reconcile": "tsx scripts/reconcile-counterfactual-ledger.ts",
     "shadow:golden": "tsx scripts/capture-counterfactual-golden.ts",
-  "verify:bankroll-limits": "tsx scripts/verify-botbankroll-limits.ts"
+    "verify:bankroll-limits": "tsx scripts/verify-botbankroll-limits.ts",
+    "resolution:label-orphans": "python3 scripts/token-label-orphan-read.py"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

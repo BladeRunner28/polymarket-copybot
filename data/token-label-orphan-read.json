@@ -1,0 +1,110 @@
+{
+  "basis": {
+    "clock": "resolvedAt (UTC); venue label sets read at generated_at",
+    "level": "one leg / one market",
+    "population": "settled PaperTrade legs (isDemo=0, status='resolved', resolvedAt NOT NULL)",
+    "truth": "CLOB /markets/<conditionId> tokens[].outcome / [].winner; local caches first"
+  },
+  "book": {
+    "legs_with_venue_truth": 3808,
+    "local_conditions_cached": 17943,
+    "markets_audited": 1709,
+    "settled_legs": 3848,
+    "truth_coverage_pct": 98.96
+  },
+  "class_read": {
+    "booked_pnl_error_usd": 13.14,
+    "booked_pnl_on_instances": -9.0,
+    "ex_top_instance_error_usd": 0.0,
+    "instance_legs": 1,
+    "instance_markets": 1,
+    "largest_instance": {
+      "bookedPnl": -9.0,
+      "botId": "STANDARD",
+      "entryPrice": 0.685,
+      "id": "cmw6tnghc000gn949rbs1477a",
+      "identity": "won",
+      "identityEvidence": "twin_flip",
+      "identityPnl": 4.14,
+      "marketId": "ufc-jon5-jos27-2026-11-07",
+      "openedAt": 1794081245232,
+      "outcome": "JOSE HENRIQUE",
+      "pnlError": 13.14,
+      "size": 9.0,
+      "venueLabels": [
+        "Jonny Parsons",
+        "Jose Souza"
+      ],
+      "venueWinner": "Jose Souza"
+    },
+    "priced_legs": 1,
+    "unresolved_legs": 0
+  },
+  "classes": {
+    "binary_vs_named": 0,
+    "multi_token_absent": 0,
+    "no_label": 0,
+    "no_truth": 40,
+    "no_venue_labels": 0,
+    "ok": 3807,
+    "rename_orphan": 1
+  },
+  "classes_detail": {
+    "binary_vs_named": 0,
+    "multi_token_absent": 0,
+    "no_label": 0,
+    "no_truth": 40,
+    "no_venue_labels": 0,
+    "ok": 3807,
+    "rename_orphan": 1
+  },
+  "gates": {
+    "act_fired_legs": false,
+    "act_fired_pnl": false,
+    "act_legs": 5,
+    "act_pnl_usd": 100.0,
+    "markets_beyond_prior": 1172,
+    "prior_audit_markets": 537,
+    "refute_extra_markets": 500,
+    "refuted": true
+  },
+  "generated_at": "2026-11-18T02:09:36Z",
+  "instances": [
+    {
+      "bookedPnl": -9.0,
+      "botId": "STANDARD",
+      "entryPrice": 0.685,
+      "id": "cmw6tnghc000gn949rbs1477a",
+      "identity": "won",
+      "identityEvidence": "twin_flip",
+      "identityPnl": 4.14,
+      "marketId": "ufc-jon5-jos27-2026-11-07",
+      "openedAt": 1794081245232,
+      "outcome": "JOSE HENRIQUE",
+      "pnlError": 13.14,
+      "size": 9.0,
+      "venueLabels": [
+        "Jonny Parsons",
+        "Jose Souza"
+      ],
+      "venueWinner": "Jose Souza"
+    }
+  ],
+  "other_absent": [],
+  "truth_fetch": {
+    "failed": 13,
+    "fetched": 0,
+    "reasons": {
+      "http_404": 13
+    },
+    "requested": 13
+  },
+  "unmeasured": {
+    "legs_no_venue_truth": 40,
+    "no_market_identity_legs": 40,
+    "no_market_identity_note": "blank marketId + event-id conditionId (404 at CLOB); already measured on card parlay-rows-in-decision-path (-$412.97, left booked on purpose)",
+    "no_market_identity_pnl": -412.97,
+    "other_missing_legs": 0,
+    "other_missing_markets": []
+  }
+}
