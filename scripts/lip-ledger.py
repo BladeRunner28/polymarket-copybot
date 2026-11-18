@@ -133,6 +133,7 @@ def fetch_programs(max_pages, verbose=True):
     rows, stats = {}, {}
     for st in STATUSES:
         cur, npages, n = None, 0, 0
+        end = "capped"          # cursor | ended_empty | capped -- see the note in stats below
         while npages < max_pages:
             q = {"status": st, "limit": 1000}
             if cur:
@@ -153,6 +154,7 @@ def fetch_programs(max_pages, verbose=True):
                 raise RuntimeError("incentive_programs fetch failed for status=%s" % st)
             got = body.get("incentive_programs", [])
             if not got:
+                end = "ended_empty"       # the feed answered with no rows: this IS the end
                 break
             npages += 1
             n += len(got)
@@ -166,11 +168,17 @@ def fetch_programs(max_pages, verbose=True):
                     rows[p["id"]] = rec
             cur = body.get("next_cursor")
             if not cur:
+                end = "cursor"
                 break
             time.sleep(0.3)
-        stats[st] = {"pages": npages, "rows": n, "exhausted": cur is None}
+        # `exhausted` used to be `cur is None`, which reported False whenever the feed ended on an
+        # empty page (cursor still in hand) -- i.e. a COMPLETE read advertising itself as partial.
+        # The reason is now recorded, so "ended_empty" and "capped" cannot be mistaken for each other.
+        stats[st] = {"pages": npages, "rows": n, "end": end,
+                     "exhausted": end in ("cursor", "ended_empty")}
         if verbose:
-            print("  status=%-8s pages=%3d rows=%6d exhausted=%s" % (st, npages, n, cur is None))
+            print("  status=%-8s pages=%3d rows=%6d end=%-6s exhausted=%s"
+                  % (st, npages, n, end, end in ("cursor", "ended_empty")))
 
     payload = {
         "fetched_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -526,6 +534,19 @@ def build(args):
             100.0 * sum(1 for x in v if x >= GATE_USD_PER_CONTRACT_HOUR) / len(v)))
     fam = collections.Counter(p["market_ticker"].split("-")[0] for p in above)
     print("above-gate families: " + ", ".join("%s:%d" % (f, n) for f, n in fam.most_common(12)))
+
+    # The whole-feed base rate mixes paid_out history with what can actually be earned today.
+    # The live menu is the decision-relevant population, and it was previously quoted from a
+    # different (unpaged, ~12-day) snapshot -- so it is stated here from the same paged read.
+    live = [p for p in programs if set(p.get("_statuses") or []) & {"active", "upcoming"}]
+    live_above = [p for p in live if ceiling_of(p, div) >= GATE_USD_PER_CONTRACT_HOUR]
+    print("live menu (active+upcoming): %d programs | above gate %d (%.1f%%) | max ceiling %.6f"
+          % (len(live), len(live_above),
+             100.0 * len(live_above) / max(1, len(live)),
+             max([ceiling_of(p, div) for p in live] or [0.0])))
+    live_fam = collections.Counter(p["market_ticker"].split("-")[0] for p in live_above)
+    print("live above-gate families: " + (", ".join("%s:%d" % (f, n) for f, n in live_fam.most_common(10))
+                                          or "none"))
 
     qt = quote_tickers()
     tf = tape_families()

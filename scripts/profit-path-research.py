@@ -73,6 +73,26 @@ def clip(size):
     return "<$18"
 
 
+QUESTION = {"will", "highest", "lowest", "elon"}
+ESPORTS = {"cs2", "dota2", "lol", "lec", "val"}
+SPORTS = {"ufc", "atp", "swe", "fif", "cbb", "mlb", "col", "ucl", "ere", "unl", "bel1",
+          "clf", "us", "bun", "itsb", "por", "lal", "nhl", "wta", "crichundred", "den",
+          "mls", "itf", "fl1", "mex", "bra", "elc", "sea", "fifwc", "uel", "arg", "nfl",
+          "efl", "wnba", "cfb", "epl"}
+
+
+def vertical(row):
+    """Coarse bucket. Question markets are the ones whose ids carry no league token."""
+    c = category(row["marketId"])
+    if c in QUESTION:
+        return "question"
+    if c in ESPORTS:
+        return "esports"
+    if c in SPORTS:
+        return "sports"
+    return "other"
+
+
 def hold_bucket(h):
     if h is None: return "?"
     if h < 1: return "<1d"
@@ -173,6 +193,34 @@ def main():
                                   "FILL-CONFIRMED by clip size")
     art["all_by_category"] = table(rows, lambda r: category(r["marketId"]),
                                    "ALL SETTLED by market category (incl. unadjudicated)")
+    art["all_by_vertical"] = table(rows, vertical, "ALL SETTLED by vertical")
+    art["filled_by_vertical"] = table(filled, vertical, "FILL-CONFIRMED by vertical")
+
+    # Coverage by lane, and by entry vintage -- the number that decides whether a lane's
+    # headline PnL is admissible at all. Read straight from PaperTrade, dedupe-free.
+    con = sqlite3.connect(f"file:{os.path.abspath(DB)}?mode=ro&immutable=1", uri=True)
+    cov = [{"botId": r[0], "n": r[1], "adj": r[2], "filled": r[3]} for r in con.execute("""
+        SELECT botId, COUNT(*), SUM(fillStatus IS NOT NULL), SUM(fillStatus='filled')
+        FROM PaperTrade WHERE isDemo=0 AND status IN ('closed','resolved')
+          AND realizedPnl IS NOT NULL GROUP BY botId""")]
+    for c in cov:
+        c["coverage_pct"] = round(100.0 * (c["adj"] or 0) / c["n"], 1) if c["n"] else None
+    art["coverage_by_lane"] = cov
+    print("\n=== FILL-ADJUDICATION COVERAGE by lane (settled legs) ===")
+    for c in cov:
+        print(f"  {c['botId']:13s} n={c['n']:5d} adjudicated={c['adj'] or 0:5d} "
+              f"({c['coverage_pct']}%) filled={c['filled'] or 0}")
+
+    covw = [dict(zip(("botId", "week", "n", "coverage_pct"), r)) for r in con.execute("""
+        SELECT botId, strftime('%Y-%m-%d', openedAt/1000, 'unixepoch') wk, COUNT(*),
+               ROUND(100.0*SUM(fillStatus IS NOT NULL)/COUNT(*),1)
+        FROM PaperTrade WHERE isDemo=0 AND openedAt > (strftime('%s','now','-15 days')*1000)
+        GROUP BY botId, wk ORDER BY wk DESC, botId""")]
+    art["coverage_recent_by_week"] = covw
+    print("\n=== COVERAGE, entry vintage, last 15d ===")
+    for c in covw:
+        print(f"  {c['week']} {c['botId']:13s} n={c['n']:4d} cov={c['coverage_pct']}%")
+    con.close()
 
     # hold time needs settlement timestamps
     for r in rows:
@@ -186,7 +234,13 @@ def main():
     ci_out = []
     for label, subset in (("filled:ALL", filled),
                           ("filled:ex-$100-clip",
-                           [r for r in filled if (r["simulatedPositionSize"] or 0) < 90])):
+                           [r for r in filled if (r["simulatedPositionSize"] or 0) < 90]),
+                          ("filled:sports", [r for r in filled if vertical(r) == "sports"]),
+                          ("filled:sports ex-top3",
+                           sorted([r for r in filled if vertical(r) == "sports"],
+                                  key=lambda r: -(r["realizedPnl"] or 0))[3:]),
+                          ("filled:question", [r for r in filled if vertical(r) == "question"]),
+                          ("filled:esports", [r for r in filled if vertical(r) == "esports"])):
         if len(subset) >= 20:
             ci = cluster_ci(subset)
             s = stats(subset)

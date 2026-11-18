@@ -1,0 +1,140 @@
+{
+ "source_schedule": "docs.polymarket.com/programs/fee-and-rebate-changes-november-2026.md",
+ "effective": "2026-11-20T23:59:00Z",
+ "n": 5912,
+ "by_vertical": [
+  {
+   "cell": "question [question_politics]",
+   "n": 2930,
+   "cost": 35147.32,
+   "pnl": 6112.03,
+   "roi_pct": 17.4,
+   "mean_1_minus_p": 0.351,
+   "fee_usd_cur": 623.23,
+   "fee_usd_new": 155.81,
+   "fee_pct_cur": 1.77,
+   "fee_pct_new": 0.44,
+   "roi_net_cur_pct": 15.6,
+   "roi_net_new_pct": 16.9
+  },
+  {
+   "cell": "question [question_other]",
+   "n": 2930,
+   "cost": 35147.32,
+   "pnl": 6112.03,
+   "roi_pct": 17.4,
+   "mean_1_minus_p": 0.351,
+   "fee_usd_cur": 779.04,
+   "fee_usd_new": 779.04,
+   "fee_pct_cur": 2.22,
+   "fee_pct_new": 2.22,
+   "roi_net_cur_pct": 15.2,
+   "roi_net_new_pct": 15.2
+  },
+  {
+   "cell": "sports [sports]",
+   "n": 1692,
+   "cost": 19323.88,
+   "pnl": 2629.9,
+   "roi_pct": 13.6,
+   "mean_1_minus_p": 0.541,
+   "fee_usd_cur": 539.41,
+   "fee_usd_new": 539.41,
+   "fee_pct_cur": 2.79,
+   "fee_pct_new": 2.79,
+   "roi_net_cur_pct": 10.8,
+   "roi_net_new_pct": 10.8
+  },
+  {
+   "cell": "esports [esports]",
+   "n": 821,
+   "cost": 9296.59,
+   "pnl": -846.25,
+   "roi_pct": -9.1,
+   "mean_1_minus_p": 0.521,
+   "fee_usd_cur": 257.57,
+   "fee_usd_new": 257.57,
+   "fee_pct_cur": 2.77,
+   "fee_pct_new": 2.77,
+   "roi_net_cur_pct": -11.9,
+   "roi_net_new_pct": -11.9
+  },
+  {
+   "cell": "other [question_other]",
+   "n": 469,
+   "cost": 5824.41,
+   "pnl": -759.46,
+   "roi_pct": -13.0,
+   "mean_1_minus_p": 0.556,
+   "fee_usd_cur": 178.42,
+   "fee_usd_new": 178.42,
+   "fee_pct_cur": 3.06,
+   "fee_pct_new": 3.06,
+   "roi_net_cur_pct": -16.1,
+   "roi_net_new_pct": -16.1
+  }
+ ],
+ "filled_by_vertical": [
+  {
+   "cell": "filled:question",
+   "n": 52,
+   "cost": 1499.02,
+   "pnl": -867.38,
+   "roi_pct": -57.9,
+   "mean_1_minus_p": 0.654,
+   "fee_usd_cur": 49.01,
+   "fee_usd_new": 12.25,
+   "fee_pct_cur": 3.27,
+   "fee_pct_new": 0.82,
+   "roi_net_cur_pct": -61.1,
+   "roi_net_new_pct": -58.7
+  },
+  {
+   "cell": "filled:sports",
+   "n": 104,
+   "cost": 911.5,
+   "pnl": 1045.32,
+   "roi_pct": 114.7,
+   "mean_1_minus_p": 0.569,
+   "fee_usd_cur": 32.5,
+   "fee_usd_new": 32.5,
+   "fee_pct_cur": 3.57,
+   "fee_pct_new": 3.57,
+   "roi_net_cur_pct": 111.1,
+   "roi_net_new_pct": 111.1
+  },
+  {
+   "cell": "filled:esports",
+   "n": 65,
+   "cost": 1255.41,
+   "pnl": -751.11,
+   "roi_pct": -59.8,
+   "mean_1_minus_p": 0.659,
+   "fee_usd_cur": 48.65,
+   "fee_usd_new": 48.65,
+   "fee_pct_cur": 3.87,
+   "fee_pct_new": 3.87,
+   "roi_net_cur_pct": -63.7,
+   "roi_net_new_pct": -63.7
+  },
+  {
+   "cell": "filled:other",
+   "n": 59,
+   "cost": 648.57,
+   "pnl": -343.91,
+   "roi_pct": -53.0,
+   "mean_1_minus_p": 0.583,
+   "fee_usd_cur": 23.43,
+   "fee_usd_new": 23.43,
+   "fee_pct_cur": 3.61,
+   "fee_pct_new": 3.61,
+   "roi_net_cur_pct": -56.6,
+   "roi_net_new_pct": -56.6
+  }
+ ],
+ "maker_volume_30d": {
+  "legs": 561,
+  "weighted_usd": 7392.49,
+  "multiple_to_first_tier": 27.1
+ }
+}
