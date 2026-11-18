@@ -1,0 +1,307 @@
+============================================================================================
+FILLED-CLASS DECOMPOSITION — adjudicating the ambiguous class against the venue tape
+============================================================================================
+
+  regime: DecisionJournal.ruleSetVersion >= 0, deduped first leg per
+  bot|wallet|market|outcome, opened >= 2026-09-01, non-demo: 2339 legs
+
+  adjudicating against cached venue tape ...
+  settled legs: 2339  (open: 0)
+
+--------------------------------------------------------------------------------------------
+S1. COVERAGE — can the tape speak to the regime at all?
+--------------------------------------------------------------------------------------------
+  filled_tape      1197  (51.2%)
+  unfilled_tape     740  (31.6%)
+  near_miss         402  (17.2%)
+  [PASS] tape adjudicates >=90% of settled regime legs — 2339/2339 = 100.0%
+
+--------------------------------------------------------------------------------------------
+S2. VALIDATION — does the tape agree with the resolver where the resolver has spoken?
+--------------------------------------------------------------------------------------------
+  resolver      legs  tape filled   near  tape unfilled  no tape
+  filled         281          234     43              4        0
+  unfilled       535          101    198            236        0
+  NULL          1523          862    161            500        0
+
+  agreement on resolver-FILLED legs: 234/238 = 98.3% called filled by the tape
+  [PASS] tape confirms >=70% of resolver-filled legs — the tape model is sane on the class we already trust
+  resolver-UNFILLED legs the tape says DID touch: 101/535 = 18.9%
+
+--------------------------------------------------------------------------------------------
+S2b. IS THE TOUCH TEST INFORMATIVE? (min(p) over the window includes the dispatch snapshot)
+--------------------------------------------------------------------------------------------
+  If we paid the market price, the tape is AT our price at t0, so a 0-lag touch is guaranteed.
+  Re-test with a lag floor: does the series print <= our price AFTER we were resting?
+  resolver class    n    lag>=0s   lag>=60s  lag>=300s  lag>=900s
+  filled        281      83.3%      83.3%      81.9%      80.1%
+  unfilled      535      18.9%      18.3%      17.8%      17.0%
+  NULL         1523      56.6%      56.1%      54.5%      51.8%
+  read: a class whose rate decays with the lag floor was touching at dispatch, not filling.
+
+--------------------------------------------------------------------------------------------
+S3. THE QUESTION YESTERDAY DEFERRED — what does the unadjudicated class actually do?
+--------------------------------------------------------------------------------------------
+  unadjudicated (fillStatus NULL): 1523 legs, $20932, booked +4327.3
+  tape-adjudicable: 1362  tape-filled: 862  touch rate 63.3%  (LOWER bound on fill)
+  of which tape-FILLED        862     13516     +212.5    +1.6%       [-10.2,+14.3]
+  of which tape-NOT-filled    500      5638    +4458.0   +79.1%      [+17.1,+156.3]
+  booked PnL stranded in tape-NOT-filled legs: +4458.0 on $5638
+    ex-top-1   499 legs $   5538   +2944.6   +53.2%
+    ex-top-3   497 legs $   5338   +1129.9   +21.2%
+    ex-top-5   495 legs $   5227    +291.9    +5.6%
+    ex-top-10  490 legs $   5052    -311.9    -6.2%
+    260 of 500 legs are positive
+
+--------------------------------------------------------------------------------------------
+S4. THE BOOK, ON ONE BASIS — every settled leg, valued the way the tape says it happened
+--------------------------------------------------------------------------------------------
+  basis key: filled = resolver stamp; NULL = tape touch; unfilled = excluded.
+  booked (all rows)          2339     33547    +5659.7   +16.9%        [+0.8,+36.1]
+  positions only (non-unfilled) 1804     25267    +3390.2   +13.4%        [-5.5,+36.3]
+  confirmed filled (resolver)  281      4334     -937.1   -21.6%       [-55.3,+23.2]
+  REACHABLE (stamp OR tape touch) 1143     17851     -724.6    -4.1%       [-17.6,+10.8]
+  reachable window 77.9d -> -9.3 $/day on $17851 = -0.52 $/1k-capital-day
+
+--------------------------------------------------------------------------------------------
+S5. DECOMPOSITION OF THE REACHABLE BOOK — is any cell positive? (cost = dollars at risk)
+--------------------------------------------------------------------------------------------
+  cell                       legs      cost        pnl      ROI          cluster CI
+  BANKROLL_200                490      6803    -1076.9   -15.8%       [-40.8,+15.0]
+  STANDARD                    653     11048     +352.3    +3.2%        [-9.5,+16.4]
+
+  band 0.00-0.20              153      4875     -396.6    -8.1%       [-51.4,+45.0]
+  band 0.20-0.40              257      3464     -136.7    -3.9%       [-23.7,+16.9]
+  band 0.40-0.60              360      4062     -236.0    -5.8%        [-19.7,+9.1]
+  band 0.60-0.80              314      4087      -46.5    -1.1%        [-10.2,+7.7]
+  band 0.80-1.01               59      1363      +91.1    +6.7%        [-5.0,+14.8]
+
+  BANK 0.00-0.20               76      3596    -1084.2   -30.1%       [-76.1,+27.1]
+  BANK 0.20-0.40              137      1553      -76.7    -4.9%       [-31.0,+21.0]
+  BANK 0.40-0.60              150       282       -7.8    -2.8%       [-19.2,+14.5]
+  BANK 0.60-0.80              116       757       -4.5    -0.6%       [-13.5,+12.5]
+  BANK 0.80-1.01               11       615      +96.2   +15.6%       [+12.0,+18.2]
+  STAN 0.00-0.20               77      1279     +687.6   +53.8%      [-25.8,+147.5]
+  STAN 0.20-0.40              120      1911      -60.0    -3.1%       [-29.6,+24.5]
+  STAN 0.40-0.60              210      3780     -228.2    -6.0%        [-21.7,+9.9]
+  STAN 0.60-0.80              198      3330      -42.0    -1.3%        [-11.6,+8.4]
+  STAN 0.80-1.01               48       748       -5.1    -0.7%       [-17.8,+13.3]
+
+  wallet 0xb0c85813       293      4552     -118.6    -2.6%       [-20.8,+20.3]
+  wallet 0x885ffdf3       104      1124      +76.6    +6.8%       [-22.8,+43.9]
+  wallet 0xc5187cb6        75      1088     +222.1   +20.4%       [-33.4,+94.8]
+  wallet 0xd29312e2        58       798     +582.9   +73.0%      [-29.8,+191.6]
+  wallet 0xfb07f485        56       405     +261.7   +64.6%       [+1.0,+133.7]
+  wallet 0x52b7fc8a        44      1042     -652.1   -62.6%       [-84.1,-24.6]
+  wallet 0xf5a3504a        39       901      +22.3    +2.5%       [-28.9,+31.1]
+  wallet 0x764b3056        30       447      +25.2    +5.6%       [-50.5,+86.6]
+  wallet 0xcd91a549        27       391     -124.8   -31.9%       [-65.5,+10.5]
+  wallet 0x80896d05        27       533     -160.2   -30.0%       [-71.5,+35.0]
+
+  ex-top-1  1142 legs $  17751   -1276.8     -7.2%
+  ex-top-3  1140 legs $  17631   -2076.6    -11.8%
+  ex-top-5  1138 legs $  17595   -2580.6    -14.7%
+  ex-top-10 1133 legs $  17501   -3379.1    -19.3%
+  the single biggest leg carries +552.2
+
+--------------------------------------------------------------------------------------------
+S6. CAPITAL VELOCITY — what the reachable book actually earns per capital-day
+--------------------------------------------------------------------------------------------
+  holding period (opened->closed/resolved): n=1143 median 1.0d mean 2.3d  p90 2.3d
+  capital-days = sum(cost x hold) = 44,233  ->  -16.381 $/1k-capital-day
+  a negative rate has no required capital — it has a required sign
+
+--------------------------------------------------------------------------------------------
+S7. BAND x SPEED — edge where it is, weighted by how fast it recycles
+--------------------------------------------------------------------------------------------
+  band         legs      ROI  median hold  $/1k-cap-day
+  0.00-0.20      153    -8.1%         1.0d       -41.135
+  0.20-0.40      257    -3.9%         0.6d       -20.659
+  0.40-0.60      360    -5.8%         1.0d       -23.457
+  0.60-0.80      314    -1.1%         1.1d        -3.372
+  0.80-1.01       59    +6.7%         1.2d       +22.063
+
+--------------------------------------------------------------------------------------------
+S8. HOW WE GOT FILLED — bid vs market at dispatch decides the sign
+--------------------------------------------------------------------------------------------
+  gap = price we paid - market price at dispatch (tape p0).
+  gap < 0 = resting bid UNDER the market (we waited); gap > 0 = we paid up (we crossed).
+  legs with a dispatch-market price: 1143/1143
+  gap <= -5c (deep rest)     14       226     -181.6   -80.3%       [-97.8,-13.7]
+  gap -5..-2c               140      1021     +287.4   +28.2%      [-29.0,+108.2]
+  gap -2..0c                736     12516     +327.5    +2.6%       [-14.4,+22.2]
+  gap 0..+2c (paid up)      163      2579     -532.7   -20.7%        [-44.2,+8.7]
+  gap >= +2c (crossed)       90      1509     -625.2   -41.4%        [-64.4,-9.3]
+
+  BANK rested <=-2c         146      1099     +226.1   +20.6%       [-33.9,+99.0]
+  BANK paid >=-2c           344      5704    -1303.0   -22.8%        [-50.9,+9.8]
+  STAN rested <=-2c           8       148     -120.3   -81.3%      [-100.0,-43.1]
+  STAN paid >=-2c           645     10900     +472.6    +4.3%        [-8.4,+18.0]
+
+  at/above (gap>-2c)        989     16604     -830.4    -5.0%       [-18.7,+11.8]
+  rested (gap<=-2c)         154      1247     +105.8    +8.5%       [-41.4,+77.1]
+
+--------------------------------------------------------------------------------------------
+S8b. IS PAYING UP A SYMPTOM OF STALE DETECTION? (wallet trade -> our dispatch lag)
+--------------------------------------------------------------------------------------------
+  n=1143  median detection lag 387s  p90 943s
+  cell                       legs      cost        pnl      ROI
+  paid at/below lag<2m        112      1727     +414.9   +24.0%      [-35.2,+102.2]
+  paid at/below 2-10m         487      7294      -81.7    -1.1%       [-19.8,+24.0]
+  paid at/below lag>10m       291      4741     +100.1    +2.1%       [-20.8,+30.2]
+  paid up lag<2m               48       848     -618.1   -72.9%       [-89.6,-43.8]
+  paid up 2-10m               150      2351     -190.0    -8.1%       [-35.6,+26.0]
+  paid up lag>10m              55       889     -349.8   -39.4%       [-62.3,-13.9]
+
+--------------------------------------------------------------------------------------------
+S9. TIME TO TOUCH — does a fast fill mean a bad fill?
+--------------------------------------------------------------------------------------------
+  touch <=60s               741     12579     -723.1    -5.7%        [-17.6,+6.5]
+  60-300s                   106      1712     -483.6   -28.3%        [-50.1,-2.0]
+  300-1800s                 162      1968     +288.8   +14.7%       [-37.8,+79.2]
+  1800-3600s                 87      1367      +75.0    +5.5%      [-67.5,+117.1]
+  never / >1h                47       225     +118.3   +52.5%      [-59.2,+224.6]
+
+--------------------------------------------------------------------------------------------
+S10. THE RESOLVER'S FALSE NEGATIVES — 191 legs are stamped 'unfilled' and the tape says many traded
+--------------------------------------------------------------------------------------------
+  stamped unfilled: 535 legs $8280 booked +2269.5
+  tape-adjudicable 337; tape says TOUCHED 101 = 30.0% FALSE-NEGATIVE rate (lower bound)
+  those 80-odd legs, booked   101      2794       -7.1    -0.3%       [-21.4,+30.5]
+  same lane split: BANK   101      2794       -7.1    -0.3%       [-21.4,+30.5]
+  same lane split: STAN     0         0       +0.0      n/a                 n/a
+  TApe BOOK (stamp|touch, all) 1244     20645     -731.6    -3.5%        [-15.7,+9.9]
+  tape book: -9.4 $/day over 77.9d; ex-top-1 -1283.9
+
+--------------------------------------------------------------------------------------------
+S11. INSIDE THE ONLY CELL WITH A CI EXCLUDING ZERO (band 0.80-1.01)
+--------------------------------------------------------------------------------------------
+  59 legs / 48 markets / 11 wallets, $1363 cost
+    BANK  p=0.825 ntl= 100.0 pnl=  +21.21 resolved  atp-norrie-medvede-2026-10-29
+    BANK  p=0.845 ntl= 100.0 pnl=  +18.34 resolved  atp-altmaie-lehecka-2026-10-29
+    BANK  p=0.845 ntl= 100.0 pnl=  +18.34 resolved  cfb-ucla-minnst-2026-11-07-1h-total-30pt5
+    BANK  p=0.865 ntl= 100.0 pnl=  +15.61 resolved  lal-mad-bar-2026-11-08-spread-home-1pt5
+    BANK  p=0.885 ntl= 100.0 pnl=  +12.99 resolved  ucl-mnu-rom-2026-11-03-total-5pt5
+    BANK  p=0.915 ntl=  50.0 pnl=   +4.64 resolved  nba-atl-was-2026-11-04-total-256pt5
+    STAN  p=0.815 ntl=  20.0 pnl=   +4.54 resolved  atp-minaur-alcaraz-2026-11-01
+    STAN  p=0.800 ntl=  18.0 pnl=   +4.50 resolved  highest-temperature-in-toronto-on-september-
+    STAN  p=0.800 ntl=  18.0 pnl=   +4.50 resolved  highest-temperature-in-amsterdam-on-septembe
+    STAN  p=0.800 ntl=  18.0 pnl=   +4.50 resolved  highest-temperature-in-karachi-on-september-
+    STAN  p=0.804 ntl=  18.0 pnl=   +4.39 resolved  elon-musk-of-tweets-august-25-september-1-20
+    STAN  p=0.805 ntl=  18.0 pnl=   +4.36 resolved  atp-ruud-alcaraz-2026-11-07
+    STAN  p=0.825 ntl=  20.0 pnl=   +4.24 resolved  atp-norrie-medvede-2026-10-29
+    STAN  p=0.825 ntl=  20.0 pnl=   +4.24 resolved  wta-montgom-revathi-2026-11-05
+    STAN  p=0.810 ntl=  18.0 pnl=   +4.22 resolved  highest-temperature-in-munich-on-september-5
+    STAN  p=0.815 ntl=  18.0 pnl=   +4.09 resolved  elon-musk-of-tweets-august-28-september-4-20
+    BANK  p=0.865 ntl=  50.0 pnl=   +4.05 closed    cfb-wvir-txtech-2026-11-07
+    STAN  p=0.825 ntl=  18.0 pnl=   +3.82 resolved  ere-her1-exc-2026-10-16-exc
+    STAN  p=0.825 ntl=  18.0 pnl=   +3.82 resolved  atp-wawrink-lehecka-2026-10-27
+    STAN  p=0.830 ntl=  18.0 pnl=   +3.69 resolved  highest-temperature-in-toronto-on-september-
+    STAN  p=0.845 ntl=  20.0 pnl=   +3.67 resolved  atp-altmaie-lehecka-2026-10-29
+    STAN  p=0.834 ntl=  18.0 pnl=   +3.60 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.839 ntl=  18.0 pnl=   +3.47 resolved  will-united-russia-win-between-310-and-324-s
+    STAN  p=0.839 ntl=  18.0 pnl=   +3.45 resolved  will-new-people-nl-gain-the-most-seats-in-th
+    STAN  p=0.840 ntl=  18.0 pnl=   +3.43 resolved  fif-arg-bur-2026-10-03-draw
+    STAN  p=0.850 ntl=  18.0 pnl=   +3.18 resolved  highest-temperature-in-wuhan-on-september-12
+    STAN  p=0.865 ntl=  18.0 pnl=   +2.81 resolved  cfb-wvir-txtech-2026-11-07
+    STAN  p=0.902 ntl=  18.0 pnl=   +1.94 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.825 ntl=   9.0 pnl=   +1.91 resolved  es2-cor-ceu-2026-11-07-ceu
+    STAN  p=0.910 ntl=  18.0 pnl=   +1.77 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.845 ntl=   9.0 pnl=   +1.65 resolved  cfb-ucla-minnst-2026-11-07-1h-total-30pt5
+    STAN  p=0.921 ntl=  18.0 pnl=   +1.54 resolved  will-ben-shelton-win-the-2026-mens-us-open
+    STAN  p=0.927 ntl=  18.0 pnl=   +1.42 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.865 ntl=   9.0 pnl=   +1.40 resolved  ucl-gal-stu-2026-11-03-spread-home-2pt5
+    STAN  p=0.810 ntl=  18.0 pnl=   +1.33 closed    will-the-democratic-party-candidate-win-the-
+    STAN  p=0.935 ntl=  18.0 pnl=   +1.24 closed    will-the-liberal-democratic-party-of-russia-
+    STAN  p=0.885 ntl=   9.0 pnl=   +1.17 resolved  ucl-mnu-rom-2026-11-03-total-5pt5
+    STAN  p=0.943 ntl=  18.0 pnl=   +1.09 resolved  will-rafael-jodar-win-the-2026-mens-us-open
+    STAN  p=0.895 ntl=   9.0 pnl=   +1.06 resolved  nhl-chi-car-2026-11-07-spread-away-1pt5
+    STAN  p=0.946 ntl=  18.0 pnl=   +1.04 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.805 ntl=   4.0 pnl=   +0.97 resolved  nba-tor-den-2026-11-04-spread-away-6pt5
+    STAN  p=0.949 ntl=  18.0 pnl=   +0.96 closed    will-mirra-andreeva-win-the-2026-womens-us-o
+    STAN  p=0.811 ntl=  18.0 pnl=   +0.94 closed    will-roma-win-the-2026-27-serie-a-championsh
+    STAN  p=0.865 ntl=   4.2 pnl=   +0.65 resolved  lal-mad-bar-2026-11-08-spread-home-1pt5
+    STAN  p=0.940 ntl=   9.0 pnl=   +0.57 resolved  ucl-aek1-rma-2026-11-04-team-total-home-2pt5
+    STAN  p=0.885 ntl=   4.1 pnl=   +0.53 resolved  cbb-clvst-bowlgr-2026-11-09
+    BANK  p=0.826 ntl=   2.5 pnl=   +0.52 closed    will-grand-theft-auto-vi-extended-look-get-b
+    BANK  p=0.905 ntl=   5.0 pnl=   +0.52 resolved  elon-musk-of-tweets-september-3-september-5-
+    STAN  p=0.900 ntl=   4.0 pnl=   +0.44 resolved  nba-tor-mil-2026-11-06-spread-away-23pt5
+    STAN  p=0.801 ntl=  18.0 pnl=   +0.37 closed    no-one-announced-as-next-james-bond
+    STAN  p=0.915 ntl=   4.0 pnl=   +0.37 resolved  nba-atl-was-2026-11-04-total-256pt5
+    BANK  p=0.915 ntl=   2.5 pnl=   +0.01 closed    highest-temperature-in-mexico-city-on-septem
+    BANK  p=0.920 ntl=   5.0 pnl=   +0.00 closed    highest-temperature-in-mexico-city-on-septem
+    STAN  p=0.805 ntl=  18.0 pnl=  -18.00 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.835 ntl=  18.0 pnl=  -18.00 resolved  elon-musk-of-tweets-august-28-september-4-20
+    STAN  p=0.840 ntl=  18.0 pnl=  -18.00 resolved  highest-temperature-in-hong-kong-on-septembe
+    STAN  p=0.830 ntl=  18.0 pnl=  -18.00 resolved  highest-temperature-in-shenzhen-on-september
+    STAN  p=0.800 ntl=  18.0 pnl=  -18.00 resolved  highest-temperature-in-chicago-on-september-
+    STAN  p=0.800 ntl=  18.0 pnl=  -18.00 resolved  highest-temperature-in-chicago-on-september-
+
+--------------------------------------------------------------------------------------------
+S12. THE PAID-UP CELL, POST PRICE-SIDE FIX (card profit-fill-never-reachable P3, 150-leg bar)
+--------------------------------------------------------------------------------------------
+  legs opened after the 2026-11-09 price-side fix: 90
+  paid at/below market       67      1376     -153.2   -11.1%       [-78.6,+97.6]
+  PAID ABOVE market          23       561     -175.5   -31.2%       [-80.7,+59.5]
+  bar progress: 23/150 post-fix paid-up legs; a live dispatch rule ships at 150
+
+  COUNTERFACTUAL — the reachable book with the paid-up class not dispatched at all:
+  as traded (reachable)      1143     17851     -724.6    -4.1%       [-17.6,+10.8]
+  paid-up class removed       890     13763     +433.3    +3.1%       [-13.0,+22.6]
+  -> +3.1% vs -4.1%, +5.6 $/day vs -9.3 $/day
+  paid-up class by lane: BANK 134 legs / $1969, STAN 119 legs / $2119
+
+--------------------------------------------------------------------------------------------
+S13. WHAT THE RUNG READS — trailing settled sums on each basis (settle clock = closed|resolved)
+--------------------------------------------------------------------------------------------
+  last 7d (rung 1 needs +$1750 per 7d = $250/day):
+    booked rows         106 legs $   2342     +27.1     1.5% of the bar
+                       ex-top-1   -525.2; biggest leg +552.2 (atp-shevche-ruud-2026-11-11)
+    positions only       59 legs $   1320     -81.0    -4.6% of the bar
+                       ex-top-1   -633.2; biggest leg +552.2 (atp-shevche-ruud-2026-11-11)
+    confirmed filled     38 legs $   1053     -59.7    -3.4% of the bar
+                       ex-top-1   -611.9; biggest leg +552.2 (atp-shevche-ruud-2026-11-11)
+    REACHABLE (tape)     57 legs $   1302     -75.6    -4.3% of the bar
+                       ex-top-1   -627.8; biggest leg +552.2 (atp-shevche-ruud-2026-11-11)
+
+  last 14d (rung 1 needs +$1750 per 7d = $250/day):
+    booked rows         334 legs $   7369    -480.1   -13.7% of the bar
+    positions only      177 legs $   3556    -706.7   -20.2% of the bar
+    confirmed filled     89 legs $   2290    -714.7   -20.4% of the bar
+    REACHABLE (tape)    172 legs $   3516    -683.9   -19.5% of the bar
+
+  SETTLED window the rung actually JUDGES (query_bankroll.js SETTLE_DAYS=3,
+  GATE_WINDOW_DAYS=7 -> settled days T-3 .. T-9), rung 1 bar = +$1,750:
+    booked rows         149 legs $   3460    +441.9    25.3% of the bar  (ex-top-1 -110.3)
+    positions only       73 legs $   1500    +303.2    17.3% of the bar  (ex-top-1 -249.0)
+    confirmed filled     48 legs $   1155    +169.6     9.7% of the bar  (ex-top-1 -382.6)
+    REACHABLE (tape)     71 legs $   1482    +321.2    18.4% of the bar  (ex-top-1 -231.0)
+
+
+--------------------------------------------------------------------------------------------
+S14. THE REACHABILITY TOLERANCE IS A POLICY CHOICE, NOT A FACT
+--------------------------------------------------------------------------------------------
+  The venue series is a MIDPOINT (profit-fill-tape S1b: ~90% of points sit at the half-cent on
+  1c-spread books). A resting bid at L is at the best bid when the midpoint sits at L + half the
+  spread -- 0.005 on a 1c book -- so the strict touch (L+0.001) can only fire when the market
+  moved BELOW us. Every row below is the same population with one rule changed.
+
+  tolerance                    legs      cost        pnl      ROI          cluster CI
+  strict touch (L+0.000)       1142     17833     -706.6    -4.0%       [-17.1,+11.7]
+  instrument default (L+0.001) 1143     17851     -724.6    -4.1%       [-17.6,+10.8]
+  half spread (L+0.005)        1203     18549     -693.1    -3.7%       [-17.2,+11.3]
+  near-miss kept (L+0.010)     1307     19635    -1068.6    -5.4%        [-18.0,+8.0]
+
+  same sweep, the tape ALSO outvoting the resolver's negative (the S10 false-negative class):
+  tape-first (L+0.001)         1244     20645     -731.6    -3.5%       [-15.4,+10.2]
+  tape-first (L+0.005)         1487     24103     -702.2    -2.9%        [-13.5,+9.5]
+
+  near-miss class: 402 legs $5017 -489.3 (-9.8%)
+    at exactly the half-cent (mid = L+0.005): 169/402 = 42.0%   <- signature of a bid that WAS the best bid
+    at or inside the half-cent (<= L+0.005):  256/402 = 63.7%
+  READ: if the near-miss mass sits at the half-cent, voiding it banks a TOLERANCE
+  artifact, not a non-fill. Keeping it booked is the conservative arm: it lowers the book.
+
+============================================================================================
+self-checks: all PASS
+============================================================================================

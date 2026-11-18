@@ -511,6 +511,63 @@ def main():
                       f"{big['realizedPnl'] or 0:+.1f} ({big['marketId'][:38]})")
         print()
 
+    # ------------------------------------------------- S13b the window the rung JUDGES
+    print("  SETTLED window the rung actually JUDGES (query_bankroll.js SETTLE_DAYS=3,")
+    print("  GATE_WINDOW_DAYS=7 -> settled days T-3 .. T-9), rung 1 bar = +$1,750:")
+    lo = now_ms - 10 * D
+    hi = now_ms - 3 * D
+    for label, pop in (("booked rows", settled),
+                       ("positions only", [l for l in settled if l.get("fillStatus") != "unfilled"]),
+                       ("confirmed filled", [l for l in settled if l.get("fillStatus") == "filled"]),
+                       ("REACHABLE (tape)", reach)):
+        sub = settled_between(pop, lo, hi)
+        n7, ntl7, p7, r7 = agg(sub)
+        bar = 1750.0
+        print(f"    {label:<18} {n7:>4} legs ${ntl7:>7.0f} {p7:>+9.1f}  "
+              f"{p7 / bar * 100:>6.1f}% of the bar  (ex-top-1 {agg(ex_top(sub, 1))[2]:+.1f})")
+    print()
+
+    # ---------------------------------------------------------------- S14 tolerance sweep
+    print("\n" + "-" * 92)
+    print("S14. THE REACHABILITY TOLERANCE IS A POLICY CHOICE, NOT A FACT")
+    print("-" * 92)
+    print("  The venue series is a MIDPOINT (profit-fill-tape S1b: ~90% of points sit at the half-cent on")
+    print("  1c-spread books). A resting bid at L is at the best bid when the midpoint sits at L + half the")
+    print("  spread -- 0.005 on a 1c book -- so the strict touch (L+0.001) can only fire when the market")
+    print("  moved BELOW us. Every row below is the same population with one rule changed.")
+    print()
+    print(f"  {'tolerance':<28} {'legs':>4} {'cost':>9} {'pnl':>10} {'ROI':>8}  {'cluster CI':>18}")
+    for tol, name in ((0.0, "strict touch (L+0.000)"), (0.001, "instrument default (L+0.001)"),
+                      (0.005, "half spread (L+0.005)"), (0.010, "near-miss kept (L+0.010)")):
+        keep = [l for l in settled
+                if l.get("fillStatus") == "filled"
+                or (l.get("fillStatus") != "unfilled" and l.get("tape_minp") is not None
+                    and l.get("trueP") is not None and l["tape_minp"] <= l["trueP"] + tol + 1e-9)]
+        line(name, keep, width=28)
+    print()
+    print("  same sweep, the tape ALSO outvoting the resolver's negative (the S10 false-negative class):")
+    for tol, name in ((0.001, "tape-first (L+0.001)"), (0.005, "tape-first (L+0.005)")):
+        keep = [l for l in settled
+                if l.get("fillStatus") == "filled"
+                or (l.get("tape_minp") is not None and l.get("trueP") is not None
+                    and l["tape_minp"] <= l["trueP"] + tol + 1e-9)]
+        line(name, keep, width=28)
+    nm = [l for l in settled if l.get("tape_minp") is not None and l.get("trueP") is not None
+          and l["trueP"] + 0.001 < l["tape_minp"] <= l["trueP"] + 0.010]
+    if nm:
+        dd = [l["tape_minp"] - l["trueP"] for l in nm]
+        at_half = sum(1 for x in dd if abs(x - 0.005) <= 0.0005)
+        inside = sum(1 for x in dd if x <= 0.0055)
+        n6, ntl6, p6, r6 = agg(nm)
+        print()
+        print(f"  near-miss class: {len(nm)} legs ${ntl6:.0f} {p6:+.1f} ({r6:+.1f}%)")
+        print(f"    at exactly the half-cent (mid = L+0.005): {at_half}/{len(nm)} = "
+              f"{at_half / len(nm) * 100:.1f}%   <- signature of a bid that WAS the best bid")
+        print(f"    at or inside the half-cent (<= L+0.005):  {inside}/{len(nm)} = "
+              f"{inside / len(nm) * 100:.1f}%")
+        print("  READ: if the near-miss mass sits at the half-cent, voiding it banks a TOLERANCE")
+        print("  artifact, not a non-fill. Keeping it booked is the conservative arm: it lowers the book.")
+
     print("\n" + "=" * 92)
     print(f"self-checks: {len(FAIL)} FAIL" if FAIL else "self-checks: all PASS")
     print("=" * 92)

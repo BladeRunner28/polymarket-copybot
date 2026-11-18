@@ -560,12 +560,19 @@ def series24(token, t0_s, win=86400, fidelity=5):
     return [(int(p["t"]), float(p["p"])) for p in h if "t" in p and "p" in p]
 
 
-def sec_horizon(legs):
+def sec_horizon(legs, eps=TICK):
     print()
     print("=" * 90)
     print("8. THE COUNTER-ARGUMENT I HAD TO TEST — were the 'untouched' legs simply filled LATER")
+    print(f"   (reachability tolerance: L+{eps:.3f})")
     print("=" * 90)
-    un = [l for l in legs if l["tape_verdict"] == "unfilled_tape" and l.get("tape_token")]
+    def _untouched_1h(l):
+        s = l.get("tape_series") or []
+        t0 = l["openedTs"] // 1000
+        sub = [p for t, p in s if t0 <= t <= t0 + 3600]
+        return bool(sub) and min(sub) > l["trueP"] + eps
+
+    un = [l for l in legs if l.get("tape_token") and l.get("tape_series") and _untouched_1h(l)]
     print(f"  untouched within 60m: {len(un)} legs; re-querying a 24h series (5-min fidelity) for each")
     tot = 0
     buckets = {"<=1h": 0, "1-6h": 0, "6-24h": 0, "never in 24h": 0}
@@ -573,16 +580,20 @@ def sec_horizon(legs):
     pnl_never, ntl_never = 0.0, 0.0
     never = []
     per_lane = {}
+    per_cls = {}
     for l in un:
         t0 = l["openedTs"] // 1000
         s = series24(l["tape_token"], t0)
         if not s:
             continue
         tot += 1
-        hit = next((t for t, p in s if t0 <= t <= t0 + 86400 and p <= l["trueP"] + TICK), None)
+        hit = next((t for t, p in s if t0 <= t <= t0 + 86400 and p <= l["trueP"] + eps), None)
         lag = (hit - t0) if hit else None
         pl = per_lane.setdefault(l["botId"], {"never": 0, "n": 0, "ntl": 0.0, "pnl": 0.0,
                                              "late_n": 0, "late_ntl": 0.0, "late_pnl": 0.0})
+        ck = l.get("fillStatus") or "NULL"
+        pc = per_cls.setdefault(ck, {"never": 0, "never_ntl": 0.0, "never_pnl": 0.0,
+                                     "late_n": 0, "late_ntl": 0.0, "late_pnl": 0.0})
         pl["n"] += 1
         if lag is None:
             buckets["never in 24h"] += 1
@@ -591,6 +602,9 @@ def sec_horizon(legs):
             pl["never"] += 1
             pl["ntl"] += l["simulatedPositionSize"]
             pl["pnl"] += l["realizedPnl"] or 0
+            pc["never"] += 1
+            pc["never_ntl"] += l["simulatedPositionSize"]
+            pc["never_pnl"] += l["realizedPnl"] or 0
             never.append(l)
         else:
             k = "<=1h" if lag <= 3600 else ("1-6h" if lag <= 21600 else "6-24h")
@@ -601,6 +615,9 @@ def sec_horizon(legs):
                 pl["late_n"] += 1
                 pl["late_ntl"] += l["simulatedPositionSize"]
                 pl["late_pnl"] += l["realizedPnl"] or 0
+                pc["late_n"] += 1
+                pc["late_ntl"] += l["simulatedPositionSize"]
+                pc["late_pnl"] += l["realizedPnl"] or 0
     if not tot:
         print("  probe returned no data")
         return
@@ -629,6 +646,16 @@ def sec_horizon(legs):
     print("  position. Legs that touch inside 24h belong to the FILLED class, not the phantom, and the")
     print("  restated ROI above is too pessimistic by exactly that share.")
 
+    print("\n  SPLIT BY RESOLVER STAMP — what a 24h window would void, by the class that owns it:")
+    print(f"    {'resolver':<10} {'late fill n':>11} {'late $':>8} {'late PnL':>9} "
+          f"{'never n':>8} {'never $':>8} {'never PnL':>10}")
+    for cls in ("filled", "unfilled", "NULL"):
+        pc = per_cls.get(cls)
+        if not pc:
+            continue
+        print(f"    {cls:<10} {pc['late_n']:>11} {pc['late_ntl']:>8,.0f} {pc['late_pnl']:>+9.1f} "
+              f"{pc['never']:>8} {pc['never_ntl']:>8,.0f} {pc['never_pnl']:>+10.1f}")
+
     print("\n  (b) the 24h 'never' verdict is a NEGATIVE claim, so it gets re-checked at 1-minute")
     print("      fidelity on a sample (5-min sampling can step over a brief print)")
     sample = never[::max(1, len(never) // 80)][:80]
@@ -642,7 +669,7 @@ def sec_horizon(legs):
         if not h:
             continue
         ok += 1
-        if any(t0 <= int(q["t"]) <= t0 + 86400 and float(q["p"]) <= l["trueP"] + TICK for q in h):
+        if any(t0 <= int(q["t"]) <= t0 + 86400 and float(q["p"]) <= l["trueP"] + eps for q in h):
             flips += 1
     print(f"      re-checked {ok} of {len(never)}; {flips} touch at 1-minute resolution "
           f"({flips / ok * 100:.1f}% reverse rate)" if ok else "      sample returned no data")
@@ -973,6 +1000,7 @@ def main():
         sec_basis(legs)
     if want is None or "8" in want:
         sec_horizon(legs)
+        sec_horizon(legs, eps=0.005)
     if want is None or "6" in want:
         sec_audit(legs)
     if want is None or "9" in want:

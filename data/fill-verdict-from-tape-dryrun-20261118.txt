@@ -1,0 +1,70 @@
+================================================================================================
+FILL VERDICT FROM TAPE — row-level dry run (read-only; nothing is written)
+================================================================================================
+
+  population: opened >= 2026-09-01, non-demo, deduped first leg per bot|wallet|market|outcome
+  regime: DecisionJournal.ruleSetVersion >= 0 -> 2339 legs
+  adjudicating (1h tape; 24h series fetched only for legs untouched in the hour) ...
+  no tape at all: 0 legs (they fall back to the resolver stamp under every rule)
+
+  stored ledger (realizedPnl as booked): 2339 legs $33547 +5659.7 (+16.9%)
+  published basis (positions only) 1804     25267    +3390.2   +13.4%        [-5.5,+36.3]
+
+------------------------------------------------------------------------------------------------
+G1. THE GRID — one rule at a time, same population
+------------------------------------------------------------------------------------------------
+  rule                           legs      cost        pnl      ROI          cluster CI
+  1h L+0.001 strict resolver-first 1143     17851     -724.6    -4.1%       [-17.6,+10.8]
+  1h L+0.001 strict tape-first   1244     20645     -731.6    -3.5%       [-15.4,+10.2]
+  1h L+0.005 half-spread resolver-first 1203     18549     -693.1    -3.7%       [-17.2,+11.3]
+  1h L+0.005 half-spread tape-first 1487     24103     -702.2    -2.9%        [-13.5,+9.5]
+  24h L+0.001 strict resolver-first 1592     22403     -329.7    -1.5%       [-16.9,+16.5]
+  24h L+0.001 strict tape-first  2032     29275     -744.0    -2.5%       [-15.2,+12.0]
+  24h L+0.005 half-spread resolver-first 1618     22892     -168.8    -0.7%       [-17.5,+18.0]
+  24h L+0.005 half-spread tape-first 2084     30129     -408.3    -1.4%       [-14.0,+13.0]
+
+  READ: every arm voids the same thing (a level the market never came to inside W);
+  they differ only on how much real exposure the window throws away with it.
+
+------------------------------------------------------------------------------------------------
+G2. WHAT EACH PIECE OF THE RULE ACTUALLY VOIDS (recommended rule: 24h, L+0.005, tape-first)
+------------------------------------------------------------------------------------------------
+  voided: resolver filled           0         0       +0.0      n/a                 n/a
+  voided: resolver unfilled        69      1043    +2509.0  +240.6%      [+85.9,+400.6]
+  voided: resolver NULL           186      2375    +3559.0  +149.9%      [+50.5,+289.4]
+  TOTAL voided                    255      3417    +6068.1  +177.6%      [+87.9,+284.1]
+  voided ex-top-1   254 legs $   3317   +4554.7 (+137.3%)
+  voided ex-top-5   250 legs $   3006   +2510.2 (+83.5%)
+  voided ex-top-10  245 legs $   2826   +1304.9 (+46.2%)
+  voided legs positive: 175 of 255 (69%) — a coin flip is what p(fill)=1 looks like
+  BOOKS under the rule           2084     30129     -408.3    -1.4%       [-14.0,+13.0]
+  rule book: 77.9d -> -5.2 $/day, -0.17 $/1k-capital-day
+
+  ex-top-1  2083 legs $  30029   -1484.8 (-4.9%)
+  ex-top-5  2079 legs $  29709   -3575.1 (-12.0%)
+  ex-top-10 2074 legs $  29586   -4785.8 (-16.2%)
+    lane BANKROLL_200            1371     18058     -548.2    -3.0%       [-20.9,+17.7]
+    lane STANDARD                 713     12071     +139.9    +1.2%       [-10.2,+13.4]
+
+  the voided class, by lane (what a LEDGER restatement would remove, if ever approved):
+    BANKROLL_200                  243      3197    +5917.7  +185.1%      [+91.5,+292.3]
+    STANDARD                       12       220     +150.3   +68.3%      [+28.5,+111.2]
+
+------------------------------------------------------------------------------------------------
+G3. THE RUNG — settled days T-3..T-9 (query_bankroll.js SETTLE_DAYS=3, 7-day sum), bar +$1,750
+------------------------------------------------------------------------------------------------
+  stored ledger                     149 legs $   3460    +441.9    25.3% of the bar  (ex-top-1 -110.3)
+  positions only (published)         73 legs $   1500    +303.2    17.3% of the bar  (ex-top-1 -249.0)
+  rule book (24h/0.005/tape-first)  142 legs $   3300    +394.0    22.5% of the bar  (ex-top-1 -158.2)
+
+------------------------------------------------------------------------------------------------
+G4. LIVE REGIME (v68+) ON THE SAME RULE — is the phantom a live problem?
+------------------------------------------------------------------------------------------------
+  stored ledger                   450      9808     -276.9    -2.8%       [-19.0,+16.8]
+  rule book                       437      9468     -425.2    -4.5%       [-21.0,+17.3]
+  voided                           13       341     +148.3   +43.5%       [+2.0,+137.8]
+  voided legs in the last 10d (settled): 7 -> they are still arriving
+
+================================================================================================
+nothing written: no prisma row, no RuleSet, no verdict store, no fillStatus stamp
+================================================================================================

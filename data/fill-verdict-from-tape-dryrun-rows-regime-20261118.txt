@@ -1,0 +1,58 @@
+================================================================================================
+FILL VERDICT FROM TAPE — row-level dry run (read-only; nothing is written)
+================================================================================================
+
+  population: opened >= 2026-09-01, non-demo, EVERY finished ROW (no dedupe — what a surface sums)
+  regime: DecisionJournal.ruleSetVersion >= 68 -> 463 legs
+  adjudicating (1h tape; 24h series fetched only for legs untouched in the hour) ...
+  no tape at all: 0 legs (they fall back to the resolver stamp under every rule)
+
+  stored ledger (realizedPnl as booked): 463 legs $10024 -140.8 (-1.4%)
+  published basis (positions only)  259      5110     -511.7   -10.0%       [-35.5,+24.1]
+
+------------------------------------------------------------------------------------------------
+G1. THE GRID — one rule at a time, same population
+------------------------------------------------------------------------------------------------
+  rule                           legs      cost        pnl      ROI          cluster CI
+  1h L+0.001 strict resolver-first  246      4923     -628.3   -12.8%       [-38.4,+23.9]
+  1h L+0.001 strict tape-first    331      7462     -611.3    -8.2%       [-28.7,+17.0]
+  1h L+0.005 half-spread resolver-first  248      4945     -645.7   -13.1%       [-39.4,+22.0]
+  1h L+0.005 half-spread tape-first  432      9350     -368.3    -3.9%       [-20.4,+17.3]
+  24h L+0.001 strict resolver-first  251      4968     -660.5   -13.3%       [-39.5,+23.3]
+  24h L+0.001 strict tape-first   437      9388     -431.8    -4.6%       [-21.3,+17.7]
+  24h L+0.005 half-spread resolver-first  254      5010     -635.6   -12.7%       [-37.8,+23.3]
+  24h L+0.005 half-spread tape-first  446      9606     -406.9    -4.2%       [-20.6,+16.9]
+
+  READ: every arm voids the same thing (a level the market never came to inside W);
+  they differ only on how much real exposure the window throws away with it.
+
+------------------------------------------------------------------------------------------------
+G2. WHAT EACH PIECE OF THE RULE ACTUALLY VOIDS (recommended rule: 24h, L+0.005, tape-first)
+------------------------------------------------------------------------------------------------
+  voided: resolver filled           0         0       +0.0      n/a                 n/a
+  voided: resolver unfilled        12       319     +142.1   +44.6%       [-0.0,+158.7]
+  voided: resolver NULL             5       100     +123.9  +123.9%      [+18.4,+150.3]
+  TOTAL voided                     17       419     +266.0   +63.6%       [+3.1,+143.4]
+  BOOKS under the rule            446      9606     -406.9    -4.2%       [-20.6,+16.9]
+  rule book: 21.6d -> -18.8 $/day, -1.96 $/1k-capital-day
+
+  ex-top-1   445 legs $   9506    -959.1 (-10.1%)
+  ex-top-5   441 legs $   9396   -1683.5 (-17.9%)
+  ex-top-10  436 legs $   9309   -1957.0 (-21.0%)
+    lane BANKROLL_200             318      8081     -631.6    -7.8%       [-25.0,+15.1]
+    lane STANDARD                 128      1525     +224.7   +14.7%       [-10.2,+43.2]
+
+  the voided class, by lane (what a LEDGER restatement would remove, if ever approved):
+    BANKROLL_200                   12       319     +142.1   +44.6%       [-0.0,+158.7]
+    STANDARD                        5       100     +123.9  +123.9%      [+18.4,+150.3]
+
+------------------------------------------------------------------------------------------------
+G3. THE RUNG — settled days T-3..T-9 (query_bankroll.js SETTLE_DAYS=3, 7-day sum), bar +$1,750
+------------------------------------------------------------------------------------------------
+  stored ledger                     149 legs $   3460    +441.9    25.3% of the bar  (ex-top-1 -110.3)
+  positions only (published)         73 legs $   1500    +303.2    17.3% of the bar  (ex-top-1 -249.0)
+  rule book (24h/0.005/tape-first)  142 legs $   3300    +394.0    22.5% of the bar  (ex-top-1 -158.2)
+
+================================================================================================
+nothing written: no prisma row, no RuleSet, no verdict store, no fillStatus stamp
+================================================================================================

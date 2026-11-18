@@ -1,0 +1,78 @@
+FILL TAPE — window from 2026-09-01, 3600s horizon, read-only
+  PASS  classifier: touch at bid
+  PASS  classifier: 0.5c above bid is near_miss not a negative
+  PASS  classifier: 2c above bid is unfilled
+  PASS  restatement: untouched books zero (pnl=-5 on $20)
+  PASS  diff_ci antisymmetry
+  PASS  true_pnl: exit=1.0 reproduced then re-priced at 0.20 gives +40
+
+  6/6 self-tests pass
+  loading legs: 2339 finished, conditionId present
+  tape adjudicated in 0s
+
+
+==========================================================================================
+8. THE COUNTER-ARGUMENT I HAD TO TEST — were the 'untouched' legs simply filled LATER
+   (reachability tolerance: L+0.001)
+==========================================================================================
+  untouched within 60m: 1142 legs; re-querying a 24h series (5-min fidelity) for each
+  answered: 1142
+    <=1h              0  (0%)
+    1-6h            424  (37%)
+    6-24h           417  (37%)
+    never in 24h    301  (26%)
+
+  that only touched AFTER the hour: 841 legs, $9,050 at risk, booked +186.7 (+2.1%)
+  never touched in 24h: 301 legs, $4,077 at risk, booked +6322.9 (+155.1%)
+
+  per lane, restated so that ONLY the 24h-never class is voided (the conservative read):
+  lane           legs booked ROI never n  never $  never PnL restated ROI late-fill ROI
+  STANDARD        725      +2.4%      13      240     +123.1        +1.4%        -18.5%
+  BANKROLL_200   1614     +25.3%     288    3,837    +6199.8        -3.9%         +4.6%
+  OUR MODEL: the paper ledger has no cancel, so a bid that fills at hour 7 is still a real
+  position. Legs that touch inside 24h belong to the FILLED class, not the phantom, and the
+  restated ROI above is too pessimistic by exactly that share.
+
+  SPLIT BY RESOLVER STAMP — what a 24h window would void, by the class that owns it:
+    resolver   late fill n   late $  late PnL  never n  never $  never PnL
+    filled              43      211    +123.7        4       14       -5.4
+    unfilled           342    4,205    -407.3       92    1,281    +2683.8
+    NULL               456    4,634    +470.3      205    2,783    +3644.5
+
+  (b) the 24h 'never' verdict is a NEGATIVE claim, so it gets re-checked at 1-minute
+      fidelity on a sample (5-min sampling can step over a brief print)
+      re-checked 80 of 301; 3 touch at 1-minute resolution (3.8% reverse rate)
+
+==========================================================================================
+8. THE COUNTER-ARGUMENT I HAD TO TEST — were the 'untouched' legs simply filled LATER
+   (reachability tolerance: L+0.005)
+==========================================================================================
+  untouched within 60m: 895 legs; re-querying a 24h series (5-min fidelity) for each
+  answered: 895
+    <=1h              0  (0%)
+    1-6h            311  (35%)
+    6-24h           333  (37%)
+    never in 24h    251  (28%)
+
+  that only touched AFTER the hour: 644 legs, $6,327 at risk, booked +597.9 (+9.5%)
+  never touched in 24h: 251 legs, $3,330 at risk, booked +5914.7 (+177.6%)
+
+  per lane, restated so that ONLY the 24h-never class is voided (the conservative read):
+  lane           legs booked ROI never n  never $  never PnL restated ROI late-fill ROI
+  STANDARD        725      +2.4%       9      166      +82.1        +1.7%         -1.2%
+  BANKROLL_200   1614     +25.3%     242    3,164    +5832.6        -2.2%        +10.7%
+  OUR MODEL: the paper ledger has no cancel, so a bid that fills at hour 7 is still a real
+  position. Legs that touch inside 24h belong to the FILLED class, not the phantom, and the
+  restated ROI above is too pessimistic by exactly that share.
+
+  SPLIT BY RESOLVER STAMP — what a 24h window would void, by the class that owns it:
+    resolver   late fill n   late $  late PnL  never n  never $  never PnL
+    filled              36      144    +183.8        1        1       -1.1
+    unfilled           185    1,715    -212.1       67    1,023    +2478.3
+    NULL               423    4,467    +626.2      183    2,306    +3437.4
+
+  (b) the 24h 'never' verdict is a NEGATIVE claim, so it gets re-checked at 1-minute
+      fidelity on a sample (5-min sampling can step over a brief print)
+      re-checked 80 of 251; 1 touch at 1-minute resolution (1.2% reverse rate)
+
+  verdicts cached -> /Users/xsnyde2/polymarket-copybot/data/fill-tape-cache/verdicts.json
