@@ -1,21 +1,21 @@
 {
- "generatedAt": "2026-11-16T11:49:25.015864Z",
+ "generatedAt": "2026-11-17T11:41:34.411648Z",
  "sources": {
   "marketCandidates": {
    "path": "data/ml/market-candidates.parquet",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-11-16T11:49:06.449654Z",
+   "mtimeZ": "2026-11-17T11:41:15.732180Z",
    "ageHours": 0.0,
    "evidenceClock": "resolved_at",
    "evidenceZ": "2026-10-19T03:17:34Z",
-   "evidenceAgeHours": 680.5
+   "evidenceAgeHours": 704.4
   },
   "paperTrades": {
    "path": "prisma/dev.db",
    "role": "rolling",
    "exists": true,
-   "mtimeZ": "2026-11-16T11:45:51.594383Z",
+   "mtimeZ": "2026-11-17T11:35:42.257804Z",
    "ageHours": 0.1
   },
   "predictionsTest": {
@@ -23,7 +23,7 @@
    "role": "study",
    "exists": true,
    "mtimeZ": "2026-10-19T08:54:09.889491Z",
-   "ageHours": 674.9
+   "ageHours": 698.8
   }
  },
  "lane": {
@@ -167,23 +167,23 @@
  "veto": {
   "available": true,
   "baseline": {
-   "legs": 831,
-   "notionalUsd": 8364.75,
-   "pnlUsd": 46.52,
-   "roiPct": 0.56
+   "legs": 832,
+   "notionalUsd": 8382.75,
+   "pnlUsd": 28.52,
+   "roiPct": 0.34
   },
   "sweep": [
    {
     "threshold": -0.05,
-    "legs": 815,
-    "pnlUsd": 29.54,
-    "roiPct": 0.36
+    "legs": 816,
+    "pnlUsd": 11.54,
+    "roiPct": 0.14
    },
    {
     "threshold": -0.02,
-    "legs": 750,
-    "pnlUsd": -17.78,
-    "roiPct": -0.24
+    "legs": 751,
+    "pnlUsd": -35.78,
+    "roiPct": -0.48
    },
    {
     "threshold": 0.0,
@@ -212,18 +212,18 @@
     "evLo": -0.077,
     "evHi": 0.005,
     "legs": 208,
-    "roiPct": 4.3,
-    "ciLoPct": -12.04,
-    "ciHiPct": 20.49
+    "roiPct": 3.37,
+    "ciLoPct": -12.23,
+    "ciHiPct": 20.09
    },
    {
     "quartile": 2,
     "evLo": 0.005,
     "evHi": 0.028,
     "legs": 208,
-    "roiPct": -5.27,
-    "ciLoPct": -18.5,
-    "ciHiPct": 8.52
+    "roiPct": -5.39,
+    "ciLoPct": -18.28,
+    "ciHiPct": 8.93
    },
    {
     "quartile": 3,
@@ -247,8 +247,8 @@
   "byBand": [
    {
     "band": "<0.20",
-    "legs": 37,
-    "roiPct": 65.79
+    "legs": 38,
+    "roiPct": 62.07
    },
    {
     "band": "0.2-0.4",
