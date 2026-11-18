@@ -10,6 +10,7 @@ import { getActiveRules } from "../src/lib/rules";
 import { scoreWallet, walletStatus, encodeCategoryStrengths } from "../src/lib/scoring/wallet";
 import { log, logError } from "../src/lib/redact";
 import { sendDiscord } from "../src/lib/discord";
+import { writeJsonAtomic } from "../src/lib/atomic-json";
 import * as fs from "fs";
 import { join } from "path";
 
@@ -57,6 +58,17 @@ async function main() {
   const adapter = getAdapter();
   const { rules } = await getActiveRules();
 
+  /**
+   * 2026-11-18 self-audit: the state file was written with a bare
+   * `fs.writeFileSync(path, json)`, which truncates before it writes. A run killed
+   * between the two steps leaves a half-written JSON — and the EOD report read that
+   * as "no scan line at all" (now it reads as UNAVAILABLE, see src/lib/report.ts).
+   * The kill is not hypothetical: every run between 2026-11-13 11:08 and 11-14 05:17
+   * died at the harness ceiling. writeJsonAtomic renames a fully-written temp file
+   * over the target, so a reader sees either the old file or the new one.
+   */
+  const writeState = (obj: unknown) => writeJsonAtomic(SCAN_STATE_FILE, obj);
+
   // Attempt marker FIRST (see SCAN_BUDGET_MS): a killed run must leave a trace, or the
   // report cannot tell "last run was 20 h ago" from "last run finished 20 h ago".
   // Read-merge-write so a marker never destroys the previous run's figures.
@@ -67,10 +79,7 @@ async function main() {
     } catch {
       prev = {};
     }
-    fs.writeFileSync(
-      SCAN_STATE_FILE,
-      JSON.stringify({ ...prev, lastAttemptAt: new Date(startedAt).toISOString() }, null, 2)
-    );
+    writeState({ ...prev, lastAttemptAt: new Date(startedAt).toISOString() });
   } catch (e) {
     logError(`[SCAN ATTEMPT] could not write the attempt marker: ${e instanceof Error ? e.message : e}`);
   }
@@ -272,26 +281,19 @@ async function main() {
       prev = {};
     }
     const lastAlertAtMs = partial ? prev.lastAlertAtMs ?? 0 : prev.lastAlertAtMs;
-    fs.writeFileSync(
-      SCAN_STATE_FILE,
-      JSON.stringify(
-        {
-          lastRunAt: nowIso,
-          // Preserved so the report can print "attempt X / completion Y" rather than
-          // only the completion (2026-11-14).
-          lastAttemptAt: prev.lastAttemptAt ?? new Date(startedAt).toISOString(),
-          profiled,
-          target: wallets.length,
-          partial,
-          failures: failures.slice(0, 5),
-          budgetStop,
-          lastPartialAt: partial ? nowIso : prev.lastPartialAt ?? null,
-          lastAlertAtMs,
-        },
-        null,
-        2
-      )
-    );
+    writeState({
+      lastRunAt: nowIso,
+      // Preserved so the report can print "attempt X / completion Y" rather than
+      // only the completion (2026-11-14).
+      lastAttemptAt: prev.lastAttemptAt ?? new Date(startedAt).toISOString(),
+      profiled,
+      target: wallets.length,
+      partial,
+      failures: failures.slice(0, 5),
+      budgetStop,
+      lastPartialAt: partial ? nowIso : prev.lastPartialAt ?? null,
+      lastAlertAtMs,
+    });
     if (partial && Date.now() - (lastAlertAtMs ?? 0) > PARTIAL_ALERT_EVERY_MS) {
       await sendDiscord(
         [
@@ -303,7 +305,7 @@ async function main() {
       );
       const state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8"));
       state.lastAlertAtMs = Date.now();
-      fs.writeFileSync(SCAN_STATE_FILE, JSON.stringify(state, null, 2));
+      writeState(state);
     }
   } catch (e) {
     logError(`[SCAN PARTIAL] reporting failed: ${e instanceof Error ? e.message : e}`);

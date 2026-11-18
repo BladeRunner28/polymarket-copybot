@@ -422,15 +422,43 @@ export function walletScanLineText(
  * completion line, so a report reader cannot tell a quiet cycle from 2 wallets
  * that stopped being profiled. Reads the scan job's own state file (latest run)
  * and event log (one row per partial) — measurement only, no behavior change.
+ *
+ * 2026-11-18 self-audit: an unreadable state file returned undefined and the report
+ * DROPPED the line — so the whole wallet-scan coverage row disappeared, which reads as
+ * "this build has no scan row", not "the scan cannot be judged". The file is written
+ * non-atomically at the START of every run (`fs.writeFileSync`, scripts/scan-wallets.ts
+ * line ~70), so a run killed mid-write leaves a truncated JSON — and 2026-11-13 already
+ * proved runs here do get killed at the harness ceiling (10 in a row). The failure path
+ * is therefore reachable by an event that has happened. Absent vs unreadable are named
+ * separately: ENOENT means no completed run is on record, a parse error means the
+ * record is damaged.
  */
-async function walletScanLine(now: Date): Promise<string | undefined> {
-  let state: WalletScanState | null = null;
+const relDataPath = (p: string) => p.split("/").slice(-2).join("/");
+
+export async function walletScanLine(now: Date, file: string = SCAN_STATE_FILE): Promise<string> {
+  let raw: string;
   try {
-    state = JSON.parse(fs.readFileSync(SCAN_STATE_FILE, "utf-8")) as WalletScanState;
-  } catch {
-    return undefined;
+    raw = fs.readFileSync(file, "utf-8");
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException)?.code;
+    const where = relDataPath(file);
+    if (code === "ENOENT") {
+      return `• ⚠️ Wallet scan: NO STATE ON RECORD — ${where} does not exist, so no scan run has ever completed; this is NOT a quiet cycle`;
+    }
+    const why = (e instanceof Error ? e.message : String(e)).replace(/\s+/g, " ").slice(0, 90);
+    return `• ⚠️ Wallet scan: UNAVAILABLE — ${where} unreadable (${why}); the scan's coverage cannot be judged this run`;
   }
-  if (!state) return undefined;
+  let state: WalletScanState | null;
+  try {
+    state = JSON.parse(raw) as WalletScanState;
+  } catch (e) {
+    // a truncated write from a killed run lands here
+    const why = (e instanceof Error ? e.message : String(e)).replace(/\s+/g, " ").slice(0, 90);
+    return `• ⚠️ Wallet scan: UNAVAILABLE — ${relDataPath(file)} is damaged (${why}); the last run cannot be established — this is NOT a quiet cycle`;
+  }
+  if (!state) {
+    return `• ⚠️ Wallet scan: UNAVAILABLE — ${relDataPath(file)} is empty; the last run cannot be established`;
+  }
   // 2026-10-21 self-audit: this used to print `${profiled}/${target}` — but target
   // IS WALLET_SCAN_LIMIT (the per-run batch cap), not the pool the scan rotates
   // through. On live data that rendered "25/25 profiled", which reads as "every
@@ -466,7 +494,10 @@ async function walletScanLine(now: Date): Promise<string | undefined> {
   } catch {
     partials = "partials log UNREADABLE";
   }
-  return walletScanLineText(state, { pool, stale7d, partials, now });
+  return (
+    walletScanLineText(state, { pool, stale7d, partials, now }) ??
+    `• ⚠️ Wallet scan: UNMEASURED — ${relDataPath(file)} carries neither a profiled count nor an attempt stamp; the scan cannot be judged this run (this is NOT a quiet cycle)`
+  );
 }
 
 /**

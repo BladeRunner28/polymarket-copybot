@@ -1,5 +1,8 @@
+import { mkdtempSync, writeFileSync as fsWriteFileSync, readFileSync as fsReadFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { walletScanLineText } from "../src/lib/report";
+import { walletScanLine, walletScanLineText } from "../src/lib/report";
 
 /**
  * 2026-11-14 self-audit.
@@ -82,5 +85,53 @@ describe("wallet-scan line tells a killed attempt from a completed run", () => {
 
   it("no state at all prints nothing rather than a fabricated line", () => {
     expect(walletScanLineText({}, opts)).toBeUndefined();
+  });
+});
+
+/**
+ * 2026-11-18 self-audit: the READ side of the same file. `walletScanLine` returned
+ * undefined on an unreadable state file, and the report drops undefined lines — so a
+ * truncated JSON (the file was written non-atomically, at the START of every run) made
+ * the whole wallet-scan row disappear rather than say it could not be judged.
+ */
+describe("wallet-scan line never disappears, it degrades loudly", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "scanline-"));
+  const write = (name: string, body: string) => {
+    const f = path.join(dir, name);
+    fsWriteFileSync(f, body);
+    return f;
+  };
+
+  it("an ABSENT state file says no run is on record", async () => {
+    const line = await walletScanLine(NOW, path.join(dir, "absent.json"));
+    expect(line).toContain("NO STATE ON RECORD");
+    expect(line).toContain("NOT a quiet cycle");
+  });
+
+  it("a TRUNCATED state file (killed mid-write) says UNAVAILABLE, not silence", async () => {
+    const f = write("half.json", '{"lastRunAt":"2026-11-14T06:55:55-06:00","profi');
+    const line = await walletScanLine(NOW, f);
+    expect(line).toContain("UNAVAILABLE");
+    expect(line).toContain("damaged");
+    expect(line).toContain("NOT a quiet cycle");
+  });
+
+  it("a state file with no figures at all says UNMEASURED", async () => {
+    const f = write("nofigures.json", JSON.stringify({ lastAlertAtMs: 1 }));
+    expect(await walletScanLine(NOW, f)).toContain("UNMEASURED");
+  });
+
+  it("a healthy state file renders the pre-fix line (pool segment comes from the live DB)", async () => {
+    const f = write(
+      "ok.json",
+      JSON.stringify({ lastRunAt: "2026-11-14T06:55:55-06:00", lastAttemptAt: "2026-11-14T06:46:00-06:00", profiled: 25, target: 25 })
+    );
+    const line = await walletScanLine(NOW, f);
+    const expectedHead = walletScanLineText(
+      JSON.parse(fsReadFileSync(f, "utf-8")),
+      opts
+    )!.split(" · pool ")[0];
+    expect(line.split(" · pool ")[0]).toBe(expectedHead);
+    expect(line).toContain("25 profiled last run 06:55");
   });
 });
