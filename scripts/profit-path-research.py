@@ -31,7 +31,7 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "data", "profit-path.json")
 BASE = """
 WITH legs AS (
   SELECT id, botId, walletAddress, marketId, outcome, entryPrice, realizedPnl,
-         simulatedPositionSize, fillStatus, openedAt, closedAt, resolvedAt
+         simulatedPositionSize, fillStatus, fillResolvedAt, openedAt, closedAt, resolvedAt
   FROM PaperTrade
   WHERE isDemo=0 AND status IN ('closed','resolved') AND realizedPnl IS NOT NULL
 ), dedup AS (
@@ -195,6 +195,103 @@ def main():
                                    "ALL SETTLED by market category (incl. unadjudicated)")
     art["all_by_vertical"] = table(rows, vertical, "ALL SETTLED by vertical")
     art["filled_by_vertical"] = table(filled, vertical, "FILL-CONFIRMED by vertical")
+
+    # --- 2026-11-19: is the loss UNIFORM across the filled class, or concentrated in one
+    # price cell? The clip table already says the $100 tier carries it; the band table says
+    # the sub-0.10 band is 0 wins. Print the CI on every band cell so the cell that is
+    # distinguishable from zero is named, not inferred.
+    bands = collections.defaultdict(list)
+    for r in filled:
+        bands[band(r["entryPrice"])].append(r)
+    print("\n=== FILL-CONFIRMED by entry band, with market-clustered CI ===")
+    band_ci = []
+    for k in sorted(bands):
+        v = bands[k]
+        if len(v) < 10:
+            continue
+        s, ci = stats(v), cluster_ci(v)
+        band_ci.append({"band": k, **s, "ci95": ci})
+        print(f"  {k:10s} n={s['n']:4d} cost=${s['cost']:8.0f} roi={s['roi_pct']:7.1f}% "
+              f"win={s['win_pct']:5.1f}% be={s['breakeven_win_pct'] or 0:5.1f}% "
+              f"ex-top3={s['ex_top3_roi_pct']:6.1f}% CI {ci}")
+    art["filled_by_band_ci"] = band_ci
+
+    # Composition of the sub-0.10 cell: is it the $100 clip wearing a price label?
+    penny = bands.get("0.00-0.10", [])
+    if penny:
+        p100 = [r for r in penny if (r["simulatedPositionSize"] or 0) >= 90]
+        rest = [r for r in penny if (r["simulatedPositionSize"] or 0) < 90]
+        print(f"\n  sub-0.10 composition: n={len(penny)}  $100-clip={len(p100)} "
+              f"(${sum(r['simulatedPositionSize'] or 0 for r in p100):.0f})  "
+              f"other={len(rest)} (${sum(r['simulatedPositionSize'] or 0 for r in rest):.0f}, "
+              f"pnl ${sum(r['realizedPnl'] or 0 for r in rest):.2f})")
+        art["penny_cell"] = {"n": len(penny), "n_100clip": len(p100), "n_other": len(rest),
+                             "pnl_other": round(sum(r["realizedPnl"] or 0 for r in rest), 2),
+                             "prices": sorted(round(r["entryPrice"], 3) for r in penny)}
+
+    # --- 2026-11-19: ADJUDICABILITY CEILING. Item 2 asks for >=60% of the question-market
+    # legs to tape out as filled. Two hard bounds sit above that rule: a leg opened before
+    # the L2 corpus existed can never be adjudicated, and a leg on a market the recorder never
+    # mapped has no book to read either. Print both, so "unadjudicated" is separated from
+    # "unadjudicable" instead of being reported as one unmeasured mass.
+    L2_EPOCH_MS = 1788180352649  # 2026-08-31T12:45:52Z, the earliest L2 book on disk
+    mapped = set()
+    map_path = os.path.join(os.path.dirname(__file__), "..", "data", "l2-asset-map.jsonl")
+    if os.path.exists(map_path):
+        with open(map_path) as fh:
+            for line in fh:
+                try:
+                    o = json.loads(line)
+                except ValueError:
+                    continue
+                if o.get("marketId"):
+                    mapped.add(o["marketId"])
+    print(f"\n=== ADJUDICABILITY CEILING (L2 epoch {L2_EPOCH_MS}; asset map {len(mapped)} markets) ===")
+    print(f"{'vertical':9s} {'era':5s} {'legs':>5s} {'cost':>8s} {'pnl':>7s} {'adj%':>5s} "
+          f"{'mapped%':>7s} {'pnl_provable':>12s}")
+    ceilout = []
+    for v in ("question", "sports", "esports", "other"):
+        for era, pred in (("pre", lambda r: r["openedAt"] < L2_EPOCH_MS),
+                          ("post", lambda r: r["openedAt"] >= L2_EPOCH_MS)):
+            sub = [r for r in rows if vertical(r) == v and pred(r)]
+            if not sub:
+                continue
+            adj = sum(1 for r in sub if r["fillStatus"] is not None)
+            mp = [r for r in sub if r["marketId"] in mapped]
+            s = stats(sub)
+            prov = round(sum(r["realizedPnl"] or 0 for r in mp), 0)
+            ceilout.append({"vertical": v, "era": era, **s, "adjudicated": adj,
+                            "adj_pct": round(100.0 * adj / len(sub), 1),
+                            "mapped_legs": len(mp),
+                            "mapped_pct": round(100.0 * len(mp) / len(sub), 1),
+                            "mapped_pnl": prov})
+            print(f"{v:9s} {era:5s} {s['n']:5d} ${s['cost']:7.0f} {s['pnl']:+7.0f} "
+                  f"{100.0 * adj / len(sub):5.1f} {100.0 * len(mp) / len(sub):7.1f} {prov:+12.0f}")
+    art["adjudicability_ceiling"] = ceilout
+
+    # --- 2026-11-19: BOOKING vs VERDICT ORDER. A leg booked before its no-fill verdict
+    # existed keeps its PnL; the fill-aware path only zeroes legs it already knows are
+    # unfilled. Print the order split, because it decides whether the "measured window" is
+    # a book result or a booking artefact. fillResolvedAt is the verdict stamp.
+    print("\n=== BOOKING vs VERDICT ORDER (settled, adjudicated) ===")
+    order_out = []
+    for era, pred in (("pre-oct", lambda r: r["openedAt"] < 1790812800000),
+                      ("oct+", lambda r: r["openedAt"] >= 1790812800000)):
+        for fs in ("filled", "unfilled"):
+            sub = [r for r in rows if pred(r) and r["fillStatus"] == fs]
+            if not sub:
+                continue
+            book_ts = lambda r: r["closedAt"] or r["resolvedAt"] or 0
+            late = [r for r in sub if (r.get("fillResolvedAt") or 0) >= book_ts(r)]
+            s, sl = stats(sub), stats(late)
+            order_out.append({"era": era, "fillStatus": fs, "n": s["n"], "cost": s["cost"],
+                              "pnl": s["pnl"], "late_n": sl["n"], "late_pnl": sl.get("pnl")})
+            print(f"  {era:8s} {fs:9s} n={s['n']:4d} cost=${s['cost']:8.0f} pnl={s['pnl']:+8.0f}"
+                  f"  | verdict-after-booking n={sl['n']:4d} pnl={(sl.get('pnl') or 0):+8.0f}")
+    art["booking_vs_verdict"] = order_out
+
+
+
 
     # Coverage by lane, and by entry vintage -- the number that decides whether a lane's
     # headline PnL is admissible at all. Read straight from PaperTrade, dedupe-free.
