@@ -10,16 +10,18 @@
     {
       "id": "profit-longshot-token-basis",
       "title": "MEASUREMENT \u2014 the long-shot shadow ladder is marked by a label-only function; its 19.3% must be re-marked on the token basis before it can be promoted",
-      "column": "Backlog",
+      "column": "Done",
       "effort": "2h (reuse the \u00a79 token join over the ladder's resolve records)",
       "dates": "Proposed 2026-11-19 by the profit review (drafts/profit-recs-20261119.md \u00a7R3). Measurement only.",
-      "note": "WHY: the ladder is the one remaining candidate for a NEW lane (155 would-admit, 135 resolved, 26 wins = 19.3%, +$1,891.93 on $20 stakes, data/longshot-shadow-summary.json 2026-11-19T13:34Z), and it is marked by didOutcomeWin(outcome, {winningLabel}) \u2014 a pure label compare (src/lib/resolution.ts:73). The 2026-11-19 review showed that basis inflates hit rate by 25pp on named rows pre-2026-11-09 and by 0pp after, so the ladder's record is only as clean as its named share. NOT MEASURED YET: the named share and the token-basis win rate.",
+      "note": "WHY: the ladder is the one remaining candidate for a NEW lane (155 would-admit, 135 resolved, 26 wins = 19.3%, +$1,891.93 on $20 stakes, data/longshot-shadow-summary.json 2026-11-19T13:34Z), and it is marked by didOutcomeWin(outcome, {winningLabel}) \u2014 a pure label compare (src/lib/resolution.ts:73). The 2026-11-19 review showed that basis inflates hit rate by 25pp on named rows pre-2026-11-09 and by 0pp after, so the ladder's record is only as clean as its named share. NOT MEASURED YET: the named share and the token-basis win rate. | DONE 2026-11-19 09:00 run (Lane B measurement; instrument scripts/longshot-token-basis.py --self-test 28/28, artifact data/longshot-token-basis.json, token cache data/longshot-token-truth.json, write-up drafts/longshot-token-basis-20261119.md -> :3013/drafts/longshot-token-basis-20261119). VERDICT: the ladder STAYS A SHADOW, and the card's premise is CORRECTED rather than confirmed. MEASURED (level = one ticket = would-admit candidate joined to its resolve row, and separately one bet = marketId|outcome earliest ticket; clock = resolve row ts UTC; population = data/longshot-shadow.jsonl, 155 would-admit, 135 settled, 64 markets, 2026-09-12..11-19; basis = clob.polymarket.com/markets/<conditionId> tokens[].outcome/winner keyless, plus /prices-history per token +/-15 min around the decision as an independent identity vote at 3c): (1) BASIS IS SOUND -- label vs token disagreements 0 of 135 tickets (0.0%), YES/NO invariant 74 rows / 0 failures, the venue tape agrees the ticket was priced on the label's token on 135 of 135. Named rows are 61/135 = 45.2% (so the card's own >=90% YES/NO refutation clause does not apply) and they disagree 0 times, so the 2026-11-19 25pp inflation was the refused-cheap cohort's frame, not this lane's. (2) THE DEFECT IS MULTIPLICITY -- 135 resolved tickets are 64 distinct bets (2.11x; one market seen 16 times). Token-basis ticket basis: 19.3% hit vs 12.9% breakeven, +6.4pp, +$1891.93. Bet basis: 17.2% vs 11.9%, +5.3pp, +$939.62. Concentration: tickets ex-top-1 +$1599.43 / ex-top-5 +$542.25 / ex-top-10 -$485.30 / median -$20; bets ex-top-1 +$647.12 / ex-top-5 -$344.89 / ex-top-10 -$977.44 / median -$20; market-clustered ROI CI tickets [-42.4,+210.1]% / bets [-20.2,+175.2]%. (3) THE CARD'S RULE: n clause NOT MET on either basis (135 tickets / 64 bets vs >=150) and the excess clause is carried by the pre-2026-11-09 era (+10.9pp on 95 tickets) while the forward era reads -4.4pp on 40 tickets (-1.4pp on the 61 named rows). Not promotable, nothing applied, nothing tagged awaiting-approval. LANE B REPAIR SHIPPED IN THE SAME PASS (the printed number's basis lied, not the decision): summarizeShadow now publishes perOpportunity {markets, wouldHavePnl, wouldHavePnlPerSignal} and ticketsPerMarket, and the marker's log line prints 'the N above are TICKETS, X/market' beside the bet basis (src/lib/shadow-longshot.ts, scripts/mark-shadow-longshot.ts, tests/shadow-longshot-basis.test.ts, 4 tests). RE-OPEN CONDITION: re-measure when distinct settled bets >= 150 (today 64; 10-12 new bets settle per week -> ~2027-01); until then the headline is a ticket count over one winning long-shot, not a track record.",
       "decision_rule": "Promote only if, on the token basis, >=150 further resolved admits clear +5pp of hit-rate excess over their actual entry price. Until then it stays a shadow. REFUTATION: if >=90% of the ladder's resolved admits are YES/NO rows, the label basis already IS the token basis there and the existing record can be read as filed.",
       "tags": [
         "profit-review",
         "measurement",
         "long-shot",
-        "basis-defect"
+        "basis-defect",
+        "measurement-done",
+        "ticket-multiplicity"
       ],
       "gate": "Measurement only; nothing applied. Instrument to extend: scripts/profit-cheap-ask.py \u00a79 (token_truth/basis_win)."
     },
@@ -4669,6 +4671,6 @@
     }
   ],
   "dates": {
-    "updated": "2026-11-18"
+    "updated": "2026-11-19"
   }
 }

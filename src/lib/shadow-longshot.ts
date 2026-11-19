@@ -15,6 +15,14 @@
  * Relaxed ladder (report): drift ≤ 0.01, spread ≤ 0.08, confidence ≥ 0.50,
  * price in [0.05, 0.20). Fixed shadow stake for comparability.
  *
+ * 2026-11-19 (card profit-longshot-token-basis): the summary's `resolved` counts
+ * TICKETS, not bets. Repeated sightings of one side in one market are logged as
+ * separate tickets (135 resolved over 64 distinct market|outcome bets, 2.11x), so a
+ * ticket-basis headline overstates independent evidence. The summary now also
+ * publishes the one-ticket-per-market arm; the token-basis re-mark found the label
+ * basis correct on 135/135 tickets (0 disagreements), so the BASIS was never the
+ * defect -- the MULTIPLICITY was. scripts/longshot-token-basis.py holds the measurement.
+ *
  * 2026-10-29 (card phil-counterfactual-ledger-primitive): rows go through the
  * shared append-only primitive and `summarizeShadow` is a VIEW of the shared read.
  * The relaxed ladder below is this lane's own HYPOTHESIS screen and stays declared
@@ -121,6 +129,22 @@ export interface ShadowSummary {
   totalPnl: number;
   avgPnlPerTrade: number | null;
   stakeUsd: number;
+  /**
+   * One-ticket-per-market basis -- the LEVEL a promote gate needs. `resolved` above
+   * counts TICKETS: the ladder logs one candidate per observed trade, so one market
+   * can repeat many times (measured 2026-11-19: 135 resolved tickets over 64 bets,
+   * 2.11x, one market seen 16 times). Both bases are published so neither number can
+   * be read as the other.
+   */
+  perOpportunity: {
+    /** Distinct settled markets (one ticket per market, earliest poll). */
+    markets: number;
+    wouldHavePnl: number;
+    /** One ticket per copy signal (marketId|outcome|wallet). */
+    wouldHavePnlPerSignal: number;
+  };
+  /** Resolved tickets per settled market; null when nothing has settled. */
+  ticketsPerMarket: number | null;
   firstCandidateAt: string | null;
   lastCandidateAt: string | null;
 }
@@ -151,6 +175,15 @@ export function summarizeShadow(rows: Array<Record<string, unknown>>): ShadowSum
     totalPnl: s.wouldHavePnl,
     avgPnlPerTrade: s.avgPnlPerTrade,
     stakeUsd: SHADOW_STAKE_USD,
+    perOpportunity: {
+      markets: s.perOpportunity.markets,
+      wouldHavePnl: s.perOpportunity.wouldHavePnlOneBetPerMarket,
+      wouldHavePnlPerSignal: s.perOpportunity.wouldHavePnlPerSignal,
+    },
+    ticketsPerMarket:
+      s.perOpportunity.markets > 0
+        ? Math.round((s.marked / s.perOpportunity.markets) * 100) / 100
+        : null,
     firstCandidateAt: s.firstCandidateAt,
     lastCandidateAt: s.lastCandidateAt,
   };

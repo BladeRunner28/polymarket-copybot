@@ -1,0 +1,115 @@
+{
+  "tickets": 135,
+  "distinct_bets": 64,
+  "tickets_per_bet": 2.11,
+  "identity": {
+    "label_token": 135
+  },
+  "label_token_1to1": 135,
+  "disagreements": 0,
+  "yesno_invariant_failures": 0,
+  "ticket_basis": {
+    "all": {
+      "n": 135,
+      "wins": 26,
+      "hit": 19.26,
+      "breakeven": 12.87,
+      "excess_pp": 6.39,
+      "pnl": 1891.93,
+      "roi": 70.07
+    },
+    "yesno": {
+      "n": 74,
+      "wins": 18,
+      "hit": 24.32,
+      "breakeven": 11.51,
+      "excess_pp": 12.81,
+      "pnl": 1604.82,
+      "roi": 108.43
+    },
+    "named": {
+      "n": 61,
+      "wins": 8,
+      "hit": 13.11,
+      "breakeven": 14.53,
+      "excess_pp": -1.41,
+      "pnl": 287.11,
+      "roi": 23.53
+    },
+    "pre_fix": {
+      "n": 95,
+      "wins": 22,
+      "hit": 23.16,
+      "breakeven": 12.22,
+      "excess_pp": 10.94,
+      "pnl": 1826.49,
+      "roi": 96.13
+    },
+    "post_fix": {
+      "n": 40,
+      "wins": 4,
+      "hit": 10.0,
+      "breakeven": 14.42,
+      "excess_pp": -4.42,
+      "pnl": 65.45,
+      "roi": 8.18
+    }
+  },
+  "concentration": {
+    "TICKET basis": {
+      "n": 135,
+      "sum": 1891.93,
+      "ex_top_1": 1599.43,
+      "ex_top_5": 542.25,
+      "ex_top_10": -485.3,
+      "median": -20.0,
+      "max": 292.5,
+      "ci_lo": -42.4,
+      "ci_hi": 210.1
+    },
+    "BET basis": {
+      "n": 64,
+      "sum": 939.62,
+      "ex_top_1": 647.12,
+      "ex_top_5": -344.89,
+      "ex_top_10": -977.44,
+      "median": -20.0,
+      "max": 292.5,
+      "ci_lo": -20.2,
+      "ci_hi": 175.2
+    }
+  },
+  "rule": {
+    "ticket basis": {
+      "n_resolved_bets": 135,
+      "n_required": 150,
+      "excess_pp": 6.39,
+      "excess_required_pp": 5.0,
+      "n_met": false,
+      "excess_met": true,
+      "promotable": false
+    },
+    "bet basis": {
+      "n_resolved_bets": 64,
+      "n_required": 150,
+      "excess_pp": 5.32,
+      "excess_required_pp": 5.0,
+      "n_met": false,
+      "excess_met": true,
+      "promotable": false
+    }
+  },
+  "overstatement": {
+    "ticket_pnl": 1891.93,
+    "bet_pnl": 939.62,
+    "ticket_excess_pp": 6.39,
+    "bet_excess_pp": 5.32
+  },
+  "generatedAt": "2026-11-19T15:20:32.361217Z",
+  "basis": {
+    "level": "one ticket (marketId|outcome candidate joined to its resolve row); bet = marketId|outcome",
+    "clock": "resolve row ts (UTC); identity tape read +/-15 min around the decision ts",
+    "population": "data/longshot-shadow.jsonl would-admit candidates, all-time",
+    "token_truth": "clob.polymarket.com/markets/<conditionId> tokens[].outcome/winner (keyless)"
+  }
+}

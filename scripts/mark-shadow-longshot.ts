@@ -514,6 +514,9 @@ async function main() {
       `${summary.winRate === null ? "—" : (summary.winRate * 100).toFixed(1) + "%"}), ` +
       `PnL $${summary.totalPnl.toFixed(2)} @ $${summary.stakeUsd}/trade (` +
       `${summary.avgPnlPerTrade === null ? "—" : "$" + summary.avgPnlPerTrade.toFixed(2)}/trade). ` +
+      `BETS (one ticket per market, earliest poll): ${summary.perOpportunity.markets} markets, ` +
+      `$${summary.perOpportunity.wouldHavePnl.toFixed(2)}` +
+      `${summary.ticketsPerMarket === null ? "" : ` -- the ${summary.resolved} above are TICKETS, ${summary.ticketsPerMarket.toFixed(2)}/market`}. ` +
       `Summary: ${SHADOW_SUMMARY_FILE}`
   );
 }
