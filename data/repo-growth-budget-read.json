@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T12:56:25.965Z",
+  "generatedAt": "2026-11-18T04:31:00.533Z",
   "card": "kalshi-tape-repo-size-policy",
   "basis": {
     "window": {
@@ -13,46 +13,46 @@
     "bytes": "on-disk object size of every blob newly added by that day diffs (loose zlib / delta-packed)"
   },
   "objectStore": {
-    "gitBytes": 2670752281,
+    "gitBytes": 2822414689,
     "packBytes": 1422500864,
-    "looseBytes": 1241051136,
-    "looseCount": 2763
+    "looseBytes": 1393815552,
+    "looseCount": 2951
   },
   "head": {
-    "trackedBytes": 2641711337,
-    "files": 2908,
+    "trackedBytes": 2728817085,
+    "files": 2962,
     "classes": {
       "code": {
-        "files": 1255,
-        "bytes": 23935764
+        "files": 1268,
+        "bytes": 24470155
       },
       "other": {
-        "files": 501,
-        "bytes": 170845815
+        "files": 509,
+        "bytes": 174511620
       },
       "tape-shadow": {
         "files": 9,
-        "bytes": 141530321
+        "bytes": 143263422
       },
       "tape-other": {
-        "files": 87,
-        "bytes": 222363136
+        "files": 90,
+        "bytes": 224084676
       },
       "cache": {
         "files": 19,
-        "bytes": 2875847
+        "bytes": 2892271
       },
       "tape-kalshi": {
-        "files": 1000,
-        "bytes": 2005741126
+        "files": 1030,
+        "bytes": 2085011510
       },
       "orderbook": {
         "files": 1,
-        "bytes": 3898988
+        "bytes": 3921300
       },
       "dataset": {
         "files": 36,
-        "bytes": 70520340
+        "bytes": 70662131
       }
     }
   },
@@ -133,7 +133,7 @@
   "verdict": {
     "level": "alarm",
     "reasons": [
-      "the 2048.0 MB ceiling is ALREADY EXCEEDED by 499.0 MB (object store 2547.0 MB, ceiling 2048.0 MB), and the median day adds another 73.3 MB on top of it",
+      "the 2048.0 MB ceiling is ALREADY EXCEEDED by 643.7 MB (object store 2691.7 MB, ceiling 2048.0 MB), and the median day adds another 73.3 MB on top of it",
       "median 73.3 MB/day is over the 40.0 MB/day budget"
     ],
     "daysAtMedian": 0,

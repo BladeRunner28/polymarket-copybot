@@ -1,46 +1,14 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-17T22:05:31-06:00",
+  "updatedAt": "2026-11-18T22:05:04-06:00",
   "counts": {
-    "pending": 2,
-    "approved": 42,
+    "pending": 0,
+    "approved": 45,
     "declined": 1,
     "excluded": 18,
     "retired": 9
   },
   "items": [
-    {
-      "id": "apr-fill-verdict-from-tape",
-      "lane": "A",
-      "status": "pending",
-      "title": "LANE A PROPOSAL \u2014 make the venue tape the fill verdict: the resolver's 'unfilled' stamp is 29.3% false-negative, the book's +$6,059 is 5 legs the market never brought to our price, and the tape book \u2026",
-      "proposal": "WHY: the book has been argued over three bases for three days because nobody adjudicated the class the resolver never stamped. The venue answers it retroactively (clob.polymarket.com/prices-history, keyless, minute fidelity). MEASURED (2,311 settled non-demo legs opened >= 2026-09-01, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk, 77.0d, 100% tape coverage): RESOLVER-filled 272 legs $3,965 -$609.3 (-15.4%); NULL&tape-touched 852 legs $13,377 +$284.2 (+2.1%); NULL&tape-NEVER-TRADED 500 legs $5,638 +$4,458.0 (+79.1%); rows stamped unfilled 526 legs $8,164 +$2,269.5. The two positive classes are exactly the two with no evidence of a fill. Phantom concentration: \u2026",
-      "evidence": "MEASURED (2,311 settled non-demo legs opened >= 2026-09-01, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk, 77.0d, 100% tape coverage): RESOLVER-filled 272 legs $3,965 -$609.3 (-15.4%);",
-      "revert": "",
-      "source": "roadmap:fill-verdict-from-tape",
-      "createdAt": "2026-11-17T08:05:31-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Proposed 2026-11-17 by the profit review (drafts/profit-recs-20261117.md; instrument scripts/profit-filled-decomp.py, read-only, DB mode=ro). NOT APPLIED \u2014 Lane A: it changes what the bot books, what the ladder credits and the netWorth that feeds the exposure cap.",
-      "_column": "Backlog"
-    },
-    {
-      "id": "apr-paid-up-entry-cohort",
-      "lane": "A",
-      "status": "pending",
-      "title": "MEASUREMENT \u2014 paying above the market at dispatch loses monotonically (\u221217.7% at 0..+2c, \u221241.6% at >=+2c); removing the class moves the tape book from \u22121.9% to +5.5%, but the pre-registered bar \u2026",
-      "proposal": "WHY: the previous read of this defect (2026-11-13) was C-200-scoped, pre-dated the 2026-11-09 price-side fix on 106 of 121 losing legs, and its proposed rule had an INVERTED sign. Measured on the tape basis (gap = price we paid minus the market print at dispatch; 1,124 reachable legs): paid at/below market 875 legs $13,383 +$730.9 (+5.5%, CI [-10.5,+24.1]); paid 0..+2c above 161 legs $2,469 -$435.9 (-17.7%); paid >=+2c above 88 legs $1,490 -$620.0 (-41.6%, CI [-65.6,-10.9]). Removing the 249 paid-up legs takes the book from -$325 (-1.9%, -$4.2/day) to +$730.9 (+5.5%, +$9.5/day) \u2014 a $1,055.9 swing on 22% of notional. THREE CHECKS: (a) not a C-200 artifact \u2014 paid-up splits 131 C-200 \u2026",
-      "evidence": "Measured on the tape basis (gap = price we paid minus the market print at dispatch;",
-      "revert": "",
-      "source": "roadmap:paid-up-entry-cohort",
-      "createdAt": "2026-11-17T08:05:31-06:00",
-      "decidedAt": null,
-      "decidedVia": null,
-      "kanbanTaskId": null,
-      "_card_dates": "Measured 2026-11-17 by the profit review (drafts/profit-recs-20261117.md; instrument scripts/profit-filled-decomp.py S8/S8b/S12, read-only). NOT APPLIED \u2014 Lane A: it changes what the bot dispatches and how much it risks. Feeds the existing card profit-fill-never-reachable P3, whose 150-leg post-fix bar is NOT met today.",
-      "_column": "Backlog"
-    },
     {
       "id": "apr-polyterm-p3-hygiene-preregistered-read",
       "lane": "B",
@@ -182,7 +150,7 @@
       "decidedAt": "2026-11-12T16:10:40.906Z",
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_2a23291d",
-      "_card_dates": "Proposed 2026-11-02 by the profit review (drafts/profit-recs-20261102.md). NOT APPROVED \u2014 Lane A: changes the PnL the ladder advances on. | Lane A read 2026-11-02 (drafts/fee-booking-net-ledger-20261102.md, instrument scripts/fee-ladder-reread.py): REFUTED ON ITS OWN 30-DAY RUNG CLAUSE (0 of 30 days) \u2014 withdraw recommended, operator decision pending; NOTHING APPLIED. | APPROVED 2026-11-12 (apr-fee-booking-net-ledger). LANE A PROPOSAL delivered the same day: drafts/fee-booking-net-ledger-20261112.md \u2014 apply-ready in 5 operator commands, NOTHING APPLIED (no db:push, no prisma write, no RuleSet, no merge). Clause 2 re-measured on today's book: still 0 of 30.",
+      "_card_dates": "Proposed 2026-11-02 by the profit review (drafts/profit-recs-20261102.md). NOT APPROVED \u2014 Lane A: changes the PnL the ladder advances on. | Lane A read 2026-11-02 (drafts/fee-booking-net-ledger-20261102.md, instrument scripts/fee-ladder-reread.py): REFUTED ON ITS OWN 30-DAY RUNG CLAUSE (0 of 30 days) \u2014 withdraw recommended, operator decision pending; NOTHING APPLIED. | APPROVED 2026-11-12 (apr-fee-booking-net-ledger). LANE A PROPOSAL delivered the same day: drafts/fee-booking-net-ledger-20261112.md \u2014 apply-ready in 5 operator commands, NOTHING APPLIED (no db:push, no prisma write, no RuleSet, no merge). Clause 2 re-measured on today's book: still 0 of 30. | 2026-11-18 RESEARCH (drafts/profit-research-20261118.md, instrument scripts/fee-schedule-delta.py): the fee is now time-bound. Polymarket reprices taker fees 2026-11-20 23:59 UTC (politics non-election 0.04->0.01, culture/econ/weather 0.05->0.01, crypto 0.07->0.01, sports 0.05 flat, elections/finance/tech +0.01) and moves maker rebates to a $200k/30d floor (27.1x our $7,392 weighted volume). Measured drag on today's book: 2.8-3.6% of dollars at risk per leg, unbooked. Still NOTHING APPLIED.",
       "_column": "Backlog"
     },
     {
@@ -707,6 +675,54 @@
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_cd30ea69",
       "_card_dates": "opened 2026-11-16 from the sentiment-edge-single-polarity proposal (drafts/sentiment-edge-single-polarity-20261116.md)",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-fill-verdict-from-tape",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 make the venue tape the fill verdict: the resolver's 'unfilled' stamp is 29.3% false-negative, the book's +$6,059 is 5 legs the market never brought to our price, and the tape book \u2026",
+      "proposal": "WHY: the book has been argued over three bases for three days because nobody adjudicated the class the resolver never stamped. The venue answers it retroactively (clob.polymarket.com/prices-history, keyless, minute fidelity). MEASURED (2,311 settled non-demo legs opened >= 2026-09-01, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk, 77.0d, 100% tape coverage): RESOLVER-filled 272 legs $3,965 -$609.3 (-15.4%); NULL&tape-touched 852 legs $13,377 +$284.2 (+2.1%); NULL&tape-NEVER-TRADED 500 legs $5,638 +$4,458.0 (+79.1%); rows stamped unfilled 526 legs $8,164 +$2,269.5. The two positive classes are exactly the two with no evidence of a fill. Phantom concentration: \u2026",
+      "evidence": "MEASURED (2,311 settled non-demo legs opened >= 2026-09-01, deduped first leg per bot|wallet|market|outcome, cost = dollars at risk, 77.0d, 100% tape coverage): RESOLVER-filled 272 legs $3,965 -$609.3 (-15.4%);",
+      "revert": "",
+      "source": "roadmap:fill-verdict-from-tape",
+      "createdAt": "2026-11-17T08:05:31-06:00",
+      "decidedAt": "2026-11-18T17:03:44.866Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_7f17593e",
+      "_card_dates": "Proposed 2026-11-17 by the profit review (drafts/profit-recs-20261117.md; instrument scripts/profit-filled-decomp.py, read-only, DB mode=ro). NOT APPLIED \u2014 Lane A: it changes what the bot books, what the ladder credits and the netWorth that feeds the exposure cap.",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-paid-up-entry-cohort",
+      "lane": "A",
+      "status": "approved",
+      "title": "MEASUREMENT \u2014 paying above the market at dispatch loses monotonically (\u221217.7% at 0..+2c, \u221241.6% at >=+2c); removing the class moves the tape book from \u22121.9% to +5.5%, but the pre-registered bar \u2026",
+      "proposal": "WHY: the previous read of this defect (2026-11-13) was C-200-scoped, pre-dated the 2026-11-09 price-side fix on 106 of 121 losing legs, and its proposed rule had an INVERTED sign. Measured on the tape basis (gap = price we paid minus the market print at dispatch; 1,124 reachable legs): paid at/below market 875 legs $13,383 +$730.9 (+5.5%, CI [-10.5,+24.1]); paid 0..+2c above 161 legs $2,469 -$435.9 (-17.7%); paid >=+2c above 88 legs $1,490 -$620.0 (-41.6%, CI [-65.6,-10.9]). Removing the 249 paid-up legs takes the book from -$325 (-1.9%, -$4.2/day) to +$730.9 (+5.5%, +$9.5/day) \u2014 a $1,055.9 swing on 22% of notional. THREE CHECKS: (a) not a C-200 artifact \u2014 paid-up splits 131 C-200 \u2026",
+      "evidence": "Measured on the tape basis (gap = price we paid minus the market print at dispatch;",
+      "revert": "",
+      "source": "roadmap:paid-up-entry-cohort",
+      "createdAt": "2026-11-17T08:05:31-06:00",
+      "decidedAt": "2026-11-18T17:03:45.348Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_45c78307",
+      "_card_dates": "Measured 2026-11-17 by the profit review (drafts/profit-recs-20261117.md; instrument scripts/profit-filled-decomp.py S8/S8b/S12, read-only). NOT APPLIED \u2014 Lane A: it changes what the bot dispatches and how much it risks. Feeds the existing card profit-fill-never-reachable P3, whose 150-leg post-fix bar is NOT met today. | 2026-11-18 join measured (scripts/paid-up-book-gap.py, read-only) \u2014 proposal drafts/paid-up-entry-cohort-20261118.md: the executable form the gate demanded is dead (1 post-fix leg), the re-cut headline is \u22124.1% \u2192 +3.1%, and the loss is quote movement, not overpaying. Still NOT APPLIED.",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-fast-adverse-stop",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 exit a fill if the marked bid is >=8% under it at +5m: -12.2% -> ~0% (+$630 per 21 days), the only positive-dollar lever in the book",
+      "proposal": "WHY: the live-regime book (v68+, 2026-10-27..11-17, 21.1d, 449 settled intents, $9,788) loses -$600.2 on the 249 legs it OWNS (-12.2% at our own bid, ex-top-1 -23.8%) and would have made +16.4% on the 200 rows it never owned, valued at their real settlement prices \u2014 so the loss is in the fills, and the question is whether it accrues fast enough to exit. MEASURED (exit price = leg-side bid at the mark = mid minus half the quoted spread; compared with each leg's own realized exit; cost = dollars at risk): stop at +5m if down >=8% -> PnL +$30.0 (+0.6%) vs hold -$600.2 (-12.2%) = +$630.1; 29 of 249 legs stopped (11.6%); ex-top-3 delta +$375.9; BANKROLL_200 +$556.6 (23 stopped) and STANDARD \u2026",
+      "evidence": "MEASURED (exit price = leg-side bid at the mark = mid minus half the quoted spread;",
+      "revert": "",
+      "source": "roadmap:profit-fast-adverse-stop",
+      "createdAt": "2026-11-18T08:05:32-06:00",
+      "decidedAt": "2026-11-18T17:03:45.799Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_aff9ef5e",
+      "_card_dates": "Proposed 2026-11-18 by the profit review (drafts/profit-recs-20261118.md; instrument scripts/profit-taker-entry.py S10). NOT APPLIED \u2014 Lane A: it changes when the bot closes a position. No rule value, no clip, no gate.",
       "_column": "Backlog"
     },
     {

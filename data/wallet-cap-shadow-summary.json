@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T04:26:17.783Z",
+  "generatedAt": "2026-11-19T04:26:05.787Z",
   "candidates": 0,
   "marked": 0,
   "awaitingResolution": 0,
@@ -20,7 +20,7 @@
   "firstCandidateAt": null,
   "lastCandidateAt": null,
   "feedState": {
-    "note": "DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3525.76 = $881.44 + frozen baseline (basis delta). Nearest wallet 0x17dd123a… holds $505.13 = 57.3% of its $881.44 ceiling ($376.31 of headroom = 3.8x the largest clip booked in the window ($100.00)).",
+    "note": "0 candidates; arm check is STALE (2026-11-11T19:03:43.225Z, > 7d) — re-run `npm run shadow:reconcile`. Last read: DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3525.76 = $881.44 + frozen baseline (basis delta). Nearest wallet 0x17dd123a… holds $505.13 = 57.3% of its $881.44 ceiling ($376.31 of headroom = 3.8x the largest clip booked in the window ($100.00)).",
     "armCheck": {
       "state": "DORMANT",
       "enabled": true,
@@ -42,6 +42,6 @@
       "capBasis": "ddBasis=realized → cap NW $6951.52 (principal $1900.00, realizedPnl $5051.52, mtm NW $6991.93)"
     },
     "armCheckAsOf": "2026-11-11T19:03:43.225Z",
-    "stale": false
+    "stale": true
   }
 }
