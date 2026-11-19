@@ -1,0 +1,747 @@
+{
+  "generated_at": "2026-11-19T02:06:19.441Z",
+  "basis": {
+    "frozen_csv": "data/decision-dataset.csv",
+    "manifest_generated_at": "2026-09-13T14:18:10.600192+00:00",
+    "level": "position"
+  },
+  "coverage": {
+    "frozen": 3516,
+    "joined": 3512,
+    "missing": [],
+    "truth_excluded": 4,
+    "rate_changed": 0,
+    "unparsed": 0
+  },
+  "manifest_level": {
+    "proxy_positions": 3512,
+    "export_gross": 1075.8899999999983,
+    "export_net_full": 178.3996625947038,
+    "want_gross": 1065.75,
+    "want_net_full": 167.4158
+  },
+  "summary": {
+    "n": 3512,
+    "moved": 47,
+    "byCause": {
+      "gross": 0,
+      "fee": 1,
+      "both": 46
+    },
+    "sum": {
+      "dGross": 10.139999999999997,
+      "dFeeEntry": -0.3279072772784565,
+      "dFeeExit": -0.5220553174249225,
+      "dNetEntry": 10.460307277278462,
+      "dNetFull": 10.981862594703303
+    },
+    "topSharePct": 3.525928413353353
+  },
+  "moved": [
+    {
+      "tradeId": "cmsahoul60048p2y1urd3l0kf",
+      "marketId": "atp-trungel-mejia-2026-08-01",
+      "question": "Canadian Open; Qualification: Marco Trungelliti vs Nicolas Mejia",
+      "cause": "both",
+      "dGross": 25.6,
+      "dFeeEntry": 0.08545000000000003,
+      "dFeeExit": 0.00014012921348307563,
+      "dNetEntry": 25.51455,
+      "dNetFull": 25.51430987078652,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrqgl83n00076zuotiao6d4o",
+      "marketId": "dota2-ty-pari-2026-07-18-game1",
+      "question": "Dota 2: Team Yandex vs PARIVISION - Game 1 Winner",
+      "cause": "both",
+      "dGross": 25.52,
+      "dFeeEntry": 0.09015000000000004,
+      "dFeeExit": 0.00013823493975896595,
+      "dNetEntry": 25.429949999999998,
+      "dNetFull": 25.42971176506024,
+      "frozenExitMarks": [
+        0.0006,
+        0.9994
+      ]
+    },
+    {
+      "tradeId": "cmsdph7no0004114nb3c1vk9b",
+      "marketId": "dota2-re-lgd-2026-08-03",
+      "question": "Dota 2: Rune Eaters vs LGD Gaming (BO3) - Games of the Future Playoffs",
+      "cause": "both",
+      "dGross": -25.04,
+      "dFeeEntry": -0.0884,
+      "dFeeExit": -0.00015577777777777769,
+      "dNetEntry": -24.9516,
+      "dNetFull": -24.95144422222222,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms0ad14o000cwpmse8rq3a2h",
+      "marketId": "atp-bublik-halys-2026-07-25",
+      "question": "Generali Open: Alexander Bublik vs Quentin Halys",
+      "cause": "both",
+      "dGross": 24.92,
+      "dFeeEntry": 0.07415000000000002,
+      "dFeeExit": 0.0001232176470587549,
+      "dNetEntry": 24.84585,
+      "dNetFull": 24.84562678235294,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrwdzztl0019v4gwwe87ziqg",
+      "marketId": "dota2-z10-lvlup1-2026-07-22-game1",
+      "question": "Dota 2: Zero Tenacity vs Level UP - Game 1 Winner",
+      "cause": "both",
+      "dGross": 24.42,
+      "dFeeEntry": 0.05500000000000005,
+      "dFeeExit": 0.00011080555555548828,
+      "dNetEntry": 24.365000000000002,
+      "dNetFull": 24.364889194444444,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrpfbxbz001liilqjk9ui3op",
+      "marketId": "mlb-cws-tor-2026-07-17",
+      "question": "Chicago White Sox vs. Toronto Blue Jays",
+      "cause": "both",
+      "dGross": -22.9,
+      "dFeeEntry": -0.056050000000000016,
+      "dFeeExit": -0.00014077027027027027,
+      "dNetEntry": -22.84395,
+      "dNetFull": -22.84380922972973,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms1yy7t30004hitzzsfkzx9s",
+      "marketId": "wta-eala-zhen-2026-07-27",
+      "question": "Mubadala Citi DC Open: Alexandra Eala vs Qinwen Zheng",
+      "cause": "both",
+      "dGross": -22.84,
+      "dFeeEntry": -0.0494,
+      "dFeeExit": -0.0001275090909090909,
+      "dNetEntry": -22.7906,
+      "dNetFull": -22.790472490909092,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms0c7yyv004ix7bx5zc2vkds",
+      "marketId": "lol-tes-tt-2026-07-25-game-handicap-away-1pt5",
+      "question": "Game Handicap: TES (-1.5) vs ThunderTalk Gaming (+1.5)",
+      "cause": "both",
+      "dGross": 21.84,
+      "dFeeEntry": 0.06580000000000003,
+      "dFeeExit": 0.00014623837209296308,
+      "dNetEntry": 21.7742,
+      "dNetFull": 21.774053761627904,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsasjscr008imsrd4u1uwvk6",
+      "marketId": "cs2-fxw7-bst-2026-08-01",
+      "question": "Counter-Strike: Fluxo W7M vs BESTIA (BO3) - StarLadder StarSeries South American Qualifier Playoffs",
+      "cause": "both",
+      "dGross": 21.24,
+      "dFeeEntry": -0.06495000000000001,
+      "dFeeExit": -0.0001687342342342927,
+      "dNetEntry": 21.304850000000002,
+      "dNetFull": 21.305018734234235,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsd4vudp000ii5ezydrxp93d",
+      "marketId": "dota2-xtreme-tr7-2026-08-03-game2",
+      "question": "Dota 2: Xtreme Gaming vs Team Resilience - Game 2 Winner",
+      "cause": "both",
+      "dGross": 21.16,
+      "dFeeEntry": 0.07644999999999999,
+      "dFeeExit": 0.00012914705882347113,
+      "dNetEntry": 21.083550000000002,
+      "dNetFull": 21.083320852941178,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsb410t4000wvaoreo7x6g0s",
+      "marketId": "val-bbl1-pcfic-2026-08-02-map-handicap-away-1pt5",
+      "question": "Map Handicap: BBL (-1.5) vs Pcific Esports (+1.5)",
+      "cause": "both",
+      "dGross": 20.759999999999998,
+      "dFeeEntry": 0.09200000000000005,
+      "dFeeExit": 0.00021922077922072208,
+      "dNetEntry": 20.668,
+      "dNetFull": 20.667780779220777,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsblc39w0018mh6qsl8a20jo",
+      "marketId": "cs2-g1-cs1-2026-08-02",
+      "question": "Counter-Strike: GenOne vs CYBERSHOKE Esports (BO3) - Thunderpick World Championship European Series #2 Playoffs",
+      "cause": "both",
+      "dGross": -20.7,
+      "dFeeEntry": -0.07304999999999998,
+      "dFeeExit": -0.00013266239316239313,
+      "dNetEntry": -20.626849999999997,
+      "dNetFull": -20.626717337606838,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrnlw14d00tlzcz6b66475s0",
+      "marketId": "fifwc-fra-eng-2026-07-18-total-3pt5",
+      "question": "France vs. England: O/U 3.5",
+      "cause": "both",
+      "dGross": -20.67,
+      "dFeeEntry": -0.058449999999999946,
+      "dFeeExit": -0.00010196902654867253,
+      "dNetEntry": -20.61145,
+      "dNetFull": -20.611348030973453,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsady5s9002yzkbcgxdkaozg",
+      "marketId": "cs2-fxw7-bst-2026-08-01",
+      "question": "Counter-Strike: Fluxo W7M vs BESTIA (BO3) - StarLadder StarSeries South American Qualifier Playoffs",
+      "cause": "both",
+      "dGross": 19.799999999999997,
+      "dFeeEntry": -0.0728,
+      "dFeeExit": -0.00010467256637173596,
+      "dNetEntry": 19.872799999999998,
+      "dNetFull": 19.87290467256637,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms7t38mq000ytrz8afw0rjdt",
+      "marketId": "lol-ns-fox1-2026-08-01",
+      "question": "LoL: Nongshim Red Force vs BNK FEARX (BO3) - LCK Round 3-4 Rise Group",
+      "cause": "both",
+      "dGross": -19.490000000000002,
+      "dFeeEntry": -0.07199999999999998,
+      "dFeeExit": -0.00016118644067796608,
+      "dNetEntry": -19.418,
+      "dNetFull": -19.41783881355932,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms4t2kqe0006hmglwekbny87",
+      "marketId": "wta-bucsa-kuderme-2026-07-28",
+      "question": "Mubadala Citi DC Open: Cristina Bucsa vs Polina Kudermetova",
+      "cause": "both",
+      "dGross": 19.03,
+      "dFeeEntry": 0.06200000000000003,
+      "dFeeExit": 0.0001759523809523286,
+      "dNetEntry": 18.968,
+      "dNetFull": 18.967824047619047,
+      "frozenExitMarks": [
+        0.0004,
+        0.9996
+      ]
+    },
+    {
+      "tradeId": "cmryt5nep000oa4lii6jjebfj",
+      "marketId": "atp-torre-gaston-2026-07-24-set-handicap-away-1pt5",
+      "question": "Set Handicap: Gaston (-1.5) vs Torres (+1.5)",
+      "cause": "both",
+      "dGross": -18.37,
+      "dFeeEntry": -0.05199999999999999,
+      "dFeeExit": -0.00014619469026548669,
+      "dNetEntry": -18.317999999999998,
+      "dNetFull": -18.31785380530973,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrz50nhh000spwl91rk0k38f",
+      "marketId": "val-tl1-fnc1-2026-07-24",
+      "question": "Valorant: Team Liquid vs Fnatic (BO3) - VCT EMEA Group Omega",
+      "cause": "both",
+      "dGross": -18.37,
+      "dFeeEntry": -0.05199999999999999,
+      "dFeeExit": -0.00014619469026548669,
+      "dNetEntry": -18.317999999999998,
+      "dNetFull": -18.31785380530973,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms9ju75q001ga6im9njt6jad",
+      "marketId": "val-t1-dfm1-2026-08-01-game1-round-total-20pt5",
+      "question": "Map 1 Total Rounds: Over/Under 20.5",
+      "cause": "both",
+      "dGross": 18.32,
+      "dFeeEntry": 0.05399999999999999,
+      "dFeeExit": 0.00043540229885057633,
+      "dNetEntry": 18.266,
+      "dNetFull": 18.26556459770115,
+      "frozenExitMarks": [
+        0.002,
+        0.998
+      ]
+    },
+    {
+      "tradeId": "cms69znmx000oy1dx7ag96mix",
+      "marketId": "atp-nakashi-mensik-2026-07-30",
+      "question": "Mubadala Citi DC Open: Brandon Nakashima vs Jakub Mensik",
+      "cause": "both",
+      "dGross": -17.759999999999998,
+      "dFeeEntry": -0.04000000000000001,
+      "dFeeExit": -0.000036545454545454576,
+      "dNetEntry": -17.72,
+      "dNetFull": -17.719963454545454,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrxani9500061rnmdemg3hcr",
+      "marketId": "lol-myth-dyn1-2026-07-23-total-games-2pt5",
+      "question": "Games Total: O/U 2.5",
+      "cause": "both",
+      "dGross": -17.560000000000002,
+      "dFeeEntry": -0.036000000000000004,
+      "dFeeExit": -0.000033211009174311976,
+      "dNetEntry": -17.524,
+      "dNetFull": -17.523966788990826,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsdn3jiq000pdgndeqcjgxbg",
+      "marketId": "lol-kt-gen-2026-08-07",
+      "question": "LoL: KT Rolster vs Gen.G (BO3) - LCK Round 3-4 Legend Group",
+      "cause": "both",
+      "dGross": 17.33,
+      "dFeeEntry": -0.06374999999999992,
+      "dFeeExit": -0.00016658849557526877,
+      "dNetEntry": 17.39365,
+      "dNetFull": 17.393816588495575,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsao68a9000wezlcpnpd07nm",
+      "marketId": "mlb-bos-lad-2026-08-01",
+      "question": "Boston Red Sox vs. Los Angeles Dodgers",
+      "cause": "both",
+      "dGross": -17.22,
+      "dFeeEntry": -0.10294999999999996,
+      "dFeeExit": -0.06488471074380166,
+      "dNetEntry": -17.11705,
+      "dNetFull": -17.052165289256198,
+      "frozenExitMarks": [
+        0.185,
+        0.815
+      ]
+    },
+    {
+      "tradeId": "cmsblc24e000imh6q3qgg2n80",
+      "marketId": "cs2-ace1-6666-2026-08-02",
+      "question": "Counter-Strike: Acend vs 6666 (BO3) - Stake Pulse Beat I Group C",
+      "cause": "both",
+      "dGross": -16.509999999999998,
+      "dFeeEntry": 0.10500000000000004,
+      "dFeeExit": 0.00023259493670886073,
+      "dNetEntry": -16.615000000000002,
+      "dNetFull": -16.61523259493671,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsaubxd6004cb9ep778yxl71",
+      "marketId": "mlb-mil-laa-2026-08-01-total-9pt5",
+      "question": "Milwaukee Brewers vs. Los Angeles Angels: O/U 9.5",
+      "cause": "both",
+      "dGross": 15.3,
+      "dFeeEntry": -0.08244999999999994,
+      "dFeeExit": -0.026306521739130437,
+      "dNetEntry": 15.382550000000002,
+      "dNetFull": 15.408756521739132,
+      "frozenExitMarks": [
+        0.085,
+        0.915
+      ]
+    },
+    {
+      "tradeId": "cmsc0aghl004co2rjenqcvb1b",
+      "marketId": "cs2-shin-bst-2026-08-02",
+      "question": "Counter-Strike: ShindeN vs BESTIA (BO3) - StarLadder StarSeries South American Qualifier Playoffs",
+      "cause": "both",
+      "dGross": 14.44,
+      "dFeeEntry": -0.08175000000000002,
+      "dFeeExit": -0.00013883613445382127,
+      "dNetEntry": 14.52175,
+      "dNetFull": 14.521888836134453,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmrnlvc5d003jzcz6s95ru3t6",
+      "marketId": "atp-burruch-carabel-2026-07-16",
+      "question": "Croatia Open: Roman Andres Burruchaga vs Camilo Ugo Carabelli",
+      "cause": "both",
+      "dGross": -14.4,
+      "dFeeEntry": 0.04400000000000004,
+      "dFeeExit": 0.00004921348314606747,
+      "dNetEntry": -14.443999999999999,
+      "dNetFull": -14.444049213483146,
+      "frozenExitMarks": [
+        0.0006,
+        0.9994
+      ]
+    },
+    {
+      "tradeId": "cmsaks8bk004sj68tlt7m1hxz",
+      "marketId": "cs2-sparta-run2-2026-08-01",
+      "question": "Counter-Strike: SPARTA vs Rune Eaters (BO3) - CCT Europe Series #6 Group Stage",
+      "cause": "both",
+      "dGross": 14.29,
+      "dFeeEntry": -0.10119999999999998,
+      "dFeeExit": -0.00024245528455288482,
+      "dNetEntry": 14.391200000000001,
+      "dNetFull": 14.391442455284551,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmscdplgj005aiqan3cl9rrzy",
+      "marketId": "cs2-nrg-spo-2026-08-02-game1",
+      "question": "Counter-Strike: NRG vs SportsBetExpert - Map 1 Winner",
+      "cause": "both",
+      "dGross": -14.27,
+      "dFeeEntry": 0.04800000000000007,
+      "dFeeExit": 0.00005431818181818185,
+      "dNetEntry": -14.318000000000001,
+      "dNetFull": -14.318054318181819,
+      "frozenExitMarks": [
+        0.0006,
+        0.9994
+      ]
+    },
+    {
+      "tradeId": "cmsa4jvj40016dl4k5ajmghxv",
+      "marketId": "cs2-sashi-justpl-2026-08-01",
+      "question": "Counter-Strike: Sashi Esport vs Just Players (BO3) - CCT Europe Series #5 Playoffs",
+      "cause": "both",
+      "dGross": -13.420000000000002,
+      "dFeeEntry": 0.10500000000000007,
+      "dFeeExit": 0.0002597200000000001,
+      "dNetEntry": -13.524999999999999,
+      "dNetFull": -13.525259720000001,
+      "frozenExitMarks": [
+        0.0004,
+        0.9996
+      ]
+    },
+    {
+      "tradeId": "cmsb0lz85000gipr850varklg",
+      "marketId": "val-g21-sen-2026-08-02",
+      "question": "Valorant: G2 Esports vs Sentinels (BO3) - VCT Americas Stage 2 Group Omega",
+      "cause": "both",
+      "dGross": -13.21,
+      "dFeeEntry": 0.08399999999999999,
+      "dFeeExit": 0.00020607594936708859,
+      "dNetEntry": -13.294,
+      "dNetFull": -13.294206075949367,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms82irwu000mti30vh7lev0d",
+      "marketId": "dota2-re-midas3-2026-07-31",
+      "question": "Dota 2: Rune Eaters vs Midas Club (BO3) - Games of the Future Group B",
+      "cause": "both",
+      "dGross": -12.99,
+      "dFeeEntry": 0.09200000000000005,
+      "dFeeExit": 0.00021922077922077921,
+      "dNetEntry": -13.082,
+      "dNetFull": -13.082219220779223,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cms97c8pz003ettzs2562o6xy",
+      "marketId": "mlb-stl-tor-2026-07-31",
+      "question": "St. Louis Cardinals vs. Toronto Blue Jays",
+      "cause": "both",
+      "dGross": 12.76,
+      "dFeeEntry": -0.11879999999999999,
+      "dFeeExit": -0.014388251968503917,
+      "dNetEntry": 12.878800000000002,
+      "dNetFull": 12.893188251968503,
+      "frozenExitMarks": [
+        0.029,
+        0.971
+      ]
+    },
+    {
+      "tradeId": "cms079tpm000ijdt8vh1yasj4",
+      "marketId": "wta-valento-snigur-2026-07-25",
+      "question": "Livesport Prague Open: Tereza Valentova vs Daria Snigur",
+      "cause": "both",
+      "dGross": 13.010000000000002,
+      "dFeeEntry": 0.07955000000000001,
+      "dFeeExit": 0.06483235294117648,
+      "dNetEntry": 12.93055,
+      "dNetFull": 12.865617647058823,
+      "frozenExitMarks": [
+        0.2751,
+        0.7249
+      ]
+    },
+    {
+      "tradeId": "cmsahoux3004np2y1cmu82lts",
+      "marketId": "atp-trungel-mejia-2026-08-01",
+      "question": "Canadian Open; Qualification: Marco Trungelliti vs Nicolas Mejia",
+      "cause": "both",
+      "dGross": 12.77,
+      "dFeeEntry": 0.04267291139240509,
+      "dFeeExit": 0.00011945333522966192,
+      "dNetEntry": 12.727327088607595,
+      "dNetFull": 12.727207635272364,
+      "frozenExitMarks": [
+        0.0004,
+        0.9996
+      ]
+    },
+    {
+      "tradeId": "cmsc2hhnz0004vgq69kk4x0nm",
+      "marketId": "mlb-stl-tor-2026-08-02",
+      "question": "St. Louis Cardinals vs. Toronto Blue Jays",
+      "cause": "both",
+      "dGross": -11.79,
+      "dFeeEntry": -0.0572,
+      "dFeeExit": -0.046198198198198204,
+      "dNetEntry": -11.732800000000001,
+      "dNetFull": -11.686601801801801,
+      "frozenExitMarks": [
+        0.275,
+        0.725
+      ]
+    },
+    {
+      "tradeId": "cmsevrgqb000olwam98ywggyo",
+      "marketId": "mlb-wsh-phi-2026-08-04-spread-home-1pt5",
+      "question": "Spread: Philadelphia Phillies (-1.5)",
+      "cause": "both",
+      "dGross": -11.010000000000002,
+      "dFeeEntry": 0.04400000000000004,
+      "dFeeExit": 0.016771910112359567,
+      "dNetEntry": -11.054000000000002,
+      "dNetFull": -11.07077191011236,
+      "frozenExitMarks": [
+        0.1049,
+        0.8951
+      ]
+    },
+    {
+      "tradeId": "cms824m6u0004r3tbhbi6h3yi",
+      "marketId": "wta-stephen-vidmano-2026-07-30",
+      "question": "The Memphis Classic: Sloane Stephens vs Darja Vidmanova",
+      "cause": "both",
+      "dGross": 10.17,
+      "dFeeEntry": -0.09454999999999997,
+      "dFeeExit": -0.04324669421487602,
+      "dNetEntry": 10.26455,
+      "dNetFull": 10.307796694214876,
+      "frozenExitMarks": [
+        0.125,
+        0.875
+      ]
+    },
+    {
+      "tradeId": "cmrxani9b00091rnme9c9gbss",
+      "marketId": "lol-myth-dyn1-2026-07-23-total-games-2pt5",
+      "question": "Games Total: O/U 2.5",
+      "cause": "both",
+      "dGross": -8.75,
+      "dFeeEntry": -0.01794556962025319,
+      "dFeeExit": -0.000017301939379863016,
+      "dNetEntry": -8.732054430379748,
+      "dNetFull": -8.732037128440368,
+      "frozenExitMarks": [
+        0.0005,
+        0.9995
+      ]
+    },
+    {
+      "tradeId": "cmsaqd18v003z7uyagkjb8vxi",
+      "marketId": "mlb-bos-lad-2026-08-01",
+      "question": "Boston Red Sox vs. Los Angeles Dodgers",
+      "cause": "both",
+      "dGross": -8.59,
+      "dFeeEntry": -0.051280000000000006,
+      "dFeeExit": -0.03240324092478294,
+      "dNetEntry": -8.53872,
+      "dNetFull": -8.506316759075217,
+      "frozenExitMarks": [
+        0.1849,
+        0.8151
+      ]
+    },
+    {
+      "tradeId": "cmscfzdl6004mv20tn6pal9oa",
+      "marketId": "wta-hruncak-bandecc-2026-08-03",
+      "question": "Warsaw: Viktoria Hruncakova vs Susan Bandecchi",
+      "cause": "both",
+      "dGross": -6.880000000000001,
+      "dFeeEntry": 0.04955000000000004,
+      "dFeeExit": -0.19759463483146067,
+      "dNetEntry": -6.929550000000001,
+      "dNetFull": -6.73185536516854,
+      "frozenExitMarks": [
+        0.4247,
+        0.5753
+      ]
+    },
+    {
+      "tradeId": "cmrsfq0g800055e8nzc58pnjs",
+      "marketId": "mlb-lad-nyy-2026-07-19",
+      "question": "Los Angeles Dodgers vs. New York Yankees",
+      "cause": "both",
+      "dGross": 6.539999999999999,
+      "dFeeEntry": -0.07499999999999993,
+      "dFeeExit": -0.05973043478260867,
+      "dNetEntry": 6.615,
+      "dNetFull": 6.674730434782608,
+      "frozenExitMarks": [
+        0.2649,
+        0.7351
+      ]
+    },
+    {
+      "tradeId": "cms079tpr000ljdt8zaddynpn",
+      "marketId": "wta-valento-snigur-2026-07-25",
+      "question": "Livesport Prague Open: Tereza Valentova vs Daria Snigur",
+      "cause": "both",
+      "dGross": 6.49,
+      "dFeeEntry": 0.039632911392405074,
+      "dFeeExit": 0.032337081161578546,
+      "dNetEntry": 6.450367088607594,
+      "dNetFull": 6.418030007446016,
+      "frozenExitMarks": [
+        0.2749,
+        0.7251
+      ]
+    },
+    {
+      "tradeId": "cms9avilz0004q9ilbqlev922",
+      "marketId": "atp-gaubas-monteir-2026-07-31",
+      "question": "San Marino: Vilius Gaubas vs Thiago Monteiro",
+      "cause": "both",
+      "dGross": -4,
+      "dFeeEntry": 0.053249999999999964,
+      "dFeeExit": 0.04677413793103452,
+      "dNetEntry": -4.05325,
+      "dNetFull": -4.100124137931035,
+      "frozenExitMarks": [
+        0.3151,
+        0.6849
+      ]
+    },
+    {
+      "tradeId": "cmrn0jhgf005bc6ksd7lly32h",
+      "marketId": "ufc-fel11-lev1-2026-07-18",
+      "question": "UFC Fight Night: Felipe Franco vs. Levi Rodrigues Jr. (Light Heavyweight; Prelims)",
+      "cause": "both",
+      "dGross": 0.66,
+      "dFeeEntry": -0.06,
+      "dFeeExit": -0.059165217391304314,
+      "dNetEntry": 0.72,
+      "dNetFull": 0.7791652173913043,
+      "frozenExitMarks": [
+        0.405,
+        0.595
+      ]
+    },
+    {
+      "tradeId": "cms8xri0j000cuuff0y3vkx4s",
+      "marketId": "mlb-nyy-chc-2026-07-31-total-10pt5",
+      "question": "New York Yankees vs. Chicago Cubs: O/U 10.5",
+      "cause": "both",
+      "dGross": 0.51,
+      "dFeeEntry": -0.10294999999999996,
+      "dFeeExit": -0.10170258264462809,
+      "dNetEntry": 0.61295,
+      "dNetFull": 0.7145525826446281,
+      "frozenExitMarks": [
+        0.3825,
+        0.6175
+      ]
+    },
+    {
+      "tradeId": "cms8cc8js000au6h1n7069hmp",
+      "marketId": "mlb-mia-nym-2026-07-30",
+      "question": "Miami Marlins vs. New York Mets",
+      "cause": "fee",
+      "dGross": 0,
+      "dFeeEntry": -0.039199999999999985,
+      "dFeeExit": -0.039199999999999985,
+      "dNetEntry": 0.039199999999999985,
+      "dNetFull": 0.07839999999999997,
+      "frozenExitMarks": [
+        0.46,
+        0.54
+      ]
+    }
+  ]
+}

@@ -27,6 +27,7 @@
     "research:source-liveness": "tsx scripts/research-source-liveness-check.ts",
     "kalshi:settled-history-probe": "python3 scripts/kalshi-settled-history-probe.py",
     "export:training": "tsx scripts/export-training-data.ts",
+    "export:drift-localise": "tsx scripts/decision-dataset-drift-localise.ts",
     "update:rules": "tsx scripts/update-rules.ts",
     "report:daily": "tsx scripts/report-daily.ts",
     "test": "vitest run",

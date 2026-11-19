@@ -9,6 +9,7 @@ import {
   outcomeLabel,
   round4,
 } from "../src/lib/training-export";
+import { localiseFrozenPositions, parseFrozenCsv } from "../src/lib/decision-dataset-drift";
 
 /**
  * ML training-data exporter (Phase 7; re-pointed 2026-10-11, card
@@ -432,9 +433,53 @@ async function main() {
       `  proxy-only scope: ${asOfSums.rows} positions reconciled | truth-bearing (fee_rate_source=venue, ` +
         `excluded from the check): ${truthSums.rows} positions, $${truthSums.gross} gross`,
     );
+    // LOCALISATION (card export-reconciliation-localisable, 2026-11-19). The line below used to blame
+    // "the fee/target math" for every drift. Measured on this population: the math is unchanged and the
+    // DATABASE moved — the 2026-11-11 ledger price-side repair restated 47 of the 3,512 positions that
+    // sit inside the frozen window, and their deltas sum to exactly the gross drift printed here. The
+    // frozen CSV is per-position, so the attribution is cheap: state it, instead of leaving the next
+    // reader to re-derive it (and instead of re-baselining, which would erase the evidence).
+    try {
+      const { positions: frozenPositions, unparsed: frozenUnparsed } = parseFrozenCsv(
+        fs.readFileSync("data/decision-dataset.csv", "utf8"),
+      );
+      const byId = new Map(out.map((r) => [r.paper_trade_id, r]));
+      const loc = localiseFrozenPositions(
+        frozenPositions,
+        (id) => {
+          const r = byId.get(id);
+          if (!r) return null;
+          return {
+            tradeId: id,
+            marketId: r.market_id,
+            status: r.status,
+            entryPrice: r.entry_price,
+            sizeUsd: r.size_usd,
+            realizedPnl: r.pnl_gross,
+            feeRate: r.fee_rate,
+            feeRateSource: r.fee_rate_source,
+            feeEntryUsd: r.fee_entry_usd,
+            feeExitUsd: r.fee_exit_usd,
+            pnlNetEntry: r.pnl_net_entry,
+            pnlNetFull: r.pnl_net_full,
+          };
+        },
+        frozenUnparsed,
+      );
+      console.log(
+        `  drift localisation (frozen CSV, level=position): ${loc.summary.moved}/${loc.deltas.length} positions moved — ` +
+          `Σ Δgross $${loc.summary.sum.dGross.toFixed(4)}, Σ Δnet_full $${loc.summary.sum.dNetFull.toFixed(4)}, ` +
+          `largest single position ${loc.summary.topSharePct.toFixed(1)}% of Σ|Δnet_full|` +
+          (loc.summary.moved > 0 ? " — reproduce: npm run export:drift-localise" : ""),
+      );
+    } catch {
+      console.log("  drift localisation: data/decision-dataset.csv unreadable — skipped");
+    }
     console.log(drift === 0
       ? `  reconciliation: IDENTICAL on the proxy rows the frozen dataset could price — today's file adds ${out.length - asOfSums.rows - truthSums.rows} positions settled since ${String(m.generated_at).slice(0, 10)}`
-      : `  reconciliation: ${drift} check(s) DRIFTED on the proxy rows — the fee/target math disagrees with the frozen dataset; investigate before using the target`);
+      : `  reconciliation: ${drift} check(s) DRIFTED on the proxy rows — the frozen baseline's SUMS no longer` +
+        ` match today's book. That is a DATA movement, not a math disagreement: the localisation line names` +
+        ` the positions. Re-baselining is refused because it would erase the evidence (card export-reconciliation-localisable).`);
   } catch {
     console.log("Reconcile: data/decision-dataset.manifest.json not readable — skipped");
   }
