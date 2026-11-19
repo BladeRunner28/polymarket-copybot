@@ -292,7 +292,7 @@ export function instrumentHeartbeatText(stages: StageHeartbeat[], now: Date): st
   if (stale.length > 0) {
     return `• ⚠️ Instrument heartbeat: ${stale.join("; ")}${rest ? ` — other stages: ${rest}` : ""}`;
   }
-  return `• Instrument heartbeat (last write per stage, isDemo=0): ${rest}`;
+  return `• Instrument heartbeat (last write per stage, isDemo=0 · monitor copy-set only): ${rest}`;
 }
 
 /**
@@ -301,16 +301,39 @@ export function instrumentHeartbeatText(stages: StageHeartbeat[], now: Date): st
  * 25 s on the live 6.7 M-row table (measured 2026-11-15), which is exactly the kind of
  * unbounded scan that turns one slow step into a killed cron run. `order by rowid desc
  * limit 1` returns the identical row in 0.00 s (same value verified against the scan).
+ *
+ * 2026-11-19 self-audit: the line states its basis as `isDemo=0`, and only the `score`
+ * read applied it. `ObservedTrade` has carried isDemo since the demo seed and
+ * `observationOnly` since v61 — rows for wallets that are NOT in the copy set, which the
+ * schema says "every reader whose output feeds ... a published number must filter
+ * observationOnly: false". `PnlSnapshot` and `OutcomeReview` have no demo flag of their
+ * own, so their unfiltered reads silently included any demo leg. Measured live
+ * (2026-11-19 12:50Z): the raw monitor read returned 12:47:12Z while the copy-set-only
+ * read returned 12:25:06Z — a 22-minute gap between the age the report printed and the
+ * age of the population the line claims. The pnl/review maxima agreed at that moment,
+ * but only by luck of write order, not by any filter. All four now read isDemo=0, the
+ * monitor additionally excludes observation-only rows, and the label says so.
+ * Cost: pnl join 0.02 s, monitor filtered scan 1.8 s (dense observation-only tail) —
+ * once a day, against a 3600 s ceiling.
  */
+const toDate = (v: unknown): Date | null => {
+  if (v === null || v === undefined) return null;
+  if (v instanceof Date) return Number.isFinite(v.getTime()) ? v : null;
+  const d = typeof v === "bigint" || typeof v === "number" ? new Date(Number(v)) : new Date(String(v));
+  return Number.isFinite(d.getTime()) ? d : null;
+};
+
 async function instrumentHeartbeat(now: Date): Promise<string | undefined> {
   const newest = <T>(fn: () => Promise<T | null>): Promise<T | "unreadable" | null> =>
     fn().catch(() => "unreadable" as const);
 
   const [monitor, score, pnl, review] = await Promise.all([
     newest(async () => {
-      const r = await prisma.$queryRaw<Array<{ createdAt: bigint | number }>>`
-        SELECT createdAt FROM ObservedTrade ORDER BY rowid DESC LIMIT 1`;
-      return r[0] ? new Date(Number(r[0].createdAt)) : null;
+      const r = await prisma.$queryRaw<Array<{ at: Date | number | null }>>`
+        SELECT createdAt AS at FROM ObservedTrade
+        WHERE isDemo = 0 AND observationOnly = 0
+        ORDER BY rowid DESC LIMIT 1`;
+      return toDate(r[0]?.at);
     }),
     newest(async () => {
       const r = await prisma.decisionJournal.findFirst({
@@ -321,12 +344,20 @@ async function instrumentHeartbeat(now: Date): Promise<string | undefined> {
       return r?.createdAt ?? null;
     }),
     newest(async () => {
-      const r = await prisma.pnlSnapshot.findFirst({ orderBy: { collectedAt: "desc" }, select: { collectedAt: true } });
-      return r?.collectedAt ?? null;
+      const r = await prisma.$queryRaw<Array<{ at: Date | number | null }>>`
+        SELECT ps.collectedAt AS at FROM PnlSnapshot ps
+        JOIN PaperTrade pt ON pt.id = ps.paperTradeId
+        WHERE pt.isDemo = 0
+        ORDER BY ps.rowid DESC LIMIT 1`;
+      return toDate(r[0]?.at);
     }),
     newest(async () => {
-      const r = await prisma.outcomeReview.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } });
-      return r?.createdAt ?? null;
+      const r = await prisma.$queryRaw<Array<{ at: Date | number | null }>>`
+        SELECT o.createdAt AS at FROM OutcomeReview o
+        JOIN DecisionJournal d ON d.id = o.decisionJournalId
+        WHERE d.isDemo = 0
+        ORDER BY o.rowid DESC LIMIT 1`;
+      return toDate(r[0]?.at);
     }),
   ]);
 
@@ -566,6 +597,50 @@ export function sizingRangeLine(botId: string, r: SizingRanges): string {
   return `• Sizing Range: ${span} (opened last ${SIZING_RANGE_DAYS}d, n=${s.n})`;
 }
 
+/** Dollar figure for a balance. Sign LEADS on a negative — the same rule `fmt` follows since 2026-11-13. */
+const usdBalance = (n: number) => `${n < 0 ? "−" : ""}$${Math.abs(n).toFixed(2)}`;
+
+/**
+ * The C-200 cash/net-worth line, PURE (2026-11-19 self-audit).
+ *
+ * The defect this closes: the line was
+ *   `$${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | … $${totalCmpCapital.toFixed(2)}`
+ * with `totalCmpCapital = cmpBankroll ? principal + pnl : 0`. Two lies came out of that:
+ *
+ *  (a) NO ROW printed "$0.00 | $0.00". `bankrolls.find(botId === "BANKROLL_200")` returning
+ *      nothing (a renamed/absent bot id — the fleet already carries a third row, ML_LANE)
+ *      rendered the compounding book as an empty account, which is the one reading a
+ *      reader must never get from a missing measurement. Every other line in this file
+ *      says UNMEASURED / UNAVAILABLE / NEVER in that case; this one said zero.
+ *  (b) NEGATIVE CASH printed "$0.00". `Math.max(0, …)` clamped an overdrawn ledger to
+ *      flat. That is precisely the state the ledger invariant above exists to catch, and
+ *      it cannot be caught downstream: the note compares cashBalance against
+ *      principal + realized − open notional, which goes negative with it, so the gap
+ *      stays small while the printed cash says $0.00. An overdraft and a closed account
+ *      read identically.
+ *
+ * Live 2026-11-19 12:50Z the healthy path renders byte-identically: `Available Cash:
+ * $6993.96 | Current Net Worth: $7023.94`. The two failure paths are pinned by tests.
+ */
+export type BankrollSnapshot = { cashBalance: number; principal: number };
+
+export function bankrollLine(b: BankrollSnapshot | undefined, totalPnl: number): string {
+  if (!b) {
+    return (
+      "• ⚠️ Available Cash: UNMEASURED — no BotBankroll row for BANKROLL_200 (this is NOT a $0.00 balance)" +
+      " | Current Net Worth: UNAVAILABLE for the same reason"
+    );
+  }
+  const net = b.principal + totalPnl;
+  if (b.cashBalance < 0) {
+    return (
+      `• ⚠️ Available Cash: ${usdBalance(b.cashBalance)} — NEGATIVE: the paper ledger is overdrawn (not a $0.00 balance)` +
+      ` | Current Net Worth: ${usdBalance(net)}`
+    );
+  }
+  return `• Available Cash: ${usdBalance(b.cashBalance)} | Current Net Worth: ${usdBalance(net)}`;
+}
+
 /** Local calendar date (YYYY-MM-DD) — the label is the day the report covers. */
 function localDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -761,7 +836,6 @@ export async function generateDailyReport(
   const tailStd = tailRows.filter((t) => t.botId === "STANDARD").reduce((a, t) => a + (t.realizedPnl ?? 0), 0);
 
   const cmpBankroll = bankrolls.find((b) => b.botId === "BANKROLL_200");
-  const totalCmpCapital = cmpBankroll ? cmpBankroll.principal + cmpTotalPnl : 0;
 
   // Bankroll ledger invariant: cash should equal principal + realized − open
   // notional. Surface drift so accounting bugs show up in the daily report.
@@ -890,7 +964,7 @@ export async function generateDailyReport(
     `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)} = settled realized ${fmt(cmpRealized)} + open MTM ${fmt(cmpOpenMtm)} (${compoundOpen.length} open legs)`,
     winRateLine(cmpPayoff, compoundOpen.length),
     sizingRangeLine("BANKROLL_200", sizingRanges),
-    `• Available Cash: $${cmpBankroll ? Math.max(0, cmpBankroll.cashBalance).toFixed(2) : "0.00"} | Current Net Worth: $${totalCmpCapital.toFixed(2)}`,
+    bankrollLine(cmpBankroll, cmpTotalPnl),
     ledgerNote,
     ...(edgeBlock.length ? [``, ...edgeBlock] : []),
     ``,

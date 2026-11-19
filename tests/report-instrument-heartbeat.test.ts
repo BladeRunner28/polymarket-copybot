@@ -36,7 +36,7 @@ describe("instrument heartbeat tells a dead stage from a quiet one", () => {
       NOW
     );
     expect(line).toBe(
-      "• Instrument heartbeat (last write per stage, isDemo=0): monitor 6m ago · score 6m ago · pnl 48m ago · review 8.9h ago"
+      "• Instrument heartbeat (last write per stage, isDemo=0 · monitor copy-set only): monitor 6m ago · score 6m ago · pnl 48m ago · review 8.9h ago"
     );
     expect(line).not.toContain("⚠️");
   });
