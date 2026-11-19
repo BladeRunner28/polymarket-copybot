@@ -744,6 +744,183 @@ def section4(all_rows, with_s, allow_fetch):
           f"ROI {s['roi']:+.1f}% CI [{100*lo:+.1f},{100*hi:+.1f}]")
 
 
+# ---------------------------------------------------------------- section 9
+# THE OUTCOME BASIS
+# Every number in sections 2-7 tests a win as `outcome_label == venue winner`.
+# That test is only meaningful if the label names the token the leg is PRICED on.
+# Section 1 identifies the token by PRICE and says so ("frame check: agrees 99x,
+# disagrees 0x") -- but that check only covers rows labelled YES/NO, i.e. exactly
+# the rows where the question is uninteresting. On a named-outcome market the two
+# questions come apart, and they come apart in the direction that manufactures a
+# win rate: the cheap side of a two-outcome named market is the side the label
+# does not name.
+#
+# This section re-tests every resolved row on the token-level basis instead:
+# the venue archive's tokens[] carries a winner flag per TOKEN, so the win test
+# becomes "did the token this leg was priced on win", with no label in the path.
+# Both bases are printed side by side, split by label class and by the date of
+# the 2026-11-09 price-side fix, because a defect that only exists before a fix
+# is a historical fact and one that survives it is a live one.
+TOKEN_TRUTH = os.path.join("data", "cheap-token-truth.json")
+PRICE_SIDE_FIX_MS = 1794237316000   # 2026-11-09 09:15:16, the fbf9073 write fix
+
+
+def _token_cache():
+    if os.path.exists(TOKEN_TRUTH):
+        try:
+            with open(TOKEN_TRUTH) as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def token_truth(cid, cache, allow_fetch):
+    """conditionId -> [[outcome, winner], ...] from the venue archive, or None."""
+    if not cid:
+        return None
+    if cid in cache:
+        rec = cache[cid]
+        return rec if isinstance(rec, list) else None
+    if not allow_fetch:
+        return None
+    url = "https://clob.polymarket.com/markets/" + cid
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "medusa-copybot/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                js = json.loads(r.read().decode())
+            toks = [[str(t.get("outcome")), bool(t.get("winner"))]
+                    for t in (js.get("tokens") or [])]
+            cache[cid] = toks
+            time.sleep(0.25)                      # keyless endpoint, stay polite
+            return toks
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                cache[cid] = {"http": 404}
+                return None
+            time.sleep(1.2 * (attempt + 1))
+        except Exception:
+            time.sleep(0.6 * (attempt + 1))
+    return None
+
+
+def basis_win(x, toks):
+    """(held_token_won, held_name, other_name) on the token-level basis."""
+    tok0 = x["f_b"][0]
+    held, other = (toks[0], toks[1]) if tok0 else (toks[1], toks[0])
+    return held[1], held[0], other[0]
+
+
+def section9(rows, allow_fetch):
+    print("\n" + "=" * 92)
+    print("9. THE OUTCOME BASIS -- label vs the token the leg is actually priced on")
+    print("=" * 92)
+    cache = _token_cache()
+    resolved = [x for x in rows if x["winner"] and x["f_b"]]
+    print(f"  resolved rows with an identity: {len(resolved)}")
+    got = []
+    for x in resolved:
+        toks = token_truth(x["r"]["cid"], cache, allow_fetch)
+        if not toks or len(toks) != 2:
+            continue
+        won, held, other = basis_win(x, toks)
+        lab = (x["r"]["oc"] or "").upper()
+        got.append({
+            "x": x, "tok_won": won, "held": held, "other": other,
+            "lab_class": "YES/NO" if lab in ("YES", "NO") else "named",
+            "lab_win": bool(x["winner"]) and lab == str(x["winner"]).upper(),
+            "post_fix": x["r"]["ts"] >= PRICE_SIDE_FIX_MS,
+        })
+    if allow_fetch:
+        with open(TOKEN_TRUTH, "w") as f:
+            json.dump(cache, f)
+        print(f"  token-truth cache written: {TOKEN_TRUTH} "
+              f"({sum(1 for v in cache.values() if isinstance(v, list))} markets with tokens)")
+    print(f"  token-level truth recovered: {len(got)} of {len(resolved)}")
+    if not got:
+        print("  no token truth -- rerun with --fetch. NOTHING BELOW IS A MEASUREMENT.")
+        return
+
+    def line(label, xs):
+        if not xs:
+            return
+        lb = sum(1 for g in xs if g["lab_win"])
+        tb = sum(1 for g in xs if g["tok_won"])
+        dis = sum(1 for g in xs if g["lab_win"] != bool(g["tok_won"]))
+        print(f"  {label:34} n={len(xs):4d}  label-basis {100.0*lb/len(xs):5.1f}%  "
+              f"token-basis {100.0*tb/len(xs):5.1f}%  disagree {dis:4d} "
+              f"({100.0*dis/len(xs):4.1f}%)")
+
+    line("ALL resolved", got)
+    line("  label YES/NO", [g for g in got if g["lab_class"] == "YES/NO"])
+    line("  label NAMED", [g for g in got if g["lab_class"] == "named"])
+    line("  pre-2026-11-09 fix", [g for g in got if not g["post_fix"]])
+    line("  post-2026-11-09 fix", [g for g in got if g["post_fix"]])
+    yn = [g for g in got if g["lab_class"] == "YES/NO"]
+    yn_dis = sum(1 for g in yn if g["lab_win"] != bool(g["tok_won"]))
+    print(f"\n  INVARIANT: on YES/NO rows the two bases must agree ({len(yn)} rows, "
+          f"{yn_dis} disagreements)")
+    if yn_dis:
+        print("  FAIL -- the token join is broken, not the labels. Do not read past this line.")
+
+    # the arm that section 5 called reachable, priced on the honest basis
+    print("\n  THE ARM SECTION 5 CALLED 'REACHABLE', BOTH BASES")
+    for arm_label, pick in (("label basis (as filed)", True), ("token basis (honest)", False)):
+        sub = []
+        for g in got:
+            x = g["x"]
+            if len(risks_of(x["r"]["risk"])) != 1:
+                continue
+            if not gate_of(x["r"]["risk"]).startswith("resolves in"):
+                continue
+            if (x["r"]["cs"] or 0) < 70:
+                continue
+            w = int(g["lab_win"]) if pick else int(bool(g["tok_won"]))
+            sub.append((w, x["f_b"][2], x["r"]["m"]))
+        if not sub:
+            continue
+        s = summary([(w, a) for w, a, _ in sub])
+        lo, hi = boot([roi_at(w, a) for w, a, _ in sub], [m for _, _, m in sub])
+        print(f"  {arm_label:26} n={s['n']:3d}  hit {s['hit']:5.1f}%  be {s['be']:5.1f}%  "
+              f"edge {s['edge']:+6.1f}pp  ROI {s['roi']:+8.1f}%  CI [{100*lo:+.0f},{100*hi:+.0f}]")
+    print("\n  A gap between those two rows is the measurement error, not an edge. The label")
+    print("  basis is what every band ROI in this repo has been computed on.")
+
+    # the whole cohort the awaiting-approval card is built on
+    print("\n  THE WHOLE REFUSED COHORT AT THE ASK, BOTH BASES (this is card")
+    print("  profit-cheap-refusal-ask-price's population)")
+    for arm_label, pick in (("label basis (as filed)", True), ("token basis (honest)", False)):
+        sub = [(int(g["lab_win"]) if pick else int(bool(g["tok_won"])),
+                g["x"]["f_b"][2], g["x"]["r"]["m"]) for g in got]
+        s = summary([(w, a) for w, a, _ in sub])
+        lo, hi = boot([roi_at(w, a) for w, a, _ in sub], [m for _, _, m in sub])
+        print(f"  {arm_label:26} n={s['n']:3d}  hit {s['hit']:5.1f}%  be {s['be']:5.1f}%  "
+              f"edge {s['edge']:+6.1f}pp  ROI {s['roi']:+8.1f}%  CI [{100*lo:+.0f},{100*hi:+.0f}]")
+    # post-fix only: the population a forward decision would actually be made on
+    for arm_label, pick in (("post-fix, label basis", True), ("post-fix, token basis", False)):
+        sub = [(int(g["lab_win"]) if pick else int(bool(g["tok_won"])),
+                g["x"]["f_b"][2], g["x"]["r"]["m"]) for g in got if g["post_fix"]]
+        if len(sub) < 5:
+            continue
+        s = summary([(w, a) for w, a, _ in sub])
+        lo, hi = boot([roi_at(w, a) for w, a, _ in sub], [m for _, _, m in sub])
+        print(f"  {arm_label:26} n={s['n']:3d}  hit {s['hit']:5.1f}%  be {s['be']:5.1f}%  "
+              f"edge {s['edge']:+6.1f}pp  ROI {s['roi']:+.1f}%  CI [{100*lo:+.0f},{100*hi:+.0f}]")
+
+    # the 2026-11-20 fee repricing, on this cohort's own prices (arithmetic, not a
+    # measurement of the book: paper fills pay no fee, so this changes no ledger row)
+    asks = [g["x"]["f_b"][2] for g in got]
+    med = statistics.median(asks)
+    print(f"\n  FEE DRAG ON THIS COHORT'S PRICES (fee/cost = rate * (1-p), p = median ask {100*med:.1f}c)")
+    for lbl, rate in (("pre-2026-11-20 (5c politics/culture/econ/weather)", 0.05),
+                      ("post-2026-11-20 (1c for the same categories)", 0.01),
+                      ("sports, unchanged", 0.05)):
+        print(f"    {lbl:52} {100*rate*(1-med):5.2f}c per dollar at risk")
+    print("  paper fills pay no fee at all (src/lib/copy-cost.ts), so this moves no")
+    print("  realised number; it only re-prices what a live fill would cost.")
+
+
 def self_test():
     print("SELF-TEST")
     ok = tot = 0
@@ -797,6 +974,17 @@ def self_test():
     # 9. gate label must name the gate, not the value
     chk("gate label collapses numbers",
         gate_of('["liquidity $120 < min $750"]') == gate_of('["liquidity $12 < min $750"]'))
+    # 10. OUTCOME BASIS: the label and the token can name different sides, and the
+    #     token basis must follow the PRICED token, never the label.
+    chk("basis: label 'Yes' on token0 -> win",
+        basis_win({"f_b": (True, 0.12, 0.13, 1.0), "r": {"oc": "Yes"}},
+                  [["Yes", True], ["No", False]])[0] is True)
+    chk("basis: named label naming the OTHER token -> loss",
+        basis_win({"f_b": (True, 0.12, 0.13, 1.0), "r": {"oc": "UNDER"}},
+                  [["Over", False], ["Under", True]])[0] is False)
+    chk("basis: flips with the priced token, not the label",
+        basis_win({"f_b": (False, 0.12, 0.88, 1.0), "r": {"oc": "UNDER"}},
+                  [["Over", False], ["Under", True]])[0] is True)
     print(f"\n  {ok}/{tot} checks passed")
     return 0 if ok == tot else 1
 
@@ -856,6 +1044,7 @@ def main():
     section5(sb, rows)
     section4(rows, with_s, allow_fetch)
     section8()
+    section9(rows, allow_fetch)
     return 0
 
 
