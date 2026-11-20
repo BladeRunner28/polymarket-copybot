@@ -127,15 +127,17 @@ Read: the $100 cohort carries the loss (74.6% of notional, −$977.89, against a
 — 22 at −0.68, 3 at −0.74, one at −0.53 (Polymarket) and one at −0.50 (Kalshi) — and the other five
 are untagged STANDARD-dota2 legs dispatched at the same size. Those tags are dispatch-time snapshots
 (`src/lib/premium.ts :: premiumRiskTag` records the λ̂ in force when the leg was sized), not today's
-value, and **25 of the 27 are more negative than today's −0.5308** (22 at −0.68, 3 at −0.74) — the
-table asserted a lower q when those legs were sized than it does now, which argues for the refit
-rather than against it; the other two are −0.53 (indistinguishable from today's −0.5308 at the tag's
-2-dp precision) and −0.50 (a slightly higher q, one Kalshi leg). A λ̂ change resizes none of them:
+value, and **25 of the 27 are more negative than today's −0.5308** (22 at −0.68, 3 at −0.74) — and
+because `q = Φ(Φ⁻¹(p) − λ̂)` (`src/lib/kelly.ts:84`), a more negative λ̂ asserts a *higher* q, so the
+table asserted **higher** q when those legs were sized than it does now: 33.6% at −0.68 and 35.8% at
+−0.74, against 28.4% today, at a 13.5c ask. That argues for the refit rather than against it; the
+other two are −0.53 (indistinguishable from today's −0.5308 at the tag's 2-dp precision) and −0.50 (a
+slightly *lower* q, 27.3%, one Kalshi leg). A λ̂ change resizes none of them:
 at $6,722 of cash the cap binds for any λ̂ ≤ −0.112, so −0.531 and −0.277 both book $100. The $20
 clips belong to the short-TTR/standard lane, which never reads λ̂; the three $50 legs are tagged
 Kelly but sit below the cap, where the value of λ̂ at today's bankroll is not what set them. (Read
 A5b prints this tag classification against the live λ̂, so the "25 of 27" is checkable, not counted
-by hand.)
+by hand, and prints the q each tag asserted at a 13.5c ask.)
 
 (An earlier revision of this section quoted 36 legs / $3,368 / −$792 for a "λ̂-sized" cohort. No
 definition yields it — it is the ≥$50 tier's 35 legs plus the single $17.99 untagged STANDARD leg
@@ -195,7 +197,8 @@ complement-frame repricing does not touch this band's sample.
   | sizes today | — | **$0 difference** |
 
 - **Why ship a change worth $0 today:** it is the input every later sizing decision multiplies, it stops
-  the table asserting 10pp of probability the population cannot support, and it makes the *next* refit
+  the table asserting 8pp of probability the population cannot support (28.4% → 20.4% at a 13.5c ask),
+  and it makes the *next* refit
   (2026-12-01) inherit a defensible convention. It also cannot re-inflate: the same run reports the
   number rather than hand-typing it.
 - **Cost** 2h · **Risk** low (one numeric field in one file; no band changes flow) ·
@@ -245,9 +248,10 @@ review should compare a $ sign to a q again.
 
 ```bash
 cd ~/polymarket-copybot
-./venv-calib/bin/python scripts/profit-lambda-owned-population.py --selftest     # 8 checks, incl. a
-                                                                                # synthetic λ recovery
-                                                                                # and the clip partition
+./venv-calib/bin/python scripts/profit-lambda-owned-population.py --selftest     # 9 checks, incl. a
+                                                                                # synthetic λ recovery,
+                                                                                # the λ̂→q direction and
+                                                                                # the clip partition
 ./venv-calib/bin/python scripts/profit-lambda-owned-population.py                # the full read
                                                                                 # (§A5b is the clip
                                                                                 #  partition §6 quotes,

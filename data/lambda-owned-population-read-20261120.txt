@@ -147,7 +147,8 @@ A5b. CLIP STRUCTURE INSIDE THE CHEAP CELL — a partition of every leg, checked 
       5x  (untagged)
   tag range: -0.74 .. -0.50  (all <= -0.50: True)
 
-  vs the live lambda -0.5308: 25 of 27 tagged legs are MORE negative (a lower q asserted at dispatch); 1 equal at the tag's 2 dp (-0.53); 1 less negative (min -0.50)
+  vs the live lambda -0.5308: 25 of 27 tagged legs are MORE negative (and a more negative lambda asserts a HIGHER q, since q = Phi(Phi^-1(p) - lambda)); 1 equal at the tag's 2 dp (-0.53); 1 less negative (min -0.50)
+  q asserted at a 13.5c ask, per tag value in the cohort:  -0.50 -> 27.3%  -0.53 -> 28.3%  -0.68 -> 33.6%  -0.74 -> 35.8%  | live -0.5308 -> 28.4%
 
 --------------------------------------------------------------------------------------------------------
 A6. IF THE LIVE TABLE WERE REPLACED BY THE OUTCOME-CONVENTION TABLE — what each band would do

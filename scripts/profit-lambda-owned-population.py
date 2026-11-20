@@ -637,9 +637,16 @@ def main():
         equal2dp = [v for v in vals if round(v, 2) == round(live_lam, 2)]
         less = [v for v in vals if v > live_lam and round(v, 2) != round(live_lam, 2)]
         print(f"  vs the live lambda {live_lam:+.4f}: {len(more)} of {len(vals)} tagged legs are MORE"
-              f" negative (a lower q asserted at dispatch); {len(equal2dp)} equal at the tag's 2 dp"
-              f" ({live_lam:+.2f}); {len(less)} less negative"
-              + (f" (min {min(less):+.2f})" if less else ""))
+              f" negative (and a more negative lambda asserts a HIGHER q, since q = Phi(Phi^-1(p) -"
+              f" lambda)); {len(equal2dp)} equal at the tag's 2 dp ({live_lam:+.2f});"
+              f" {len(less)} less negative" + (f" (min {min(less):+.2f})" if less else ""))
+        # Print the q each tag value asserted at a reference cheap ask. The lambda -> q direction is
+        # the one thing in this section a reader (and a previous revision of this script) got backwards,
+        # so it is printed rather than asserted in prose.
+        print("  q asserted at a 13.5c ask, per tag value in the cohort:"
+              + "".join(f"  {v:+.2f} -> {100 * fair_q(0.135, v):.1f}%"
+                        for v in sorted(set(vals), reverse=True))
+              + f"  | live {live_lam:+.4f} -> {100 * fair_q(0.135, live_lam):.1f}%")
 
     # ---------------------------------------------------------------- swap diff
     print("\n" + "-" * 104)
@@ -754,12 +761,19 @@ def selftest():
           and abs(sum(r[2] for r in crows) - 297.34) < 1e-6
           and abs(sum(r[3] for r in crows) - (-57.0)) < 1e-6
           and [len(r[1]) for r in crows] == [2, 1, 3])
+    # lambda -> q DIRECTION (src/lib/kelly.ts: q = Phi(Phi^-1(p) - lambda)): more negative => HIGHER q
+    qs = {v: fair_q(0.135, v) for v in (-0.74, -0.68, -0.5308, -0.50, -0.2773)}
+    g5 = (qs[-0.74] > qs[-0.68] > qs[-0.5308] > qs[-0.50] > qs[-0.2773]
+          and abs(qs[-0.5308] - 0.2836) < 5e-4 and abs(qs[-0.2773] - 0.2045) < 5e-4)
     for g, msg in ((g0, "lambda=0.00 at 13.5c -> 0 (skip: no edge)"),
                    (g1, "lambda=-0.53 at 13.5c -> $100 (saturates the cap)"),
                    (g2, "lambda=-0.20 at 13.5c -> $100 (the cap still binds)"),
                    (g3, f"cap threshold at 13.5c = {thr:+.3f} (expected ~-0.11)"),
                    (g4, "clip partition is exhaustive and additive (6 synthetic legs -> 2/1/3 rows,"
-                        " $297.34, -$57.00; a subset that misses a leg cannot pass)")):
+                        " $297.34, -$57.00; a subset that misses a leg cannot pass)"),
+                   (g5, "q rises as lambda gets MORE negative: at 13.5c "
+                        + ", ".join(f"{v:+.2f}->{100 * qs[v]:.1f}%" for v in
+                                    (-0.74, -0.68, -0.5308, -0.50, -0.2773)))):
         ok &= bool(g)
         print(f"  [{'PASS' if g else 'FAIL'}] {msg}")
     print(f"  SELFTEST {'PASS' if ok else 'FAIL'}")
