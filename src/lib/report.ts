@@ -760,6 +760,18 @@ export async function generateDailyReport(
       prisma.paperTrade.findMany({
         where: {
           status: { in: ["closed", "resolved"] },
+          // 2026-11-20 self-audit: this read — the one behind `PnL Today`, the day's
+          // resolved count and the carry-over tail — carried NO population filter, while
+          // every sibling read in this Promise.all (open positions, lifetime totals,
+          // decisions) scopes on isDemo=false. A demo row settling on a reported day
+          // would therefore enter the day's PnL and the "best of N resolved today" count
+          // with nothing on the line to say so. Live effect today: none — measured
+          // 2026-11-20, `select isDemo,count(*) from PaperTrade group by isDemo` returns
+          // one row (isDemo=0, 13,332), so this is a guard, not a correction. It is the
+          // same class the 2026-10-28 note above measured on Open Positions (487 shown /
+          // 469 real, 18 seeded demo rows), and the two reads must not disagree about
+          // which book they describe.
+          isDemo: false,
           // TR-15 (2026-09-03): include early-exit trades — realized PnL books
           // at closedAt (resolvedAt NULL), so a resolvedAt-only filter under-
           // stated "today" for both bots on exit-bleed days.
