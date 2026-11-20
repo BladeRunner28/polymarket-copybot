@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-18T22:05:04-06:00",
+  "updatedAt": "2026-11-19T22:05:05-06:00",
   "counts": {
     "pending": 0,
-    "approved": 45,
+    "approved": 46,
     "declined": 1,
     "excluded": 18,
     "retired": 9
@@ -723,6 +723,22 @@
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_aff9ef5e",
       "_card_dates": "Proposed 2026-11-18 by the profit review (drafts/profit-recs-20261118.md; instrument scripts/profit-taker-entry.py S10). NOT APPLIED \u2014 Lane A: it changes when the bot closes a position. No rule value, no clip, no gate.",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-outcome-basis-remark",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 re-mark every band/lane ROI that carries named-outcome rows on the token basis; 29 mislabelled rows moved one cohort's ROI by 119pp",
+      "proposal": "WHY: the 2026-11-19 review found the measurement layer still marks wins as `outcome_label == venue winner`. On a two-outcome named market the cheap side is the side the label does not name, so the test becomes 'did the expensive side win' and manufactures hit rate. MEASURED (209 resolved refused-cheap rows, ask basis, market-clustered CIs): ALL 23.9% -> 11.0%; label NAMED 35.8% -> 10.4% with 29 of 106 disagreeing; label YES/NO 11.7% -> 11.7% with 0 of 103 disagreeing; pre-fix 115 rows 29 disagreements, post-fix 94 rows 0. The yes/no invariant (0/103) is what proves the token join is sound rather than a second broken join. 51% of this cohort's resolved rows carry a named label, so the \u2026",
+      "evidence": "MEASURED (209 resolved refused-cheap rows, ask basis, market-clustered CIs): ALL 23.9% -> 11.0%;",
+      "revert": "Revert: git revert.",
+      "source": "roadmap:profit-outcome-basis-remark",
+      "createdAt": "2026-11-19T08:05:04-06:00",
+      "decidedAt": "2026-11-19T16:53:34.838Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_7b30b5b3",
+      "_card_dates": "Proposed 2026-11-19 by the profit review (drafts/profit-recs-20261119.md; instrument scripts/profit-cheap-ask.py \u00a79, extended and committed the same day). NOT APPLIED \u2014 Lane A: it changes which measurements rules are approved on.",
       "_column": "Backlog"
     },
     {
