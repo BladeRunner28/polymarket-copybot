@@ -8,6 +8,40 @@
   ],
   "cards": [
     {
+    "id": "profit-entry-ceiling-censored-pool",
+    "title": "MEASUREMENT — the entry-price ceiling is NOT censoring a paying population: skips at 0.85-0.90 hit 81% against an 87.9% break-even; do not lift c200MaxEntryPrice 0.80 / standardMaxEntryPrice 0.85",
+    "column": "Done",
+    "effort": "0h (decision); 45m instrument",
+    "dates": "Proposed and closed 2026-11-20 by the profit review (drafts/profit-recs-20261120.md §R2). Instrument scripts/profit-marginal-cell.py §S8 (--selftest 6/6).",
+    "note": "WHY: c200MaxEntryPrice=0.80 and standardMaxEntryPrice=0.85 mean candidates priced above the cap are never acted and never marked, so no PnL surface has ever included them; meanwhile the one acted cell whose clustered CI excludes zero on the positive side is 0.80-1.01 (B-200 +14.3% EV/int CI [+10.6,+17.4]; STANDARD +16.1% CI [+11.6,+19.5], +$10.1/day combined). That invited raising the cap. MEASURED (read-only, DB mode=ro; population = deduped skip decisions priceAtDecision>=0.85, ruleSetVersion>=68, one per conditionId|outcome; resolved against clob.polymarket.com/markets/<conditionId> tokens[].winner, keyless): 131 deduped skips, 115 resolvable (88%). ALL >=0.85: hit 95.7% vs 96.2% break-even = -0.6%/$1 (-1.0% at +1c). 0.85-0.90: 21 bets, hit 81.0% vs 87.9% = -7.6%/$1 (-8.7% at +1c). 0.90-0.95: 21 bets, 95.2% vs 92.6% = +2.8%. 0.95+: 73 bets, 100% vs 99.6% = +0.4% (the already-decided class; no fee-adjusted value). The acted 0.80-1.01 cell is 26 legs over 19 distinct bets from 3 wallets, all sports, 26 wins / 0 losses -- and 19/19 at an 0.86 average has a 5.7% chance under fair pricing. VERDICT: keep the ceiling; the favourite cell is a streak and one bucket higher the same shape loses 7.6% per dollar. CAVEAT THAT TRAVELS: DecisionJournal.reasonsJson is [] on 27,106 skips, so this is the PRICE-conditional population, not the cap-conditional one -- some of the 131 would have been refused by score/liquidity anyway. REFUTATION (pre-registered): >=100 ACTED bets in 0.85-0.90 clearing price+5pp at the ask -> the ceiling censors value and this card is wrong.",
+    "decision_rule": "Keep c200MaxEntryPrice=0.80 / standardMaxEntryPrice=0.85 while any forward 0.85-0.90 sample fails to clear price+5pp at the ask. Do not credit the 0.80-1.01 cell's +$14.3% when ranking bands: it is 19 correlated bets. REFUTATION: >=100 acted bets at 0.85-0.90 clearing price+5pp at the ask.",
+    "tags": [
+        "profit-review",
+        "measurement",
+        "entry-price",
+        "censored-pool",
+        "closed-2026-11-20"
+    ],
+    "gate": "Measurement only; nothing applied. Re-read: python3 scripts/profit-marginal-cell.py (§S8; --no-fetch to stay cache-only)."
+},
+    {
+    "id": "profit-lambda-owned-population",
+    "title": "LANE A PROPOSAL — the cheap band's λ̂ (−0.5308 → q≈28%) is fitted on wallet prints, not on the legs we own (13.0% pooled hit, 95% upper bound 24.9%); refit on the owned population before the 2026-12-01 refit re-inflates the clip",
+    "column": "Backlog",
+    "effort": "2h (restrict the refit population to tape-owned legs, print both λ̂ side by side)",
+    "dates": "Proposed 2026-11-20 by the profit review (drafts/profit-recs-20261120.md §R3; instrument scripts/profit-marginal-cell.py §S9). NOT APPLIED — Lane A: it changes how much the bot risks in a band.",
+    "note": "WHY: C-200 0.00-0.20 is 43.0% of the book's intent notional and loses $30/day (EV/int -16.5% CI [-46.4,+22.4]); the loss is a clip tier, not a price class. MEASURED (tape-owned legs, cost = dollars at risk): <$25 tier 48 legs / 29 owned / $937 intent / +39.5% EV/int / hit 17.2% at avg price 0.104; >=$50 tier 35 legs / 25 owned / $3,350 / -32.1% EV/int / hit 8.0% at avg 0.119. The >=$50 tier is 78% of the cell's notional. The sizing input for it: data/premium-calibration.json (refit 2026-11-15) λ̂=-0.5308 for 0.00-0.20, i.e. q≈28% at a 13.5c ask, funded to kellyMaxSizeUsd=$100. The OWNED population reads 13.0% pooled (7/54) with a 95% upper bound of 24.9% -- below 28%, so the q is not supported by the population the book owns; the gap IS the adverse-selection cost the fill filter imposes. The approved $25 cap (card profit-band-clip-rebalance) is worth +$17.7/day at the cell's rate and +$34.2/day at the tier's, but it leaves the mis-calibrated input in place, so the next refit can re-inflate the clip.",
+    "decision_rule": "Refit λ̂ restricted to tape-owned legs and publish both tables. If the owned-population λ̂ for 0.00-0.20 is >= -0.20 (q <= ~20%), the Kelly input over-bets the band by ~3x and the cheap-band size must be re-derived from the owned λ̂ (new calibration file; revert = restore the current one). REFUTATION: an owned cheap-band sample of >=150 legs hitting >= 28% -> the printed λ̂ stands, the gap is fill noise, and only the cap (R1) is justified.",
+    "tags": [
+        "profit-review",
+        "lane-a",
+        "sizing",
+        "calibration",
+        "awaiting-approval"
+    ],
+    "gate": "LANE A — nothing applied. No RuleSet read or write, no prisma write, DB mode=ro. Re-read: python3 scripts/profit-marginal-cell.py §S9 and python3 scripts/calibrate-premium.py (existing refit path)."
+},
+    {
       "id": "profit-longshot-token-basis",
       "title": "MEASUREMENT \u2014 the long-shot shadow ladder is marked by a label-only function; its 19.3% must be re-marked on the token basis before it can be promoted",
       "column": "Done",
