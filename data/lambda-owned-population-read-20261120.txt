@@ -1,0 +1,156 @@
+========================================================================================================
+LAMBDA ON THE OWNED POPULATION — the cheap band's sizing input, refitted on the legs we own
+========================================================================================================
+
+  live table : data/premium-calibration.json  calibratedAt=2026-11-15T12:00:46.472795+00:00
+  live knobs : RuleSet v73  kellyFraction=0.5  maxSize=$100  maxBankrollPct=0.1  minEdgePct=0.02  longshotFactor=3.5x
+  bankroll   : BotBankroll.cashBalance = $6,721.88 (Kelly `availableBankroll`)
+  truth cache: 4,239 conditionIds carrying a winning label (venue archive)
+
+  label sources: OutcomeReview.finalOutcome on 1,498  venue archive on 1,831  agreement where both speak: 1282/1282 (100.0%)
+
+  A1 raw rows (live script's exact query)      : 2,787
+  book population (B200, deduped, settled)     : 2,194   with a venue winning label: 2,047
+  regime subset (rv>=68, opened>=2026-09-01) : 335
+
+--------------------------------------------------------------------------------------------------------
+A1. REPRODUCTION — the fit exactly as `calibrate-premium.py` runs it today
+--------------------------------------------------------------------------------------------------------
+  band            n  win%(pnl>0)    lambda      live     delta
+  0.00-0.20     348        22.4%   -0.4993   -0.5308   +0.0315
+  0.20-0.40     667        31.5%   -0.0319   -0.0632   +0.0313
+  0.40-0.60    1002        47.0%   +0.0594   +0.0594   +0.0000
+  0.60-0.80     599        55.9%   +0.3502   +0.3392   +0.0110
+  0.80-1.01     171        78.4%   +0.4128   +0.4128   -0.0000
+  (delta = today's data vs the 2026-11-15 table: it moves with five days of new settlements,
+   so a few hundredths is expected. A LARGE delta means the population drifted.)
+
+--------------------------------------------------------------------------------------------------------
+A2. OWNERSHIP — the regime book adjudicated against the venue minute tape (cached)
+--------------------------------------------------------------------------------------------------------
+    filled_tape       211
+    near_miss         110
+    unfilled_tape      14
+  positively owned (filled_tape): 211 of 335 (63.0%)
+  owned AND carrying a venue winning label: 144  <- the outcome label needs a RESOLVED market; early exits do not have one
+
+--------------------------------------------------------------------------------------------------------
+A3. THE FOUR ARMS — same bands, four population/label conventions
+--------------------------------------------------------------------------------------------------------
+  band             A2 book / outcome     A3 OWNED / outcome       A4 OWNED / pnl>0
+                 n   win%     lambda    n   win%     lambda    n   win%     lambda
+  0.00-0.20    268  17.5%     -0.299   35  17.1%     -0.277   54   5.6%     +0.374
+  0.20-0.40    471  35.2%     -0.128   54  24.1%     +0.180   69  18.8%     +0.361
+  0.40-0.60    725  49.8%     -0.009    2      —          —    2      —          —
+  0.60-0.80    487  70.0%     -0.031   51  62.7%     +0.148   71  39.4%     +0.763
+  0.80-1.01     96  87.5%     +0.023    2      —          —   15      —          —
+  (n counts LABELLED legs only; the label's coverage limit is printed in A2. A cell under 20
+   labelled legs is not fitted — an unlabelled population is not a measurement.)
+
+--------------------------------------------------------------------------------------------------------
+A4. THE CHEAP BAND IN DETAIL — which label does the card's 13.0% (7/54) actually carry?
+--------------------------------------------------------------------------------------------------------
+  regime C-200 cheap legs: 83   tape-owned: 54
+  three ways to score the SAME 54 owned cheap legs:
+    booked PnL sign (realizedPnl>0)      : 3/54 = 5.6%  <- 18 legs are booked at ZERO PnL by the unfilled-stamp convention, so this understates the arm
+    reconstructed exit sign (pnl_at)     : 7/54 = 13.0%  <- this is the card's 13.0% (7/54) family
+    market outcome (venue winner)        : 6/35 = 17.1%   Wilson 95% [8.1%, 32.7%]  <- the probability target; 19 owned legs have no resolved market
+    -> the outcome-labelled owned sample is the only one that can carry a lambda_hat, and
+       it is 35 legs wide. A rate over 54 legs with a proxy label is not a
+       probability and must not be compared to q.
+
+  BOOK x market outcome (the arm with power): n=268  hit 17.5%  Wilson 95% [13.5%, 22.5%]
+    lambda = -0.2988 (se 0.0914)   market-clustered 95% CI [-0.482, -0.070]
+    at the band's median booked price 0.105: q=0.170   (live lambda -0.5308 -> q=0.235)
+    43 further book legs in this band are unlabelled (market not resolved / named
+    outcome our YES-NO label cannot name) — a coverage bias, not a random exclusion.
+
+--------------------------------------------------------------------------------------------------------
+A4b. THE OWNED ARM WITH INTERVALS — the numbers a rule would actually read
+--------------------------------------------------------------------------------------------------------
+  band        owned n    hit        wilson 95%    lambda     se     clustered 95%
+  0.00-0.20        35  17.1%          [8%,33%]    -0.277  0.254   [-0.761,+0.336]
+  0.20-0.40        54  24.1%         [15%,37%]    +0.180  0.189   [-0.181,+0.610]
+  0.40-0.60         2   — not fittable (needs >=20 labelled legs)
+  0.60-0.80        51  62.7%         [49%,75%]    +0.148  0.180   [-0.192,+0.523]
+  0.80-1.01         2   — not fittable (needs >=20 labelled legs)
+  own x outcome is the arm the card names; its width is the answer's precision.
+
+--------------------------------------------------------------------------------------------------------
+A5. WHAT EACH LAMBDA BUYS — the clip under the LIVE knobs, at several paid prices
+--------------------------------------------------------------------------------------------------------
+  owned cheap clips: median $20  min $17  max $100
+  share of owned cheap clips at the $100 cap: 43%
+  median standard-scale base size in the band: $20.00
+
+  prices probed: 0.050, 0.104, 0.135, 0.190
+
+    p=0.050   the $100 cap binds for any lambda <= -0.228
+       lambda       q       f*   kelly$  railed$  basis
+       -0.531   0.133   0.0870   100.00   100.00  LIVE table
+       -0.277   0.086   0.0376   100.00   100.00  A3 owned/outcome (0.00-0.20)
+       +0.180   0.034   0.0000     0.00     0.00  A3 owned/outcome (0.20-0.40)  [no edge (q<=p)]
+       +0.148   0.037   0.0000     0.00     0.00  A3 owned/outcome (0.60-0.80)  [no edge (q<=p)]
+       -0.299   0.089   0.0412   100.00   100.00  A2 book/outcome (cheap)
+
+    p=0.104   the $100 cap binds for any lambda <= -0.136
+       lambda       q       f*   kelly$  railed$  basis
+       -0.531   0.233   0.1442   100.00   100.00  LIVE table
+       -0.277   0.163   0.0660   100.00   100.00  A3 owned/outcome (0.00-0.20)
+       +0.180   0.075   0.0000     0.00     0.00  A3 owned/outcome (0.20-0.40)  [no edge (q<=p)]
+       +0.148   0.080   0.0000     0.00     0.00  A3 owned/outcome (0.60-0.80)  [no edge (q<=p)]
+       -0.299   0.168   0.0719   100.00   100.00  A2 book/outcome (cheap)
+
+    p=0.135   the $100 cap binds for any lambda <= -0.112
+       lambda       q       f*   kelly$  railed$  basis
+       -0.531   0.284   0.1718   100.00   100.00  LIVE table
+       -0.277   0.204   0.0803   100.00   100.00  A3 owned/outcome (0.00-0.20)
+       +0.180   0.100   0.0000     0.00     0.00  A3 owned/outcome (0.20-0.40)  [no edge (q<=p)]
+       +0.148   0.105   0.0000     0.00     0.00  A3 owned/outcome (0.60-0.80)  [no edge (q<=p)]
+       -0.299   0.211   0.0874   100.00   100.00  A2 book/outcome (cheap)
+
+    p=0.190   the $100 cap binds for any lambda <= -0.086
+       lambda       q       f*   kelly$  railed$  basis
+       -0.531   0.364   0.2151   100.00   100.00  LIVE table
+       -0.277   0.274   0.1038   100.00   100.00  A3 owned/outcome (0.00-0.20)
+       +0.180   0.145   0.0000     0.00     0.00  A3 owned/outcome (0.20-0.40)  [no edge (q<=p)]
+       +0.148   0.152   0.0000     0.00     0.00  A3 owned/outcome (0.60-0.80)  [no edge (q<=p)]
+       -0.299   0.281   0.1127   100.00   100.00  A2 book/outcome (cheap)
+
+  -> the clip is min(fraction*f*avail, pct*avail, cap). At avail = $6,722 the
+     cap binds across the whole plausible lambda range, and applyKellyBandRails then
+     FLOORS the cheap band at the legacy-equivalent size. A lambda refit alone cannot
+     shrink this clip; only a lambda that reaches 'no edge' (a skip) or a cap/knob change can.
+
+--------------------------------------------------------------------------------------------------------
+A6. IF THE LIVE TABLE WERE REPLACED BY THE OUTCOME-CONVENTION TABLE — what each band would do
+--------------------------------------------------------------------------------------------------------
+  (band median BOOKED price, live RuleSet knobs; 'live' = today's table, 'A2' = book x venue
+   outcome. This is the blast radius of the label change, not just the cheap band.)
+  band         med p  live lam      q    size   ->   A2 lam      q    size  read
+  0.00-0.20    0.105    -0.531  0.235  100.00   ->   -0.299  0.170  100.00  no change
+  0.20-0.40    0.310    -0.063  0.333   20.00   ->   -0.128  0.357   20.00  no change
+  0.40-0.60    0.491    +0.059  0.468    0.00   ->   -0.009  0.495    0.00  no change
+  0.60-0.80    0.685    +0.339  0.557    0.00   ->   -0.031  0.696  100.00  BAND RE-ADMITTED
+  0.80-1.01    0.880    +0.413  0.777    0.00   ->   +0.023  0.875    0.00  no change
+
+  -> a convention swap is NOT cheap-band-local. Its largest effect is on the bands the
+     current table's POSITIVE lambda is keeping out of the book.
+
+--------------------------------------------------------------------------------------------------------
+A7. STABILITY — is the cheap band's corrected lambda a level, or a drift?
+--------------------------------------------------------------------------------------------------------
+  split at 2026-09-25 10:53 UTC (median decision time)
+  half             n    hit    lambda     median t
+  first half     134  18.7%    -0.356  2026-09-11
+  second half    134  16.4%    -0.241  2026-10-22
+  price basis  : booked entry -> -0.299   paid price (trueP) -> -0.299  on the same n=268
+
+--------------------------------------------------------------------------------------------------------
+A8. VERDICT AGAINST THE CARD'S DECISION RULE
+--------------------------------------------------------------------------------------------------------
+  rule (card R3): owned cheap lambda >= -0.20 -> the Kelly input over-bets, re-derive size
+  measured A3 (private): lambda = -0.2773 on 35 legs -> FAILS the rule
+  but the arm with power (A2 book/outcome, n=268): lambda = -0.2988 -> FAILS the rule
+
+  READ-ONLY: nothing written. The proposed table lives in the draft, not in data/.
