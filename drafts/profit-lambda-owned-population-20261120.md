@@ -15,9 +15,9 @@ the lever it names.
 
 1. **The live λ̂ is NOT fitted on wallet prints.** `scripts/calibrate-premium.py :: finished_trades()`
    reads `PaperTrade WHERE botId='BANKROLL_200' AND status IN ('resolved','closed')` — our own booked
-   rows — and labels each `1 if realizedPnl > 0`. Reproduced here to 4 decimals in three of five bands
-   (§3). The real defects are different: **the population is every settled leg (owned or not), the
-   price is the detection mid, and the label is a PnL sign, not the market outcome.**
+   rows — and labels each `1 if realizedPnl > 0`. Reproduced here within 0.032 in every band and
+   exactly in two of five (§3). The real defects are different: **the population is every settled leg
+   (owned or not), the price is the detection mid, and the label is a PnL sign, not the market outcome.**
 2. **Refitted on the outcome label, the cheap band's λ̂ is −0.28 / −0.30, not −0.53.** At a 13.5c ask
    that is q ≈ **20.4%**, not the 28.4% the table asserts. On the arm the card names — tape-owned legs,
    venue winner as the label — λ̂ = **−0.277 on 35 legs** (hit 17.1%, Wilson [8%,33%]); on the whole
@@ -25,10 +25,12 @@ the lever it names.
    **[−0.482, −0.070]** — which **excludes the live −0.531**).
 3. **…and it moves no money.** At `availableBankroll = $6,721.88` the $100 per-position cap binds for
    *any* λ̂ ≤ −0.112 at 13.5c. Every candidate value (−0.53, −0.30, −0.28) still books **$100**. The
-   cheap band's clip takes exactly two values in the book — $20 (the short-TTR lane, which never reads
-   λ̂) and $100 (the Kelly path, all at the cap) — and λ̂ only decides *which*, never anything between.
-   **The clip is a `kellyMaxSizeUsd`/cap problem; λ̂ is a correctness problem.** Fixing λ̂ is worth $0
-   today and becomes worth money only when cash falls below ~$2.5k or the cap moves.
+   book's cheap clips are *not* two-valued — 32 × $100, 42 × $20, 3 × $50 and six odd clips
+   ($17.37 ×4, $17.99, $9.97) (§6) — but under today's knobs every cheap-band Kelly clip saturates the
+   $100 cap, and the $20 clips belong to the short-TTR/standard lane, which never reads λ̂. λ̂ decides
+   whether a leg is Kelly-admitted at all, never how much it is for: **the clip is a
+   `kellyMaxSizeUsd`/cap problem; λ̂ is a correctness problem.** Fixing λ̂ is worth $0 today and becomes
+   worth money only when cash falls below ~$2,490 or the cap moves.
 
 ## 2. What the card claimed vs what I measured
 
@@ -37,7 +39,7 @@ the lever it names.
 | λ̂ = −0.5308 is "fitted on wallet prints" | fitted on `PaperTrade` C-200 settled rows, `realizedPnl>0`; reproduced −0.4993 (n=348) today | **wrong mechanism** — it is our book, not the wallets |
 | owned population hit 13.0% (7/54), 95% UB 24.9%, "below 28%" | 13.0% reproduces **only** as a *reconstructed-exit $ sign* (7/54). Venue-outcome label: **17.1% (6/35)**, Wilson [8.1%, 32.7%] — brackets 28% | **label-basis error** — a PnL sign was compared to a probability |
 | owned λ̂ ≥ −0.20 ⇒ "over-betting by ~3x", re-derive size | owned λ̂ = **−0.277** (rule misses by 0.077); at 13.5c that is q 20.4% vs 28.4% (**1.39x** on q, **2.14x** on the Kelly fraction), not 3x | rule not met; overstatement real but smaller |
-| the refit is what stops the $100 clip | the cap binds at any λ̂ ≤ −0.112; 36 of 83 cheap legs (79% of the cell's notional) are λ̂-sized and every one sits at $100 | **the refit cannot shrink the clip** |
+| the refit is what stops the $100 clip | the cap binds at any λ̂ ≤ −0.112; the $100-cap cohort is 32 of 83 cheap legs, 74.6% of the cell's notional, and it is sized by the cap, not by λ̂ (§6) | **the refit cannot shrink the clip** |
 
 ## 3. The live table reproduced (so the premise is checked, not assumed)
 
@@ -101,20 +103,39 @@ Live knobs (RuleSet v73): `kellyFraction 0.5`, `kellyMaxBankrollPct 0.10`, `kell
 | 0.190 | −0.086 | 0.364 | 0.274 | $100 | $100 |
 
 `size = min(fraction·f*·avail, 10%·avail, $100)`. At $6,722 of available bankroll the last term wins
-everywhere. **The λ̂ only starts mattering when cash falls below ~$1,164 (live) / ~$2,493 (owned
-value)** — at which point the corrected table books ~40% less than the live one instead of both being
-clipped at the ceiling.
+everywhere. **The λ̂ only starts mattering when cash falls below ~$1,164 (live) / ~$2,490 (owned
+value, 13.5c ask)** — at which point the corrected table books ~40% less than the live one instead of
+both being clipped at the ceiling.
 
-And the clip structure inside the cell (regime, 83 legs, $4,287 intent, −$616.86 booked):
+And the clip structure inside the cell — a partition of all 83 regime legs, with every row checked to
+sum to the cell's own $4,287.44 / −$616.86 (read A5b; this is the partition, not a filtered view):
 
-| path | reads λ̂? | legs | intent $ | share | booked PnL |
-|---|---|---:|---:|---:|---:|
-| Kelly (`premium λ̂=…` tag, or $100 signature) | **yes** | 36 | 3,368 | **79%** | **−$792** |
-| short-TTR lane (fixed base × lane factor, $20) | no (by design) | 47 | 919 | 21% | +$175 |
+| cohort | legs | intent $ | share | booked PnL | legs w/ `premium λ̂` tag |
+|---|---:|---:|---:|---:|---:|
+| at the $100 per-position cap | 32 | 3,200.00 | **74.6%** | **−$977.89** | 27 |
+| $50 (sized under an earlier cap vintage) | 3 | 150.00 | 3.5% | +$203.63 | 3 |
+| under $50 — $20 ×42, $17.37 ×4, $17.99, $9.97 | 48 | 937.44 | 21.9% | +$157.40 | 0 |
+| **total** | **83** | **4,287.44** | 100% | **−$616.86** | 30 |
 
-So the λ̂-sized 79% is where the loss is — but every one of those legs is at the $100 ceiling, which
-λ̂ does not set. **The clip cap is the dollar lever (already approved as the $25 cap on this band);
-the λ̂ refit is an input correction that only binds once the cap or the bankroll moves.**
+The top two rows are the card's ≥$50 tier: **35 legs, $3,350.00, 78.1% of the cell's notional,
+−$774.26 booked**. The card prices that tier at −32.1% EV/int = −$1,075; that gap is a basis
+difference, not a different leg set — the card's EV/int is measured on `trueP` dollars at risk, the
+column above is booked `realizedPnl`.
+
+Read: the $100 cohort carries the loss (74.6% of notional, −$977.89, against a cell total of
+−$616.86) and every leg in it sits exactly at the cap (27 of the 32 carry the `premium λ̂=−0.68`
+journal tag; five untagged STANDARD-dota2 legs were dispatched at the same size). A λ̂ change resizes
+none of them: at $6,722 of cash the cap binds for any λ̂ ≤ −0.112, so −0.531 and −0.277 both book
+$100. The $20 clips belong to the short-TTR/standard lane, which never reads λ̂; the three $50 legs are
+tagged Kelly but sit below the cap, where the value of λ̂ at today's bankroll is not what set them.
+
+(An earlier revision of this section quoted 36 legs / $3,368 / −$792 for a "λ̂-sized" cohort. No
+definition yields it — it is the ≥$50 tier's 35 legs plus the single $17.99 untagged STANDARD leg
+($3,367.99, −$792.25), and it reconciles with neither the cell's total nor the card's tier. Superseded
+by the partition above.)
+
+**The clip cap is the dollar lever (already approved as the $25 cap on this band); the λ̂ refit is an
+input correction that only binds once the cap or the bankroll moves.**
 
 ## 7. Blast radius if the whole table were swapped (why the proposal is scoped to one band)
 
@@ -161,7 +182,7 @@ complement-frame repricing does not touch this band's sample.
   | q at a 13.5c ask | 0.284 | **0.204** |
   | q at the band's median paid price 0.105 | 0.235 | **0.163** |
   | clip at 13.5c, cash $6,722 | $100 | **$100 (unchanged)** |
-  | cash level below which size starts to fall | $1,164 | **$2,493** |
+  | cash level below which size starts to fall | $1,164 | **$2,490** |
   | journal tag `premium λ̂=…` | "info edge (underpriced)" | **unchanged** (threshold ≤ −0.15) |
   | sizes today | — | **$0 difference** |
 
@@ -175,15 +196,17 @@ complement-frame repricing does not touch this band's sample.
 - **Decision rule (pre-registered):** keep the new value while a trailing owned-cheap sample of ≥35
   labelled legs reads a hit rate whose Wilson interval contains the implied q, and while the
   outcome-basis λ̂ stays ≤ −0.15 (i.e. the band keeps an edge). Re-read at each biweekly refit.
-- **Refutation:** (a) ≥100 owned cheap legs resolve and hit **≥28%** → the live −0.53 was right (the
-  13% reading was small-sample weather); (b) the corrected λ̂ reaches ≥ −0.11 while the $25 cap is in
-  force, in which case the cheap band's legs stop being Kelly-admitted at all and the cap becomes moot;
-  (c) any measured forward cohort where the −0.277 table sizes *worse* than −0.531 at equal cash.
+- **Refutation:** (a) ≥150 owned cheap legs resolve and hit **≥28%** — the card's pre-registered bar,
+  restored here (an earlier revision of this draft had lowered it to 100 without saying why) → the
+  live −0.53 was right and the 13% reading was small-sample weather; (b) the corrected λ̂ reaches
+  ≥ −0.11 while the $25 cap is in force, in which case the cheap band's legs stop being Kelly-admitted
+  at all and the cap becomes moot; (c) any measured forward cohort where the −0.277 table sizes
+  *worse* than −0.531 at equal cash.
 
 ### P2 — treat the clip as the dollar lever, not λ̂ (already approved as the $25 cap)
-Nothing in this study changes the earlier card: 79% of the cell's notional is λ̂-sized and every one of
-those legs sits at $100 because of `kellyMaxSizeUsd`, not because of λ̂. With P1 shipped and cash at
-$6.7k the cheap band still books $100. **The cap is what moves the money.**
+Nothing in this study changes the earlier card: 74.6% of the cell's notional sits at the $100 cap and
+carries −$977.89 there because `kellyMaxSizeUsd` puts it there, not because of λ̂. With P1 shipped and
+cash at $6.7k the cheap band still books $100. **The cap is what moves the money.**
 
 ### P3 — 0.20–0.40 (reported, needs its own card)
 Owned × outcome reads **+0.180 (n=54, hit 24.1% vs 0.31 median price)** → the band is overpriced and
@@ -201,10 +224,11 @@ label basis for 0.40–0.60 and 0.80–1.01 (2 owned labelled legs each — no m
 
 The owned sample is label-limited, not leg-limited: 54 owned cheap legs, only **35 resolved enough to
 carry a venue winner**. The owned cheap legs themselves are a **22-day window (2026-10-28 → 2026-11-19,
-~17 owned/week)**, so the arm adds roughly **10 labelled legs a week**; the pre-registered bar that ends
-the argument — **100 labelled owned cheap legs** — is about **7 weeks out**, at which point the interval
-on λ̂ narrows to roughly ±0.12 and either confirms −0.28 or restores −0.53. (The 115-day median
-time-to-resolution is what makes this the binding constraint, not leg flow.)
+~17 owned/week)**, so the arm adds roughly **11 labelled legs a week**; the card's pre-registered bar
+that ends the argument — **150 labelled owned cheap legs** (≥150 hitting ≥28% refutes P1) — is about
+**11 weeks out, early February 2027**. At that width the λ̂ standard error falls from 0.254 to
+0.254·√(35/150) ≈ **0.12**, and the reading either confirms −0.28 or restores −0.53. (The 115-day
+median time-to-resolution is what makes this the binding constraint, not leg flow.)
 
 Until then every reading of this band should state which of the four conventions it used — and no
 review should compare a $ sign to a q again.
@@ -213,9 +237,12 @@ review should compare a $ sign to a q again.
 
 ```bash
 cd ~/polymarket-copybot
-./venv-calib/bin/python scripts/profit-lambda-owned-population.py --selftest     # 7 checks, incl. a
+./venv-calib/bin/python scripts/profit-lambda-owned-population.py --selftest     # 8 checks, incl. a
                                                                                 # synthetic λ recovery
+                                                                                # and the clip partition
 ./venv-calib/bin/python scripts/profit-lambda-owned-population.py                # the full read
+                                                                                # (§A5b is the clip
+                                                                                #  partition §6 quotes)
 python3 scripts/profit-marginal-cell.py                                          # S9 tier table (card's
                                                                                 # 48/29/$937 and 35/25/$3,350)
 ```

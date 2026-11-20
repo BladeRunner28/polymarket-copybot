@@ -123,6 +123,23 @@ A5. WHAT EACH LAMBDA BUYS — the clip under the LIVE knobs, at several paid pri
      shrink this clip; only a lambda that reaches 'no edge' (a skip) or a cap/knob change can.
 
 --------------------------------------------------------------------------------------------------------
+A5b. CLIP STRUCTURE INSIDE THE CHEAP CELL — a partition of every leg, checked additive
+--------------------------------------------------------------------------------------------------------
+  cell: 83 regime cheap legs  intent $4,287.44  booked $-616.86
+  clip multiset: 1x$9.97, 4x$17.37, 1x$17.99, 42x$20.00, 3x$50.00, 32x$100.00
+
+  cohort                              legs    intent $   share  booked PnL   legs w/ premium tag
+  at the $100 per-position cap          32    3,200.00   74.6%     -977.89                    27
+  $50 (earlier cap vintage)              3      150.00    3.5%     +203.63                     3
+  under $50                             48      937.44   21.9%     +157.40                     0
+  TOTAL                                 83    4,287.44  100.0%     -616.86
+  partition check: OK  (83 legs, $4,287.44, $-616.86 vs the cell's own totals)
+
+  tier size >= $50 (the card's >=$50 tier): 35 legs  $3,350.00 (78.1% of the cell)  booked $-774.26
+  -> any cohort quoted from this cell must be a row above, or a sum of rows. A count/intent
+     pair that matches the cell's total by coincidence but not a row is not a cohort.
+
+--------------------------------------------------------------------------------------------------------
 A6. IF THE LIVE TABLE WERE REPLACED BY THE OUTCOME-CONVENTION TABLE — what each band would do
 --------------------------------------------------------------------------------------------------------
   (band median BOOKED price, live RuleSet knobs; 'live' = today's table, 'A2' = book x venue

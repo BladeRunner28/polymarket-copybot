@@ -37,6 +37,10 @@ ARMS PRINTED
 plus the card's OWN statistic (owned cheap legs profitable-or-not, 7/54) so a reader can see which
 label that number carries, and what each lambda_hat would buy under the LIVE RuleSet knobs.
 
+A5b prints the CLIP STRUCTURE of the cheap cell as a PARTITION of its 83 legs — every cohort quoted
+from this cell must be a row of that table (or a sum of rows), and the table is checked to be
+exhaustive and additive. A cohort that only matches a total by coincidence is not a cohort.
+
 BASIS
 -----
 population : PaperTrade isDemo=0, deduped to the first leg per bot|wallet|market|outcome (except A1,
@@ -283,6 +287,27 @@ def band_of(p):
         if p is not None and lo <= p < hi:
             return nm
     return None
+
+
+# Clip cohorts inside the cheap cell. Bounds are [lo, hi) on simulatedPositionSize.
+CLIP_COHORTS = (("at the $100 per-position cap", 100.0, float("inf")),
+                ("$50 (earlier cap vintage)", 50.0, 100.0),
+                ("under $50", 0.0, 50.0))
+
+
+def clip_rows(legs):
+    """Partition a leg set by clip size: (label, legs, intent $, booked PnL $).
+
+    A partition, not a filter: the rows must cover every leg exactly once, which is what
+    makes a quoted cohort checkable against the cell's own totals.
+    """
+    out = []
+    for name, lo, hi in CLIP_COHORTS:
+        sub = [l for l in legs if lo <= l["simulatedPositionSize"] + 1e-9 < hi]
+        out.append((name, sub,
+                    sum(l["simulatedPositionSize"] for l in sub),
+                    sum((l.get("realizedPnl") or 0.0) for l in sub)))
+    return out
 
 
 def cap_threshold_lambda(knobs, p, base_size=None):
@@ -548,6 +573,44 @@ def main():
     print("     FLOORS the cheap band at the legacy-equivalent size. A lambda refit alone cannot")
     print("     shrink this clip; only a lambda that reaches 'no edge' (a skip) or a cap/knob change can.")
 
+    # ---------------------------------------------------------------- clip structure
+    print("\n" + "-" * 104)
+    print("A5b. CLIP STRUCTURE INSIDE THE CHEAP CELL — a partition of every leg, checked additive")
+    print("-" * 104)
+    t_ntl = sum(l["simulatedPositionSize"] for l in cheap_regime)
+    t_pnl = sum((l["realizedPnl"] or 0.0) for l in cheap_regime)
+    print(f"  cell: {len(cheap_regime)} regime cheap legs  intent ${t_ntl:,.2f}  booked ${t_pnl:+,.2f}")
+    mult = {}
+    for l in cheap_regime:
+        s = round(l["simulatedPositionSize"], 2)
+        mult[s] = mult.get(s, 0) + 1
+    print("  clip multiset: " + ", ".join(f"{n}x${s:,.2f}" for s, n in sorted(mult.items())))
+    c = _con()
+    risks = {r["id"]: (r["risksJson"] or "") for r in c.execute(
+        "SELECT p.id AS id, d.risksJson AS risksJson FROM PaperTrade p"
+        " JOIN DecisionJournal d ON d.id = p.decisionJournalId")}
+    c.close()
+    rows = clip_rows(cheap_regime)
+    print(f"\n  {'cohort':<34}{'legs':>6}{'intent $':>12}{'share':>8}{'booked PnL':>12}"
+          f"{'legs w/ premium tag':>22}")
+    for name, sub, ntl, pnl in rows:
+        tagged = sum(1 for l in sub if "premium" in risks.get(l["id"], ""))
+        print(f"  {name:<34}{len(sub):>6}{ntl:>12,.2f}{100 * ntl / t_ntl:>7.1f}%"
+              f"{pnl:>+12,.2f}{tagged:>22}")
+    pn, pt, pp = (sum(len(r[1]) for r in rows), sum(r[2] for r in rows), sum(r[3] for r in rows))
+    ok = pn == len(cheap_regime) and abs(pt - t_ntl) < 1e-6 and abs(pp - t_pnl) < 1e-6
+    print(f"  {'TOTAL':<34}{pn:>6}{pt:>12,.2f}{100 * pt / t_ntl:>7.1f}%{pp:>+12,.2f}")
+    print(f"  partition check: {'OK' if ok else 'FAIL'}"
+          f"  ({pn} legs, ${pt:,.2f}, ${pp:+,.2f} vs the cell's own totals)")
+
+    cap_row, fif_row = rows[0], rows[1]
+    tier_ntl = cap_row[2] + fif_row[2]
+    tier_pnl = cap_row[3] + fif_row[3]
+    print(f"\n  tier size >= $50 (the card's >=$50 tier): {len(cap_row[1]) + len(fif_row[1])} legs"
+          f"  ${tier_ntl:,.2f} ({100 * tier_ntl / t_ntl:.1f}% of the cell)  booked ${tier_pnl:+,.2f}")
+    print("  -> any cohort quoted from this cell must be a row above, or a sum of rows. A count/intent")
+    print("     pair that matches the cell's total by coincidence but not a row is not a cohort.")
+
     # ---------------------------------------------------------------- swap diff
     print("\n" + "-" * 104)
     print("A6. IF THE LIVE TABLE WERE REPLACED BY THE OUTCOME-CONVENTION TABLE — what each band would do")
@@ -654,10 +717,19 @@ def selftest():
     g2 = r2["size"] == 100.0  # the cap binds even at the rule's own threshold
     thr = cap_threshold_lambda(knobs, 0.135)
     g3 = -0.12 < thr < -0.10
+    syn = [{"simulatedPositionSize": s, "realizedPnl": p} for s, p in
+           ((100.0, -100.0), (100.0, 40.0), (50.0, 5.0), (20.0, -3.0), (17.37, 2.0), (9.97, -1.0))]
+    crows = clip_rows(syn)
+    g4 = (sum(len(r[1]) for r in crows) == len(syn)
+          and abs(sum(r[2] for r in crows) - 297.34) < 1e-6
+          and abs(sum(r[3] for r in crows) - (-57.0)) < 1e-6
+          and [len(r[1]) for r in crows] == [2, 1, 3])
     for g, msg in ((g0, "lambda=0.00 at 13.5c -> 0 (skip: no edge)"),
                    (g1, "lambda=-0.53 at 13.5c -> $100 (saturates the cap)"),
                    (g2, "lambda=-0.20 at 13.5c -> $100 (the cap still binds)"),
-                   (g3, f"cap threshold at 13.5c = {thr:+.3f} (expected ~-0.11)")):
+                   (g3, f"cap threshold at 13.5c = {thr:+.3f} (expected ~-0.11)"),
+                   (g4, "clip partition is exhaustive and additive (6 synthetic legs -> 2/1/3 rows,"
+                        " $297.34, -$57.00; a subset that misses a leg cannot pass)")):
         ok &= bool(g)
         print(f"  [{'PASS' if g else 'FAIL'}] {msg}")
     print(f"  SELFTEST {'PASS' if ok else 'FAIL'}")
