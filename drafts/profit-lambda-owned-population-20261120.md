@@ -127,12 +127,15 @@ Read: the $100 cohort carries the loss (74.6% of notional, −$977.89, against a
 — 22 at −0.68, 3 at −0.74, one at −0.53 (Polymarket) and one at −0.50 (Kalshi) — and the other five
 are untagged STANDARD-dota2 legs dispatched at the same size. Those tags are dispatch-time snapshots
 (`src/lib/premium.ts :: premiumRiskTag` records the λ̂ in force when the leg was sized), not today's
-value, and **every one of them is ≤ −0.50**, i.e. more negative than the live −0.531: the table
-asserted an even lower q when those legs were sized than it does now, which argues for the refit
-rather than against it. A λ̂ change resizes none of them: at $6,722 of cash the cap binds for any
-λ̂ ≤ −0.112, so −0.531 and −0.277 both book $100. The $20 clips belong to the short-TTR/standard
-lane, which never reads λ̂; the three $50 legs are
-tagged Kelly but sit below the cap, where the value of λ̂ at today's bankroll is not what set them.
+value, and **25 of the 27 are more negative than today's −0.5308** (22 at −0.68, 3 at −0.74) — the
+table asserted a lower q when those legs were sized than it does now, which argues for the refit
+rather than against it; the other two are −0.53 (indistinguishable from today's −0.5308 at the tag's
+2-dp precision) and −0.50 (a slightly higher q, one Kalshi leg). A λ̂ change resizes none of them:
+at $6,722 of cash the cap binds for any λ̂ ≤ −0.112, so −0.531 and −0.277 both book $100. The $20
+clips belong to the short-TTR/standard lane, which never reads λ̂; the three $50 legs are tagged
+Kelly but sit below the cap, where the value of λ̂ at today's bankroll is not what set them. (Read
+A5b prints this tag classification against the live λ̂, so the "25 of 27" is checkable, not counted
+by hand.)
 
 (An earlier revision of this section quoted 36 legs / $3,368 / −$792 for a "λ̂-sized" cohort. No
 definition yields it — it is the ≥$50 tier's 35 legs plus the single $17.99 untagged STANDARD leg

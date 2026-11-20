@@ -614,19 +614,32 @@ def main():
     # the cap cohort's journal tags: a DISTRIBUTION, not one value (the tag records the lambda in
     # force at dispatch, so it is a snapshot; quote every value it takes inside the cohort)
     tags = {}
+    tag_vals = []  # one entry per TAGGED LEG (the dict above counts legs per distinct tag string)
     for l in cap_row[1]:
         r = risks.get(l["id"], "")
         found = [t for t in json.loads(r) if "premium" in str(t)] if r else []
         tags["(untagged)"] = tags.get("(untagged)", 0) + (0 if found else 1)
         for t in found:
             tags[str(t)] = tags.get(str(t), 0) + 1
+            tag_vals.append(float(str(t).split("=")[1].split()[0]))
     print(f"\n  journal tags inside the $100-cap cohort ({len(cap_row[1])} legs) — a distribution:")
     for t, n in sorted(tags.items(), key=lambda kv: (kv[0] == "(untagged)", kv[0])):
         print(f"    {n:>3}x  {t}")
-    vals = [float(t.split("=")[1].split()[0]) for t in tags if t != "(untagged)"]
+    vals = tag_vals
     if vals:
         print(f"  tag range: {min(vals):+.2f} .. {max(vals):+.2f}"
-              f"  (all <= -0.50: {all(v <= -0.50 for v in vals)})")
+              f"  (all <= -0.50: {all(v <= -0.50 for v in vals)})\n")
+        # The tags are 2-dp snapshots, so "all of them are more negative than the live lambda" is
+        # NOT true of -0.53 (today's -0.5308 at the tag's precision) or -0.50. Classify explicitly
+        # instead of asserting a cohort-wide direction from the range.
+        live_lam = live[0.0]
+        more = [v for v in vals if v < live_lam]
+        equal2dp = [v for v in vals if round(v, 2) == round(live_lam, 2)]
+        less = [v for v in vals if v > live_lam and round(v, 2) != round(live_lam, 2)]
+        print(f"  vs the live lambda {live_lam:+.4f}: {len(more)} of {len(vals)} tagged legs are MORE"
+              f" negative (a lower q asserted at dispatch); {len(equal2dp)} equal at the tag's 2 dp"
+              f" ({live_lam:+.2f}); {len(less)} less negative"
+              + (f" (min {min(less):+.2f})" if less else ""))
 
     # ---------------------------------------------------------------- swap diff
     print("\n" + "-" * 104)
