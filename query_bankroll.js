@@ -263,24 +263,54 @@ async function main() {
     logNote = ` · immutable log write FAILED (${e.message})`;
   }
 
-  // As-recorded vs now: the FIRST row logged for a day is what it read when the log
-  // first saw it (T+0); the live value is the re-read. Days with no row predate the
-  // log and are reported as such rather than silently omitted.
-  const firstByDay = new Map();
+  // As-recorded vs now. The baseline is the day's LAST logged read while that day was
+  // still current (18:00 in practice) — the figure the day was last reported at — and
+  // the live value is the re-read.
+  //
+  // 2026-11-20 self-audit: this used the FIRST row logged for a day and printed its
+  // wall-clock time with no date. That row is written by the ~07:00 run ON the day
+  // itself (measured in the live log: the first row for 11-17 is 11-17 06:51, for 11-18
+  // it is 11-18 07:01, for 11-19 it is 11-19 07:00), so the "as-recorded" baseline was a
+  // SEVEN-HOUR PARTIAL of the day, and `MOVED` fired on every day that settled anything
+  // after 7am — i.e. every day, always. Live before → after on the same log:
+  //   11-18  `as-recorded 07:01 -109.97 (2)`  → `last-read 11-18 18:00 -129.97 (4)`
+  //   11-17  `as-recorded 06:51   +0.00 (0)`  → `last-read 11-17 18:00 -217.86 (15)`
+  // A bare HH:MM also could not say WHICH of those two reads a reader was looking at.
+  // Days with no logged row say so rather than being omitted; a day whose only reads
+  // came from a later day is labelled `first-seen`, not `last-read`.
+  const localDayOfTs = (iso) =>
+    new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); // YYYY-MM-DD
+  const localStampOf = (iso) => {
+    const hm = new Date(iso).toLocaleTimeString('en-US', {
+      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Chicago',
+    });
+    return `${localDayOfTs(iso).slice(5)} ${hm}`;
+  };
+  const signed = (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
+  const rowsByDay = new Map();
   for (const r of priorLog) {
-    if (!firstByDay.has(r.day)) firstByDay.set(r.day, r);
+    const l = rowsByDay.get(r.day) ?? [];
+    l.push(r);
+    rowsByDay.set(r.day, l);
   }
   const asRecorded = series
     .slice(0, 4)
     .map((s) => {
-      const f = firstByDay.get(s.day);
-      if (!f)
-        return `${s.day.slice(5)} baseline (first row recorded now: ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs}))`;
-      const when = new Date(f.ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Chicago' });
-      const moved = Math.abs(f.localPnl - s.pnl) >= 0.01 || f.localLegs !== s.legs;
+      const rows = (rowsByDay.get(s.day) ?? [])
+        .slice()
+        .sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
+      if (rows.length === 0)
+        return `${s.day.slice(5)} baseline (first row recorded now: ${signed(s.pnl)} (${s.legs}))`;
+      const inDay = rows.filter((r) => localDayOfTs(r.ts) === s.day);
+      const base = inDay.length ? inDay[inDay.length - 1] : rows[0];
+      const how = inDay.length ? 'last-read' : 'first-seen';
+      const dPnl = s.pnl - base.localPnl;
+      const dLegs = s.legs - base.localLegs;
+      const moved = Math.abs(dPnl) >= 0.01 || dLegs !== 0;
       return (
-        `${s.day.slice(5)} as-recorded ${when} ${f.localPnl >= 0 ? '+' : ''}${f.localPnl.toFixed(2)} (${f.localLegs}) → ` +
-        `now ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs})${moved ? ' ⇐ MOVED' : ''}`
+        `${s.day.slice(5)} ${how} ${localStampOf(base.ts)} ${signed(base.localPnl)} (${base.localLegs}) → ` +
+        `now ${signed(s.pnl)} (${s.legs})` +
+        (moved ? ` ⇐ MOVED (${signed(dPnl)} / ${dLegs >= 0 ? '+' : ''}${dLegs} legs)` : '')
       );
     })
     .join(' · ');
@@ -313,12 +343,19 @@ async function main() {
   //    cash balance that already held the day's closes).
   // Reproduction line: the buckets above are LOCAL calendar days (the same
   // boundary the ladder, the Overview cards and the EOD report use), so the SQL
-  // must carry this machine's UTC offset — a bare `date(ts/1000,'unixepoch')`
-  // reproduces the UTC-day numbers instead and silently disagrees (the documented
-  // "day boundaries differ by query" trap).
-  const offSec = -new Date().getTimezoneOffset() * 60; // CDT = -18000
-  const offsetExpr = offSec === 0 ? '' : `${offSec > 0 ? '+' : '-'}${Math.abs(offSec)}`;
-  const reproduce = `sqlite3 prisma/dev.db "SELECT date((COALESCE(closedAt,resolvedAt)/1000)${offsetExpr},'unixepoch') d, COUNT(*) legs, ROUND(SUM(realizedPnl),2) pnl FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0 AND status IN ('closed','resolved') GROUP BY d ORDER BY d DESC LIMIT 14;"`;
+  // must convert using this machine's own zone rules for EACH row.
+  //
+  // 2026-11-20 self-audit: this inserted ONE fixed offset, computed from the current
+  // moment (`-new Date().getTimezoneOffset()`, -21600 in CST), into every historical
+  // row. A fixed offset is only right for the half of the year sharing the current DST
+  // state: on CDT days it shifted the day boundary by an hour, so every row closing
+  // 23:00-24:00 local landed a day early — and on the printed window that is enough to
+  // make the "Reproduce" command disagree with the line above it. Measured, fixed offset
+  // vs 'localtime' on this book: 2026-10-22 +$8.21 (6 legs) vs +$101.24 (6 legs);
+  // 2026-09-18 +$973.04 (10) vs +$993.70 (12) — the second is the very figure the log
+  // comment cites as the correct local read. 2026-09-17: $53.73 vs $12.36.
+  // 'localtime' applies the zone's DST rules per row, which is what the JS bucketing does.
+  const reproduce = `sqlite3 prisma/dev.db "SELECT date(COALESCE(closedAt,resolvedAt)/1000,'unixepoch','localtime') d, COUNT(*) legs, ROUND(SUM(realizedPnl),2) pnl FROM PaperTrade WHERE botId='BANKROLL_200' AND isDemo=0 AND status IN ('closed','resolved') GROUP BY d ORDER BY d DESC LIMIT 14;"`;
 
   console.log(`**C-200 Daily Progress Report**
 - **Goal:** $${goal.target}/day (${goal.name}${goalIdx > 0 ? " — CLEARED" : ""})${goalIdx !== goalIdxT0 ? ` — ⚠️ T+0 window would read ${PHASES[goalIdxT0].name}` : ""}
@@ -332,7 +369,7 @@ async function main() {
 - **Phase gate (T+0 rolling ${GATE_WINDOW_DAYS}d sum, provisional):** $${gateSumT0.toFixed(2)} vs $${gateNeed.toLocaleString()} (${gatePctT0.toFixed(1)}%) — today's bucket still settles
 - **Daily realized (T+0 read, most recent first):** ${series.map((s) => `${s.day.slice(5)} ${s.pnl >= 0 ? '+' : ''}${s.pnl.toFixed(2)} (${s.legs})`).join(" · ")}${drift.length ? `
 - **Settlement drift (recorded T+0 → settled now):** ${drift.join(" · ")}` : ''}${historyNote}
-- **As-recorded vs now (declared basis = local, immutable \`data/phase-streak-log.jsonl\`):** ${asRecorded}${logNote}
+- **As-recorded vs now (baseline = that day's LAST read while it was still that day — not a post-settlement read; immutable \`data/phase-streak-log.jsonl\`):** ${asRecorded}${logNote}
 - **Cross-check, UTC basis (what an ad-hoc \`date(ts/1000,'unixepoch')\` returns — do NOT compare it to the line above):** ${utcCrossCheck}
 - **Current Bankroll (cash):** $${bankroll.cashBalance.toFixed(2)}
 - **Reproduce:** \`${reproduce}\``);
