@@ -611,6 +611,23 @@ def main():
     print("  -> any cohort quoted from this cell must be a row above, or a sum of rows. A count/intent")
     print("     pair that matches the cell's total by coincidence but not a row is not a cohort.")
 
+    # the cap cohort's journal tags: a DISTRIBUTION, not one value (the tag records the lambda in
+    # force at dispatch, so it is a snapshot; quote every value it takes inside the cohort)
+    tags = {}
+    for l in cap_row[1]:
+        r = risks.get(l["id"], "")
+        found = [t for t in json.loads(r) if "premium" in str(t)] if r else []
+        tags["(untagged)"] = tags.get("(untagged)", 0) + (0 if found else 1)
+        for t in found:
+            tags[str(t)] = tags.get(str(t), 0) + 1
+    print(f"\n  journal tags inside the $100-cap cohort ({len(cap_row[1])} legs) — a distribution:")
+    for t, n in sorted(tags.items(), key=lambda kv: (kv[0] == "(untagged)", kv[0])):
+        print(f"    {n:>3}x  {t}")
+    vals = [float(t.split("=")[1].split()[0]) for t in tags if t != "(untagged)"]
+    if vals:
+        print(f"  tag range: {min(vals):+.2f} .. {max(vals):+.2f}"
+              f"  (all <= -0.50: {all(v <= -0.50 for v in vals)})")
+
     # ---------------------------------------------------------------- swap diff
     print("\n" + "-" * 104)
     print("A6. IF THE LIVE TABLE WERE REPLACED BY THE OUTCOME-CONVENTION TABLE — what each band would do")

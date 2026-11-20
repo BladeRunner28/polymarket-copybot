@@ -123,10 +123,15 @@ difference, not a different leg set — the card's EV/int is measured on `trueP`
 column above is booked `realizedPnl`.
 
 Read: the $100 cohort carries the loss (74.6% of notional, −$977.89, against a cell total of
-−$616.86) and every leg in it sits exactly at the cap (27 of the 32 carry the `premium λ̂=−0.68`
-journal tag; five untagged STANDARD-dota2 legs were dispatched at the same size). A λ̂ change resizes
-none of them: at $6,722 of cash the cap binds for any λ̂ ≤ −0.112, so −0.531 and −0.277 both book
-$100. The $20 clips belong to the short-TTR/standard lane, which never reads λ̂; the three $50 legs are
+−$616.86) and every leg in it sits exactly at the cap. 27 of the 32 carry a `premium λ̂=…` journal tag
+— 22 at −0.68, 3 at −0.74, one at −0.53 (Polymarket) and one at −0.50 (Kalshi) — and the other five
+are untagged STANDARD-dota2 legs dispatched at the same size. Those tags are dispatch-time snapshots
+(`src/lib/premium.ts :: premiumRiskTag` records the λ̂ in force when the leg was sized), not today's
+value, and **every one of them is ≤ −0.50**, i.e. more negative than the live −0.531: the table
+asserted an even lower q when those legs were sized than it does now, which argues for the refit
+rather than against it. A λ̂ change resizes none of them: at $6,722 of cash the cap binds for any
+λ̂ ≤ −0.112, so −0.531 and −0.277 both book $100. The $20 clips belong to the short-TTR/standard
+lane, which never reads λ̂; the three $50 legs are
 tagged Kelly but sit below the cap, where the value of λ̂ at today's bankroll is not what set them.
 
 (An earlier revision of this section quoted 36 legs / $3,368 / −$792 for a "λ̂-sized" cohort. No
@@ -242,7 +247,9 @@ cd ~/polymarket-copybot
                                                                                 # and the clip partition
 ./venv-calib/bin/python scripts/profit-lambda-owned-population.py                # the full read
                                                                                 # (§A5b is the clip
-                                                                                #  partition §6 quotes)
+                                                                                #  partition §6 quotes,
+                                                                                #  plus that cohort's
+                                                                                #  journal-tag spread)
 python3 scripts/profit-marginal-cell.py                                          # S9 tier table (card's
                                                                                 # 48/29/$937 and 35/25/$3,350)
 ```
