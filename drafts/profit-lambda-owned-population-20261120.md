@@ -150,13 +150,13 @@ complement-frame repricing does not touch this band's sample.
   --scope-band 0.00-0.20` (owned = `filled_tape` from the fill-tape cache, label = venue winner through
   the `didOutcomeWin` guard, price = booked/paid entry). Run once; it writes
   `data/premium-calibration.json` with **one field changed**:
-  `bands[0].lambda: −0.5308 → −0.2770` (and `n: 336 → 35`). The other four bands keep their live values
+  `bands[0].lambda: −0.5308 → −0.2773` (and `n: 336 → 35`). The other four bands keep their live values
   and are reported, not replaced.
 - **Before / after, every figure that moves:**
 
   | figure | before | after |
   |---|---|---|
-  | `bands[0].lambda` | −0.5308 | **−0.2770** |
+  | `bands[0].lambda` | −0.5308 | **−0.2773** |
   | `bands[0].n` | 336 (book × PnL) | **35** (owned × outcome) |
   | q at a 13.5c ask | 0.284 | **0.204** |
   | q at the band's median paid price 0.105 | 0.235 | **0.163** |
