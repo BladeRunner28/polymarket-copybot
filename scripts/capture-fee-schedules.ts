@@ -27,18 +27,40 @@
  *   FEE_CAPTURE_PAGE    Gamma page size for the universe pull (default 100)
  */
 
-import { appendFileSync } from "fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { categoryFeeRate, takerFeePerShare, PRICE_EDGE_SPEC_V1 } from "../src/lib/scoring/price-edge";
 import { gammaProvenance, clobWsProvenance } from "../src/lib/provenance";
 import { VENUE, asNumber, parseJsonArray, venueGetJson } from "../src/lib/venue-read";
 import { log, logError } from "../src/lib/redact";
+import {
+  capturedSlugs,
+  feePerShare,
+  parseExportSlugs,
+  pickMarketRow,
+  resolveVenueFee,
+  slugMarketUrl,
+} from "../src/lib/fee-capture";
 
 const OUT = join(__dirname, "..", "data", "fee-schedules.jsonl");
 const MAX = Number(process.env.FEE_CAPTURE_MAX ?? 25);
 const PAGE = Number(process.env.FEE_CAPTURE_PAGE ?? 100);
 const WITH_CLOB = String(process.env.FEE_CAPTURE_CLOB ?? "0") === "1";
 const DRY = process.argv.includes("--dry");
+// 2026-11-20 (card paper-ledger-fee-fidelity, "coverage is the binding gap"):
+// capture the venue's schedule for every market the TRAINING EXPORT contains,
+// not just the top-volume active ones. Default OFF so the existing hourly-ish
+// call keeps its old behaviour and cost.
+const FROM_EXPORT = process.argv.includes("--from-export");
+const EXPORT_CSV = process.env.FEE_EXPORT_CSV ?? "training_data.csv";
+const EXPORT_MAX = Number(process.env.FEE_EXPORT_MAX ?? Number.MAX_SAFE_INTEGER);
+const CONCURRENCY = Math.max(1, Number(process.env.FEE_CAPTURE_CONCURRENCY ?? 4));
+// Two artifacts, deliberately separate: `...-last-run.json` is what THIS invocation did
+// (attempted / captured / the slugs the venue 404'd), `...-report.json` is the state of the
+// POPULATION derived from the append-only file. One filename for both meant a 2-row resume run
+// looked like the whole population's coverage.
+const EXPORT_RUN_REPORT = join(__dirname, "..", "data", "fee-capture-export-last-run.json");
+const EXPORT_REPORT = join(__dirname, "..", "data", "fee-capture-export-report.json");
 
 type GammaMarket = Record<string, unknown>;
 
@@ -89,32 +111,15 @@ type FeeRow = {
 };
 
 /** Resolve the venue's rate + exponent from a Gamma market row. */
+/**
+ * Gamma -> venue rate. The parsing lives in src/lib/fee-capture.ts so the export
+ * walk and the active-market sample cannot drift apart, and so the "`?slug=`
+ * hides closed markets" trap is documented one place (it silently returned `[]`
+ * for every settled market when this was first written).
+ */
 function resolveFromGamma(m: GammaMarket): { rate?: number; exponent?: number; rebate?: number; source: FeeRow["feeSource"] } {
-  if (m.feesEnabled === false) return { rate: 0, exponent: 1, source: "market" };
-  const sched = typeof m.feeSchedule === "string" ? safeParse(m.feeSchedule) : m.feeSchedule;
-  if (sched && typeof sched === "object" && !Array.isArray(sched)) {
-    const s = sched as Record<string, unknown>;
-    const rate = asNumber(s.rate);
-    if (rate !== undefined) {
-      return {
-        rate,
-        exponent: asNumber(s.exponent) ?? 1,
-        rebate: asNumber(s.rebateRate),
-        source: "market",
-      };
-    }
-  }
-  const base = asNumber(m.takerBaseFee);
-  if (base !== undefined) return { rate: base / 10000, exponent: 1, source: "market" };
-  return { source: "none" };
-}
-
-function safeParse(s: string): unknown {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return undefined;
-  }
+  const f = resolveVenueFee(m);
+  return { rate: f.rate, exponent: f.exponent, rebate: f.rebate, source: f.source };
 }
 
 /**
@@ -144,7 +149,130 @@ async function clobFeeRate(tokenId: string): Promise<unknown> {
   return venueGetJson(`${VENUE.clob}/fee-rate?token_id=${encodeURIComponent(tokenId)}`);
 }
 
-async function main(): Promise<number> {
+function countBy(xs: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const x of xs) out[x] = (out[x] ?? 0) + 1;
+  return Object.fromEntries(Object.entries(out).sort((a, b) => b[1] - a[1]));
+}
+
+/** One capture row, from a Gamma market row. Shared by both modes. */
+async function buildFeeRow(m: GammaMarket, opts: { fetchClob: boolean }): Promise<FeeRow | undefined> {
+  const slug = String(m.slug ?? "");
+  if (!slug) return undefined;
+  const resolved = resolveFromGamma(m);
+  const tokens = parseJsonArray(m.clobTokenIds) ?? [];
+  const tokenId = tokens.length > 0 ? String(tokens[0]) : undefined;
+
+  let clobRaw: unknown;
+  let rate = resolved.rate;
+  let exponent = resolved.exponent ?? 1;
+  let source = resolved.source;
+  if (opts.fetchClob && tokenId) {
+    try {
+      clobRaw = await clobFeeRate(tokenId);
+      const base = asNumber((clobRaw as Record<string, unknown>)?.base_fee);
+      if (base !== undefined && rate === undefined) {
+        rate = base / 10000;
+        exponent = 1;
+        source = "clob";
+      }
+    } catch (e) {
+      logError(`[fees] clob fee-rate failed for ${slug}: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  // A CLOSED market's outcomePrices are the SETTLEMENT MARK (0/1), not a trade
+  // price: pricing a fee-per-share off it would manufacture a 0.25 x rate delta
+  // that no trade ever paid. Closed rows therefore carry RATES only, and the
+  // money impact is measured where the real entry prices are — the export re-run.
+  const closed = m.closed === true;
+  const prices = parseJsonArray(m.outcomePrices);
+  const yes = !closed && prices && prices.length > 0 ? asNumber(prices[0]) : undefined;
+  const no = !closed && prices && prices.length > 1 ? asNumber(prices[1]) : undefined;
+  const mid = yes !== undefined && no !== undefined ? (yes + no) / 2 : yes;
+
+  const proxyRate = categoryFeeRate(`${slug} ${String(m.question ?? "")}`);
+  const proxyFee = mid !== undefined ? takerFeePerShare(mid, proxyRate) : undefined;
+  const resolvedFee = mid !== undefined && rate !== undefined ? takerFeePerShare(mid, rate) : undefined;
+
+  return {
+    capturedAt: new Date().toISOString(),
+    slug,
+    conditionId: m.conditionId ? String(m.conditionId) : undefined,
+    tokenId,
+    feesEnabled: m.feesEnabled === undefined ? undefined : Boolean(m.feesEnabled),
+    feeType: m.feeType === undefined || m.feeType === null ? undefined : String(m.feeType),
+    feeSchedule: m.feeSchedule,
+    takerBaseFee: asNumber(m.takerBaseFee),
+    makerBaseFee: asNumber(m.makerBaseFee),
+    resolvedRate: rate,
+    resolvedExponent: exponent,
+    rebateRate: resolved.rebate,
+    feeSource: source,
+    clobFeeRate: clobRaw,
+    proxyRate,
+    proxySource: `price-edge.ts defaultFeeRate ${PRICE_EDGE_SPEC_V1.defaultFeeRate} + keyword table`,
+    midPrice: mid,
+    proxyFeePerShare: proxyFee,
+    resolvedFeePerShare: resolvedFee,
+    feePerShareDelta: proxyFee !== undefined && resolvedFee !== undefined ? proxyFee - resolvedFee : undefined,
+    volume24hr: asNumber(m.volume24hr),
+    liquidity: asNumber(m.liquidityNum) ?? asNumber(m.liquidity),
+    provenance: rate !== undefined && source === "clob" ? clobWsProvenance(["fee_rate_endpoint"]) : gammaProvenance(["fee_schedule"]),
+    qualityFlags: [
+      "capture_only",
+      "not_read_by_live_path",
+      ...(closed ? ["closed_market_price_is_settlement_mark"] : []),
+      ...(rate === undefined ? ["no_venue_fee_schedule_found"] : []),
+      ...(mid === undefined && !closed ? ["mid_price_unavailable"] : []),
+      ...feeQualityFlags(m, rate, source),
+    ].filter(Boolean),
+  };
+}
+
+function summarize(rows: FeeRow[]): void {
+  const withResolved = rows.filter((r) => r.resolvedRate !== undefined);
+  const differing = withResolved.filter((r) => Math.abs(r.resolvedRate! - r.proxyRate) > 1e-9);
+  log(
+    `[fees] rows=${rows.length} venue_schedule_found=${withResolved.length} ` +
+      `rate_differs_from_proxy=${differing.length}` +
+      (withResolved.length ? ` (${((100 * differing.length) / withResolved.length).toFixed(1)}% of found)` : "")
+  );
+  const byRate = new Map<string, number>();
+  for (const r of withResolved) byRate.set(String(r.resolvedRate), (byRate.get(String(r.resolvedRate)) ?? 0) + 1);
+  if (byRate.size > 0) {
+    log(
+      `[fees] venue rates: ` +
+        [...byRate.entries()].sort((a, b) => b[1] - a[1]).map(([r, n]) => `${r}=${n}`).join(" ")
+    );
+  }
+  const byType = new Map<string, number>();
+  for (const r of withResolved) byType.set(r.feeType ?? "(none)", (byType.get(r.feeType ?? "(none)") ?? 0) + 1);
+  if (byType.size > 0) {
+    log(
+      `[fees] feeType: ` +
+        [...byType.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t, n]) => `${t}=${n}`).join(" ")
+    );
+  }
+  if (withResolved.length > 0) {
+    const deltas = withResolved.filter((r) => r.feePerShareDelta !== undefined).map((r) => r.feePerShareDelta!);
+    if (deltas.length > 0) {
+      const mean = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+      log(
+        `[fees] open-market per-share delta (proxy - venue), n=${deltas.length}: mean=${mean.toFixed(4)} ` +
+          `min=${Math.min(...deltas).toFixed(4)} max=${Math.max(...deltas).toFixed(4)}`
+      );
+    }
+  }
+}
+
+function appendRows(rows: FeeRow[]): void {
+  if (rows.length === 0) return;
+  appendFileSync(OUT, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+}
+
+/** Mode 1 (default): the venue's top-volume ACTIVE markets. Unchanged behaviour. */
+async function captureActive(): Promise<number> {
   const universe = await fetchUniverse(PAGE);
   const ranked = [...universe]
     .sort((a, b) => (asNumber(b.volume24hr) ?? 0) - (asNumber(a.volume24hr) ?? 0))
@@ -153,96 +281,184 @@ async function main(): Promise<number> {
 
   const rows: FeeRow[] = [];
   for (const m of ranked) {
-    const slug = String(m.slug ?? "");
-    if (!slug) continue;
-    const resolved = resolveFromGamma(m);
-    const tokens = parseJsonArray(m.clobTokenIds) ?? [];
-    const tokenId = tokens.length > 0 ? String(tokens[0]) : undefined;
-
-    let clobRaw: unknown;
-    let rate = resolved.rate;
-    let exponent = resolved.exponent ?? 1;
-    let source = resolved.source;
-    if (WITH_CLOB && tokenId) {
-      try {
-        clobRaw = await clobFeeRate(tokenId);
-        const base = asNumber((clobRaw as Record<string, unknown>)?.base_fee);
-        if (base !== undefined && rate === undefined) {
-          rate = base / 10000;
-          exponent = 1;
-          source = "clob";
-        }
-      } catch (e) {
-        logError(`[fees] clob fee-rate failed for ${slug}: ${e instanceof Error ? e.message : e}`);
-      }
-    }
-
-    const prices = parseJsonArray(m.outcomePrices);
-    const yes = prices && prices.length > 0 ? asNumber(prices[0]) : undefined;
-    const no = prices && prices.length > 1 ? asNumber(prices[1]) : undefined;
-    const mid = yes !== undefined && no !== undefined ? (yes + no) / 2 : yes;
-
-    const proxyRate = categoryFeeRate(`${slug} ${String(m.question ?? "")}`);
-    const proxyFee = mid !== undefined ? takerFeePerShare(mid, proxyRate) : undefined;
-    const resolvedFee = mid !== undefined && rate !== undefined ? takerFeePerShare(mid, rate) : undefined;
-
-    rows.push({
-      capturedAt: new Date().toISOString(),
-      slug,
-      conditionId: m.conditionId ? String(m.conditionId) : undefined,
-      tokenId,
-      feesEnabled: m.feesEnabled === undefined ? undefined : Boolean(m.feesEnabled),
-      feeType: m.feeType === undefined || m.feeType === null ? undefined : String(m.feeType),
-      feeSchedule: m.feeSchedule,
-      takerBaseFee: asNumber(m.takerBaseFee),
-      makerBaseFee: asNumber(m.makerBaseFee),
-      resolvedRate: rate,
-      resolvedExponent: exponent,
-      rebateRate: resolved.rebate,
-      feeSource: source,
-      clobFeeRate: clobRaw,
-      proxyRate,
-      proxySource: `price-edge.ts defaultFeeRate ${PRICE_EDGE_SPEC_V1.defaultFeeRate} + keyword table`,
-      midPrice: mid,
-      proxyFeePerShare: proxyFee,
-      resolvedFeePerShare: resolvedFee,
-      feePerShareDelta: proxyFee !== undefined && resolvedFee !== undefined ? proxyFee - resolvedFee : undefined,
-      volume24hr: asNumber(m.volume24hr),
-      liquidity: asNumber(m.liquidityNum) ?? asNumber(m.liquidity),
-      provenance: rate !== undefined && source === "clob" ? clobWsProvenance(["fee_rate_endpoint"]) : gammaProvenance(["fee_schedule"]),
-      qualityFlags: [
-        "capture_only",
-        "not_read_by_live_path",
-        ...(rate === undefined ? ["no_venue_fee_schedule_found"] : []),
-        ...(mid === undefined ? ["mid_price_unavailable"] : []),
-        ...feeQualityFlags(m, rate, source),
-      ].filter(Boolean),
-    });
+    const row = await buildFeeRow(m, { fetchClob: WITH_CLOB });
+    if (row) rows.push(row);
   }
-
-  if (!DRY) {
-    appendFileSync(OUT, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
-  }
-
-  const withResolved = rows.filter((r) => r.resolvedRate !== undefined);
-  const differing = withResolved.filter((r) => Math.abs((r.feePerShareDelta ?? 0)) > 1e-9);
-  log(`[fees] rows=${rows.length} venue_schedule_found=${withResolved.length} proxy_differs=${differing.length}`);
-  if (withResolved.length > 0) {
-    const deltas = differing.map((r) => r.feePerShareDelta ?? 0);
-    const mean = deltas.length ? deltas.reduce((a, b) => a + b, 0) / deltas.length : 0;
-    log(
-      `[fees] per-share delta (proxy - venue) on differing markets: mean=${mean.toFixed(4)} ` +
-        `min=${Math.min(...deltas, 0).toFixed(4)} max=${Math.max(...deltas, 0).toFixed(4)}`
-    );
-    for (const r of withResolved.slice(0, 10)) {
-      log(
-        `[fees]   ${r.slug.slice(0, 46)} type=${r.feeType ?? "-"} venue_rate=${r.resolvedRate} exp=${r.resolvedExponent} rebate=${r.rebateRate ?? "-"} ` +
-          `proxy_rate=${r.proxyRate} delta/share=${(r.feePerShareDelta ?? 0).toExponential(3)}`
-      );
-    }
-  }
+  if (!DRY) appendRows(rows);
+  summarize(rows);
   log(`[fees] ${DRY ? "dry run — nothing written" : `appended ${rows.length} rows -> ${OUT}`}`);
   return 0;
+}
+
+/**
+ * Mode 2 (`--from-export`): every distinct market_id in the training export.
+ *
+ * The export's `market_id` is the venue SLUG, and the population is mostly
+ * CLOSED — which is why this mode uses `/markets/slug/<slug>` rather than the
+ * `?slug=` query (that form returns `[]` for closed markets; see
+ * src/lib/fee-capture.ts). Already-captured slugs are skipped, so the file stays
+ * append-only, a re-run is cheap, and an interrupted run resumes as a prefix.
+ */
+async function captureExport(): Promise<number> {
+  if (!existsSync(EXPORT_CSV)) throw new Error(`export not found: ${EXPORT_CSV}`);
+  const allSlugs = parseExportSlugs(readFileSync(EXPORT_CSV, "utf8"));
+  const have = existsSync(OUT) ? capturedSlugs(readFileSync(OUT, "utf8")) : new Set<string>();
+  const todo = allSlugs.filter((s) => !have.has(s)).slice(0, EXPORT_MAX);
+  log(
+    `[fees] export=${EXPORT_CSV} distinct_markets=${allSlugs.length} already_captured=${allSlugs.filter((s) => have.has(s)).length} ` +
+      `todo=${todo.length} concurrency=${CONCURRENCY} clob=${WITH_CLOB ? "on" : "off"}${DRY ? " dry" : ""}`
+  );
+
+  // Every captured row is kept for the SUMMARY; a splice-and-append copy is what
+  // goes to disk. The first cut summarized the final partial flush instead (128
+  // of 4,388 rows), which reported a run total that was really a tail.
+  const collected: FeeRow[] = [];
+  const rows: FeeRow[] = []; // write buffer, flushed every 250 rows
+  const failedSlugs: Array<{ slug: string; error: string }> = [];
+  let missing = 0;
+  let failed = 0;
+  let done = 0;
+  const queue = [...todo];
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const slug = queue.shift();
+      if (slug === undefined) return;
+      // 429 / 5xx retry: one attempt is the rule for a MEASUREMENT script, but a
+      // cap read that gives up on the first throttle would file a partial
+      // population as complete. 4xx-other is not retried, and is counted.
+      let payload: unknown;
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+          payload = await venueGetJson(slugMarketUrl(VENUE.gamma, slug));
+          lastErr = undefined;
+          break;
+        } catch (e) {
+          lastErr = e;
+          const msg = e instanceof Error ? e.message : String(e);
+          const retryable = /-> (429|5\d\d)\b/.test(msg);
+          if (!retryable || attempt === 4) break;
+          await new Promise((r) => setTimeout(r, 400 * attempt * attempt));
+        }
+      }
+      if (lastErr) {
+        failed++;
+        const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+        failedSlugs.push({ slug, error: msg.slice(0, 200) });
+        if (failed <= 10) logError(`[fees] ${slug}: ${msg}`);
+        continue;
+      }
+      const m = pickMarketRow(payload);
+      if (!m) {
+        missing++;
+        continue;
+      }
+      const row = await buildFeeRow(m, { fetchClob: WITH_CLOB });
+      if (row) {
+        collected.push(row);
+        rows.push(row);
+      }
+      done++;
+      if (rows.length > 0 && rows.length % 250 === 0) {
+        if (!DRY) {
+          appendRows(rows.splice(0, rows.length));
+        }
+        log(`[fees] progress ${done}/${todo.length} (found=${collected.length} missing=${missing} failed=${failed})`);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(1, todo.length)) }, () => worker()));
+
+  if (!DRY) appendRows(rows);
+  summarize(collected);
+  const report = {
+    capturedAt: new Date().toISOString(),
+    exportCsv: EXPORT_CSV,
+    distinctMarketsInExport: allSlugs.length,
+    alreadyCaptured: allSlugs.length - todo.length,
+    attempted: todo.length,
+    answered: done,
+    captured: collected.length,
+    missingRow: missing,
+    failed,
+    failedSlugs,
+    rates: countBy(collected.map((r) => (r.resolvedRate === undefined ? "none" : String(r.resolvedRate)))),
+    feeTypes: countBy(collected.map((r) => r.feeType ?? "(none)")),
+    proxyDisagreements: collected.filter((r) => r.resolvedRate !== undefined && Math.abs(r.resolvedRate - r.proxyRate) > 1e-9).length,
+    proxyDisagreementsByRate: countBy(
+      collected
+        .filter((r) => r.resolvedRate !== undefined && Math.abs(r.resolvedRate - r.proxyRate) > 1e-9)
+        .map((r) => `proxy ${r.proxyRate} -> venue ${r.resolvedRate}`)
+    ),
+  };
+  if (!DRY) writeFileSync(EXPORT_RUN_REPORT, JSON.stringify(report, null, 2) + "\n");
+  log(
+    `[fees] ${DRY ? "dry run — nothing written" : `appended ${collected.length} rows -> ${OUT}`} ` +
+      `| attempted=${todo.length} answered=${done} captured=${collected.length} missing=${missing} failed=${failed}`
+  );
+  log(`[fees] run report -> ${EXPORT_RUN_REPORT}`);
+  return failed > 0 && collected.length === 0 ? 1 : 0;
+}
+
+/**
+ * `--summarize-only`: re-print the aggregate for the markets the export contains,
+ * from the capture file alone (no network). This is what makes the population
+ * claim re-checkable after the fact instead of living in a terminal scrollback.
+ */
+function summarizeOnly(): number {
+  if (!existsSync(OUT)) throw new Error(`capture file not found: ${OUT}`);
+  const exportSlugs = new Set(parseExportSlugs(readFileSync(EXPORT_CSV, "utf8")));
+  const inExport: FeeRow[] = [];
+  let outside = 0;
+  for (const line of readFileSync(OUT, "utf8").split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const r = JSON.parse(t) as FeeRow;
+      if (!r || typeof r.slug !== "string") continue;
+      if (exportSlugs.has(r.slug)) inExport.push(r);
+      else outside++;
+    } catch {
+      /* malformed line: skipped, as everywhere else in this file */
+    }
+  }
+  const capturedSet = new Set(inExport.map((r) => r.slug));
+  const uncaptured = [...exportSlugs].filter((s) => !capturedSet.has(s));
+  log(
+    `[fees] capture rows in export=${inExport.length} distinct=${capturedSet.size} of ${exportSlugs.size} export markets ` +
+      `(rows outside export: ${outside}, markets with no capture row: ${uncaptured.length})`
+  );
+  summarize(inExport);
+  // Same artifact the capture writes, derived from the file — so the population claim is
+  // re-checkable in one command instead of living in a terminal scrollback.
+  const report = {
+    capturedAt: new Date().toISOString(),
+    source: "capture-file",
+    exportCsv: EXPORT_CSV,
+    distinctMarketsInExport: exportSlugs.size,
+    captured: inExport.length,
+    capturedDistinctMarkets: capturedSet.size,
+    uncapturedMarkets: uncaptured,
+    rowsOutsideExport: outside,
+    rates: countBy(inExport.map((r) => (r.resolvedRate === undefined ? "none" : String(r.resolvedRate)))),
+    feeTypes: countBy(inExport.map((r) => r.feeType ?? "(none)")),
+    proxyDisagreements: inExport.filter(
+      (r) => r.resolvedRate !== undefined && Math.abs(r.resolvedRate - r.proxyRate) > 1e-9
+    ).length,
+    proxyDisagreementsByRate: countBy(
+      inExport
+        .filter((r) => r.resolvedRate !== undefined && Math.abs(r.resolvedRate - r.proxyRate) > 1e-9)
+        .map((r) => `proxy ${r.proxyRate} -> venue ${r.resolvedRate}`)
+    ),
+  };
+  writeFileSync(EXPORT_REPORT, JSON.stringify(report, null, 2) + "\n");
+  log(`[fees] report -> ${EXPORT_REPORT}`);
+  return 0;
+}
+
+async function main(): Promise<number> {
+  if (process.argv.includes("--summarize-only")) return summarizeOnly();
+  return FROM_EXPORT ? captureExport() : captureActive();
 }
 
 main()

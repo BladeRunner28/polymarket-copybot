@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-11-20T15:18:39.260Z",
+  "exportCsv": "training_data.csv",
+  "distinctMarketsInExport": 4399,
+  "alreadyCaptured": 4387,
+  "attempted": 12,
+  "answered": 2,
+  "captured": 2,
+  "missingRow": 0,
+  "failed": 10,
+  "failedSlugs": [
+    {
+      "slug": "will-bitcoin-dip-to-45000-by-december-31-2026-674-923-755-971-998-525-926-245-316-517-544-589-965-923-986-841-815-224-586-231-289-533",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/will-bitcoin-dip-to-45000-by-december-31-2026-674-923-755-971-998-525-926-245-316-517-544-589-965-923-986-841-815-224-586-231-289-533 -> 404 : {\"type\""
+    },
+    {
+      "slug": "will-bitcoin-dip-to-50000-by-december-31-2026-454-325-222-878-949-487-451-853-523",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/will-bitcoin-dip-to-50000-by-december-31-2026-454-325-222-878-949-487-451-853-523 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    },
+    {
+      "slug": "will-bitcoin-dip-to-40000-by-december-31-2026-593-522-842-874-931-776-991-167-531",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/will-bitcoin-dip-to-40000-by-december-31-2026-593-522-842-874-931-776-991-167-531 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    },
+    {
+      "slug": "will-bitcoin-dip-to-55000-by-december-31-2026-527-627-868-745-188-361-314-673-612-946-821-624-855-557-684-381-884-939-182-939",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/will-bitcoin-dip-to-55000-by-december-31-2026-527-627-868-745-188-361-314-673-612-946-821-624-855-557-684-381-884-939-182-939 -> 404 : {\"type\":\"not fo"
+    },
+    {
+      "slug": "will-xi-jinping-visit-us-before-2027",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/will-xi-jinping-visit-us-before-2027 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    },
+    {
+      "slug": "iran-full-airspace-closure-by-august-31-20260625195254151",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/iran-full-airspace-closure-by-august-31-20260625195254151 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    },
+    {
+      "slug": "us-obtains-iranian-enriched-uranium-by-december-31-725-733-123-574",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/us-obtains-iranian-enriched-uranium-by-december-31-725-733-123-574 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    },
+    {
+      "slug": "us-announces-end-of-iranian-blockade-by-september-30-2026-20260727171615364-722-649-646-561-213-644",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/us-announces-end-of-iranian-blockade-by-september-30-2026-20260727171615364-722-649-646-561-213-644 -> 404 : {\"type\":\"not found error\",\"error\":\"slug n"
+    },
+    {
+      "slug": "iran-full-airspace-closure-by-july-31-20260625195254150",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/iran-full-airspace-closure-by-july-31-20260625195254150 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    },
+    {
+      "slug": "us-iran-hormuz-agreement-by-august-15-20260804222025506",
+      "error": "GET https://gamma-api.polymarket.com/markets/slug/us-iran-hormuz-agreement-by-august-15-20260804222025506 -> 404 : {\"type\":\"not found error\",\"error\":\"slug not found\"}\n"
+    }
+  ],
+  "rates": {
+    "0.05": 2
+  },
+  "feeTypes": {
+    "sports_fees_v3": 2
+  },
+  "proxyDisagreements": 0,
+  "proxyDisagreementsByRate": {}
+}

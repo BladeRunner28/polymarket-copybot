@@ -134,20 +134,31 @@ describe("deltaOf / summariseDeltas", () => {
 });
 
 describe("localiseFrozenPositions", () => {
-  it("keeps venue-rate rows out of a proxy-priced baseline and names what is missing", () => {
+  it("COMPARES venue-rate rows on the proxy instead of dropping them (2026-11-20 regression)", () => {
+    // The exclusion used to be harmless (truth on 9 markets). Once the capture covered the
+    // whole export it swallowed 3,498 of 3,516 frozen positions and the read became
+    // "0 of 18 moved" — a check that could no longer see the book it was auditing.
     const a = parseFrozenLine(frozenLine({ id: "a" }))!;
     const b = parseFrozenLine(frozenLine({ id: "b" }))!;
     const c = parseFrozenLine(frozenLine({ id: "c" }))!;
     const loc = localiseFrozenPositions([a, b, c], (id) => {
       if (id === "a") return currentOf(a, { realizedPnl: a.pnlGross + 5 });
-      if (id === "b") return currentOf(b, { feeRateSource: "venue" });
+      if (id === "b") return currentOf(b, { feeRateSource: "venue", realizedPnl: b.pnlGross + 2 });
       return null;
     });
-    expect(loc.deltas.map((d) => d.tradeId)).toEqual(["a"]);
-    expect(loc.truthExcluded).toBe(1);
+    expect(loc.deltas.map((d) => d.tradeId)).toEqual(["a", "b"]);
+    expect(loc.truthLabelled).toBe(1);
     expect(loc.missing).toEqual(["c"]);
-    expect(loc.summary.moved).toBe(1);
-    expect(loc.summary.sum.dGross).toBeCloseTo(5, 6);
+    expect(loc.summary.moved).toBe(2);
+    expect(loc.summary.sum.dGross).toBeCloseTo(7, 6);
+  });
+
+  it("a venue-rate row whose numbers did not move reads 'none', so the label cannot manufacture drift", () => {
+    const a = parseFrozenLine(frozenLine({ id: "a" }))!;
+    const loc = localiseFrozenPositions([a], () => currentOf(a, { feeRateSource: "venue" }));
+    expect(loc.deltas).toHaveLength(1);
+    expect(loc.truthLabelled).toBe(1);
+    expect(loc.summary.moved).toBe(0);
   });
 
   it("reports a rate-basis change instead of silently re-pricing it as drift", () => {

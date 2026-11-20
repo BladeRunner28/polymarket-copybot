@@ -95,7 +95,18 @@ async function main() {
       status: String(r.status),
       currentPrice: num(r.currentPrice),
     });
-    const t = netTargets({ realizedPnl: Number(r.realizedPnl), fees });
+    // Both sides of the diff are priced on the FROZEN artifact's own fee model (the keyword
+    // proxy). The labelled decomposition is only consulted for the label, so a venue-rate row
+    // can neither be dropped nor read as a fee-basis move.
+    const proxyFees = feeDecomposition({
+      entryPrice: entry,
+      sizeUsd,
+      feeText: `${r.marketQuestion ?? ""} ${r.marketId ?? ""}`,
+      feeRateTruth: null,
+      status: String(r.status),
+      currentPrice: num(r.currentPrice),
+    });
+    const t = netTargets({ realizedPnl: Number(r.realizedPnl), fees: proxyFees });
     return {
       tradeId: String(r.paperTradeId),
       marketId: String(r.marketId),
@@ -103,10 +114,10 @@ async function main() {
       entryPrice: entry,
       sizeUsd,
       realizedPnl: Number(r.realizedPnl),
-      feeRate: fees.feeRate,
+      feeRate: proxyFees.feeRate,
       feeRateSource: fees.feeRateSource,
-      feeEntryUsd: fees.feeEntryUsd,
-      feeExitUsd: fees.feeExitUsd,
+      feeEntryUsd: proxyFees.feeEntryUsd,
+      feeExitUsd: proxyFees.feeExitUsd,
       pnlNetEntry: t.pnlNetEntry,
       pnlNetFull: t.pnlNetFull,
     };
@@ -133,25 +144,18 @@ async function main() {
         return t !== null && t <= asOf;
       }),
   );
-  let g = 0, nf = 0, n = 0, tg = 0, tnf = 0, tn = 0;
+  // Every in-window position, priced on the proxy — the SAME scope the exporter's reconcile block
+  // now uses, so the two can never disagree about what "drift" means.
+  let g = 0, nf = 0, n = 0;
   for (const x of asOfDedup) {
     const p = currentById.get(String(x.raw.paperTradeId));
     if (!p) continue;
-    if (p.feeRateSource === "venue") {
-      // Subtracted from the manifest on ITS OWN frozen values — today's venue fee here would
-      // smuggle a basis change into the baseline.
-      const f0 = frozenById.get(String(x.raw.paperTradeId));
-      tn += 1;
-      tg += f0 ? f0.pnlGross : 0;
-      tnf += f0 ? f0.pnlNetFull : 0;
-      continue;
-    }
     n += 1;
     g += p.realizedPnl;
     nf += p.pnlNetFull;
   }
-  const wantGross = manifest.pnl_gross - tg;
-  const wantNetFull = manifest.pnl_net_full - tnf;
+  const wantGross = manifest.pnl_gross;
+  const wantNetFull = manifest.pnl_net_full;
 
   console.log("Drift localisation — frozen decision dataset vs the live book");
   console.log(
@@ -160,7 +164,7 @@ async function main() {
   );
   console.log(
     `  coverage: joined ${loc.deltas.length}/${frozen.length} | missing from the DB ${loc.missing.length} | ` +
-      `truth-bearing excluded ${loc.truthExcluded} | rate-basis changed ${loc.rateChanged} | unparsed lines ${loc.unparsed}`,
+      `truth-labelled (compared on the proxy, not dropped) ${loc.truthLabelled} | rate-basis changed ${loc.rateChanged} | unparsed lines ${loc.unparsed}`,
   );
   console.log(
     `  moved positions: ${loc.summary.moved} (gross only ${loc.summary.byCause.gross}, ` +
@@ -173,8 +177,8 @@ async function main() {
   );
   console.log(
     `  manifest-level check, reproduced here: proxy scope ${n} positions; export side gross $${g.toFixed(4)} ` +
-      `vs manifest-minus-truth $${wantGross.toFixed(4)} = Δ ${money(g - wantGross)} | net_full $${nf.toFixed(4)} ` +
-      `vs $${wantNetFull.toFixed(4)} = Δ ${money(nf - wantNetFull)} | truth-bearing in scope ${tn} ($${tg.toFixed(2)} gross)`,
+      `vs manifest $${wantGross.toFixed(4)} = Δ ${money(g - wantGross)} | net_full $${nf.toFixed(4)} ` +
+      `vs $${wantNetFull.toFixed(4)} = Δ ${money(nf - wantNetFull)}`,
   );
   console.log(
     `  COMPLETE only if the per-position Σ equals the manifest-level Δ: gross ${money(loc.summary.sum.dGross)} ` +
@@ -207,7 +211,7 @@ async function main() {
             frozen: frozen.length,
             joined: loc.deltas.length,
             missing: loc.missing,
-            truth_excluded: loc.truthExcluded,
+            truth_labelled: loc.truthLabelled,
             rate_changed: loc.rateChanged,
             unparsed: loc.unparsed,
           },

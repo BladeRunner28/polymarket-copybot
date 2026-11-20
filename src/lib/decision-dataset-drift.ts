@@ -191,7 +191,8 @@ export function parseFrozenCsv(text: string): { positions: FrozenPosition[]; unp
 export interface Localisation {
   deltas: PositionDelta[];
   missing: string[];
-  truthExcluded: number;
+  /** Positions whose CURRENT label is the venue's rate (reported; they are compared, not dropped). */
+  truthLabelled: number;
   rateChanged: number;
   unparsed: number;
   summary: DeltaSummary;
@@ -200,9 +201,16 @@ export interface Localisation {
 }
 
 /**
- * Diff every frozen position against its live reading. Truth-bearing rows (the venue's own fee rate)
- * are EXCLUDED, because the artifact was priced entirely on the keyword proxy and such a row
- * disagrees by construction — the same scope rule the exporter's reconcile block applies.
+ * Diff every frozen position against its live reading. EVERY position is compared, and both the
+ * frozen and the current reading must be priced on the keyword PROXY — that is the only fee model
+ * the frozen artifact has (there is no per-row way to know a 2026-09-13 rate otherwise).
+ *
+ * The earlier version EXCLUDED rows carrying the venue's own rate "because they disagree by
+ * construction". That was true while venue truth covered 9 markets. On 2026-11-20 the capture was
+ * extended to the whole export (4,387 of 4,397 markets) and the exclusion swallowed 3,498 of the
+ * 3,516 frozen positions: the localisation ran on 18 rows and reported "0 positions moved", which
+ * is the same defect class as a probe that cannot fail. The label is now COUNTED and printed, never
+ * used to drop a row.
  */
 export function localiseFrozenPositions(
   frozen: FrozenPosition[],
@@ -211,7 +219,7 @@ export function localiseFrozenPositions(
 ): Localisation {
   const deltas: PositionDelta[] = [];
   const missing: string[] = [];
-  let truthExcluded = 0;
+  let truthLabelled = 0;
   let rateChanged = 0;
   for (const f of frozen) {
     const cur = current(f.tradeId);
@@ -219,17 +227,16 @@ export function localiseFrozenPositions(
       missing.push(f.tradeId);
       continue;
     }
-    if (cur.feeRateSource === "venue") {
-      truthExcluded += 1;
-      continue;
-    }
+    if (cur.feeRateSource === "venue") truthLabelled += 1;
+    // Only a genuine proxy-model change counts here: the caller prices `cur` on the proxy, so a
+    // venue-rate row does not read as "the rate changed" (see the module note).
     if (Math.abs(cur.feeRate - f.feeRate) > 1e-9) rateChanged += 1;
     deltas.push(deltaOf(f, cur));
   }
   return {
     deltas,
     missing,
-    truthExcluded,
+    truthLabelled,
     rateChanged,
     unparsed,
     summary: summariseDeltas(deltas),

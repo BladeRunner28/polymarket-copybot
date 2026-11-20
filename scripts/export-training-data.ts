@@ -130,7 +130,10 @@ const cell = (v: unknown): string => String(v ?? "").replace(/,/g, ";");
  * Target sums for a given set of raw rows — the SAME lib math the export uses (fee decomposition +
  * net targets), applied to another row set, so the reconciliation cannot drift from the exports.
  */
-function targetSums(rawRows: any[]): { rows: number; gross: number; netEntry: number; netFull: number } {
+function targetSums(
+  rawRows: any[],
+  opts: { forceProxyFee?: boolean } = {},
+): { rows: number; gross: number; netEntry: number; netFull: number } {
   const dedup = dedupeFirstPerPosition(rawRows);
   let gross = 0;
   let netEntry = 0;
@@ -140,7 +143,10 @@ function targetSums(rawRows: any[]): { rows: number; gross: number; netEntry: nu
       entryPrice: Number(r.entryPrice),
       sizeUsd: Number(r.simulatedPositionSize ?? 10),
       feeText: `${r.marketQuestion ?? ""} ${r.marketId ?? ""}`,
-      feeRateTruth: feeRateTruthMap().get(String(r.marketId)) ?? null,
+      // `forceProxyFee` prices the row on the keyword proxy EVEN where the venue's own
+      // schedule is known. Only the frozen-baseline reconciliation uses it: that
+      // manifest was built on the proxy, so it can only be adjudicated on the proxy.
+      feeRateTruth: opts.forceProxyFee ? null : feeRateTruthMap().get(String(r.marketId)) ?? null,
       status: String(r.status),
       currentPrice: num(r.currentPrice),
     });
@@ -400,25 +406,39 @@ async function main() {
     // Fix: keep the frozen baseline, reconcile only the proxy rows (which is what it measured), and
     // report the truth-bearing rows SEPARATELY so their movement stays visible instead of silently
     // disabling the check. Regenerating the manifest (option (a)) was rejected — it moves the baseline.
-    const truthMap = feeRateTruthMap();
-    const isTruthRow = (r: any) => (truthMap.get(String(r.marketId)) ?? null) !== null;
     const dedupAsOf = dedupeFirstPerPosition(
       raw.filter((r) => {
         const t = num(r.terminalAt);
         return t !== null && t <= asOf;
       }),
     );
-    const proxyDedup = dedupAsOf.filter((r) => !isTruthRow(r));
-    const truthDedup = dedupAsOf.filter(isTruthRow);
-    const asOfSums = targetSums(proxyDedup);
-    const truthSums = targetSums(truthDedup);
-    // `rows` compares like with like: the manifest counted every position, so subtract the truth-bearing
-    // positions it could not have priced on the proxy.
+    // PRICE THE FROZEN WINDOW ON THE FROZEN BASELINE'S OWN BASIS.
+    //
+    // tuning #70 Rec 2 scoped this check to rows with NO venue fee truth, because a
+    // truth-bearing row disagrees with a proxy-built manifest BY CONSTRUCTION. That
+    // was right while truth covered 9 markets (35 rows). On 2026-11-20 the fee
+    // capture was run across the whole export — 4,387 of 4,397 markets now carry the
+    // venue's rate — and the same filter silently swallowed the check: 3,498 of the
+    // 3,516 frozen positions became "truth-bearing", the reconciliation ran on 18
+    // rows, and it printed DRIFTED because the excluded mass moved out from under it.
+    // A check that excludes 99.5% of its population is the same defect as one that
+    // cannot pass.
+    //
+    // So the comparison no longer filters by label: every in-window position is priced
+    // on the PROXY (what the manifest measured), and the label-basis figure is printed
+    // beside it, with the difference named as the fee-truth effect. Same population,
+    // same fee model, falsifiable again.
+    const asOfSums = targetSums(dedupAsOf, { forceProxyFee: true });
+    const labelledSums = targetSums(dedupAsOf);
+    const feeTruthEffect = {
+      netEntry: round4(labelledSums.netEntry - asOfSums.netEntry),
+      netFull: round4(labelledSums.netFull - asOfSums.netFull),
+    };
     const checks: [string, number, number][] = [
-      ["rows", Number(m.rows_emitted) - truthSums.rows, asOfSums.rows],
-      ["pnl_gross", m.pnl_gross - truthSums.gross, asOfSums.gross],
-      ["pnl_net_entry", m.pnl_net_entry - truthSums.netEntry, asOfSums.netEntry],
-      ["pnl_net_full", m.pnl_net_full - truthSums.netFull, asOfSums.netFull],
+      ["rows", Number(m.rows_emitted), asOfSums.rows],
+      ["pnl_gross", m.pnl_gross, asOfSums.gross],
+      ["pnl_net_entry", m.pnl_net_entry, asOfSums.netEntry],
+      ["pnl_net_full", m.pnl_net_full, asOfSums.netFull],
     ];
     console.log(`Reconcile vs data/decision-dataset.manifest.json (generated ${String(m.generated_at).slice(0, 10)}, span ${m.first_day}..${m.last_day}, raw ${m.rows_raw} -> ${m.rows_emitted}):`);
     let drift = 0;
@@ -428,10 +448,12 @@ async function main() {
       const show = (v: number) => (k === "rows" ? String(v) : `$${v}`);
       console.log(`  ${k}: dataset ${show(want)} vs export ${show(got)} ${ok ? "OK" : "DRIFT"}`);
     }
-    // Truth-bearing rows are REPORTED, never reconciled against a proxy-only baseline.
+    // Both bases named, so neither can be mistaken for the other.
     console.log(
-      `  proxy-only scope: ${asOfSums.rows} positions reconciled | truth-bearing (fee_rate_source=venue, ` +
-        `excluded from the check): ${truthSums.rows} positions, $${truthSums.gross} gross`,
+      `  fee basis: frozen-window positions priced on the PROXY (the manifest's own model): ${asOfSums.rows} rows, ` +
+        `net_entry $${asOfSums.netEntry} | at today's labels (venue truth where captured): net_entry $${labelledSums.netEntry} ` +
+        `(fee-truth effect ${feeTruthEffect.netEntry >= 0 ? "+" : ""}$${feeTruthEffect.netEntry}, net_full ` +
+        `${feeTruthEffect.netFull >= 0 ? "+" : ""}$${feeTruthEffect.netFull})`,
     );
     // LOCALISATION (card export-reconciliation-localisable, 2026-11-19). The line below used to blame
     // "the fee/target math" for every drift. Measured on this population: the math is unchanged and the
@@ -444,11 +466,39 @@ async function main() {
         fs.readFileSync("data/decision-dataset.csv", "utf8"),
       );
       const byId = new Map(out.map((r) => [r.paper_trade_id, r]));
+      // The diff is made on the FROZEN model's basis: `out` carries venue rates wherever the
+      // capture knows them, so the fee legs and net targets are recomputed at the proxy here.
+      // Handing the labelled numbers to the localiser would make every truth-bearing position
+      // look like "fee math moved" (and, before 2026-11-20, made it drop them entirely).
+      const proxyById = new Map(
+        raw.map((r: any) => {
+          const fees = feeDecomposition({
+            entryPrice: Number(r.entryPrice),
+            sizeUsd: Number(r.simulatedPositionSize ?? 10),
+            feeText: `${r.marketQuestion ?? ""} ${r.marketId ?? ""}`,
+            feeRateTruth: null,
+            status: String(r.status),
+            currentPrice: num(r.currentPrice),
+          });
+          const t = netTargets({ realizedPnl: Number(r.realizedPnl), fees });
+          return [
+            String(r.paperTradeId),
+            {
+              feeRate: fees.feeRate,
+              feeEntryUsd: fees.feeEntryUsd,
+              feeExitUsd: fees.feeExitUsd,
+              pnlNetEntry: t.pnlNetEntry,
+              pnlNetFull: t.pnlNetFull,
+            },
+          ];
+        }),
+      );
       const loc = localiseFrozenPositions(
         frozenPositions,
         (id) => {
           const r = byId.get(id);
           if (!r) return null;
+          const p = proxyById.get(id);
           return {
             tradeId: id,
             marketId: r.market_id,
@@ -456,12 +506,12 @@ async function main() {
             entryPrice: r.entry_price,
             sizeUsd: r.size_usd,
             realizedPnl: r.pnl_gross,
-            feeRate: r.fee_rate,
+            feeRate: p ? p.feeRate : r.fee_rate,
             feeRateSource: r.fee_rate_source,
-            feeEntryUsd: r.fee_entry_usd,
-            feeExitUsd: r.fee_exit_usd,
-            pnlNetEntry: r.pnl_net_entry,
-            pnlNetFull: r.pnl_net_full,
+            feeEntryUsd: p ? p.feeEntryUsd : r.fee_entry_usd,
+            feeExitUsd: p ? p.feeExitUsd : r.fee_exit_usd,
+            pnlNetEntry: p ? p.pnlNetEntry : r.pnl_net_entry,
+            pnlNetFull: p ? p.pnlNetFull : r.pnl_net_full,
           };
         },
         frozenUnparsed,
@@ -476,7 +526,7 @@ async function main() {
       console.log("  drift localisation: data/decision-dataset.csv unreadable — skipped");
     }
     console.log(drift === 0
-      ? `  reconciliation: IDENTICAL on the proxy rows the frozen dataset could price — today's file adds ${out.length - asOfSums.rows - truthSums.rows} positions settled since ${String(m.generated_at).slice(0, 10)}`
+      ? `  reconciliation: IDENTICAL on the frozen window — today's file adds ${out.length - asOfSums.rows} positions settled since ${String(m.generated_at).slice(0, 10)}`
       : `  reconciliation: ${drift} check(s) DRIFTED on the proxy rows — the frozen baseline's SUMS no longer` +
         ` match today's book. That is a DATA movement, not a math disagreement: the localisation line names` +
         ` the positions. Re-baselining is refused because it would erase the evidence (card export-reconciliation-localisable).`);
