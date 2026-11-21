@@ -4706,7 +4706,42 @@
         "applied"
       ],
       "gate": "APPLIED (Lane B). Verify: python3 scripts/profit-fill-tape.py --only=1 prints S1b and the half-cent share; python3 scripts/profit-fill-tape.py --selftest passes. REFUTATION: if a future window prints a minority at the half-cent on 1c-spread markets, the series is prints after all and the old wording should be restored."
-    }
+    },
+  {
+    "id": "profit-floor-ttr-all-lane-basis",
+    "title": "BASIS CORRECTION — the approved 2->24h TTR floor is a GLOBAL gate but its shadow measures STANDARD only; BANKROLL_200 owns 283 of the 370 blocked legs and 8x the dollars",
+    "column": "In Progress",
+    "effort": "0.5h (amend the read; no rule change)",
+    "dates": "Carded 2026-11-21 by the profit review (drafts/profit-recs-20261121.md; instrument scripts/profit-tenor.py, selftest 9/9). NOT a rule change and NOTHING APPLIED.",
+    "note": "WHY: `minTimeToResolutionHours` is a single hard gate in src/lib/scoring/trade.ts:124 applied inside one `scoreTrade(..., rules)` call (scripts/score-trades.ts:592), so raising it 2->24 binds BOTH lanes. The approved flip decision is pre-registered against a STANDARD-ONLY shadow (data/ttr-floor-shadow.json: 99 of 150 settled band legs). MEASURED TODAY on the all-lane regime (PaperTrade isDemo=0, ruleSetVersion>=68, deduped bot|wallet|market|outcome, 487 legs / 24.3d / $10,267): blocking 2-24h removes 370 legs / $6,810 / -$636.90 (-9.4%, CI [-1698,+468], both halves negative) and lifts the kept book to +14.9% ROI. Split: STANDARD 87 legs / $748 / -$58.76 (-7.9%); BANKROLL_200 283 legs / $6,062 / -$578.14 (-9.5%) = 3.3x the legs and 8.1x the dollars the shadow measures, and the more negative lane. The flip's true value is +$26.2/day, not the STANDARD-only figure. BIAS DIRECTION: correcting the population cannot turn a passing rule into a failing one (the unmeasured lane is worse), so this is a basis correction, not a threshold change. Do NOT flip early on these numbers: amend the population, then let the n>=150 trigger fire (~17 days at 3.07 band openings/day).",
+    "decision_rule": "Amend the shadow to report both lanes (keeping STANDARD as a sub-arm). Flip when the COMBINED 2-24h population reaches >=150 settled legs AND its ROI is <= -3%. Measured today: 370 legs, -9.4%.",
+    "tags": [
+      "profit-review",
+      "exit",
+      "measurement",
+      "tenor",
+      "awaiting-approval"
+    ],
+    "gate": "LANE B instrument correction (no RuleSet read or write, no prisma write, DB mode=ro). Re-read: python3 scripts/profit-tenor.py section S15. REFUTATION: if the combined 2-24h population reaches >=150 settled legs at ROI >= +3%, or reads >= 0 on the owned-only basis, the floor is not worth flipping and this correction is moot."
+  },
+  {
+    "id": "profit-c200-clip-cap-withdrawn-after-floor",
+    "title": "CLOSED — the $25 clip cap is withdrawn as a SECOND fix: after the 24h floor its remaining population is profitable (+$113.8 on 15 legs); the cap's whole case was 17 same-day legs the floor already removes",
+    "column": "Done",
+    "effort": "0h (decision)",
+    "dates": "Proposed 2026-11-20 (drafts/profit-recs-20261120.md R1), WITHDRAWN 2026-11-21 by the profit review (drafts/profit-recs-20261121.md; instrument scripts/profit-tenor.py, selftest 9/9). Supersedes the ranking, not the arithmetic: every figure in the 11-20 brief still reproduces.",
+    "note": "WHY THE WITHDRAWAL: the 11-20 brief ranked the cap first on +$17.7-34/day. Splitting the same legs by tenor at entry shows the premise is a same-day cell: cheap (px<0.20) clips >=$60 with ttr 2-24h = 17 legs / $1,700 / -$1,091.7 (-64.2%), while the cheap clips >=$60 with ttr >=24h = 15 legs / $1,500 / +$113.8 (+7.6%). The whole 32-leg tier is -$977.9, i.e. the longer-tenor half is a profit centre the cap would gut. The approved 2->24h floor blocks the 17-leg cell outright. Cap shadows today (exact linear rescale): band-scoped $25 (already approved) +$26.02/day; lane-wide $25 +$22.90/day; $10 on cheap >=$60 +$36.26/day (in-sample on 32 legs — not a basis for a parameter). Stacking the cap on the floor is not additive and double-counts ~+$26/day in the ladder plan.",
+    "decision_rule": "Hold the cap while the residual population (cheap px<0.20, clip >=$60, ttr >=24h) has ROI >= 0 on >=15 legs. Measured: +7.6% on 15 legs.",
+    "tags": [
+      "profit-review",
+      "lane-a",
+      "sizing",
+      "clip",
+      "superseded-in-part",
+      "closed"
+    ],
+    "gate": "LANE A — nothing applied, nothing to apply. REFUTATION (would reopen): a forward sample of >=40 cheap >=$50 clips at ttr >=24h earning <= -10% -> the cap earns its keep outside the same-day window and this withdrawal is wrong."
+  }
   ],
   "dates": {
     "updated": "2026-11-19"
