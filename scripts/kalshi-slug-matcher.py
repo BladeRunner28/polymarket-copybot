@@ -6,13 +6,13 @@ the cross-venue lane, whose shadow book showed "verified cross-listings = 0 (0%)
 and blamed matcher coverage. Two probes showed the binding constraint is neither
 the delta nor the matching algorithm — it is PAGINATION DEPTH:
 
-  * Kalshi has >12,000 open EVENTS (the cursor is still not exhausted after 60
-    pages x 200).
-  * The Rust sidecar's `resolve_kalshi_match` walks `MAX_EVENT_PAGES` (8 pages x
-    200 = 1,600 events) — roughly a tenth of the inventory — so real counterparts
-    never enter the scoring set. Counterparts demonstrably exist: matching our own
-    book by keyword finds 72 "fed" events, 40 "emmy", 40 "elon", 9 "valorant",
-    2 Flávio-Bolsonaro events.
+  * Kalshi's open-event inventory is EXHAUSTIBLE and large: 22,782 open events on
+    2026-11-21T15:02Z, cursor exhausted at 114 pages x 200.
+  * The Rust sidecar's `resolve_kalshi_match` walks `MAX_EVENT_PAGES` x 200 events
+    (the constant lives in rust-sidecar/src/adapters.rs and is printed by this
+    script at run time, because a hardcoded copy here has already gone stale once:
+    this docstring said "8 pages x 200 = 1,600" while the sidecar had moved to 25
+    pages x 200 = 5,000 = 21.9% of the inventory).
   * An earlier probe that capped at 25,000 MARKETS reproduced the same illusion
     (0 of 202 rows scored >= 0.3), so the ceiling cannot be measured from a
     truncated index.
@@ -140,6 +140,17 @@ def main():
     ap.add_argument("--ttl-hours", type=float, default=12.0)
     ap.add_argument("--refresh", action="store_true")
     args = ap.parse_args()
+
+    # print the sidecar's real depth from its source, so this script can never
+    # again describe a constant that has moved
+    try:
+        src = open(os.path.join(ROOT, "rust-sidecar", "src", "adapters.rs")).read()
+        pages = int(re.search(r"MAX_EVENT_PAGES:\s*usize\s*=\s*(\d+)", src).group(1))
+        thr = re.search(r"MATCH_THRESHOLD:\s*f64\s*=\s*([\d.]+)", src).group(1)
+        print(f"sidecar depth (read from adapters.rs): {pages} x 200 = {pages*200} events "
+              f"at threshold {thr}")
+    except (OSError, AttributeError, ValueError):
+        print("sidecar source not readable — depth not stated")
 
     idx = build_index(args.max_pages, args.refresh, args.ttl_hours)
     scored_idx = []
