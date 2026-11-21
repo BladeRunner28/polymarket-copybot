@@ -121,11 +121,20 @@ describe("frozen artifacts — bypass resistance", () => {
     expect(verifyPin(shrunk, pin, NOW).ok).toBe(false);
   });
 
-  it("a window that closes without being retired trips the pin's expiry list", () => {
-    const late = new Date("2026-11-21T00:00:00Z");
-    const v = verifyPin(manifest, pin, late);
-    expect(v.ok).toBe(false);
-    expect(v.problems.join(" ")).toContain("kelly-band-020-040-unresolved");
+  it("a window that closes without being retired trips the pin expiry list", () => {
+    // SYNTHETIC since 2026-11-21: this arm used to assert against the LIVE manifest, so it became
+    // unfalsifiable the moment kelly-band-020-040-unresolved closed on its 2026-11-20 window -- at
+    // 2026-11-21 no retirement choice could make it pass. It was testing the dataset, not the wire.
+    const closing: FreezeManifest = withEntry(
+      entry({ id: "closes-soon", frozenFrom: "2026-01-01", frozenUntil: "2026-05-31" }),
+    );
+    const closingPin: FreezePin = { manifestSha256: digestManifest(closing), expectedExpired: [], note: "synthetic" };
+    expect(verifyPin(closing, closingPin, new Date("2026-05-01T00:00:00Z")).ok).toBe(true);
+    const late = verifyPin(closing, closingPin, NOW); // NOW = 2026-06-01, after the window
+    expect(late.ok).toBe(false);
+    expect(late.problems.join(" ")).toContain("closes-soon");
+    // and acknowledging the close in the pin is what retires it
+    expect(verifyPin(closing, { ...closingPin, expectedExpired: ["closes-soon"] }, NOW).ok).toBe(true);
   });
 
   it("the digest is stable across key order", () => {
