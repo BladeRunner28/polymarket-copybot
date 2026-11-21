@@ -8,14 +8,20 @@ WHAT IT WATCHES (silent when healthy; the cron delivers stdout verbatim, so empt
   2. unpaired_leg    a BANKROLL_200 leg booked on/after the instrument went live (2026-09-25 23:33 CDT)
                      with intentPrice still NULL -> the webhook half of the shadow is not stamping.
                      That is the documented failure signature ("FillIntent/write silently failing").
-  3. gap_anomaly     a stamped leg whose (entry - intent) is neither the modelled -$0.02 nor the
-                     sidecar's 0.01 clamp (intent - 0.02 < 0.01 -> entry 0.01, gap = 0.01 - intent).
-                     Anything else means a leg was booked by a path that skipped the filler.
+  3. gap_anomaly     a stamped leg whose booked entry matches NEITHER credit model the sidecar can
+                     run (measured per-band, the default since 2026-10-10; modelled flat 2c; 1c floor).
+                     Anything else means a leg was booked by a path that skipped the filler. The alert
+                     prints `mirror` = entry - (1 - intent), which reads 0.0 when the sibling token's
+                     price was booked (card ledger-price-side-repair).
   4. unlinked_intent a FillIntent dispatched >20 min ago with no booked leg (paperTradeId NULL) —
                      dispatched but never booked.
   5. dispatch_unrecorded  scorer runs logging 'Dispatching Execution Intent' after the newest intent row
                      wrote nothing.
-  6. shadow_off      FILL_INTENT_SHADOW=0 visible in the running dashboard's environment.
+  6. shadow_off      FILL_INTENT_SHADOW=0 set in any source that feeds the dashboard: .env/.env.local/
+                     .env.production/.env.development, the LaunchAgent's EnvironmentVariables, or
+                     `launchctl getenv`. The LIVE process environment is deliberately not read: on
+                     macOS 26 `ps eww` exposes no environment at all for launchd-managed processes
+                     (measured 2026-11-21), so a regex over it could never match.
   7. l2_coverage     (v62 gate) for every fill intent dispatched AFTER the A2/B' fix, the market's L2
                      book file must start within 90s of the dispatch and its quote-event file must
                      exist — i.e. the recorder really did pick the market up at dispatch time, which is
@@ -41,7 +47,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sqlite3
 import subprocess
 import sys
@@ -68,8 +73,17 @@ L2_LAG_BUDGET_MS = 90_000
 RECORDER_STALE_S = 180           # heartbeat is every 15s; 180s = 12 missed beats = stalled sockets/hung process
                                  # (the docstring/alert used to say "3 missed beats" -- that is 45s, not this limit)
 GATE_LEGS = 50
+# DELTA is the sidecar's 2c modelled credit. Since 2026-10-10 the default mode is MEASURED: the
+# credit is DELTA x the band's measured reach share (rust-sidecar/src/main.rs maker_credit(),
+# weights measured in src/lib/copy-cost.ts MEASURED_FILL_WEIGHTS). Check 3 compared every leg against
+# the FLAT 2c alone, so from that date every leg the filler booked under the default mode was flagged
+# as "booked outside the sidecar's filler": measured 2026-11-21, 544 of 898 intent-stamped legs. A new
+# C-200 leg lands every few minutes, so there was nearly always a fresh id to report and the 15-minute
+# watcher posted to Discord on almost every tick (96 messages/day of a permanent false alarm).
 DELTA = 0.02
-TOL = 1e-9
+MODEL_BANDS = ((0.00, 0.10, 0.028), (0.10, 0.20, 0.084), (0.20, 0.40, 0.229),
+               (0.40, 0.60, 0.188), (0.60, 0.80, 0.185), (0.80, 10.0, 0.185))
+ENTRY_TOL = 5e-6                 # entryPrice is stored to 5 decimals
 STALE_INTENT_MS = 20 * 60 * 1000
 # D (tape ingest) budget. The legs a tick must ingest are the ones dispatched since the last
 # successful ingest; anything older was already folded in (and the 2-hourly fill-chain re-derives the
@@ -118,19 +132,111 @@ def save_state(path: str, s: dict) -> None:
         json.dump(s, fh, indent=1)
 
 
-def dashboard_env_shadow_off() -> bool:
-    """FILL_INTENT_SHADOW=0 in the running dashboard process (revert switch left accidentally on)."""
+# Where FILL_INTENT_SHADOW can actually be set for the dashboard. The running process's environment
+# is NOT visible on this host: measured 2026-11-21 (macOS 26.6.2), `ps eww -p <pid>` returns zero
+# environment tokens for every launchd-managed copybot process (dashboard 54129: 56 chars, command
+# only, not even PATH; rust-sidecar 93419: 104; caffeinate 1214: 53) while it returns 13 for the
+# shell's own child — so the hiding is specific to launchd-managed processes, which is exactly the
+# class the old check 6 was reading. Check 6 matched a regex against that always-empty string and its
+# `except: return False` turned an lsof/ps failure into "shadow ON" as well: it could not fire. These
+# three sources are the places the knob can be set, and all three are readable.
+DASHBOARD_LABEL = "com.xsnyde2.copybot-dashboard"
+DASHBOARD_PLIST = os.path.expanduser(f"~/Library/LaunchAgents/{DASHBOARD_LABEL}.plist")
+# .env.example is deliberately absent: it documents the knob and is not loaded by Next.
+DASHBOARD_ENV_FILES = (".env", ".env.local", ".env.production", ".env.development")
+
+
+def _env_file_says_off(path: str):
+    """True if the file sets FILL_INTENT_SHADOW=0, False if it sets anything else, None if unreadable."""
     try:
-        pids = subprocess.run(["lsof", "-nP", f"-iTCP:{PORT}", "-sTCP:LISTEN", "-t"],
-                              capture_output=True, text=True, timeout=20).stdout.split()
-        for pid in pids:
-            env = subprocess.run(["ps", "eww", "-p", pid],
-                                 capture_output=True, text=True, timeout=20).stdout
-            if re.search(r"FILL_INTENT_SHADOW=0(\s|$)", env):
-                return True
+        with open(path) as fh:
+            for line in fh:
+                ln = line.strip()
+                if not ln or ln.startswith("#") or "=" not in ln:
+                    continue
+                key, _, val = ln.partition("=")
+                if key.strip() == "FILL_INTENT_SHADOW":
+                    return val.split("#")[0].strip().strip("\"'") == "0"
     except Exception:
-        return False
-    return False
+        return None
+    return None if not os.path.exists(path) else False
+
+
+def _plist_says_off(path: str):
+    """True if the LaunchAgent's EnvironmentVariables sets FILL_INTENT_SHADOW=0; None if unreadable."""
+    try:
+        import plistlib
+        with open(path, "rb") as fh:
+            doc = plistlib.load(fh)
+        env = (doc.get("EnvironmentVariables") or {}) if isinstance(doc, dict) else {}
+        if "FILL_INTENT_SHADOW" not in env:
+            return False
+        return str(env["FILL_INTENT_SHADOW"]).strip() == "0"
+    except Exception:
+        return None
+
+
+def _launchctl_getenv_says_off():
+    """True if `launchctl setenv FILL_INTENT_SHADOW 0` is in force; None if launchctl cannot be asked."""
+    try:
+        r = subprocess.run(["launchctl", "getenv", "FILL_INTENT_SHADOW"],
+                           capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            return None
+        val = (r.stdout or "").strip()
+        return val == "0" if val else False
+    except Exception:
+        return None
+
+
+def measured_credit(intent_price: float) -> float:
+    """The credit the sidecar books for an intent under its DEFAULT (measured) mode."""
+    for lo, hi, share in MODEL_BANDS:
+        if lo <= intent_price < hi:
+            return DELTA * share
+    return DELTA * MODEL_BANDS[-1][2]
+
+
+def booked_entry(intent_price: float, credit: float) -> float:
+    """The entry the sidecar books for this intent under `credit` — including its 1c floor.
+
+    Either credit model, plus the floor, is a legitimate booking; anything else is a leg that a
+    different path priced. Mirrors `levelFor()` in src/lib/c200-fill-resolution.ts.
+    """
+    return max(0.01, intent_price - credit)
+
+
+def shadow_off_sources(root: str | None = None) -> tuple[list[str], list[str]]:
+    """(sources that say FILL_INTENT_SHADOW=0, sources actually read).
+
+    Second element is the denominator: an empty list means the shadow's state is UNKNOWN, which must
+    never render as "ON". A source that is absent (no .env, no plist) still counts as READ when the
+    absence itself is the answer — the default is ON and only a key somewhere can turn it off.
+    """
+    root = root or ROOT
+    off: list[str] = []
+    read: list[str] = []
+    for name in DASHBOARD_ENV_FILES:
+        p = os.path.join(root, name)
+        if not os.path.exists(p):
+            continue
+        v = _env_file_says_off(p)
+        if v is None:
+            continue
+        read.append(name)
+        if v:
+            off.append(name)
+    v = _plist_says_off(DASHBOARD_PLIST)
+    if v is not None:
+        read.append(os.path.basename(DASHBOARD_PLIST))
+        if v:
+            off.append(os.path.basename(DASHBOARD_PLIST))
+    v = _launchctl_getenv_says_off()
+    if v is not None:
+        read.append("launchctl getenv")
+        if v:
+            off.append("launchctl getenv")
+    return off, read
 
 
 def unrecorded_dispatches(log_path: str, newest_intent_ms: int | None, max_lines: int = 40000) -> int | None:
@@ -410,21 +516,30 @@ def main() -> int:
             f"check the dashboard bundle/start time vs the source mtime and whether the sidecar posted "
             f"`execution-result`. The copies themselves are unaffected.")
 
-    # 3. gap anomaly
+    # 3. gap anomaly — a booked entry that matches NEITHER credit model
     bad = []
     for r in stamped:
-        gap = r["gap"]
-        clamped = abs(r["entryPrice"] - 0.01) < 1e-9 and r["intentPrice"] < 0.03   # sidecar's 0.01 floor
-        if abs(gap + DELTA) > TOL and not clamped:
-            bad.append(r)
+        intent, entry = r["intentPrice"], r["entryPrice"]
+        if abs(entry - booked_entry(intent, measured_credit(intent))) <= ENTRY_TOL:
+            continue                                   # default measured per-band credit
+        if abs(entry - booked_entry(intent, DELTA)) <= ENTRY_TOL:
+            continue                                   # modelled flat 2c (every leg before 2026-10-10)
+        bad.append(r)
     new_bad = [r for r in bad if r["id"] not in st["alertedLegs"]]
     if new_bad:
-        worst = ", ".join(f"{r['marketId']} entry {r['entryPrice']} vs intent {r['intentPrice']} (gap {r['gap']})"
-                          for r in new_bad[:3])
+        # `mirror` = entry - (1 - intent). 22 of the 27 live residuals read 0.000000 here: the leg was
+        # priced off the SIBLING token, the class card `ledger-price-side-repair` governs (Lane A, not
+        # repaired for historical rows). Printing it lets the reader tell that apart from a booking
+        # that skipped the filler for some other reason, without asserting which it is.
+        worst = ", ".join(
+            f"{r['marketId']} entry {r['entryPrice']} vs intent {r['intentPrice']} "
+            f"(gap {r['gap']}, mirror {round(r['entryPrice'] - (1 - r['intentPrice']), 6)})"
+            for r in new_bad[:3])
         alerts.append(
-            f"🚨 **C-200 fill gap anomaly** — {len(new_bad)} leg(s) where (entry - intent) is not -$0.02: {worst}. "
-            f"A leg was booked outside the sidecar's filler (or the clamp rule changed); the sweep's 2¢ "
-            f"assumption does not describe these legs.")
+            f"🚨 **C-200 fill gap anomaly** — {len(new_bad)} leg(s) whose booked entry matches neither "
+            f"credit model (measured per-band −0.06¢…−0.46¢ by price band; modelled flat 2¢; 1¢ floor): "
+            f"{worst}. A leg was booked by a path outside the sidecar's filler — `mirror 0.0` means the "
+            f"sibling token's price was booked.")
 
     # 4. dispatched but never booked
     new_unlinked = [r for r in unlinked if r["id"] not in st["alertedIntents"]]
@@ -485,11 +600,27 @@ def main() -> int:
         st["flags"].pop("dispatchUnverifiable", None)
 
     # 6. revert switch left on
-    if not a.no_process_check and not st["flags"].get("shadowOff") and dashboard_env_shadow_off():
-        alerts.append(
-            "⚠️ **C-200 fill-intent shadow is OFF** — `FILL_INTENT_SHADOW=0` is set in the running dashboard's "
-            "environment, so no intent prices are being recorded. Unset it (and restart) to resume measurement.")
-        st["flags"]["shadowOff"] = True
+    if not a.no_process_check and not st["flags"].get("shadowOff"):
+        off, seen = shadow_off_sources()
+        if off:
+            alerts.append(
+                f"⚠️ **C-200 fill-intent shadow is OFF** — `FILL_INTENT_SHADOW=0` is set in "
+                f"{', '.join(off)} (read: {', '.join(seen)}), so no intent prices are being recorded. "
+                "Unset it and restart the dashboard to resume measurement.")
+            st["flags"]["shadowOff"] = True
+        elif seen:
+            # Verified ON this tick — clear the latch so a NEW occurrence can alert again. It was
+            # never cleared: one occurrence muted this check for the life of the state file.
+            st["flags"].pop("shadowOff", None)
+            st["flags"].pop("shadowUnverifiable", None)
+        elif not st["flags"].get("shadowUnverifiable"):
+            # No source readable: say UNKNOWN once rather than letting an unreadable check pass as ON
+            # (the same discipline check 8 applies to the recorder probe).
+            alerts.append(
+                "⚠️ **C-200 fill-intent shadow state UNKNOWN** — none of .env/.env.local, the dashboard "
+                "LaunchAgent's EnvironmentVariables, or `launchctl getenv` could be read, so whether "
+                "`FILL_INTENT_SHADOW=0` is in force cannot be established on this host.")
+            st["flags"]["shadowUnverifiable"] = True
 
     # 7. v62 coverage gate: did the recorder actually cover the dispatch window?
     post_fix = [dict(r) for r in db(a.db).execute(
