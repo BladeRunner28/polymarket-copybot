@@ -129,7 +129,7 @@ export function classifySource(
   const inert = e.rows > 0 && e.opinionatedRows === 0;
   if (inert) {
     reasons.push(
-      `INERT — ${e.rows.toLocaleString("en-US")} rows all-time and 0 with |polarity| >= ` +
+      `INERT — ${e.rows.toLocaleString("en-US")} rows all-time (${e.windowRows.toLocaleString("en-US")} in the window) and 0 with |polarity| >= ` +
         `${LIVENESS_OPINIONATED_THRESHOLD}, so it can never change the aggregated delta`
     );
   }
@@ -212,10 +212,26 @@ export function livenessLine(readings: SourceLiveness[], now: Date): string {
   // the card exists to kill.
   const why = alarms.map((r) => `${r.source}: ${r.reasons.join("; ")}`).join(" | ");
   const ok = readings.length - alarms.length;
+  // 2026-11-21 self-audit: the header read `${alarms.length}/${readings.length} NOT SUPPLYING`,
+  // and `alarms` includes INERT — a source that IS emitting on schedule but whose every row has
+  // zero weight. Live that day: govinfo_fr_notice had written 96 rows in the 7d window and last
+  // emitted 2.6h earlier, and the EOD said "3/4 NOT SUPPLYING" about it. Two different faults
+  // (stopped emitting, cannot move a number) with one label is the same lie in a new costume;
+  // each is counted and named separately here, and the INERT reason now prints its window rows so
+  // "supplying but worth nothing" can be read off the line.
+  const silentAlarms = alarms.filter((r) => r.status !== "INERT");
+  const inertAlarms = alarms.filter((r) => r.status === "INERT");
+  const head: string[] = [];
+  if (silentAlarms.length > 0) {
+    head.push(`${silentAlarms.length}/${readings.length} SILENT (not supplying)`);
+  }
+  if (inertAlarms.length > 0) {
+    head.push(`${inertAlarms.length} INERT (supplying, zero weight)`);
+  }
   return (
-    `• ⚠️ Research sources — ${alarms.length}/${readings.length} NOT SUPPLYING ` +
+    `• ⚠️ Research sources — ${head.join(" + ")} ` +
     `(RegulatorySignal, clock=processedAt UTC, level=source): ${why}` +
-    (ok > 0 ? ` | still supplying: ${ok}` : "")
+    (ok > 0 ? ` | OK: ${ok}` : "")
   );
 }
 

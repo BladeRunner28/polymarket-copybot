@@ -162,10 +162,26 @@ describe("livenessLine — the report surface", () => {
       NOW
     );
     const line = livenessLine(out, NOW);
-    expect(line).toContain("NOT SUPPLYING");
+    // 2026-11-21: was "NOT SUPPLYING", which the alarm count no longer says on its own — an INERT
+    // source is emitting and still pages. The line must name the SILENT count and the source.
+    expect(line).toContain("1/2 SILENT");
     expect(line).toContain("quiver_congress_trade");
     expect(line).toContain("SILENT");
     expect(line).toContain("clock=processedAt UTC");
+  });
+
+  it("does not call an INERT source 'not supplying' — it emits, it just cannot move a number", () => {
+    // Live 2026-11-21: govinfo_fr_notice had 96 rows in the 7d window and last emitted 2.6h
+    // earlier; the header said "3/4 NOT SUPPLYING" about it.
+    const out = classifyAll(
+      [mk(), mk({ source: "govinfo_fr_notice", opinionatedRows: 0, windowRows: 96 })],
+      NOW
+    );
+    const line = livenessLine(out, NOW);
+    expect(line).toContain("1 INERT (supplying, zero weight)");
+    expect(line).not.toContain("SILENT");
+    expect(line).toContain("96 in the window");
+    expect(line).toContain("| OK: 1");
   });
 
   it("prints per-source rows/opinionated/age on a clean day, with the basis named", () => {

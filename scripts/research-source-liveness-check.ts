@@ -110,7 +110,14 @@ function selfTest(): void {
   );
 
   const line = livenessLine(classifyAll([live, dead, inert], now), now);
-  checks.push(["report line names the alarm", line.includes("NOT SUPPLYING") && line.includes("quiver_congress_trade"), line.slice(0, 60)]);
+  // 2026-11-21: the header no longer says "NOT SUPPLYING" for every paging source — an INERT source
+  // emits and still pages. Assert the split AND the source name, which is what the reader needs.
+  checks.push([
+    "report line names the alarm",
+    line.includes("1/3 SILENT (not supplying)") && line.includes("1 INERT (supplying, zero weight)") &&
+      line.includes("quiver_congress_trade"),
+    line.slice(0, 80),
+  ]);
   checks.push(["report line keeps its basis", line.includes("clock=processedAt UTC") && line.includes("level=source"), ""]);
 
   // Paging: entry pages, repeat within 24h does not, relapse after recovery does.
