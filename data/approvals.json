@@ -1,14 +1,30 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-19T22:05:05-06:00",
+  "updatedAt": "2026-11-20T22:05:05-06:00",
   "counts": {
-    "pending": 0,
-    "approved": 46,
+    "pending": 1,
+    "approved": 47,
     "declined": 1,
     "excluded": 18,
     "retired": 9
   },
   "items": [
+    {
+      "id": "apr-exit-exemption-20-40-decision",
+      "lane": "B",
+      "status": "pending",
+      "title": "DECISION (pre-committed) \u2014 exit exemption for 0.20\u20130.40: extended read + decision rule",
+      "proposal": "READ 2026-09-20 (the Change-2 clock's due date) \u2014 NO EXEMPTION SHIPS. Command: `DATABASE_URL=\"file:./dev.db?immutable=1\" npx tsx scripts/analyze-band-exit-exemption.ts --since 2026-09-13 [--band-min 0.20 --band-max 0.40]`. Result: <0.20 since 09-13 \u2014 tier1 cuts n=10, realized \u2212$191.85, priced tickets 1h 5 / 6h 3 / 24h 2 / settle 1 \u2192 under-powered, the guarantee rule blocks a decision. 0.20\u20130.40 since 09-13 \u2014 cuts n=18, realized \u2212$48.75, 1h \u2212$47.18 (n=11), 6h \u2212$14.25 (n=8), 24h \u2212$4.38 (n=1), settle \u2212$64.18 (n=9) \u2192 n<20 and the named 24h bucket has 1 priced ticket. 0.20\u20130.40 ALL-TIME \u2014 cuts n=112, realized \u2212$75.92, 1h \u2212$115.28 (n=34), 6h \u2212$87.60 (n=26), 24h \u2212$8.35 (n=8), 72h \u2212$16.40 (n=3), \u2026",
+      "evidence": "(b) MEASURED BASIS: the published settlement columns were priced on 4-22% of the cut tickets (n=5 of 113 cuts;",
+      "revert": "(e) ROLLBACK: git revert of the regeneration commit;",
+      "source": "roadmap:exit-exemption-20-40-decision",
+      "createdAt": "2026-11-20T21:05:05-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Rule pre-committed 2026-09-20 (daily report rec 1b, user-approved) \u00b7 re-read weekly or when a horizon bucket reaches 20 priced tickets",
+      "_column": "Backlog"
+    },
     {
       "id": "apr-polyterm-p3-hygiene-preregistered-read",
       "lane": "B",
@@ -739,6 +755,22 @@
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_7b30b5b3",
       "_card_dates": "Proposed 2026-11-19 by the profit review (drafts/profit-recs-20261119.md; instrument scripts/profit-cheap-ask.py \u00a79, extended and committed the same day). NOT APPLIED \u2014 Lane A: it changes which measurements rules are approved on.",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-lambda-owned-population",
+      "lane": "A",
+      "status": "approved",
+      "title": "LANE A PROPOSAL \u2014 the cheap band's \u03bb\u0302 (\u22120.5308 \u2192 q\u224828%) is fitted on wallet prints, not on the legs we own (13.0% pooled hit, 95% upper bound 24.9%); refit on the owned population before the \u2026",
+      "proposal": "WHY: C-200 0.00-0.20 is 43.0% of the book's intent notional and loses $30/day (EV/int -16.5% CI [-46.4,+22.4]); the loss is a clip tier, not a price class. MEASURED (tape-owned legs, cost = dollars at risk): <$25 tier 48 legs / 29 owned / $937 intent / +39.5% EV/int / hit 17.2% at avg price 0.104; >=$50 tier 35 legs / 25 owned / $3,350 / -32.1% EV/int / hit 8.0% at avg 0.119. The >=$50 tier is 78% of the cell's notional. The sizing input for it: data/premium-calibration.json (refit 2026-11-15) \u03bb\u0302=-0.5308 for 0.00-0.20, i.e. q\u224828% at a 13.5c ask, funded to kellyMaxSizeUsd=$100. The OWNED population reads 13.0% pooled (7/54) with a 95% upper bound of 24.9% -- below 28%, so the q is not \u2026",
+      "evidence": "MEASURED (tape-owned legs, cost = dollars at risk): <$25 tier 48 legs / 29 owned / $937 intent / +39.5% EV/int / hit 17.2% at avg price 0.104;",
+      "revert": "",
+      "source": "roadmap:profit-lambda-owned-population",
+      "createdAt": "2026-11-20T08:05:05-06:00",
+      "decidedAt": "2026-11-20T16:04:14.426Z",
+      "decidedVia": "approvals-inbox",
+      "kanbanTaskId": "t_c545aabe",
+      "_card_dates": "Proposed 2026-11-20 by the profit review (drafts/profit-recs-20261120.md \u00a7R3; instrument scripts/profit-marginal-cell.py \u00a7S9). NOT APPLIED \u2014 Lane A: it changes how much the bot risks in a band.",
       "_column": "Backlog"
     },
     {

@@ -1,131 +1,131 @@
 {
-  "generatedAt": "2026-11-20T03:34:59.604Z",
-  "candidates": 40804,
-  "marked": 28734,
-  "awaitingResolution": 12070,
-  "wins": 13585,
-  "winRate": 0.4727848541797174,
-  "wouldHavePnl": 546145.99,
+  "generatedAt": "2026-11-21T03:34:46.215Z",
+  "candidates": 41045,
+  "marked": 28735,
+  "awaitingResolution": 12310,
+  "wins": 13586,
+  "winRate": 0.47280320167043677,
+  "wouldHavePnl": 546210.07,
   "avgPnlPerTrade": 19.01,
-  "confidenceOnlyCandidates": 415,
+  "confidenceOnlyCandidates": 427,
   "stakeUsd": 10,
   "byBand": {
     "0-0.2": {
-      "n": 3694,
-      "marked": 2198,
-      "wouldHavePnl": 557048.73
+      "n": 3709,
+      "marked": 2199,
+      "wouldHavePnl": 557112.8
     },
     "0.8-1.01": {
-      "n": 8500,
+      "n": 8518,
       "marked": 4254,
       "wouldHavePnl": -20288.36
     },
     "0.4-0.6": {
-      "n": 15246,
+      "n": 15403,
       "marked": 11676,
       "wouldHavePnl": 20606.29
     },
     "0.6-0.8": {
-      "n": 7241,
+      "n": 7262,
       "marked": 5851,
       "wouldHavePnl": -23311.36
     },
     "0.2-0.4": {
-      "n": 6123,
+      "n": 6153,
       "marked": 4755,
       "wouldHavePnl": 12090.7
     }
   },
   "byPriceBand": {
     "0.05-0.1": {
-      "n": 427,
+      "n": 430,
       "marked": 305,
       "wouldHavePnl": 6467.83
     },
     "0.8-1.01": {
-      "n": 8500,
+      "n": 8518,
       "marked": 4254,
       "wouldHavePnl": -20288.36
     },
     "0.4-0.6": {
-      "n": 15246,
+      "n": 15403,
       "marked": 11676,
       "wouldHavePnl": 20606.29
     },
     "0.6-0.8": {
-      "n": 7241,
+      "n": 7262,
       "marked": 5851,
       "wouldHavePnl": -23311.36
     },
     "0.2-0.4": {
-      "n": 6123,
+      "n": 6153,
       "marked": 4755,
       "wouldHavePnl": 12090.7
     },
     "0.1-0.2": {
-      "n": 982,
-      "marked": 671,
-      "wouldHavePnl": 7244.73
+      "n": 986,
+      "marked": 672,
+      "wouldHavePnl": 7308.81
     },
     "0-0.05": {
-      "n": 2285,
+      "n": 2293,
       "marked": 1222,
       "wouldHavePnl": 543336.16
     }
   },
   "byConfidenceBucket": {
     "<0.40": {
-      "n": 16155,
+      "n": 16215,
       "marked": 11311,
       "wouldHavePnl": 512794.66
     },
     "0.40-0.50": {
-      "n": 14395,
-      "marked": 11429,
-      "wouldHavePnl": 22978.08
+      "n": 14522,
+      "marked": 11430,
+      "wouldHavePnl": 23042.15
     },
     "0.50-0.60": {
-      "n": 8701,
+      "n": 8739,
       "marked": 5228,
       "wouldHavePnl": 12774.45
     },
     "0.60-0.70": {
-      "n": 1553,
+      "n": 1569,
       "marked": 766,
       "wouldHavePnl": -2401.2
     }
   },
   "confidenceOnly": {
-    "n": 415,
-    "marked": 126,
-    "wouldHavePnl": -463.1,
-    "avgPnlPerTrade": -3.68
+    "n": 427,
+    "marked": 127,
+    "wouldHavePnl": -399.02,
+    "avgPnlPerTrade": -3.14
   },
   "dust": {
     "minEntryPrice": 0.1,
     "bannedTailMax": 0.05,
     "rowsExcluded": 1527,
     "rowPnlExcluded": 549804,
-    "wouldHavePnl": -3658,
+    "wouldHavePnl": -3593.93,
     "avgPnlPerTrade": -0.13,
     "signalsExcluded": 457,
-    "wouldHavePnlPerSignal": 5066.55,
+    "wouldHavePnlPerSignal": 5130.63,
     "marketsExcluded": 358,
-    "wouldHavePnlOneBetPerMarket": 5407.72,
-    "wouldHavePnlOneBetPerMarketExTop10": 4517.25,
+    "wouldHavePnlOneBetPerMarket": 5471.8,
+    "wouldHavePnlOneBetPerMarketExTop10": 4581.32,
     "topMarketId": "nfl-pit-cle-2026-10-02-rec-darnell-washington-3pt5",
     "topMarketPnl": 90,
-    "topMarketShare": 0.0166428659872925,
+    "topMarketShare": 0.016447980043753547,
     "bannedTailMarkets": 213,
     "bannedTailOneBetPerMarket": 267015.93
   },
   "basis": {
-    "bets": 28734,
-    "signals": 5964,
-    "markets": 5185,
-    "wouldHavePnlPerSignal": 362645.3,
-    "wouldHavePnlOneBetPerMarket": 277423.14
+    "bets": 28735,
+    "signals": 5965,
+    "markets": 5186,
+    "wouldHavePnlPerSignal": 362709.37,
+    "wouldHavePnlOneBetPerMarket": 277487.21
   },
   "firstCandidateAt": "2026-09-21T13:59:15.510Z",
-  "lastCandidateAt": "2026-11-20T03:27:18.160Z"
+  "lastCandidateAt": "2026-11-21T03:28:16.677Z"
 }
