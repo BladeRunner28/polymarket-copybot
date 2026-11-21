@@ -1,0 +1,618 @@
+{
+ "stamp": "data/standard-fill-stamp.jsonl",
+ "stamp_ranAt": "2026-11-21T12:38:41.463Z",
+ "union_legs": 1028,
+ "stamped_with_book": 396,
+ "evaluable_settled": 352,
+ "basis": "cost=simulatedPositionSize dollars at risk; realizedPnl on status IN (closed,resolved); isDemo=0; dedupe first leg per bot|wallet|market|outcome; entry vintage; market-clustered bootstrap 2000 draws; reachability = min ask in the stamp's lag buckets <= booked price (upper bound on fill, no queue, no size)",
+ "question_tol 0": {
+  "all": {
+   "n": 89,
+   "markets": 80,
+   "cost": 1569.78,
+   "pnl": 286.56,
+   "roi_pct": 18.3,
+   "win_pct": 42.7,
+   "avg_win": 30.52,
+   "avg_loss": -17.12,
+   "ex_top3_pnl": -276.46,
+   "ex_top3_roi_pct": -17.6,
+   "ci95": [
+    -32.3,
+    78.4
+   ]
+  },
+  "reachable": {
+   "n": 32,
+   "markets": 32,
+   "cost": 552.78,
+   "pnl": 413.12,
+   "roi_pct": 74.7,
+   "win_pct": 50.0,
+   "avg_win": 42.69,
+   "avg_loss": -16.87,
+   "ex_top3_pnl": -76.24,
+   "ex_top3_roi_pct": -13.8,
+   "ci95": [
+    -21.5,
+    212.2
+   ]
+  },
+  "unreachable": {
+   "n": 57,
+   "markets": 51,
+   "cost": 1017.0,
+   "pnl": -126.56,
+   "roi_pct": -12.4,
+   "win_pct": 38.6,
+   "avg_win": 21.66,
+   "avg_loss": -17.23,
+   "ex_top3_pnl": -417.4,
+   "ex_top3_roi_pct": -41.0,
+   "ci95": [
+    -56.2,
+    54.4
+   ]
+  },
+  "reachability_pct": 36.0
+ },
+ "sports_tol 0": {
+  "all": {
+   "n": 196,
+   "markets": 179,
+   "cost": 3091.28,
+   "pnl": 408.31,
+   "roi_pct": 13.2,
+   "win_pct": 54.1,
+   "avg_win": 17.15,
+   "avg_loss": -15.66,
+   "ex_top3_pnl": 117.1,
+   "ex_top3_roi_pct": 3.8,
+   "ci95": [
+    -6.0,
+    32.9
+   ]
+  },
+  "reachable": {
+   "n": 48,
+   "markets": 47,
+   "cost": 807.17,
+   "pnl": 238.28,
+   "roi_pct": 29.5,
+   "win_pct": 56.2,
+   "avg_win": 21.49,
+   "avg_loss": -16.28,
+   "ex_top3_pnl": -14.43,
+   "ex_top3_roi_pct": -1.8,
+   "ci95": [
+    -14.4,
+    79.8
+   ]
+  },
+  "unreachable": {
+   "n": 148,
+   "markets": 136,
+   "cost": 2284.11,
+   "pnl": 170.03,
+   "roi_pct": 7.4,
+   "win_pct": 53.4,
+   "avg_win": 15.67,
+   "avg_loss": -15.47,
+   "ex_top3_pnl": -11.01,
+   "ex_top3_roi_pct": -0.5,
+   "ci95": [
+    -13.1,
+    28.8
+   ]
+  },
+  "reachability_pct": 24.5
+ },
+ "esports_tol 0": {
+  "all": {
+   "n": 19,
+   "markets": 17,
+   "cost": 342.0,
+   "pnl": -38.05,
+   "roi_pct": -11.1,
+   "win_pct": 36.8,
+   "avg_win": 24.4,
+   "avg_loss": -17.41,
+   "ex_top3_pnl": -139.56,
+   "ex_top3_roi_pct": -40.8,
+   "ci95": [
+    -61.8,
+    52.4
+   ]
+  },
+  "reachable": {
+   "n": 12,
+   "markets": 12,
+   "cost": 216.0,
+   "pnl": -9.04,
+   "roi_pct": -4.2,
+   "win_pct": 41.7,
+   "avg_win": 21.96,
+   "avg_loss": -16.98,
+   "ex_top3_pnl": -88.27,
+   "ex_top3_roi_pct": -40.9,
+   "ci95": [
+    -64.3,
+    63.7
+   ]
+  },
+  "unreachable": {
+   "n": 7,
+   "markets": 6,
+   "cost": 126.0,
+   "pnl": -29.01,
+   "roi_pct": -23.0,
+   "win_pct": 28.6,
+   "avg_win": 30.5,
+   "avg_loss": -18.0,
+   "ex_top3_pnl": -72.0,
+   "ex_top3_roi_pct": -57.1,
+   "ci95": [
+    -100.0,
+    102.8
+   ]
+  },
+  "reachability_pct": 63.2
+ },
+ "other_tol 0": {
+  "all": {
+   "n": 48,
+   "markets": 47,
+   "cost": 583.12,
+   "pnl": -128.52,
+   "roi_pct": -22.0,
+   "win_pct": 37.5,
+   "avg_win": 13.36,
+   "avg_loss": -12.3,
+   "ex_top3_pnl": -235.58,
+   "ex_top3_roi_pct": -40.4,
+   "ci95": [
+    -55.5,
+    14.4
+   ]
+  },
+  "reachable": {
+   "n": 13,
+   "markets": 13,
+   "cost": 180.0,
+   "pnl": 24.75,
+   "roi_pct": 13.8,
+   "win_pct": 46.2,
+   "avg_win": 19.12,
+   "avg_loss": -12.86,
+   "ex_top3_pnl": -59.03,
+   "ex_top3_roi_pct": -32.8,
+   "ci95": [
+    -53.6,
+    85.4
+   ]
+  },
+  "unreachable": {
+   "n": 35,
+   "markets": 34,
+   "cost": 403.12,
+   "pnl": -153.27,
+   "roi_pct": -38.0,
+   "win_pct": 34.3,
+   "avg_win": 10.48,
+   "avg_loss": -12.13,
+   "ex_top3_pnl": -238.55,
+   "ex_top3_roi_pct": -59.2,
+   "ci95": [
+    -72.2,
+    4.4
+   ]
+  },
+  "reachability_pct": 27.1
+ },
+ "all_tol 0": {
+  "n": 352,
+  "reachable": 105,
+  "reachability_pct": 29.8
+ },
+ "question_+1c slack": {
+  "all": {
+   "n": 89,
+   "markets": 80,
+   "cost": 1569.78,
+   "pnl": 286.56,
+   "roi_pct": 18.3,
+   "win_pct": 42.7,
+   "avg_win": 30.52,
+   "avg_loss": -17.12,
+   "ex_top3_pnl": -276.46,
+   "ex_top3_roi_pct": -17.6,
+   "ci95": [
+    -32.3,
+    78.4
+   ]
+  },
+  "reachable": {
+   "n": 72,
+   "markets": 65,
+   "cost": 1272.78,
+   "pnl": 345.27,
+   "roi_pct": 27.1,
+   "win_pct": 43.1,
+   "avg_win": 34.35,
+   "avg_loss": -17.55,
+   "ex_top3_pnl": -217.75,
+   "ex_top3_roi_pct": -17.1,
+   "ci95": [
+    -32.0,
+    103.3
+   ]
+  },
+  "unreachable": {
+   "n": 17,
+   "markets": 17,
+   "cost": 297.0,
+   "pnl": -58.71,
+   "roi_pct": -19.8,
+   "win_pct": 41.2,
+   "avg_win": 13.53,
+   "avg_loss": -15.34,
+   "ex_top3_pnl": -127.44,
+   "ex_top3_roi_pct": -42.9,
+   "ci95": [
+    -62.3,
+    21.2
+   ]
+  },
+  "reachability_pct": 80.9
+ },
+ "sports_+1c slack": {
+  "all": {
+   "n": 196,
+   "markets": 179,
+   "cost": 3091.28,
+   "pnl": 408.31,
+   "roi_pct": 13.2,
+   "win_pct": 54.1,
+   "avg_win": 17.15,
+   "avg_loss": -15.66,
+   "ex_top3_pnl": 117.1,
+   "ex_top3_roi_pct": 3.8,
+   "ci95": [
+    -6.0,
+    32.9
+   ]
+  },
+  "reachable": {
+   "n": 176,
+   "markets": 165,
+   "cost": 2777.28,
+   "pnl": 399.15,
+   "roi_pct": 14.4,
+   "win_pct": 54.0,
+   "avg_win": 17.5,
+   "avg_loss": -15.6,
+   "ex_top3_pnl": 107.94,
+   "ex_top3_roi_pct": 3.9,
+   "ci95": [
+    -6.3,
+    35.4
+   ]
+  },
+  "unreachable": {
+   "n": 20,
+   "markets": 18,
+   "cost": 314.0,
+   "pnl": 9.16,
+   "roi_pct": 2.9,
+   "win_pct": 55.0,
+   "avg_win": 14.11,
+   "avg_loss": -16.22,
+   "ex_top3_pnl": -81.04,
+   "ex_top3_roi_pct": -25.8,
+   "ci95": [
+    -44.3,
+    54.4
+   ]
+  },
+  "reachability_pct": 89.8
+ },
+ "esports_+1c slack": {
+  "all": {
+   "n": 19,
+   "markets": 17,
+   "cost": 342.0,
+   "pnl": -38.05,
+   "roi_pct": -11.1,
+   "win_pct": 36.8,
+   "avg_win": 24.4,
+   "avg_loss": -17.41,
+   "ex_top3_pnl": -139.56,
+   "ex_top3_roi_pct": -40.8,
+   "ci95": [
+    -61.8,
+    52.4
+   ]
+  },
+  "reachable": {
+   "n": 19,
+   "markets": 17,
+   "cost": 342.0,
+   "pnl": -38.05,
+   "roi_pct": -11.1,
+   "win_pct": 36.8,
+   "avg_win": 24.4,
+   "avg_loss": -17.41,
+   "ex_top3_pnl": -139.56,
+   "ex_top3_roi_pct": -40.8,
+   "ci95": [
+    -61.8,
+    52.4
+   ]
+  },
+  "unreachable": {
+   "n": 0
+  },
+  "reachability_pct": 100.0
+ },
+ "other_+1c slack": {
+  "all": {
+   "n": 48,
+   "markets": 47,
+   "cost": 583.12,
+   "pnl": -128.52,
+   "roi_pct": -22.0,
+   "win_pct": 37.5,
+   "avg_win": 13.36,
+   "avg_loss": -12.3,
+   "ex_top3_pnl": -235.58,
+   "ex_top3_roi_pct": -40.4,
+   "ci95": [
+    -55.5,
+    14.4
+   ]
+  },
+  "reachable": {
+   "n": 41,
+   "markets": 40,
+   "cost": 517.0,
+   "pnl": -89.04,
+   "roi_pct": -17.2,
+   "win_pct": 34.1,
+   "avg_win": 16.78,
+   "avg_loss": -12.0,
+   "ex_top3_pnl": -196.1,
+   "ex_top3_roi_pct": -37.9,
+   "ci95": [
+    -54.7,
+    23.4
+   ]
+  },
+  "unreachable": {
+   "n": 7,
+   "markets": 7,
+   "cost": 66.12,
+   "pnl": -39.48,
+   "roi_pct": -59.7,
+   "win_pct": 57.1,
+   "avg_win": 1.38,
+   "avg_loss": -15.0,
+   "ex_top3_pnl": -44.63,
+   "ex_top3_roi_pct": -67.5,
+   "ci95": [
+    -90.4,
+    2.5
+   ]
+  },
+  "reachability_pct": 85.4
+ },
+ "all_+1c slack": {
+  "n": 352,
+  "reachable": 308,
+  "reachability_pct": 87.5
+ },
+ "attainable_minus_booked_cents": {
+  "question": {
+   "n": 89,
+   "median_c": 0.5,
+   "exactly_1c": 23,
+   "exactly_1c_pct": 25.8,
+   "buckets": {
+    "<=0": 32,
+    "(0,1]": 40,
+    "(1,2]": 7,
+    "(2,5]": 6,
+    ">5": 4
+   }
+  },
+  "sports": {
+   "n": 196,
+   "median_c": 0.5,
+   "exactly_1c": 10,
+   "exactly_1c_pct": 5.1,
+   "buckets": {
+    "<=0": 48,
+    "(0,1]": 128,
+    "(1,2]": 14,
+    "(2,5]": 3,
+    ">5": 3
+   }
+  },
+  "esports": {
+   "n": 19,
+   "median_c": -0.5,
+   "exactly_1c": 1,
+   "exactly_1c_pct": 5.3,
+   "buckets": {
+    "<=0": 12,
+    "(0,1]": 7
+   }
+  },
+  "other": {
+   "n": 48,
+   "median_c": 0.5,
+   "exactly_1c": 3,
+   "exactly_1c_pct": 6.2,
+   "buckets": {
+    "<=0": 13,
+    "(0,1]": 28,
+    "(1,2]": 6,
+    "(2,5]": 1
+   }
+  }
+ },
+ "lane_mix": {
+  "STANDARD": 352
+ },
+ "lane_x_vertical_tol0": {
+  "STANDARD|question": {
+   "all": {
+    "n": 89,
+    "markets": 80,
+    "cost": 1569.78,
+    "pnl": 286.56,
+    "roi_pct": 18.3,
+    "win_pct": 42.7,
+    "avg_win": 30.52,
+    "avg_loss": -17.12,
+    "ex_top3_pnl": -276.46,
+    "ex_top3_roi_pct": -17.6,
+    "ci95": [
+     -32.3,
+     78.4
+    ]
+   },
+   "reachable": {
+    "n": 32,
+    "markets": 32,
+    "cost": 552.78,
+    "pnl": 413.12,
+    "roi_pct": 74.7,
+    "win_pct": 50.0,
+    "avg_win": 42.69,
+    "avg_loss": -16.87,
+    "ex_top3_pnl": -76.24,
+    "ex_top3_roi_pct": -13.8,
+    "ci95": [
+     -21.5,
+     212.2
+    ]
+   },
+   "reachability_pct": 36.0
+  },
+  "STANDARD|sports": {
+   "all": {
+    "n": 196,
+    "markets": 179,
+    "cost": 3091.28,
+    "pnl": 408.31,
+    "roi_pct": 13.2,
+    "win_pct": 54.1,
+    "avg_win": 17.15,
+    "avg_loss": -15.66,
+    "ex_top3_pnl": 117.1,
+    "ex_top3_roi_pct": 3.8,
+    "ci95": [
+     -6.0,
+     32.9
+    ]
+   },
+   "reachable": {
+    "n": 48,
+    "markets": 47,
+    "cost": 807.17,
+    "pnl": 238.28,
+    "roi_pct": 29.5,
+    "win_pct": 56.2,
+    "avg_win": 21.49,
+    "avg_loss": -16.28,
+    "ex_top3_pnl": -14.43,
+    "ex_top3_roi_pct": -1.8,
+    "ci95": [
+     -14.4,
+     79.8
+    ]
+   },
+   "reachability_pct": 24.5
+  },
+  "STANDARD|esports": {
+   "all": {
+    "n": 19,
+    "markets": 17,
+    "cost": 342.0,
+    "pnl": -38.05,
+    "roi_pct": -11.1,
+    "win_pct": 36.8,
+    "avg_win": 24.4,
+    "avg_loss": -17.41,
+    "ex_top3_pnl": -139.56,
+    "ex_top3_roi_pct": -40.8,
+    "ci95": [
+     -61.8,
+     52.4
+    ]
+   },
+   "reachable": {
+    "n": 12,
+    "markets": 12,
+    "cost": 216.0,
+    "pnl": -9.04,
+    "roi_pct": -4.2,
+    "win_pct": 41.7,
+    "avg_win": 21.96,
+    "avg_loss": -16.98,
+    "ex_top3_pnl": -88.27,
+    "ex_top3_roi_pct": -40.9,
+    "ci95": [
+     -64.3,
+     63.7
+    ]
+   },
+   "reachability_pct": 63.2
+  },
+  "STANDARD|other": {
+   "all": {
+    "n": 48,
+    "markets": 47,
+    "cost": 583.12,
+    "pnl": -128.52,
+    "roi_pct": -22.0,
+    "win_pct": 37.5,
+    "avg_win": 13.36,
+    "avg_loss": -12.3,
+    "ex_top3_pnl": -235.58,
+    "ex_top3_roi_pct": -40.4,
+    "ci95": [
+     -55.5,
+     14.4
+    ]
+   },
+   "reachable": {
+    "n": 13,
+    "markets": 13,
+    "cost": 180.0,
+    "pnl": 24.75,
+    "roi_pct": 13.8,
+    "win_pct": 46.2,
+    "avg_win": 19.12,
+    "avg_loss": -12.86,
+    "ex_top3_pnl": -59.03,
+    "ex_top3_roi_pct": -32.8,
+    "ci95": [
+     -53.6,
+     85.4
+    ]
+   },
+   "reachability_pct": 27.1
+  }
+ },
+ "item2_rule": {
+  "reachability_pct": 36.0,
+  "reachable_roi_pct": 74.7,
+  "reachable_n": 32,
+  "reachable_ci95": [
+   -21.5,
+   212.2
+  ],
+  "verdict": "FAIL"
+ }
+}

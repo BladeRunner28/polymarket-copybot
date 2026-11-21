@@ -30,8 +30,11 @@ export DATABASE_URL="${DATABASE_URL:-file:./dev.db}"
 
 STATE="logs/standard-fill-chain-state.json"
 UNION="data/standard-fill-stamp.jsonl"
-# First run starts at the census start of the never-stamped population (2026-10-29T00:00:00Z);
-# every later run starts from its own previous start.
+# Scope anchor: the census start of the never-stamped population (2026-10-29T00:00:00Z). NEVER
+# advanced to the previous run — see the SCOPE ANCHOR note below for why a moving anchor is a
+# silent narrowing. The artifact's basis string names this anchor and its distance from the L2
+# corpus epoch (2026-08-31), because the two are 59 days apart and the in-scope count is not the
+# post-corpus population.
 DEFAULT_SINCE_MS=1793232000000
 # Set by report() for the state write, because the pending count is report()'s business.
 REPORT_PENDING=0

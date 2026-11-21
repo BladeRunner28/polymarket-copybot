@@ -545,10 +545,15 @@ async function main() {
     tapeTokenRejected,
   };
 
+  const scopeLabel = sinceMs === null
+    ? "(no scope anchor: no L2 corpus)"
+    : `${new Date(sinceMs).toISOString()}${epoch !== null && sinceMs !== epoch
+        ? ` — a LATER anchor than the L2 corpus epoch (${new Date(epoch).toISOString()}), so this run's in-scope count is NOT the post-corpus population`
+        : " (the L2 corpus epoch)"}`;
   const artifact = {
     ranAt: new Date().toISOString(),
     basis: {
-      population: "STANDARD PaperTrade rows, isDemo=0, opened at/after the L2 corpus epoch",
+      population: `STANDARD PaperTrade rows, isDemo=0, opened on/after ${scopeLabel}`,
       decisionPrice: "PaperTrade.entryPrice (the quote STANDARD read at scoring time and booked)",
       deltaCents: "attainable - decisionPrice, in cents; POSITIVE = worse than booked",
       attainment: "lowest best-ask (book) / lowest print (tape) inside the lag window — REACHABILITY, not a fill",
