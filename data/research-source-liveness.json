@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T02:06:25.233Z",
+  "generatedAt": "2026-11-21T12:54:07.444Z",
   "windowDays": 7,
   "basis": {
     "population": "RegulatorySignal rows",
@@ -11,7 +11,7 @@
     {
       "source": "quiver_congress_trade",
       "status": "SILENT",
-      "silentHours": 1683.3364625,
+      "silentHours": 1814.1315211111112,
       "policy": {
         "cadenceHours": 6,
         "maxSilenceHours": 24
@@ -23,14 +23,14 @@
       "windowOpinionated": 0,
       "lastEmitAt": "2026-09-06T22:46:13.968Z",
       "reasons": [
-        "SILENT 1683.3h (70.1d) since 2026-09-06T22:46:13.968Z — policy 24h (4× its 6h cadence)"
+        "SILENT 1814.1h (75.6d) since 2026-09-06T22:46:13.968Z — policy 24h (4× its 6h cadence)"
       ],
       "pageRequired": true
     },
     {
       "source": "reddit_trumpstrades",
       "status": "SILENT_INERT",
-      "silentHours": 677.0265983333334,
+      "silentHours": 807.8216569444445,
       "policy": {
         "cadenceHours": 6,
         "maxSilenceHours": 24
@@ -42,7 +42,7 @@
       "windowOpinionated": 0,
       "lastEmitAt": "2026-10-18T21:04:49.479Z",
       "reasons": [
-        "SILENT 677.0h (28.2d) since 2026-10-18T21:04:49.479Z — policy 24h (4× its 6h cadence)",
+        "SILENT 807.8h (33.7d) since 2026-10-18T21:04:49.479Z — policy 24h (4× its 6h cadence)",
         "INERT — 1 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta"
       ],
       "pageRequired": true
@@ -50,36 +50,36 @@
     {
       "source": "govinfo_fr_notice",
       "status": "INERT",
-      "silentHours": 4.339220277777778,
+      "silentHours": 2.6140294444444443,
       "policy": {
         "cadenceHours": 6,
         "maxSilenceHours": 24
       },
       "policyMeasured": true,
-      "rows": 1210,
+      "rows": 1285,
       "opinionatedRows": 0,
-      "windowRows": 97,
+      "windowRows": 96,
       "windowOpinionated": 0,
-      "lastEmitAt": "2026-11-15T21:46:04.040Z",
+      "lastEmitAt": "2026-11-21T10:17:16.938Z",
       "reasons": [
-        "INERT — 1,210 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta"
+        "INERT — 1,285 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta"
       ],
       "pageRequired": true
     },
     {
       "source": "congress_gov_api",
       "status": "OK",
-      "silentHours": 4.3397725,
+      "silentHours": 2.6150458333333333,
       "policy": {
         "cadenceHours": 6,
         "maxSilenceHours": 24
       },
       "policyMeasured": true,
-      "rows": 1520,
-      "opinionatedRows": 1520,
-      "windowRows": 125,
-      "windowOpinionated": 125,
-      "lastEmitAt": "2026-11-15T21:46:02.052Z",
+      "rows": 1625,
+      "opinionatedRows": 1625,
+      "windowRows": 135,
+      "windowOpinionated": 135,
+      "lastEmitAt": "2026-11-21T10:17:13.279Z",
       "reasons": [],
       "pageRequired": false
     }
@@ -88,21 +88,21 @@
     {
       "source": "quiver_congress_trade",
       "status": "SILENT",
-      "reason": "SILENT 1683.3h (70.1d) since 2026-09-06T22:46:13.968Z — policy 24h (4× its 6h cadence)",
+      "reason": "SILENT 1814.1h (75.6d) since 2026-09-06T22:46:13.968Z — policy 24h (4× its 6h cadence)",
       "send": true,
       "why": "new alarm"
     },
     {
       "source": "reddit_trumpstrades",
       "status": "SILENT_INERT",
-      "reason": "SILENT 677.0h (28.2d) since 2026-10-18T21:04:49.479Z — policy 24h (4× its 6h cadence); INERT — 1 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta",
+      "reason": "SILENT 807.8h (33.7d) since 2026-10-18T21:04:49.479Z — policy 24h (4× its 6h cadence); INERT — 1 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta",
       "send": true,
       "why": "new alarm"
     },
     {
       "source": "govinfo_fr_notice",
       "status": "INERT",
-      "reason": "INERT — 1,210 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta",
+      "reason": "INERT — 1,285 rows all-time and 0 with |polarity| >= 0.3, so it can never change the aggregated delta",
       "send": true,
       "why": "new alarm"
     }

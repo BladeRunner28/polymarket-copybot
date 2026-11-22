@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T19:03:43.225Z",
+  "generatedAt": "2026-11-22T00:03:11.096Z",
   "goldenCapturedAt": "2026-11-11T18:46:38.758Z",
   "windowCutoff": "2026-11-11T18:40:07.964Z",
   "lanes": [
@@ -13,13 +13,13 @@
         "digest": "de44f51c6ae50ac2",
         "digestMatches": true
       },
-      "feedRows": 54225,
+      "feedRows": 60386,
       "compared": 23,
       "mismatches": [],
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T19:03:39.875Z",
+        "generatedAt": "2026-11-22T00:03:07.311Z",
         "candidates": 45421,
         "marked": 41262,
         "awaitingResolution": 4159,
@@ -68,13 +68,13 @@
         "digest": "ebd59acd28ce484f",
         "digestMatches": true
       },
-      "feedRows": 40130,
+      "feedRows": 47113,
       "compared": 84,
       "mismatches": [],
       "additive": [],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T19:03:42.154Z",
+        "generatedAt": "2026-11-22T00:03:09.443Z",
         "candidates": 34803,
         "marked": 27809,
         "awaitingResolution": 6994,
@@ -242,25 +242,25 @@
       "armCheck": {
         "state": "DORMANT",
         "enabled": true,
-        "walletCapUsd": 881.44,
+        "walletCapUsd": 902.51,
         "basis": "delta",
         "blocksInWindow": 0,
         "windowDays": 7,
         "feedRows": 0,
         "breached": [],
         "tightest": {
-          "walletAddress": "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
-          "notionalUsd": 505.13,
-          "ceilingUsd": 881.44,
-          "headroomUsd": 376.31,
-          "ratio": 0.5731
+          "walletAddress": "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+          "notionalUsd": 315.23,
+          "ceilingUsd": 902.51,
+          "headroomUsd": 587.28,
+          "ratio": 0.3493
         },
         "contradiction": false,
-        "note": "DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3525.76 = $881.44 + frozen baseline (basis delta). Nearest wallet 0x17dd123a… holds $505.13 = 57.3% of its $881.44 ceiling ($376.31 of headroom = 3.8x the largest clip booked in the window ($100.00)).",
-        "capBasis": "ddBasis=realized → cap NW $6951.52 (principal $1900.00, realizedPnl $5051.52, mtm NW $6991.93)"
+        "note": "DORMANT (a real zero, not a missing writer): 0 blocks in 7d, ceiling 0.25 x $3610.04 = $902.51 + frozen baseline (basis delta). Nearest wallet 0x885ffdf3… holds $315.23 = 34.9% of its $902.51 ceiling ($587.28 of headroom = 5.9x the largest clip booked in the window ($100.00)).",
+        "capBasis": "ddBasis=realized → cap NW $7120.09 (principal $1900.00, realizedPnl $5220.09, mtm NW $7097.07)"
       },
       "portedSummary": {
-        "generatedAt": "2026-11-11T19:03:42.940Z",
+        "generatedAt": "2026-11-22T00:03:10.166Z",
         "candidates": 0,
         "marked": 0,
         "awaitingResolution": 0,
@@ -305,13 +305,18 @@
         "digest": "f10c43d5a926e78d",
         "digestMatches": true
       },
-      "feedRows": 9304,
+      "feedRows": 10185,
       "compared": 11,
       "mismatches": [],
-      "additive": [],
+      "additive": [
+        "perOpportunity.markets",
+        "perOpportunity.wouldHavePnl",
+        "perOpportunity.wouldHavePnlPerSignal",
+        "ticketsPerMarket"
+      ],
       "status": "match",
       "portedSummary": {
-        "generatedAt": "2026-11-11T19:03:43.217Z",
+        "generatedAt": "2026-11-22T00:03:11.089Z",
         "candidates": 9256,
         "wouldAdmit": 119,
         "admitsAwaitingResolution": 20,
@@ -321,6 +326,12 @@
         "totalPnl": 1996.49,
         "avgPnlPerTrade": 20.17,
         "stakeUsd": 20,
+        "perOpportunity": {
+          "markets": 47,
+          "wouldHavePnl": 664.17,
+          "wouldHavePnlPerSignal": 878.95
+        },
+        "ticketsPerMarket": 2.11,
         "firstCandidateAt": "2026-09-12T16:12:57.419Z",
         "lastCandidateAt": "2026-11-11T18:32:56.738Z"
       },

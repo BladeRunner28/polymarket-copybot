@@ -124,10 +124,20 @@
    "audited": "2026-10-15 20:26 CDT",
    "claimed": "2026-10-15 20:20 CDT",
    "claimed_ts": 1792113628.564872,
+   "decay": {
+    "action": "expired",
+    "at": "2026-11-21 08:20 CST",
+    "clause": "abandoned-approved",
+    "days": 30,
+    "rule": "asset-queue-decay-v1",
+    "since": "2026-10-22 07:16",
+    "since_event": "approval-decided",
+    "ttl": 30
+   },
    "discovered": "2026-10-15 12:25 CDT",
    "id": "agent-next/polymarket-paper-trader",
    "license": "MIT",
-   "note": "via LLMQuant/awesome-trading-agents (asset-audit 2026-10-15): PM paper-trading simulator + live order books + claimed official fee model + fill-fidelity benchma",
+   "note": "via LLMQuant/awesome-trading-agents (asset-audit 2026-10-15): PM paper-trading simulator + live order books + claimed official fee model + fill-fidelity benchma \u00b7 EXPIRED 2026-11-21 08:20 CST by asset-queue-decay-v1: abandoned-approved: 30d >= 30d since approval-decided; re-open with `asset-queue.py add --id agent-next/polymarket-paper-trader --force`, never silently \u2014 the verdict was 'watch'",
    "pushed": "",
    "recommendation": {
     "decision_rule": "read-only replay over settled C-200 legs: clob-markets fd must resolve >=90% of conditionIds (measured 25/25 where Gamma serves 6/25) AND the venue-vs-proxy re-pricing must move total fee >= $25 or flip a leg's net sign; else keep the proxy and record the null",
@@ -138,7 +148,7 @@
    "report": "drafts/asset-audit-polymarket-paper-trader-20261015.md",
    "source": "agent",
    "stars": 499,
-   "status": "audited",
+   "status": "expired",
    "url": "https://github.com/agent-next/polymarket-paper-trader",
    "verdict": "watch"
   },

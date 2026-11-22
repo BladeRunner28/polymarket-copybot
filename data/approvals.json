@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-20T22:05:05-06:00",
+  "updatedAt": "2026-11-21T22:05:06-06:00",
   "counts": {
-    "pending": 1,
+    "pending": 4,
     "approved": 47,
     "declined": 1,
-    "excluded": 18,
+    "excluded": 19,
     "retired": 9
   },
   "items": [
@@ -23,6 +23,54 @@
       "decidedVia": null,
       "kanbanTaskId": null,
       "_card_dates": "Rule pre-committed 2026-09-20 (daily report rec 1b, user-approved) \u00b7 re-read weekly or when a horizon bucket reaches 20 priced tickets",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-floor-ttr-all-lane-basis",
+      "lane": "B",
+      "status": "pending",
+      "title": "BASIS CORRECTION \u2014 the approved 2->24h TTR floor is a GLOBAL gate but its shadow measures STANDARD only; BANKROLL_200 owns 283 of the 370 blocked legs and 8x the dollars",
+      "proposal": "WHY: `minTimeToResolutionHours` is a single hard gate in src/lib/scoring/trade.ts:124 applied inside one `scoreTrade(..., rules)` call (scripts/score-trades.ts:592), so raising it 2->24 binds BOTH lanes. The approved flip decision is pre-registered against a STANDARD-ONLY shadow (data/ttr-floor-shadow.json: 99 of 150 settled band legs). MEASURED TODAY on the all-lane regime (PaperTrade isDemo=0, ruleSetVersion>=68, deduped bot|wallet|market|outcome, 487 legs / 24.3d / $10,267): blocking 2-24h removes 370 legs / $6,810 / -$636.90 (-9.4%, CI [-1698,+468], both halves negative) and lifts the kept book to +14.9% ROI. Split: STANDARD 87 legs / $748 / -$58.76 (-7.9%); BANKROLL_200 283 legs / \u2026",
+      "evidence": "MEASURED TODAY on the all-lane regime (PaperTrade isDemo=0, ruleSetVersion>=68, deduped bot|wallet|market|outcome, 487 legs / 24.3d / $10,267): blocking 2-24h removes 370 legs / $6,810 / -$636.90 (-9.4%, CI [-1698,+468], both halves negative) and lifts the kept book to +14.9% ROI.",
+      "revert": "",
+      "source": "roadmap:profit-floor-ttr-all-lane-basis",
+      "createdAt": "2026-11-21T08:05:05-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Carded 2026-11-21 by the profit review (drafts/profit-recs-20261121.md; instrument scripts/profit-tenor.py, selftest 9/9). NOT a rule change and NOTHING APPLIED.",
+      "_column": "In Progress"
+    },
+    {
+      "id": "apr-profit-item2-question-gate-basis",
+      "lane": "A",
+      "status": "pending",
+      "title": "LANE A PROPOSAL \u2014 item 2's question-class gate needs a pre-registered price tolerance: 36.0% of STANDARD question legs are reachable at the booked price and 80.9% at +1c, so the rule that decides \u2026",
+      "proposal": "WHY: item 2 says 'if >=60% of the question-market legs tape out as filled at non-negative ROI, the profit is real; otherwise it is written off permanently' and has never been computed on the question class. Computed today (basis: cost=simulatedPositionSize dollars at risk, settled TR-15 OR, isDemo=0, dedupe first leg per bot|wallet|market|outcome, entry vintage, market-clustered bootstrap 2000): 89 settled STANDARD question legs, $1,570 at risk, +$286.56 (+18.3%), CI [-32.3,+78.4], ex-top-3 -$276.46. Reachable at the booked price 32/89 = 36.0% -> gate FAILS; at +1c slack 72/89 = 80.9% -> gate PASSES. The tolerance decides the verdict because the distribution is dense at the boundary: median \u2026",
+      "evidence": "",
+      "revert": "",
+      "source": "roadmap:profit-item2-question-gate-basis",
+      "createdAt": "2026-11-21T09:05:05-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-21 by the daily profit-research job (drafts/profit-research-20261121.md; new read-only instrument scripts/profit-question-fill-read.py). NOT APPLIED \u2014 Lane A: it decides which published verdict governs a $6,200 write-off.",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-kalshi-lane-ontology-not-coverage",
+      "lane": "B",
+      "status": "pending",
+      "title": "Kalshi cross-venue lane: 0% is REFUTED \u2014 12 verified contract-equivalent pairs (9.0% of a 7d book); the gap is NAMING, not semantics (decision)",
+      "proposal": "RE-MEASURED 2026-11-21T15:13Z, and the 2026-09-18 premise is REFUTED on the population that matters now. BASIS. Population: C-200 acted positions, isDemo=0, openedAt 2026-11-14..2026-11-21; level = market; stake = sum of simulatedPositionSize. Clock: read 2026-11-21T15:13Z. Index: every OPEN Kalshi event, cursor EXHAUSTED at 114 pages x 200 = 22,782 events. Book: 115 markets, $1,961.68. WHY THE OLD READ WAS 0%. It was taken on a September book dominated by elections/politics, where the counterparts genuinely do not exist (Kalshi rate-LEVEL vs our 25bp-MOVE, vote-percentage vs win, Daytime vs primetime Emmys). Today 42.2% of the book is class-bearing sports: MONEYLINE 24/$386.01, SPREAD \u2026",
+      "evidence": "RE-MEASURED 2026-11-21T15:13Z, and the 2026-09-18 premise is REFUTED on the population that matters now.",
+      "revert": "(e) ROLLBACK: revert the matcher commit and delete data/kalshi-contract-equivalence.json;",
+      "source": "roadmap:kalshi-lane-ontology-not-coverage",
+      "createdAt": "2026-11-21T10:05:05-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Measured 2026-09-18 on the politics book; RE-MEASURED 2026-11-21T15:13Z on the sports book",
       "_column": "Backlog"
     },
     {
@@ -916,6 +964,13 @@
       "title": "LANE A PROPOSAL \u2014 STANDARD books the mid and a taker pays ~1c above it: the lane's realisable PnL is 4.23% of notional \u2026",
       "column": "Backlog",
       "reason": "note:APPLIED"
+    },
+    {
+      "id": "apr-profit-c200-clip-cap-withdrawn-after-floor",
+      "card": "profit-c200-clip-cap-withdrawn-after-floor",
+      "title": "CLOSED \u2014 the $25 clip cap is withdrawn as a SECOND fix: after the 24h floor its remaining population is profitable \u2026",
+      "column": "Done",
+      "reason": "tag:closed"
     }
   ],
   "retired": [

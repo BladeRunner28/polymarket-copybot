@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-21T03:48:08Z",
+  "builtAt": "2026-11-22T04:20:09Z",
   "status": "CLOSED",
   "closedOn": "2026-10-22",
   "reason": "pre-registered refutation triggered on both forms",
@@ -7,34 +7,34 @@
     "form": "complete pair: cost to buy a $1 payout",
     "byDirection": {
       "A": {
-        "n": 62624,
-        "medianNet": -0.117,
+        "n": 64364,
+        "medianNet": -0.1173,
         "netPositivePct": 0.91
       },
       "B": {
-        "n": 63901,
+        "n": 65678,
         "medianNet": -0.1185,
-        "netPositivePct": 0.88
+        "netPositivePct": 0.87
       }
     },
-    "medianNetAll": -0.1176,
+    "medianNetAll": -0.1182,
     "feeBand": 0.07
   },
   "information": {
     "form": "predictive AUC for P(up), mid-window quote",
-    "windows": 3282,
-    "labelled": 1964,
-    "aucPm": 0.9224,
-    "aucKalshi": 0.9313,
-    "nPm": 1804,
-    "nKalshi": 1964,
+    "windows": 3381,
+    "labelled": 2018,
+    "aucPm": 0.9225,
+    "aucKalshi": 0.9317,
+    "nPm": 1851,
+    "nKalshi": 2018,
     "disagreementMedian": 0.0,
-    "disagreementOverOneFeePct": 20.79
+    "disagreementOverOneFeePct": 20.8
   },
   "coverage": {
-    "copiesSeen": 1688,
+    "copiesSeen": 1736,
     "withKalshiQuote": 2,
-    "crossListPct": 0.2,
+    "crossListPct": 0.1,
     "unverifiedMatches": 98
   },
   "reopenCondition": "a new hypothesis on Kalshi's event-driven macro families (KXFED / KXCPI / KXPAYROLLS, 75,278 quotes already on disk with venue-truth labels) rather than 15-minute BTC"
