@@ -143,6 +143,12 @@ export interface FillAwareLeg {
   sizeUsd: number;
   /** Band label source; defaults to `intentPrice` when omitted. */
   bandPrice?: number;
+  /**
+   * Market id — the bootstrap CLUSTER key for `marketClusteredDelta`. Optional;
+   * a leg without one becomes its own cluster, so it can never be pooled with a
+   * market it does not belong to.
+   */
+  marketId?: string;
 }
 
 export const FILL_BANDS: ReadonlyArray<{ lo: number; hi: number; label: string }> = [
@@ -318,4 +324,264 @@ export function renderFillAware(s: FillAwareSummary, basisLabel: string): string
     );
   }
   return out;
+}
+
+/* ============================================================================
+ * THE UNION READER, AND THE CLUSTERED DELTA — added 2026-11-22 (Lane B repair,
+ * card `profit-c200-reachability-stamp`)
+ *
+ * WHY (measured, not asserted): the C-200 booth APPENDS one snapshot per run and
+ * each run re-stamps only the legs it could reach that tick — today's tick holds
+ * 4 legs. Every consumer of this artifact (`scripts/c200-fill-aware-pnl.ts`,
+ * published as item 1 of `approved-work-queue-20261026`) read the LAST LINE, so
+ * re-running it on 2026-11-22 printed `booked +$0.00, 4 legs, 0 settled` while
+ * the union underneath held 955 stamped intents (473 dispatched inside 30 days).
+ * Same defect class as `standard-fill-union-verdict`: the gate could not be read
+ * off the file. This module is the union and its evidence rule, so a reader can
+ * no longer be written against a tick.
+ *
+ * EVIDENCE RULE (copied from the STANDARD booth's merge, `scripts/
+ * standard-fill-stamp-merge.py`, so the two booths cannot drift): the newer
+ * stamp wins, EXCEPT that a stamp which carries NO evidence never erases one
+ * that did — otherwise a single tick that misses the L2 window silently shrinks
+ * coverage. `keptOldEvidence` counts exactly those legs, and it is printed.
+ * ========================================================================== */
+
+/** The minimum shape a stamped leg must carry to be folded into a union. */
+export interface StampCarrier {
+  intentId: string;
+  book?: { minAsk?: number | null } | null;
+  reached60?: boolean | null;
+  tapeSilent?: boolean | null;
+}
+
+/** Does this stamp carry any evidence at all? (absence is not evidence) */
+export function stampHasEvidence(l: StampCarrier): boolean {
+  if (l.book && typeof l.book.minAsk === "number" && Number.isFinite(l.book.minAsk)) return true;
+  if (l.tapeSilent) return false;
+  return typeof l.reached60 === "boolean";
+}
+
+export interface StampRow<L extends StampCarrier> {
+  ranAt: number;
+  legs: L[];
+}
+
+export interface StampUnion<L extends StampCarrier> {
+  /** One leg per intentId, in first-appearance order. */
+  legs: L[];
+  /** Snapshots read, and how many of them carried legs. */
+  rows: number;
+  rowsWithLegs: number;
+  /** Newer stamp had no evidence, older did -> the older one is kept (the rule). */
+  keptOldEvidence: number;
+  /** Older had nothing, newer has evidence. */
+  upgraded: number;
+  /** Both sides had the same evidence class -> the newer stamp is kept. */
+  newerWins: number;
+  /** Distinct intentIds seen across every snapshot. */
+  distinctLegs: number;
+  firstRanAt: number | null;
+  lastRanAt: number | null;
+}
+
+/**
+ * Streaming folder. One instance per artifact; `add()` per line so a 225 MB
+ * append-only artifact is never materialised as a whole.
+ */
+export class StampUnionFolder<L extends StampCarrier> {
+  private order: string[] = [];
+  private byId = new Map<string, { leg: L; ranAt: number; has: boolean }>();
+  private rows = 0;
+  private rowsWithLegs = 0;
+  private keptOldEvidence = 0;
+  private upgraded = 0;
+  private newerWins = 0;
+  private first: number | null = null;
+  private last: number | null = null;
+
+  add(row: StampRow<L>): void {
+    this.rows++;
+    // A row with no timestamp cannot claim the range; it still folds by evidence.
+    if (typeof row.ranAt === "number" && Number.isFinite(row.ranAt) && row.ranAt > 0) {
+      if (this.first === null || row.ranAt < this.first) this.first = row.ranAt;
+      if (this.last === null || row.ranAt > this.last) this.last = row.ranAt;
+    }
+    if (!Array.isArray(row.legs) || row.legs.length === 0) return;
+    this.rowsWithLegs++;
+    for (const leg of row.legs) {
+      const id = leg && typeof leg.intentId === "string" ? leg.intentId : "";
+      if (!id) continue;
+      const has = stampHasEvidence(leg);
+      const prev = this.byId.get(id);
+      if (!prev) {
+        this.order.push(id);
+        this.byId.set(id, { leg, ranAt: row.ranAt, has });
+        continue;
+      }
+      // Later rows are appended later; ranAt is carried so an out-of-order
+      // artifact still resolves to the NEWER stamp, not the last line read.
+      const newer = row.ranAt >= prev.ranAt ? { leg, ranAt: row.ranAt, has } : prev;
+      const older = newer === prev ? { leg, ranAt: row.ranAt, has } : prev;
+      if (!newer.has && older.has) {
+        this.keptOldEvidence++;
+        this.byId.set(id, older); // evidence beats absence
+      } else {
+        if (!older.has && newer.has) this.upgraded++;
+        else this.newerWins++;
+        this.byId.set(id, newer);
+      }
+    }
+  }
+
+  result(): StampUnion<L> {
+    const legs: L[] = [];
+    for (const id of this.order) {
+      const v = this.byId.get(id);
+      if (v) legs.push(v.leg);
+    }
+    return {
+      legs,
+      rows: this.rows,
+      rowsWithLegs: this.rowsWithLegs,
+      keptOldEvidence: this.keptOldEvidence,
+      upgraded: this.upgraded,
+      newerWins: this.newerWins,
+      distinctLegs: this.order.length,
+      firstRanAt: this.first,
+      lastRanAt: this.last,
+    };
+  }
+}
+
+/** Convenience wrapper for an in-memory row list (tests, small artifacts). */
+export function unionStamps<L extends StampCarrier>(rows: Iterable<StampRow<L>>): StampUnion<L> {
+  const f = new StampUnionFolder<L>();
+  for (const r of rows) f.add(r);
+  return f.result();
+}
+
+/**
+ * Maker-vs-taker delta per dollar of INTENDED copy, with a MARKET-CLUSTERED
+ * bootstrap CI. Both arms share the same denominator (every settled leg's
+ * notional) so the difference is the booking assumption and nothing else:
+ *
+ *   bookedRoiPct     = 100 * Σ realizedPnl / Σ notional        (p(fill) = 1)
+ *   fillAwareRoiPct  = 100 * Σ (reachable ? realizedPnl : 0) / Σ notional
+ *   deltaPct         = fillAwareRoiPct − bookedRoiPct   (percentage points)
+ *
+ * Clustering is on `marketId`: legs in one market share a resolution event and a
+ * price path, so a leg-level bootstrap understates the interval. Resampling
+ * markets also reproduces the "is this one market wide" question the printed
+ * ex-top-10 column asks. Deterministic (mulberry32) so a reread is identical.
+ */
+export interface ClusteredDelta {
+  mode: CreditMode;
+  legs: number;
+  /** Distinct market clusters seen (settled or not) — the bootstrap's resampling unit. */
+  markets: number;
+  reps: number;
+  seed: number;
+  bookedRoiPct: number | null;
+  fillAwareRoiPct: number | null;
+  deltaPct: number | null;
+  ciLoPct: number | null;
+  ciHiPct: number | null;
+  /** Markets contributing at least one settled leg. */
+  settledMarkets: number;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function marketClusteredDelta(
+  legs: FillAwareLeg[],
+  mode: CreditMode,
+  opts: { reps?: number; seed?: number } = {}
+): ClusteredDelta {
+  const reps = Math.max(200, Math.floor(opts.reps ?? 2000));
+  const seed = Math.floor(opts.seed ?? 20261122);
+  const clusters = new Map<
+    string,
+    { n: number; notional: number; booked: number; filled: number }
+  >();
+  let settled = 0;
+  for (const l of legs) {
+    const pnl = l.realizedPnl;
+    const key = l.marketId ?? `leg:${clusters.size}:${settled}`;
+    const c = clusters.get(key) ?? { n: 0, notional: 0, booked: 0, filled: 0 };
+    if (pnl !== null && Number.isFinite(pnl)) {
+      c.booked += pnl;
+      c.notional += l.sizeUsd;
+      c.n += 1;
+      settled++;
+      if (resolveFill(l.leg, mode).reachable) c.filled += pnl;
+    }
+    clusters.set(key, c);
+  }
+  const settledClusters = [...clusters.entries()].filter(([, c]) => c.n > 0);
+  const base: ClusteredDelta = {
+    mode,
+    legs: legs.length,
+    markets: clusters.size,
+    reps,
+    seed,
+    bookedRoiPct: null,
+    fillAwareRoiPct: null,
+    deltaPct: null,
+    ciLoPct: null,
+    ciHiPct: null,
+    settledMarkets: settledClusters.length,
+  };
+  if (settledClusters.length < 2) return base;
+
+  // Both arms share ONE denominator per draw: the notional of the settled legs in
+  // the resampled markets. Resampling markets therefore moves numerator AND
+  // denominator together, which is what makes the interval a market-clustered one
+  // rather than a numerator-only interval on a fixed base.
+  const sum = settledClusters.reduce(
+    (a, [, c]) => ({ booked: a.booked + c.booked, filled: a.filled + c.filled, notional: a.notional + c.notional }),
+    { booked: 0, filled: 0, notional: 0 }
+  );
+  if (!(sum.notional > 0)) return base;
+  const bookedRoi = (100 * sum.booked) / sum.notional;
+  const filledRoi = (100 * sum.filled) / sum.notional;
+
+  const rnd = mulberry32(seed);
+  const draws: number[] = [];
+  const k = settledClusters.length;
+  for (let r = 0; r < reps; r++) {
+    let b = 0;
+    let f = 0;
+    let nt = 0;
+    let n = 0;
+    for (let i = 0; i < k; i++) {
+      const pick = settledClusters[Math.floor(rnd() * k)];
+      b += pick[1].booked;
+      f += pick[1].filled;
+      nt += pick[1].notional;
+      if (pick[1].n > 0) n++;
+    }
+    if (n < 2 || !(nt > 0)) continue;
+    draws.push((100 * f) / nt - (100 * b) / nt);
+  }
+  if (draws.length === 0) return base;
+  draws.sort((a, b) => a - b);
+  const at = (q: number) => draws[Math.min(draws.length - 1, Math.max(0, Math.floor(q * draws.length)))];
+  return {
+    ...base,
+    bookedRoiPct: bookedRoi,
+    fillAwareRoiPct: filledRoi,
+    deltaPct: filledRoi - bookedRoi,
+    ciLoPct: at(0.025),
+    ciHiPct: at(0.975),
+  };
 }
