@@ -1,0 +1,22 @@
+{
+  "why": "Fixed eval set for scripts/ops-record-lookup.py. Every query is a question a reviewer could honestly ask before designing work, and every expected card is a REAL incident already answered on this board (column recorded at eval time, not asserted to be Done). Queries are phrased without the card id so the task is retrieval, not string matching. Do not edit a query to make an arm pass: the gate in the script is pre-registered.",
+  "level": "one query -> one expected card id",
+  "queries": [
+    {"q": "the venue changed its outcome text between eras so old and new rows fail to join", "expect": "data-api-v2-outcome-normalisation"},
+    {"q": "is the per market rail really a count of legs rather than a notional ceiling", "expect": "permarket-legs-rail-finding"},
+    {"q": "one mega bucket consumed the fifteen per slug allowance", "expect": "slug-cap-token-granularity"},
+    {"q": "the min confidence shadow headline is mostly a single dust row", "expect": "lowconf-shadow-dust-floor"},
+    {"q": "a research source stopped emitting and nothing paged", "expect": "research-source-silent-death"},
+    {"q": "our reports get cut off by the webhook payload limit", "expect": "discord-eod-truncation"},
+    {"q": "which incentive programs sit above the gate and we never capture them", "expect": "kalshi-lip-universe-gap"},
+    {"q": "a token renamed between ingest and settlement booked a phantom loss", "expect": "token-label-alias-phantom-loss"},
+    {"q": "how far back does kalshi serve settled markets and fills", "expect": "kalshi-settled-history-surface"},
+    {"q": "label coverage of the declined arm in the training export", "expect": "ml1-declined-arm-coverage"},
+    {"q": "auc split by era because the fit only saw one regime", "expect": "ml1-fit-population-gaps"},
+    {"q": "per position fee truth from the venue instead of the keyword proxy", "expect": "paper-ledger-fee-fidelity"},
+    {"q": "the demoted wallets carried the whole forward edge", "expect": "crowdintel-track-churn-inversion"},
+    {"q": "is the high entry ceiling censoring a paying population", "expect": "profit-entry-ceiling-censored-pool"},
+    {"q": "congressional disclosure vendor overlap with the feeds we already run", "expect": "insidercat-source-audit"},
+    {"q": "band exit exemption tier one cuts in the point two to point four band", "expect": "exit-exemption-20-40-decision"}
+  ]
+}

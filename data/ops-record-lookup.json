@@ -1,0 +1,146 @@
+{
+  "arms": {
+    "full": {
+      "mrr": 0.6898481638418079,
+      "ranks": {
+        "crowdintel-track-churn-inversion": 1,
+        "data-api-v2-outcome-normalisation": 2,
+        "discord-eod-truncation": 236,
+        "exit-exemption-20-40-decision": 2,
+        "insidercat-source-audit": 5,
+        "kalshi-lip-universe-gap": 1,
+        "kalshi-settled-history-surface": 3,
+        "lowconf-shadow-dust-floor": 2,
+        "ml1-declined-arm-coverage": 1,
+        "ml1-fit-population-gaps": 1,
+        "paper-ledger-fee-fidelity": 2,
+        "permarket-legs-rail-finding": 1,
+        "profit-entry-ceiling-censored-pool": 1,
+        "research-source-silent-death": 1,
+        "slug-cap-token-granularity": 1,
+        "token-label-alias-phantom-loss": 2
+      },
+      "recall1": 0.5,
+      "recall3": 0.875,
+      "recall5": 0.9375
+    },
+    "hybrid": {
+      "mrr": 0.7142543859649122,
+      "ranks": {
+        "crowdintel-track-churn-inversion": 2,
+        "data-api-v2-outcome-normalisation": 1,
+        "discord-eod-truncation": 95,
+        "exit-exemption-20-40-decision": 5,
+        "insidercat-source-audit": 57,
+        "kalshi-lip-universe-gap": 1,
+        "kalshi-settled-history-surface": 1,
+        "lowconf-shadow-dust-floor": 1,
+        "ml1-declined-arm-coverage": 1,
+        "ml1-fit-population-gaps": 1,
+        "paper-ledger-fee-fidelity": 5,
+        "permarket-legs-rail-finding": 1,
+        "profit-entry-ceiling-censored-pool": 1,
+        "research-source-silent-death": 1,
+        "slug-cap-token-granularity": 2,
+        "token-label-alias-phantom-loss": 1
+      },
+      "recall1": 0.625,
+      "recall3": 0.75,
+      "recall5": 0.875
+    },
+    "literal": {
+      "mrr": 0.15625,
+      "ranks": {
+        "crowdintel-track-churn-inversion": null,
+        "data-api-v2-outcome-normalisation": null,
+        "discord-eod-truncation": null,
+        "exit-exemption-20-40-decision": null,
+        "insidercat-source-audit": null,
+        "kalshi-lip-universe-gap": null,
+        "kalshi-settled-history-surface": null,
+        "lowconf-shadow-dust-floor": null,
+        "ml1-declined-arm-coverage": 1,
+        "ml1-fit-population-gaps": 1,
+        "paper-ledger-fee-fidelity": 2,
+        "permarket-legs-rail-finding": null,
+        "profit-entry-ceiling-censored-pool": null,
+        "research-source-silent-death": null,
+        "slug-cap-token-granularity": null,
+        "token-label-alias-phantom-loss": null
+      },
+      "recall1": 0.125,
+      "recall3": 0.1875,
+      "recall5": 0.1875
+    },
+    "passage": {
+      "mrr": 0.4479581944509647,
+      "ranks": {
+        "crowdintel-track-churn-inversion": 2,
+        "data-api-v2-outcome-normalisation": 34,
+        "discord-eod-truncation": 358,
+        "exit-exemption-20-40-decision": 3,
+        "insidercat-source-audit": 10,
+        "kalshi-lip-universe-gap": 6,
+        "kalshi-settled-history-surface": 175,
+        "lowconf-shadow-dust-floor": 1,
+        "ml1-declined-arm-coverage": 2,
+        "ml1-fit-population-gaps": 2,
+        "paper-ledger-fee-fidelity": 1,
+        "permarket-legs-rail-finding": 34,
+        "profit-entry-ceiling-censored-pool": 1,
+        "research-source-silent-death": 2,
+        "slug-cap-token-granularity": 1,
+        "token-label-alias-phantom-loss": 2
+      },
+      "recall1": 0.25,
+      "recall3": 0.625,
+      "recall5": 0.625
+    },
+    "title": {
+      "mrr": 0.6344818376068377,
+      "ranks": {
+        "crowdintel-track-churn-inversion": 3,
+        "data-api-v2-outcome-normalisation": 1,
+        "discord-eod-truncation": 78,
+        "exit-exemption-20-40-decision": 12,
+        "insidercat-source-audit": null,
+        "kalshi-lip-universe-gap": 1,
+        "kalshi-settled-history-surface": 1,
+        "lowconf-shadow-dust-floor": 1,
+        "ml1-declined-arm-coverage": 1,
+        "ml1-fit-population-gaps": 3,
+        "paper-ledger-fee-fidelity": 18,
+        "permarket-legs-rail-finding": 1,
+        "profit-entry-ceiling-censored-pool": 1,
+        "research-source-silent-death": 1,
+        "slug-cap-token-granularity": 3,
+        "token-label-alias-phantom-loss": 1
+      },
+      "recall1": 0.5625,
+      "recall3": 0.75,
+      "recall5": 0.75
+    }
+  },
+  "corpus": {
+    "card": 309,
+    "draft": 503
+  },
+  "gate": {
+    "beats_literal_met": true,
+    "beats_title_met": true,
+    "pass": true,
+    "queries_beating_literal": 13,
+    "recall3_met": true
+  },
+  "gate_rule": {
+    "beat_literal_by": 2,
+    "recall3": 0.875
+  },
+  "missed": [
+    "discord-eod-truncation(rank 236)",
+    "insidercat-source-audit(rank 5)"
+  ],
+  "n_docs": 812,
+  "n_queries": 16,
+  "read_at": "2026-11-22T02:05:56Z"
+}
