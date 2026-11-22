@@ -981,7 +981,29 @@ export async function generateDailyReport(
     ...(edgeBlock.length ? [``, ...edgeBlock] : []),
     ``,
     `**System Activity:**`,
-    `• Signals today: ${decisionsToday.length} (copy ${copied} / watch ${watched} / skip ${skipped})${dayElapsed ? "" : ` — counted 00:00→${localHm(now)} local; the rest of the day is not in this count`}`,
+    // 2026-11-22 self-audit (Lane B, label only — no number, rule or threshold touched): the
+    // bucket printed as "watch" is the journal's `watchlist` decision, and that word means two
+    // different things in this report family. `watchlist` is a SCORE BAND, not a wallet status:
+    // src/lib/scoring/trade.ts:417 sets it when `copyScore >= rules.watchlistScore` but under the
+    // copy bar (reasons: "Interesting but below copy threshold"), and scripts/score-trades.ts
+    // additionally RE-LABELS a would-be paper_copy as watchlist when a cap or risk gate refuses it.
+    // The bar is the ACTIVE RuleSet's value, which is not the 45 in src/lib/rules.ts defaults:
+    // measured v73 = 35 (DB RuleSet.rulesJson), so the printed line names the bar's SOURCE rather
+    // than a number that would go stale the next time the threshold moves.
+    // Measured on the live DB. The 2026-11-21 report (local calendar day, isDemo=0) printed
+    // "copy 50 / watch 2 / skip 1114", and the journal for that same window returns:
+    //   watchlist rows                     2   — BOTH from wallets whose STATUS is track
+    //   decisions by watch-STATUS wallets  168 — every one journaled `skip`
+    // so the number printed as "watch" was 2 rows that had nothing to do with watched wallets,
+    // while 168 signals actually came from them. 7d (isDemo=0, to 2026-11-22 07:20) the same
+    // asymmetry holds: watchlist rows 26 (18 watch-status wallets, 8 track), decisions by
+    // watch-status wallets 2,724 (skip 2,680 / watchlist 18 / paper_copy 26).
+    // The same report's edge/copy-cost block already uses "watch" for the wallet status, so one
+    // word carried two populations on consecutive lines. Renamed to "near-miss" with the basis
+    // stated on the following line.
+    `• Signals today: ${decisionsToday.length} (copy ${copied} / near-miss ${watched} / skip ${skipped})${dayElapsed ? "" : ` — counted 00:00→${localHm(now)} local; the rest of the day is not in this count`}`,
+    `  ↳ near-miss = the journal's \`watchlist\` rows: copyScore at/above the active RuleSet's watchlist bar but under the copy bar, plus copy-intended rows a cap or risk gate refused — NOT the count of watch-status wallets`,
+
     // 2026-11-13 self-audit: this read "Best trade: 0x885f…8ed9 $-9.00" on 2026-11-12 —
     // the day's best STANDARD trade was a LOSS, because the day had exactly ONE
     // resolved STANDARD trade. "Best" over a sample of one is arithmetically right and
