@@ -8,6 +8,40 @@
   ],
   "cards": [
     {
+      "id": "profit-residual-cheap-longdated-clip",
+      "title": "LANE A PROPOSAL — cap C-200 at $40 only where the 24h floor cannot reach: px<0.20 AND ttr>=168h (13 legs, 0/13 won, −$221.45) = +$5.27/day",
+      "column": "Backlog",
+      "effort": "1h (new RuleSet field defaulted 0 = off, applied after clampPaperSize)",
+      "dates": "Proposed 2026-11-22 by the profit review (drafts/profit-recs-20261122.md §R2; instrument scripts/profit-clip-tier.py §S4/S6, --selftest 5/5). NOT APPLIED — Lane A: it changes how much the bot risks.",
+      "note": "WHY: the whole book's loss is one clip tier (≥$40: 53 legs, $5,000 = 45% of notional, −$766.19, −15.3%, ex-top-1 −26.9%), and a 24h floor removes 32 of those 53 legs (the entire −$904.44 at ttr 2-24h). The one block the floor CANNOT reach is ≥$40 at px<0.20 with ttr≥168h: 13 legs, $1,200, −$221.45 (−18.5%), CI [−36.1,−5.3], 0/13 won, ex-top-3 −25%, mean price 0.16 against a 16% break-even. A $40 cap rescales those legs to 40% of their risk: +$132.87 = +$5.27/day. S6 confirms zero overlap with the floor. CONTEXT — do not ship this together with anything else on the cheap band: the approved $25 band-scoped cap is a SHADOW of the floor (post-floor it reaches 17 legs that are +$94.65 and capping them costs $64-107), and the λ̂ refit card (profit-lambda-owned-population) fixes the same over-bet at its input. Approve ONE of the three.",
+      "decision_rule": "Ship as a RuleSet field defaulted 0 = off; apply when this cell's forward 30 legs earn ≤ −10% with a market-clustered CI excluding zero, or immediately if the operator prefers to stop the bleed (the measured 13-leg basis already clears −10%; the n is what is thin). REFUTATION: 0/13 at a 16% break-even has a 10.4% chance under fair pricing, so a forward 30 legs at ≥0 EV withdraws it; and if profit-lambda-owned-population lands first, withdraw this entirely — the cap only truncates the output of a funding input that card corrects.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "sizing",
+        "clip",
+        "awaiting-approval",
+        "proposed-2026-11-22"
+      ],
+      "gate": "LANE A — nothing applied. No RuleSet read/write, no prisma write, DB mode=ro. Re-read: python3 scripts/profit-clip-tier.py (§S4, §S6)."
+    },
+    {
+      "id": "profit-exit-schedule-and-scope",
+      "title": "MEASUREMENT — the stale adverse exit is worth +$922 on its own class (hold-to-resolution would be −60.2% vs −22.7%); do not change its schedule, and do NOT extend its scope to STANDARD (+$11 total)",
+      "column": "Done",
+      "effort": "0h (decision); 1h instrument",
+      "dates": "Proposed and closed 2026-11-22 by the profit review (drafts/profit-recs-20261122.md §3/§R3). Instrument scripts/profit-exit-counterfactual.py (tape arms, 5 checks PASS, 100% coverage), committed the same day.",
+      "note": "WHY: the book's loss sits entirely on legs our exit closed (63 legs / $2,455 / −22.7%) while market-resolved legs made +4.6% on 497 legs — a split that invites 'our exit is selling the bottom'. MEASURED (venue minute tape, prices-history keyless/retroactive, dollars at risk held constant, arms at the leg's own closedAt): actual −22.7% | hold +24h −21.4% (delta CI [−36.3,+56.8]) | hold +7d −28.3% | hold to resolution −60.2% (delta CI [−77.5,+27.1]). Only 8 of 63 held outcomes won against a 32.8% break-even price, i.e. the closed class loses because it was selected for losing, not because we exited early. TWO NEGATIVE RESULTS: (1) replacing the rule with a mechanical 'exit at exactly entry+24h if ≤15% adverse' on all 410 settled C-200 legs costs −$379.69 (−4.0%, CI [−7.9,−1.0], 29 fires) — the live rule earns its keep by firing on a LATER check, so a leg that dips and recovers is not sold; do not 'simplify' it. (2) Replaying the same rule on STANDARD's 137 settled legs (the lane the botId===\"BANKROLL_200\" scope excludes) moves +$11.02 (+0.7%, CI [+0.0,+2.0], 5 fires): the 381 stranded STANDARD legs / $4,171 are a mark-quality and capital-days problem, NOT a P&L problem.",
+      "decision_rule": "Leave staleExitHours / staleExitAdverseMove / staleExitHardHours and the botId===\"BANKROLL_200\" scope unchanged while the STANDARD replay delta stays under +2% of notional. REFUTATION: ≥100 forward STANDARD legs whose replay delta clears +2% with a CI excluding zero, or ≥30 forward STANDARD legs going adverse at the 24h check — then the scope is a live lever and becomes a real proposal.",
+      "tags": [
+        "profit-review",
+        "measurement",
+        "exit",
+        "closed-2026-11-22"
+      ],
+      "gate": "Measurement only; nothing applied. Re-read: python3 scripts/profit-exit-counterfactual.py (S1-S8; --no-fetch for cache-only)."
+    },
+    {
       "id": "profit-entry-ceiling-censored-pool",
       "title": "MEASUREMENT — the entry-price ceiling is NOT censoring a paying population: skips at 0.85-0.90 hit 81% against an 87.9% break-even; do not lift c200MaxEntryPrice 0.80 / standardMaxEntryPrice 0.85",
       "column": "Done",
