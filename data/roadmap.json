@@ -4807,6 +4807,18 @@
         "2026-11-21"
       ],
       "note": "FOUND 2026-11-21 (Lane B, while building scripts/ops-record-lookup.py). MEASURED: 1 of 308 cards stores `note` as a JSON ARRAY rather than a string — tr39-print-type-ingest-guard, column Done. scripts/roadmap-add-card.py checks only that the key is PRESENT (REQUIRED tuple), never its type, so the hole is in the writer. The first version of the retrieval instrument crashed on exactly this card (TypeError: sequence item 3: expected str, list found) and now coerces it via as_text(). WHY IT MATTERS: readers are written against `note` being a string (`' '.join(...)`, slice, regex, `.lower()`), so every new consumer is a fresh crash or, worse, a silently truncated read. The existing reader that matters most is the approval-queue gate and any cron that greps the note text. NOT FIXED, and deliberately: normalising the stored value rewrites a Done card's record and this card's own subject is the missing check, not the one row. PROPOSED (Lane B, no decision changes): (1) roadmap-add-card.py refuses a card whose `note` is not a str or whose `tags` is not a list of str, with a self-test arm; (2) optionally re-shape the one legacy row to a string in a separate, explicit commit. REVERT: revert the commit; nothing reads the type check at runtime."
+    },
+    {
+      "id": "profit-c200-reachability-stamp",
+      "title": "MEASUREMENT — item 1's maker shadow has no writer: stamp reachability on the C-200 dispatch population (>=200 legs) to give item 1 and item 2 the same population in one pass",
+      "column": "Backlog",
+      "note": "Day 5 of the 30-day refutation clock with zero code: grep for a maker/shadow writer in src/ and scripts/ returns nothing, and the reachability booth that exists is STANDARD-scoped. Basis: cost = simulatedPositionSize (dollars at risk), settled TR-15 OR, isDemo=0, dedupe first leg per bot|wallet|market|outcome, entry vintage. Per dispatch stamp: min ask at/inside the booked price and at the mid over the booth's lag buckets (UPPER bound on fill; no queue position, no size). Unlock: >=200 stamped C-200 legs, then the maker-vs-taker ROI delta with a market-clustered CI = item 1's approved decision rule. Refutation: <200 stamped legs in 30 days means the shadow population does not exist and item 1 expires unrefuted, which is the answer.",
+      "tags": [
+        "profit-research",
+        "lane-a",
+        "item-1",
+        "measurement"
+      ]
     }
   ],
   "dates": {

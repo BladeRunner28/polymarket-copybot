@@ -156,22 +156,42 @@ def cluster_ci(rows, iters=2000, seed=7):
     return [round(out[int(0.025 * len(out))], 1), round(out[int(0.975 * len(out))], 1)]
 
 
+SUPPRESSED = []
+
+
 def table(rows, keyfn, title, minn=8):
+    """Print one grouped table. Cells with fewer than `minn` legs are NOT printed, which is
+    fine as a display choice and a lie as a population claim: on 2026-11-22 the
+    FILL-CONFIRMED clip table summed to 299 of 302 legs and $4,506 of $4,676 at risk because
+    the 3-leg "$40-99" cell was suppressed, so its rows could not be reconciled with the
+    headline ROI. Every suppressed cell is now declared in a footer line and in the artifact
+    (art["suppressed_cells"]) so no reader can mistake a table for the whole population."""
     print(f"\n=== {title} ===")
     print(f"{'cell':16s} {'legs':>5s} {'mkts':>5s} {'cost':>9s} {'pnl':>9s} {'roi%':>7s} "
           f"{'win%':>6s} {'be%':>6s} {'ex-top3':>9s}")
     groups = collections.defaultdict(list)
     for r in rows:
         groups[keyfn(r)].append(r)
-    out = []
+    out, dropped = [], []
     for k, v in sorted(groups.items(), key=lambda kv: -(sum(x["realizedPnl"] or 0 for x in kv[1]))):
         if len(v) < minn:
+            dropped.extend(v)
             continue
         s = stats(v)
         out.append({"cell": k, **s})
         print(f"{k:16s} {s['n']:5d} {s['markets']:5d} {s['cost']:9.0f} {s['pnl']:9.0f} "
               f"{s['roi_pct'] if s['roi_pct'] is not None else 0:7.1f} "
               f"{s['win_pct']:6.1f} {s['breakeven_win_pct'] or 0:6.1f} {s['ex_top3_pnl']:9.0f}")
+    shown = stats([r for r in rows])
+    if dropped:
+        ds = stats(dropped)
+        print(f"{'[suppressed]':16s} {ds['n']:5d} {ds['markets']:5d} {ds['cost']:9.0f} "
+              f"{ds['pnl']:9.0f} {ds['roi_pct'] if ds['roi_pct'] is not None else 0:7.1f} "
+              f"{ds['win_pct']:6.1f} {ds['breakeven_win_pct'] or 0:6.1f} {ds['ex_top3_pnl']:9.0f}"
+              f"   (cells below minn={minn}; shown rows are NOT the whole population)")
+        SUPPRESSED.append({"table": title, "minn": minn,
+                           "suppressed": ds,
+                           "population": {"n": shown["n"], "cost": shown["cost"], "pnl": shown["pnl"]}})
     return out
 
 
@@ -344,6 +364,7 @@ def main():
             ci_out.append({"cell": label, "n": s["n"], "roi_pct": s["roi_pct"], "ci95": ci})
             print(f"  {label:22s} n={s['n']:4d} roi={s['roi_pct']:7.1f}%  CI {ci}")
     art["filled_ci"] = ci_out
+    art["suppressed_cells"] = SUPPRESSED
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as fh:
