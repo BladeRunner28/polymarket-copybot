@@ -9,8 +9,16 @@ approved 2026-11-23T13:22:25Z) · **Lane A — PROPOSAL ONLY, nothing applied** 
 **Revision 2 (2026-11-23, after review).** §2, §3, §4 and §8 prose corrected against the
 instrument's own output: the "mid is never a grid price" claim, the crosstab's status as an
 invariant rather than evidence, the 0.05–0.20 price band, the 543-leg denominator, the flow share,
-the book-stamp count, and the "same span" framing. No number in any table changed and no line of
-the §6 rule text changed.
+the book-stamp count, and the "same span" framing. No published count, ROI, CI or arm percentage
+changed; two read-only cells did — the §2 mid-match tolerance (≤0.01c → ≤0.05c) and the readiness
+horizon (27 → ~23 months) — and no line of the §6 rule text changed.
+
+**Revision 3 (2026-11-23, after review).** §8's flow sentence now names a basis per figure instead
+of welding a STANDARD leg share to a both-lane dollar share, and §2's arm-B row / §3 state the
+sub-tick remainder range the instrument actually produces: **0.05–0.90c** over the 40 off-grid legs,
+with **10 of the 40 above 0.50c**. The grid construction bounds the remainder at 0.95c, not 0.50c;
+capping arm B at 0.50c still yields 46/89, so again no published count, ROI, CI or arm percentage
+moved and the §6 rule text is untouched.
 
 ## Key insight
 
@@ -80,7 +88,7 @@ The bar is 89 legs, n small enough that every arm's ROI interval spans zero:
 | arm | tolerance rule | reachable | reachable-cohort ROI | 95% CI (mkt-clustered) | ex-top-3 |
 |---|---|---|---|---|---|
 | **A** tol 0 (maker at the booked mid) | 0.00 | **32/89 = 36.0%** | +74.7% | [−21.5, +212.2] | −$76.24 |
-| **B** tick-aligned reachability | leg's sub-tick remainder to the next 1c (0 for the 49 on-grid legs; ≤0.50c observed) | **46/89 = 51.7%** | +63.4% | [−14.4, +166.0] | −$52.75 |
+| **B** tick-aligned reachability | leg's sub-tick remainder to the next 1c (0 for the 49 on-grid legs; 0.05–0.90c observed on the other 40) | **46/89 = 51.7%** | +63.4% | [−14.4, +166.0] | −$52.75 |
 | **C** flat +1c | +0.01 | **72/89 = 80.9%** | +27.1% | [−32.0, +103.3] | −$217.75 |
 | **C'** C re-priced at the ask | +0.01, PnL at the min ask | 80.9% | +33.4% | [−30.1, +117.4] | −$197.12 |
 | **B'** B re-priced at the ask | sub-tick, PnL at the min ask | 51.7% | +74.5% | [−11.9, +193.0] | −$22.54 |
@@ -100,9 +108,10 @@ The full class (no reachability filter) is **89 legs, $1,569.78 at risk, +$286.5
 
 49 of the 89 legs are booked on the grid already (tick remainder 0). A flat +1c hands those legs a
 **whole cent of price improvement** with no booking-derived justification — 1.9% of the booked price
-at the median leg, and only on the cheapest few is that anything like 5–20% (the 89 booked prices
-run **0.051–0.839, median 0.515, p75 0.669**; **66/89 sit outside 0.05–0.20**) — whereas the 40
-off-grid legs need only their own sub-tick remainder (0.05–0.50c by construction) to become
+at the median leg, and only on the **23 legs booked at ≤0.20** is a cent 5% or more of the price
+(the 89 booked prices run **0.051–0.839, median 0.515, p75 0.669**; **66/89 sit outside 0.05–0.20**)
+— whereas the 40 off-grid legs need only their own sub-tick remainder (**0.05–0.90c observed**, 10 of
+the 40 above 0.50c; the grid construction bounds it at 0.95c) to become
 tradable. The tick-aligned arm grants each leg exactly the gap its own booking implies and no more:
 **51.7%**. The flat arm grants everyone a full
 tick: **80.9%**. That 29.2pp gap is the difference between "the booked price, instantiated on the
@@ -229,11 +238,17 @@ verdict* would read once the operator approves this text.
   the point estimate only; "non-negative ROI" is not statistically established at n=89.
 - The **adjudicable** flow is thin and lumpy: 106 mapped question legs in September (the L2 corpus
   epoch month, which carries backfill), **7** in October, **9** in November. The class as a whole is
-  not small, and it is not in free fall: post-corpus STANDARD question legs ran 505 → 8 → 30
-  (all statuses, undeduped) against a lane that ran 747 → 146 → 143, so November's question book is
-  **30/143 = 21% of STANDARD's legs** and its **87 settled question legs carry $2,443 of the $10,628
-  settled at risk = 23%** of the lane's dollars. What is small is the *adjudicable* slice — 9 legs a
-  month, which is why the coverage bar, not the tolerance, is what parks item 2.
+  not small — November carries **110 question legs across both lanes** — but it is shrinking faster
+  than the lane it sits in: post-corpus question legs ran **505 → 8 → 30** on STANDARD (all statuses,
+  undeduped) against STANDARD's own lane at **747 → 146 → 143**, i.e. 68% → 5.5% → 21% of the lane's
+  legs. Measured per basis, November's question book is:
+  - **STANDARD:** 30/143 = **21% of the lane's legs**; **9** settled question legs carry **$135 of
+    STANDARD's $1,339 settled at risk = 10%**.
+  - **Both lanes:** 110/575 = **19% of all legs**; **87** settled question legs carry **$2,443 of
+    $10,628 settled at risk = 23%**.
+
+  What is small is the *adjudicable* slice — 9 legs a month — which is why the coverage bar, not the
+  tolerance, is what parks item 2.
 - The adjudicable universe is capped by the L2 map, not by the book: **122 of 425** post-corpus
   question legs sit in the L2 asset map, and **89** of those 122 carry a book stamp and are settled
   (73.0%). Coverage can only improve forward (Oct/Nov adjudicable legs stamp at 100%).
