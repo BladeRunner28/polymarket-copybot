@@ -1,13 +1,19 @@
 {
-  "generated_at": "2026-10-25T11:52:56Z",
+  "generated_at": "2026-11-23T13:28:19Z",
   "mode": "calibration-replay",
-  "approval_date": "2020-01-01",
+  "approval_date": "2024-01-01",
+  "basis_corrected_at": "2026-11-23",
+  "basis_correction": "measured STANDARD only through 2026-11-23; the gate is global. Decision population is now every lane, each reported as a sub-arm. See drafts/ttr-floor-all-lane-basis-20261123.md (approvals apr-profit-floor-ttr-all-lane-basis).",
+  "decision_population": "STANDARD",
   "window": "n-driven (no calendar deadline)",
   "superseded_shadow_days": 14,
-  "days_elapsed": 2489.5,
+  "days_elapsed": 1057.56,
   "bot": "STANDARD",
+  "lanes_reported": [
+    "STANDARD"
+  ],
   "rule": {
-    "proposed": "minTimeToResolutionHours 2 -> 24 on STANDARD",
+    "proposed": "minTimeToResolutionHours 2 -> 24 -- GLOBAL, binds every lane",
     "live_floor_h": 2.0,
     "proposed_floor_h": 24.0,
     "at_risk_band_h": [
@@ -17,26 +23,28 @@
     "min_settled_legs": 150,
     "refute_if_band_roi_at_or_above": 0.03,
     "decision": "n-driven: flip live unless the at-risk band returns >= +3.0% at n >= 150 settled legs",
+    "decision_population": "COMBINED (all lanes) -- the population the gate binds",
     "calendar_deadline": "none -- the original 14-day clause was unmeetable at 4.29 band openings/day and is retired, not reinterpreted"
   },
+  "population_basis": "PaperTrade isDemo=0, every botId unless --only-bot, settled (closed|resolved, realizedPnl not null), openedAt >= approval, deduped to one leg per bot|wallet|market|outcome",
   "bands": {
     "at_risk_2_24h": {
-      "legs": 3405,
-      "markets": 1271,
-      "notional": 42234.6,
-      "pnl": -5399.31,
-      "roi": -0.12784091716270438,
-      "resolved_legs": 656,
-      "resolved_roi": -0.09025364581420116
+      "legs": 1510,
+      "markets": 1337,
+      "notional": 18994.0,
+      "pnl": -1029.41,
+      "roi": -0.054196588396335746,
+      "resolved_legs": 467,
+      "resolved_roi": -0.03813933589113699
     },
     "kept_24h_plus": {
-      "legs": 6146,
-      "markets": 1651,
-      "notional": 67744.6,
-      "pnl": 14499.58,
-      "roi": 0.21403300041627787,
-      "resolved_legs": 1667,
-      "resolved_roi": 0.3971195558654975
+      "legs": 2160,
+      "markets": 1725,
+      "notional": 25588.38,
+      "pnl": 2244.4,
+      "roi": 0.08771168788332838,
+      "resolved_legs": 576,
+      "resolved_roi": 0.09759329665847073
     },
     "under_live_floor_lt_2h": {
       "legs": 0,
@@ -48,13 +56,114 @@
       "resolved_roi": null
     }
   },
-  "opened_legs_in_band": 3405,
+  "by_lane": {
+    "STANDARD": {
+      "at_risk_2_24h": {
+        "legs": 1510,
+        "markets": 1337,
+        "notional": 18994.0,
+        "pnl": -1029.41,
+        "roi": -0.054196588396335746,
+        "resolved_legs": 467,
+        "resolved_roi": -0.03813933589113699
+      },
+      "kept_24h_plus": {
+        "legs": 2160,
+        "markets": 1725,
+        "notional": 25588.38,
+        "pnl": 2244.4,
+        "roi": 0.08771168788332838,
+        "resolved_legs": 576,
+        "resolved_roi": 0.09759329665847073
+      },
+      "under_live_floor_lt_2h": {
+        "legs": 0,
+        "markets": 0,
+        "notional": 0.0,
+        "pnl": 0.0,
+        "roi": null,
+        "resolved_legs": 0,
+        "resolved_roi": null
+      }
+    }
+  },
+  "band_admission_path": {
+    "short_ttr_lane": {
+      "legs": 0,
+      "markets": 0,
+      "notional": 0.0,
+      "pnl": 0.0,
+      "roi": null,
+      "resolved_legs": 0,
+      "resolved_roi": null
+    },
+    "main_funnel": {
+      "legs": 1510,
+      "markets": 1337,
+      "notional": 18994.0,
+      "pnl": -1029.41,
+      "roi": -0.054196588396335746,
+      "resolved_legs": 467,
+      "resolved_roi": -0.03813933589113699
+    },
+    "note": "Admission path is read from DecisionJournal.reasonsJson ('Short-TTR lane: ...'), not inferred from price or size. Both paths are inside the lane window [2, 72]h, so a floor raise is cleared by the rescue on either."
+  },
+  "reach": {
+    "mechanism": "short-TTR lane rescue (src/lib/scoring/trade.ts laneRescuesGateFailures) clears a 'resolves in ... < min ...h' skip when ttr in [shortTtrMinHours, shortTtrMaxHours], adverse drift <= shortTtrMaxDrift and copyScore >= shortTtrMinCopyScore",
+    "lane_window_h": [
+      2.0,
+      72.0
+    ],
+    "lane_min_copy_score": 35.0,
+    "lane_max_drift": 0.05,
+    "ruleset_version_read": 73,
+    "reachable_band_legs": 71,
+    "band_legs": 1510,
+    "unresolved_eligibility": 0,
+    "probe": "npx tsx scripts/ttr-floor-reach-probe.ts",
+    "probe_result": "0 of 22464 grid cases change under the live ruleset; controls A/B/C reach 75/15/1115",
+    "note": "reachable_band_legs counts settled band legs the rescue would NOT clear, i.e. the legs a 2->24h raise would actually block. A band-removal counterfactual over ALL band legs (scripts/profit-tenor.py \u00a7S15) is NOT this number -- it prices a block that cannot happen."
+  },
+  "raw_undeduped_band_legs": 3510,
+  "bands_undeduped": {
+    "at_risk_2_24h": {
+      "legs": 3510,
+      "markets": 1372,
+      "notional": 43199.0,
+      "pnl": -4844.12,
+      "roi": -0.11213500312507203,
+      "resolved_legs": 761,
+      "resolved_roi": -0.09525291894445553
+    },
+    "kept_24h_plus": {
+      "legs": 6363,
+      "markets": 1725,
+      "notional": 70684.98,
+      "pnl": 13518.43,
+      "roi": 0.19124897538346233,
+      "resolved_legs": 1884,
+      "resolved_roi": 0.3327255114934697
+    },
+    "under_live_floor_lt_2h": {
+      "legs": 0,
+      "markets": 0,
+      "notional": 0.0,
+      "pnl": 0.0,
+      "roi": null,
+      "resolved_legs": 0,
+      "resolved_roi": null
+    }
+  },
+  "dedupe_note": "bands/by_lane are the decision basis (one leg per bot|wallet|market|outcome, the basis of the S15 measurement and the 2026-11-21 profit review). bands_undeduped is the pre-2026-11-23 basis and the one the historical calibration reproduces; it is reported so a reader can see what the dedupe moves rather than having to trust it.",
+  "opened_legs_in_band": 3513,
   "trailing_rate_window_days": 14,
-  "trailing_openings_per_day": 4.21,
-  "projected_days_to_n": -772,
-  "unclassified_ttr": 142,
+  "trailing_openings_per_day": 2.71,
+  "projected_days_to_n": -501,
+  "unclassified_ttr": 78,
   "verdict": "FLIP",
-  "reason": "band net ROI -12.78% < +3.0% at n=3405",
+  "verdict_population": "STANDARD",
+  "reason": "band net ROI -5.42% < +3.0% at n=1510",
+  "flip_effect": "71 of 1510 settled band legs are NOT rescued by the lane window and would be BLOCKED.",
   "not_yet_evaluable": [
     "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
     "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"
