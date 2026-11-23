@@ -20,6 +20,15 @@ with **10 of the 40 above 0.50c**. The grid construction bounds the remainder at
 capping arm B at 0.50c still yields 46/89, so again no published count, ROI, CI or arm percentage
 moved and the §6 rule text is untouched.
 
+**Revision 4 (2026-11-23, after review).** §8's flow trend now reads the series as it prints instead
+of inverting it — the class fell from the backfilled September epoch and then rose **8 → 30** while
+the lane was flat (**146 → 143**) — and the "coverage can only improve forward" line is replaced by
+the actual arithmetic (33 un-stamped legs, all September; ≥90% needs ~23 months of new legs). F4 and
+§7 now carry the recommended bar's horizon, the fact that it clears on essentially the same date as
+the ≥300 bar it replaces, and the card's own **~2h stamp extension** as the path that actually
+un-parks item 2; F4 is now justified on the coverage principle rather than on timing. No published
+count, ROI, CI or arm percentage changed and no line of the §6 rule text changed.
+
 ## Key insight
 
 The tolerance is not a rounding knob — it names an **execution model**, and only the arm that grants
@@ -150,7 +159,9 @@ Coverage of the whole lane's union is 404/1,036 = 39.0%.
 
 Flow, by month opened (adjudicable universe / of which stamped): **2026-09: 106 / 73 · 2026-10: 7 / 7
 · 2026-11: 9 / 9**. The class has produced **9 adjudicable legs in November**. At that rate the
-card's **≥300-leg readiness bar is ~23 months away** (211 more legs at ~9/month).
+card's **≥300-leg readiness bar is ~23 months away** (211 more legs at ~9/month); the recommended
+≥90%-coverage bar lands on the same clock if only new legs move the number, and is cleared at once by
+the stamp extension rather than by waiting (§8, F4).
 
 Lane mix of the class's post-corpus profit: **BANKROLL_200 +$4,539.09 (n=650, $9,174 at risk)** vs
 **STANDARD +$96.74 (n=425, $7,618)**. The stamp is STANDARD-only. The card's own cross-lane note —
@@ -209,8 +220,17 @@ reported beside it. Under the strict tol-0 reading the answer is 36.0% — same 
   stands; the class number once both lanes are stamped),** not the all-time **+$6,180.86**. An
   all-time write-off cannot be adjudicated by a post-corpus fill read.
 - **F4 · COVERAGE BAR — recommended: ≥90% of the adjudicable universe (89/122 today → 73%).** The
-  card's absolute **≥300** is ~23 months out at November flow. Revert: keep 300 and accept that item 2
-  stays parked until ~late 2028.
+  bar should be coverage of the population the gate can actually adjudicate, not an absolute leg
+  count: **≥300 is ~2.5× today's adjudicable universe**, so it is a different threshold in disguise,
+  and it detaches from the population whenever the class grows or shrinks. The cost, stated honestly:
+  the two bars clear on essentially the same date if nothing but new legs move the number — ≥90%
+  needs **k ≈ 23.1 months** at November's 9 adjudicable legs/month (`(0.9·122−89)/(0.1·9)`) and ≥300
+  needs `(300−89)/9 ≈ 23.4` — so the swap buys about a week on the clock, not two years. What it buys
+  is the right remedy: the **33 un-stamped legs are all September**, and the card's own **~2h stamp
+  extension** takes coverage from 89/122 to 122/122 and clears the recommended bar immediately, while
+  no stamp extension can clear a 300-leg bar that needs 211 new legs. Concretely, F4 drops the
+  "or ≥ 300 legs" disjunct from the §6 rule. Revert: keep 300 and accept
+  that item 2 stays parked until ~2028-10 at November flow even after the stamp is extended.
 - **F5 · LANE COVERAGE — recommended: block the class verdict until C-200 question legs carry a
   reachability stamp** (the booth exists: `scripts/c200-printthrough.py` + the union read in
   `scripts/c200-fill-aware-pnl.ts`). The STANDARD-only stamp sees 2.1% of the class's post-corpus
@@ -224,7 +244,7 @@ reported beside it. Under the strict tol-0 reading the answer is 36.0% — same 
 | tolerance in force | none | sub-tick remainder (≤1c, derived from the venue grid) |
 | ROI basis of the reachable cohort | booked mid (inconsistent with a taker fill) | tick-implied ask |
 | write-off candidate | $6,180.86 all-time, both lanes | post-corpus adjudicable class (+$96.74 STANDARD today) |
-| readiness bar | 300 legs (~23 months out at November flow) | ≥90% of the adjudicable universe (73% today) |
+| readiness bar | 300 legs (~23 months out at November flow) | ≥90% of the adjudicable universe (73% today; also ~23 months by waiting, but immediate once the ~2h stamp extension runs) |
 | class verdict may be published by | anyone who picks an arm | nobody, until F4/F5 clear |
 
 No rule, size, gate, booked figure or DB row changes today. The diff above is what the *published
@@ -238,10 +258,15 @@ verdict* would read once the operator approves this text.
   the point estimate only; "non-negative ROI" is not statistically established at n=89.
 - The **adjudicable** flow is thin and lumpy: 106 mapped question legs in September (the L2 corpus
   epoch month, which carries backfill), **7** in October, **9** in November. The class as a whole is
-  not small — November carries **110 question legs across both lanes** — but it is shrinking faster
-  than the lane it sits in: post-corpus question legs ran **505 → 8 → 30** on STANDARD (all statuses,
-  undeduped) against STANDARD's own lane at **747 → 146 → 143**, i.e. 68% → 5.5% → 21% of the lane's
-  legs. Measured per basis, November's question book is:
+  not small — November carries **110 question legs across both lanes** — and its post-corpus series
+  should be read for what it prints, not as a decline: STANDARD question legs ran **505 → 8 → 30**
+  (all statuses, undeduped) against STANDARD's own lane at **747 → 146 → 143**, i.e. 68% → 5.5% → 21%
+  of the lane's legs. The 505 is the backfilled September epoch month; across the two organic months
+  the class **rose 8 → 30 (+275%)** while the lane was flat (146 → 143, −2.1%) and the class's share
+  of the lane **rose 5.5% → 21%**. From September the series falls (68% → 21%) only because that
+  denominator carries the backfill; forward it is growing off a thin base. Either reading forbids
+  citing recent flow as evidence that the class is dying. Measured per basis, November's question
+  book is:
   - **STANDARD:** 30/143 = **21% of the lane's legs**; **9** settled question legs carry **$135 of
     STANDARD's $1,339 settled at risk = 10%**.
   - **Both lanes:** 110/575 = **19% of all legs**; **87** settled question legs carry **$2,443 of
@@ -251,7 +276,11 @@ verdict* would read once the operator approves this text.
   tolerance, is what parks item 2.
 - The adjudicable universe is capped by the L2 map, not by the book: **122 of 425** post-corpus
   question legs sit in the L2 asset map, and **89** of those 122 carry a book stamp and are settled
-  (73.0%). Coverage can only improve forward (Oct/Nov adjudicable legs stamp at 100%).
+  (73.0%). New legs do stamp at 100% (Oct 7/7, Nov 9/9), but that does not close the gap on any
+  useful horizon: the **33 un-stamped adjudicable legs are all September**, so coverage runs
+  `(89 + 9k)/(122 + 9k)` and **90% needs k ≈ 23 months** at November's 9 adjudicable legs/month.
+  Waiting is therefore not the path to the bar — extending the stamp over the remaining mapped
+  question legs is (89/122 → 122/122; the card's own ~2h remedy, see F4).
 
 ## 9. Refutation — what would answer this in the other direction
 
