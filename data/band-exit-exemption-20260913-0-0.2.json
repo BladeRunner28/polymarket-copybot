@@ -1,44 +1,64 @@
 {
-  "generatedAt": "2026-09-20T09:35:52.843Z",
+  "generatedAt": "2026-11-23T13:26:46.747Z",
   "botId": "BANKROLL_200",
   "bandMin": 0,
   "bandMax": 0.2,
   "since": "2026-09-13",
-  "rawRows": 25,
-  "decisions": 21,
-  "dedupeCollapsed": 4,
-  "exitRecoveryTrades": 249,
+  "rawRows": 242,
+  "decisions": 230,
+  "dedupeCollapsed": 12,
+  "exitRecoveryTrades": 541,
   "byExitKind": {
     "tier1_cut": {
-      "n": 10,
-      "realizedPnl": -191.85,
+      "n": 74,
+      "realizedPnl": -203.78,
       "counterfactualPnl": {
-        "1h": -81.08,
-        "6h": -46.94,
-        "24h": -25.87,
-        "72h": 0,
-        "168h": 0,
-        "final": -19.95
+        "1h": -1386.92,
+        "6h": -567.1,
+        "24h": -575.34,
+        "72h": -444.57,
+        "168h": -642.34,
+        "final": -621.39
       },
       "pricedCount": {
-        "1h": 5,
-        "6h": 3,
-        "24h": 2,
-        "72h": 0,
-        "168h": 0,
-        "final": 1
+        "1h": 56,
+        "6h": 38,
+        "24h": 24,
+        "72h": 18,
+        "168h": 17,
+        "final": 62
+      }
+    },
+    "hard_max_age": {
+      "n": 10,
+      "realizedPnl": 2278.2,
+      "counterfactualPnl": {
+        "1h": 2358.76,
+        "6h": 2436.34,
+        "24h": 2495.82,
+        "72h": 965.72,
+        "168h": 853.61,
+        "final": 2276.77
+      },
+      "pricedCount": {
+        "1h": 10,
+        "6h": 10,
+        "24h": 10,
+        "72h": 9,
+        "168h": 9,
+        "final": 6
       }
     },
     "resolved": {
-      "n": 11,
-      "realizedPnl": 1022.95,
+      "n": 146,
+      "realizedPnl": 2100.27,
       "counterfactualPnl": {
         "1h": 0,
         "6h": 0,
         "24h": 0,
         "72h": 0,
         "168h": 0,
-        "final": 1022.95
+        "final": 2192.29
       },
       "pricedCount": {
         "1h": 0,
@@ -46,21 +66,21 @@
         "24h": 0,
         "72h": 0,
         "168h": 0,
-        "final": 11
+        "final": 146
       }
     }
   },
   "headline": {
-    "tier1Cuts": 10,
-    "realizedPnl": -191.85,
-    "hold24hPnl": -25.87,
-    "hold24hPriced": 2,
-    "hold72hPnl": 0,
-    "hold72hPriced": 0,
-    "hold168hPnl": 0,
-    "hold168hPriced": 0,
-    "settlementPnl": -19.95,
-    "settlementPriced": 1
+    "tier1Cuts": 74,
+    "realizedPnl": -203.78,
+    "hold24hPnl": -575.34,
+    "hold24hPriced": 24,
+    "hold72hPnl": -444.57,
+    "hold72hPriced": 18,
+    "hold168hPnl": -642.34,
+    "hold168hPriced": 17,
+    "settlementPnl": -621.39,
+    "settlementPriced": 62
   },
   "caveat": "Survivorship: the rule cuts positions that are not working, so closed-vs-resolved gaps overstate the case for holding. Hold-to-horizon marks answer 'did the cut tickets recover inside the horizon we would actually have held' — that is the decision metric. Guarantee rule: read only buckets with >= 20 priced tickets and >= 7 days of accumulation; anything less is noise.",
   "rows": [
@@ -78,6 +98,25 @@
         "24h": null,
         "72h": null,
         "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmtzr4rk7000211okiu0r6a2e",
+      "marketId": "will-paris-saint-germain-win-the-2026-27-ligue-1-championship-20260701201053346",
+      "entryPrice": 0.175,
+      "stakeUsd": 87.52,
+      "kind": "hard_max_age",
+      "ageHours": 169,
+      "realizedPnl": 10,
+      "counterfactualByHorizon": {
+        "1h": 10,
+        "6h": 10,
+        "24h": 10,
+        "72h": 15,
+        "168h": 15
       },
       "settlementValue": null,
       "settlementSource": "none",
@@ -98,9 +137,47 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu03i0bg000nkfy4e3fvn0dk",
+      "marketId": "will-eva-bender-win-the-next-hannover-region-presidential-election-20260722233938482",
+      "entryPrice": 0.06,
+      "stakeUsd": 19.94936708860759,
+      "kind": "hard_max_age",
+      "ageHours": 168.6,
+      "realizedPnl": 21.61,
+      "counterfactualByHorizon": {
+        "1h": 23.27,
+        "6h": 21.61,
+        "24h": 49.87,
+        "72h": 0,
+        "168h": -19.45
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
+    },
+    {
+      "tradeId": "cmu054kl7000tkfy4ieg039z4",
+      "marketId": "will-belit-onay-win-the-next-hannover-mayoral-election-20260724232337443",
+      "entryPrice": 0.035,
+      "stakeUsd": 19.94936708860759,
+      "kind": "hard_max_age",
+      "ageHours": 168.9,
+      "realizedPnl": 11.4,
+      "counterfactualByHorizon": {
+        "1h": 17.1,
+        "6h": 25.65,
+        "24h": 17.1,
+        "72h": 9.4,
+        "168h": -19.66
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
     },
     {
       "tradeId": "cmu0n6yi40028kfy453dlww19",
@@ -118,7 +195,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -75.12
     },
     {
@@ -137,7 +214,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -19.95
     },
     {
@@ -156,7 +233,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -9.97
     },
     {
@@ -174,9 +251,9 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -80.06
     },
     {
       "tradeId": "cmu1agfhs0044kfy4br0543l4",
@@ -193,9 +270,9 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
     },
     {
       "tradeId": "cmu1e6paq004jkfy4rknx1upx",
@@ -212,9 +289,9 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
     },
     {
       "tradeId": "cmu1yv70e0061kfy4n70psom3",
@@ -232,7 +309,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -19.95
     },
     {
@@ -251,7 +328,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -19.95
     },
     {
@@ -270,7 +347,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -19.95
     },
     {
@@ -285,12 +362,12 @@
         "1h": -9.48,
         "6h": 0,
         "24h": 1.58,
-        "72h": null,
-        "168h": null
+        "72h": 0,
+        "168h": -30.03
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -47.41
     },
     {
       "tradeId": "cmu2y0km5009rkfy4gquxqxnb",
@@ -308,7 +385,7 @@
         "168h": null
       },
       "settlementValue": 1,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": 97.4
     },
     {
@@ -327,7 +404,7 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -9.97
     },
     {
@@ -364,9 +441,9 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -19.95
     },
     {
       "tradeId": "cmu3wirfs00dnkfy4k8f0wpzr",
@@ -383,9 +460,9 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
     },
     {
       "tradeId": "cmu48susn00etkfy4q9jz5dr9",
@@ -402,9 +479,9 @@
         "72h": null,
         "168h": null
       },
-      "settlementValue": null,
-      "settlementSource": "none",
-      "counterfactualSettlement": null
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -33.22
     },
     {
       "tradeId": "cmu6u424e00hpkfy4ktdeyilw",
@@ -422,8 +499,27 @@
         "168h": null
       },
       "settlementValue": 1,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": 1076.47
+    },
+    {
+      "tradeId": "cmu6v83lo00ijkfy4ntvvi07z",
+      "marketId": "will-new-people-win-fewer-than-35-seats-in-the-next-russian-state-duma-election",
+      "entryPrice": 0.105,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 53.8,
+      "realizedPnl": -8.57,
+      "counterfactualByHorizon": {
+        "1h": -6.67,
+        "6h": -12.95,
+        "24h": -18.86,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
     },
     {
       "tradeId": "cmu6z7nit00jakfy44po3hork",
@@ -441,8 +537,65 @@
         "168h": null
       },
       "settlementValue": 1,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": 43.94
+    },
+    {
+      "tradeId": "cmu7aktzg00kzkfy4pa0c9ae6",
+      "marketId": "will-no-qualifying-diplomatic-us-iran-meeting-occur-by-september-30-2026-20260622185050763",
+      "entryPrice": 0.119,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 99,
+      "realizedPnl": 738.24,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 740.34
+    },
+    {
+      "tradeId": "cmu7ehnag00lxkfy4obeeh4h4",
+      "marketId": "reserve-bank-of-australia-increases-interest-rates-by-25-bps-at-the-september-2026-meeting-20260729163823948",
+      "entryPrice": 0.062,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 43.7,
+      "realizedPnl": -16.13,
+      "counterfactualByHorizon": {
+        "1h": -24.19,
+        "6h": -12.9,
+        "24h": -8.06,
+        "72h": -32.26,
+        "168h": -82.26
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmu7qdrlb00mikfy4gscgtd2c",
+      "marketId": "will-spd-win-at-least-31-of-all-valid-second-votes-mecklenburg-vorpommern",
+      "entryPrice": 0.03999999999999999,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 36.1,
+      "realizedPnl": -17.5,
+      "counterfactualByHorizon": {
+        "1h": -17.5,
+        "6h": -76.25,
+        "24h": -86.25,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
     },
     {
       "tradeId": "cmu80dyzr00ndkfy4qvcyv1x9",
@@ -460,8 +613,3846 @@
         "168h": null
       },
       "settlementValue": 0,
-      "settlementSource": "own-resolution",
+      "settlementSource": "market-settlement",
       "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmu86bhgh00ntkfy4chb653m6",
+      "marketId": "will-the-communist-party-of-the-russian-federation-kprf-win-the-second-most-seats-in-the-next-russian-parliamentary-election",
+      "entryPrice": 0.08,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 28.6,
+      "realizedPnl": -43.75,
+      "counterfactualByHorizon": {
+        "1h": -56.25,
+        "6h": -65,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmu89fvym00nzkfy41lmwbvu5",
+      "marketId": "will-cdu-win-less-than-8-of-all-valid-second-votes-mecklenburg-vorpommern",
+      "entryPrice": 0.09,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 29.3,
+      "realizedPnl": -4.44,
+      "counterfactualByHorizon": {
+        "1h": -16.78,
+        "6h": -18.78,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmu8c0xgx00ohkfy4mxzgj15w",
+      "marketId": "will-the-price-of-xrp-be-between-1pt40-1pt50-on-september-19-2026",
+      "entryPrice": 0.03999999999999999,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.9,
+      "realizedPnl": -19.75,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmu8havh500q9kfy47rc982er",
+      "marketId": "will-sergio-moro-win-the-governor-of-parana-election-20260608205122817",
+      "entryPrice": 0.15,
+      "stakeUsd": 50,
+      "kind": "hard_max_age",
+      "ageHours": 168.6,
+      "realizedPnl": 6.67,
+      "counterfactualByHorizon": {
+        "1h": 6.67,
+        "6h": 6.67,
+        "24h": 8.33,
+        "72h": 18.33,
+        "168h": 48.33
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -50
+    },
+    {
+      "tradeId": "cmu9rhh30000e12noyiax8tgd",
+      "marketId": "will-the-price-of-ethereum-be-between-2500-2600-on-september-20-2026",
+      "entryPrice": 0.065,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": 287.54,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 287.69
+    },
+    {
+      "tradeId": "cmu9vskhx000n12norilp7z97",
+      "marketId": "uwcl-ser-oly-2026-09-23-oly",
+      "entryPrice": 0.05,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 52.3,
+      "realizedPnl": -30,
+      "counterfactualByHorizon": {
+        "1h": -15,
+        "6h": -14,
+        "24h": -99,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmua0l0ju001t12nojrkoyvll",
+      "marketId": "will-linke-win-less-than-8-of-all-valid-second-votes-mecklenburg-vorpommern",
+      "entryPrice": 0.124,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.4,
+      "realizedPnl": -19.92,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmua6jl58002e12no5nhoszwu",
+      "marketId": "will-linke-win-40-or-more-seats-in-the-2026-berlin-state-elections-20260805192827918",
+      "entryPrice": 0.195,
+      "stakeUsd": 9.974683544303796,
+      "kind": "tier1_cut",
+      "ageHours": 24.8,
+      "realizedPnl": -9.54,
+      "counterfactualByHorizon": {
+        "1h": -9.54,
+        "6h": -9.54,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -9.97
+    },
+    {
+      "tradeId": "cmua6yyj1002k12no3i2qfe6p",
+      "marketId": "will-grune-win-between-14-and-17-of-all-valid-second-votes-berlin",
+      "entryPrice": 0.075,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.6,
+      "realizedPnl": -16,
+      "counterfactualByHorizon": {
+        "1h": -16.27,
+        "6h": -19.87,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmua7u9w7002n12nox6txhrfw",
+      "marketId": "will-the-communist-party-kprf-win-fewer-than-50-seats-in-the-next-russian-state-duma-election",
+      "entryPrice": 0.105,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.2,
+      "realizedPnl": -19.05,
+      "counterfactualByHorizon": {
+        "1h": -19.05,
+        "6h": -19.9,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmua7ub9c002t12nolswq2vbi",
+      "marketId": "will-spd-win-26-29-seats-in-the-2026-mecklenburg-vorpommern-parliamentary-elections-20260805193138008",
+      "entryPrice": 0.035,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.2,
+      "realizedPnl": -68.57,
+      "counterfactualByHorizon": {
+        "1h": -55.71,
+        "6h": -57.14,
+        "24h": -82.86,
+        "72h": -18.57,
+        "168h": -82.86
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmuarx1dn003k12no7lx6pw3n",
+      "marketId": "elon-musk-of-tweets-september-19-september-21-2026-40-64",
+      "entryPrice": 0.06999999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuasdr8n003n12noaursaqa5",
+      "marketId": "will-pam-win-the-next-moroccan-legislative-elections-20260728174826234",
+      "entryPrice": 0.155,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 36,
+      "realizedPnl": -5.81,
+      "counterfactualByHorizon": {
+        "1h": -3.23,
+        "6h": -5.81,
+        "24h": -3.87,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuaxfbai003q12nog37ebwx2",
+      "marketId": "highest-temperature-in-tokyo-on-september-21-2026-24c",
+      "entryPrice": 0.125,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8,
+      "realizedPnl": 140,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 140
+    },
+    {
+      "tradeId": "cmub6380g004j12no8xulr3th",
+      "marketId": "will-alibaba-have-the-best-chinese-ai-model-at-the-end-of-september-2026-20260717140852825",
+      "entryPrice": 0.06,
+      "stakeUsd": 100,
+      "kind": "hard_max_age",
+      "ageHours": 168.9,
+      "realizedPnl": 1513.33,
+      "counterfactualByHorizon": {
+        "1h": 1515,
+        "6h": 1524.17,
+        "24h": 1550.83,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 1566.67
+    },
+    {
+      "tradeId": "cmub6ll4b004s12nokky36t91",
+      "marketId": "will-xavier-becerra-win-the-california-governor-election-in-2026",
+      "entryPrice": 0.0355,
+      "stakeUsd": 100,
+      "kind": "hard_max_age",
+      "ageHours": 168.6,
+      "realizedPnl": 22.54,
+      "counterfactualByHorizon": {
+        "1h": 22.54,
+        "6h": 18.31,
+        "24h": 22.54,
+        "72h": 18.31,
+        "168h": 19.72
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmuccvwxw007112norkvjpeav",
+      "marketId": "will-the-next-claude-opus-model-be-released-on-september-22-2026",
+      "entryPrice": 0.1915,
+      "stakeUsd": 9.974683544303796,
+      "kind": "tier1_cut",
+      "ageHours": 24.8,
+      "realizedPnl": -9.95,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -9.97
+    },
+    {
+      "tradeId": "cmud7aal1008w12nooehg7afx",
+      "marketId": "unl-nor-den-2026-09-24-den",
+      "entryPrice": 0.195,
+      "stakeUsd": 9.974683544303796,
+      "kind": "tier1_cut",
+      "ageHours": 42.3,
+      "realizedPnl": -1.53,
+      "counterfactualByHorizon": {
+        "1h": -1.02,
+        "6h": -9.95,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -9.97
+    },
+    {
+      "tradeId": "cmudokkad009812noxim8dadt",
+      "marketId": "elon-musk-of-tweets-september-21-september-23-2026-65-89",
+      "entryPrice": 0.145,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.3,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuffpxm400bu12noh0g77tup",
+      "marketId": "will-kylian-mbapp-win-the-2026-ballon-dor",
+      "entryPrice": 0.0635,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 99.3,
+      "realizedPnl": -18.11,
+      "counterfactualByHorizon": {
+        "1h": -18.9,
+        "6h": -25.2,
+        "24h": -37.01,
+        "72h": -43.31,
+        "168h": -61.42
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmufyli5a00co12nodo816h26",
+      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-220-239",
+      "entryPrice": 0.09,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 22.7,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmugm5nmo00dl12no09ijatqu",
+      "marketId": "dota2-nem-navi-2026-09-25",
+      "entryPrice": 0.155,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.5,
+      "realizedPnl": 25.81,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmugu0nop00e312nokiobhhx8",
+      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-200-219",
+      "entryPrice": 0.06,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 8,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmugueq2g00e612nolqdtf7mq",
+      "marketId": "elon-musk-of-tweets-september-18-september-25-2026-180-199",
+      "entryPrice": 0.0345,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 6.8,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmuh50ujh00f412no9n8s5urw",
+      "marketId": "dota2-xtreme-lgd-2026-09-25-game1",
+      "entryPrice": 0.125,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 1.8,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmuhtdyq800ft12noxcn9lvaa",
+      "marketId": "mlb-lad-sf-2026-09-26-spread-home-1pt5",
+      "entryPrice": 0.115,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 20.3,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmui0ur50000kd8p1xn7kvv58",
+      "marketId": "cfb-smho-txtech-2026-09-26-spread-home-54pt5",
+      "entryPrice": 0.065,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.6,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmui56bou000qd8p1xevkev5p",
+      "marketId": "elon-musk-of-tweets-september-26-september-28-2026-65-89",
+      "entryPrice": 0.175,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.4,
+      "realizedPnl": -12.57,
+      "counterfactualByHorizon": {
+        "1h": -9.14,
+        "6h": 5.71,
+        "24h": 37.71,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuiaa93y001fd8p1vaf4e6fn",
+      "marketId": "cfb-miss-fl-2026-09-26-spread-away-16pt5",
+      "entryPrice": 0.06,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.5,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuiesqnn001rd8p1onom77qy",
+      "marketId": "cfb-south-jackst-2026-09-26",
+      "entryPrice": 0.08,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": -56.25,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmuiestcc001ud8p1tleass0v",
+      "marketId": "highest-temperature-in-manila-on-september-27-2026-35c",
+      "entryPrice": 0.045,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": -19.78,
+      "counterfactualByHorizon": {
+        "1h": -19.78,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuiiw56h002id8p11hbwc6ou",
+      "marketId": "will-forgotten-island-opening-weekend-box-office-be-between-13m-and-16m",
+      "entryPrice": 0.05,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 55.1,
+      "realizedPnl": 380,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 380
+    },
+    {
+      "tradeId": "cmuijcj74002od8p1e04c6lpr",
+      "marketId": "will-avengers-endgame-encore-be-1-box-office-this-weekend",
+      "entryPrice": 0.05,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.7,
+      "realizedPnl": -10.6,
+      "counterfactualByHorizon": {
+        "1h": -11.4,
+        "6h": -9,
+        "24h": -17.6,
+        "72h": -17.6,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuip0ent003jd8p1a1mpjma9",
+      "marketId": "ufc-nor1-ail1-2026-09-26-perez-win-by-ko-tko",
+      "entryPrice": 0.03999999999999999,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.2,
+      "realizedPnl": 65,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmujw6wae005cd8p1gc9eu0l1",
+      "marketId": "mlb-nym-wsh-2026-09-27-extra-innings",
+      "entryPrice": 0.05499999999999999,
+      "stakeUsd": 12.40506329113924,
+      "kind": "resolved",
+      "ageHours": 8.5,
+      "realizedPnl": -12.41,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -12.41
+    },
+    {
+      "tradeId": "cmuleg4l4006hd8p1sjtdk9cq",
+      "marketId": "elon-musk-of-tweets-september-28-september-30-2026-0-39",
+      "entryPrice": 0.09,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 31.4,
+      "realizedPnl": -15.67,
+      "counterfactualByHorizon": {
+        "1h": -15.67,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmullam59006zd8p19baieo4g",
+      "marketId": "elon-musk-of-tweets-september-22-september-29-2026-160-179",
+      "entryPrice": 0.0915,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 8,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmulohw380078d8p1328phq16",
+      "marketId": "will-anthropic-have-the-best-ai-model-at-the-end-of-october-2026-20260811194841118",
+      "entryPrice": 0.09999999999999999,
+      "stakeUsd": 100,
+      "kind": "hard_max_age",
+      "ageHours": 168.3,
+      "realizedPnl": 575,
+      "counterfactualByHorizon": {
+        "1h": 575,
+        "6h": 630,
+        "24h": 595,
+        "72h": 635,
+        "168h": 670
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 900
+    },
+    {
+      "tradeId": "cmumwdreo0091d8p1e4lsab39",
+      "marketId": "unl-esp-hrv-2026-09-29-esp",
+      "entryPrice": 0.165,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 7.2,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuo4ymfc00bld8p1dns1imo4",
+      "marketId": "fif-arg-bol-2026-09-30-arg",
+      "entryPrice": 0.065,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 15.4,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmup3mvlx00d9d8p12m7cj6zo",
+      "marketId": "fif-uzb-syr-2026-10-01-total-4pt5",
+      "entryPrice": 0.09999999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.7,
+      "realizedPnl": 180,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 180
+    },
+    {
+      "tradeId": "cmuqvo43800h2d8p1wjc4fkpu",
+      "marketId": "cfb-pitt-vtech-2026-10-02-total-75pt5",
+      "entryPrice": 0.09,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 15.9,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuqz7dr400h8d8p179umk6q2",
+      "marketId": "ufc-and28-dam11-2026-10-03",
+      "entryPrice": 0.155,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 34.9,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmur1653d00hed8p1bnyy6adq",
+      "marketId": "cfb-pennst-nw-2026-10-02-1q-total-19pt5",
+      "entryPrice": 0.08,
+      "stakeUsd": 12.40506329113924,
+      "kind": "resolved",
+      "ageHours": 11.2,
+      "realizedPnl": -12.41,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -12.41
+    },
+    {
+      "tradeId": "cmur88s7h00hxd8p1r1wywj5v",
+      "marketId": "cfb-navy-airf-2026-10-03-total-63pt5",
+      "entryPrice": 0.12,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.5,
+      "realizedPnl": -15.75,
+      "counterfactualByHorizon": {
+        "1h": -7.92,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmur8mxa300i0d8p1w29577nd",
+      "marketId": "cfb-stan-wake-2026-10-03-spread-away-3pt5",
+      "entryPrice": 0.09999999999999999,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": -17.5,
+      "counterfactualByHorizon": {
+        "1h": -17.8,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuralngg00i3d8p160ygnnbd",
+      "marketId": "will-david-lisnard-win-the-2027-french-presidential-election",
+      "entryPrice": 0.0595,
+      "stakeUsd": 100,
+      "kind": "hard_max_age",
+      "ageHours": 168.1,
+      "realizedPnl": 117.65,
+      "counterfactualByHorizon": {
+        "1h": 117.65,
+        "6h": 115.97,
+        "24h": 137.82,
+        "72h": 127.73,
+        "168h": 90.76
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmurdqx1600iid8p1ejic9ora",
+      "marketId": "fif-arg-bur-2026-10-03-total-5pt5",
+      "entryPrice": 0.065,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 32.2,
+      "realizedPnl": 287.69,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 287.69
+    },
+    {
+      "tradeId": "cmurgw0hk00j6d8p18097bawq",
+      "marketId": "cfb-pennst-nw-2026-10-02-spread-away-20pt5",
+      "entryPrice": 0.075,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuri2fnh00jjd8p1c8rbq1id",
+      "marketId": "fif-arg-bur-2026-10-03-draw",
+      "entryPrice": 0.115,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24,
+      "realizedPnl": -14.17,
+      "counterfactualByHorizon": {
+        "1h": -15.22,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmursodd300jsd8p19mpppwk6",
+      "marketId": "cfb-incar-sfaus-2026-10-03",
+      "entryPrice": 0.075,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 24.2,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmurw7pe000kbd8p134ef2iw0",
+      "marketId": "cfb-ala-mspst-2026-10-03-spread-home-10pt5",
+      "entryPrice": 0.105,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 15.4,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmurwlu1h00kkd8p1lknq0h1a",
+      "marketId": "fif-rus-nam-2026-10-03-rus",
+      "entryPrice": 0.095,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 16.2,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmus3acur00ktd8p1id7std0z",
+      "marketId": "ufc-dei-pay-2026-10-03",
+      "entryPrice": 0.125,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 19.3,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmusu0fjh00n4d8p1saf3v0b8",
+      "marketId": "cfb-gas-coast-2026-10-03-total-73pt5",
+      "entryPrice": 0.105,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 6.8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuv07evn0028yp6sy3kdsh6o",
+      "marketId": "cfb-soumis-troy-2026-10-06-total-69pt5",
+      "entryPrice": 0.105,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.1,
+      "realizedPnl": -3.81,
+      "counterfactualByHorizon": {
+        "1h": -2.86,
+        "6h": 3.81,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 170.48
+    },
+    {
+      "tradeId": "cmuvoki0h004gyp6s5j2fcqs3",
+      "marketId": "mlb-nyy-tb-2026-10-05-f5-spread-home-1pt5",
+      "entryPrice": 0.185,
+      "stakeUsd": 9.974683544303796,
+      "kind": "resolved",
+      "ageHours": 6.5,
+      "realizedPnl": 43.94,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 43.94
+    },
+    {
+      "tradeId": "cmuwy5dht006zyp6si1nppr3w",
+      "marketId": "highest-temperature-in-kuala-lumpur-on-october-7-2026-35c",
+      "entryPrice": 0.06,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 24.5,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuwy5f660075yp6sm3tut10f",
+      "marketId": "highest-temperature-in-san-francisco-on-october-7-2026-72-73f",
+      "entryPrice": 0.0955,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 26.6,
+      "realizedPnl": -10.37,
+      "counterfactualByHorizon": {
+        "1h": -15.5,
+        "6h": -19.9,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmux1aksz0078yp6swgfrvxpu",
+      "marketId": "highest-temperature-in-shanghai-on-october-7-2026-27c",
+      "entryPrice": 0.12,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 22,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmux2h02u007hyp6swmgk5vgh",
+      "marketId": "ufc-prelag-nelari-2026-10-06",
+      "entryPrice": 0.145,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 7,
+      "realizedPnl": 589.66,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 589.66
+    },
+    {
+      "tradeId": "cmux4tx1b007nyp6s4pz99u7z",
+      "marketId": "highest-temperature-in-beijing-on-october-8-2026-28c",
+      "entryPrice": 0.06,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.5,
+      "realizedPnl": -29.17,
+      "counterfactualByHorizon": {
+        "1h": -40.83,
+        "6h": -82.5,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmuxhsnvt008eyp6sgtxxndrw",
+      "marketId": "highest-temperature-in-toronto-on-october-7-2026-23c",
+      "entryPrice": 0.09999999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 27.7,
+      "realizedPnl": 180,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 180
+    },
+    {
+      "tradeId": "cmuxkjo4r008nyp6sbz8l7j6m",
+      "marketId": "highest-temperature-in-chicago-on-october-8-2026-72-73f",
+      "entryPrice": 0.08499999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 51.3,
+      "realizedPnl": 215.29,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 215.29
+    },
+    {
+      "tradeId": "cmuxlbze5008qyp6s0vo9ykgu",
+      "marketId": "highest-temperature-in-san-francisco-on-october-7-2026-76-77f",
+      "entryPrice": 0.19,
+      "stakeUsd": 9.974683544303796,
+      "kind": "tier1_cut",
+      "ageHours": 24,
+      "realizedPnl": -9.92,
+      "counterfactualByHorizon": {
+        "1h": -9.95,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -9.97
+    },
+    {
+      "tradeId": "cmuxnapky0092yp6s3tdxknzi",
+      "marketId": "highest-temperature-in-denver-on-october-7-2026-84-85f",
+      "entryPrice": 0.165,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.1,
+      "realizedPnl": -19.94,
+      "counterfactualByHorizon": {
+        "1h": -19.94,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuxs0g18009dyp6s4i8onhqv",
+      "marketId": "cfb-nmxst-flint-2026-10-07-spread-away-14pt5",
+      "entryPrice": 0.045,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 21.9,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuxsstbr009gyp6sv9j00qye",
+      "marketId": "highest-temperature-in-chongqing-on-october-8-2026-29c",
+      "entryPrice": 0.17,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.7,
+      "realizedPnl": -19.47,
+      "counterfactualByHorizon": {
+        "1h": -19.94,
+        "6h": -19.94,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmuyflduc00aryp6s2svsp8cf",
+      "marketId": "bun-dor-wer-2026-10-09-wer",
+      "entryPrice": 0.08499999999999999,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 50.2,
+      "realizedPnl": -16.35,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmv0250hb00e7yp6sk0unpim9",
+      "marketId": "dota2-1win-pari-2026-10-09",
+      "entryPrice": 0.075,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 21.9,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmv09zzun00ejyp6suk7zzts5",
+      "marketId": "will-aurora-win-the-esl-pro-league-season-24-1788882991655",
+      "entryPrice": 0.031,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 38.9,
+      "realizedPnl": -45.16,
+      "counterfactualByHorizon": {
+        "1h": -98.39,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmv0jfikp00epyp6s3t1hhxjd",
+      "marketId": "cfb-iowa-wash-2026-10-09-spread-home-14pt5",
+      "entryPrice": 0.12,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 23.1,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmv1bbvxy00gfyp6s35e6393m",
+      "marketId": "cfb-ucf-okst-2026-10-10-spread-away-10pt5",
+      "entryPrice": 0.05,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 25.6,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmv1p2zke00hayp6sfge4grpd",
+      "marketId": "cfb-syra-vir-2026-10-10-spread-away-5pt5",
+      "entryPrice": 0.105,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 25.4,
+      "realizedPnl": -71.43,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmv1tspt200hpyp6sx3ri5f9f",
+      "marketId": "cfb-ind-nebr-2026-10-10-spread-home-7pt5",
+      "entryPrice": 0.095,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 17,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmv1wxvpt00hsyp6sx0q27dsr",
+      "marketId": "cfb-ill-mst-2026-10-10-total-67pt5",
+      "entryPrice": 0.105,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 19.6,
+      "realizedPnl": 170.48,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 170.48
+    },
+    {
+      "tradeId": "cmv3xmxi2000e3kfab1rm4alt",
+      "marketId": "dota2-ty-ts8-2026-10-11-game1",
+      "entryPrice": 0.08444,
+      "stakeUsd": 50,
+      "kind": "resolved",
+      "ageHours": 2.2,
+      "realizedPnl": -50,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -50
+    },
+    {
+      "tradeId": "cmvbbnywv00765cloxyz9pc4i",
+      "marketId": "nba-sac-sas-2026-10-16",
+      "entryPrice": 0.14332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvby29sq00835clowjmxwi4t",
+      "marketId": "cfb-mspst-lsu-2026-10-17",
+      "entryPrice": 0.12832,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 15.2,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvc4qok5008i5clos66ubnwo",
+      "marketId": "elc-wre-pne-2026-10-17-pne",
+      "entryPrice": 0.15332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 11,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvca8spg008r5clo66yb9ux8",
+      "marketId": "bkcba-nin-bei2-2026-10-17",
+      "entryPrice": 0.14832,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 5.3,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvcfqwgy00965clo1pjt7jwe",
+      "marketId": "cfb-flst-mia-2026-10-17",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 14.1,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvchpmq800995clojj2ki7ga",
+      "marketId": "cfb-charlt-templ-2026-10-17",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 17.36708860759494,
+      "kind": "resolved",
+      "ageHours": 7,
+      "realizedPnl": 215.94,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 215.94
+    },
+    {
+      "tradeId": "cmvci3phz009c5clooqagu0kb",
+      "marketId": "dota2-tr7-xtreme-2026-10-17",
+      "entryPrice": 0.06444,
+      "stakeUsd": 17.36708860759494,
+      "kind": "resolved",
+      "ageHours": 1.7,
+      "realizedPnl": -17.37,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -17.37
+    },
+    {
+      "tradeId": "cmvdepvrn00a65clotqwfiv0c",
+      "marketId": "swe-org-gais-2026-10-18-org",
+      "entryPrice": 0.16332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 13.3,
+      "realizedPnl": 512.29,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 512.29
+    },
+    {
+      "tradeId": "cmvdlsgh800au5cloiw1ia0rv",
+      "marketId": "nor-mol-ik-2026-10-18-ik",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 11.1,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvewxyez00by5clocfunnjna",
+      "marketId": "ucl-mnc-aek1-2026-10-20-mnc",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 36.6,
+      "realizedPnl": -17.48,
+      "counterfactualByHorizon": {
+        "1h": -19.9,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvgvo98900dt5clokgza0b71",
+      "marketId": "dota2-synaps-yes-2026-10-20-game1",
+      "entryPrice": 0.14382,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 1.5,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvh1ymzm00dz5clojezqq5ph",
+      "marketId": "ucl-bay-ars-2026-10-21-first-to-score-neither",
+      "entryPrice": 0.05044,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 25.3,
+      "realizedPnl": -19.8,
+      "counterfactualByHorizon": {
+        "1h": -19.8,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvilrd7j000tzkaehxkvwxg1",
+      "marketId": "lib-pal-flu-2026-10-21-flu",
+      "entryPrice": 0.15332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8.4,
+      "realizedPnl": 110.45,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 110.45
+    },
+    {
+      "tradeId": "cmvj485v10018zkaei0hnhcyt",
+      "marketId": "lib-fla-est-2026-10-22-est",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 23.5,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvl63xal0014tq2sr9omvnky",
+      "marketId": "lal-ala-mala-2026-10-23-mala",
+      "entryPrice": 0.15332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 5.7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvmhal7q0026tq2s63hagess",
+      "marketId": "ufc-nic24-ias-2026-10-24",
+      "entryPrice": 0.15332,
+      "stakeUsd": 50,
+      "kind": "resolved",
+      "ageHours": 1.1,
+      "realizedPnl": -50,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -50
+    },
+    {
+      "tradeId": "cmvmt30uv002ctq2sqw65z8lj",
+      "marketId": "nba-nop-den-2026-10-24",
+      "entryPrice": 0.19332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8.8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvmt319x002ftq2s9voip56b",
+      "marketId": "nba-mil-phi-2026-10-24",
+      "entryPrice": 0.16332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 6.7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvmt31ho002itq2slm9p9vrn",
+      "marketId": "nba-bkn-cle-2026-10-24",
+      "entryPrice": 0.19332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 7.8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvnlrsq1003ktq2sib7otda9",
+      "marketId": "arg-bar-aae-2026-10-25-aae",
+      "entryPrice": 0.13332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 17.8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvo2nzfp0048tq2sz7456d8r",
+      "marketId": "lal-bar-rea-2026-10-25-draw",
+      "entryPrice": 0.14332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 5.8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvp37s8m0054tq2s2pz7j5pc",
+      "marketId": "fl1-psg-lyo-2026-10-25-draw",
+      "entryPrice": 0.16332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 12.1,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvpi5400005ytq2srd04htrc",
+      "marketId": "will-lamine-yamal-win-the-2026-ballon-dor",
+      "entryPrice": 0.08344,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 8.2,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvpixjba0061tq2svqdd9d6s",
+      "marketId": "bra-fla-cam-2026-10-26-draw",
+      "entryPrice": 0.15332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9.9,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvpnn6530064tq2s4pot11ys",
+      "marketId": "bra-fla-cam-2026-10-26-cam",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 7.7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvpwohtp00051um2hwgxr16l",
+      "marketId": "will-brad-bradford-win-the-2026-toronto-mayoral-election-415",
+      "entryPrice": 0.18832,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 4.5,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvrw787t001dhnixrwtr12hj",
+      "marketId": "will-bitcoin-dip-to-77pt5k-in-october-2026",
+      "entryPrice": 0.14332,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 30.1,
+      "realizedPnl": -61.62,
+      "counterfactualByHorizon": {
+        "1h": -74.53,
+        "6h": 200.38,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 597.74
+    },
+    {
+      "tradeId": "cmvs5mmjd001mhnixctv5mgr8",
+      "marketId": "scop-cel-dun-2026-10-28-dun",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 10.5,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvxkj7sm003i13i0bqvs5xvi",
+      "marketId": "will-liverpool-win-the-2026-27-english-premier-league-epl-championship-20260701200428760",
+      "entryPrice": 0.09294,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": -47.82,
+      "counterfactualByHorizon": {
+        "1h": -47.82,
+        "6h": -47.28,
+        "24h": -44.59,
+        "72h": -40.82,
+        "168h": -34.9
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmvy2lvz3004c13i0yv17yp8w",
+      "marketId": "por-scb-fam-2026-11-01-fam",
+      "entryPrice": 0.16332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 7.7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmvy4yr4h004f13i0vqe334ii",
+      "marketId": "will-bitcoin-dip-to-76k-october-26-november-1-2026",
+      "entryPrice": 0.05094,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 11.7,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmvzrwmp8006h13i0t9ake9lt",
+      "marketId": "will-the-democrats-win-the-minnesota-senate-race-in-2026",
+      "entryPrice": 0.05944,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 28.3,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -73.92,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmw02ijxy006w13i0ovzecxz8",
+      "marketId": "will-the-democratic-party-candidate-win-the-2026-michigan-senate-election-by-12-or-more",
+      "entryPrice": 0.09494,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 25.4,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -1.25,
+        "6h": -16.73,
+        "24h": -16.1,
+        "72h": -19.47,
+        "168h": -19.58
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw0i8tp2007s13i0b9s6o1v2",
+      "marketId": "will-the-democratic-party-candidate-win-the-2026-ohio-senate-election-by-12-or-more",
+      "entryPrice": 0.05994,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.1,
+      "realizedPnl": -91.66,
+      "counterfactualByHorizon": {
+        "1h": -91.66,
+        "6h": -91.66,
+        "24h": -98.33,
+        "72h": -99.17,
+        "168h": -99.17
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw0ut7yl008v13i0gnstvtic",
+      "marketId": "ucl-vil-psg-2026-11-03-spread-away-2pt5",
+      "entryPrice": 0.18332,
+      "stakeUsd": 50,
+      "kind": "resolved",
+      "ageHours": 7.1,
+      "realizedPnl": 222.75,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 222.75
+    },
+    {
+      "tradeId": "cmw0v7ddo008y13i071mqr9d9",
+      "marketId": "swe-sir-hal-2026-11-03-hal",
+      "entryPrice": 0.09444,
+      "stakeUsd": 17.36708860759494,
+      "kind": "resolved",
+      "ageHours": 6.9,
+      "realizedPnl": -17.37,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -17.37
+    },
+    {
+      "tradeId": "cmw0vzmyp009113i0qlt24pd3",
+      "marketId": "ucl-vil-psg-2026-11-03-spread-away-3pt5",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 6.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 216.85
+    },
+    {
+      "tradeId": "cmw14mpx9009713i0qw2y45cl",
+      "marketId": "cbb-wag-boscol-2026-11-03",
+      "entryPrice": 0.05444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8.6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw1m7dio00aa13i0rds8fzjg",
+      "marketId": "ucl-rbl-mnc-2026-11-04-spread-home-1pt5",
+      "entryPrice": 0.06944,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 18.7,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw1m7dug00ad13i06yxip48y",
+      "marketId": "cbb-ndkst-stmry-2026-11-04",
+      "entryPrice": 0.10832,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -99.54,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmw1svxci00ap13i0afiaj8qi",
+      "marketId": "ucl-slp-ars-2026-11-04-btts-first-half",
+      "entryPrice": 0.15332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 15.6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw1vmx3m00as13i04njnig5b",
+      "marketId": "ucl-rbl-mnc-2026-11-04-spread-away-3pt5",
+      "entryPrice": 0.11332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 14.3,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw27fdmi00c313i0qma86xid",
+      "marketId": "ucl-aek1-rma-2026-11-04-spread-away-4pt5",
+      "entryPrice": 0.09444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 5.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw2g2iq900d313i03c95ouwz",
+      "marketId": "epl-lee-tot-2026-11-07-spread-away-1pt5",
+      "entryPrice": 0.14332,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 66.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -17.91,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw3nambs00e013i0iouxf60z",
+      "marketId": "dota2-yes-gl-2026-11-05",
+      "entryPrice": 0.19542,
+      "stakeUsd": 17.99493670886076,
+      "kind": "resolved",
+      "ageHours": 5,
+      "realizedPnl": -17.99,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -17.99
+    },
+    {
+      "tradeId": "cmw3nor3y00e313i0n2s2bawp",
+      "marketId": "col-kob-sab-2026-11-05-btts-first-half",
+      "entryPrice": 0.13832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9.8,
+      "realizedPnl": 124.59,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 124.59
+    },
+    {
+      "tradeId": "cmw3nori300e613i0fcht893n",
+      "marketId": "col-pao-csk-2026-11-05-btts-first-half",
+      "entryPrice": 0.18332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 89.1
+    },
+    {
+      "tradeId": "cmw3qftyq00er13i06flukse5",
+      "marketId": "will-ethereum-reach-2700-in-november-2026",
+      "entryPrice": 0.18332,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.8,
+      "realizedPnl": -20.9,
+      "counterfactualByHorizon": {
+        "1h": -20.9,
+        "6h": -15.45,
+        "24h": -20.9,
+        "72h": -48.18,
+        "168h": -90.73
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw3ud82100f313i0nf81kzsx",
+      "marketId": "nhl-chi-tb-2026-11-05-total-9pt5",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw5554js00gy13i042c4k1jm",
+      "marketId": "will-spacex-have-the-highest-ipo-market-cap-2026-516",
+      "entryPrice": 0.08943999999999999,
+      "stakeUsd": 50,
+      "kind": "tier1_cut",
+      "ageHours": 92.7,
+      "realizedPnl": -8.07,
+      "counterfactualByHorizon": {
+        "1h": -27.08,
+        "6h": -20.37,
+        "24h": 0.31,
+        "72h": -13.38,
+        "168h": -15.62
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw5c7e4w00hd13i0qnr31dex",
+      "marketId": "will-susie-wiles-be-the-next-to-leave-the-trump-cabinet-before-2027-628",
+      "entryPrice": 0.05944,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 3,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmw60ysr500ix13i09a1mp00j",
+      "marketId": "will-national-party-win-the-most-seats-in-the-new-zealand-house-of-representatives-in-the-2026-new-zealand-legislative-election",
+      "entryPrice": 0.14332,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 25,
+      "realizedPnl": -16.79,
+      "counterfactualByHorizon": {
+        "1h": -16.79,
+        "6h": -17,
+        "24h": -17.63,
+        "72h": -17.56,
+        "168h": -18.74
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw6cr7s200jv13i0q73g36xb",
+      "marketId": "elc-qpr-lin-2026-11-07-lin",
+      "entryPrice": 0.17332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 7.3,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw6hgunk00jy13i0rju4p7vb",
+      "marketId": "cbb-oak-uscb-2026-11-07",
+      "entryPrice": 0.11332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 11.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw6inapj00k413i0gmw7ckjo",
+      "marketId": "nhl-utah-ott-2026-11-07-total-9pt5",
+      "entryPrice": 0.09832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 12.6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw6l058t00kh13i0qdyv9n8m",
+      "marketId": "will-clayface-3rd-weekend-box-office-be-between-6m-and-7m",
+      "entryPrice": 0.05444,
+      "stakeUsd": 17.36708860759494,
+      "kind": "tier1_cut",
+      "ageHours": 33.9,
+      "realizedPnl": -4.13,
+      "counterfactualByHorizon": {
+        "1h": 7.99,
+        "6h": 2.73,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -17.37
+    },
+    {
+      "tradeId": "cmw6utysz00kt13i0joibnrhz",
+      "marketId": "nhl-pit-lak-2026-11-07-total-9pt5",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw6yd5bc00l713i009ckg2r9",
+      "marketId": "den-mid-sjs-2026-11-08-sjs",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 23.6,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw7axxi800li13i0t3szkzwj",
+      "marketId": "will-nicols-maduro-be-the-leader-of-venezuela-end-of-2026",
+      "entryPrice": 0.06694,
+      "stakeUsd": 100,
+      "kind": "hard_max_age",
+      "ageHours": 168,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": 41.92,
+        "6h": 47.15,
+        "24h": 53.12,
+        "72h": 97.94,
+        "168h": 33.7
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw7e30bz00lo13i01956qz76",
+      "marketId": "epl-cry-liv-2026-11-08-total-5pt5",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 11.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw7isqm300m613i0ei338t93",
+      "marketId": "epl-sun-che-2026-11-08-spread-home-1pt5",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw7ljsnu00m913i0r6wfjwhb",
+      "marketId": "will-drummer-boy-opening-weekend-box-office-be-at-least-9m",
+      "entryPrice": 0.11332,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 25,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -16.65,
+        "6h": -18.15,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw7mq87j00mr13i0v03nutvd",
+      "marketId": "us-x-iran-effective-ceasefire-by-december-31-20261108",
+      "entryPrice": 0.14332,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 101.7,
+      "realizedPnl": -16.27,
+      "counterfactualByHorizon": {
+        "1h": -12.78,
+        "6h": 50.01,
+        "24h": 36.06,
+        "72h": 29.08,
+        "168h": 91.88
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw7smhxu00mx13i0x8gtyh70",
+      "marketId": "epl-mun-ast-2026-11-08-team-total-away-2pt5",
+      "entryPrice": 0.17832,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 7.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 460.79
+    },
+    {
+      "tradeId": "cmw82u6kp00ni13i0rwhxeiz6",
+      "marketId": "nba-uta-min-2026-11-08",
+      "entryPrice": 0.15332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 10.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmw85lasm00nr13i0qdjyt9nu",
+      "marketId": "dota2-playti-legion1-2026-11-07-game2",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 1.4,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmw86ro4e00nu13i0hzytqqpl",
+      "marketId": "nhl-phi-cal-2026-11-08-total-9pt5",
+      "entryPrice": 0.06444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw8ap3w600nx13i0d62zpvnr",
+      "marketId": "will-chang-san-cheng-win-the-next-taoyuan-mayor-election-20260813125857301",
+      "entryPrice": 0.06944,
+      "stakeUsd": 100,
+      "kind": "hard_max_age",
+      "ageHours": 168.6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": 29.61,
+        "6h": 36.81,
+        "24h": 51.21,
+        "72h": 44.01,
+        "168h": 15.21
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw8ft4nz00o713i07r2vt1sq",
+      "marketId": "will-morena-win-the-most-seats-in-the-2027-nayarit-congress-election",
+      "entryPrice": 0.08943999999999999,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 25.1,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -16.14,
+        "6h": -21.74,
+        "24h": -21.74,
+        "72h": -21.74,
+        "168h": -21.74
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw9dlktk00pi13i0w6e1z82t",
+      "marketId": "will-apple-be-the-largest-company-in-the-world-by-market-cap-on-november-30-2026",
+      "entryPrice": 0.10332,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": 1.63,
+        "6h": -8.05,
+        "24h": 1.63,
+        "72h": -72.42,
+        "168h": -74.84
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmw9kryki0002771ll3n0gash",
+      "marketId": "nhl-nyr-edm-2026-11-09-total-3pt5",
+      "entryPrice": 0.10832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 10.1,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw9l62w70008771l09pofofj",
+      "marketId": "nba-was-det-2026-11-09",
+      "entryPrice": 0.19332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 8.9,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmw9ttckp000q771lh0kupmuj",
+      "marketId": "will-annual-inflation-be-3pt7-in-october-2026",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.1,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -10.17,
+        "6h": -13.01,
+        "24h": -7.09,
+        "72h": -8.75,
+        "168h": -10.88
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw9uzr62000t771lqiet4ger",
+      "marketId": "nhl-nyi-sj-2026-11-09-total-9pt5",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8.3,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw9xqrgd000z771lfebigq81",
+      "marketId": "cbb-elon-geows-2026-11-10",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 25.4,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -19.88,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmw9yxctw0012771lm16ucyqj",
+      "marketId": "nba-nop-gsw-2026-11-09",
+      "entryPrice": 0.17332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 5.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwa22con001b771ln6ak8nr2",
+      "marketId": "dota2-playti-nemiga-2026-11-10",
+      "entryPrice": 0.17332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 12.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwa7kf3u001q771l01arf3wy",
+      "marketId": "will-the-denver-broncos-win-the-2027-nfl-league-championship",
+      "entryPrice": 0.04994000000000001,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 135.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -16.9,
+        "6h": -4.89,
+        "24h": 1.12,
+        "72h": -7.89,
+        "168h": -2.88
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmwa7yhb0001t771lqt9zlmib",
+      "marketId": "will-kai-cenat-finish-his-gta-marathon-by-november-10-20261105",
+      "entryPrice": 0.05294,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.7,
+      "realizedPnl": -99.06,
+      "counterfactualByHorizon": {
+        "1h": -99.06,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwaf15s2001w771lwbkpcmlm",
+      "marketId": "will-kai-cenat-finish-his-gta-marathon-by-november-11-759-am-et",
+      "entryPrice": 0.17832,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.4,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwaftliu001z771ly4anom97",
+      "marketId": "cbb-winth-kenest-2026-11-10",
+      "entryPrice": 0.19332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 20,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwagzz010022771lbmjem8gv",
+      "marketId": "will-the-fed-increase-interest-rates-by-25-bps-after-the-december-2026-meeting-20260729232808636",
+      "entryPrice": 0.16332,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 45.9,
+      "realizedPnl": -17.34,
+      "counterfactualByHorizon": {
+        "1h": -17.34,
+        "6h": -17.34,
+        "24h": -29.59,
+        "72h": -17.34,
+        "168h": -47.95
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmwai6c7n002j771l1puz874s",
+      "marketId": "highest-temperature-in-karachi-on-november-10-2026-34c",
+      "entryPrice": 0.05944,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9.7,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwajr246002p771lj55wn64o",
+      "marketId": "dota2-frogli-pr1-2026-11-10-game1",
+      "entryPrice": 0.15332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 1.9,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwavj9w3003k771lq1umc8ml",
+      "marketId": "will-toy-story-5-have-the-3rd-best-domestic-opening-weekend-in-2026-20260722232204878",
+      "entryPrice": 0.17332,
+      "stakeUsd": 50,
+      "kind": "tier1_cut",
+      "ageHours": 92.8,
+      "realizedPnl": -11.05,
+      "counterfactualByHorizon": {
+        "1h": -11.05,
+        "6h": -12.5,
+        "24h": -16.82,
+        "72h": 4.81,
+        "168h": -40.62
+      },
+      "settlementValue": null,
+      "settlementSource": "none",
+      "counterfactualSettlement": null
+    },
+    {
+      "tradeId": "cmwaxi057003t771l0owy10xv",
+      "marketId": "dota2-huliga-ic-2026-11-09",
+      "entryPrice": 0.19542,
+      "stakeUsd": 9.974683544303796,
+      "kind": "resolved",
+      "ageHours": 4.6,
+      "realizedPnl": 41.07,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 41.07
+    },
+    {
+      "tradeId": "cmwb3sg7c004b771lqihsir5h",
+      "marketId": "nba-mil-nyk-2026-11-10",
+      "entryPrice": 0.09444,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 7.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwb9olzd004u771lxyskh3u4",
+      "marketId": "nba-bos-phi-2026-11-10-total-197pt5",
+      "entryPrice": 0.11332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwbhxn520053771lctlfilzu",
+      "marketId": "cbb-penn-navy-2026-11-11",
+      "entryPrice": 0.18332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 25.6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 89.1
+    },
+    {
+      "tradeId": "cmwbjwdi30056771ljlntrnwb",
+      "marketId": "cbb-utsa-sea-2026-11-11",
+      "entryPrice": 0.06944,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 28.7,
+      "realizedPnl": 268.02,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 268.02
+    },
+    {
+      "tradeId": "cmwblv2tw005l771lguuf4ihm",
+      "marketId": "cbb-chist-cabap-2026-11-11",
+      "entryPrice": 0.15832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 27.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 106.33
+    },
+    {
+      "tradeId": "cmwbpefey0063771lg65gki49",
+      "marketId": "highest-temperature-in-singapore-on-november-11-2026-31c",
+      "entryPrice": 0.05444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 10.9,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwbpslfq0066771lco1ywzdd",
+      "marketId": "cbb-furman-holy-2026-11-11",
+      "entryPrice": 0.12832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 22.9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwbq6p2b006c771lqasqezjq",
+      "marketId": "nba-okc-por-2026-11-11-total-196pt5",
+      "entryPrice": 0.05444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 23.8,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwc3jqrk0011by8u366q57ye",
+      "marketId": "nhl-nsh-ana-2026-11-11-total-3pt5",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 17.5,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwcamabd001lby8ueps1r3wv",
+      "marketId": "cfb-sacst-cmich-2026-11-11",
+      "entryPrice": 0.11332,
+      "stakeUsd": 17.36708860759494,
+      "kind": "resolved",
+      "ageHours": 12.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -17.37
+    },
+    {
+      "tradeId": "cmwccl4fo001oby8uurkpjyo6",
+      "marketId": "nba-cle-nyk-2026-11-11-total-195pt5",
+      "entryPrice": 0.06444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 10.3,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwcdrhgz001rby8utogy06lv",
+      "marketId": "atp-shevche-ruud-2026-11-11",
+      "entryPrice": 0.15332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 3.6,
+      "realizedPnl": 552.23,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 552.23
+    },
+    {
+      "tradeId": "cmwj605jh003nb5urxv8p76ui",
+      "marketId": "unl-che-sco-2026-11-16-sco",
+      "entryPrice": 0.19332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 11.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwjk4ym40047b5urmuhqw5vk",
+      "marketId": "dota2-nemiga-ch1-2026-11-16",
+      "entryPrice": 0.19132,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 1.8,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwkhjg0t005eb5urcy1t3jck",
+      "marketId": "dota2-pari-frogli-2026-11-17",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 3.5,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwklgumz005vb5urviqg2yiv",
+      "marketId": "will-bitcoin-dip-to-62k-on-november-17-2026",
+      "entryPrice": 0.16332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 19,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwkvahc70005zxw8x59websa",
+      "marketId": "unl-bih-rom-2026-11-17-total-1pt5",
+      "entryPrice": 0.19332,
+      "stakeUsd": 17.36708860759494,
+      "kind": "resolved",
+      "ageHours": 6.3,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -17.37
+    },
+    {
+      "tradeId": "cmwl16pgs000tzxw8em4gyu25",
+      "marketId": "dota2-lgd-pari-2026-11-17",
+      "entryPrice": 0.14332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 3.5,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwl4bupz000wzxw8t678e8cr",
+      "marketId": "dota2-lgd-pari-2026-11-17-game2",
+      "entryPrice": 0.19332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 2.1,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwlsaw7n0019zxw87hrudl8w",
+      "marketId": "dota2-aur1-pari-2026-11-18",
+      "entryPrice": 0.16332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 9.2,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwmr06fv002czxw89fxnutge",
+      "marketId": "scop-cel-stm-2026-11-21-cel",
+      "entryPrice": 0.16332,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 65.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": -19.94,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwnsq4eu0035zxw8gv8wvj11",
+      "marketId": "nba-gsw-mem-2026-11-19-total-201pt5",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 11,
+      "realizedPnl": -20,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwoec911003wzxw8ykui84zn",
+      "marketId": "cbb-harvrd-holy-2026-11-20",
+      "entryPrice": 0.10832,
+      "stakeUsd": 20,
+      "kind": "tier1_cut",
+      "ageHours": 24.3,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwohhc86004bzxw8c2anb83r",
+      "marketId": "cbb-smho-boise-2026-11-20",
+      "entryPrice": 0.13832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 26.9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 124.59
+    },
+    {
+      "tradeId": "cmwomzf0r004kzxw8kp5ks8tv",
+      "marketId": "cbb-vtech-nw-2026-11-20",
+      "entryPrice": 0.16832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 17.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwomzf9q004nzxw8aq0enm20",
+      "marketId": "jap-kas-ssp-2026-11-20-ssp",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 6,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwopc90n004zzxw8gc3wqatq",
+      "marketId": "nba-nop-okc-2026-11-20-spread-away-5pt5",
+      "entryPrice": 0.10332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 20.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwozk2vf005zzxw8x8fyyibm",
+      "marketId": "will-bitcoin-dip-to-59k-on-november-20-2026",
+      "entryPrice": 0.15332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 4.2,
+      "realizedPnl": 110.45,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 110.45
+    },
+    {
+      "tradeId": "cmwpsn4q8007jzxw87ddfhage",
+      "marketId": "nba-nop-sas-2026-11-21",
+      "entryPrice": 0.09444,
+      "stakeUsd": 100,
+      "kind": "tier1_cut",
+      "ageHours": 24.2,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwpzpjnq008hzxw8hb2y1tfd",
+      "marketId": "cfb-lsu-tenn-2026-11-21-spread-home-16pt5",
+      "entryPrice": 0.13332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 19.9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwq0huk4008nzxw8bj8w9ibt",
+      "marketId": "cfb-lsu-tenn-2026-11-21-spread-away-14pt5",
+      "entryPrice": 0.15332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 19.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwq1oa7u008qzxw8hc7avy2t",
+      "marketId": "epl-mac-ful-2026-11-21-total-5pt5",
+      "entryPrice": 0.13332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 8.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwq3n2sf008wzxw8ae2m9ff3",
+      "marketId": "cfb-col-cin-2026-11-21-spread-away-17pt5",
+      "entryPrice": 0.07443999999999999,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 12.9,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwqb3s9200a9zxw8ped14adb",
+      "marketId": "cwbb-njit-marq-2026-11-21",
+      "entryPrice": 0.07944,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 13.5,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwqv57bx00c4zxw8fm8uivq3",
+      "marketId": "ufc-jproch-nav-2026-11-21-go-the-distance",
+      "entryPrice": 0.16332,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 1.1,
+      "realizedPnl": -100,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
+    },
+    {
+      "tradeId": "cmwrcfpts00d3zxw8880n7ki3",
+      "marketId": "epl-liv-mun-2026-11-22-spread-away-1pt5",
+      "entryPrice": 0.08444,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 14.4,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwresjag00dizxw8e7hbfhtu",
+      "marketId": "epl-hul-bri-2026-11-22-hul",
+      "entryPrice": 0.13332,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 11.3,
+      "realizedPnl": 130.02,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 1,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": 130.02
+    },
+    {
+      "tradeId": "cmwrf6prg00dlzxw8uvs96u2f",
+      "marketId": "lal-bar-vil-2026-11-22-corners-total-7pt5",
+      "entryPrice": 0.16832,
+      "stakeUsd": 20,
+      "kind": "resolved",
+      "ageHours": 10.1,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -20
+    },
+    {
+      "tradeId": "cmwrm9evj00e0zxw8xgcif1r3",
+      "marketId": "epl-liv-mun-2026-11-22-team-total-away-2pt5",
+      "entryPrice": 0.11832,
+      "stakeUsd": 100,
+      "kind": "resolved",
+      "ageHours": 9.8,
+      "realizedPnl": 0,
+      "counterfactualByHorizon": {
+        "1h": null,
+        "6h": null,
+        "24h": null,
+        "72h": null,
+        "168h": null
+      },
+      "settlementValue": 0,
+      "settlementSource": "market-settlement",
+      "counterfactualSettlement": -100
     }
   ]
 }
