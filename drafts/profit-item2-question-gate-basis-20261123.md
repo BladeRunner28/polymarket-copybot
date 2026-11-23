@@ -21,13 +21,25 @@ capping arm B at 0.50c still yields 46/89, so again no published count, ROI, CI 
 moved and the §6 rule text is untouched.
 
 **Revision 4 (2026-11-23, after review).** §8's flow trend now reads the series as it prints instead
-of inverting it — the class fell from the backfilled September epoch and then rose **8 → 30** while
+of inverting it — September's 505 is a genuine level, then **8 → 30** into November while
 the lane was flat (**146 → 143**) — and the "coverage can only improve forward" line is replaced by
 the actual arithmetic (33 un-stamped legs, all September; ≥90% needs ~23 months of new legs). F4 and
 §7 now carry the recommended bar's horizon, the fact that it clears on essentially the same date as
 the ≥300 bar it replaces, and the card's own **~2h stamp extension** as the path that actually
 un-parks item 2; F4 is now justified on the coverage principle rather than on timing. No published
 count, ROI, CI or arm percentage changed and no line of the §6 rule text changed.
+
+**Revision 5 (2026-11-23, after review).** The "backfill" attribution is gone from §8 and from the
+revision-4 note: September's 505 question legs were minted live, not replayed — every one of those
+rows carries a cuid whose timestamp decodes to its `openedAt`, the 505 decisions arrive one at a time
+across the month rather than in a batch (largest single second: 4 legs; largest 60-second window:
+15), and they ran on rule sets **v40–v60**. The series is now stated with the regime each month was
+traded under (Oct **v60–v70**, Nov **v70–v73**) and with no causal claim, and the "either reading"
+sentence is dropped in favour of the November share the paragraph already prints. The only genuinely
+older artifact is stamp provenance, now named as such: all **81** September question legs carrying a
+book stamp are `_src:"old"` from the merged artifact, against all **30** November ones `_src:"new"`.
+F4's "about a week" is corrected to ten days (0.33 months). No published count, ROI, CI or arm
+percentage changed and no line of the §6 rule text changed.
 
 ## Key insight
 
@@ -225,12 +237,12 @@ reported beside it. Under the strict tol-0 reading the answer is 36.0% — same 
   and it detaches from the population whenever the class grows or shrinks. The cost, stated honestly:
   the two bars clear on essentially the same date if nothing but new legs move the number — ≥90%
   needs **k ≈ 23.1 months** at November's 9 adjudicable legs/month (`(0.9·122−89)/(0.1·9)`) and ≥300
-  needs `(300−89)/9 ≈ 23.4` — so the swap buys about a week on the clock, not two years. What it buys
-  is the right remedy: the **33 un-stamped legs are all September**, and the card's own **~2h stamp
-  extension** takes coverage from 89/122 to 122/122 and clears the recommended bar immediately, while
-  no stamp extension can clear a 300-leg bar that needs 211 new legs. Concretely, F4 drops the
-  "or ≥ 300 legs" disjunct from the §6 rule. Revert: keep 300 and accept
-  that item 2 stays parked until ~2028-10 at November flow even after the stamp is extended.
+  needs `(300−89)/9 ≈ 23.4` — so the swap buys about ten days on the clock (0.33 months), not two
+  years. What it buys is the right remedy: the **33 un-stamped legs are all September**, and the
+  card's own **~2h stamp extension** takes coverage from 89/122 to 122/122 and clears the
+  recommended bar immediately, while no stamp extension can clear a 300-leg bar that needs 211 new
+  legs. Concretely, F4 drops the "or ≥ 300 legs" disjunct from the §6 rule. Revert: keep 300 and
+  accept that item 2 stays parked until ~2028-10 at November flow even after the stamp is extended.
 - **F5 · LANE COVERAGE — recommended: block the class verdict until C-200 question legs carry a
   reachability stamp** (the booth exists: `scripts/c200-printthrough.py` + the union read in
   `scripts/c200-fill-aware-pnl.ts`). The STANDARD-only stamp sees 2.1% of the class's post-corpus
@@ -256,17 +268,23 @@ verdict* would read once the operator approves this text.
   robust to concentration.
 - Every arm's ROI interval spans zero (best lower bound −11.9%). The gate's ROI conjunct passes on
   the point estimate only; "non-negative ROI" is not statistically established at n=89.
-- The **adjudicable** flow is thin and lumpy: 106 mapped question legs in September (the L2 corpus
-  epoch month, which carries backfill), **7** in October, **9** in November. The class as a whole is
-  not small — November carries **110 question legs across both lanes** — and its post-corpus series
-  should be read for what it prints, not as a decline: STANDARD question legs ran **505 → 8 → 30**
-  (all statuses, undeduped) against STANDARD's own lane at **747 → 146 → 143**, i.e. 68% → 5.5% → 21%
-  of the lane's legs. The 505 is the backfilled September epoch month; across the two organic months
-  the class **rose 8 → 30 (+275%)** while the lane was flat (146 → 143, −2.1%) and the class's share
-  of the lane **rose 5.5% → 21%**. From September the series falls (68% → 21%) only because that
-  denominator carries the backfill; forward it is growing off a thin base. Either reading forbids
-  citing recent flow as evidence that the class is dying. Measured per basis, November's question
-  book is:
+- The **adjudicable** flow is thin and lumpy: 106 mapped question legs in September (the L2 corpus's
+  first month), **7** in October, **9** in November. The class as a whole is not small — November
+  carries **110 question legs across both lanes** — and its post-corpus series is a level, a trough
+  and a recovery, not a decline: STANDARD question legs ran **505 → 8 → 30** (all statuses,
+  undeduped) against STANDARD's own lane at **747 → 146 → 143**, i.e. 68% → 5.5% → 21% of the lane's
+  legs. The 505 is a real September level, minted live at the open like any other leg: every one of
+  those rows carries a cuid whose timestamp decodes to its `openedAt`, and the 505 decisions arrive
+  one at a time across the month rather than in a batch (largest single second: 4 legs; largest
+  60-second window: 15). Read with the regime each month was traded under — September **v40–v60**,
+  October's 8 legs **v60–v70**, November's 30 **v70–v73** — the series is a trough in the month the
+  rule set turned over, then **8 → 30 (+275%)** into November while the lane was flat (146 → 143,
+  −2.1%) and the class's share of the lane **rose 5.5% → 21%**. Neither the September level nor the
+  October trough bears on the rules in force now, and the one month measured under them (November,
+  30/143 = **21% of the lane's legs**) supports neither "the class is dying" nor "the class is
+  reviving". What is genuinely older here is the *stamp*, not the legs: all **81** September question
+  legs carrying a book stamp are `_src:"old"` from the merged artifact, against all **30** November
+  ones `_src:"new"`. Measured per basis, November's question book is:
   - **STANDARD:** 30/143 = **21% of the lane's legs**; **9** settled question legs carry **$135 of
     STANDARD's $1,339 settled at risk = 10%**.
   - **Both lanes:** 110/575 = **19% of all legs**; **87** settled question legs carry **$2,443 of
