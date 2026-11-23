@@ -83,7 +83,9 @@ above below between within without against per via etc n b c d e g h i j k l m o
 
 
 def as_text(v):
-    """Roadmap notes are strings except one legacy array row (tr39-print-type-ingest-guard)."""
+    """Coerce a note to text. Notes are strings since the 2026-11-22 reshape of the one legacy
+    array row (tr39-print-type-ingest-guard); the list branch is kept so an older backup or an
+    out-of-band edit cannot crash the lookup the way it did when this was built."""
     if isinstance(v, list):
         return " ".join(str(x) for x in v)
     return v or ""
