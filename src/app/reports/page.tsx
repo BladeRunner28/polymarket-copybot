@@ -142,7 +142,14 @@ export default async function Reports() {
               </div>
             </div>
             <div className="text-xs text-dim mb-3">
-              Open positions {r.openPositions} · Signals (c/w/s) {r.copiedSignals}/{r.watchedSignals}/{r.skippedSignals}
+              Open positions {r.openPositions} · Signals (copy/near-miss/skip) {r.copiedSignals}/{r.watchedSignals}/{r.skippedSignals}
+              {/* 2026-11-23 self-audit (Lane B, label only): the middle bucket read "w" (watched
+                  signals) and stored `watchedSignals`, but it is the journal's `watchlist`
+                  DECISION — a score band (copyScore at/above the watchlist bar, under the copy
+                  bar) plus copy-intended rows a cap/risk gate refused. It is NOT the count of
+                  watch-status wallets: 2026-11-22 stored 2 watchlist rows while wallets whose
+                  status is `watch` produced decisions journaled `skip`. The EOD text was renamed
+                  to "near-miss" on 2026-11-22; this page kept the ambiguous letter. */}
               {" "}· as written by the 22:00 run, so the day&apos;s last hours are not in these counts
             </div>
             {(bestWallets.length > 0 || worstWallets.length > 0) && (
