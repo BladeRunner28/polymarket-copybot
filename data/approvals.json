@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-21T22:05:06-06:00",
+  "updatedAt": "2026-11-22T22:05:06-06:00",
   "counts": {
-    "pending": 4,
+    "pending": 5,
     "approved": 47,
     "declined": 1,
     "excluded": 19,
-    "retired": 9
+    "retired": 10
   },
   "items": [
     {
@@ -71,6 +71,22 @@
       "decidedVia": null,
       "kanbanTaskId": null,
       "_card_dates": "Measured 2026-09-18 on the politics book; RE-MEASURED 2026-11-21T15:13Z on the sports book",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-residual-cheap-longdated-clip",
+      "lane": "A",
+      "status": "pending",
+      "title": "LANE A PROPOSAL \u2014 cap C-200 at $40 only where the 24h floor cannot reach: px<0.20 AND ttr>=168h (13 legs, 0/13 won, \u2212$221.45) = +$5.27/day",
+      "proposal": "WHY: the whole book's loss is one clip tier (\u2265$40: 53 legs, $5,000 = 45% of notional, \u2212$766.19, \u221215.3%, ex-top-1 \u221226.9%), and a 24h floor removes 32 of those 53 legs (the entire \u2212$904.44 at ttr 2-24h). The one block the floor CANNOT reach is \u2265$40 at px<0.20 with ttr\u2265168h: 13 legs, $1,200, \u2212$221.45 (\u221218.5%), CI [\u221236.1,\u22125.3], 0/13 won, ex-top-3 \u221225%, mean price 0.16 against a 16% break-even. A $40 cap rescales those legs to 40% of their risk: +$132.87 = +$5.27/day. S6 confirms zero overlap with the floor. CONTEXT \u2014 do not ship this together with anything else on the cheap band: the approved $25 band-scoped cap is a SHADOW of the floor (post-floor it reaches 17 legs that are +$94.65 and \u2026",
+      "evidence": "",
+      "revert": "",
+      "source": "roadmap:profit-residual-cheap-longdated-clip",
+      "createdAt": "2026-11-22T08:05:06-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-22 by the profit review (drafts/profit-recs-20261122.md \u00a7R2; instrument scripts/profit-clip-tier.py \u00a7S4/S6, --selftest 5/5). NOT APPLIED \u2014 Lane A: it changes how much the bot risks.",
       "_column": "Backlog"
     },
     {
@@ -1036,6 +1052,13 @@
       "status": "approved",
       "why": "card closed, de-tagged or absent from the roadmap",
       "at": "2026-11-12T10:41:01-06:00"
+    },
+    {
+      "id": "apr-profit-c200-reachability-stamp",
+      "card": "profit-c200-reachability-stamp",
+      "status": "pending",
+      "why": "card closed, de-tagged or absent from the roadmap",
+      "at": "2026-11-22T10:05:06-06:00"
     }
   ]
 }
