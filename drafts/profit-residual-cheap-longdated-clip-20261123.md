@@ -6,6 +6,9 @@
 `staleExitHours = 24`, `staleExitAdverseMove = -0.15`, `staleExitHardHours = 168`.
 **Instrument** `scripts/profit-longdated-clip.py` (read-only, DB `mode=ro`, `--selftest` 7/7, S7 6/6).
 Base read: 578 legs / 476 markets / 32 wallets / 26.3 days, book −$91.05 (−0.8%), **2026-11-23**.
+**Rev 2** (review round 1): three supporting sentences corrected — §2 post-floor population
+(21 legs / $1,680, of which 17 bind), §3 loser spread (16.1–47.8%) and the `unfilled` stamp
+attribution, §6 the $25-cap cost (−$75.77, with the arm named). No number in the recommendation moved.
 
 ---
 
@@ -56,12 +59,13 @@ parameter is the weakest of the four arms available.**
 | "$40 cap … **+$132.87 = +$5.27/day**" | **+$125.22 = +$4.77/day** (CI [+30.31,+262.38]); the rescale applied 40% to two $50 legs | **arithmetic slip**, −$7.65 |
 | "S6 confirms zero overlap with the floor" | holds, and more strongly than stated: the cell's **minimum** ttr is **488h** (range 488–5,056h), so no floor at 24h can ever touch it | **confirmed** |
 | "the floor removes 32 of those 53 legs (the entire −$904.44)" | today the ≥$40 / 2-24h tier is **33 legs / −$904.44** (one leg added in the 5 days since) | **stale by one leg**, no sign change |
-| "13 legs, 0/13 won" | **7 of the 12 carried risk** (5 booked exactly $0.00 with `fillStatus='unfilled'`); **45.2%** of the loss is one **resolved** total loss at 5.9c | the sample is 7 legs, not 12 |
+| "13 legs, 0/13 won" | **7 of the 12 carried risk** (5 booked exactly $0.00); 8 of the 12 carry `fillStatus='unfilled'` and **3 of those booked real losses**, so the risk split follows PnL, not the stamp; **45.2%** of the loss is one **resolved** total loss at 5.9c | the sample is 7 legs, not 12 |
 
 Everything else in the card reproduces exactly: the ≥$40 tier is the whole book's loss
-(54 legs / $5,100 / −$766.19 / −15.0%; everything under $40 is +$675.14), and the post-floor
-cheap survivors are 17 legs / +$94.65, of which the 12-leg long-dated slice is −$221.45 and the
-5 legs at 24–168h are **+$316.10 (+63.2%)**.
+(54 legs / $5,100 / −$766.19 / −15.0%; everything under $40 is +$675.14), and the post-floor cheap
+population is **21 legs / $1,680 / +$94.65**, of which **17 (all ≥$40, $1,600)** are a cap's bind set
+— the 12-leg long-dated slice (−$221.45) plus the 5 legs at 24–168h (**+$316.10, +63.2%**) — and the
+other 4 are $20 clips booking exactly $0.00.
 
 ---
 
@@ -93,9 +97,13 @@ Three facts this table settles:
   **−$221.45** realised: the adverse marks persisted. The "just hold them" alternative is dead on
   this population, independently of `profit-exit-counterfactual.py`'s hold-to-resolution arm.
 - **It is one resolved total loss plus six adverse marks.** The single resolution carries 45.2% of
-  the loss; the other six lose 12–25% of stake on marks that never came back.
-- **Half the sample took no risk.** 5 of 12 booked exactly $0.00 with `fillStatus='unfilled'`; they
-  contribute nothing to realised PnL and nothing to any cap delta, which is why the effective n is 7.
+  the loss; the other six lose **16.1%–47.8%** of stake (−16.1%, −16.3%, −17.3%, −20.9%, −22.1%,
+  −47.8%) on marks that never came back.
+- **Five of twelve took no risk — and the stamp does not say so.** 5 of 12 booked exactly $0.00;
+  they contribute nothing to realised PnL and nothing to any cap delta, which is why the effective
+  n is 7. The `unfilled` stamp is *not* the discriminator: **8 of the 12 carry it and 3 of those
+  booked real losses** (−$47.82, −$16.27, −$8.07) — the repo already records that stamp as 29.3%
+  false-negative, so "no risk" is attributed here to the $0.00 PnL, never to the stamp.
 
 ---
 
@@ -175,7 +183,10 @@ Every λ̂ above −0.112 books the maximum clip. `profit-lambda-owned-populatio
 reaches the same conclusion from the other side ("the clip is a `kellyMaxSizeUsd`/cap problem; λ̂ is
 a correctness problem"). So the two cards are **complements, not alternatives** — the card's own
 "approve one of the three" instruction should be retired, and the withdrawn $25 band cap stays
-withdrawn (post-floor it reaches 17 legs worth +$94.65 and costs $64–107 to cap).
+withdrawn — post-floor, scoped `px<0.20`, it reaches the same 17 legs (all ≥$40) that carry the
++$94.65 and **costs −$75.77** to cap; applied at all prices it reaches 21 legs worth +$138.25 and
+costs −$107.46. (The −$64.44/−$2.45-per-day endpoint belongs to the **$40** arm at `px<0.20`, §4.)
+Those three figures are three arms, not a range — quote them with the arm attached.
 
 ---
 

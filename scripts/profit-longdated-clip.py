@@ -165,19 +165,22 @@ def main():
           f"{'funded':<7} {'ttr_h':>6}  market")
     import datetime as dt
     money = []
-    nzero = nunf = nkelly = 0
+    nzero = nunf = nunf_all = nunf_loss = nkelly = 0
     mtm = 0.0
     for l in sorted(cell, key=lambda x: x["ms"]):
         r = c.execute("select currentPrice, resolvedAt, fillStatus from PaperTrade where id=?",
                       (l["id"],)).fetchone()
         kelly = l["ntl"] > 20.0  # only the Kelly path can exceed BOT_LIMITS.BANKROLL_200.max
         nkelly += 1 if kelly else 0
+        stamp = (r["fillStatus"] or "") == "unfilled"
+        nunf_all += 1 if stamp else 0
         if abs(l["pnl"]) < 1e-9:
             nzero += 1
-            if (r["fillStatus"] or "") == "unfilled":
+            if stamp:
                 nunf += 1
         else:
             money.append(l)
+            nunf_loss += 1 if stamp else 0
             mtm += l["pnl"] if r["resolvedAt"] else ((r["currentPrice"] / l["px"] - 1.0) * l["ntl"]
                                                      if r["currentPrice"] else l["pnl"])
         print(f"  {dt.datetime.utcfromtimestamp(l['ms']/1000):%Y-%m-%d} {l['ntl']:>5.0f} "
@@ -187,7 +190,15 @@ def main():
               f"{('KELLY' if kelly else 'legacy'):<7} {l['ttr']:>6.0f}  {l['market'][:40]}")
     realized = sum(l["pnl"] for l in cell)
     print(f"\n  {len(cell)} legs: {len(money)} carried risk, {nzero} booked exactly $0 "
-          f"({nunf} of them fillStatus=unfilled — no risk taken)")
+          f"({nunf} of them fillStatus=unfilled)")
+    print(f"  fillStatus='unfilled' is on {nunf_all}/{len(cell)} legs and is NOT a no-risk marker: "
+          f"{nunf_loss} stamped legs booked real losses, so risk follows the $0.00 PnL, not the stamp "
+          f"(the repo records that stamp at 29.3% false-negative)")
+    marks = [l["pnl"] / l["ntl"] for l in money
+             if l["pnl"] < 0 and abs(l["pnl"] + l["ntl"]) > 1e-9]
+    if marks:
+        print(f"  the {len(marks)} marked-down losers each lose {abs(max(marks))*100:.1f}%.."
+              f"{abs(min(marks))*100:.1f}% of stake")
     print(f"  funded above the legacy ceiling: {nkelly}/{len(cell)} legs (only the Kelly path can)")
     worst = min(cell, key=lambda x: x["pnl"])
     wres = c.execute("select resolvedAt from PaperTrade where id=?", (worst["id"],)).fetchone()[0]
@@ -255,6 +266,16 @@ def main():
         print(f"  ttr>={X:>4}h  n={cc['n']:>3}  ${cc['cost']:>6,.0f}  {cc['pnl']:>+9,.2f}  "
               f"{cc['roi']:+6.1f}%  px {cc['avg_px']:.3f}   "
               f"a skip of this cut is worth {-cc['pnl']/days:+6.2f}/day")
+    post = [l for l in c200 if l["px"] < 0.20 and l["ttr"] is not None and l["ttr"] >= 24]
+    pbig = [l for l in post if l["ntl"] >= 40.0]
+    psmall = [l for l in post if l["ntl"] < 40.0]
+    if post:
+        tail = (f"the remaining {len(psmall)} are ${psmall[0]['ntl']:.0f} clips booking "
+                f"{sum(l['pnl'] for l in psmall):+,.2f}" if psmall else "no leg sits below $40")
+        print(f"\n  post-floor population (px<.20, ttr>=24h): {len(post)} legs / "
+              f"${sum(l['ntl'] for l in post):,.0f} / {sum(l['pnl'] for l in post):+,.2f}. "
+              f"A cap at/below $40 binds the {len(pbig)} legs >=$40 "
+              f"(${sum(l['ntl'] for l in pbig):,.0f}, {sum(l['pnl'] for l in pbig):+,.2f}); {tail}")
     print()
 
     # ------------------------------------------------------------------ S6
