@@ -984,6 +984,122 @@ def reddit_recon(skipped: bool = False) -> list[str]:
     return out
 
 
+# ------------------------------------------------ prereg gate registry (read-only)
+PREREG_REGISTRY = REPO_DIR / "data" / "prereg-registry.jsonl"
+
+# What a registry state means FOR THE LIVE ARM printed above it. FROZEN is the one that
+# matters: its population stopped moving before its own gate date, so the live series can
+# print INSUFFICIENT_N forever and never become a gate that is still waiting.
+REGISTRY_STATE_MEANING = {
+    "FROZEN": "population stopped moving before the gate date - n can never arrive",
+    "REFUTED": "gate answered NO",
+    "UNGRADEABLE": "gate cannot be graded on this population",
+}
+
+
+def format_registry_row(r: dict) -> str:
+    """One compact spec line: id, state, reads, frozen_at, hand-read, what the state means."""
+    rid = r.get("id")
+    state = str(r.get("state") or "NO_STATE").upper()
+    reads = r.get("reads")
+    froz = r.get("frozen_at") or "?"
+    txt = f"{rid} **{state}** - {reads} read(s), frozen {froz}"
+    hand = r.get("hand_read")
+    if isinstance(hand, dict) and hand.get("value") is not None:
+        hv, hn, hd = hand.get("value"), hand.get("n"), hand.get("date")
+        txt += f", hand-read {hv} at n={hn} ({hd})"
+    why = REGISTRY_STATE_MEANING.get(state)
+    if why:
+        txt += f" [{why}]"
+    return txt
+
+
+def parse_registry_text(text: str) -> tuple[list[dict], int]:
+    """(rows, bad) from the registry JSONL. A bad row is COUNTED, never silently dropped."""
+    rows: list[dict] = []
+    bad = 0
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            bad += 1
+            continue
+        if isinstance(r, dict) and r.get("id"):
+            rows.append(r)
+        else:
+            bad += 1
+    return rows, bad
+
+
+def format_registry_block(rows: list[dict], bad: int = 0) -> str:
+    """The one sheet line: every spec beside the live arm, with the bad-row count named."""
+    line = (f"- **Gate registry** (`data/prereg-registry.jsonl`, {len(rows)} spec(s)): "
+            + " · ".join(format_registry_row(r) for r in rows))
+    if bad:
+        line += f" · {bad} line(s) skipped as unparseable"
+    return line
+
+
+def prereg_registry_lines() -> list[str]:
+    """Every gate spec in data/prereg-registry.jsonl, BESIDE the live arm - never instead.
+
+    Why (2026-11-23, Lane B repair of card fact-sheet-gate-block-registry-state): every
+    fact sheet up to today printed entry-floor-a as INSUFFICIENT_N (n=32/60, gate 30d ago),
+    which reads as a gate still waiting for legs. The registry holds the same spec as FROZEN
+    since 2026-10-17, 20 reads, hand-read -55.18% at n=31: the population stopped moving
+    BEFORE the gate date, so the 60-leg bar can never arrive. The live series cannot say
+    that. Read-only: nothing here writes the registry, the series or the floor.
+    """
+    if not PREREG_REGISTRY.exists():
+        return ["- **Gate registry MISSING** (`data/prereg-registry.jsonl` absent) - the "
+                "state above is unverified against its own spec."]
+    try:
+        text = PREREG_REGISTRY.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        return [f"- **Gate registry UNREADABLE** ({type(e).__name__}: {e}) - the state "
+                f"above is unverified against its own spec."]
+    rows, bad = parse_registry_text(text)
+    if not rows:
+        return [f"- **Gate registry EMPTY** ({bad} unparseable line(s)) - no spec can be "
+                f"quoted for the state above."]
+    return [format_registry_block(rows, bad)]
+
+
+def registry_selftest() -> int:
+    """Fixtures only: no DB, no network, no file writes. Mutation arms prove it can fail."""
+    checks: list[tuple[str, bool]] = []
+    frozen = {"id": "entry-floor-a", "state": "frozen", "reads": 20,
+              "frozen_at": "2026-10-17",
+              "hand_read": {"value": -0.5518, "n": 31, "date": "2026-11-09"}}
+    refuted = {"id": "c200-ladder-window-1025", "state": "REFUTED", "reads": 3,
+               "frozen_at": "2026-10-24"}
+    rows, bad = parse_registry_text(json.dumps(frozen) + chr(10) + json.dumps(refuted))
+    checks.append(("two specs parse with zero bad rows", len(rows) == 2 and bad == 0))
+    junk = json.dumps(frozen) + chr(10) + "{not json}" + chr(10) + "[1, 2]" + chr(10) + json.dumps({"state": "FROZEN"})
+    rows2, bad2 = parse_registry_text(junk)
+    checks.append(("three malformed rows counted, not swallowed", len(rows2) == 1 and bad2 == 3))
+    line = format_registry_row(frozen)
+    checks.append(("lowercase state normalised to **FROZEN**", "**FROZEN**" in line))
+    checks.append(("reads and frozen_at are printed", "20 read(s), frozen 2026-10-17" in line))
+    checks.append(("hand-read carries its n and date", "n=31" in line and "2026-11-09" in line))
+    checks.append(("a FROZEN row names the consequence", "can never arrive" in line))
+    rl = format_registry_row(refuted)
+    checks.append(("a REFUTED row does not borrow the FROZEN text", "can never arrive" not in rl))
+    checks.append(("hand-read is optional and silently absent", "hand-read" not in rl))
+    checks.append(("an absent state prints NO_STATE, never blank", "**NO_STATE**" in format_registry_row({"id": "x"})))
+    naked = frozen["id"] + " - 20 read(s), frozen 2026-10-17"
+    checks.append(("mutation: a state-less line is rejected", "**FROZEN**" not in naked))
+    blk = format_registry_block([frozen, refuted], bad=3)
+    checks.append(("the block names both specs and the bad count", "entry-floor-a" in blk and "c200-ladder-window-1025" in blk and "3 line(s) skipped" in blk))
+    checks.append(("the block keeps the live-and-registry side-by-side form", blk.startswith("- **Gate registry**")))
+    n_fail = sum(1 for _name, ok in checks if not ok)
+    for name, ok in checks:
+        print(("PASS  " if ok else "FAIL  ") + name)
+    print(f"registry self-test: {len(checks) - n_fail}/{len(checks)}")
+    return 0 if n_fail == 0 else 1
+
 # ---------------------------------------------------------------- main
 def prereg_reads(skipped: bool = False) -> list[str]:
     """Status of the pre-registered reads whose gate dates are already in the past.
@@ -1052,6 +1168,9 @@ def prereg_reads(skipped: bool = False) -> list[str]:
         f"gate B net=${gb.get('value')} across {v.get('gateB_resolved', {}).get('value')} resolved "
         f"(need >= $25 / 30). Series: `data/entry-floor-read.jsonl`."
     )
+    # BESIDE the live state, never instead of it: the registry row says whether the arm
+    # above is still a gate at all (2026-11-23 - a FROZEN gate read as INSUFFICIENT_N).
+    out.extend(prereg_registry_lines())
     out.append(
         "- A `PENDING_DATE` line older than the gate date is NOT a pending gate — it is an "
         "unread one. Quote the newest state with its `gateDate` and `ranAt`, never the state alone."
@@ -1069,7 +1188,12 @@ def main() -> int:
                     help="skip the GitHub/Reddit reconnaissance blocks")
     ap.add_argument("--skip-prereg", action="store_true",
                     help="skip the pre-registered-read status block (does not take the read)")
+    ap.add_argument("--self-test", action="store_true",
+                    help="run the registry-formatter self-test and exit (no DB, no network)")
     a = ap.parse_args()
+
+    if a.self_test:
+        return registry_selftest()
 
     # Every block this run must emit a typed row for. `--skip-*` blocks are recorded as
     # gated_off (blocked on US, not broken), so a flag cannot masquerade as a healthy run.
