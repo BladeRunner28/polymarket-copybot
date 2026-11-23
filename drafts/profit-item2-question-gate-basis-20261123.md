@@ -41,6 +41,14 @@ book stamp are `_src:"old"` from the merged artifact, against all **30** Novembe
 F4's "about a week" is corrected to ten days (0.33 months). No published count, ROI, CI or arm
 percentage changed and no line of the §6 rule text changed.
 
+**Revision 6 (2026-11-23, after review).** §8's rule-set gloss is restated from the ledger. November's
+30 STANDARD question legs split **v70 ×4 (Nov 1–3), v71 ×23 (Nov 5–11) and v73 ×3 (Nov 17, Nov 21 ×2)**,
+and v73 dates from **2026-11-13T16:13:26Z**, so **no month yet measures the class under the rules in
+force** — the earlier "the one month measured under them" clause was false for 27 of the 30 legs and
+is removed. The "month the rule set turned over" attribution is removed too: the churn is September's
+(**21 distinct versions v40–v60**, **213 of 505** legs on v52/v53), against October's **4** versions
+over 8 legs. Every table number, F1–F5, the F4/§7 arithmetic and the §6 rule text are unchanged.
+
 ## Key insight
 
 The tolerance is not a rounding knob — it names an **execution model**, and only the arm that grants
@@ -277,11 +285,14 @@ verdict* would read once the operator approves this text.
   those rows carries a cuid whose timestamp decodes to its `openedAt`, and the 505 decisions arrive
   one at a time across the month rather than in a batch (largest single second: 4 legs; largest
   60-second window: 15). Read with the regime each month was traded under — September **v40–v60**,
-  October's 8 legs **v60–v70**, November's 30 **v70–v73** — the series is a trough in the month the
-  rule set turned over, then **8 → 30 (+275%)** into November while the lane was flat (146 → 143,
-  −2.1%) and the class's share of the lane **rose 5.5% → 21%**. Neither the September level nor the
-  October trough bears on the rules in force now, and the one month measured under them (November,
-  30/143 = **21% of the lane's legs**) supports neither "the class is dying" nor "the class is
+  October's 8 legs **v60–v70**, November's 30 split **v70 ×4 (Nov 1–3), v71 ×23 (Nov 5–11) and
+  v73 ×3 (Nov 17, Nov 21 ×2)** — the series is **8 → 30 (+275%)** into November while the lane was flat
+  (146 → 143, −2.1%) and the class's share of the lane **rose 5.5% → 21%**. The ledger puts the
+  churn in September, not October: September's 505 legs ran on **21 distinct versions across
+  v40–v60** (**213** of them on v52/v53), against October's **4** versions over 8 legs. And **no
+  month yet measures the class under the rules in force** — v73 dates from 2026-11-13T16:13:26Z and
+  only **3 of November's 30** legs were opened under it — so November's 30/143 = **21% of the lane's
+  legs** is a mixed-regime reading and supports neither "the class is dying" nor "the class is
   reviving". What is genuinely older here is the *stamp*, not the legs: all **81** September question
   legs carrying a book stamp are `_src:"old"` from the merged artifact, against all **30** November
   ones `_src:"new"`. Measured per basis, November's question book is:
