@@ -298,6 +298,181 @@ def table(title, legs, extra=None):
         print(extra)
 
 
+def boot_delta(legs, dvals, reps=2000, seed=17):
+    """Market-clustered bootstrap of a SUM of per-leg deltas (resample markets, sum members)."""
+    import collections
+    g = collections.defaultdict(list)
+    for l, d in zip(legs, dvals):
+        g[l["market"]].append(d)
+    keys = list(g)
+    if not keys:
+        return (0.0, 0.0)
+    rng = np.random.default_rng(seed)
+    out = []
+    for _ in range(reps):
+        pick = rng.choice(len(keys), len(keys), replace=True)
+        out.append(sum(sum(g[keys[i]]) for i in pick))
+    a = np.array(out)
+    return float(np.percentile(a, 2.5)), float(np.percentile(a, 97.5))
+
+
+def sec_fill_basis(legs, days, cap=25.0):
+    """S16-S19 — the same book, split by whether the venue ever traded at our price.
+
+    WHY: every ROI in S1-S15 is booked at p(fill)=1. A maker bid that the market never
+    came down to is not a position, and the resolver stamp covers only the legs its own
+    resolver could reach. The venue's minute tape (keyless, retroactive, cached under
+    data/fill-tape-cache) adjudicates all of them on one basis: did the MID for the token
+    we bid on print at or below our price inside the horizon?
+
+    touch(W) is necessary, not sufficient: queue position is unmodelled, so a touch is an
+    UPPER bound on the fill and the phantom class is a LOWER bound on the phantom dollars.
+    """
+    import importlib.util as _iu
+    _s = _iu.spec_from_file_location("_pft", os.path.join(HERE, "profit-fill-tape.py"))
+    if _s is None or _s.loader is None:
+        return
+    pf = _iu.module_from_spec(_s)
+    _s.loader.exec_module(pf)
+
+    tlegs = [l for l in pf.load("2026-09-01")
+             if l.get("status") != "open" and l.get("realizedPnl") is not None
+             and (l.get("rv") or 0) >= 68]
+    pf.classify(tlegs, workers=8)
+    tape = {l["id"]: l for l in tlegs}
+
+    def touch(leg, W):
+        t = tape.get(leg["id"])
+        if t is None:
+            return None
+        s = t.get("tape_series")
+        if not s:
+            return None
+        t0 = t["openedTs"] // 1000
+        sub = [p for t2, p in s if t2 <= t0 + W]
+        if not sub:
+            return None
+        return min(sub) <= t["trueP"] + 0.001
+
+    W5, W60 = 300, 3600
+    print("\n== S16. FILL BASIS — did the venue ever trade at our price? (minutes tape, keyless) ==")
+    print(f"   population {len(legs)} settled legs; tape-classified {sum(1 for l in legs if l['id'] in tape)}")
+    print("   reach  W=300s (resolver's own 5-min fidelity) / W=3600s (a resting bid's hour):")
+    for st, nm in (("filled", "resolver filled"), ("unfilled", "resolver unfilled"), ("", "resolver null")):
+        v = [l for l in legs if l["fs"] == st]
+        n5 = [l for l in v if touch(l, W5) is not None]
+        t5 = sum(1 for l in n5 if touch(l, W5))
+        n60 = [l for l in v if touch(l, W60) is not None]
+        t60 = sum(1 for l in n60 if touch(l, W60))
+        print(f"     {nm:<18} n={len(v):>3}  touch {t5}/{len(n5)} = {100*t5/max(len(n5),1):5.1f}%"
+              f"   touch {t60}/{len(n60)} = {100*t60/max(len(n60),1):5.1f}%")
+    for W, lab in ((W5, "5min"), (W60, "1hour")):
+        print(f"   basis W={lab}:")
+        for nm, f in (("all legs", lambda l: True),
+                      ("touched  (reachable)", lambda l: touch(l, W) is True),
+                      ("never touched (phantom)", lambda l: touch(l, W) is False),
+                      ("no tape", lambda l: touch(l, W) is None)):
+            v = [l for l in legs if f(l)]
+            if not v:
+                continue
+            print(f"     {nm:<24} n={len(v):>3} ${sum(l['ntl'] for l in v):>7.0f} risk "
+                  f"PnL ${sum(l['pnl'] for l in v):>8.1f} ROI {roi(v):>6.1f}%")
+
+    def capped(l, d=cap):
+        m = dict(l)
+        if l["px"] < 0.20 and l["ntl"] > d:
+            m["pnl"] = l["pnl"] * (d / l["ntl"])
+            m["ntl"] = d
+            m["cd"] = d * l["days"]
+        return m
+
+    B = [capped(l) for l in legs]
+    print(f"\n== S17. the APPROVED $25 cheap-band cap (v73 apply script, never run), priced on both bases ==")
+    print("   cap binds px<0.20 clips > $25 (C-200 only: STANDARD's BOT_LIMITS max is $20)")
+    for nm, sel in (("booked (as filed)", lambda l: True),
+                    ("touched W=5min", lambda l: touch(l, W5) is True),
+                    ("touched W=1hour", lambda l: touch(l, W60) is True)):
+        v = [l for l in legs if sel(l)]
+        d = [(cap - l["ntl"]) * (l["pnl"] / l["ntl"])
+             if (l["px"] < 0.20 and l["ntl"] > cap) else 0.0 for l in v]
+        lo, hi = boot_delta(v, d)
+        nb = sum(1 for l in v if l["px"] < 0.20 and l["ntl"] > cap)
+        nz = sum(1 for x in d if x != 0.0)
+        post = sum(l["pnl"] for l in v) + sum(d)
+        nt = sum(l["ntl"] for l in v) - sum(l["ntl"] - cap for l in v
+                                            if l["px"] < 0.20 and l["ntl"] > cap)
+        print(f"     {nm:<18} clips {nb:>3} ({nz} priced)  delta ${sum(d):>+8.2f} "
+              f"({sum(d)/days:+.2f}/day) CI [{lo:+.0f},{hi:+.0f}]  "
+              f"post-cap ROI {100*post/nt if nt else 0:+.1f}%  "
+              f"helped {sum(1 for x in d if x > 0)}/hurt {sum(1 for x in d if x < 0)}")
+
+    def row(v, label, base=True):
+        if not v:
+            print(f"     {label:<30} empty")
+            return
+        s = sorted(v, key=lambda x: -x["pnl"])
+        ex1 = roi(s[1:]) if len(s) > 1 else 0.0
+        print(f"     {label:<30} n={len(v):>3} ${sum(l['ntl'] for l in v):>6.0f} "
+              f"PnL ${sum(l['pnl'] for l in v):>+8.1f} ROI {roi(v):>+6.1f}% ex1 {ex1:>+6.1f}% "
+              f"mkts {len({l['market'] for l in v}):>3}")
+
+    R = [l for l in B if touch(l, W60) is True]
+    print("\n== S18. POST-CAP, TOUCHED ONLY (W=1hour): where the ownable edge is ==")
+    row(R, "post-cap reachable book")
+    for b in BANDS:
+        row([l for l in R if band_of(l["px"]) == b], f"band {b}")
+    for lo_h, hi_h, lab in ((2, 24, "2-24h"), (24, 72, "24-72h"), (72, 168, "72h-7d"),
+                            (168, float("inf"), "7d+")):
+        for fl, nm in ((True, "short-TTR lane"), (False, "main path")):
+            row([l for l in R if l["ttr"] is not None and lo_h <= l["ttr"] < hi_h and l["stair"] == fl],
+                f"{lab} {nm}")
+    cell = [l for l in R if not l["stair"] and l["ttr"] is not None and 2 <= l["ttr"] < 24]
+    if cell:
+        lo, hi = boot_pnl(cell)
+        s = sorted(cell, key=lambda x: -x["pnl"])
+        print(f"   the main-path short-tenor cell, under the knife: PnL CI [{lo:+.1f},{hi:+.1f}], "
+              f"ex-top-1 {roi(s[1:]):+.1f}%, ex-top-3 {roi(s[3:]):+.1f}%, "
+              f"ex-top-5 {roi(s[5:]):+.1f}%")
+
+    print("\n== S19. what is LEFT to cap after the approved $25 (nothing stacks) ==")
+    cand = (
+        ("$10 cap, main-path 2-24h", lambda l: not l["stair"] and l["ttr"] is not None and 2 <= l["ttr"] < 24, 10),
+        ("$15 cap, main-path 2-24h", lambda l: not l["stair"] and l["ttr"] is not None and 2 <= l["ttr"] < 24, 15),
+        ("$20 cap, long-dated cheap (card)", lambda l: l["ttr"] is not None and l["ttr"] >= 168, 20),
+        ("$10 cap, px<0.10", lambda l: l["px"] < 0.10, 10),
+        ("$20 cap, px<0.20", lambda l: l["px"] < 0.20, 20),
+    )
+    for lab, pred, d in cand:
+        tot = 0.0
+        nb = 0
+        for l in B:
+            if touch(l, W60) is not True or not pred(l):
+                continue
+            if l["ntl"] > d:
+                tot += (d - l["ntl"]) * (l["pnl"] / l["ntl"])
+                nb += 1
+        print(f"   {lab:<36} binds {nb:>3}  delta ${tot:>+8.2f} ({tot/days:+.2f}/day)  "
+              f"[measured AFTER the approved cap]")
+
+    print("\n   the two upsizes the data refuses (measured, not argued):")
+    lane = [l for l in R if l["stair"]]
+    if lane:
+        s = sorted(lane, key=lambda x: -x["pnl"])
+        wal = {}
+        for l in lane:
+            wal[l["wallet"]] = wal.get(l["wallet"], 0.0) + l["pnl"]
+        top = max(wal.items(), key=lambda kv: kv[1])
+        print(f"     short-TTR lane reached: {len(lane)} legs ROI {roi(lane):+.1f}%, "
+              f"ex-top-1 {roi(s[1:]):+.1f}%, ex-top-3 {roi(s[3:]):+.1f}%, "
+              f"ex-top-5 {roi(s[5:]):+.1f}%; one wallet carries ${top[1]:.0f} of ${sum(l['pnl'] for l in lane):.0f}")
+    fav = [l for l in R if l["px"] >= 0.80]
+    if fav:
+        s = sorted(fav, key=lambda x: -x["pnl"])
+        print(f"     0.80+ reached: {len(fav)} legs ROI {roi(fav):+.1f}% CI "
+              f"[{boot_pnl(fav)[0]:+.0f},{boot_pnl(fav)[1]:+.0f}] ex-top-1 {roi(s[1:]):+.1f}%; "
+              f"{sum(1 for l in fav if l['pnl'] < 0)} losses in the cell")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-rule", type=int, default=68)
@@ -544,6 +719,8 @@ def main():
           f"({roi(res):+.1f}%)")
     print("    stacking both approved fixes is NOT additive: the floor already removes these legs,")
     print("    so the cap's measured value applies only to whatever the floor leaves behind.")
+
+    sec_fill_basis(legs, days)
 
     print("\n== S8. the same tenor cap applied to today's open book ==")
     for cap_h, label in ((720, "30d"), (2160, "90d"), (4320, "180d"), (8760, "365d")):
