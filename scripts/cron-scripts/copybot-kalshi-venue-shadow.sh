@@ -63,9 +63,18 @@ print("books (settled pairs only): PM $%+.2f (n=%d) | Kalshi $%+.2f (n=%d) | del
          b["delta"]["pnl"], b["delta"]["perTrade"]))
 days = (datetime.date(2026, 10, 8) - datetime.date.today()).days
 print("days to Kelly window close (Oct 8): %d" % days)
-if c["withKalshiQuote"] == 0:
+if c.get("withKalshiQuote") == 0:
     print("NOTE: zero verified cross-listings so far — the binding constraint is matcher coverage, "
           "not the delta.")
+d = s.get("deterministic") or {}
+if d:
+    b = d.get("book") or {}
+    print("det arm (contract equivalence, observation only): resolved=%s equiv=%s priced=%s | "
+          "book n=%s PM $%+.2f vs DET $%+.2f"
+          % (d.get("resolved"), d.get("equiv"), d.get("priced"), b.get("n"),
+             b.get("pmPnl", 0.0), b.get("detPnl", 0.0)))
+    if d.get("verdicts"):
+        print("  det verdicts: %s" % json.dumps(d["verdicts"]))
 PY
 
 echo "=== done $(date "+%H:%M:%S") ==="

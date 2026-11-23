@@ -1,0 +1,590 @@
+{
+ "_meta": {
+  "generatedAt": "2026-11-23T13:26:34Z",
+  "leagues": {
+   "epl": {
+    "ambiguousFormsDropped": [],
+    "codes": 23,
+    "missing": [],
+    "series": "KXEPLGAME"
+   },
+   "mlb": {
+    "ambiguousFormsDropped": [],
+    "codes": 34,
+    "missing": [],
+    "series": "KXMLBGAME"
+   },
+   "nba": {
+    "ambiguousFormsDropped": [],
+    "codes": 37,
+    "missing": [],
+    "series": "KXNBAGAME"
+   },
+   "nfl": {
+    "ambiguousFormsDropped": [
+     "New York"
+    ],
+    "codes": 35,
+    "missing": [],
+    "series": "KXNFLGAME"
+   },
+   "nhl": {
+    "ambiguousFormsDropped": [],
+    "codes": 38,
+    "missing": [],
+    "series": "KXNHLGAME"
+   }
+  },
+  "source": "Kalshi event title/sub_title pairs (settled 90d + open)"
+ },
+ "epl": {
+  "ars": [
+   "Arsenal"
+  ],
+  "avl": [
+   "Aston Villa"
+  ],
+  "bou": [
+   "Bournemouth"
+  ],
+  "bre": [
+   "Brentford"
+  ],
+  "bri": [
+   "Brighton"
+  ],
+  "cfc": [
+   "Chelsea"
+  ],
+  "che": [
+   "Chelsea"
+  ],
+  "cov": [
+   "Coventry"
+  ],
+  "cry": [
+   "Crystal Palace"
+  ],
+  "eve": [
+   "Everton"
+  ],
+  "ful": [
+   "Fulham"
+  ],
+  "hul": [
+   "Hull City"
+  ],
+  "ips": [
+   "Ipswich Town"
+  ],
+  "lee": [
+   "Leeds United"
+  ],
+  "lfc": [
+   "Liverpool"
+  ],
+  "liv": [
+   "Liverpool"
+  ],
+  "mac": [
+   "Manchester City"
+  ],
+  "mci": [
+   "Manchester City"
+  ],
+  "mun": [
+   "Manchester United"
+  ],
+  "new": [
+   "Newcastle"
+  ],
+  "nfo": [
+   "Nottingham Forest",
+   "Nottingham"
+  ],
+  "sun": [
+   "Sunderland"
+  ],
+  "tot": [
+   "Tottenham"
+  ]
+ },
+ "mlb": {
+  "ari": [
+   "Arizona"
+  ],
+  "ath": [
+   "A's"
+  ],
+  "atl": [
+   "Atlanta"
+  ],
+  "az": [
+   "Arizona"
+  ],
+  "bal": [
+   "Baltimore"
+  ],
+  "bos": [
+   "Boston"
+  ],
+  "chc": [
+   "Chicago C"
+  ],
+  "chw": [
+   "Chicago WS"
+  ],
+  "cin": [
+   "Cincinnati"
+  ],
+  "cle": [
+   "Cleveland"
+  ],
+  "col": [
+   "Colorado"
+  ],
+  "cws": [
+   "Chicago WS"
+  ],
+  "det": [
+   "Detroit"
+  ],
+  "hou": [
+   "Houston"
+  ],
+  "kc": [
+   "Kansas City"
+  ],
+  "laa": [
+   "Los Angeles A"
+  ],
+  "lad": [
+   "Los Angeles D"
+  ],
+  "mia": [
+   "Miami"
+  ],
+  "mil": [
+   "Milwaukee"
+  ],
+  "min": [
+   "Minnesota"
+  ],
+  "nym": [
+   "New York M"
+  ],
+  "nyy": [
+   "New York Y",
+   "New York Y (Game 1)",
+   "New York Y (Game 2)"
+  ],
+  "oak": [
+   "A's"
+  ],
+  "phi": [
+   "Philadelphia"
+  ],
+  "pit": [
+   "Pittsburgh"
+  ],
+  "sd": [
+   "San Diego"
+  ],
+  "sea": [
+   "Seattle"
+  ],
+  "sf": [
+   "San Francisco"
+  ],
+  "stl": [
+   "St. Louis"
+  ],
+  "tb": [
+   "Tampa Bay"
+  ],
+  "tex": [
+   "Texas"
+  ],
+  "tor": [
+   "Toronto"
+  ],
+  "was": [
+   "Washington"
+  ],
+  "wsh": [
+   "Washington"
+  ]
+ },
+ "nba": {
+  "atl": [
+   "Atlanta"
+  ],
+  "bkn": [
+   "Brooklyn"
+  ],
+  "bos": [
+   "Boston"
+  ],
+  "cha": [
+   "Charlotte"
+  ],
+  "chi": [
+   "Chicago"
+  ],
+  "cle": [
+   "Cleveland"
+  ],
+  "dal": [
+   "Dallas"
+  ],
+  "den": [
+   "Denver"
+  ],
+  "det": [
+   "Detroit"
+  ],
+  "gs": [
+   "Golden State"
+  ],
+  "gsw": [
+   "Golden State"
+  ],
+  "hou": [
+   "Houston"
+  ],
+  "ind": [
+   "Indiana"
+  ],
+  "lac": [
+   "Los Angeles C"
+  ],
+  "lal": [
+   "Los Angeles L"
+  ],
+  "mem": [
+   "Memphis"
+  ],
+  "mia": [
+   "Miami"
+  ],
+  "mil": [
+   "Milwaukee"
+  ],
+  "min": [
+   "Minnesota"
+  ],
+  "no": [
+   "New Orleans"
+  ],
+  "nop": [
+   "New Orleans"
+  ],
+  "ny": [
+   "New York"
+  ],
+  "nyk": [
+   "New York"
+  ],
+  "okc": [
+   "Oklahoma City"
+  ],
+  "orl": [
+   "Orlando"
+  ],
+  "phi": [
+   "Philadelphia"
+  ],
+  "pho": [
+   "Phoenix"
+  ],
+  "phx": [
+   "Phoenix"
+  ],
+  "por": [
+   "Portland"
+  ],
+  "sa": [
+   "San Antonio"
+  ],
+  "sac": [
+   "Sacramento"
+  ],
+  "sas": [
+   "San Antonio"
+  ],
+  "tor": [
+   "Toronto"
+  ],
+  "uta": [
+   "Utah"
+  ],
+  "utah": [
+   "Utah"
+  ],
+  "was": [
+   "Washington"
+  ],
+  "wsh": [
+   "Washington"
+  ]
+ },
+ "nfl": {
+  "ari": [
+   "Arizona",
+   "ARI Cardinals"
+  ],
+  "atl": [
+   "Atlanta",
+   "ATL Falcons"
+  ],
+  "bal": [
+   "Baltimore",
+   "BAL Ravens"
+  ],
+  "buf": [
+   "Buffalo",
+   "BUF Bills"
+  ],
+  "car": [
+   "Carolina",
+   "CAR Panthers"
+  ],
+  "chi": [
+   "Chicago",
+   "CHI Bears"
+  ],
+  "cin": [
+   "Cincinnati",
+   "CIN Bengals"
+  ],
+  "cle": [
+   "Cleveland",
+   "CLE Browns"
+  ],
+  "dal": [
+   "Dallas",
+   "DAL Cowboys"
+  ],
+  "den": [
+   "Denver",
+   "DEN Broncos"
+  ],
+  "det": [
+   "Detroit",
+   "DET Lions"
+  ],
+  "gb": [
+   "Green Bay",
+   "GB Packers"
+  ],
+  "hou": [
+   "Houston",
+   "HOU Texans"
+  ],
+  "ind": [
+   "Indianapolis",
+   "IND Colts"
+  ],
+  "jac": [
+   "Jacksonville",
+   "JAC Jaguars"
+  ],
+  "jax": [
+   "Jacksonville",
+   "JAC Jaguars"
+  ],
+  "kc": [
+   "Kansas City",
+   "KC Chiefs"
+  ],
+  "lac": [
+   "Los Angeles C",
+   "LA Chargers"
+  ],
+  "lar": [
+   "Los Angeles R",
+   "LA Rams"
+  ],
+  "lv": [
+   "Las Vegas",
+   "LV Raiders"
+  ],
+  "lvr": [
+   "Las Vegas",
+   "LV Raiders"
+  ],
+  "mia": [
+   "Miami",
+   "MIA Dolphins"
+  ],
+  "min": [
+   "Minnesota",
+   "MIN Vikings"
+  ],
+  "ne": [
+   "New England",
+   "NE Patriots"
+  ],
+  "no": [
+   "New Orleans",
+   "NO Saints",
+   "NOLA Saints"
+  ],
+  "nyg": [
+   "New York G",
+   "NY Giants"
+  ],
+  "nyj": [
+   "New York J",
+   "NY Jets"
+  ],
+  "phi": [
+   "Philadelphia",
+   "PHI Eagles"
+  ],
+  "pit": [
+   "Pittsburgh",
+   "PIT Steelers"
+  ],
+  "sea": [
+   "Seattle",
+   "SEA Seahawks"
+  ],
+  "sf": [
+   "San Francisco",
+   "SF 49ers"
+  ],
+  "tb": [
+   "Tampa Bay",
+   "TB Buccaneers"
+  ],
+  "ten": [
+   "Tennessee",
+   "TEN Titans"
+  ],
+  "was": [
+   "Washington",
+   "WAS Commanders"
+  ],
+  "wsh": [
+   "Washington",
+   "WAS Commanders"
+  ]
+ },
+ "nhl": {
+  "ana": [
+   "Anaheim"
+  ],
+  "bos": [
+   "Boston"
+  ],
+  "buf": [
+   "Buffalo"
+  ],
+  "car": [
+   "Carolina"
+  ],
+  "cbj": [
+   "Columbus"
+  ],
+  "cgy": [
+   "Calgary"
+  ],
+  "chi": [
+   "Chicago"
+  ],
+  "col": [
+   "Colorado"
+  ],
+  "dal": [
+   "Dallas"
+  ],
+  "det": [
+   "Detroit"
+  ],
+  "edm": [
+   "Edmonton"
+  ],
+  "fla": [
+   "Florida"
+  ],
+  "la": [
+   "Los Angeles"
+  ],
+  "lak": [
+   "Los Angeles"
+  ],
+  "min": [
+   "Minnesota"
+  ],
+  "mtl": [
+   "Montreal"
+  ],
+  "nj": [
+   "New Jersey"
+  ],
+  "njd": [
+   "New Jersey"
+  ],
+  "nsh": [
+   "Nashville"
+  ],
+  "nshv": [
+   "Nashville"
+  ],
+  "nyi": [
+   "New York I"
+  ],
+  "nyr": [
+   "New York R"
+  ],
+  "ott": [
+   "Ottawa"
+  ],
+  "phi": [
+   "Philadelphia"
+  ],
+  "pit": [
+   "Pittsburgh"
+  ],
+  "sea": [
+   "Seattle"
+  ],
+  "sj": [
+   "San Jose"
+  ],
+  "sjs": [
+   "San Jose"
+  ],
+  "stl": [
+   "St. Louis"
+  ],
+  "tb": [
+   "Tampa Bay"
+  ],
+  "tor": [
+   "Toronto"
+  ],
+  "uta": [
+   "Utah"
+  ],
+  "utah": [
+   "Utah"
+  ],
+  "van": [
+   "Vancouver"
+  ],
+  "vgk": [
+   "Vegas"
+  ],
+  "was": [
+   "Washington"
+  ],
+  "wpg": [
+   "Winnipeg"
+  ],
+  "wsh": [
+   "Washington"
+  ]
+ }
+}

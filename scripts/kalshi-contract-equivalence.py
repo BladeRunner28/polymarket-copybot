@@ -44,7 +44,9 @@ DB = os.path.join(ROOT, "prisma", "dev.db")
 INDEX = os.path.join(ROOT, "data", "kalshi-event-index.json")
 MAP = os.path.join(ROOT, "data", "kalshi-slug-map.json")
 OUT = os.path.join(ROOT, "data", "kalshi-contract-equivalence.json")
+ALIASES = os.path.join(ROOT, "data", "kalshi-team-aliases.json")
 MCACHE = os.path.join(ROOT, "data", "cache", "kalshi-event-markets")
+WCACHE = os.path.join(ROOT, "data", "cache", "kalshi-window-events")
 BASE = "https://api.elections.kalshi.com/trade-api/v2"
 MONTHS = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6, "JUL": 7,
           "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}
@@ -76,22 +78,41 @@ def state_marker(text):
     return bool(re.search(r"\bstate\b|\bst\.?\b", (text or ""), re.I))
 
 
+CLUB_PREFIX = {"rcd", "fc", "cf", "ca", "csyd", "cd", "sc", "ac", "as", "sv", "sk", "bk", "fk",
+               "if", "aik", "ss", "ssc", "us", "uc", "rc", "club"}
+
+
+def head_token(name):
+    """The token that identifies a team: its first distinctive word, skipping club prefixes
+    ('RCD Espanyol de Barcelona' -> espanyol, not rcd)."""
+    for t in re.findall(r"[a-z0-9]+", (name or "").lower().replace("'", "")):
+        if t in GENERIC or re.fullmatch(r"\d+", t) or t in CLUB_PREFIX:
+            continue
+        return t
+    return ""
+
+
 def subject_match(ours, theirs):
-    """Same team/player? Two guards, each bought with a measured false positive:
+    """Same team/player? Three guards, each bought with a measured false positive:
 
     (1) the State/St. qualifier must agree on BOTH sides, else "Georgia" matches
         "Georgia St." and "Kansas" matches "Kansas St.";
     (2) the shared tokens must cover >=60% of the CANDIDATE's distinctive tokens,
         else "Georgia" matches "Georgia Southern", "New Mexico" matches "New York"
-        and "South Carolina State Bulldogs" matches "Western Carolina".
-
-    Both of those passed a >=1-token rule that this replaces.
+        and "South Carolina State Bulldogs" matches "Western Carolina";
+    (3) a ONE-token candidate must be our team's identifying HEAD token: a club's name
+        carries its city, so "RCD Espanyol de Barcelona" matched a single-token "Barcelona"
+        (the opponent) at 100% of the candidate's tokens and fabricated a La Liga
+        "equivalent" 2.4 days from our trade. "Marquette" vs "Marquette Golden Eagles"
+        still matches, because 'marquette' IS the head.
     """
     if state_marker(ours) != state_marker(theirs):
         return False, []
     o, t = tokens(ours), tokens(theirs)
     shared = {x for x in (o & t) if len(x) >= 3}
     if not shared or not t:
+        return False, []
+    if len(t) == 1 and head_token(ours) not in shared:
         return False, []
     return len(shared) / len(t) >= 0.6, sorted(shared)
 
@@ -144,6 +165,14 @@ def our_contract(q):
     m = OUR_SPREAD.match(q)
     if m:
         return {"klass": "SPREAD", "subject": m.group(1), "line": abs(float(m.group(2))), "teams": []}
+    # Both-teams-to-score, corners, cards, clean sheets and player props are NOT the two named
+    # result sides. Without this gate "Belgium vs. Italy: Both Teams to Score" parsed as a
+    # MONEYLINE on the two named teams and matched a Kalshi "Belgium wins" contract.
+    # The card clause must be 'yellow/red card(s)', never a bare 'card': a UFC question is
+    # suffixed "(Middleweight, Main Card)" and a bare \bcard\b reclassified four real pairs.
+    if re.search(r"\bbtts\b|both teams to score|\bcorner|\b(yellow|red) cards?\b|total cards|"
+                 r"clean sheet|first goal|anytime|\bplayer prop", q, re.I):
+        return {"klass": "OTHER", "teams": []}
     m = OUR_TOTAL.match(q)
     if m:
         # "A vs B: O/U n" and nothing after the line. A team total
@@ -191,7 +220,7 @@ def event_verified(ours, event_title):
     return False
 
 
-def pick_events(ours, events, day, window_days=10.0):
+def pick_events(ours, events, day, window_days=1.0):
     """Name-verified GAME candidates, as (gapSeconds, title, [event tickers]).
 
     One game is listed as several Kalshi events (GAME / SPREAD / TOTAL each carry the
@@ -221,7 +250,7 @@ def pick_events(ours, events, day, window_days=10.0):
             continue
         # one game is listed as GAME / SPREAD / TOTAL / ... with the same matchup and
         # a ": <contract>" tail: key on the matchup, not the tail
-        key = re.sub(r"\s+", " ", title.split(":")[0].lower()).strip()
+        key = matchup_key(title)
         prev = out.get(key)
         if prev is None:
             out[key] = (gap, title, [ticker])
@@ -291,7 +320,72 @@ def code_match(code, side):
     return False
 
 
-def pick_events_slug(sl, events, window_days=1.0):
+LEAGUE_LABEL = {"fc", "afc", "sc", "cf", "club", "the", "vs", "v", "and", "ac", "ss", "ssc"}
+
+
+def atokens(text):
+    """Tokens that KEEP the words which distinguish a split city.
+
+    `tokens()` drops 'city', 'united', 'state' and 'st' as generic because question text
+    pads team names with them — correct for scoring free text, fatal for aliases: it makes
+    'Manchester City' and 'Manchester United' the same one-token team, and 'New York' the
+    same for both Knicks and Islanders. An alias carries the venue's OWN rendered name, so
+    only competition labels are stripped here.
+    """
+    text = (text or "").lower().replace("'", "").replace("\u2019", "")
+    return {w for w in re.findall(r"[a-z0-9]+", text) if w not in LEAGUE_LABEL}
+
+
+def alias_match(sport, code, side, aliases):
+    """Slug code vs a venue side name, through the derived table. None = no entry, so the
+    caller may fall back to the heuristic in `code_match`."""
+    forms = ((aliases or {}).get(sport) or {}).get((code or "").lower())
+    if not forms:
+        return None
+    st = atokens(side)
+    for form in forms:
+        ft = atokens(form)
+        if ft and ft <= st and state_marker(form) == state_marker(side):
+            return True
+    return False
+
+
+def team_match(sport, code, side, aliases):
+    """Alias first, heuristic only for codes the table does not cover (college, cups)."""
+    am = alias_match(sport, code, side, aliases)
+    if am is not None:
+        return am
+    return code_match(code, side)
+
+
+def team_index(subject, sl, aliases):
+    """Which of the slug's two teams does `subject` name? None when it is neither or both."""
+    if not sl or not subject:
+        return None
+    hits = [i for i, c in enumerate(sl["teams"])
+            if team_match(sl["sport"], c, subject, aliases)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def matchup_key(title):
+    """Group a game's contract families under ONE key.
+
+    The venue lists the same game under several event TITLES — "Liverpool vs Manchester
+    United: Total Goals" and "Liverpool FC vs Manchester United: Correct Score" — so keying
+    on the raw title made a single game AMBIGUOUS AGAINST ITSELF (2 rows in the first shadow
+    run, both soccer). The key is the matchup's identity tokens, order-independent, with
+    competition labels ("FC", "SC", "Club") dropped.
+    """
+    sides = split_sides(title)
+    if not sides:
+        return re.sub(r"\s+", " ", (title or "").split(":")[0].lower()).strip()
+    bag = set()
+    for sd in sides:
+        bag |= atokens(sd)
+    return "|".join(sorted(bag))
+
+
+def pick_events_slug(sl, events, aliases=None, window_days=1.0):
     """Event candidates constrained by slug sport family + slug day + both team codes."""
     out = {}
     for ticker, title, ed in events:
@@ -307,11 +401,11 @@ def pick_events_slug(sl, events, window_days=1.0):
         sides = split_sides(title)
         if not sides:
             continue
-        a = [i for i, sd in enumerate(sides) if code_match(sl["teams"][0], sd)]
-        b = [i for i, sd in enumerate(sides) if code_match(sl["teams"][1], sd)]
+        a = [i for i, sd in enumerate(sides) if team_match(sl["sport"], sl["teams"][0], sd, aliases)]
+        b = [i for i, sd in enumerate(sides) if team_match(sl["sport"], sl["teams"][1], sd, aliases)]
         if not any(i != j for i in a for j in b):
             continue
-        key = re.sub(r"\s+", " ", title.split(":")[0].lower()).strip()
+        key = matchup_key(title)
         prev = out.get(key)
         if prev is None:
             out[key] = (abs(ed - sl["day"]), title, [ticker])
@@ -321,7 +415,22 @@ def pick_events_slug(sl, events, window_days=1.0):
     return sorted(out.values(), key=lambda x: x[0])
 
 
-def verdict(ours, theirs):
+def spread_index(sl):
+    """Which slug team a SPREAD question is about. PM encodes it in the id tail
+    ('...-spread-home-13pt5' / '...-spread-away-5pt5'), so the answer is deterministic
+    rather than inferred from a nickname the venue never uses."""
+    tail = (sl or {}).get("tail") or []
+    if "home" in tail:
+        return 1
+    if "away" in tail:
+        return 0
+    return None
+
+
+SIDE_CHECK = Counter()
+
+
+def verdict(ours, theirs, sl=None, aliases=None):
     if not theirs:
         return "NO_CONTRACT"
     if ours["klass"] != theirs["klass"]:
@@ -331,10 +440,31 @@ def verdict(ours, theirs):
     if ours["klass"] == "SPREAD":
         if abs(ours["line"] - theirs["line"]) >= 1e-9:
             return "DIFFERENT_CONTRACT"
+        idx = spread_index(sl)
+        ti = team_index(theirs.get("subject"), sl, aliases)
+        if idx is not None and ti is not None:
+            # Cross-check the id tail against our own question's subject whenever the subject
+            # names one of the slug teams (true for college codes). Agreement is the norm;
+            # a disagreement means the side encoding moved and NO claim should be made.
+            osi = team_index(ours.get("subject"), sl, aliases)
+            if osi is None:
+                SIDE_CHECK["undetermined"] += 1
+            elif osi == idx:
+                SIDE_CHECK["agree"] += 1
+            else:
+                SIDE_CHECK["disagree"] += 1
+                print(f"  ! spread side disagreement: {ours.get('subject')!r} vs "
+                      f"{sl['teams']}/{sl['tail']}", file=sys.stderr)
+                return "DIFFERENT_CONTRACT"
+            return "EQUIV" if ti == idx else "DIFFERENT_CONTRACT"
         return "EQUIV" if subject_match(ours["subject"], theirs["subject"])[0] else "DIFFERENT_CONTRACT"
     if ours["klass"] == "MONEYLINE":
         hit = [t for t in ours["teams"] if subject_match(t, theirs["subject"])[0]]
-        return "EQUIV" if hit else "DIFFERENT_CONTRACT"
+        if hit:
+            return "EQUIV"
+        # The venue names the city, our question names the nickname: attribute the contract
+        # subject to a slug team instead of comparing two vocabularies.
+        return "EQUIV" if team_index(theirs.get("subject"), sl, aliases) is not None else "DIFFERENT_CONTRACT"
     return "DIFFERENT_CONTRACT"
 
 
@@ -376,7 +506,51 @@ def event_markets(event_ticker, ttl_hours=12.0):
     return ms
 
 
-ARMS = 26
+ARMS = 41
+
+
+def window_pool(from_ms, to_ms, max_pages=250, ttl_hours=24.0):
+    """Every event the venue CLOSED inside the window.
+
+    WHY THIS EXISTS — an instrument defect found while executing this card's approved
+    change. `data/kalshi-event-index.json` is a snapshot of events that were OPEN when it was
+    built, so a trailing 7d read asks "was there a counterpart?" against a pool that has
+    already DELETED the counterparts: a game that settled yesterday is gone. On the
+    2026-11-14..21 window, 6 of the 9 naming-blocked NBA markets had no event anywhere in
+    the open index — their games had finished — so they were being counted as
+    NO_EVENT_MATCH ("naming unverified") when nothing about the naming was at issue.
+    The venue keeps closed events queryable, so the pool is rebuilt for the window and
+    cached per window: same clock, same pool, re-runnable.
+    """
+    os.makedirs(WCACHE, exist_ok=True)
+    key = f"{int(from_ms/86400000)}_{int(to_ms/86400000)}_p{max_pages}"
+    path = os.path.join(WCACHE, key + ".json")
+    if os.path.exists(path) and (time.time() - os.path.getmtime(path)) / 3600.0 < ttl_hours:
+        with open(path) as f:
+            return json.load(f)
+    events, cursor, pages = [], None, 0
+    while pages < max_pages:
+        q = {"status": "settled", "limit": "200",
+             "min_close_ts": int(from_ms / 1000), "max_close_ts": int(to_ms / 1000)}
+        if cursor:
+            q["cursor"] = cursor
+        d = get(f"{BASE}/events?" + urllib.parse.urlencode(q))
+        ev = d.get("events", [])
+        pages += 1
+        for e in ev:
+            if e.get("event_ticker"):
+                events.append({"ticker": e["event_ticker"], "title": e.get("title") or ""})
+        cursor = d.get("cursor")
+        if not cursor or not ev:
+            break
+    # A truncated walk silently hides a whole slice of the window, so say which happened:
+    # the first build of this pool capped at 90 pages and reported nothing.
+    print(f"window pool: {len(events)} closed events over {pages} pages — "
+          f"cursor {'EXHAUSTED' if not cursor else 'TRUNCATED (raise --pool-pages)'}, "
+          f"cache {os.path.basename(path)}")
+    with open(path, "w") as f:
+        json.dump(events, f)
+    return events
 
 
 def self_test():
@@ -440,25 +614,261 @@ def self_test():
     _day = ticker_day("KXNCAAFSPREAD-26NOV21COLOCIN")
     arm("season-long/undated event never wins a game question",
         [p[2] for p in pick_events(our_contract("Spread: Colorado (-17.5)"), _ev, _day)] == [["KXNCAAFSPREAD-26NOV21COLOCIN"]])
+
+    # --- alias table: the approved change (code -> venue name), one arm per failure it prevents
+    AL = {"nba": {"nop": ["New Orleans"], "sas": ["San Antonio"], "lal": ["Los Angeles L"],
+                  "lac": ["Los Angeles C"], "det": ["Detroit"], "tor": ["Toronto"]},
+          "epl": {"mac": ["Manchester City"], "mun": ["Manchester United"]}}
+    arm("alias resolves the city the venue publishes",
+        alias_match("nba", "nop", "New Orleans", AL) is True)
+    arm("alias keeps the two LA teams apart",
+        alias_match("nba", "lal", "Los Angeles C", AL) is False
+        and alias_match("nba", "lal", "Los Angeles L", AL) is True)
+    arm("alias keeps Manchester City from matching Manchester United",
+        alias_match("epl", "mac", "Manchester United", AL) is False
+        and alias_match("epl", "mac", "Manchester City", AL) is True)
+    arm("alias table ABSTAINS on a code it does not list (college falls back to the heuristic)",
+        alias_match("cfb", "tenn", "Tennessee", AL) is None and team_match("cfb", "tenn", "Tennessee", AL))
+    _sl_home = {"sport": "nba", "teams": ["tor", "det"], "day": 0, "tail": ["spread", "home", "13pt5"]}
+    _sl_away = {"sport": "nba", "teams": ["nop", "sas"], "day": 0, "tail": ["spread", "away", "5pt5"]}
+    arm("spread side is read from the id tail",
+        spread_index(_sl_home) == 1 and spread_index(_sl_away) == 0)
+    arm("moneyline EQUIV through the alias where the nickname never meets the city",
+        verdict(our_contract("Pelicans vs. Spurs"), kalshi_contract("New Orleans wins"),
+                {"sport": "nba", "teams": ["nop", "sas"], "day": 0, "tail": []}, AL) == "EQUIV")
+    arm("moneyline NOT EQUIV when the contract names a team outside our slug",
+        verdict(our_contract("Pelicans vs. Spurs"), kalshi_contract("New Orleans wins"),
+                {"sport": "epl", "teams": ["mac", "mun"], "day": 0, "tail": []}, AL) == "DIFFERENT_CONTRACT")
+    arm("spread EQUIV on the home side the slug names",
+        verdict(our_contract("Spread: Pistons (-13.5)"), kalshi_contract("Detroit wins by over 13.5 points"),
+                _sl_home, AL) == "EQUIV")
+    arm("spread DIFFERENT when the contract names the other side of the same game",
+        verdict(our_contract("Spread: Pistons (-13.5)"), kalshi_contract("Toronto wins by over 13.5 points"),
+                _sl_home, AL) == "DIFFERENT_CONTRACT")
+    arm("alias tokens keep the words that separate a split city",
+        atokens("Manchester City") == {"manchester", "city"} and not atokens("Manchester City") <= atokens("Manchester United"))
+    arm("one game listed under two titles is ONE candidate",
+        matchup_key("Liverpool vs Manchester United: Total Goals")
+        == matchup_key("Liverpool FC vs Manchester United: Correct Score")
+        and matchup_key("Liverpool vs Manchester United: Total Goals")
+        != matchup_key("Liverpool vs Arsenal: Total Goals"))
+    arm("a club's city does not match the OPPONENT (Espanyol de Barcelona vs Barcelona)",
+        not subject_match("RCD Espanyol de Barcelona", "Barcelona")[0])
+    arm("a one-token candidate that IS our head still matches (Marquette)",
+        subject_match("Marquette Golden Eagles", "Marquette")[0])
+    arm("both-teams-to-score is not a moneyline on the two named sides",
+        our_contract("Belgium vs. Italy: Both Teams to Score")["klass"] == "OTHER")
+    arm("a UFC 'Main Card' suffix is STILL a moneyline (a bare \\bcard\\b rule ate 4 real pairs)",
+        our_contract("UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)"
+                     )["klass"] == "MONEYLINE")
     print(f"\nself-test {ok}/{ARMS}")
     return 0 if ok == ARMS else 1
+
+
+def market_quote(ticker):
+    """Two-sided quote for ONE Kalshi market, in dollars, plus the fields we store for audit.
+
+    The venue's `*_dollars` fields are STRINGS ("0.2700") and the legacy `yes_bid`/`yes_ask`
+    are integer cents — a float-only parser reads a live book as "no quote", which is how the
+    first test of this path returned price=null on a live market.
+    """
+    d = get(f"{BASE}/markets/{urllib.parse.quote(ticker)}")
+    m = d.get("market") or {}
+
+    def usd(*keys):
+        for k in keys:
+            v = m.get(k)
+            scale = 1.0 if k.endswith("_dollars") else 100.0
+            if isinstance(v, bool) or v is None:
+                continue
+            if isinstance(v, (int, float)):
+                return float(v) / scale
+            if isinstance(v, str) and v.strip():
+                try:
+                    return float(v) / scale
+                except ValueError:
+                    continue
+        return None
+
+    return {"ticker": m.get("ticker", ticker), "title": m.get("title") or "",
+            "yesSubtitle": m.get("yes_sub_title") or "",
+            "yesBid": usd("yes_bid_dollars", "yes_bid"),
+            "yesAsk": usd("yes_ask_dollars", "yes_ask"),
+            "lastPrice": usd("last_price_dollars", "last_price"),
+            "rulesPrimary": (m.get("rules_primary") or "")[:400],
+            "status": m.get("status") or ""}
+
+
+def side_yes(ours, theirs, outcome, sl, aliases):
+    """Is OUR side of the trade the YES side of the matched Kalshi contract?
+    None = cannot tell, and then no price is booked (never guess a side)."""
+    o = (outcome or "").strip().lower()
+    if ours["klass"] == "TOTAL":
+        if o.startswith("over") or o in ("yes", "up"):
+            return True
+        if o.startswith("under") or o in ("no", "down"):
+            return False
+        return None
+    if not o or o in ("yes", "no", "up", "down"):
+        return None
+    if subject_match(outcome, theirs.get("subject") or "")[0]:
+        return True
+    # Which of OUR slugs does the outcome name? PM lists the two sides in the SAME order as
+    # the slug (verified on every pair in the 2026-11-14..21 window), and a SPREAD's side is
+    # encoded in the id tail, so the index is positional; the contract's subject is attributed
+    # through the alias table. Same index => we hold YES, different => we hold NO.
+    if sl:
+        idx = spread_index(sl) if ours["klass"] == "SPREAD" else next(
+            (k for k, t in enumerate(ours.get("teams") or [])
+             if t and subject_match(outcome, t)[0]), None)
+        subj = team_index(theirs.get("subject"), sl, aliases)
+        if idx is not None and subj is not None:
+            return idx == subj
+    return False
+
+
+def resolve(req_path, out_path=None):
+    """Shadow-lane resolver: contract-equivalent pairs for a batch of OUR trades.
+
+    This is the wiring the card asked for — the shipped parser feeds the venue shadow lane
+    (observation only: no execution, no sizing, no capital). It is the SAME functions the
+    measurement uses, so a pair that the report counts is a pair the lane can price.
+    Input : [{"marketId", "question", "dayMs", "outcome"}]
+    Output: [{"marketId", "verdict", "ticker", "kalshiTitle", "yesBid", "yesAsk", "price", ...}]
+    """
+    with open(req_path) as f:
+        reqs = json.load(f)
+    if not reqs:
+        print("[]")
+        return 0
+    try:
+        with open(ALIASES) as f:
+            aliases = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+    except (OSError, ValueError):
+        aliases = {}
+    with open(INDEX) as f:
+        idx = json.load(f)
+    days = [r.get("dayMs") or 0 for r in reqs if r.get("dayMs")]
+    lo, hi = (min(days), max(days)) if days else (time.time() * 1000, time.time() * 1000)
+    events = [(e.get("ticker", ""), e.get("title") or "", ticker_day(e.get("ticker", "")))
+              for e in idx["events"] if e.get("title")]
+    seen = {e[0] for e in events}
+    for e in window_pool(lo - 2 * 86400_000, hi + 2 * 86400_000):
+        if e["ticker"] not in seen:
+            seen.add(e["ticker"])
+            events.append((e["ticker"], e["title"], ticker_day(e["ticker"])))
+
+    out, cache = [], {}
+    for r in reqs:
+        mid = r.get("marketId") or ""
+        ours = our_contract(r.get("question"))
+        sl = parse_slug(mid)
+        rec = {"marketId": mid, "verdict": "OTHER_CLASS" if ours["klass"] == "OTHER" else "NO_EVENT_MATCH",
+               "ticker": None, "kalshiTitle": None, "yesBid": None, "yesAsk": None,
+               "price": None, "line": ours.get("line"), "class": ours["klass"]}
+        if ours["klass"] != "OTHER" and sl and sl["families"]:
+            picks = pick_events_slug(sl, events, aliases)
+            if len(picks) == 1:
+                # Collect EVERY equivalent contract in the event, then prefer the one whose
+                # side is OURS: a two-sided game lists one market per team and both are
+                # "equivalent" to a moneyline question, so taking the first one books the
+                # wrong side of our own trade.
+                cands = []
+                for ct in picks[0][2]:
+                    if ct not in cache:
+                        try:
+                            cache[ct] = event_markets(ct)
+                        except Exception:
+                            cache[ct] = []
+                    for m in cache[ct]:
+                        t = kalshi_contract(m["title"], m["yes_sub_title"])
+                        if verdict(ours, t, sl, aliases) != "EQUIV":
+                            continue
+                        yes = side_yes(ours, t, r.get("outcome"), sl, aliases)
+                        cands.append((yes is True, ct, m, t, yes))
+                if cands:
+                    _ok, ct, m, t, yes = sorted(cands, key=lambda c: not c[0])[0]
+                    rec.update({"verdict": "EQUIV", "ticker": m.get("ticker") or ct,
+                                "event": ct, "kalshiTitle": t.get("raw_title"),
+                                "ourSideIsYes": yes})
+                    try:
+                        q = market_quote(m.get("ticker") or ct)
+                    except Exception as e:
+                        rec["note"] = f"quote failed: {e}"
+                        q = None
+                    if q:
+                        price = None
+                        if yes is True and q["yesAsk"] is not None:
+                            price = q["yesAsk"]
+                        elif yes is False and q["yesBid"] is not None:
+                            price = round(1.0 - q["yesBid"], 4)
+                        # A settled market still answers with 0/1 — a "price" of 1.00 is a
+                        # resolved outcome, not a quote, and must never enter a book.
+                        if q["status"] not in ("active", "open") or price is None \
+                                or not (0.0 < price < 1.0):
+                            rec["note"] = f"not_tradeable:{q['status'] or 'unknown'}"
+                            price = None
+                        rec.update({"yesBid": q["yesBid"], "yesAsk": q["yesAsk"],
+                                    "lastPrice": q["lastPrice"], "price": price,
+                                    "tickerStatus": q["status"], "rulesPrimary": q["rulesPrimary"]})
+            elif len(picks) > 1:
+                rec["verdict"] = "AMBIGUOUS_EVENT"
+        out.append(rec)
+    body = json.dumps(out, indent=1)
+    if out_path:
+        with open(out_path, "w") as f:
+            f.write(body)
+    print(body)
+    return 0
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--top", type=int, default=14)
+    ap.add_argument("--out", default=OUT, help="artifact path (arms write side-by-side without "
+                                               "overwriting the canonical artifact)")
+    ap.add_argument("--as-of", default=None,
+                    help="pin the clock, e.g. 2026-11-21T15:13Z — makes a window RE-RUNNABLE")
+    ap.add_argument("--no-alias", action="store_true",
+                    help="baseline arm: ignore data/kalshi-team-aliases.json (measures its lift)")
+    ap.add_argument("--pool", choices=("open", "both"), default="both",
+                    help="event pool: the open-index snapshot only, or the snapshot plus the "
+                         "venue's CLOSED events in the window (default: both)")
+    ap.add_argument("--pool-pages", type=int, default=250,
+                    help="page cap for the closed-event walk (200 events/page); the log says "
+                         "whether the cursor was EXHAUSTED or TRUNCATED")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--resolve", default=None,
+                    help="shadow-lane mode: JSON file of [{marketId,question,dayMs,outcome}] -> "
+                         "contract-equivalent pairs with a two-sided venue quote")
+    ap.add_argument("--resolve-out", default=None)
     args = ap.parse_args()
     if args.self_test:
         return self_test()
+    if args.resolve:
+        return resolve(args.resolve, args.resolve_out)
 
+    aliases = {}
+    if not args.no_alias:
+        try:
+            with open(ALIASES) as f:
+                aliases = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+        except (OSError, ValueError) as e:
+            print(f"  ! alias table unreadable ({e}) — running the baseline arm", file=sys.stderr)
+
+    if args.as_of:
+        as_of = time.mktime(time.strptime(args.as_of, "%Y-%m-%dT%H:%MZ")) - time.timezone
+    else:
+        as_of = time.time()
     with open(MAP) as f:
         slug = json.load(f)
     with open(INDEX) as f:
         idx = json.load(f)
     print(f"event index: {len(idx['events'])} open events, cursor exhausted={idx['cursorExhausted']}, "
           f"built {idx['generatedAt']}; slug map built {slug['generatedAt']} at minScore {slug['minScore']}")
+    print(f"clock: {time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime(as_of))} "
+          f"(window={args.days}d); aliases: {'OFF (baseline arm)' if not aliases else 'on, ' + str(sum(len(v) for v in aliases.values())) + ' codes'}")
     try:
         src = open(os.path.join(ROOT, "rust-sidecar", "src", "adapters.rs")).read()
         pages = int(re.search(r"MAX_EVENT_PAGES:\s*usize\s*=\s*(\d+)", src).group(1))
@@ -468,7 +878,7 @@ def main():
     except (OSError, AttributeError, ValueError):
         print("sidecar source not readable — depth not stated")
 
-    since_ms = int((time.time() - args.days * 86400) * 1000)
+    since_ms = int((as_of - args.days * 86400) * 1000)
     con = sqlite3.connect(DB)
     rows = con.execute(
         """SELECT t.marketId, o.marketQuestion, ROUND(SUM(t.simulatedPositionSize),2),
@@ -476,18 +886,27 @@ def main():
            FROM PaperTrade t
            JOIN DecisionJournal d ON d.id = t.decisionJournalId
            JOIN ObservedTrade o ON o.id = d.observedTradeId
-           WHERE t.botId='BANKROLL_200' AND t.isDemo=0 AND t.openedAt >= ?
+           WHERE t.botId='BANKROLL_200' AND t.isDemo=0 AND t.openedAt >= ? AND t.openedAt < ?
            GROUP BY t.marketId ORDER BY 3 DESC""",
-        (since_ms,),
+        (since_ms, int(as_of * 1000)),
     ).fetchall()
     con.close()
     stake_all = sum(r[2] or 0 for r in rows)
-    print(f"\nour C-200 markets, {args.days}d to {time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime())}: "
+    print(f"\nour C-200 markets, {args.days}d to {time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime(as_of))}: "
           f"{len(rows)} markets, ${stake_all:,.2f} stake (level=market, stake=summed simulatedPositionSize)")
 
     events = [(e.get("ticker", ""), e.get("title") or "", ticker_day(e.get("ticker", "")))
               for e in idx["events"] if e.get("title")]
-    print(f"event pool for G1 (level=event, full index): {len(events)} titled open events")
+    n_open = len(events)
+    if args.pool == "both":
+        # closed counterparts are the majority of a trailing window; see window_pool()
+        seen_tickers = {e[0] for e in events}
+        for e in window_pool(since_ms - 86400_000, int(as_of * 1000), max_pages=args.pool_pages):
+            if e["ticker"] not in seen_tickers:
+                seen_tickers.add(e["ticker"])
+                events.append((e["ticker"], e["title"], ticker_day(e["ticker"])))
+    print(f"event pool: {len(events)} titled events for G1 "
+          f"(open-index snapshot {n_open}, +{len(events)-n_open} closed inside the window)")
 
     by_class, stake_class = Counter(), Counter()
     res, stake_res = Counter(), Counter()
@@ -507,7 +926,7 @@ def main():
         else:
             sl = parse_slug(market_id)
             if sl and sl["families"]:
-                picks, ident = pick_events_slug(sl, events), "slug"
+                picks, ident = pick_events_slug(sl, events, aliases), "slug"
             else:
                 picks, ident = pick_events(ours, events, day), "text"
             if not picks:
@@ -532,7 +951,7 @@ def main():
                         cands = [kalshi_contract(m["title"], m["yes_sub_title"]) for m in ev_cache[ct]]
                         if any(c["klass"] == ours["klass"] for c in cands):
                             saw_class = True
-                        hit = next((c for c in cands if verdict(ours, c) == "EQUIV"), None)
+                        hit = next((c for c in cands if verdict(ours, c, sl, aliases) == "EQUIV"), None)
                         if hit:
                             hits.append((ct, hit))
                 keys = {(h[1].get("klass"), h[1].get("line"), h[1].get("subject")) for h in hits}
@@ -563,7 +982,7 @@ def main():
                     cands = [kalshi_contract(m["title"], m["yes_sub_title"]) for m in ev_cache[ct]]
                     if any(c["klass"] == ours["klass"] for c in cands):
                         saw_class = True
-                    hit = next((c for c in cands if verdict(ours, c) == "EQUIV"), None)
+                    hit = next((c for c in cands if verdict(ours, c, sl, aliases) == "EQUIV"), None)
                     if hit:
                         v, k, gate, t = "EQUIV", hit, None, ct
                         break
@@ -624,16 +1043,31 @@ def main():
         print(f"  ${r['stake']:>7.2f}  {r['question'][:46]} -> {r['looseMatcherEvent']} "
               f"score {r['looseMatcherScore']}")
 
-    with open(OUT, "w") as f:
+    if SIDE_CHECK:
+        print(f"spread side cross-check: " + ", ".join(f"{k}={v}" for k, v in sorted(SIDE_CHECK.items())))
+    print(f"\nEQUIV share of the window's stake: "
+          f"{100.0*stake_res['EQUIV']/max(1e-9,stake_all):.1f}% "
+          f"(${stake_res['EQUIV']:,.2f} of ${stake_all:,.2f})")
+
+    with open(args.out, "w") as f:
         json.dump({"generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                   "windowDays": args.days, "indexGeneratedAt": idx["generatedAt"],
+                   "windowDays": args.days,
+                   "asOf": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(as_of)),
+                   "windowFrom": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(as_of - args.days * 86400)),
+                   "aliasTable": {"loaded": bool(aliases),
+                                  "codes": sum(len(v) for v in aliases.values()) if aliases else 0},
+                   "pool": {"events": len(events), "openIndex": n_open,
+                            "closedInWindow": len(events) - n_open},
+                   "spreadSideCheck": dict(SIDE_CHECK),
+                   "indexGeneratedAt": idx["generatedAt"],
                    "indexEvents": len(idx["events"]), "indexCursorExhausted": idx["cursorExhausted"],
                    "markets": len(rows), "stakeTotalUsd": round(stake_all, 2),
                    "byOurClass": dict(by_class),
                    "stakeByOurClass": {k: round(v, 2) for k, v in stake_class.items()},
                    "result": dict(res), "stakeByResult": {k: round(v, 2) for k, v in stake_res.items()},
+                   "equivSharePct": round(100.0 * stake_res["EQUIV"] / max(1e-9, stake_all), 2),
                    "pairs": records}, f, indent=2)
-    print(f"\nWrote {OUT}")
+    print(f"\nWrote {args.out}")
     return 0
 
 

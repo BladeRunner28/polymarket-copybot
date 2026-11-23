@@ -161,3 +161,10 @@ data/fill-tape-cache/
 # archive's tokens[].winner. Refetchable keyless; scripts/profit-cheap-funnel.py rewrites it.
 data/cheap-funnel-cache/
 data/cache/kalshi-event-markets/
+
+# Contract-equivalence closed-event walk (2026-11-23, card kalshi-lane-ontology-not-coverage):
+# a trailing 7d window holds ~35-50k settled events, so this cache is multi-MB and refetchable
+# keyless. data/kalshi-contract-equivalence.json IS committed, so the read re-runs offline
+# from the cached pool; scripts/kalshi-contract-equivalence.py rebuilds it on a miss.
+data/cache/kalshi-window-events/
+

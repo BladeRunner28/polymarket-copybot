@@ -29,6 +29,7 @@
 import { prisma } from "../src/lib/db";
 import * as fs from "fs";
 import * as path from "path";
+import { execFileSync } from "child_process";
 
 const LEDGER = path.join(process.cwd(), "data", "kalshi-venue-shadow.jsonl");
 const SUMMARY = path.join(process.cwd(), "data", "kalshi-venue-shadow-summary.json");
@@ -36,6 +37,14 @@ const SIDECAR = process.env.SIDECAR_QUOTE_URL ?? "http://127.0.0.1:3014/quote";
 const KALSHI_FEE_RATE = 0.07; // Kalshi schedule; flagged as needing live confirmation (fee audit)
 const DEFAULT_MAX_QUOTE_AGE_H = 6;
 const BOT = "BANKROLL_200";
+/** Deterministic contract-equivalence arm (card kalshi-lane-ontology-not-coverage, option (a),
+ *  approved 2026-11-23). Observation only: it writes its own fields and its own summary block;
+ *  it never feeds pmPnl / kalshiPnl / delta, and nothing in decisions or sizing reads it. */
+const DET_RESOLVER = path.join(process.cwd(), "scripts", "kalshi-contract-equivalence.py");
+const DET_ENABLED = process.env.KALSHI_DET_ARM !== "0";
+/** Rows resolved per run: the resolver walks event markets per candidate, so a bound keeps a
+ *  cron tick short; the ledger drains newest-first over successive runs. */
+const DET_BATCH = Number(process.env.KALSHI_DET_BATCH ?? 60);
 
 /** A match must clear this raw sidecar score to be trusted at all. */
 const MIN_MATCH_SCORE = 0.75;
@@ -85,7 +94,7 @@ function feeUsd(size: number, price: number, rate: number): number {
 }
 
 type Row = {
-  tradeId: string; decisionId: string; question: string; outcome: string; side: string;
+  tradeId: string; decisionId: string; marketId: string; question: string; outcome: string; side: string;
   openedAt: string; openedMs: number; status: string;
   pmEntry: number; size: number; pmFeeRate: number;
   kalshiResolved: boolean; kalshiEntry: number | null; kalshiError: string | null;
@@ -94,7 +103,44 @@ type Row = {
   kalshiQuoteAtMs: number | null; stale: boolean; attempts: number;
   firstSeenAtMs: number; lastCheckedAtMs: number;
   won: boolean | null; pmPnl: number | null; kalshiPnl: number | null; delta: number | null;
+  /** deterministic contract-equivalence arm — its own fields, never mixed into kalshiPnl */
+  detVerdict?: string; detTicker?: string; detTitle?: string; detEntry?: number | null;
+  detOurSideIsYes?: boolean | null; detEvent?: string; detAtMs?: number; detNote?: string;
+  detRules?: string;
 };
+
+type DetOut = {
+  marketId: string; verdict: string; ticker: string | null; kalshiTitle: string | null;
+  yesBid: number | null; yesAsk: number | null; lastPrice?: number | null;
+  price: number | null; ourSideIsYes: boolean | null; event?: string; note?: string;
+  rulesPrimary?: string; tickerStatus?: string;
+};
+
+/** Resolve a batch of OUR trades to contract-equivalent Kalshi markets via the shipped
+ *  deterministic parser (alias table + slug identity + strike gates). One subprocess per run,
+ *  never per trade. Returns an empty map on any failure — this arm is additive, and a broken
+ *  resolver must not stop the fuzzy arm from recording its rows. */
+function resolveDeterministic(rows: Row[]): Map<string, DetOut> {
+  const out = new Map<string, DetOut>();
+  if (!DET_ENABLED || !rows.length || !fs.existsSync(DET_RESOLVER)) return out;
+  const tmpIn = path.join(process.cwd(), "data", "cache", `det-arm-req-${process.pid}.json`);
+  const tmpOut = tmpIn.replace("-req-", "-out-");
+  try {
+    fs.mkdirSync(path.dirname(tmpIn), { recursive: true });
+    fs.writeFileSync(tmpIn, JSON.stringify(rows.map((r) => ({
+      marketId: r.marketId ?? "", question: r.question, dayMs: r.openedMs, outcome: r.outcome,
+    }))));
+    execFileSync("python3", [DET_RESOLVER, "--resolve", tmpIn, "--resolve-out", tmpOut],
+      { timeout: 240_000, stdio: ["ignore", "ignore", "inherit"] });
+    const parsed = JSON.parse(fs.readFileSync(tmpOut, "utf-8")) as DetOut[];
+    for (const d of parsed) out.set(d.marketId, d);
+  } catch (e) {
+    console.error(`det arm skipped: ${(e as Error).message}`);
+  } finally {
+    for (const p of [tmpIn, tmpOut]) { try { fs.unlinkSync(p); } catch { /* ignore */ } }
+  }
+  return out;
+}
 
 function loadLedger(): Map<string, Row> {
   const m = new Map<string, Row>();
@@ -175,7 +221,7 @@ async function main() {
     if (!existing) {
       const isStale = now - openedMs > maxAgeMs;
       const row: Row = {
-        tradeId: t.id, decisionId: t.decisionJournalId, question, outcome: t.outcome, side: t.side,
+        tradeId: t.id, decisionId: t.decisionJournalId, marketId: t.marketId, question, outcome: t.outcome, side: t.side,
         openedAt: new Date(t.openedAt).toISOString(), openedMs, status: t.status,
         pmEntry: t.entryPrice, size: t.simulatedPositionSize, pmFeeRate: pmFeeRate(question),
         kalshiResolved: false, kalshiEntry: null, kalshiError: null,
@@ -233,6 +279,37 @@ async function main() {
       existing.won = won; existing.pmPnl = pmPnl; existing.kalshiPnl = kalshiPnl;
       existing.delta = kalshiPnl == null ? null : kalshiPnl - pmPnl;
       settled++;
+    }
+  }
+
+  // ---- deterministic contract-equivalence arm (observation only; never touches pmPnl/kalshiPnl)
+  const marketById = new Map(trades.map((t) => [t.id, t.marketId]));
+  for (const r of ledger.values()) if (!r.marketId) r.marketId = marketById.get(r.tradeId) ?? "";
+  let detAttempted = 0;
+  if (DET_ENABLED) {
+    const todo = [...ledger.values()]
+      .filter((r) => !r.stale && r.kalshiError !== "before_window_start"
+        && r.detVerdict === undefined && r.marketId)
+      .sort((a, b) => b.openedMs - a.openedMs)
+      .slice(0, DET_BATCH);
+    detAttempted = todo.length;
+    const det = resolveDeterministic(todo);
+    for (const r of todo) {
+      const d = det.get(r.marketId);
+      if (!d) continue;
+      r.detVerdict = d.verdict;
+      r.detAtMs = Date.now();
+      if (d.verdict === "EQUIV") {
+        r.detTicker = d.ticker ?? undefined;
+        r.detTitle = d.kalshiTitle ?? undefined;
+        r.detEvent = d.event;
+        r.detOurSideIsYes = d.ourSideIsYes ?? null;
+        r.detEntry = d.price ?? null;
+        r.detRules = d.rulesPrimary;
+        r.detNote = d.note;
+      } else {
+        r.detNote = d.note;
+      }
     }
   }
 
@@ -298,6 +375,42 @@ async function main() {
       delta: { pnl: r2(kPnl - pmPnl), perTrade: bookRows.length ? r2((kPnl - pmPnl) / bookRows.length) : 0 },
     },
     series: { dates, pmCum: cum((v) => v.pm).map(r2), kalshiCum: cum((v) => v.kalshi).map(r2) },
+    /** Contract-equivalence arm: deterministic pairs (slug identity + derived team aliases +
+     *  class + strike), priced on OUR side. Separate from the fuzzy arm above on purpose —
+     *  its rows are NOT mixed into pm/kalshi/delta, so activating it moves no published
+     *  number and deleting the block reverts to the pre-2026-11-23 read exactly. */
+    deterministic: (() => {
+      const det = [...ledger.values()].filter((r) => r.detVerdict !== undefined);
+      const equiv = det.filter((r) => r.detVerdict === "EQUIV");
+      const priced = equiv.filter((r) => r.detEntry != null);
+      const settledDet = priced.filter((r) => r.pmPnl != null);
+      const detPnl = sum(settledDet.map((r) => {
+        const won = r.won === true;
+        const gross = won ? r.size * (1 / (r.detEntry as number) - 1) : -r.size;
+        return gross - feeUsd(r.size, r.detEntry as number, KALSHI_FEE_RATE);
+      }));
+      const pmPnlDet = sum(settledDet.map((r) => r.pmPnl ?? 0));
+      const stakedDet = sum(settledDet.map((r) => r.size));
+      const verdicts: Record<string, number> = {};
+      for (const r of det) verdicts[r.detVerdict as string] = (verdicts[r.detVerdict as string] ?? 0) + 1;
+      return {
+        enabled: DET_ENABLED, attempted: detAttempted, resolved: det.length,
+        verdicts, equiv: equiv.length, priced: priced.length,
+        coverage: det.length ? Math.round((equiv.length / det.length) * 1000) / 1000 : 0,
+        fuzzyEquiv: det.filter((r) => r.detVerdict === "EQUIV" && r.verified).length,
+        detOnlyEquiv: det.filter((r) => r.detVerdict === "EQUIV" && !r.verified).length,
+        book: {
+          n: settledDet.length, pmPnl: r2(pmPnlDet), detPnl: r2(detPnl), staked: r2(stakedDet),
+          pmRoiPct: stakedDet ? r2((pmPnlDet / stakedDet) * 100) : 0,
+          detRoiPct: stakedDet ? r2((detPnl / stakedDet) * 100) : 0,
+        },
+        pairs: equiv.slice(-30).map((r) => ({
+          question: r.question.slice(0, 80), detTicker: r.detTicker, detTitle: (r.detTitle ?? "").slice(0, 80),
+          ourSideIsYes: r.detOurSideIsYes, detEntry: r.detEntry, pmEntry: r.pmEntry,
+          fuzzyTicker: r.kalshiTicker, fuzzyVerified: r.verified, note: r.detNote,
+        })),
+      };
+    })(),
     // accepted + rejected quotes, so the match audit is visible on the dashboard
     matchAudit: rows.filter((r) => r.kalshiResolved).slice(-40).map((r) => ({
       question: r.question.slice(0, 90), ticker: r.kalshiTicker, matchedTitle: (r.kalshiTitle ?? "").slice(0, 90),
@@ -313,6 +426,8 @@ async function main() {
   if (dryRun) {
     console.log(`[dry-run] added=${added} verified=${quoted} unverified=${unverified} failed=${failed} stale=${stale} settled=${settled}`);
     console.log(JSON.stringify(summary.coverage));
+    console.log(`[dry-run] det arm: attempted=${summary.deterministic.attempted} resolved=${summary.deterministic.resolved} `
+      + `verdicts=${JSON.stringify(summary.deterministic.verdicts)} priced=${summary.deterministic.priced}`);
     return;
   }
   fs.writeFileSync(LEDGER, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
@@ -325,6 +440,9 @@ async function main() {
   if (Object.keys(summary.coverage.rejectionReasons).length) {
     console.log(`quoting buckets: ${JSON.stringify(summary.coverage.rejectionReasons)}`);
   }
+  const dsum = summary.deterministic;
+  console.log(`det arm (contract equivalence): resolved=${dsum.resolved} equiv=${dsum.equiv} `
+    + `priced=${dsum.priced} book n=${dsum.book.n} PM $${dsum.book.pmPnl} | DET $${dsum.book.detPnl}`);
   console.log(`wrote data/kalshi-venue-shadow.jsonl + summary`);
 }
 
