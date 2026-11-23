@@ -26,7 +26,7 @@ parameter is the weakest of the four arms available.**
    cap's own delta CI is **[+$30.31, +$262.38]** over 12 distinct markets. Both intervals exclude zero
    while the fair-pricing null does not: this is a **magnitude** finding, not a rate finding.
 3. **$40 is the worst of the four arms the same 12 legs price.** The cell is **entirely ≥$40**
-   (eleven $100 clips and one $50) — there is not a single cheap long-dated leg below $40 in the
+   (ten $100 clips and two $50) — there is not a single cheap long-dated leg below $40 in the
    regime — so a $40 cap here is a **cell-wide cap**, not a tier cut, and every lower cap is strictly
    better: $40 → +$4.77/day, $25 → +$6.14/day, $20 (the lane's own legacy ceiling) → **+$6.60/day**,
    full skip → +$8.43/day. The card's $40 has no measured basis: it is `−221.45 × 0.6`, an
