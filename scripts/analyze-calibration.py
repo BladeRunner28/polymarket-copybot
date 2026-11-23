@@ -129,6 +129,23 @@ def main():
         params.append(since_ms)
     rows = con.execute(sql, params).fetchall()
 
+    # 2026-11-23 self-audit (Lane B, label only -- no query, sample or statistic changed):
+    # the venue exclusion above was explained in a code comment and NOWHERE in the output.
+    # The printed header said "all-time" and N=2,890 while the EOD report's lifetime settled
+    # leg count for the same bot is 2,983; the 93-leg gap is exactly the Kalshi rows this
+    # query drops, so a reader cross-checking the two surfaces saw an unexplained over-count
+    # in the report (or an unexplained under-count here). The excluded count is now measured
+    # and printed, and the hour block names its clock -- `by_hour` is keyed on openedAt, i.e.
+    # the ENTRY hour, while "Returns by hour (ET)" read like the settlement hour.
+    kalshi_sql = """SELECT COUNT(*) FROM PaperTrade
+                    WHERE botId=? AND status IN ('resolved','closed')
+                      AND realizedPnl IS NOT NULL AND isDemo=0
+                      AND venue = 'Kalshi'"""
+    kalshi_params: list = [args.bot]
+    if since_ms is not None:
+        kalshi_sql += " AND openedAt >= ?"
+        kalshi_params.append(since_ms)
+    kalshi_excluded = con.execute(kalshi_sql, kalshi_params).fetchone()[0]
 
 
     # SETTLEMENT BASIS (2026-10-29, label-integrity-probability-arms).
@@ -281,7 +298,14 @@ def main():
             "arm_totalOutcome_band_outcome": "OUTCOME = OutcomeReview.finalOutcome vs the trade outcome (settlement-knowable legs only)",
             "why": "the declared quantity (excess_return = win_rate - mean entry price) is a calibration read, so it belongs on the OUTCOME arm; until 2026-10-29 it was computed on the exit sign -- the exit policy under test",
             "rule": "an unknown outcome is excluded, never counted as a loss",
+            "population": "PaperTrade botId=" + args.bot + ", status in (resolved,closed), realizedPnl not null, isDemo=0",
+            "venue": "Polymarket-only: venue='Kalshi' legs are excluded (v48 phantom-price stub); "
+                     + str(kalshi_excluded) + " such leg(s) exist for the same filters and are NOT in N",
+            "clock_hours": "entry hour = openedAt converted to America/New_York, NOT the settlement hour",
+            "level": "one leg (raw). --dedupe switches to one decision per marketId|outcome",
         },
+        "venueExcludedKalshiLegs": kalshi_excluded,
+
         "bands": bands_out,
         "hours": hours_out,
     }
@@ -308,10 +332,14 @@ def main():
     label = f"since {args.since}" if args.since else "all-time"
     if args.dedupe:
         label += f", decision-level (deduped from {deduped_from} rows)"
-    print(f"Calibration analysis ({args.bot}, {label}, N={total['n']}) — ** = |z|>=2 significant")
+    print(f"Calibration analysis ({args.bot}, Polymarket-only, {label}, N={total['n']}) — ** = |z|>=2 significant")
+    print(
+        f"  basis: EXIT arm = every finished leg; population = isDemo=0, status resolved|closed, realizedPnl not null; "
+        f"{kalshi_excluded} Kalshi-venue leg(s) excluded (NOT in N — the EOD 'LIFETIME settled' line includes them)"
+    )
     print("Price bands:")
     print("\n".join(lines))
-    print("Returns by hour (ET):")
+    print("Returns by ENTRY hour (openedAt -> ET; not the settlement hour):")
     print("\n".join(hlines))
     cov = out["outcomeCoverage"]
     print(f"  coverage {t_n}/{len(rows)} legs = {cov*100:.1f}% settlement-knowable; {outcome_unknown} excluded (unknown is never a loss)")
