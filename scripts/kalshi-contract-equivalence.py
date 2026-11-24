@@ -506,7 +506,6 @@ def event_markets(event_ticker, ttl_hours=12.0):
     return ms
 
 
-ARMS = 41
 
 
 def window_pool(from_ms, to_ms, max_pages=250, ttl_hours=24.0):
@@ -555,8 +554,11 @@ def window_pool(from_ms, to_ms, max_pages=250, ttl_hours=24.0):
 
 def self_test():
     ok = 0
+    arms = 0
+
     def arm(name, cond):
-        nonlocal ok
+        nonlocal ok, arms
+        arms += 1
         print(f"  {'PASS' if cond else 'FAIL'}  {name}")
         if cond:
             ok += 1
@@ -661,8 +663,34 @@ def self_test():
     arm("a UFC 'Main Card' suffix is STILL a moneyline (a bare \\bcard\\b rule ate 4 real pairs)",
         our_contract("UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)"
                      )["klass"] == "MONEYLINE")
-    print(f"\nself-test {ok}/{ARMS}")
-    return 0 if ok == ARMS else 1
+    # --- side_yes (repaired 2026-11-23: the spread tail is the MARKET's side, not ours)
+    sl_bkn = parse_slug("nba-phi-bkn-2026-11-16")
+    sl_hou = parse_slug("cbb-hou-kan-2026-11-19-spread-home-1pt5")
+    sp_ours = our_contract("Spread: Kansas Jayhawks (-1.5)")
+    sp_k = kalshi_contract("Kansas wins by over 1.5 points")
+    arm("side_yes: a SPREAD holder of the NON-subject team is the NO side",
+        side_yes(sp_ours, sp_k, "HOUSTON COUGARS", sl_hou, {}) is False)
+    arm("side_yes: a SPREAD holder of the subject team is the YES side",
+        side_yes(sp_ours, sp_k, "KANSAS JAYHAWKS", sl_hou, {}) is True)
+    arm("side_yes MUTATION: the retired tail rule answers YES on the same fixture",
+        spread_index(sl_hou) == team_index(sp_k["subject"], sl_hou, {}))
+    arm("side_yes: a MONEYLINE nickname maps to the city subject",
+        side_yes(our_contract("76ers vs. Nets"), kalshi_contract("Brooklyn wins"),
+                 "NETS", sl_bkn, {"nba": {"bkn": ["Brooklyn"], "phi": ["Philadelphia"]}}) is True)
+    # the case that matters in practice: our outcome is the venue's NICKNAME, the contract
+    # carries the CITY, and the alias table only stores the city -- a partial overlap must
+    # abstain, because guessing here prices the wrong token
+    arm("side_yes: a nickname/city overlap the alias table cannot place abstains",
+        side_yes(our_contract("Spread: NY Knicks (-7.5)"),
+                 kalshi_contract("New York wins by over 7.5 points"),
+                 "KNICKS", parse_slug("nba-por-nyk-2026-11-21-spread-home-7pt5"), {}) is None)
+    arm("side_yes: a label that shares nothing with the subject is the opponent's side",
+        side_yes(our_contract("Spread: Kansas Jayhawks (-1.5)"),
+                 kalshi_contract("Kansas wins by over 1.5 points"),
+                 "TRAIL BLAZERS", None, {}) is False)
+
+    print(f"\nself-test {ok}/{arms}")
+    return 0 if ok == arms else 1
 
 
 def market_quote(ticker):
@@ -701,7 +729,21 @@ def market_quote(ticker):
 
 def side_yes(ours, theirs, outcome, sl, aliases):
     """Is OUR side of the trade the YES side of the matched Kalshi contract?
-    None = cannot tell, and then no price is booked (never guess a side)."""
+
+    True / False / None. None = cannot tell, and then no price is booked (never guess).
+
+    FIXED 2026-11-23: the SPREAD branch used the QUESTION's spread tail
+    (`spread_index`) as our side. That tail names the team the line is written on, which
+    is the contract's own subject on every EQUIV pair, so the function answered YES for
+    every spread trade -- including the 13 of 37 settled pairs where we held the
+    opponent, which made the settlement audit unreadable (see
+    scripts/kalshi-pair-settlement-read.py and its mutation arm). Our side is now the
+    position of OUR OWN outcome, in whichever vocabulary it is written.
+
+    Three vocabularies meet here: the slug carries CODES ("nyk"), the contract carries
+    CITIES ("New York"), our outcome carries the venue's LABEL ("KNICKS"). The index is
+    therefore taken from the side that can actually be read, never from the market.
+    """
     o = (outcome or "").strip().lower()
     if ours["klass"] == "TOTAL":
         if o.startswith("over") or o in ("yes", "up"):
@@ -711,19 +753,34 @@ def side_yes(ours, theirs, outcome, sl, aliases):
         return None
     if not o or o in ("yes", "no", "up", "down"):
         return None
-    if subject_match(outcome, theirs.get("subject") or "")[0]:
+    subject = theirs.get("subject") or ""
+    if subject_match(outcome, subject)[0]:
         return True
-    # Which of OUR slugs does the outcome name? PM lists the two sides in the SAME order as
-    # the slug (verified on every pair in the 2026-11-14..21 window), and a SPREAD's side is
-    # encoded in the id tail, so the index is positional; the contract's subject is attributed
-    # through the alias table. Same index => we hold YES, different => we hold NO.
-    if sl:
-        idx = spread_index(sl) if ours["klass"] == "SPREAD" else next(
-            (k for k, t in enumerate(ours.get("teams") or [])
-             if t and subject_match(outcome, t)[0]), None)
-        subj = team_index(theirs.get("subject"), sl, aliases)
-        if idx is not None and subj is not None:
-            return idx == subj
+    if ours["klass"] == "SPREAD":
+        # The question names ONE team and that team IS the contract subject (verdict()
+        # cross-checks this through the id tail). Our outcome and that name are BOTH venue
+        # labels, so they compare directly -- and a name pair that shares no distinctive
+        # token at all is the opponent, because a spread market has exactly two sides.
+        # Anything in between (partial overlap: "NEW YORK KNICKS" vs "NY Knicks") abstains
+        # rather than guess a side, because a wrong side prices the wrong token.
+        q_subj = ours.get("subject") or ""
+        if q_subj:
+            if subject_match(outcome, q_subj)[0]:
+                return True
+            if not (tokens(outcome) & tokens(q_subj)):
+                return False
+        oi = team_index(outcome, sl, aliases) if sl else None
+        ti = team_index(subject, sl, aliases) if sl else None
+        if oi is not None and ti is not None:
+            return oi == ti
+        return None
+    # MONEYLINE (and anything else that names both sides): our outcome's position among
+    # our own two named teams vs the contract subject's slug position.
+    oi = next((k for k, t in enumerate(ours.get("teams") or [])
+               if t and subject_match(outcome, t)[0]), None)
+    ti = team_index(subject, sl, aliases) if sl else None
+    if oi is not None and ti is not None:
+        return oi == ti
     return False
 
 

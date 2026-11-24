@@ -168,3 +168,8 @@ data/cache/kalshi-event-markets/
 # from the cached pool; scripts/kalshi-contract-equivalence.py rebuilds it on a miss.
 data/cache/kalshi-window-events/
 
+# Kalshi pair-settlement read (2026-11-23, card kalshi-pair-settlement-rule-check): the
+# cache holds one already-settled Kalshi market and one closed PM market per pair — both
+# refetchable from keyless endpoints, and a settled market never changes. The READ artifact
+# data/kalshi-pair-settlement.json IS committed so the verdict re-reads offline.
+data/cache/kalshi-pair-settlement/
