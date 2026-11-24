@@ -132,6 +132,8 @@ export default async function Performance() {
         </div>
         <p className="text-xs text-dim mt-2">
           Watchlist/skipped/blind PnL is hypothetical ($10 flat positions at detection price). Bot-filtered uses actual simulated sizes.
+          Level differs per row: the Bot row counts LEGS (a copied signal books one leg per lane, so its Resolved can exceed a
+          per-signal count), every other row counts SIGNALS.
         </p>
       </Card>
 

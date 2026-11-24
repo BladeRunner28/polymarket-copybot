@@ -6,7 +6,7 @@
  */
 
 import { computePnl } from "./paper";
-import { copyDecisions, decisionCounts, reviewedDecisions } from "./decision-aggregates";
+import { copyLegs, decisionCounts, reviewedDecisions } from "./decision-aggregates";
 import { normalizeOutcomeLabel } from "./resolution";
 
 export interface BenchmarkBucket {
@@ -86,7 +86,7 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   // GROUP BY, hypothetical PnL only exists for the ~688 decisions with a
   // resolved review, and the bot's own bucket only needs paper_copy rows.
   // Previously this pulled all 253k rows with three nested includes (~10s).
-  const [counts, reviewed, copies] = await Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]);
+  const [counts, reviewed, legs] = await Promise.all([decisionCounts(), reviewedDecisions(), copyLegs()]);
 
   // Hypothetical PnL per reviewed decision (same computePnl call as before).
   // The label comparison goes through normalizeOutcomeLabel: stored
@@ -102,7 +102,10 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   const isCopy = (d: { decision: string }) => d.decision === "paper_copy";
   const isWatch = (d: { decision: string }) => d.decision === "watchlist";
 
-  const copyRows: BucketRow[] = copies.map((c) => ({ pnl: c.realizedPnl, cost: c.sizeUsd }));
+  // EXIT-BASIS ARM (2026-11-24 self-audit): one row per LEG, not per decision. The previous
+  // `copies.map((c) => c.realizedPnl / c.sizeUsd)` took one arbitrary leg per decision while the
+  // EOD line printed it as "n=… settled legs" (see copyLegs() for the measured before/after).
+  const copyRows: BucketRow[] = legs.map((l) => ({ pnl: l.realizedPnl, cost: l.sizeUsd }));
   // Blind copy = every observed signal, no filtering: the reviewed rows carry
   // the only non-null values, everything else is a null row for the count.
   const blindRows: BucketRow[] = hypoRows.map((h) => ({ pnl: h.pnl, cost: HYPOTHETICAL_SIZE }));
@@ -121,8 +124,17 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   let badCopies = 0;
   let goodSkips = 0;
 
-  for (const c of copies) {
-    if (c.realizedPnl !== null && c.realizedPnl < 0) badCopies++;
+  // "Bad Copies" on /performance = copies that LOST, so it is counted per DECISION over all of
+  // that decision's settled legs (net < 0). The old count read the first leg only, which meant a
+  // two-lane decision was "bad" or not depending on which lane Prisma returned: measured live
+  // 2026-11-24, first-leg 4,342 vs decision-net 4,350 (+8).
+  const pnlByDecision = new Map<string, number>();
+  for (const l of legs) {
+    if (l.realizedPnl === null) continue;
+    pnlByDecision.set(l.decisionId, (pnlByDecision.get(l.decisionId) ?? 0) + l.realizedPnl);
+  }
+  for (const net of pnlByDecision.values()) {
+    if (net < 0) badCopies++;
   }
   for (const h of hypoRows) {
     if (isCopy(h)) continue;
@@ -134,7 +146,7 @@ export async function computeBenchmarks(): Promise<BenchmarkReport> {
   }
 
   return {
-    botFiltered: benchmarkBucket("Bot-filtered paper trades", copyRows, counts.paperCopy),
+    botFiltered: benchmarkBucket("Bot-filtered paper trades", copyRows, legs.length),
     botFilteredOutcome: benchmarkBucket("Bot copy decisions, hold to resolution", outRows, counts.paperCopy),
     blindCopy: benchmarkBucket("Blind leaderboard copy", blindRows, counts.total),
     watchlist: benchmarkBucket("Watchlist (not copied)", watchRows, counts.watchlist),

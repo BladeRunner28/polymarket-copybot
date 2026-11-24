@@ -17,7 +17,7 @@
 
 import { prisma } from "../src/lib/db";
 import { computeBenchmarks, type BenchmarkReport } from "../src/lib/benchmarks";
-import { copyDecisions, decisionCounts, reviewedDecisions } from "../src/lib/decision-aggregates";
+import { copyLegs, decisionCounts, reviewedDecisions } from "../src/lib/decision-aggregates";
 import { dailyPnlSeries, hourlyPnlSeries } from "../src/lib/pnl-rollup";
 import { computePnl } from "../src/lib/paper";
 import { normalizeOutcomeLabel } from "../src/lib/resolution";
@@ -72,7 +72,7 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
   const blindRows: { pnl: number | null; cost?: number | null }[] = [];
   // matched-basis arm (2026-10-29): copies priced like the blind arm (hold to resolution, flat $10)
   const outRows: { pnl: number | null; cost?: number | null }[] = [];
-  let missedWinners = 0, avoidedLosers = 0, badCopies = 0, goodSkips = 0;
+  let missedWinners = 0, avoidedLosers = 0, badCopies = 0, goodSkips = 0, copyLegCount = 0;
   for (const d of decisions) {
     const review = d.outcomeReviews.find((r) => r.finalOutcome !== null);
     const entry = d.observedTrade.detectedPrice;
@@ -85,10 +85,20 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
     }
     blindRows.push({ pnl: hypoPnl, cost: HYP });
     if (d.decision === "paper_copy") {
-      const pnl = d.paperTrades[0]?.realizedPnl ?? null;
-      copyRows.push({ pnl, cost: d.paperTrades[0]?.simulatedPositionSize ?? null });
+      // Leg census, matching src/lib/decision-aggregates.ts copyLegs(): every leg, isDemo=0,
+      // and badCopies counted per DECISION net (2026-11-24 self-audit — the reference
+      // implementation used to mirror the first-leg-only read it was validating).
+      if (!d.isDemo) copyLegCount += d.paperTrades.length;
+      let net = 0;
+      let settled = 0;
+      for (const pt of d.paperTrades) {
+        if (pt.realizedPnl === null) continue;
+        if (!d.isDemo) copyRows.push({ pnl: pt.realizedPnl, cost: pt.simulatedPositionSize ?? null });
+        net += pt.realizedPnl;
+        settled++;
+      }
       outRows.push({ pnl: hypoPnl, cost: HYP });
-      if (pnl !== null && pnl < 0) badCopies++;
+      if (!d.isDemo && settled > 0 && net < 0) badCopies++;
     } else if (d.decision === "watchlist") {
       watchRows.push({ pnl: hypoPnl, cost: HYP });
       if (hypoPnl !== null && hypoPnl > 0) missedWinners++;
@@ -99,13 +109,13 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
       if (hypoPnl !== null && hypoPnl < 0) { avoidedLosers++; goodSkips++; }
     }
   }
-  const bucket = (label: string, rows: { pnl: number | null; cost?: number | null }[]) => {
+  const bucket = (label: string, rows: { pnl: number | null; cost?: number | null }[], totalCount?: number) => {
     const resolved = rows.filter((r) => r.pnl !== null) as { pnl: number; cost?: number | null }[];
     const total = resolved.reduce((a, r) => a + r.pnl, 0);
     const cost = resolved.reduce((a, r) => a + (r.cost ?? 0), 0);
     const wins = resolved.filter((r) => r.pnl > 0).length;
     return {
-      label, count: rows.length, resolvedCount: resolved.length,
+      label, count: totalCount ?? rows.length, resolvedCount: resolved.length,
       totalPnl: Math.round(total * 100) / 100,
       winRate: resolved.length ? Math.round((wins / resolved.length) * 1000) / 1000 : 0,
       avgPnl: resolved.length ? Math.round((total / resolved.length) * 100) / 100 : 0,
@@ -114,7 +124,7 @@ async function oldBenchmarks(): Promise<BenchmarkReport> {
     };
   };
   return {
-    botFiltered: bucket("Bot-filtered paper trades", copyRows),
+    botFiltered: bucket("Bot-filtered paper trades", copyRows, copyLegCount),
     botFilteredOutcome: bucket("Bot copy decisions, hold to resolution", outRows),
     blindCopy: bucket("Blind leaderboard copy", blindRows),
     watchlist: bucket("Watchlist (not copied)", watchRows),
@@ -146,8 +156,10 @@ async function oldAnalytics() {
     }
     if (hypo !== null) pushB("Blind copy", day, hypo);
     if (d.decision === "paper_copy") {
-      const pnl = d.paperTrades[0]?.realizedPnl ?? null;
-      if (pnl !== null) pushB("Bot (actual)", day, pnl);
+      // one point per settled LEG (see src/lib/decision-aggregates.ts copyLegs())
+      for (const pt of d.paperTrades) {
+        if (pt.realizedPnl !== null) pushB("Bot (actual)", day, pt.realizedPnl);
+      }
     } else if (d.decision === "watchlist" && hypo !== null) pushB("Watchlist (hypo)", day, hypo);
     else if (d.decision === "skip" && hypo !== null) pushB("Skipped (hypo)", day, hypo);
   }
@@ -163,7 +175,7 @@ async function oldAnalytics() {
 
 /** Analytics funnel + cumulative curves, new narrow-read way. */
 async function newAnalytics() {
-  const [counts, reviewed, copies] = await Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]);
+  const [counts, reviewed, legs] = await Promise.all([decisionCounts(), reviewedDecisions(), copyLegs()]);
   const bench = new Map<string, { day: string; pnl: number }[]>();
   const pushB = (label: string, day: string, pnl: number) => {
     const arr = bench.get(label) ?? [];
@@ -178,8 +190,8 @@ async function newAnalytics() {
     if (d.decision === "watchlist") pushB("Watchlist (hypo)", day, hypo);
     else if (d.decision === "skip") pushB("Skipped (hypo)", day, hypo);
   }
-  for (const c of copies) {
-    if (c.realizedPnl !== null) pushB("Bot (actual)", dayKey(c.createdAt), c.realizedPnl);
+  for (const l of legs) {
+    if (l.realizedPnl !== null) pushB("Bot (actual)", dayKey(l.createdAt), l.realizedPnl);
   }
   const finals = new Map<string, number>();
   for (const [label, rows] of bench.entries()) {

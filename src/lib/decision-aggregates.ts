@@ -13,9 +13,10 @@
  *   - per-decision counts come from a GROUP BY in SQL.
  *
  * So these helpers fetch ~15k narrow rows instead of 253k wide ones. The JS
- * arithmetic that consumes them is unchanged, which keeps results identical —
- * importantly, `paperTrades[0]` is still resolved by Prisma (1,086 decisions
- * have more than one trade, so its order is NOT reproducible in raw SQL).
+ * arithmetic that consumes them is unchanged, which keeps results identical.
+ *
+ * 2026-11-24: `copyDecisions()` (one row per decision, first leg only) is gone — it is now
+ * `copyLegs()`, one row per PaperTrade. See its own docstring for the measured defect.
  */
 
 import { prisma } from "./db";
@@ -94,25 +95,45 @@ export async function reviewedDecisions(): Promise<ReviewedDecision[]> {
   return out;
 }
 
-export type CopyDecision = { createdAt: Date; realizedPnl: number | null; sizeUsd: number | null };
+export type CopyLeg = {
+  createdAt: Date;
+  /** The decision this leg belongs to — one decision can book one leg PER LANE. */
+  decisionId: string;
+  realizedPnl: number | null;
+  /** This leg's `simulatedPositionSize` (USD — see schema): the stake the PnL was earned on. */
+  sizeUsd: number | null;
+};
 
 /**
- * paper_copy decisions with the realized PnL of their first paper trade
- * (`paperTrades[0]`), left as Prisma ordered it.
+ * paper_copy LEGS — one row per PaperTrade, not one per decision.
  *
- * `sizeUsd` is that same trade's `simulatedPositionSize` (USD — see schema): the stake the PnL
- * above was earned on. Without it a bucket can only report $/trade, which is not comparable to a
- * flat-stake hypothetical.
+ * 2026-11-24 self-audit (Lane B, label/query only): the previous `copyDecisions()` returned
+ * `paperTrades[0]` per decision and the EOD printed that as "n=… settled legs". 1,279 decisions
+ * book TWO legs (one per lane), so the printed population was decisions-with-a-settled-first-leg
+ * and the leg that got counted was whichever one Prisma returned first — which this file's own
+ * header already flags as NOT reproducible in raw SQL. Measured on live data before the fix:
+ * n=11,778 / $129,230.07 staked / $11,431.75 / 8.85% (first leg only) vs the leg census
+ * n=13,055 / $147,011.65 / $14,521.47 / 9.88%. The under-count was 1,277 legs and $1,089.72.
+ *
+ * `isDemo: false` is now applied here: every other published line in the EOD states isDemo=0, and
+ * this read was the one that did not (0 settled demo legs today, so no number moved from it).
  */
-export async function copyDecisions(): Promise<CopyDecision[]> {
+export async function copyLegs(): Promise<CopyLeg[]> {
   const rows = await prisma.decisionJournal.findMany({
-    where: { decision: "paper_copy" },
+    where: { decision: "paper_copy", isDemo: false },
     orderBy: { createdAt: "asc" },
-    select: { createdAt: true, paperTrades: { select: { realizedPnl: true, simulatedPositionSize: true } } },
+    select: {
+      id: true,
+      createdAt: true,
+      paperTrades: { select: { realizedPnl: true, simulatedPositionSize: true } },
+    },
   });
-  return rows.map((d) => ({
-    createdAt: d.createdAt,
-    realizedPnl: d.paperTrades[0]?.realizedPnl ?? null,
-    sizeUsd: d.paperTrades[0]?.simulatedPositionSize ?? null,
-  }));
+  return rows.flatMap((d) =>
+    d.paperTrades.map((pt) => ({
+      createdAt: d.createdAt,
+      decisionId: d.id,
+      realizedPnl: pt.realizedPnl,
+      sizeUsd: pt.simulatedPositionSize,
+    }))
+  );
 }

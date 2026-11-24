@@ -1,6 +1,6 @@
 import { prisma } from "../src/lib/db";
 import { dailyPnlSeries } from "../src/lib/pnl-rollup";
-import { copyDecisions, decisionCounts, reviewedDecisions } from "../src/lib/decision-aggregates";
+import { copyLegs, decisionCounts, reviewedDecisions } from "../src/lib/decision-aggregates";
 
 const ET = "America/New_York";
 function etPartsUncached(ms: number): { hour: number; weekday: number } {
@@ -38,7 +38,7 @@ async function main() {
   const [c200Resolved, snapshots, decisionStats, allResolved, trackedWallets, insiderScores] = await Promise.all([
     t("c200Resolved", () => prisma.paperTrade.findMany({ where: { botId: "BANKROLL_200", status: { in: ["closed", "resolved"] }, realizedPnl: { not: null } }, select: { realizedPnl: true, resolvedAt: true, openedAt: true } })),
     t("snapshots (rollup daily)", () => dailyPnlSeries()),
-    t("decisionStats (3 narrow reads)", () => Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()])),
+    t("decisionStats (3 narrow reads)", () => Promise.all([decisionCounts(), reviewedDecisions(), copyLegs()])),
     t("allResolved (nested decision+observedTrade)", () => prisma.paperTrade.findMany({ where: { status: { in: ["closed", "resolved"] }, realizedPnl: { not: null } }, include: { decision: { include: { observedTrade: true } } } })),
     t("trackedWallets", () => prisma.walletProfile.findMany({ where: { status: "track" }, select: { address: true, globalScore: true } })),
     t("insiderScores", () => prisma.walletInsiderScore.findMany({ select: { walletAddress: true, flagged: true, watch: true } })),

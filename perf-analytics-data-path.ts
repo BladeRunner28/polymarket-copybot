@@ -9,7 +9,7 @@
  */
 import { prisma } from "@/lib/db";
 import { dailyPnlSeries } from "@/lib/pnl-rollup";
-import { copyDecisions, decisionCounts, reviewedDecisions } from "@/lib/decision-aggregates";
+import { copyLegs, decisionCounts, reviewedDecisions } from "@/lib/decision-aggregates";
 import { normalizeOutcomeLabel } from "@/lib/resolution";
 import { researchCategoryFor } from "@/lib/research-categories";
 import { readFileSync } from "fs";
@@ -61,9 +61,9 @@ async function main() {
     }),
   );
   const snapshots = await timed("dailyPnlSeries", () => dailyPnlSeries());
-  const decisionStats = await timed("decisionCounts+reviewed+copies", async () => {
-    const [counts, reviewed, copies] = await Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]);
-    return { counts, reviewed, copies };
+  const decisionStats = await timed("decisionCounts+reviewed+legs", async () => {
+    const [counts, reviewed, legs] = await Promise.all([decisionCounts(), reviewedDecisions(), copyLegs()]);
+    return { counts, reviewed, legs };
   });
   const allResolved = await timed("allResolved(joined)", () =>
     prisma.paperTrade.findMany({
@@ -83,7 +83,7 @@ async function main() {
   const baselineCsv = await timed("baseline csv", async () =>
     readFileSync(join(process.cwd(), "data", "polymarket-calibration-baseline.csv"), "utf8"),
   );
-  console.log(`--- rows: allResolved=${allResolved.length} c200=${c200Resolved.length} reviewed=${decisionStats.reviewed.length} copies=${decisionStats.copies.length} rollup=${snapshots.length}`);
+  console.log(`--- rows: allResolved=${allResolved.length} c200=${c200Resolved.length} reviewed=${decisionStats.reviewed.length} legs=${decisionStats.legs.length} rollup=${snapshots.length}`);
 
   const t0 = performance.now();
 
@@ -123,8 +123,8 @@ async function main() {
       if (d.decision === "watchlist") pushB("Watchlist (hypo)", day, hypo);
       else if (d.decision === "skip") pushB("Skipped (hypo)", day, hypo);
     }
-    for (const c of decisionStats.copies) {
-      if (c.realizedPnl !== null) pushB("Bot (actual)", dayKey(c.createdAt), c.realizedPnl);
+    for (const l of decisionStats.legs) {
+      if (l.realizedPnl !== null) pushB("Bot (actual)", dayKey(l.createdAt), l.realizedPnl);
     }
     void [...benchSeries.entries()].map(([, rows]) => rows.sort((a, b) => a.day.localeCompare(b.day)));
   });

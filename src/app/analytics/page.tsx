@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { dailyPnlSeries } from "@/lib/pnl-rollup";
-import { copyDecisions, decisionCounts, reviewedDecisions } from "@/lib/decision-aggregates";
+import { copyLegs, decisionCounts, reviewedDecisions } from "@/lib/decision-aggregates";
 import { normalizeOutcomeLabel } from "@/lib/resolution";
 import { Card, Empty } from "@/components/ui";
 import { LineChart, BarChart, Heatmap, Scatter } from "@/components/chart";
@@ -111,10 +111,10 @@ export default async function Analytics() {
     // outcomeReviews } })` over all 253k rows — ~10s per page load. Counts come
     // from a SQL GROUP BY; hypothetical PnL only exists for the ~688 decisions
     // with a resolved review; the bot series only needs paper_copy rows.
-    Promise.all([decisionCounts(), reviewedDecisions(), copyDecisions()]).then(([counts, reviewed, copies]) => ({
+    Promise.all([decisionCounts(), reviewedDecisions(), copyLegs()]).then(([counts, reviewed, legs]) => ({
       counts,
       reviewed,
-      copies,
+      legs,
     })),
     // Narrow projection (used by the heatmap, category/venue/version bars and
     // the wallet scatter). The previous `include: { decision: { include: {
@@ -246,8 +246,8 @@ export default async function Analytics() {
     benchSeries.set(label, arr);
   };
   // Rebuilt from the narrow reads: reviewed decisions carry the only non-null
-  // hypotheticals, copies carry the bot's actuals. Same formulas and same
-  // per-day totals as the old full-scan loop.
+  // hypotheticals, copies carry the bot's actuals — one point per settled LEG (a decision can
+  // book one leg per lane; the old read took one arbitrary leg per decision).
   for (const d of decisionStats.reviewed) {
     const day = dayKey(d.createdAt);
     // Normalised label comparison — stored finalOutcome is API-cased ("No") and
@@ -260,8 +260,8 @@ export default async function Analytics() {
     if (d.decision === "watchlist") pushB("Watchlist (hypo)", day, hypo);
     else if (d.decision === "skip") pushB("Skipped (hypo)", day, hypo);
   }
-  for (const c of decisionStats.copies) {
-    if (c.realizedPnl !== null) pushB("Bot (actual)", dayKey(c.createdAt), c.realizedPnl);
+  for (const l of decisionStats.legs) {
+    if (l.realizedPnl !== null) pushB("Bot (actual)", dayKey(l.createdAt), l.realizedPnl);
   }
   const benchLines = [...benchSeries.entries()].map(([label, rows]) => {
     const sorted = rows.sort((a, b) => a.day.localeCompare(b.day));
