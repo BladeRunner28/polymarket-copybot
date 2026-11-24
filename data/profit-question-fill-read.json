@@ -1,42 +1,42 @@
 {
  "stamp": "data/standard-fill-stamp.jsonl",
- "stamp_ranAt": "2026-11-23T13:02:42.334Z",
- "union_legs": 1036,
- "stamped_with_book": 404,
- "evaluable_settled": 363,
+ "stamp_ranAt": "2026-11-24T13:14:48.872Z",
+ "union_legs": 1040,
+ "stamped_with_book": 408,
+ "evaluable_settled": 368,
  "basis": "cost=simulatedPositionSize dollars at risk; realizedPnl on status IN (closed,resolved); isDemo=0; dedupe first leg per bot|wallet|market|outcome; entry vintage; market-clustered bootstrap 2000 draws; reachability = min ask in the stamp's lag buckets <= booked price (upper bound on fill, no queue, no size)",
  "coverage_class": {
-  "post_corpus_standard_legs": 2472,
-  "question_legs": 425,
-  "question_share_of_lane_legs_pct": 17.2,
-  "question_legs_in_asset_map": 122,
-  "question_pnl_in_asset_map": 440.71,
-  "question_legs_mapped_settled": 89,
-  "question_coverage_pct_of_adjudicable": 73.0,
-  "question_coverage_pct_of_class": 20.9,
-  "class_pnl_full": 96.74,
-  "class_cost_full": 7617.78,
-  "class_roi_full_pct": 1.3,
-  "class_pnl_mapped": 286.56,
-  "class_pnl_alltime_both_lanes": 6180.86,
-  "class_cost_alltime_both_lanes": 35278.07,
-  "class_n_alltime_both_lanes": 2939
+  "post_corpus_standard_legs": 2497,
+  "question_legs": 426,
+  "question_share_of_lane_legs_pct": 17.1,
+  "question_legs_in_asset_map": 123,
+  "question_pnl_in_asset_map": 472.03,
+  "question_legs_mapped_settled": 90,
+  "question_coverage_pct_of_adjudicable": 73.2,
+  "question_coverage_pct_of_class": 21.1,
+  "class_pnl_full": 128.06,
+  "class_cost_full": 7635.78,
+  "class_roi_full_pct": 1.7,
+  "class_pnl_mapped": 317.88,
+  "class_pnl_alltime_both_lanes": 6212.18,
+  "class_cost_alltime_both_lanes": 35314.07,
+  "class_n_alltime_both_lanes": 2941
  },
  "question_tol 0": {
   "all": {
-   "n": 89,
-   "markets": 80,
-   "cost": 1569.78,
-   "pnl": 286.56,
-   "roi_pct": 18.3,
-   "win_pct": 42.7,
-   "avg_win": 30.52,
+   "n": 90,
+   "markets": 81,
+   "cost": 1587.78,
+   "pnl": 317.88,
+   "roi_pct": 20.0,
+   "win_pct": 43.3,
+   "avg_win": 30.54,
    "avg_loss": -17.12,
-   "ex_top3_pnl": -276.46,
-   "ex_top3_roi_pct": -17.6,
+   "ex_top3_pnl": -245.14,
+   "ex_top3_roi_pct": -15.4,
    "ci95": [
-    -32.3,
-    78.4
+    -30.6,
+    80.8
    ]
   },
   "reachable": {
@@ -56,38 +56,38 @@
    ]
   },
   "unreachable": {
-   "n": 57,
-   "markets": 51,
-   "cost": 1017.0,
-   "pnl": -126.56,
-   "roi_pct": -12.4,
-   "win_pct": 38.6,
-   "avg_win": 21.66,
+   "n": 58,
+   "markets": 52,
+   "cost": 1035.0,
+   "pnl": -95.24,
+   "roi_pct": -9.2,
+   "win_pct": 39.7,
+   "avg_win": 22.08,
    "avg_loss": -17.23,
-   "ex_top3_pnl": -417.4,
-   "ex_top3_roi_pct": -41.0,
+   "ex_top3_pnl": -386.75,
+   "ex_top3_roi_pct": -37.4,
    "ci95": [
-    -56.2,
-    54.4
+    -53.1,
+    52.6
    ]
   },
-  "reachability_pct": 36.0
+  "reachability_pct": 35.6
  },
  "sports_tol 0": {
   "all": {
-   "n": 202,
-   "markets": 185,
-   "cost": 3154.28,
-   "pnl": 357.39,
-   "roi_pct": 11.3,
-   "win_pct": 53.0,
-   "avg_win": 17.02,
+   "n": 204,
+   "markets": 187,
+   "cost": 3172.28,
+   "pnl": 387.63,
+   "roi_pct": 12.2,
+   "win_pct": 53.4,
+   "avg_win": 16.98,
    "avg_loss": -15.41,
-   "ex_top3_pnl": 66.18,
-   "ex_top3_roi_pct": 2.1,
+   "ex_top3_pnl": 96.42,
+   "ex_top3_roi_pct": 3.0,
    "ci95": [
-    -8.1,
-    31.4
+    -6.7,
+    31.2
    ]
   },
   "reachable": {
@@ -107,22 +107,22 @@
    ]
   },
   "unreachable": {
-   "n": 152,
-   "markets": 140,
-   "cost": 2329.11,
-   "pnl": 137.11,
-   "roi_pct": 5.9,
-   "win_pct": 52.6,
-   "avg_win": 15.51,
+   "n": 154,
+   "markets": 142,
+   "cost": 2347.11,
+   "pnl": 167.35,
+   "roi_pct": 7.1,
+   "win_pct": 53.2,
+   "avg_win": 15.5,
    "avg_loss": -15.33,
-   "ex_top3_pnl": -43.93,
-   "ex_top3_roi_pct": -1.9,
+   "ex_top3_pnl": -13.69,
+   "ex_top3_roi_pct": -0.6,
    "ci95": [
-    -12.9,
-    26.7
+    -12.8,
+    28.4
    ]
   },
-  "reachability_pct": 24.8
+  "reachability_pct": 24.5
  },
  "esports_tol 0": {
   "all": {
@@ -177,75 +177,75 @@
  },
  "other_tol 0": {
   "all": {
-   "n": 53,
-   "markets": 52,
-   "cost": 628.12,
-   "pnl": -112.52,
-   "roi_pct": -17.9,
-   "win_pct": 37.7,
-   "avg_win": 14.17,
-   "avg_loss": -12.0,
-   "ex_top3_pnl": -219.58,
-   "ex_top3_roi_pct": -35.0,
+   "n": 55,
+   "markets": 54,
+   "cost": 646.12,
+   "pnl": -107.74,
+   "roi_pct": -16.7,
+   "win_pct": 38.2,
+   "avg_win": 14.16,
+   "avg_loss": -11.91,
+   "ex_top3_pnl": -214.8,
+   "ex_top3_roi_pct": -33.2,
    "ci95": [
-    -49.4,
-    18.2
+    -48.9,
+    20.0
    ]
   },
   "reachable": {
-   "n": 13,
-   "markets": 13,
-   "cost": 180.0,
-   "pnl": 24.75,
-   "roi_pct": 13.8,
-   "win_pct": 46.2,
+   "n": 14,
+   "markets": 14,
+   "cost": 189.0,
+   "pnl": 15.75,
+   "roi_pct": 8.3,
+   "win_pct": 42.9,
    "avg_win": 19.12,
-   "avg_loss": -12.86,
-   "ex_top3_pnl": -59.03,
-   "ex_top3_roi_pct": -32.8,
+   "avg_loss": -12.38,
+   "ex_top3_pnl": -68.03,
+   "ex_top3_roi_pct": -36.0,
    "ci95": [
-    -53.6,
-    85.4
+    -56.8,
+    77.5
    ]
   },
   "unreachable": {
-   "n": 40,
-   "markets": 39,
-   "cost": 448.12,
-   "pnl": -137.27,
-   "roi_pct": -30.6,
-   "win_pct": 35.0,
-   "avg_win": 12.05,
+   "n": 41,
+   "markets": 40,
+   "cost": 457.12,
+   "pnl": -123.49,
+   "roi_pct": -27.0,
+   "win_pct": 36.6,
+   "avg_win": 12.17,
    "avg_loss": -11.77,
-   "ex_top3_pnl": -225.46,
-   "ex_top3_roi_pct": -50.3,
+   "ex_top3_pnl": -211.68,
+   "ex_top3_roi_pct": -46.3,
    "ci95": [
-    -65.6,
-    9.7
+    -61.9,
+    14.1
    ]
   },
-  "reachability_pct": 24.5
+  "reachability_pct": 25.5
  },
  "all_tol 0": {
-  "n": 363,
-  "reachable": 107,
-  "reachability_pct": 29.5
+  "n": 368,
+  "reachable": 108,
+  "reachability_pct": 29.3
  },
  "question_+1c slack": {
   "all": {
-   "n": 89,
-   "markets": 80,
-   "cost": 1569.78,
-   "pnl": 286.56,
-   "roi_pct": 18.3,
-   "win_pct": 42.7,
-   "avg_win": 30.52,
+   "n": 90,
+   "markets": 81,
+   "cost": 1587.78,
+   "pnl": 317.88,
+   "roi_pct": 20.0,
+   "win_pct": 43.3,
+   "avg_win": 30.54,
    "avg_loss": -17.12,
-   "ex_top3_pnl": -276.46,
-   "ex_top3_roi_pct": -17.6,
+   "ex_top3_pnl": -245.14,
+   "ex_top3_roi_pct": -15.4,
    "ci95": [
-    -32.3,
-    78.4
+    -30.6,
+    80.8
    ]
   },
   "reachable": {
@@ -265,54 +265,54 @@
    ]
   },
   "unreachable": {
-   "n": 17,
-   "markets": 17,
-   "cost": 297.0,
-   "pnl": -58.71,
-   "roi_pct": -19.8,
-   "win_pct": 41.2,
-   "avg_win": 13.53,
+   "n": 18,
+   "markets": 18,
+   "cost": 315.0,
+   "pnl": -27.39,
+   "roi_pct": -8.7,
+   "win_pct": 44.4,
+   "avg_win": 15.76,
    "avg_loss": -15.34,
-   "ex_top3_pnl": -127.44,
-   "ex_top3_roi_pct": -42.9,
+   "ex_top3_pnl": -110.49,
+   "ex_top3_roi_pct": -35.1,
    "ci95": [
-    -62.3,
-    21.2
+    -54.4,
+    37.4
    ]
   },
-  "reachability_pct": 80.9
+  "reachability_pct": 80.0
  },
  "sports_+1c slack": {
   "all": {
-   "n": 202,
-   "markets": 185,
-   "cost": 3154.28,
-   "pnl": 357.39,
-   "roi_pct": 11.3,
-   "win_pct": 53.0,
-   "avg_win": 17.02,
+   "n": 204,
+   "markets": 187,
+   "cost": 3172.28,
+   "pnl": 387.63,
+   "roi_pct": 12.2,
+   "win_pct": 53.4,
+   "avg_win": 16.98,
    "avg_loss": -15.41,
-   "ex_top3_pnl": 66.18,
-   "ex_top3_roi_pct": 2.1,
+   "ex_top3_pnl": 96.42,
+   "ex_top3_roi_pct": 3.0,
    "ci95": [
-    -8.1,
-    31.4
+    -6.7,
+    31.2
    ]
   },
   "reachable": {
-   "n": 181,
-   "markets": 170,
-   "cost": 2831.28,
-   "pnl": 357.23,
-   "roi_pct": 12.6,
-   "win_pct": 53.0,
-   "avg_win": 17.35,
+   "n": 183,
+   "markets": 172,
+   "cost": 2849.28,
+   "pnl": 387.47,
+   "roi_pct": 13.6,
+   "win_pct": 53.6,
+   "avg_win": 17.31,
    "avg_loss": -15.39,
-   "ex_top3_pnl": 66.02,
-   "ex_top3_roi_pct": 2.3,
+   "ex_top3_pnl": 96.26,
+   "ex_top3_roi_pct": 3.4,
    "ci95": [
-    -7.1,
-    33.5
+    -6.6,
+    34.3
    ]
   },
   "unreachable": {
@@ -331,7 +331,7 @@
     49.6
    ]
   },
-  "reachability_pct": 89.6
+  "reachability_pct": 89.7
  },
  "esports_+1c slack": {
   "all": {
@@ -373,82 +373,82 @@
  },
  "other_+1c slack": {
   "all": {
-   "n": 53,
-   "markets": 52,
-   "cost": 628.12,
-   "pnl": -112.52,
-   "roi_pct": -17.9,
-   "win_pct": 37.7,
-   "avg_win": 14.17,
-   "avg_loss": -12.0,
-   "ex_top3_pnl": -219.58,
-   "ex_top3_roi_pct": -35.0,
+   "n": 55,
+   "markets": 54,
+   "cost": 646.12,
+   "pnl": -107.74,
+   "roi_pct": -16.7,
+   "win_pct": 38.2,
+   "avg_win": 14.16,
+   "avg_loss": -11.91,
+   "ex_top3_pnl": -214.8,
+   "ex_top3_roi_pct": -33.2,
    "ci95": [
-    -49.4,
-    18.2
+    -48.9,
+    20.0
    ]
   },
   "reachable": {
-   "n": 46,
-   "markets": 45,
-   "cost": 562.0,
-   "pnl": -73.04,
-   "roi_pct": -13.0,
-   "win_pct": 34.8,
+   "n": 47,
+   "markets": 46,
+   "cost": 571.0,
+   "pnl": -82.04,
+   "roi_pct": -14.4,
+   "win_pct": 34.0,
    "avg_win": 17.37,
-   "avg_loss": -11.7,
-   "ex_top3_pnl": -180.1,
-   "ex_top3_roi_pct": -32.0,
+   "avg_loss": -11.61,
+   "ex_top3_pnl": -189.1,
+   "ex_top3_roi_pct": -33.1,
    "ci95": [
-    -49.3,
-    27.0
+    -50.6,
+    26.1
    ]
   },
   "unreachable": {
-   "n": 7,
-   "markets": 7,
-   "cost": 66.12,
-   "pnl": -39.48,
-   "roi_pct": -59.7,
-   "win_pct": 57.1,
-   "avg_win": 1.38,
+   "n": 8,
+   "markets": 8,
+   "cost": 75.12,
+   "pnl": -25.7,
+   "roi_pct": -34.2,
+   "win_pct": 62.5,
+   "avg_win": 3.86,
    "avg_loss": -15.0,
-   "ex_top3_pnl": -44.63,
-   "ex_top3_roi_pct": -67.5,
+   "ex_top3_pnl": -44.04,
+   "ex_top3_roi_pct": -58.6,
    "ci95": [
-    -90.4,
-    2.5
+    -84.6,
+    50.5
    ]
   },
-  "reachability_pct": 86.8
+  "reachability_pct": 85.5
  },
  "all_+1c slack": {
-  "n": 363,
-  "reachable": 318,
-  "reachability_pct": 87.6
+  "n": 368,
+  "reachable": 321,
+  "reachability_pct": 87.2
  },
  "attainable_minus_booked_cents": {
   "question": {
-   "n": 89,
+   "n": 90,
    "median_c": 0.5,
    "exactly_1c": 23,
-   "exactly_1c_pct": 25.8,
+   "exactly_1c_pct": 25.6,
    "buckets": {
     "<=0": 32,
     "(0,1]": 40,
     "(1,2]": 7,
-    "(2,5]": 6,
+    "(2,5]": 7,
     ">5": 4
    }
   },
   "sports": {
-   "n": 202,
+   "n": 204,
    "median_c": 0.5,
    "exactly_1c": 11,
    "exactly_1c_pct": 5.4,
    "buckets": {
     "<=0": 50,
-    "(0,1]": 131,
+    "(0,1]": 133,
     "(1,2]": 15,
     "(2,5]": 3,
     ">5": 3
@@ -465,15 +465,15 @@
    }
   },
   "other": {
-   "n": 53,
+   "n": 55,
    "median_c": 0.5,
    "exactly_1c": 4,
-   "exactly_1c_pct": 7.5,
+   "exactly_1c_pct": 7.3,
    "buckets": {
-    "<=0": 13,
+    "<=0": 14,
     "(0,1]": 33,
     "(1,2]": 6,
-    "(2,5]": 1
+    "(2,5]": 2
    }
   }
  },
@@ -495,8 +495,8 @@
      212.2
     ]
    },
-   "reachability_pct": 36.0,
-   "n_legs": 89
+   "reachability_pct": 35.6,
+   "n_legs": 90
   },
   "arm B tick-rounding (tolerance = sub-tick remainder)": {
    "reachable": {
@@ -515,8 +515,8 @@
      166.0
     ]
    },
-   "reachability_pct": 51.7,
-   "n_legs": 89
+   "reachability_pct": 51.1,
+   "n_legs": 90
   },
   "arm C +1c (taker crossing one tick)": {
    "reachable": {
@@ -535,8 +535,8 @@
      103.3
     ]
    },
-   "reachability_pct": 80.9,
-   "n_legs": 89
+   "reachability_pct": 80.0,
+   "n_legs": 90
   },
   "arm C' taker repriced": {
    "reachable": {
@@ -555,8 +555,8 @@
      117.4
     ]
    },
-   "reachability_pct": 80.9,
-   "n_legs": 89
+   "reachability_pct": 80.0,
+   "n_legs": 90
   },
   "arm B' tick-aligned taker repriced": {
    "reachable": {
@@ -575,8 +575,8 @@
      193.0
     ]
    },
-   "reachability_pct": 51.7,
-   "n_legs": 89
+   "reachability_pct": 51.1,
+   "n_legs": 90
   },
   "arm B'' tick-implied ask": {
    "reachable": {
@@ -595,29 +595,29 @@
      163.9
     ]
    },
-   "reachability_pct": 51.7,
-   "n_legs": 89
+   "reachability_pct": 51.1,
+   "n_legs": 90
   }
  },
  "lane_mix": {
-  "STANDARD": 363
+  "STANDARD": 368
  },
  "lane_x_vertical_tol0": {
   "STANDARD|question": {
    "all": {
-    "n": 89,
-    "markets": 80,
-    "cost": 1569.78,
-    "pnl": 286.56,
-    "roi_pct": 18.3,
-    "win_pct": 42.7,
-    "avg_win": 30.52,
+    "n": 90,
+    "markets": 81,
+    "cost": 1587.78,
+    "pnl": 317.88,
+    "roi_pct": 20.0,
+    "win_pct": 43.3,
+    "avg_win": 30.54,
     "avg_loss": -17.12,
-    "ex_top3_pnl": -276.46,
-    "ex_top3_roi_pct": -17.6,
+    "ex_top3_pnl": -245.14,
+    "ex_top3_roi_pct": -15.4,
     "ci95": [
-     -32.3,
-     78.4
+     -30.6,
+     80.8
     ]
    },
    "reachable": {
@@ -636,23 +636,23 @@
      212.2
     ]
    },
-   "reachability_pct": 36.0
+   "reachability_pct": 35.6
   },
   "STANDARD|sports": {
    "all": {
-    "n": 202,
-    "markets": 185,
-    "cost": 3154.28,
-    "pnl": 357.39,
-    "roi_pct": 11.3,
-    "win_pct": 53.0,
-    "avg_win": 17.02,
+    "n": 204,
+    "markets": 187,
+    "cost": 3172.28,
+    "pnl": 387.63,
+    "roi_pct": 12.2,
+    "win_pct": 53.4,
+    "avg_win": 16.98,
     "avg_loss": -15.41,
-    "ex_top3_pnl": 66.18,
-    "ex_top3_roi_pct": 2.1,
+    "ex_top3_pnl": 96.42,
+    "ex_top3_roi_pct": 3.0,
     "ci95": [
-     -8.1,
-     31.4
+     -6.7,
+     31.2
     ]
    },
    "reachable": {
@@ -671,7 +671,7 @@
      76.1
     ]
    },
-   "reachability_pct": 24.8
+   "reachability_pct": 24.5
   },
   "STANDARD|esports": {
    "all": {
@@ -710,43 +710,43 @@
   },
   "STANDARD|other": {
    "all": {
-    "n": 53,
-    "markets": 52,
-    "cost": 628.12,
-    "pnl": -112.52,
-    "roi_pct": -17.9,
-    "win_pct": 37.7,
-    "avg_win": 14.17,
-    "avg_loss": -12.0,
-    "ex_top3_pnl": -219.58,
-    "ex_top3_roi_pct": -35.0,
+    "n": 55,
+    "markets": 54,
+    "cost": 646.12,
+    "pnl": -107.74,
+    "roi_pct": -16.7,
+    "win_pct": 38.2,
+    "avg_win": 14.16,
+    "avg_loss": -11.91,
+    "ex_top3_pnl": -214.8,
+    "ex_top3_roi_pct": -33.2,
     "ci95": [
-     -49.4,
-     18.2
+     -48.9,
+     20.0
     ]
    },
    "reachable": {
-    "n": 13,
-    "markets": 13,
-    "cost": 180.0,
-    "pnl": 24.75,
-    "roi_pct": 13.8,
-    "win_pct": 46.2,
+    "n": 14,
+    "markets": 14,
+    "cost": 189.0,
+    "pnl": 15.75,
+    "roi_pct": 8.3,
+    "win_pct": 42.9,
     "avg_win": 19.12,
-    "avg_loss": -12.86,
-    "ex_top3_pnl": -59.03,
-    "ex_top3_roi_pct": -32.8,
+    "avg_loss": -12.38,
+    "ex_top3_pnl": -68.03,
+    "ex_top3_roi_pct": -36.0,
     "ci95": [
-     -53.6,
-     85.4
+     -56.8,
+     77.5
     ]
    },
-   "reachability_pct": 24.5
+   "reachability_pct": 25.5
   }
  },
  "item2_rule": {
   "basis": "tol 0 at the booked price (LEGACY arm; the pre-registered basis proposed in drafts/profit-item2-question-gate-basis-20261123.md is the tick-aligned arm B), read this verdict only beside execution_model_arms",
-  "reachability_pct": 36.0,
+  "reachability_pct": 35.6,
   "reachable_roi_pct": 74.7,
   "reachable_n": 32,
   "reachable_ci95": [

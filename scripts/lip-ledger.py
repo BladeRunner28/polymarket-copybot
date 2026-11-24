@@ -104,6 +104,8 @@ TAPE_FAMILIES = os.path.join(DATA, "kalshi-tape-families.json")
 OUT_JSON = os.path.join(DATA, "lip-ledger.json")
 
 API = "https://api.elections.kalshi.com/trade-api/v2/incentive_programs"
+SCHED_API = "https://api.elections.kalshi.com/trade-api/v2/incentive_schedules"
+SCHED_FILE = os.path.join(DATA, "kalshi-lip-schedules.json")
 STATUSES = ["all", "active", "upcoming", "closed", "paid_out"]
 UNIT_DIVISOR = {"centi-cents": 10000.0, "mills": 1000.0, "cents": 100.0}
 KEEP_FIELDS = ("id", "market_id", "market_ticker", "incentive_type", "incentive_description",
@@ -252,6 +254,127 @@ def load_programs():
 def ceiling_of(prog, unit_divisor):
     """Hard upper bound on gross $/contract-hour, at 100% of the reward pool."""
     return (prog["period_reward"] / unit_divisor) / (2.0 * prog["_target"] * prog["_hours"])
+
+
+def fetch_schedules(max_pages=50):
+    """GET /incentive_schedules (new 2026-11-19) -> data/kalshi-lip-schedules.json.
+
+    The schedule feed states the recurring terms of a SERIES: `reward` per `window_days`
+    for every market the schedule covers, with `all_markets` saying whether later listings
+    are promised the same terms.  It is posted BEFORE the per-market program rows exist,
+    so it is the only forward-looking statement of what a family will pay.
+
+    SCALE, VERIFIED NOT ASSUMED (2026-11-24): reward is centi-cents like period_reward.
+    KXEOWEEK's schedule is reward=1,000,000, window_days=1, target_size_fp=1000.00 ->
+    $100 / (2*1000*24) = $0.002083/contract-hour, and the live programs in that event
+    carry period_reward=1,000,000 over a 24h window, i.e. exactly $0.002083.  So the
+    schedule value is PER MARKET.  The first draft of this function divided it by the
+    live market count and turned a $0.002 family into $0.0000002; the cross-check below
+    exists because that error is invisible in the schedule alone.
+    """
+    rows, cursor, pages = [], None, 0
+    while pages < max_pages:
+        q = f"{SCHED_API}?limit=500" + (f"&cursor={cursor}" if cursor else "")
+        body = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(q, timeout=45) as r:
+                    body = json.loads(r.read().decode())
+                break
+            except Exception as e:                       # noqa: BLE001 - network
+                if attempt == 2:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
+        if body is None:
+            raise RuntimeError("incentive_schedules fetch returned no body")
+        rows.extend(body.get("schedules") or [])
+        pages += 1
+        cursor = body.get("next_cursor")
+        if not cursor:
+            break
+    out = {"fetched_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+           "source": SCHED_API, "unit": "centi-cents", "paged": True, "rows": rows}
+    with open(SCHED_FILE, "w") as f:
+        json.dump(out, f)
+    print("wrote %s (%d schedules, %.1f MB)" % (SCHED_FILE, len(rows),
+                                                os.path.getsize(SCHED_FILE) / 1e6))
+    return out
+
+
+def read_schedules(programs, div, do_fetch=False):
+    """Does any recurring schedule promise a rate above the gate, and when?
+
+    This is the FORWARD half of the LIP question.  The program feed only shows windows
+    that are already open; a schedule shows a series' terms for as long as it runs, so
+    it answers "is a qualifying short-window family coming back" before the program row
+    exists  -- the exact reopening condition on the approved path (item 5).
+
+    Two numbers, because they answer different questions:
+      ceiling      $/contract-hour at 100% of the pool, PER MARKET, same formula as a program
+      window       hours per payout window; a schedule cannot pay above the gate at long
+                   windows no matter how large the pool (gate needs <= ~2-8h at these pools)
+    """
+    if do_fetch or not os.path.exists(SCHED_FILE):
+        payload = fetch_schedules()
+    else:
+        payload = json.load(open(SCHED_FILE))
+    live = [p for p in programs if set(p.get("_statuses") or []) & {"active", "upcoming"}]
+    live_prog_ceiling = collections.defaultdict(float)
+    for p in live:
+        k = p["market_ticker"].split("-")[0]
+        live_prog_ceiling[k] = max(live_prog_ceiling[k], ceiling_of(p, div))
+
+    srows, malformed = [], 0
+    for s in payload["rows"]:
+        try:
+            target = float(s["target_size_fp"])
+            wd = float(s["window_days"])
+            pool = float(s["reward"]) / div
+        except (TypeError, ValueError, KeyError):
+            malformed += 1
+            continue
+        if target <= 0 or wd <= 0:
+            malformed += 1
+            continue
+        hours = wd * 24.0
+        srows.append({"series": s.get("series_ticker"), "event": s.get("event_ticker"),
+                      "window_days": wd, "pool_usd": round(pool, 2), "target": target,
+                      "all_markets": bool(s.get("all_markets")), "ends": s.get("ends"),
+                      "ceiling": pool / (2.0 * target * hours)})
+
+    above = [r for r in srows if r["ceiling"] >= GATE_USD_PER_CONTRACT_HOUR]
+    short = [r for r in srows if r["window_days"] < 7]
+    print("\n--- E. RECURRING SCHEDULES (new 2026-11-19 endpoint; per-market ceiling) ---")
+    print("schedules %d (%d malformed/zero-window, skipped and counted) | above gate %d | "
+          "window mix %s" % (len(srows), malformed, len(above),
+                             ", ".join("%gd:%d" % (d, n) for d, n in
+                                       sorted(collections.Counter(r["window_days"] for r in srows).items()))))
+    if srows:
+        best = max(srows, key=lambda r: r["ceiling"])
+        print("best schedule ceiling %s (%gd, pool $%.0f) = $%.6f/ch  -> %.1fx BELOW gate"
+              % (best["series"], best["window_days"], best["pool_usd"], best["ceiling"],
+                 GATE_USD_PER_CONTRACT_HOUR / best["ceiling"] if best["ceiling"] else 0))
+        if short:
+            b2 = max(short, key=lambda r: r["ceiling"])
+            print("best <7d window %s (%gd) $%.6f/ch; no window of <=2h exists in the feed"
+                  % (b2["series"], b2["window_days"], b2["ceiling"]))
+    # CROSS-CHECK: schedule ceiling must equal the program ceiling it describes.
+    checks = []
+    for r in sorted(srows, key=lambda x: -x["ceiling"]):
+        c = live_prog_ceiling.get(r["series"])
+        if not c:
+            continue
+        checks.append({"series": r["series"], "schedule": r["ceiling"], "program": c,
+                       "ratio": r["ceiling"] / c})
+    ok = [x for x in checks if 0.8 <= x["ratio"] <= 1.25]
+    print("cross-check vs the live program ceiling it describes: %d/%d series within 25%%"
+          % (len(ok), len(checks)))
+    for x in checks[:4]:
+        print("   %-18s schedule $%.6f  program $%.6f  ratio %.2f"
+              % (x["series"], x["schedule"], x["program"], x["ratio"]))
+    print("VERDICT: schedules reopen the LIP lane? %s" % ("CHECK" if above else "NO"))
+    return {"schedules": srows, "malformed": malformed, "above_gate": len(above),
+            "cross_check": checks, "reopens": bool(above)}
 
 
 # ---------------------------------------------------------------- market data
@@ -547,6 +670,7 @@ def build(args):
     live_fam = collections.Counter(p["market_ticker"].split("-")[0] for p in live_above)
     print("live above-gate families: " + (", ".join("%s:%d" % (f, n) for f, n in live_fam.most_common(10))
                                           or "none"))
+    sched = read_schedules(programs, div, do_fetch=args.schedules) if args.schedules else None
 
     qt = quote_tickers()
     tf = tape_families()
@@ -731,6 +855,8 @@ def build(args):
         "gate": {"pch": GATE_USD_PER_CONTRACT_HOUR, "min_hours": GATE_MIN_PROGRAM_HOURS,
                  "hours_met": hours_met, "pch_met": pch_met, "verdict": verdict},
     }
+    if sched:
+        summary["schedules"] = sched
     return summary
 
 
@@ -741,6 +867,9 @@ def main():
     ap.add_argument("--unit", default="centi-cents", choices=sorted(UNIT_DIVISOR))
     ap.add_argument("--size", type=float, default=0.0)
     ap.add_argument("--placement", default="improve", choices=["improve", "join"])
+    ap.add_argument("--schedules", action="store_true",
+                    help="also read GET /incentive_schedules (new 2026-11-19) and score it "
+                         "PER MARKET, dividing the pool by the live market count")
     args = ap.parse_args()
     if args.fetch:
         fetch_programs(args.max_pages)
