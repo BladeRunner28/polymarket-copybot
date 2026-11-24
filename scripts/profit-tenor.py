@@ -230,6 +230,7 @@ def boot_pnl(legs, reps=2000, seed=13):
 def knife(legs, label, k_list=(1, 3, 10)):
     ci = boot_pnl(legs)
     print(f"\n  -- {label}: legs {len(legs)} / mkts {len({l['market'] for l in legs})} / "
+          f"risk ${sum(l['ntl'] for l in legs):.0f} / "
           f"PnL ${sum(l['pnl'] for l in legs):.2f} {fmt_ci(ci)} / ROI {roi(legs):+.1f}% / "
           f"$/1k cd {per1k(legs):+.2f} / hold {np.mean([l['days'] for l in legs]):.1f}d")
     s = sorted(legs, key=lambda l: -l["pnl"])
@@ -277,7 +278,14 @@ def selftest():
     fast = [dict(market="c", ntl=100, pnl=5, cd=100 * 3)]
     slow = [dict(market="d", ntl=100, pnl=20, cd=100 * 300)]
     assert per1k(fast) > 10 * per1k(slow)
-    print("selftest 9/9 OK")
+    # S20/S22 helpers: the family rule is a PORT of src/lib/event-family.ts and must match it
+    assert event_family("unl-nor-prt-2026-09-27-nor") == "unl-nor-prt-2026-09-27"
+    assert event_family("unl-nor-prt-2026-09-27-prt") == "unl-nor-prt-2026-09-27"
+    assert event_family("will-elon-musk-tweet-by-friday") == "will-elon-musk"
+    # a losing leg must gain when its risk is cut; a small leg must be untouched
+    assert abs(cap_delta(dict(ntl=100, pnl=-30), 25) - 22.5) < 1e-9
+    assert cap_delta(dict(ntl=20, pnl=-6), 25) == 0.0
+    print("selftest 13/13 OK")
 
 
 def table(title, legs, extra=None):
@@ -471,6 +479,294 @@ def sec_fill_basis(legs, days, cap=25.0):
         print(f"     0.80+ reached: {len(fav)} legs ROI {roi(fav):+.1f}% CI "
               f"[{boot_pnl(fav)[0]:+.0f},{boot_pnl(fav)[1]:+.0f}] ex-top-1 {roi(s[1:]):+.1f}%; "
               f"{sum(1 for l in fav if l['pnl'] < 0)} losses in the cell")
+
+
+def event_family(market_id):
+    """EXACT port of src/lib/event-family.ts (pre-registered family rule). Do not re-derive:
+    the EOD line and this read must agree, so the rule is copied, not approximated.
+
+      1. a slug carrying an ISO date -> family is everything up to and including the date
+         (unl-nor-prt-2026-09-27-nor + -prt are ONE family);
+      2. otherwise the first 3 dash tokens (will-<entity>-…, elon-musk-of-…).
+    """
+    import re as _re
+    m = _re.match(r"^(.*?-\d{4}-\d{2}-\d{2})(?:-|$)", market_id or "")
+    if m:
+        return m.group(1)
+    toks = (market_id or "").split("-")
+    return "-".join(toks[:3]) if len(toks) >= 3 else (market_id or "")
+
+
+def cap_delta(l, cap):
+    """Exact dollar PnL change from rescaling one leg's risk to min(ntl, cap).
+
+    PnL scales linearly in dollars at risk (entry and the realised exit are unchanged),
+    so this is exact on outcomes rather than a re-simulation. Fees scale the same way;
+    they are deliberately NOT netted here (profit-fee-net.py owns the fee law and a fee
+    is ~2-4% of notional against a 5-20% effect -- it changes levels, not the ranking).
+    """
+    if l["ntl"] <= cap:
+        return 0.0
+    return (cap - l["ntl"]) * (l["pnl"] / l["ntl"])
+
+
+def sec_clip_joint(legs, days, opens=None):
+    """S20-S22 -- is the defect the BAND, the CLIP or the TENOR, and does a joint rule flip
+    the ownable book?
+
+    WHY: two approved/backlogged cards price the same $25 field on different scopes --
+    profit-band-clip-rebalance (band-scoped, approved 2026-11-11) and profit-c200-clip-cap-25
+    (lane-wide, +$102.9 over 17.8d). Both cannot be right, and neither was priced on the
+    tape-reachable population. S20 puts every scope x cap x basis in one matrix.
+    """
+    import importlib.util as _iu
+    _s = _iu.spec_from_file_location("_pft2", os.path.join(HERE, "profit-fill-tape.py"))
+    if _s is None or _s.loader is None:
+        return
+    pf = _iu.module_from_spec(_s)
+    _s.loader.exec_module(pf)
+    tlegs = [l for l in pf.load("2026-09-01")
+             if l.get("status") != "open" and l.get("realizedPnl") is not None
+             and (l.get("rv") or 0) >= 68]
+    pf.classify(tlegs, workers=8)
+    tape = {l["id"]: l for l in tlegs}
+
+    def touch(leg, W):
+        t = tape.get(leg["id"])
+        if t is None:
+            return None
+        s = t.get("tape_series")
+        if not s:
+            return None
+        t0 = t["openedTs"] // 1000
+        sub = [p for t2, p in s if t2 <= t0 + W]
+        if not sub:
+            return None
+        return min(sub) <= t["trueP"] + 0.001
+
+    W5, W60 = 300, 3600
+    BASES = (("booked", lambda l: True),
+             ("touched 1h", lambda l: touch(l, W60) is True),
+             ("touched 5m", lambda l: touch(l, W5) is True))
+    SCOPES = (
+        ("lane-wide (all Kelly-path legs)", lambda l: not l["stair"]),
+        ("C-200 Kelly path (implementable)",
+         lambda l: l["bot"] == "BANKROLL_200" and not l["stair"]),
+        ("approved: px<0.20", lambda l: not l["stair"] and l["px"] < 0.20),
+        ("tenor: 2-24h Kelly path",
+         lambda l: (not l["stair"]) and l["ttr"] is not None and 2 <= l["ttr"] < 24),
+        ("2-24h C-200 Kelly path (impl.)",
+         lambda l: l["bot"] == "BANKROLL_200" and (not l["stair"])
+         and l["ttr"] is not None and 2 <= l["ttr"] < 24),
+        ("px<0.20 AND 2-24h",
+         lambda l: (not l["stair"]) and l["px"] < 0.20
+         and l["ttr"] is not None and 2 <= l["ttr"] < 24),
+        ("every leg, incl. the $10 lane", lambda l: True),
+    )
+
+    print("\n== S20. CAP SCOPE x CAP LEVEL x BASIS -- the two contradictory clip cards, one table ==")
+    print("   $/day in the cell's PnL over the %.1f-day window; (binds) = legs the cap resizes." % days)
+    for bname, bfn in BASES:
+        v = [l for l in legs if bfn(l)]
+        base = sum(l["pnl"] for l in v)
+        print(f"\n  basis {bname}: n={len(v)} notional ${sum(l['ntl'] for l in v):.0f} "
+              f"PnL ${base:+.1f} ROI {roi(v):+.1f}%")
+        print(f"    {'scope':<34}" + "".join(f"{('$'+str(c)):>16}" for c in (10, 20, 25, 40)))
+        for label, sel in SCOPES:
+            cells = []
+            for c in (10, 20, 25, 40):
+                d = [cap_delta(l, c) for l in v if sel(l)]
+                nb = sum(1 for l in v if sel(l) and l["ntl"] > c)
+                cells.append(f"{(sum(d)/days):>+9.2f}({nb:>2})")
+            print(f"    {label:<34}" + "".join(f"{x:>16}" for x in cells))
+
+    # ---- concentration of the CAP DELTA itself: is the recommendation one leg wide? ----
+    print("\n   DELTA CONCENTRATION -- a $-of-day figure one leg wide is not a rule, it is a leg:")
+    for lab, sel, c in (("$10 on px<0.20", lambda l: not l["stair"] and l["px"] < 0.20, 10.0),
+                        ("$25 on px<0.20 (approved)", lambda l: not l["stair"] and l["px"] < 0.20, 25.0),
+                        ("$10 on 2-24h Kelly path",
+                         lambda l: (not l["stair"]) and l["ttr"] is not None and 2 <= l["ttr"] < 24, 10.0)):
+        for bname, bfn in BASES:
+            v = [l for l in legs if bfn(l)]
+            pairs = sorted(((cap_delta(l, c), l) for l in v if sel(l)), key=lambda x: -x[0])
+            d = [p[0] for p in pairs]
+            if not d:
+                continue
+            k = len(pairs)
+            print(f"    {lab:<26}{bname:<12}total ${sum(d):>+8.2f}  top-1 ${d[0]:>+7.2f} "
+                  f"({d[0]/max(sum(d),1e-9):>5.0%})  ex-top-1 ${sum(d[1:]):>+8.2f}  "
+                  f"ex-top-3 ${sum(d[min(3, k):]):>+8.2f}  ex-top-5 ${sum(d[min(5, k):]):>+8.2f}")
+
+    print("\n  the same three rules with a market-clustered CI on the delta (dollars):")
+    print(f"    {'rule':<42}{'basis':<12}{'binds':>6}{'delta $':>10}{'$/day':>8}   CI")
+    HEAD = (
+        ("approved $25, px<0.20", lambda l: not l["stair"] and l["px"] < 0.20, 25),
+        ("$10, px<0.20 (same field, level fix)", lambda l: not l["stair"] and l["px"] < 0.20, 10),
+        ("C-200 Kelly path, $10 (impl.)",
+         lambda l: l["bot"] == "BANKROLL_200" and not l["stair"], 10),
+        ("C-200 Kelly path, $25 (impl.)",
+         lambda l: l["bot"] == "BANKROLL_200" and not l["stair"], 25),
+        ("$10, 2-24h Kelly path", lambda l: (not l["stair"]) and l["ttr"] is not None and 2 <= l["ttr"] < 24, 10),
+        ("$10, 2-24h C-200 Kelly (impl.)",
+         lambda l: l["bot"] == "BANKROLL_200" and (not l["stair"])
+         and l["ttr"] is not None and 2 <= l["ttr"] < 24, 10),
+        ("$25, 2-24h C-200 Kelly (impl.)",
+         lambda l: l["bot"] == "BANKROLL_200" and (not l["stair"])
+         and l["ttr"] is not None and 2 <= l["ttr"] < 24, 25),
+        ("$10, px<0.20 AND 2-24h", lambda l: (not l["stair"]) and l["px"] < 0.20 and l["ttr"] is not None and 2 <= l["ttr"] < 24, 10),
+        ("$10, lane-wide Kelly-path", lambda l: not l["stair"], 10),
+    )
+    for label, sel, c in HEAD:
+        for bname, bfn in BASES:
+            v = [l for l in legs if bfn(l)]
+            d = [cap_delta(l, c) if sel(l) else 0.0 for l in v]
+            lo, hi = boot_delta(v, d)
+            nb = sum(1 for l in v if sel(l) and l["ntl"] > c)
+            print(f"    {label:<42}{bname:<12}{nb:>6}{sum(d):>+10.2f}"
+                  f"{(sum(d)/days):>+8.2f}   [{lo:+.0f},{hi:+.0f}]")
+
+    # ---- S21: the joint rule, and does either loss belong to the current regime? ----
+    print("\n== S21. THE JOINT RULE -- the two caps are substitutes, so the LEVEL and the ORDER matter ==")
+
+    def mp24(l):
+        return (not l["stair"]) and l["ttr"] is not None and 2 <= l["ttr"] < 24
+
+    def apply_pair(l, cheap_cap, mp_cap):
+        s = l["ntl"]
+        if cheap_cap and (not l["stair"]) and l["px"] < 0.20:
+            s = min(s, cheap_cap)
+        if mp_cap and mp24(l):
+            s = min(s, mp_cap)
+        m = dict(l)
+        m["pnl"] = l["pnl"] * (s / l["ntl"])
+        m["ntl"] = s
+        m["cd"] = l["cd"] * (s / l["ntl"])
+        return m
+
+    CONFIGS = ((0, 0, "baseline (nothing shipped)"),
+               (25, 0, "approved $25 cheap only"),
+               (10, 0, "cheap only, but at $10"),
+               (0, 10, "tenor $10 only"),
+               (25, 10, "approved $25 cheap + tenor $10"),
+               (10, 10, "$10 cheap + $10 tenor"))
+    print(f"    {'rule':<32}{'basis':<12}{'n':>5}{'notional $':>12}{'PnL $':>10}{'ROI':>8}{'$/day':>8}   CI(PnL)")
+    store = {}
+    for cc, mc, lab in CONFIGS:
+        for bname, bfn in BASES:
+            v = [apply_pair(l, cc, mc) for l in legs if bfn(l)]
+            ci = boot_pnl(v)
+            store[(cc, mc, bname)] = (sum(l["pnl"] for l in v), roi(v), ci)
+            print(f"    {lab:<32}{bname:<12}{len(v):>5}{sum(l['ntl'] for l in v):>12.0f}"
+                  f"{sum(l['pnl'] for l in v):>+10.1f}{roi(v):>+7.1f}%"
+                  f"{(sum(l['pnl'] for l in v)/days):>+8.2f}   {fmt_ci(ci)}")
+
+    print("\n    MARGINAL: what each cap adds GIVEN the other is already shipped ($/day, and CI):")
+    print(f"    {'marginal':<40}{'booked':>22}{'touched 1h':>22}{'touched 5m':>22}")
+    for lab, a, b in (("approved $25 given tenor $10", (25, 10), (0, 10)),
+                      ("tenor $10 given approved $25", (25, 10), (25, 0)),
+                      ("tenor $10 given cheap $10", (10, 10), (10, 0)),
+                      ("cheap $10 given tenor $10", (10, 10), (0, 10))):
+        cells = []
+        for bname, _ in BASES:
+            d = (store[(a[0], a[1], bname)][0] - store[(b[0], b[1], bname)][0]) / days
+            cells.append(f"{d:>+21.2f}")
+        print(f"    {lab:<40}" + "".join(cells))
+    print("    (a pair is worth shipping only if BOTH marginals are positive on the basis you trust)")
+
+    ms_sorted = sorted(l["ms"] for l in legs)
+    mid = ms_sorted[len(ms_sorted) // 2]
+    last7 = max(ms_sorted) - 7 * 86_400_000
+    print("\n   RECENCY -- is either loss a live property or a history artefact?")
+    print(f"    {'cell':<40}{'half 1':>16}{'half 2':>16}{'last 7d':>16}")
+    for lab, sel in (
+        ("cheap $100 clips (px<0.20, >$25)", lambda l: (not l["stair"]) and l["px"] < 0.20 and l["ntl"] > 25),
+        ("main-path 2-24h (all)", mp24),
+        ("main-path 2-24h clips >=$60", lambda l: mp24(l) and l["ntl"] >= 60),
+        ("main-path clips $15-30", lambda l: (not l["stair"]) and 15 <= l["ntl"] < 30),
+    ):
+        cells = []
+        for sel2 in (lambda l: l["ms"] <= mid, lambda l: l["ms"] > mid, lambda l: l["ms"] >= last7):
+            v = [l for l in legs if sel(l) and sel2(l)]
+            cells.append(f"{len(v):>3} {roi(v):>+7.1f}%" if v else f"{'-':>12}")
+        print(f"    {lab:<40}" + "".join(f"{x:>16}" for x in cells))
+    print("    (cell = legs / ROI; half 1 + half 2 split at the median openedAt)")
+
+    # ---- S22: does the loss concentrate in EVENT FAMILIES, i.e. is a per-event cap better? ----
+    R = [l for l in legs if touch(l, W60) is True]
+    print("\n== S22. EVENT-FAMILY CONCENTRATION (touched 1h) -- is a per-event cap a better shape? ==")
+    fam = {}
+    for l in R:
+        fam.setdefault(event_family(l["market"]), []).append(l)
+    tot_nt = sum(l["ntl"] for l in R)
+    ranked = sorted(fam.items(), key=lambda kv: -sum(l["ntl"] for l in kv[1]))[:8]
+    print(f"    {'family':<34}{'legs':>6}{'notional $':>12}{'% ntl':>7}{'PnL $':>9}{'ROI':>8}")
+    for k, v in ranked:
+        nt = sum(l["ntl"] for l in v)
+        print(f"    {k[:34]:<34}{len(v):>6}{nt:>12.0f}{100*nt/tot_nt:>6.1f}%"
+              f"{sum(l['pnl'] for l in v):>+9.1f}{roi(v):>+7.1f}%")
+    print(f"    families in the reachable book: {len(fam)}; "
+          f"max legs in one family {max(len(v) for v in fam.values())}")
+
+    for cap in (25.0, 50.0):
+        d = []
+        nb = 0
+        for k, v in fam.items():
+            nt = sum(l["ntl"] for l in v)
+            if nt <= cap:
+                d.append(0.0)
+                continue
+            scale = cap / nt
+            nb += len(v)
+            d.append(sum(l["pnl"] * (scale - 1.0) for l in v))
+        # boot_delta needs one delta per leg; build leg-aligned deltas instead
+        dal = []
+        for l in R:
+            k = event_family(l["market"])
+            v = fam[k]
+            nt = sum(x["ntl"] for x in v)
+            s = min(1.0, cap / nt) if nt > 0 else 1.0
+            dal.append(l["pnl"] * (s - 1.0))
+        lo, hi = boot_delta(R, dal)
+        print(f"    per-EVENT cap ${cap:.0f} -> delta ${sum(dal):>+8.2f} "
+              f"({sum(dal)/days:+.2f}/day) CI [{lo:+.0f},{hi:+.0f}], "
+              f"resizes {sum(1 for l in R if sum(x['ntl'] for x in fam[event_family(l['market'])]) > cap)} legs")
+
+    cheap60 = [l for l in R if (not l["stair"]) and l["px"] < 0.20 and l["ntl"] > 25]
+    if cheap60:
+        f = {}
+        for l in cheap60:
+            f.setdefault(event_family(l["market"]), []).append(l)
+        print(f"    the approved cap's target class: {len(cheap60)} legs "
+              f"in {len(f)} families (max {max(len(v) for v in f.values())} legs/family), "
+              f"${sum(l['ntl'] for l in cheap60):.0f} notional, ${sum(l['pnl'] for l in cheap60):+.1f}")
+
+    # ---- S23: ladder arithmetic -- what flow/clip a rung actually requires ----
+    print("\n== S23. LADDER ARITHMETIC -- what rung 1 ($250/day) needs at the book's measured ROI ==")
+    print("   profit/day = notional/day x ROI; notional/day = legs/day x avg clip.")
+    v = [apply_pair(l, 0, 10) for l in legs]          # the recommended rule, booked
+    r = roi(v)
+    r1 = roi([apply_pair(l, 25, 0) for l in legs])     # approved $25, booked
+    nd = sum(l["ntl"] for l in v) / days
+    lpd = len(v) / days
+    print(f"    today (tenor $10 rule): {lpd:.1f} settled legs/day x ${nd/lpd:.2f} avg clip = "
+          f"${nd:.0f}/day of risk at {r:+.1f}% = ${nd*r/100:.2f}/day")
+    for target in (250.0, 500.0):
+        need_nt = target / (r / 100)
+        need_lpd10 = need_nt / 10.0
+        need_lpd25 = need_nt / 25.0
+        need_lpd100 = need_nt / 100.0
+        print(f"    ${target:.0f}/day at {r:+.1f}%: ${need_nt:,.0f}/day of risk -> "
+              f"{need_lpd10:,.0f} legs/day at $10, {need_lpd25:,.0f} at $25, "
+              f"{need_lpd100:,.0f} at $100  (today {lpd:.1f})")
+    print(f"    the approved $25 rule alone reads {r1:+.1f}%; the $100 tier it exempts is the "
+          f"tier that pays for the ladder and is measured at "
+          f"{roi([l for l in legs if (not l['stair']) and l['ntl'] >= 60]) + 0.0:+.1f}%")
+    # capacity: is the book actually short of cash to size into? (read-only, from BotBankroll)
+    print("\n    capacity check (BotBankroll vs open notional) -- is capital the binding constraint?")
+    for row in con().execute("select botId, cashBalance, principal from BotBankroll").fetchall():
+        ow = [l for l in (opens or []) if l["bot"] == row["botId"]]
+        print(f"      {row['botId']:<13} cash ${row['cashBalance']:>9.2f}  principal ${row['principal']:>9.2f}"
+              f"  open ${sum(l['ntl'] for l in ow):>8.2f}  ({len(ow)} legs)")
 
 
 def main():
@@ -721,6 +1017,7 @@ def main():
     print("    so the cap's measured value applies only to whatever the floor leaves behind.")
 
     sec_fill_basis(legs, days)
+    sec_clip_joint(legs, days, opens)
 
     print("\n== S8. the same tenor cap applied to today's open book ==")
     for cap_h, label in ((720, "30d"), (2160, "90d"), (4320, "180d"), (8760, "365d")):
