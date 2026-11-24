@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T11:40:11.124Z",
+  "generatedAt": "2026-11-23T11:40:15.639Z",
   "enforcement": {
     "form": "relative",
     "comparator": "price-only (entry_price)",
@@ -186,18 +186,18 @@
   "fitPopulation": {
     "label": "training_data.csv",
     "role": "the file the ML-1 fit actually uses — this is where the retired absolute form turns unreachable",
-    "provenance": "training_data.csv | boundary 2026-08-21T00:00:00.000Z | train n=2300 | test n=3226 | eras train [pre-kelly-v1-48:2300] test [exposure-v58plus:1403,pre-kelly-v1-48:979,kelly-window-v49-57:844] | eras on both sides: pre-kelly-v1-48 | purged 488 train rows labelled after the boundary",
+    "provenance": "training_data.csv | boundary 2026-08-21T00:00:00.000Z | train n=2300 | test n=3257 | eras train [pre-kelly-v1-48:2300] test [exposure-v58plus:1434,pre-kelly-v1-48:979,kelly-window-v49-57:844] | eras on both sides: pre-kelly-v1-48 | purged 488 train rows labelled after the boundary",
     "priceOnly": {
-      "auc": 0.7176035827313282,
-      "brier": 0.21698634921264903
+      "auc": 0.7170598516133655,
+      "brier": 0.21720144310715564
     },
     "inForceBar": {
       "form": "relative",
       "comparator": "price-only (entry_price)",
       "margin": 0.0005,
       "onThisPopulation": {
-        "auc": 0.7181035827313281,
-        "brier": 0.21748634921264903
+        "auc": 0.7175598516133654,
+        "brier": 0.21770144310715564
       }
     },
     "retiredAbsoluteBar": {
@@ -205,15 +205,15 @@
       "brier": 0.212,
       "measuredOn": "data/decision-dataset.csv 2026-09-13 (price 0.7285 / 0.2115)",
       "demandedMargin": {
-        "auc": 0.011396417268671799,
-        "brier": -0.004986349212649038
+        "auc": 0.011940148386634486,
+        "brier": -0.0052014431071556455
       }
     },
     "eras": [
       {
         "era": "exposure-v58plus",
-        "n": 1403,
-        "priceAuc": 0.6844099738670181
+        "n": 1434,
+        "priceAuc": 0.682123815921498
       },
       {
         "era": "kelly-window-v49-57",
@@ -229,11 +229,11 @@
     "arms": [
       {
         "arm": "entry_price",
-        "auc": 0.7176035827313282,
-        "brier": 0.21698634921264903,
+        "auc": 0.7170598516133655,
+        "brier": 0.21720144310715564,
         "comparatorHere": {
-          "auc": 0.7176035827313282,
-          "brier": 0.21698634921264903
+          "auc": 0.7170598516133655,
+          "brier": 0.21720144310715564
         },
         "inForce": {
           "auc": false,
@@ -248,11 +248,11 @@
       },
       {
         "arm": "detected_price",
-        "auc": 0.7032862401307045,
-        "brier": 0.22229074085555042,
+        "auc": 0.7027465399572249,
+        "brier": 0.22247590727663671,
         "comparatorHere": {
-          "auc": 0.7176035827313282,
-          "brier": 0.21698634921264903
+          "auc": 0.7170598516133655,
+          "brier": 0.21720144310715564
         },
         "inForce": {
           "auc": false,
@@ -267,11 +267,11 @@
       },
       {
         "arm": "copy_score",
-        "auc": 0.5303453307487372,
+        "auc": 0.532492732347646,
         "brier": null,
         "comparatorHere": {
-          "auc": 0.7176035827313282,
-          "brier": 0.21698634921264903
+          "auc": 0.7170598516133655,
+          "brier": 0.21720144310715564
         },
         "inForce": {
           "auc": false,
@@ -286,11 +286,11 @@
       },
       {
         "arm": "wallet_quality_score",
-        "auc": 0.509165225929009,
+        "auc": 0.5086823102216653,
         "brier": null,
         "comparatorHere": {
-          "auc": 0.7176035827313282,
-          "brier": 0.21698634921264903
+          "auc": 0.7170598516133655,
+          "brier": 0.21720144310715564
         },
         "inForce": {
           "auc": false,
@@ -305,11 +305,11 @@
       },
       {
         "arm": "entry_timing_score",
-        "auc": 0.5441331416230565,
+        "auc": 0.5439807298597995,
         "brier": null,
         "comparatorHere": {
-          "auc": 0.7176035827313282,
-          "brier": 0.21698634921264903
+          "auc": 0.7170598516133655,
+          "brier": 0.21720144310715564
         },
         "inForce": {
           "auc": false,
@@ -324,11 +324,11 @@
       },
       {
         "arm": "thesis_score",
-        "auc": 0.48620811431210353,
+        "auc": 0.4869003138772144,
         "brier": null,
         "comparatorHere": {
-          "auc": 0.7176035827313282,
-          "brier": 0.21698634921264903
+          "auc": 0.7170598516133655,
+          "brier": 0.21720144310715564
         },
         "inForce": {
           "auc": false,

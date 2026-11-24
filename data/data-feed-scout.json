@@ -1,31 +1,31 @@
 {
-  "generated_at": "2026-11-16T07:01:46",
-  "date": "2026-11-16",
+  "generated_at": "2026-11-23T07:00:44",
+  "date": "2026-11-23",
   "sources": [
     {
       "source": "reddit:r/datasets new",
-      "status": "HTTP 200 58766B",
+      "status": "STALE cache (168.0h old) after HTTP 404",
       "url": "https://www.reddit.com/r/datasets/new/.rss",
       "entries": 25,
       "ok": true
     },
     {
       "source": "reddit:r/datasets top/week",
-      "status": "STALE cache (424.1h old) after HTTP 429",
+      "status": "STALE cache (592.1h old) after HTTP 429",
       "url": "https://www.reddit.com/r/datasets/top/.rss?t=week",
       "entries": 21,
       "ok": true
     },
     {
       "source": "reddit:r/datasets search: prediction",
-      "status": "STALE cache (168.0h old) after HTTP 403",
+      "status": "STALE cache (336.0h old) after HTTP 429",
       "url": "https://www.reddit.com/r/datasets/search.rss?q=prediction&restrict_sr=1&sort=new&t=year",
       "entries": 25,
       "ok": true
     },
     {
       "source": "reddit:r/datasets search: sports",
-      "status": "STALE cache (336.0h old) after HTTP 429",
+      "status": "STALE cache (504.0h old) after HTTP 429",
       "url": "https://www.reddit.com/r/datasets/search.rss?q=sports&restrict_sr=1&sort=new&t=year",
       "entries": 16,
       "ok": true
@@ -46,7 +46,7 @@
     },
     {
       "source": "hf:injury",
-      "status": "HTTP 200 14809B",
+      "status": "HTTP 200 14254B",
       "url": "https://huggingface.co/api/datasets?search=injury&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
@@ -60,56 +60,56 @@
     },
     {
       "source": "hf:prediction market",
-      "status": "HTTP 200 14989B",
+      "status": "HTTP 200 14815B",
       "url": "https://huggingface.co/api/datasets?search=prediction%20market&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:news headlines",
-      "status": "HTTP 200 12225B",
+      "status": "HTTP 200 12100B",
       "url": "https://huggingface.co/api/datasets?search=news%20headlines&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:event dataset",
-      "status": "HTTP 200 8241B",
+      "status": "HTTP 200 7045B",
       "url": "https://huggingface.co/api/datasets?search=event%20dataset&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:polling",
-      "status": "HTTP 200 2723B",
+      "status": "HTTP 200 4012B",
       "url": "https://huggingface.co/api/datasets?search=polling&limit=12&sort=downloads&direction=-1",
-      "entries": 2,
+      "entries": 3,
       "ok": true
     },
     {
       "source": "hf:weather forecast",
-      "status": "HTTP 200 11081B",
+      "status": "HTTP 200 10925B",
       "url": "https://huggingface.co/api/datasets?search=weather%20forecast&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "hf:macro economic",
-      "status": "HTTP 200 11824B",
+      "status": "HTTP 200 12862B",
       "url": "https://huggingface.co/api/datasets?search=macro%20economic&limit=12&sort=downloads&direction=-1",
       "entries": 12,
       "ok": true
     },
     {
       "source": "arxiv:arXiv q-fin.TR",
-      "status": "HTTP 200 5661B",
+      "status": "HTTP 200 904B",
       "url": "https://rss.arxiv.org/rss/q-fin.TR",
-      "entries": 2,
+      "entries": 0,
       "ok": true
     },
     {
       "source": "arxiv:arXiv stat.ML",
-      "status": "HTTP 200 104761B",
+      "status": "HTTP 200 108064B",
       "url": "https://rss.arxiv.org/rss/stat.ML",
       "entries": 50,
       "ok": true
@@ -117,10 +117,10 @@
   ],
   "sources_failed": 0,
   "counts": {
-    "total": 95,
+    "total": 92,
     "eligible": 8,
-    "review": 26,
-    "ideas_only": 61
+    "review": 30,
+    "ideas_only": 54
   },
   "candidates": [
     {
@@ -189,7 +189,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 84,
+      "downloads": 90,
       "gated": false,
       "tags": [
         "task_categories:text-classification",
@@ -217,7 +217,7 @@
       "licence": "cc-by-sa-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 9,
+      "downloads": 11,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -236,7 +236,7 @@
       "source": "huggingface",
       "title": "openthomas/weather-forecasts",
       "url": "https://huggingface.co/datasets/openthomas/weather-forecasts",
-      "date": "2026-11-16",
+      "date": "2026-11-23",
       "relevance": 5,
       "hits": [
         "forecasts",
@@ -245,7 +245,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 1341,
+      "downloads": 1948,
       "gated": false,
       "tags": [
         "license:mit",
@@ -280,7 +280,7 @@
       "source": "huggingface",
       "title": "iiiitips/prediction-market-pro-stats",
       "url": "https://huggingface.co/datasets/iiiitips/prediction-market-pro-stats",
-      "date": "2026-11-16",
+      "date": "2026-11-23",
       "relevance": 4,
       "hits": [
         "sports"
@@ -288,7 +288,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "eligible",
-      "downloads": 179,
+      "downloads": 196,
       "gated": false,
       "tags": [
         "language:en",
@@ -305,65 +305,9 @@
     },
     {
       "source": "huggingface",
-      "title": "paperswithbacktest/PredictionMarkets-Daily-Markets",
-      "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Daily-Markets",
-      "date": "2026-11-16",
-      "relevance": 6,
-      "hits": [
-        "event",
-        "forecasting"
-      ],
-      "licence": "other",
-      "licence_class": "other",
-      "status": "review",
-      "downloads": 2318,
-      "gated": "manual",
-      "tags": [
-        "task_categories:time-series-forecasting",
-        "task_categories:tabular-classification",
-        "language:en",
-        "license:other",
-        "size_categories:1M<n<10M",
-        "format:parquet",
-        "modality:text",
-        "library:datasets"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
-      "title": "paperswithbacktest/PredictionMarkets-Daily-Price",
-      "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Daily-Price",
-      "date": "2026-11-16",
-      "relevance": 6,
-      "hits": [
-        "event",
-        "forecasting"
-      ],
-      "licence": "other",
-      "licence_class": "other",
-      "status": "review",
-      "downloads": 2296,
-      "gated": "manual",
-      "tags": [
-        "task_categories:time-series-forecasting",
-        "task_categories:tabular-regression",
-        "language:en",
-        "license:other",
-        "size_categories:10M<n<100M",
-        "format:parquet",
-        "modality:tabular",
-        "modality:text"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
       "title": "paperswithbacktest/PredictionMarkets-Daily-Trades",
       "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Daily-Trades",
-      "date": "2026-11-16",
+      "date": "2026-11-23",
       "relevance": 6,
       "hits": [
         "event",
@@ -372,7 +316,7 @@
       "licence": "other",
       "licence_class": "other",
       "status": "review",
-      "downloads": 1935,
+      "downloads": 14261,
       "gated": "manual",
       "tags": [
         "task_categories:time-series-forecasting",
@@ -389,9 +333,9 @@
     },
     {
       "source": "huggingface",
-      "title": "paperswithbacktest/PredictionMarkets-Hourly-Price",
-      "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Hourly-Price",
-      "date": "2026-11-16",
+      "title": "paperswithbacktest/PredictionMarkets-Daily-Markets",
+      "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Daily-Markets",
+      "date": "2026-11-23",
       "relevance": 6,
       "hits": [
         "event",
@@ -400,7 +344,63 @@
       "licence": "other",
       "licence_class": "other",
       "status": "review",
-      "downloads": 1651,
+      "downloads": 12295,
+      "gated": "manual",
+      "tags": [
+        "task_categories:time-series-forecasting",
+        "task_categories:tabular-classification",
+        "language:en",
+        "license:other",
+        "size_categories:1M<n<10M",
+        "format:parquet",
+        "modality:text",
+        "library:datasets"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "paperswithbacktest/PredictionMarkets-Hourly-Price",
+      "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Hourly-Price",
+      "date": "2026-11-23",
+      "relevance": 6,
+      "hits": [
+        "event",
+        "forecasting"
+      ],
+      "licence": "other",
+      "licence_class": "other",
+      "status": "review",
+      "downloads": 10091,
+      "gated": "manual",
+      "tags": [
+        "task_categories:time-series-forecasting",
+        "task_categories:tabular-regression",
+        "language:en",
+        "license:other",
+        "size_categories:10M<n<100M",
+        "format:parquet",
+        "modality:tabular",
+        "modality:text"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "paperswithbacktest/PredictionMarkets-Daily-Price",
+      "url": "https://huggingface.co/datasets/paperswithbacktest/PredictionMarkets-Daily-Price",
+      "date": "2026-11-23",
+      "relevance": 6,
+      "hits": [
+        "event",
+        "forecasting"
+      ],
+      "licence": "other",
+      "licence_class": "other",
+      "status": "review",
+      "downloads": 9199,
       "gated": "manual",
       "tags": [
         "task_categories:time-series-forecasting",
@@ -429,7 +429,7 @@
       "licence": "other",
       "licence_class": "other",
       "status": "review",
-      "downloads": 325,
+      "downloads": 290,
       "gated": false,
       "tags": [
         "license:other",
@@ -488,7 +488,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 505,
+      "downloads": 478,
       "gated": false,
       "tags": [
         "license:cc-by-4.0",
@@ -514,7 +514,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 260,
+      "downloads": 258,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -531,6 +531,33 @@
     },
     {
       "source": "huggingface",
+      "title": "lowskillcoding/pdata-prediction-markets",
+      "url": "https://huggingface.co/datasets/lowskillcoding/pdata-prediction-markets",
+      "date": "2026-10-07",
+      "relevance": 3,
+      "hits": [
+        "forecasting"
+      ],
+      "licence": "cc-by-4.0",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 120,
+      "gated": false,
+      "tags": [
+        "language:en",
+        "license:cc-by-4.0",
+        "size_categories:100K<n<1M",
+        "format:parquet",
+        "modality:tabular",
+        "modality:text",
+        "library:datasets",
+        "library:pandas"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "thomaswmitch/kalshi-prediction-markets-betting",
       "url": "https://huggingface.co/datasets/thomaswmitch/kalshi-prediction-markets-betting",
       "date": "2025-09-19",
@@ -541,7 +568,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 97,
+      "downloads": 114,
       "gated": false,
       "tags": [
         "task_categories:other",
@@ -568,7 +595,7 @@
       "licence": "apache-2.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 436,
+      "downloads": 496,
       "gated": false,
       "tags": [
         "language:en",
@@ -595,7 +622,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 109,
+      "downloads": 124,
       "gated": false,
       "tags": [
         "task_categories:text-classification",
@@ -622,7 +649,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 95,
+      "downloads": 99,
       "gated": false,
       "tags": [
         "license:mit",
@@ -649,7 +676,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 581,
+      "downloads": 666,
       "gated": "auto",
       "tags": [
         "task_categories:audio-classification",
@@ -676,40 +703,13 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 505,
+      "downloads": 387,
       "gated": false,
       "tags": [
         "license:mit",
         "arxiv:2403.16425",
         "region:us",
         "robotics"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
-      "title": "labofsahil/github-event-dataset-2019",
-      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2019",
-      "date": "2025-02-16",
-      "relevance": 3,
-      "hits": [
-        "event"
-      ],
-      "licence": "mit",
-      "licence_class": "permissive",
-      "status": "review",
-      "downloads": 294,
-      "gated": false,
-      "tags": [
-        "license:mit",
-        "size_categories:100M<n<1B",
-        "format:parquet",
-        "modality:text",
-        "library:datasets",
-        "library:dask",
-        "library:mlcroissant",
-        "library:polars"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -726,11 +726,65 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 219,
+      "downloads": 312,
       "gated": false,
       "tags": [
         "license:mit",
         "size_categories:100M<n<1B",
+        "format:parquet",
+        "modality:text",
+        "library:datasets",
+        "library:dask",
+        "library:mlcroissant",
+        "library:polars"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "labofsahil/github-event-dataset-2015",
+      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2015",
+      "date": "2025-01-19",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": "mit",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 276,
+      "gated": false,
+      "tags": [
+        "license:mit",
+        "size_categories:100M<n<1B",
+        "format:parquet",
+        "modality:text",
+        "library:datasets",
+        "library:dask",
+        "library:mlcroissant",
+        "library:polars"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "labofsahil/github-event-dataset-2013",
+      "url": "https://huggingface.co/datasets/labofsahil/github-event-dataset-2013",
+      "date": "2025-01-19",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": "mit",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 241,
+      "gated": false,
+      "tags": [
+        "license:mit",
+        "size_categories:10M<n<100M",
         "format:parquet",
         "modality:text",
         "library:datasets",
@@ -753,7 +807,7 @@
       "licence": "apache-2.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 22,
+      "downloads": 28,
       "gated": false,
       "tags": [
         "license:apache-2.0",
@@ -830,7 +884,7 @@
       "licence": "mit",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 211,
+      "downloads": 264,
       "gated": false,
       "tags": [
         "task_categories:text-classification",
@@ -847,9 +901,36 @@
     },
     {
       "source": "huggingface",
+      "title": "therajasekhar/india-public-polling-stations",
+      "url": "https://huggingface.co/datasets/therajasekhar/india-public-polling-stations",
+      "date": "2026-11-19",
+      "relevance": 2,
+      "hits": [
+        "polling"
+      ],
+      "licence": "other",
+      "licence_class": "other",
+      "status": "review",
+      "downloads": 45,
+      "gated": false,
+      "tags": [
+        "license:other",
+        "size_categories:100K<n<1M",
+        "format:parquet",
+        "modality:tabular",
+        "modality:text",
+        "library:datasets",
+        "library:pandas",
+        "library:polars"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "jniimi/weather_forecast_japan",
       "url": "https://huggingface.co/datasets/jniimi/weather_forecast_japan",
-      "date": "2026-11-16",
+      "date": "2026-11-23",
       "relevance": 2,
       "hits": [
         "climate"
@@ -857,7 +938,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 6427,
+      "downloads": 6288,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -886,7 +967,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 202,
+      "downloads": 210,
       "gated": "auto",
       "tags": [
         "task_categories:time-series-forecasting",
@@ -913,7 +994,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 30,
+      "downloads": 47,
       "gated": false,
       "tags": [
         "language:en",
@@ -930,6 +1011,33 @@
     },
     {
       "source": "huggingface",
+      "title": "electricsheepafrica/africa-rwanda-macro-economic-aggregates-gdp-national-accounts-2025-b364465a",
+      "url": "https://huggingface.co/datasets/electricsheepafrica/africa-rwanda-macro-economic-aggregates-gdp-national-accounts-2025-b364465a",
+      "date": "2026-08-11",
+      "relevance": 2,
+      "hits": [
+        "macro"
+      ],
+      "licence": "cc-by-4.0",
+      "licence_class": "permissive",
+      "status": "review",
+      "downloads": 28,
+      "gated": false,
+      "tags": [
+        "task_categories:tabular-classification",
+        "task_categories:tabular-regression",
+        "multilinguality:multilingual",
+        "language:en",
+        "license:cc-by-4.0",
+        "size_categories:n<1K",
+        "format:parquet",
+        "modality:tabular"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
       "title": "mktgap/prediction-market-reference-data",
       "url": "https://huggingface.co/datasets/mktgap/prediction-market-reference-data",
       "date": "2026-10-29",
@@ -940,7 +1048,7 @@
       "licence": "cc-by-4.0",
       "licence_class": "permissive",
       "status": "review",
-      "downloads": 113,
+      "downloads": 122,
       "gated": false,
       "tags": [
         "language:en",
@@ -1048,7 +1156,7 @@
       "licence": "cc-by-nc-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 271,
+      "downloads": 416,
       "gated": false,
       "tags": [
         "language:en",
@@ -1076,7 +1184,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 110,
+      "downloads": 113,
       "gated": false,
       "tags": [
         "size_categories:n<1K",
@@ -1091,13 +1199,12 @@
     },
     {
       "source": "arxiv:arXiv stat.ML",
-      "title": "High-Dimensional Online Calibration from Harmonic Weights",
-      "url": "https://arxiv.org/abs/2610.07740",
-      "date": "Mon, 16 Nov 2026",
+      "title": "AECSF: Adaptive Ensemble Conditional Score Filtering for High-Dimensional Nonlinear Data Assimilation",
+      "url": "https://arxiv.org/abs/2609.32411",
+      "date": "Mon, 23 Nov 2026",
       "relevance": 7,
       "hits": [
         "forecast",
-        "forecasts",
         "yield"
       ],
       "licence": null,
@@ -1138,7 +1245,7 @@
       "licence": "cc-by-nc-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 334,
+      "downloads": 421,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -1174,7 +1281,7 @@
       "source": "huggingface",
       "title": "nuuuwan/lk-dmc-weather-forecasts-chunks",
       "url": "https://huggingface.co/datasets/nuuuwan/lk-dmc-weather-forecasts-chunks",
-      "date": "2026-11-16",
+      "date": "2026-11-23",
       "relevance": 5,
       "hits": [
         "forecasts",
@@ -1183,7 +1290,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 2068,
+      "downloads": 1961,
       "gated": false,
       "tags": [
         "region:us"
@@ -1195,7 +1302,7 @@
       "source": "huggingface",
       "title": "nuuuwan/lk-dmc-weather-forecasts-docs",
       "url": "https://huggingface.co/datasets/nuuuwan/lk-dmc-weather-forecasts-docs",
-      "date": "2026-11-16",
+      "date": "2026-11-23",
       "relevance": 5,
       "hits": [
         "forecasts",
@@ -1204,17 +1311,35 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 1779,
+      "downloads": 1805,
       "gated": false,
       "tags": [
-        "size_categories:1K<n<10K",
-        "format:parquet",
-        "modality:text",
-        "library:datasets",
-        "library:pandas",
-        "library:polars",
-        "library:mlcroissant",
         "region:us"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "FINAL-Bench/Weather-Model-Forecast-Archive",
+      "url": "https://huggingface.co/datasets/FINAL-Bench/Weather-Model-Forecast-Archive",
+      "date": "2026-11-23",
+      "relevance": 5,
+      "hits": [
+        "forecast",
+        "weather"
+      ],
+      "licence": "cc-by-nc-4.0",
+      "licence_class": "copyleft",
+      "status": "ideas-only",
+      "downloads": 533,
+      "gated": false,
+      "tags": [
+        "license:cc-by-nc-4.0",
+        "region:us",
+        "weather",
+        "forecasting",
+        "benchmark"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -1232,35 +1357,10 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 423,
+      "downloads": 430,
       "gated": false,
       "tags": [
         "region:us"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
-      "title": "FINAL-Bench/Weather-Model-Forecast-Archive",
-      "url": "https://huggingface.co/datasets/FINAL-Bench/Weather-Model-Forecast-Archive",
-      "date": "2026-11-16",
-      "relevance": 5,
-      "hits": [
-        "forecast",
-        "weather"
-      ],
-      "licence": "cc-by-nc-4.0",
-      "licence_class": "copyleft",
-      "status": "ideas-only",
-      "downloads": 172,
-      "gated": false,
-      "tags": [
-        "license:cc-by-nc-4.0",
-        "region:us",
-        "weather",
-        "forecasting",
-        "benchmark"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -1278,7 +1378,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 139,
+      "downloads": 254,
       "gated": false,
       "tags": [
         "language:en",
@@ -1306,7 +1406,7 @@
       "licence": "cc-by-nc-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 113,
+      "downloads": 163,
       "gated": false,
       "tags": [
         "task_categories:tabular-regression",
@@ -1320,22 +1420,6 @@
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Adversarial Attacks on Downstream Weather Forecasting Models: Application to Tropical Cyclone Trajectory Prediction",
-      "url": "https://arxiv.org/abs/2510.10140",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 5,
-      "hits": [
-        "forecasting",
-        "weather"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1533,32 +1617,20 @@
       "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
-      "source": "huggingface",
-      "title": "flowfree/crypto-news-headlines",
-      "url": "https://huggingface.co/datasets/flowfree/crypto-news-headlines",
-      "date": "2023-04-05",
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Fast Training of Mixture-of-Experts for Time Series Forecasting via Expert Loss Integration",
+      "url": "https://arxiv.org/abs/2605.10330",
+      "date": "Mon, 23 Nov 2026",
       "relevance": 4,
       "hits": [
-        "crypto",
-        "news"
+        "forecasting",
+        "time series"
       ],
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 85,
-      "gated": false,
-      "tags": [
-        "size_categories:1K<n<10K",
-        "format:parquet",
-        "modality:text",
-        "library:datasets",
-        "library:pandas",
-        "library:mlcroissant",
-        "library:polars",
-        "region:us"
-      ],
       "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1604,7 +1676,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 581,
+      "downloads": 833,
       "gated": false,
       "tags": [
         "region:us"
@@ -1624,7 +1696,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 190,
+      "downloads": 218,
       "gated": false,
       "tags": [
         "size_categories:10M<n<100M",
@@ -1641,33 +1713,6 @@
     },
     {
       "source": "huggingface",
-      "title": "Yehor/news-headlines-ubercorpus",
-      "url": "https://huggingface.co/datasets/Yehor/news-headlines-ubercorpus",
-      "date": "2025-02-19",
-      "relevance": 3,
-      "hits": [
-        "news"
-      ],
-      "licence": "cc-by-nc-sa-4.0",
-      "licence_class": "copyleft",
-      "status": "ideas-only",
-      "downloads": 73,
-      "gated": false,
-      "tags": [
-        "language:uk",
-        "license:cc-by-nc-sa-4.0",
-        "size_categories:1M<n<10M",
-        "format:parquet",
-        "modality:text",
-        "library:datasets",
-        "library:pandas",
-        "library:mlcroissant"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
       "title": "yunfanlu/RGB-Event-ISP-Dataset",
       "url": "https://huggingface.co/datasets/yunfanlu/RGB-Event-ISP-Dataset",
       "date": "2026-04-27",
@@ -1678,7 +1723,7 @@
       "licence": "cc-by-nc-sa-4.0",
       "licence_class": "copyleft",
       "status": "ideas-only",
-      "downloads": 10924,
+      "downloads": 8119,
       "gated": false,
       "tags": [
         "license:cc-by-nc-sa-4.0",
@@ -1695,33 +1740,9 @@
     },
     {
       "source": "huggingface",
-      "title": "shiyi666777/RGB-Event-ISP-Dataset",
-      "url": "https://huggingface.co/datasets/shiyi666777/RGB-Event-ISP-Dataset",
-      "date": "2026-09-07",
-      "relevance": 3,
-      "hits": [
-        "event"
-      ],
-      "licence": "cc-by-nc-sa-4.0",
-      "licence_class": "copyleft",
-      "status": "ideas-only",
-      "downloads": 2044,
-      "gated": false,
-      "tags": [
-        "license:cc-by-nc-sa-4.0",
-        "size_categories:100B<n<1T",
-        "modality:image",
-        "region:us",
-        "event"
-      ],
-      "leak_flags": [],
-      "note": "licence read from the dataset card (never guessed)"
-    },
-    {
-      "source": "huggingface",
-      "title": "githubdata/github-event-dataset-2023",
-      "url": "https://huggingface.co/datasets/githubdata/github-event-dataset-2023",
-      "date": "2025-11-05",
+      "title": "githubdata/github-event-dataset-2021",
+      "url": "https://huggingface.co/datasets/githubdata/github-event-dataset-2021",
+      "date": "2025-11-04",
       "relevance": 3,
       "hits": [
         "event"
@@ -1729,10 +1750,10 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 752,
+      "downloads": 2081,
       "gated": false,
       "tags": [
-        "size_categories:1B<n<10B",
+        "size_categories:100M<n<1B",
         "format:parquet",
         "modality:text",
         "library:datasets",
@@ -1756,7 +1777,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 688,
+      "downloads": 2029,
       "gated": false,
       "tags": [
         "size_categories:1B<n<10B",
@@ -1767,6 +1788,30 @@
         "library:polars",
         "library:mlcroissant",
         "region:us"
+      ],
+      "leak_flags": [],
+      "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "huggingface",
+      "title": "shiyi666777/RGB-Event-ISP-Dataset",
+      "url": "https://huggingface.co/datasets/shiyi666777/RGB-Event-ISP-Dataset",
+      "date": "2026-09-07",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": "cc-by-nc-sa-4.0",
+      "licence_class": "copyleft",
+      "status": "ideas-only",
+      "downloads": 1889,
+      "gated": false,
+      "tags": [
+        "license:cc-by-nc-sa-4.0",
+        "size_categories:100B<n<1T",
+        "modality:image",
+        "region:us",
+        "event"
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
@@ -1783,7 +1828,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 343,
+      "downloads": 1773,
       "gated": false,
       "tags": [
         "size_categories:1B<n<10B",
@@ -1800,9 +1845,9 @@
     },
     {
       "source": "huggingface",
-      "title": "githubdata/github-event-dataset-2021",
-      "url": "https://huggingface.co/datasets/githubdata/github-event-dataset-2021",
-      "date": "2025-11-04",
+      "title": "githubdata/github-event-dataset-2023",
+      "url": "https://huggingface.co/datasets/githubdata/github-event-dataset-2023",
+      "date": "2025-11-05",
       "relevance": 3,
       "hits": [
         "event"
@@ -1810,10 +1855,10 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 300,
+      "downloads": 1130,
       "gated": false,
       "tags": [
-        "size_categories:100M<n<1B",
+        "size_categories:1B<n<10B",
         "format:parquet",
         "modality:text",
         "library:datasets",
@@ -1837,7 +1882,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 210,
+      "downloads": 869,
       "gated": false,
       "tags": [
         "size_categories:1B<n<10B",
@@ -1851,6 +1896,52 @@
       ],
       "leak_flags": [],
       "note": "licence read from the dataset card (never guessed)"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "On the loss landscape of the linear neural network: beyond critical points",
+      "url": "https://arxiv.org/abs/2611.26671",
+      "date": "Mon, 23 Nov 2026",
+      "relevance": 3,
+      "hits": [
+        "article"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "Efficient and Debiased Learning of Average Hazard Under Non-Proportional Hazards",
+      "url": "https://arxiv.org/abs/2602.13475",
+      "date": "Mon, 23 Nov 2026",
+      "relevance": 3,
+      "hits": [
+        "event"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
+    },
+    {
+      "source": "arxiv:arXiv stat.ML",
+      "title": "A Deep Zero-Inflated Model of North Atlantic Right Whale Presence To Support Blue Economy Management",
+      "url": "https://arxiv.org/abs/2606.14403",
+      "date": "Mon, 23 Nov 2026",
+      "relevance": 3,
+      "hits": [
+        "inflation",
+        "resolution"
+      ],
+      "licence": null,
+      "licence_class": "none",
+      "status": "ideas-only",
+      "leak_flags": [],
+      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
     },
     {
       "source": "reddit:r/datasets search: prediction",
@@ -1912,7 +2003,7 @@
       "licence": null,
       "licence_class": "none",
       "status": "ideas-only",
-      "downloads": 221,
+      "downloads": 180,
       "gated": false,
       "tags": [
         "arxiv:2603.21768",
@@ -1926,57 +2017,12 @@
     },
     {
       "source": "arxiv:arXiv stat.ML",
-      "title": "Elliptic Sampling: Optimal Interpolant Schedules for Gaussians and Beyond",
-      "url": "https://arxiv.org/abs/2611.18542",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 2,
-      "hits": [
-        "schedule"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Trajectory Density Ratios under Weak Support: A Survey across the Sciences",
-      "url": "https://arxiv.org/abs/2611.11985",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 2,
-      "hits": [
-        "climate"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Minimizing classical resources in variational measurement-based quantum computation for generative modeling",
-      "url": "https://arxiv.org/abs/2604.11578",
-      "date": "Mon, 16 Nov 2026",
+      "title": "Spectral Estimation with Deformed Decompression",
+      "url": "https://arxiv.org/abs/2611.26945",
+      "date": "Mon, 23 Nov 2026",
       "relevance": 2,
       "hits": [
         "yield"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Watch Your Step: Adam's Margin Maximization Bias Depends on the Learning Rate Schedule",
-      "url": "https://arxiv.org/abs/2611.01929",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 2,
-      "hits": [
-        "schedule"
       ],
       "licence": null,
       "licence_class": "none",
@@ -2050,25 +2096,10 @@
       "note": "Reddit post \u2014 a LEAD only. Verify at the primary host before believing anything."
     },
     {
-      "source": "arxiv:arXiv q-fin.TR",
-      "title": "Who Should Be on the Panel? Task-Conditioned Persona Selection for LLM Trading Agents",
-      "url": "https://arxiv.org/abs/2611.18150",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 1,
-      "hits": [
-        "panel"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
       "source": "arxiv:arXiv stat.ML",
-      "title": "Multifidelity Operator Inference for Dynamical Systems",
-      "url": "https://arxiv.org/abs/2611.17503",
-      "date": "Mon, 16 Nov 2026",
+      "title": "Deep Learning-based Approaches for State Space Models: A Selective Review",
+      "url": "https://arxiv.org/abs/2412.11211",
+      "date": "Mon, 23 Nov 2026",
       "relevance": 1,
       "hits": [
         "temporal"
@@ -2081,72 +2112,12 @@
     },
     {
       "source": "arxiv:arXiv stat.ML",
-      "title": "Mesh-Free Weak-Form Regression for Learning Interaction Kernels from Particle Trajectories",
-      "url": "https://arxiv.org/abs/2611.18455",
-      "date": "Mon, 16 Nov 2026",
+      "title": "Does This Gradient Spark Joy?",
+      "url": "https://arxiv.org/abs/2603.20526",
+      "date": "Mon, 23 Nov 2026",
       "relevance": 1,
       "hits": [
-        "resolution"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "SURFACE: Preference Distribution Matching on Pareto Fronts via Scalarization Steering",
-      "url": "https://arxiv.org/abs/2611.17484",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 1,
-      "hits": [
-        "resolution"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Dynamic bigraphical Mat\\'ern--Whittle processes: learning dependence graphs among spatial-temporal fields",
-      "url": "https://arxiv.org/abs/2611.18454",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 1,
-      "hits": [
-        "temporal"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Why Finite Intelligence Works in an Infinite World: A Mathematical Theory",
-      "url": "https://arxiv.org/abs/2611.18538",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 1,
-      "hits": [
-        "resolution"
-      ],
-      "licence": null,
-      "licence_class": "none",
-      "status": "ideas-only",
-      "leak_flags": [],
-      "note": "paper \u2014 dataset release terms live in the paper, mark unverified until read"
-    },
-    {
-      "source": "arxiv:arXiv stat.ML",
-      "title": "Nearly Optimal Fixed-Confidence Best-Arm Identification with 1-Bit Feedback",
-      "url": "https://arxiv.org/abs/2610.02771",
-      "date": "Mon, 16 Nov 2026",
-      "relevance": 1,
-      "hits": [
-        "resolution"
+        "surprise"
       ],
       "licence": null,
       "licence_class": "none",

@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-23T04:20:11.264Z",
+  "asOf": "2026-11-24T04:24:11.898Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,12 +12,12 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1763,
-    "inWindow": 1368,
+    "copiesSeen": 1784,
+    "inWindow": 1389,
     "withKalshiQuote": 2,
     "crossListRate": 0.001,
     "staleSkips": 395,
-    "quoteFailures": 1268,
+    "quoteFailures": 1289,
     "unverifiedMatches": 98,
     "rejectionReasons": {
       "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 1,
@@ -53,6 +53,359 @@
     ],
     "kalshiCum": [
       0.17
+    ]
+  },
+  "deterministic": {
+    "enabled": true,
+    "attempted": 1,
+    "resolved": 413,
+    "verdicts": {
+      "OTHER_CLASS": 206,
+      "NO_EVENT_MATCH": 166,
+      "EQUIV": 39,
+      "AMBIGUOUS_EVENT": 2
+    },
+    "equiv": 39,
+    "priced": 3,
+    "coverage": 0.094,
+    "fuzzyEquiv": 0,
+    "detOnlyEquiv": 39,
+    "book": {
+      "n": 1,
+      "pmPnl": -0.15,
+      "detPnl": -10.13,
+      "staked": 9.92,
+      "pmRoiPct": -1.49,
+      "detRoiPct": -102.03
+    },
+    "pairs": [
+      {
+        "question": "Oilers vs. Hurricanes",
+        "detTicker": "KXNHLGAME-26NOV21EDMCAR-CAR",
+        "detTitle": "Carolina wins",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.6113,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Thunder (-6.5)",
+        "detTicker": "KXNBASPREAD-26NOV20NOPOKC-OKC7",
+        "detTitle": "Oklahoma City wins by over 6.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.3354200000000001,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)",
+        "detTicker": "KXUFCFIGHT-26NOV21CANALI-ALI",
+        "detTitle": "Ikram Aliskerov wins",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.7313,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Pelicans vs. Spurs",
+        "detTicker": "KXNBAGAME-26NOV21NOPSAS-NOP",
+        "detTitle": "New Orleans wins",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.09444,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Nevada (-13.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV14",
+        "detTitle": "Nevada wins by over 13.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.6962999999999999,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Nevada (-14.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV15",
+        "detTitle": "Nevada wins by over 14.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.7263,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Iowa (-16.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21IOWAILL-IOWA17",
+        "detTitle": "Iowa wins by over 16.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.6713,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Iowa (-20.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21IOWAILL-IOWA21",
+        "detTitle": "Iowa wins by over 20.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.7613,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Tennessee (-16.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21LSUTENN-TENN17",
+        "detTitle": "Tennessee wins by over 16.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.13332,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: LSU (-14.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21LSUTENN-LSU15",
+        "detTitle": "LSU wins by over 14.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.15332,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Manchester City FC vs. Fulham FC: O/U 5.5",
+        "detTicker": "KXEPLTOTAL-26NOV21MCIFUL-6",
+        "detTitle": "Over 5.5 goals scored",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.13332,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Colorado (-17.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21COLOCIN-COLO18",
+        "detTitle": "Colorado wins by over 17.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.07443999999999999,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Iowa (-14.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21IOWAILL-IOWA15",
+        "detTitle": "Iowa wins by over 14.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.6213,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Spurs (-20.5)",
+        "detTicker": "KXNBASPREAD-26NOV21NOPSAS-SAS21",
+        "detTitle": "San Antonio wins by over 20.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.6113,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "UCLA vs. Michigan: O/U 41.5",
+        "detTicker": "KXNCAAFTOTAL-26NOV21UCLAMICH-42",
+        "detTitle": "Full Game: Over 41.5 points scored",
+        "ourSideIsYes": false,
+        "detEntry": null,
+        "pmEntry": 0.6363,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)",
+        "detTicker": "KXUFCFIGHT-26NOV21CANALI-ALI",
+        "detTitle": "Ikram Aliskerov wins",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.26042,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Trail Blazers (-2.5)",
+        "detTicker": "KXNBASPREAD-26NOV21PORNYK-POR3",
+        "detTitle": "Portland wins by over 2.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.6613,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Trail Blazers (-4.5)",
+        "detTicker": "KXNBASPREAD-26NOV21PORNYK-POR5",
+        "detTitle": "Portland wins by over 4.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.7112999999999999,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Knicks (-7.5)",
+        "detTicker": "KXNBASPREAD-26NOV21PORNYK-NYK8",
+        "detTitle": "New York wins by over 7.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.37042,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Knicks (-10.5)",
+        "detTicker": "KXNBASPREAD-26NOV21PORNYK-NYK11",
+        "detTitle": "New York wins by over 10.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.29042,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Knicks (-9.5)",
+        "detTicker": "KXNBASPREAD-26NOV21PORNYK-NYK10",
+        "detTitle": "New York wins by over 9.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.32042,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Thunder vs. Heat: O/U 222.5",
+        "detTicker": "KXNBATOTALPRECISE-26NOV22OKCMIA-223",
+        "detTitle": "Full Game: Over 222.5 points scored",
+        "ourSideIsYes": false,
+        "detEntry": null,
+        "pmEntry": 0.32542,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Pacers vs. Knicks",
+        "detTicker": "KXNBAGAME-26NOV22INDNYK-NYK",
+        "detTitle": "New York wins",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.7413,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Spread: Bulls (-1.5)",
+        "detTicker": "KXNBASPREAD-26NOV22DENCHI-CHI2",
+        "detTitle": "Chicago wins by over 1.5 points",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.7913,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Pistons vs. Hawks: O/U 233.5",
+        "detTicker": "KXNBATOTALPRECISE-26NOV22DETATL-234",
+        "detTitle": "Full Game: Over 233.5 points scored",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.34542,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Celtics vs. Warriors: O/U 205.5",
+        "detTicker": "KXNBATOTALPRECISE-26NOV22BOSGSW-206",
+        "detTitle": "Full Game: Over 205.5 points scored",
+        "ourSideIsYes": false,
+        "detEntry": null,
+        "pmEntry": 0.34542,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Celtics vs. Warriors",
+        "detTicker": "KXNBAGAME-26NOV22BOSGSW-GSW",
+        "detTitle": "Golden State wins",
+        "ourSideIsYes": true,
+        "detEntry": null,
+        "pmEntry": 0.25042,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
+      },
+      {
+        "question": "Brentford FC vs. Everton FC: O/U 3.5",
+        "detTicker": "KXEPLTOTAL-26NOV23BREEVE-4",
+        "detTitle": "Over 3.5 goals scored",
+        "ourSideIsYes": false,
+        "detEntry": 0.71,
+        "pmEntry": 0.7012999999999999,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
+      },
+      {
+        "question": "Binghamton Bearcats vs. Lehigh Mountain Hawks",
+        "detTicker": "KXNCAAMBGAME-26NOV24BINGLEH-LEH",
+        "detTitle": "Lehigh wins",
+        "ourSideIsYes": true,
+        "detEntry": 0.78,
+        "pmEntry": 0.7563,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
+      },
+      {
+        "question": "Bucknell Bison vs. Cornell Big Red",
+        "detTicker": "KXNCAAMBGAME-26NOV24BUCKCOR-BUCK",
+        "detTitle": "Bucknell wins",
+        "ourSideIsYes": true,
+        "detEntry": 0.17,
+        "pmEntry": 0.15832,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
+      }
     ]
   },
   "matchAudit": [
