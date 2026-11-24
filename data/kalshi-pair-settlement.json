@@ -1,10 +1,10 @@
 {
- "generatedAt": "2026-11-24T02:06:37Z",
+ "generatedAt": "2026-11-24T15:07:19Z",
  "population": {
   "level": "ledger leg (marketId|outcome|detTicker)",
   "clock": "openedAt",
-  "pairs": 37,
-  "distinctTickers": 36
+  "pairs": 41,
+  "distinctTickers": 40
  },
  "gate": {
   "size": 20,
@@ -13,7 +13,8 @@
   "disagree": 0
  },
  "counts": {
-  "AGREE": 37
+  "AGREE": 37,
+  "VOID": 4
  },
  "sideFlagDefect": 13,
  "ledgerExitSignRelabels": 12,
@@ -795,6 +796,90 @@
    "rulesLive": "If over 3.5 goals are scored in the Brentford vs Everton professional EPL soccer game originally scheduled for Nov 23, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties), then the market resolves to Yes.",
    "rulesChanged": false,
    "verdict": "AGREE"
+  },
+  {
+   "marketId": "cbb-bing-lehi-2026-11-24",
+   "outcome": "LEHIGH MOUNTAIN HAWKS",
+   "class": "MONEYLINE",
+   "kalshiTicker": "KXNCAAMBGAME-26NOV24BINGLEH-LEH",
+   "detTitle": "Lehigh wins",
+   "openedAt": "2026-11-24T02:47:18.494Z",
+   "openedMs": 1795488438494,
+   "conditionId": "0x9f8a5a9a94bfdc624e6ea0672bcc662ed80b58fdc89282c73a52dd9f6b471c9b",
+   "storedSideYes": true,
+   "ledgerWon": null,
+   "sideYes": true,
+   "pmWinner": false,
+   "kalshiResult": "",
+   "kalshiStatus": "active",
+   "pmClosed": false,
+   "rulesStored": "If Lehigh wins the Binghamton vs Lehigh men's college basketball game originally scheduled for Nov 24, 2026, then the market resolves to Yes.",
+   "rulesLive": "If Lehigh wins the Binghamton vs Lehigh men's college basketball game originally scheduled for Nov 24, 2026, then the market resolves to Yes.",
+   "rulesChanged": false,
+   "verdict": "VOID"
+  },
+  {
+   "marketId": "cbb-buck-cornel-2026-11-24",
+   "outcome": "BUCKNELL BISON",
+   "class": "MONEYLINE",
+   "kalshiTicker": "KXNCAAMBGAME-26NOV24BUCKCOR-BUCK",
+   "detTitle": "Bucknell wins",
+   "openedAt": "2026-11-24T04:15:18.921Z",
+   "openedMs": 1795493718921,
+   "conditionId": "0x7484f058d31a7e1ba3afb13dd5a2639a18d68654d05297309dd3ff5127c1456e",
+   "storedSideYes": true,
+   "ledgerWon": null,
+   "sideYes": true,
+   "pmWinner": false,
+   "kalshiResult": "",
+   "kalshiStatus": "active",
+   "pmClosed": false,
+   "rulesStored": "If Bucknell wins the Bucknell vs Cornell men's college basketball game originally scheduled for Nov 24, 2026, then the market resolves to Yes.",
+   "rulesLive": "If Bucknell wins the Bucknell vs Cornell men's college basketball game originally scheduled for Nov 24, 2026, then the market resolves to Yes.",
+   "rulesChanged": false,
+   "verdict": "VOID"
+  },
+  {
+   "marketId": "cbb-lou-txtech-2026-11-24",
+   "outcome": "LOUISVILLE CARDINALS",
+   "class": "MONEYLINE",
+   "kalshiTicker": "KXNCAAMBGAME-26NOV24LOUTTU-LOU",
+   "detTitle": "Louisville wins",
+   "openedAt": "2026-11-24T05:43:17.136Z",
+   "openedMs": 1795498997136,
+   "conditionId": "0x2709c996380c190879dbb81f5305dca5ff52c5436a0272f147921daa6e9e9017",
+   "storedSideYes": true,
+   "ledgerWon": null,
+   "sideYes": true,
+   "pmWinner": false,
+   "kalshiResult": "",
+   "kalshiStatus": "active",
+   "pmClosed": false,
+   "rulesStored": "If Louisville wins the Louisville vs Texas Tech men's college basketball game originally scheduled for Nov 24, 2026, then the market resolves to Yes.",
+   "rulesLive": "If Louisville wins the Louisville vs Texas Tech men's college basketball game originally scheduled for Nov 24, 2026, then the market resolves to Yes.",
+   "rulesChanged": false,
+   "verdict": "VOID"
+  },
+  {
+   "marketId": "ucl-gal-ast-2026-11-24-total-1pt5",
+   "outcome": "UNDER",
+   "class": "TOTAL",
+   "kalshiTicker": "KXUCLTOTAL-26NOV24GALAVL-2",
+   "detTitle": "Over 1.5 goals scored",
+   "openedAt": "2026-11-24T11:46:17.191Z",
+   "openedMs": 1795520777191,
+   "conditionId": "0x70dd6671f4577793e1d736596fb5224f74d76d5ead2b6eb712b3e3a68a94cd8a",
+   "storedSideYes": false,
+   "ledgerWon": null,
+   "sideYes": false,
+   "pmWinner": false,
+   "kalshiResult": "",
+   "kalshiStatus": "active",
+   "pmClosed": false,
+   "rulesStored": "If over 1.5 goals are scored in the Galatasaray vs Aston Villa professional Champions League soccer game originally scheduled for Nov 24, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties), then the market resolves to Yes.",
+   "rulesLive": "If over 1.5 goals are scored in the Galatasaray vs Aston Villa professional Champions League soccer game originally scheduled for Nov 24, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties), then the market resolves to Yes.",
+   "rulesChanged": false,
+   "verdict": "VOID"
   }
  ]
 }

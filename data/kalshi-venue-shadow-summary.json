@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-24T04:24:11.898Z",
+  "asOf": "2026-11-24T15:09:34.611Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -7,20 +7,19 @@
     "Kalshi's public orderbook exposes the TOP LEVEL only — no depth, no market impact, no fill probability.",
     "Kalshi fee modelled at 0.07 (published schedule; the fee audit flags it as needing live confirmation).",
     "Every quote is verified against the matched Kalshi event TITLE; unverified matches are counted and excluded, never priced. Expect false negatives (abbreviated titles) — dropping a real match is cheaper than fabricating a venue edge.",
-    "win/loss is derived from realizedPnl sign; partial exits and early closes make both legs approximate.",
+    "win/loss in the kalshi book comes from realizedPnl's SIGN (our exit), NOT from settlement: an early close books a loss on a contract that settled a win. For any settlement question read settlementBasis and deterministic.book.venuePnl (the venue's own result on our adjudicated side); the exit-sign figures are kept unchanged as the historical record.",
     "rows first seen more than 6h after open are excluded as stale (a late quote is not an entry).",
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1784,
-    "inWindow": 1389,
+    "copiesSeen": 1805,
+    "inWindow": 1410,
     "withKalshiQuote": 2,
     "crossListRate": 0.001,
     "staleSkips": 395,
-    "quoteFailures": 1289,
+    "quoteFailures": 1310,
     "unverifiedMatches": 98,
     "rejectionReasons": {
-      "no open Kalshi event matched question (scored 0.00 of open events over 25 pages)": 1,
       "pre_guard_quote": 1,
       "low_match_score_0.67": 94,
       "low_match_score_0.60": 3
@@ -57,50 +56,34 @@
   },
   "deterministic": {
     "enabled": true,
-    "attempted": 1,
-    "resolved": 413,
+    "attempted": 0,
+    "resolved": 434,
     "verdicts": {
-      "OTHER_CLASS": 206,
-      "NO_EVENT_MATCH": 166,
-      "EQUIV": 39,
+      "OTHER_CLASS": 214,
+      "NO_EVENT_MATCH": 177,
+      "EQUIV": 41,
       "AMBIGUOUS_EVENT": 2
     },
-    "equiv": 39,
-    "priced": 3,
+    "equiv": 41,
+    "priced": 5,
     "coverage": 0.094,
     "fuzzyEquiv": 0,
-    "detOnlyEquiv": 39,
+    "detOnlyEquiv": 41,
     "book": {
       "n": 1,
       "pmPnl": -0.15,
       "detPnl": -10.13,
       "staked": 9.92,
       "pmRoiPct": -1.49,
-      "detRoiPct": -102.03
+      "detRoiPct": -102.03,
+      "detPnlBasis": "exit_sign",
+      "venuePnlBasis": "kalshi_market_result",
+      "venueN": 1,
+      "venuePnl": -10.13,
+      "venueStaked": 9.92,
+      "venueRoiPct": -102.03
     },
     "pairs": [
-      {
-        "question": "Oilers vs. Hurricanes",
-        "detTicker": "KXNHLGAME-26NOV21EDMCAR-CAR",
-        "detTitle": "Carolina wins",
-        "ourSideIsYes": true,
-        "detEntry": null,
-        "pmEntry": 0.6113,
-        "fuzzyTicker": null,
-        "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
-      },
-      {
-        "question": "Spread: Thunder (-6.5)",
-        "detTicker": "KXNBASPREAD-26NOV20NOPOKC-OKC7",
-        "detTitle": "Oklahoma City wins by over 6.5 points",
-        "ourSideIsYes": true,
-        "detEntry": null,
-        "pmEntry": 0.3354200000000001,
-        "fuzzyTicker": null,
-        "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
-      },
       {
         "question": "UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)",
         "detTicker": "KXUFCFIGHT-26NOV21CANALI-ALI",
@@ -405,6 +388,187 @@
         "pmEntry": 0.15832,
         "fuzzyTicker": null,
         "fuzzyVerified": false
+      },
+      {
+        "question": "Louisville Cardinals vs. Texas Tech Red Raiders",
+        "detTicker": "KXNCAAMBGAME-26NOV24LOUTTU-LOU",
+        "detTitle": "Louisville wins",
+        "ourSideIsYes": true,
+        "detEntry": 0.39,
+        "pmEntry": 0.36042,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
+      },
+      {
+        "question": "Galatasaray SK vs. Aston Villa FC: O/U 1.5",
+        "detTicker": "KXUCLTOTAL-26NOV24GALAVL-2",
+        "detTitle": "Over 1.5 goals scored",
+        "ourSideIsYes": false,
+        "detEntry": 0.14,
+        "pmEntry": 0.13332,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
+      }
+    ]
+  },
+  "settlementBasis": {
+    "population": 37,
+    "known": 37,
+    "agree": 25,
+    "exitLossVenueWin": 12,
+    "exitWinVenueLoss": 0,
+    "venueUnknown": 0,
+    "exitUnknown": 0,
+    "disagree": 12,
+    "exitWins": 5,
+    "venueWins": 17,
+    "populationNote": "detVerdict==EQUIV legs whose paper leg is settled; level = ledger leg",
+    "exitBasis": "realizedPnl sign of OUR paper leg (early exits and partial closes) — NOT settlement",
+    "venueBasis": "Kalshi /markets/<ticker> result on our side as adjudicated by the pair audit (PM token winner only as the fallback)",
+    "clock": {
+      "openedAtFrom": "2026-11-16T18:10:45.463Z",
+      "openedAtTo": "2026-11-23T07:54:16.300Z",
+      "readAt": "2026-11-24T15:09:34.612Z"
+    },
+    "quoterun": {
+      "attempted": 0,
+      "failures": 0,
+      "stillOpen": 0
+    },
+    "sideAdjudication": {
+      "source": "data/kalshi-pair-settlement.json",
+      "generatedAt": "2026-11-24T15:07:19Z",
+      "pairsInArtifact": 41,
+      "legsAdjudicated": 37,
+      "storedSideFlagDisagreements": 13
+    },
+    "matchedPriced": {
+      "n": 1,
+      "exitPnl": -10.13,
+      "venuePnl": -10.13,
+      "delta": 0,
+      "basis": "same legs, same detEntry; exit-sign PnL vs venue-settlement PnL"
+    },
+    "flips": [
+      {
+        "question": "Trail Blazers vs. Bucks: O/U 225.5",
+        "detTicker": "KXNBATOTALPRECISE-26NOV19PORMIL-226",
+        "venueResult": "yes",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.2,
+        "venuePnl": null
+      },
+      {
+        "question": "Spread: Kansas Jayhawks (-1.5)",
+        "detTicker": "KXNCAAMBSPREAD-26NOV19HOUKU-KU2",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.18,
+        "venuePnl": null
+      },
+      {
+        "question": "Spread: Rockets (-8.5)",
+        "detTicker": "KXNBASPREAD-26NOV20HOUDEN-HOU9",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.11,
+        "venuePnl": null
+      },
+      {
+        "question": "Oilers vs. Hurricanes",
+        "detTicker": "KXNHLGAME-26NOV21EDMCAR-CAR",
+        "venueResult": "yes",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.19,
+        "venuePnl": null
+      },
+      {
+        "question": "Spread: Thunder (-6.5)",
+        "detTicker": "KXNBASPREAD-26NOV20NOPOKC-OKC7",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.33,
+        "venuePnl": null
+      },
+      {
+        "question": "UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)",
+        "detTicker": "KXUFCFIGHT-26NOV21CANALI-ALI",
+        "venueResult": "yes",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.13,
+        "venuePnl": null
+      },
+      {
+        "question": "Spread: Nevada (-13.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV14",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.15,
+        "venuePnl": null
+      },
+      {
+        "question": "Spread: Nevada (-14.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV15",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.14,
+        "venuePnl": null
+      },
+      {
+        "question": "UCLA vs. Michigan: O/U 41.5",
+        "detTicker": "KXNCAAFTOTAL-26NOV21UCLAMICH-42",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.18,
+        "venuePnl": null
+      },
+      {
+        "question": "Spread: Bulls (-1.5)",
+        "detTicker": "KXNBASPREAD-26NOV22DENCHI-CHI2",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.1,
+        "venuePnl": null
+      },
+      {
+        "question": "Celtics vs. Warriors: O/U 205.5",
+        "detTicker": "KXNBATOTALPRECISE-26NOV22BOSGSW-206",
+        "venueResult": "no",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.59,
+        "venuePnl": null
+      },
+      {
+        "question": "Celtics vs. Warriors",
+        "detTicker": "KXNBAGAME-26NOV22BOSGSW-GSW",
+        "venueResult": "yes",
+        "venueSource": "kalshi_side",
+        "exitWon": false,
+        "venueWon": true,
+        "pmPnl": -0.67,
+        "venuePnl": null
       }
     ]
   },

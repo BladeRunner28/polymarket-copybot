@@ -30,6 +30,10 @@ import { prisma } from "../src/lib/db";
 import * as fs from "fs";
 import * as path from "path";
 import { execFileSync } from "child_process";
+import {
+  normaliseKalshiResult, venueSideWon, venueGross, summariseBasis,
+  venueWonFromPair, pairKey, type PairJudgement,
+} from "../src/lib/kalshi-venue-settlement";
 
 const LEDGER = path.join(process.cwd(), "data", "kalshi-venue-shadow.jsonl");
 const SUMMARY = path.join(process.cwd(), "data", "kalshi-venue-shadow-summary.json");
@@ -45,6 +49,11 @@ const DET_ENABLED = process.env.KALSHI_DET_ARM !== "0";
 /** Rows resolved per run: the resolver walks event markets per candidate, so a bound keeps a
  *  cron tick short; the ledger drains newest-first over successive runs. */
 const DET_BATCH = Number(process.env.KALSHI_DET_BATCH ?? 60);
+
+/** Venue-settlement pass (card kalshi-venue-shadow-pnl-exit-sign-basis): settled ledger rows whose
+ *  ticker has not been read yet, per run. One keyless GET per distinct ticker. */
+const VENUE_SETTLE_BATCH = Number(process.env.KALSHI_VENUE_SETTLE_BATCH ?? 80);
+const KALSHI_API = "https://api.elections.kalshi.com/trade-api/v2";
 
 /** A match must clear this raw sidecar score to be trusted at all. */
 const MIN_MATCH_SCORE = 0.75;
@@ -107,6 +116,12 @@ type Row = {
   detVerdict?: string; detTicker?: string; detTitle?: string; detEntry?: number | null;
   detOurSideIsYes?: boolean | null; detEvent?: string; detAtMs?: number; detNote?: string;
   detRules?: string;
+  /** SETTLEMENT BASIS, added 2026-11-24. `won` above is OUR EXIT SIGN and stays the historical
+   *  record; it is NOT settlement. These fields are what the venue itself says, and the PnL arm
+   *  built on them is a separate field — no old number was restated. */
+  venueResult?: "yes" | "no" | null; venueStatus?: string | null; venueTicker?: string | null;
+  venueAtMs?: number; venueWon?: boolean | null; venuePnl?: number | null; venueDelta?: number | null;
+  venueSource?: "kalshi_side" | "pm_token" | null;
 };
 
 type DetOut = {
@@ -189,6 +204,70 @@ async function quoteKalshi(question: string, marketId: string, side: string): Pr
   }
 }
 
+
+/** The venue's own settlement: GET /markets/<ticker> -> result (yes|no) once finalized. Keyless.
+ *  Returns null on failure (never a verdict), so a dead route cannot invent a settlement. */
+async function fetchKalshiSettlement(
+  ticker: string,
+): Promise<{ result: "yes" | "no" | null; status: string | null } | null> {
+  if (!ticker) return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${KALSHI_API}/markets/${encodeURIComponent(ticker)}`, {
+        headers: { "user-agent": "medusa-copybot/1.0", accept: "application/json" },
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (res.ok) {
+        const b = (await res.json()) as { market?: { result?: unknown; status?: unknown } };
+        return {
+          result: normaliseKalshiResult(b.market?.result),
+          status: typeof b.market?.status === "string" ? b.market.status : null,
+        };
+      }
+    } catch { /* retry once, then give up */ }
+  }
+  return null;
+}
+
+/** One line, both bases named, for stdout and --dry-run — so a settlement read can never be
+ *  mistaken for the exit-sign book (card kalshi-venue-shadow-pnl-exit-sign-basis). */
+function settlementBasisLine(sb: {
+  known: number; population: number; agree: number; disagree: number;
+  exitLossVenueWin: number; exitWinVenueLoss: number;
+  matchedPriced: { n: number; exitPnl: number; venuePnl: number };
+}): string {
+  return `settlement basis (det arm; level=leg): ${sb.known} knowable of ${sb.population} settled legs, `
+    + `${sb.agree} agree / ${sb.disagree} disagree with the exit sign (${sb.exitLossVenueWin} booked a loss that`
+    + ` settled a win, ${sb.exitWinVenueLoss} booked a win that settled a loss); matched priced n=`
+    + `${sb.matchedPriced.n} exit $${sb.matchedPriced.exitPnl} vs venue $${sb.matchedPriced.venuePnl}`;
+}
+
+/** The pair-settlement audit's per-pair adjudication (side + both venues' own settlement).
+ *  Read-only input: this ledger consumes it, it never writes it. Missing file = no adjudication,
+ *  and every settlement figure stays null rather than falling back to a second opinion. */
+const PAIR_AUDIT = path.join(process.cwd(), "data", "kalshi-pair-settlement.json");
+type PairAuditRow = {
+  marketId?: string; outcome?: string; kalshiTicker?: string;
+  sideYes?: boolean | null; kalshiResult?: string | null; pmWinner?: boolean | null; verdict?: string;
+};
+function loadPairJudgements(): { map: Map<string, PairJudgement>; generatedAt: string | null; pairs: number } {
+  const map = new Map<string, PairJudgement>();
+  if (!fs.existsSync(PAIR_AUDIT)) return { map, generatedAt: null, pairs: 0 };
+  try {
+    const doc = JSON.parse(fs.readFileSync(PAIR_AUDIT, "utf-8")) as { generatedAt?: string; pairs?: PairAuditRow[] };
+    for (const p of doc.pairs ?? []) {
+      if (!p.marketId || !p.kalshiTicker) continue;
+      map.set(pairKey(p.marketId, p.outcome ?? "", p.kalshiTicker), {
+        sideYes: p.sideYes ?? null,
+        kalshiResult: normaliseKalshiResult(p.kalshiResult),
+        pmWinner: p.pmWinner ?? null,
+      });
+    }
+    return { map, generatedAt: doc.generatedAt ?? null, pairs: map.size };
+  } catch {
+    return { map, generatedAt: null, pairs: 0 };
+  }
+}
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const ageIdx = process.argv.indexOf("--max-quote-age-hours");
@@ -313,6 +392,58 @@ async function main() {
     }
   }
 
+
+  // ---- venue-settlement pass (card kalshi-venue-shadow-pnl-exit-sign-basis, 2026-11-24).
+  // `won` above is the EXIT sign of OUR paper leg. This pass records what the VENUE says, and a
+  // second set of figures derived from it, without overwriting the exit-sign ones.
+  let venueChecked = 0, venueFailed = 0, venueStillOpen = 0;
+  let pairAudit = loadPairJudgements();
+  let venueSideFlagDisagreements = 0;
+  {
+    const settledRows = [...ledger.values()].filter((r) => r.pmPnl != null);
+    // The population this basis is DEFINED on: a contract-equivalence pair — the only arm that
+    // names the venue contract we hold. A fuzzy sidecar quote has a ticker but no resolved side, so
+    // it can never produce a settlement read and keeps its exit-sign figures, unchanged.
+    const basisRows = settledRows.filter((r) => r.detVerdict === "EQUIV" && !!r.detTicker);
+    const todo = basisRows
+      .filter((r) => r.venueResult == null) // undefined = never read; null = not yet finalized
+      .sort((a, b) => b.openedMs - a.openedMs)
+      .slice(0, VENUE_SETTLE_BATCH);
+    if (process.env.KALSHI_VENUE_DEBUG) {
+      console.error(`venue dbg: ledger=${ledger.size} settled=${settledRows.length} basisRows=${basisRows.length} todo=${todo.length}`);
+    }
+    for (const r of todo) {
+      const ticker = r.detTicker as string;
+      const got = await fetchKalshiSettlement(ticker);
+      venueChecked++;
+      if (!got) { venueFailed++; continue; }
+      r.venueTicker = ticker;
+      r.venueResult = got.result;
+      r.venueStatus = got.status;
+      r.venueAtMs = Date.now();
+      // A market the venue has not finalized yet stays retryable: its empty result is not a verdict.
+      if (got.result == null) venueStillOpen++;
+    }
+    // Derived every run from what is stored (idempotent). The SIDE question is not re-derived here:
+    // it comes from the pair-settlement audit, because the ledger's own detOurSideIsYes disagrees
+    // with our outcome's side on 13 of 41 determinable pairs — a second opinion would manufacture
+    // settlement flips out of that defect.
+    for (const r of settledRows) {
+      const p = r.detTicker ? pairAudit.map.get(pairKey(r.marketId, r.outcome, r.detTicker)) : undefined;
+      const v = venueWonFromPair(p);
+      r.venueWon = v.won;
+      r.venueSource = v.source;
+      if (p && p.sideYes != null && r.detOurSideIsYes != null && p.sideYes !== r.detOurSideIsYes) {
+        venueSideFlagDisagreements++;
+      }
+      // A venue-basis PnL needs the VENUE's own entry price (detEntry), never Polymarket's: pricing
+      // a Kalshi contract at our PM fill is the same class of basis lie this card is repairing.
+      const entry = r.detEntry ?? null;
+      const gross = r.venueWon == null || entry == null ? null : venueGross(r.size, entry, r.venueWon);
+      r.venuePnl = gross == null || entry == null ? null : gross - feeUsd(r.size, entry, KALSHI_FEE_RATE);
+      r.venueDelta = r.venuePnl == null || r.pmPnl == null ? null : r.venuePnl - r.pmPnl;
+    }
+  }
   const rows = [...ledger.values()].sort((a, b) => a.openedMs - b.openedMs);
   const inWindow = rows.filter((r) => !r.stale && r.kalshiError !== "before_window_start");
   const verified = inWindow.filter((r) => r.verified);
@@ -354,7 +485,10 @@ async function main() {
       "Every quote is verified against the matched Kalshi event TITLE; unverified matches are counted and excluded, "
         + "never priced. Expect false negatives (abbreviated titles) — dropping a real match is cheaper than "
         + "fabricating a venue edge.",
-      "win/loss is derived from realizedPnl sign; partial exits and early closes make both legs approximate.",
+      "win/loss in the kalshi book comes from realizedPnl's SIGN (our exit), NOT from settlement: an early "
+      + "close books a loss on a contract that settled a win. For any settlement question read "
+      + "settlementBasis and deterministic.book.venuePnl (the venue's own result on our adjudicated "
+      + "side); the exit-sign figures are kept unchanged as the historical record.",
       `rows first seen more than ${maxAgeH}h after open are excluded as stale (a late quote is not an entry).`,
       "no real Kalshi orders were placed and none will be — paper only.",
     ],
@@ -385,10 +519,13 @@ async function main() {
       const priced = equiv.filter((r) => r.detEntry != null);
       const settledDet = priced.filter((r) => r.pmPnl != null);
       const detPnl = sum(settledDet.map((r) => {
-        const won = r.won === true;
+        const won = r.won === true; // EXIT SIGN, not settlement — see venuePnl beside it
         const gross = won ? r.size * (1 / (r.detEntry as number) - 1) : -r.size;
         return gross - feeUsd(r.size, r.detEntry as number, KALSHI_FEE_RATE);
       }));
+      const venuePriced = settledDet.filter((r) => r.venuePnl != null);
+      const venuePnlDet = sum(venuePriced.map((r) => r.venuePnl ?? 0));
+      const venueStakedDet = sum(venuePriced.map((r) => r.size));
       const pmPnlDet = sum(settledDet.map((r) => r.pmPnl ?? 0));
       const stakedDet = sum(settledDet.map((r) => r.size));
       const verdicts: Record<string, number> = {};
@@ -403,12 +540,68 @@ async function main() {
           n: settledDet.length, pmPnl: r2(pmPnlDet), detPnl: r2(detPnl), staked: r2(stakedDet),
           pmRoiPct: stakedDet ? r2((pmPnlDet / stakedDet) * 100) : 0,
           detRoiPct: stakedDet ? r2((detPnl / stakedDet) * 100) : 0,
+          /** Same book, priced on the VENUE's result instead of our exit sign, with its own n: a leg
+           *  with a settlement verdict but no entry price is knowable and not priceable. */
+          detPnlBasis: "exit_sign", venuePnlBasis: "kalshi_market_result",
+          venueN: venuePriced.length, venuePnl: r2(venuePnlDet), venueStaked: r2(venueStakedDet),
+          venueRoiPct: venueStakedDet ? r2((venuePnlDet / venueStakedDet) * 100) : 0,
         },
         pairs: equiv.slice(-30).map((r) => ({
           question: r.question.slice(0, 80), detTicker: r.detTicker, detTitle: (r.detTitle ?? "").slice(0, 80),
           ourSideIsYes: r.detOurSideIsYes, detEntry: r.detEntry, pmEntry: r.pmEntry,
           fuzzyTicker: r.kalshiTicker, fuzzyVerified: r.verified, note: r.detNote,
         })),
+      };
+    })(),
+    /** SETTLEMENT BASIS (card kalshi-venue-shadow-pnl-exit-sign-basis). Population = settled
+     *  contract-equivalent legs; level = one ledger leg; clock = openedAt of those legs; truth = the
+     *  venue's own settlement, adjudicated per pair by scripts/kalshi-pair-settlement-read.py.
+     *  Additive: no exit-sign figure is restated, replaced or mixed in. */
+    settlementBasis: (() => {
+      const legs = [...ledger.values()].filter((r) => r.detVerdict === "EQUIV" && r.pmPnl != null);
+      const s = summariseBasis(legs.map((r) => ({ exitWon: r.won, venueWon: r.venueWon })));
+      const pricedLegs = legs.filter((r) => r.venuePnl != null && r.detEntry != null);
+      let exitOnPriced = 0, venueOnPriced = 0;
+      for (const r of pricedLegs) {
+        const entry = r.detEntry as number;
+        const g = venueGross(r.size, entry, r.won === true);
+        if (g != null) exitOnPriced += g - feeUsd(r.size, entry, KALSHI_FEE_RATE);
+        venueOnPriced += r.venuePnl ?? 0;
+      }
+      const opened = legs.map((r) => r.openedMs);
+      return {
+        ...s,
+        populationNote: "detVerdict==EQUIV legs whose paper leg is settled; level = ledger leg",
+        exitBasis: "realizedPnl sign of OUR paper leg (early exits and partial closes) — NOT settlement",
+        venueBasis: "Kalshi /markets/<ticker> result on our side as adjudicated by the pair audit"
+          + " (PM token winner only as the fallback)",
+        clock: {
+          openedAtFrom: opened.length ? new Date(Math.min(...opened)).toISOString() : null,
+          openedAtTo: opened.length ? new Date(Math.max(...opened)).toISOString() : null,
+          readAt: new Date().toISOString(),
+        },
+        quoterun: { attempted: venueChecked, failures: venueFailed, stillOpen: venueStillOpen },
+        sideAdjudication: {
+          source: "data/kalshi-pair-settlement.json",
+          generatedAt: pairAudit.generatedAt,
+          pairsInArtifact: pairAudit.pairs,
+          legsAdjudicated: legs.filter((r) => r.venueSource != null).length,
+          /** named, never consumed: the ledger's stored detOurSideIsYes against the adjudicated side,
+           *  on this same population. It is the defective column (13 of 41 pairs, audit 2026-11-24). */
+          storedSideFlagDisagreements: venueSideFlagDisagreements,
+        },
+        /** matched pair on the legs that have BOTH the venue's own entry price and a venue verdict */
+        matchedPriced: {
+          n: pricedLegs.length, exitPnl: r2(exitOnPriced), venuePnl: r2(venueOnPriced),
+          delta: r2(venueOnPriced - exitOnPriced),
+          basis: "same legs, same detEntry; exit-sign PnL vs venue-settlement PnL",
+        },
+        flips: legs.filter((r) => r.venueWon != null && r.won != null && r.won !== r.venueWon)
+          .map((r) => ({
+            question: r.question.slice(0, 80), detTicker: r.detTicker, venueResult: r.venueResult,
+            venueSource: r.venueSource, exitWon: r.won, venueWon: r.venueWon,
+            pmPnl: r2(r.pmPnl ?? 0), venuePnl: r.venuePnl == null ? null : r2(r.venuePnl),
+          })),
       };
     })(),
     // accepted + rejected quotes, so the match audit is visible on the dashboard
@@ -428,6 +621,7 @@ async function main() {
     console.log(JSON.stringify(summary.coverage));
     console.log(`[dry-run] det arm: attempted=${summary.deterministic.attempted} resolved=${summary.deterministic.resolved} `
       + `verdicts=${JSON.stringify(summary.deterministic.verdicts)} priced=${summary.deterministic.priced}`);
+    console.log(settlementBasisLine(summary.settlementBasis));
     return;
   }
   fs.writeFileSync(LEDGER, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
@@ -443,6 +637,7 @@ async function main() {
   const dsum = summary.deterministic;
   console.log(`det arm (contract equivalence): resolved=${dsum.resolved} equiv=${dsum.equiv} `
     + `priced=${dsum.priced} book n=${dsum.book.n} PM $${dsum.book.pmPnl} | DET $${dsum.book.detPnl}`);
+  console.log(settlementBasisLine(summary.settlementBasis));
   console.log(`wrote data/kalshi-venue-shadow.jsonl + summary`);
 }
 
