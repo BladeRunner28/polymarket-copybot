@@ -64,8 +64,13 @@ print("--- KALSHI SHADOW STATUS (%s) ---" % s["asOf"])
 # kalshi-reprice-92). Measured on the live book: the mixed figure is n=2,660/+$8,240.47/34.4%
 # vs Polymarket-only n=2,568/+$8,288.10/35.9% -- so the label understated PM ROI by 1.5pp and
 # PM PnL by $47.63. Both readings are now printed; nothing about the numbers changed.
-print("live C-200 (BANKROLL_200 book, BOTH venues — not Polymarket-only): n=%d pnl=$%.2f roi=%.1f%% win[EXIT]=%.0f%%"
-      % (live["n"], live["pnl"], live["roi_pct"], live["win_rate_pct"]))
+print("live C-200 (BANKROLL_200 book, BOTH venues — not Polymarket-only): n=%d (settled %d, open %d) pnl=$%.2f roi=%.1f%% win[EXIT]=%.0f%%"
+      % (live["n"], live["n_settled"], live["n"] - live["n_settled"], live["pnl"], live["roi_pct"], live["win_rate_pct"]))
+# 2026-11-25 (self-audit, Lane B): the line printed `n=3060` beside a pnl/roi computed on 3036
+# SETTLED legs (24 open legs carry no realized PnL yet), so the printed n was not the ROI's
+# denominator — while the by-venue rows below had printed settled= separately since 2026-11-06.
+# Same defect in the shadow-score split (selected n=1763 vs 1747 settled, rejected 1297 vs 1289).
+# Measured live 2026-11-25T06:52-0600 against data/kalshi-shadow-summary.json; no figure changed.
 for v in sorted(s.get("liveByVenue") or {}):
     x = s["liveByVenue"][v]
     print("  by venue %-10s n=%4d settled=%4d pnl=$%9.2f roi=%6.1f%% win[EXIT]=%2.0f%%"
@@ -79,9 +84,9 @@ print("since Sep 5, OPENED cohort: n=%d pnl=$%.2f | since Sep 5, SETTLED cohort:
       % (o5["n"], o5["pnl"], f5.get("n", 0), f5.get("pnl", 0.0)))
 print("shadow-score split (IN-SAMPLE, model fitted %s, n_train=%d, purged OOS rank IC=%+.3f):"
       % (s["model"]["fittedAt"][:16], s["model"]["nTrain"], s["model"]["oosRankIcPurged"]))
-print("  selected: n=%d pnl=$%.2f roi=%.1f%% win[EXIT]=%.0f%%   rejected: n=%d pnl=$%.2f roi=%.1f%%"
-      % (ss["selected"]["n"], ss["selected"]["pnl"], ss["selected"]["roi_pct"], ss["selected"]["win_rate_pct"],
-         ss["rejected"]["n"], ss["rejected"]["pnl"], ss["rejected"]["roi_pct"]))
+print("  selected: n=%d (settled %d) pnl=$%.2f roi=%.1f%% win[EXIT]=%.0f%%   rejected: n=%d (settled %d) pnl=$%.2f roi=%.1f%%"
+      % (ss["selected"]["n"], ss["selected"].get("n_settled", ss["selected"]["n"]), ss["selected"]["pnl"], ss["selected"]["roi_pct"], ss["selected"]["win_rate_pct"],
+         ss["rejected"]["n"], ss["rejected"].get("n_settled", ss["rejected"]["n"]), ss["rejected"]["pnl"], ss["rejected"]["roi_pct"]))
 o = ss["oosSinceFit"]; r = ss["oosRejected"]
 print("  OOS clock (trades opened after fit): selected n=%d pnl=$%.2f | rejected n=%d pnl=$%.2f"
       % (o["n"], o["pnl"], r["n"], r["pnl"]))
@@ -99,8 +104,8 @@ if oe and re_:
 print("candidate venue rules (attribution of the C-200 book — BOTH venues, not PM-only):")
 for k, v in s["variants"].items():
     sel = v["selected"]
-    print("  %-18s n=%4d share=%5.1f%% pnl=$%+8.2f roi=%+7.1f%% win[EXIT]=%3.0f%%"
-          % (k, sel["n"], v["share_of_book_pct"], sel["pnl"], sel["roi_pct"], sel["win_rate_pct"]))
+    print("  %-18s n=%4d settled=%4d share=%5.1f%% pnl=$%+8.2f roi=%+7.1f%% win[EXIT]=%3.0f%%"
+          % (k, sel["n"], sel.get("n_settled", sel["n"]), v["share_of_book_pct"], sel["pnl"], sel["roi_pct"], sel["win_rate_pct"]))
 print("series days=%d last=%s live_cum=$%.2f shadow_cum=$%.2f pm_only_cum=$%.2f"
       % (len(s["series"]["dates"]), s["series"]["dates"][-1] if s["series"]["dates"] else "-",
          s["series"]["liveCum"][-1] if s["series"]["liveCum"] else 0.0,
