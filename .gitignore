@@ -173,3 +173,10 @@ data/cache/kalshi-window-events/
 # refetchable from keyless endpoints, and a settled market never changes. The READ artifact
 # data/kalshi-pair-settlement.json IS committed so the verdict re-reads offline.
 data/cache/kalshi-pair-settlement/
+
+# Over GitHub's 100 MB hard limit — the nightly backup cannot carry them
+# (it logged "backup INCOMPLETE" every night with these tracked). Untracked
+# 2026-11-24; they stay on disk and are backed up out-of-band instead.
+data/wallet-sells.jsonl
+data/c200-printthrough.jsonl
+data/kalshi-macro-quotes.jsonl
