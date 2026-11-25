@@ -959,12 +959,32 @@ export async function generateDailyReport(
   // number at all", and it prints a LOUD failure if the read itself fails.
   const researchSupply = await researchLivenessLine(now);
 
+  // Day-scoped figures carry the cut themselves, not only in the header: on 2026-11-24 the 22:00
+  // "PnL Today -$49.77" read as a settled day while the day's remaining 2h later added -$9.92.
+  const dayCut = dayElapsed ? "" : ` — ⚠️ day-to-date to ${localHm(now)}`;
+
   const summary = [
     `**📊 CopyBot Comparative EOD Report — ${date}**`,
-    `_${date} 00:00 → 24:00 local · calendar day (closedAt ?? resolvedAt)${dayOffset < 0 ? " — day that just ended" : ""}_`,
+    // 2026-11-25 self-audit (Lane B — label only, no figure, window or rule touched).
+    //
+    // The 2026-10-28 repair admitted the cut on the SIGNALS line and left the header asserting a
+    // full day, so the two lines in the SAME report disagreed: the top said "00:00 → 24:00" while
+    // one line 20 rows lower said "counted 00:00→22:00". The scheduled run is 22:00, i.e. always
+    // dayOffset=0 and dayElapsed=false, so this is the NORMAL path, not an edge case.
+    //
+    // MEASURED (same date, same code, two runs — the stored 2026-11-24 row written at 22:00 vs a
+    // complete-day read at 2026-11-25 06:5x): C-200 `PnL Today` -$49.77 -> -$59.69, open legs
+    // 12 -> 24, STANDARD open legs 381 -> 384, signals 611 -> 669, copies 33 -> 36. STANDARD PnL
+    // happened to land on the same -$9.71, which is exactly why one comparison is not evidence:
+    // the seed numbers moved on 3 of 5 and the stored row keeps the 22:00 values forever (the
+    // upsert would correct it, but only a pre-noon run does, and there is none on schedule).
+    // So the cut is stated where the window is stated.
+    dayElapsed
+      ? `_${date} 00:00 → 24:00 local · calendar day (closedAt ?? resolvedAt)${dayOffset < 0 ? " — day that just ended" : ""}_`
+      : `_${date} 00:00 → ${localHm(now)} local — ⚠️ REPORTED AT ${localHm(now)}, BEFORE THE DAY ENDED: every figure scoped to this day (PnL Today, open legs, resolved-today counts, signals) is DAY-TO-DATE, and the rest of ${date} is NOT in it · calendar day (closedAt ?? resolvedAt)_`,
     ``, 
     `**🤖 STANDARD Bot (Infinite Pool):**`,
-    `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)} = settled realized ${fmt(stdRealized)} + open MTM ${fmt(stdOpenMtm)} (${standardOpen.length} open legs; the ROI below is realized-only, so Total PnL is NOT ROI x cost)`,
+    `• PnL Today: ${fmt(stdPnlToday)} | Total PnL: ${fmt(stdTotalPnl)} = settled realized ${fmt(stdRealized)} + open MTM ${fmt(stdOpenMtm)} (${standardOpen.length} open legs; the ROI below is realized-only, so Total PnL is NOT ROI x cost)${dayCut}`,
     winRateLine(stdPayoff, standardOpen.length),
     sizingRangeLine("STANDARD", sizingRanges),
     `• Net of legacy duplicate stacks: ${fmt(stdNetOfStacks)} (day ${fmt(stdPnlToday)} − ${fmtSub(stackedDayPnl)} from ${stackedDayRows.length} stacked row${stackedDayRows.length === 1 ? "" : "s"}; stack = key with >1 row in the book)`,
@@ -973,7 +993,7 @@ export async function generateDailyReport(
       : undefined,
     ``,
     `**⚖️ BANKROLL_200 Bot (Compounding Pool):**`,
-    `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)} = settled realized ${fmt(cmpRealized)} + open MTM ${fmt(cmpOpenMtm)} (${compoundOpen.length} open legs)`,
+    `• PnL Today: ${fmt(cmpPnlToday)} | Total PnL: ${fmt(cmpTotalPnl)} = settled realized ${fmt(cmpRealized)} + open MTM ${fmt(cmpOpenMtm)} (${compoundOpen.length} open legs)${dayCut}`,
     winRateLine(cmpPayoff, compoundOpen.length),
     sizingRangeLine("BANKROLL_200", sizingRanges),
     bankrollLine(cmpBankroll, cmpTotalPnl),
