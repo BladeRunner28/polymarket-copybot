@@ -820,7 +820,11 @@ def resolve(req_path, out_path=None):
         mid = r.get("marketId") or ""
         ours = our_contract(r.get("question"))
         sl = parse_slug(mid)
-        rec = {"marketId": mid, "verdict": "OTHER_CLASS" if ours["klass"] == "OTHER" else "NO_EVENT_MATCH",
+        # `outcome` is ECHOED, not inferred: the caller keys its answer map by
+        # (marketId, outcome), because one Polymarket market can carry two of our legs
+        # (one per outcome) and a marketId-only key stamps both with the same answer.
+        rec = {"marketId": mid, "outcome": r.get("outcome"),
+               "verdict": "OTHER_CLASS" if ours["klass"] == "OTHER" else "NO_EVENT_MATCH",
                "ticker": None, "kalshiTitle": None, "yesBid": None, "yesAsk": None,
                "price": None, "line": ours.get("line"), "class": ours["klass"]}
         if ours["klass"] != "OTHER" and sl and sl["families"]:

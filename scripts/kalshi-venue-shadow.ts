@@ -34,6 +34,9 @@ import {
   normaliseKalshiResult, venueSideWon, venueGross, summariseBasis,
   venueWonFromPair, pairKey, type PairJudgement,
 } from "../src/lib/kalshi-venue-settlement";
+import {
+  DET_DERIVATION_VERSION, detKey, needsDetRederive, restampEntry, venueReadStale,
+} from "../src/lib/kalshi-det-restamp";
 
 const LEDGER = path.join(process.cwd(), "data", "kalshi-venue-shadow.jsonl");
 const SUMMARY = path.join(process.cwd(), "data", "kalshi-venue-shadow-summary.json");
@@ -116,6 +119,10 @@ type Row = {
   detVerdict?: string; detTicker?: string; detTitle?: string; detEntry?: number | null;
   detOurSideIsYes?: boolean | null; detEvent?: string; detAtMs?: number; detNote?: string;
   detRules?: string;
+  /** Which derivation wrote this stamp (card det-our-side-flag-defect). Absent = v1, whose
+   *  spread side rule was replaced 2026-11-24T02:12Z: an EQUIV row below the current version
+   *  is re-derived, because its printed side came from a rule that no longer exists. */
+  detVersion?: number; detRedAtMs?: number;
   /** SETTLEMENT BASIS, added 2026-11-24. `won` above is OUR EXIT SIGN and stays the historical
    *  record; it is NOT settlement. These fields are what the venue itself says, and the PnL arm
    *  built on them is a separate field — no old number was restated. */
@@ -125,7 +132,7 @@ type Row = {
 };
 
 type DetOut = {
-  marketId: string; verdict: string; ticker: string | null; kalshiTitle: string | null;
+  marketId: string; outcome?: string; verdict: string; ticker: string | null; kalshiTitle: string | null;
   yesBid: number | null; yesAsk: number | null; lastPrice?: number | null;
   price: number | null; ourSideIsYes: boolean | null; event?: string; note?: string;
   rulesPrimary?: string; tickerStatus?: string;
@@ -134,7 +141,7 @@ type DetOut = {
 /** Resolve a batch of OUR trades to contract-equivalent Kalshi markets via the shipped
  *  deterministic parser (alias table + slug identity + strike gates). One subprocess per run,
  *  never per trade. Returns an empty map on any failure — this arm is additive, and a broken
- *  resolver must not stop the fuzzy arm from recording its rows. */
+ *  resolver must not stop the fuzzy arm from recording its rows. Keys are detKey(). */
 function resolveDeterministic(rows: Row[]): Map<string, DetOut> {
   const out = new Map<string, DetOut>();
   if (!DET_ENABLED || !rows.length || !fs.existsSync(DET_RESOLVER)) return out;
@@ -148,7 +155,10 @@ function resolveDeterministic(rows: Row[]): Map<string, DetOut> {
     execFileSync("python3", [DET_RESOLVER, "--resolve", tmpIn, "--resolve-out", tmpOut],
       { timeout: 240_000, stdio: ["ignore", "ignore", "inherit"] });
     const parsed = JSON.parse(fs.readFileSync(tmpOut, "utf-8")) as DetOut[];
-    for (const d of parsed) out.set(d.marketId, d);
+    // Keyed by (marketId, outcome), NOT marketId: one Polymarket market can carry two of our
+    // legs (one per outcome), and a marketId-only key hands both legs whichever answer came
+    // back last — the wrong contract and the wrong side on the second one.
+    for (const d of parsed) out.set(detKey(d.marketId, d.outcome), d);
   } catch (e) {
     console.error(`det arm skipped: ${(e as Error).message}`);
   } finally {
@@ -240,6 +250,22 @@ function settlementBasisLine(sb: {
     + `${sb.agree} agree / ${sb.disagree} disagree with the exit sign (${sb.exitLossVenueWin} booked a loss that`
     + ` settled a win, ${sb.exitWinVenueLoss} booked a win that settled a loss); matched priced n=`
     + `${sb.matchedPriced.n} exit $${sb.matchedPriced.exitPnl} vs venue $${sb.matchedPriced.venuePnl}`;
+}
+
+/** One line naming what the det re-derivation changed, so a stale stamp can never be repaired
+ *  silently (card det-our-side-flag-defect). Level = ledger leg. */
+function detRestampLine(d: {
+  derivationVersion: number;
+  restamp: { rederived: number; flagsCorrected: number; contractsCorrected: number;
+    entriesCleared: number; notReconfirmed: number };
+  stampedVersionCounts: Record<string, number>;
+}): string {
+  const r = d.restamp;
+  return `det stamp basis (level=leg): derivation v${d.derivationVersion}; this run re-derived `
+    + `${r.rederived} (stored ${JSON.stringify(d.stampedVersionCounts)}), corrected `
+    + `${r.flagsCorrected} side flags and ${r.contractsCorrected} contracts, cleared `
+    + `${r.entriesCleared} entry price(s) that priced the wrong position; `
+    + `${r.notReconfirmed} stored EQUIV pair(s) NOT reconfirmed by the live index (stamp kept, not demoted)`;
 }
 
 /** The pair-settlement audit's per-pair adjudication (side + both venues' own settlement).
@@ -365,30 +391,63 @@ async function main() {
   const marketById = new Map(trades.map((t) => [t.id, t.marketId]));
   for (const r of ledger.values()) if (!r.marketId) r.marketId = marketById.get(r.tradeId) ?? "";
   let detAttempted = 0;
+  /** Re-derivation bookkeeping (card det-our-side-flag-defect): a stamp is no longer
+   *  write-once. Counted so a stale-stamp repair can never be silent. */
+  const detRestamp = { rederived: 0, flagsCorrected: 0, entriesCleared: 0, contractsCorrected: 0, notReconfirmed: 0 };
   if (DET_ENABLED) {
     const todo = [...ledger.values()]
       .filter((r) => !r.stale && r.kalshiError !== "before_window_start"
-        && r.detVerdict === undefined && r.marketId)
+        && !!r.marketId && needsDetRederive(r))
       .sort((a, b) => b.openedMs - a.openedMs)
       .slice(0, DET_BATCH);
     detAttempted = todo.length;
     const det = resolveDeterministic(todo);
     for (const r of todo) {
-      const d = det.get(r.marketId);
+      const d = det.get(detKey(r.marketId, r.outcome));
       if (!d) continue;
+      const firstStamp = r.detVerdict === undefined;
+      const prevVerdict = r.detVerdict;
+      const prevSide = r.detOurSideIsYes ?? null;
+      const prevTicker = r.detTicker ?? null;
+      // A stored EQUIV that the CURRENT resolver does not reconfirm is NOT demoted. The
+      // resolver walks a LIVE event index, so an event ageing out of the pool reads exactly
+      // like a refutation — and dropping the pair would shrink the audit population for a
+      // reason that is not evidence. Keep the stamp, say so on the row, bump the version so
+      // it does not re-derive every run.
+      if (!firstStamp && prevVerdict === "EQUIV" && d.verdict !== "EQUIV") {
+        r.detVersion = DET_DERIVATION_VERSION;
+        r.detRedAtMs = Date.now();
+        r.detNote = `${r.detNote ?? ""} rederive_v${DET_DERIVATION_VERSION}_not_reconfirmed `
+          + `(resolver now ${d.verdict}${d.note ? `: ${d.note}` : ""}); stamp kept`.trim();
+        detRestamp.rederived++;
+        detRestamp.notReconfirmed++;
+        continue;
+      }
       r.detVerdict = d.verdict;
-      r.detAtMs = Date.now();
+      r.detVersion = DET_DERIVATION_VERSION;
+      if (firstStamp) r.detAtMs = Date.now(); else r.detRedAtMs = Date.now();
       if (d.verdict === "EQUIV") {
         r.detTicker = d.ticker ?? undefined;
         r.detTitle = d.kalshiTitle ?? undefined;
         r.detEvent = d.event;
         r.detOurSideIsYes = d.ourSideIsYes ?? null;
-        r.detEntry = d.price ?? null;
         r.detRules = d.rulesPrimary;
-        r.detNote = d.note;
+        const plan = restampEntry(
+          { detTicker: prevTicker ?? undefined, detOurSideIsYes: prevSide, detEntry: r.detEntry ?? null },
+          { ticker: d.ticker, ourSideIsYes: d.ourSideIsYes }, firstStamp, d.price,
+        );
+        r.detEntry = plan.detEntry;
+        r.detNote = plan.note ? `${d.note ?? ""} ${plan.note}`.trim() : d.note;
+        if (!firstStamp) {
+          if ((d.ourSideIsYes ?? null) !== prevSide) detRestamp.flagsCorrected++;
+          if ((d.ticker ?? null) !== prevTicker) detRestamp.contractsCorrected++;
+          if (plan.cleared) detRestamp.entriesCleared++;
+        }
       } else {
+        r.detEntry = null;
         r.detNote = d.note;
       }
+      if (!firstStamp) detRestamp.rederived++;
     }
   }
 
@@ -406,7 +465,11 @@ async function main() {
     // it can never produce a settlement read and keeps its exit-sign figures, unchanged.
     const basisRows = settledRows.filter((r) => r.detVerdict === "EQUIV" && !!r.detTicker);
     const todo = basisRows
-      .filter((r) => r.venueResult == null) // undefined = never read; null = not yet finalized
+      // undefined = never read; null = not yet finalized; OR the stored result was read from a
+      // DIFFERENT contract than the one the stamp now names (a stamp can be corrected by the
+      // re-derivation above, and a result cached under the old ticker is the wrong market's
+      // settlement — never silently re-used).
+      .filter((r) => r.venueResult == null || venueReadStale(r.venueTicker, r.detTicker))
       .sort((a, b) => b.openedMs - a.openedMs)
       .slice(0, VENUE_SETTLE_BATCH);
     if (process.env.KALSHI_VENUE_DEBUG) {
@@ -533,6 +596,17 @@ async function main() {
       return {
         enabled: DET_ENABLED, attempted: detAttempted, resolved: det.length,
         verdicts, equiv: equiv.length, priced: priced.length,
+        /** Stamps are no longer write-once (card det-our-side-flag-defect): what the last run
+         *  re-derived, and how much of the stored side/contract/entry it had to correct. */
+        derivationVersion: DET_DERIVATION_VERSION, restamp: detRestamp,
+        stampedVersionCounts: (() => {
+          const c: Record<string, number> = {};
+          for (const r of det) {
+            const k = `v${r.detVersion ?? 1}`;
+            c[k] = (c[k] ?? 0) + 1;
+          }
+          return c;
+        })(),
         coverage: det.length ? Math.round((equiv.length / det.length) * 1000) / 1000 : 0,
         fuzzyEquiv: det.filter((r) => r.detVerdict === "EQUIV" && r.verified).length,
         detOnlyEquiv: det.filter((r) => r.detVerdict === "EQUIV" && !r.verified).length,
@@ -621,6 +695,7 @@ async function main() {
     console.log(JSON.stringify(summary.coverage));
     console.log(`[dry-run] det arm: attempted=${summary.deterministic.attempted} resolved=${summary.deterministic.resolved} `
       + `verdicts=${JSON.stringify(summary.deterministic.verdicts)} priced=${summary.deterministic.priced}`);
+    console.log(detRestampLine(summary.deterministic));
     console.log(settlementBasisLine(summary.settlementBasis));
     return;
   }
@@ -637,6 +712,7 @@ async function main() {
   const dsum = summary.deterministic;
   console.log(`det arm (contract equivalence): resolved=${dsum.resolved} equiv=${dsum.equiv} `
     + `priced=${dsum.priced} book n=${dsum.book.n} PM $${dsum.book.pmPnl} | DET $${dsum.book.detPnl}`);
+  console.log(detRestampLine(dsum));
   console.log(settlementBasisLine(summary.settlementBasis));
   console.log(`wrote data/kalshi-venue-shadow.jsonl + summary`);
 }

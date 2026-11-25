@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-24T15:09:34.611Z",
+  "asOf": "2026-11-25T02:11:39.492Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,12 +12,12 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1805,
-    "inWindow": 1410,
+    "copiesSeen": 1813,
+    "inWindow": 1418,
     "withKalshiQuote": 2,
     "crossListRate": 0.001,
     "staleSkips": 395,
-    "quoteFailures": 1310,
+    "quoteFailures": 1318,
     "unverifiedMatches": 98,
     "rejectionReasons": {
       "pre_guard_quote": 1,
@@ -57,31 +57,43 @@
   "deterministic": {
     "enabled": true,
     "attempted": 0,
-    "resolved": 434,
+    "resolved": 442,
     "verdicts": {
-      "OTHER_CLASS": 214,
-      "NO_EVENT_MATCH": 177,
+      "OTHER_CLASS": 219,
+      "NO_EVENT_MATCH": 180,
       "EQUIV": 41,
       "AMBIGUOUS_EVENT": 2
     },
     "equiv": 41,
     "priced": 5,
-    "coverage": 0.094,
+    "derivationVersion": 2,
+    "restamp": {
+      "rederived": 0,
+      "flagsCorrected": 0,
+      "entriesCleared": 0,
+      "contractsCorrected": 0,
+      "notReconfirmed": 0
+    },
+    "stampedVersionCounts": {
+      "v1": 401,
+      "v2": 41
+    },
+    "coverage": 0.093,
     "fuzzyEquiv": 0,
     "detOnlyEquiv": 41,
     "book": {
-      "n": 1,
-      "pmPnl": -0.15,
-      "detPnl": -10.13,
-      "staked": 9.92,
-      "pmRoiPct": -1.49,
-      "detRoiPct": -102.03,
+      "n": 2,
+      "pmPnl": -1.01,
+      "detPnl": -31.33,
+      "staked": 29.92,
+      "pmRoiPct": -3.39,
+      "detRoiPct": -104.7,
       "detPnlBasis": "exit_sign",
       "venuePnlBasis": "kalshi_market_result",
-      "venueN": 1,
-      "venuePnl": -10.13,
-      "venueStaked": 9.92,
-      "venueRoiPct": -102.03
+      "venueN": 2,
+      "venuePnl": -31.33,
+      "venueStaked": 29.92,
+      "venueRoiPct": -104.7
     },
     "pairs": [
       {
@@ -110,45 +122,45 @@
         "question": "Spread: Nevada (-13.5)",
         "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV14",
         "detTitle": "Nevada wins by over 13.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.6962999999999999,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNCAAFSPREAD-26NOV21HAWNEV-NEV14/true -> KXNCAAFSPREAD-26NOV21HAWNEV-NEV14/false)"
       },
       {
         "question": "Spread: Nevada (-14.5)",
         "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV15",
         "detTitle": "Nevada wins by over 14.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.7263,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNCAAFSPREAD-26NOV21HAWNEV-NEV15/true -> KXNCAAFSPREAD-26NOV21HAWNEV-NEV15/false)"
       },
       {
         "question": "Spread: Iowa (-16.5)",
         "detTicker": "KXNCAAFSPREAD-26NOV21IOWAILL-IOWA17",
         "detTitle": "Iowa wins by over 16.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.6713,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNCAAFSPREAD-26NOV21IOWAILL-IOWA17/true -> KXNCAAFSPREAD-26NOV21IOWAILL-IOWA17/false)"
       },
       {
         "question": "Spread: Iowa (-20.5)",
         "detTicker": "KXNCAAFSPREAD-26NOV21IOWAILL-IOWA21",
         "detTitle": "Iowa wins by over 20.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.7613,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNCAAFSPREAD-26NOV21IOWAILL-IOWA21/true -> KXNCAAFSPREAD-26NOV21IOWAILL-IOWA21/false)"
       },
       {
         "question": "Spread: Tennessee (-16.5)",
@@ -198,23 +210,23 @@
         "question": "Spread: Iowa (-14.5)",
         "detTicker": "KXNCAAFSPREAD-26NOV21IOWAILL-IOWA15",
         "detTitle": "Iowa wins by over 14.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.6213,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNCAAFSPREAD-26NOV21IOWAILL-IOWA15/true -> KXNCAAFSPREAD-26NOV21IOWAILL-IOWA15/false)"
       },
       {
         "question": "Spread: Spurs (-20.5)",
         "detTicker": "KXNBASPREAD-26NOV21NOPSAS-SAS21",
         "detTitle": "San Antonio wins by over 20.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.6113,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNBASPREAD-26NOV21NOPSAS-SAS21/true -> KXNBASPREAD-26NOV21NOPSAS-SAS21/false)"
       },
       {
         "question": "UCLA vs. Michigan: O/U 41.5",
@@ -229,36 +241,36 @@
       },
       {
         "question": "UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)",
-        "detTicker": "KXUFCFIGHT-26NOV21CANALI-ALI",
-        "detTitle": "Ikram Aliskerov wins",
+        "detTicker": "KXUFCFIGHT-26NOV21CANALI-CAN",
+        "detTitle": "Jared Cannonier wins",
         "ourSideIsYes": true,
         "detEntry": null,
         "pmEntry": 0.26042,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: contract changed (KXUFCFIGHT-26NOV21CANALI-ALI/true -> KXUFCFIGHT-26NOV21CANALI-CAN/true)"
       },
       {
         "question": "Spread: Trail Blazers (-2.5)",
         "detTicker": "KXNBASPREAD-26NOV21PORNYK-POR3",
         "detTitle": "Portland wins by over 2.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.6613,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNBASPREAD-26NOV21PORNYK-POR3/true -> KXNBASPREAD-26NOV21PORNYK-POR3/false)"
       },
       {
         "question": "Spread: Trail Blazers (-4.5)",
         "detTicker": "KXNBASPREAD-26NOV21PORNYK-POR5",
         "detTitle": "Portland wins by over 4.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.7112999999999999,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNBASPREAD-26NOV21PORNYK-POR5/true -> KXNBASPREAD-26NOV21PORNYK-POR5/false)"
       },
       {
         "question": "Spread: Knicks (-7.5)",
@@ -319,12 +331,12 @@
         "question": "Spread: Bulls (-1.5)",
         "detTicker": "KXNBASPREAD-26NOV22DENCHI-CHI2",
         "detTitle": "Chicago wins by over 1.5 points",
-        "ourSideIsYes": true,
+        "ourSideIsYes": false,
         "detEntry": null,
         "pmEntry": 0.7913,
         "fuzzyTicker": null,
         "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
+        "note": "not_tradeable:finalized stale_stamp_v2: side changed (KXNBASPREAD-26NOV22DENCHI-CHI2/true -> KXNBASPREAD-26NOV22DENCHI-CHI2/false)"
       },
       {
         "question": "Pistons vs. Hawks: O/U 233.5",
@@ -367,7 +379,8 @@
         "detEntry": 0.71,
         "pmEntry": 0.7012999999999999,
         "fuzzyTicker": null,
-        "fuzzyVerified": false
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
       },
       {
         "question": "Binghamton Bearcats vs. Lehigh Mountain Hawks",
@@ -377,7 +390,8 @@
         "detEntry": 0.78,
         "pmEntry": 0.7563,
         "fuzzyTicker": null,
-        "fuzzyVerified": false
+        "fuzzyVerified": false,
+        "note": "not_tradeable:finalized"
       },
       {
         "question": "Bucknell Bison vs. Cornell Big Red",
@@ -407,14 +421,15 @@
         "detEntry": 0.14,
         "pmEntry": 0.13332,
         "fuzzyTicker": null,
-        "fuzzyVerified": false
+        "fuzzyVerified": false,
+        "note": " rederive_v2_not_reconfirmed (resolver now AMBIGUOUS_EVENT); stamp kept"
       }
     ]
   },
   "settlementBasis": {
-    "population": 37,
-    "known": 37,
-    "agree": 25,
+    "population": 38,
+    "known": 38,
+    "agree": 26,
     "exitLossVenueWin": 12,
     "exitWinVenueLoss": 0,
     "venueUnknown": 0,
@@ -427,25 +442,25 @@
     "venueBasis": "Kalshi /markets/<ticker> result on our side as adjudicated by the pair audit (PM token winner only as the fallback)",
     "clock": {
       "openedAtFrom": "2026-11-16T18:10:45.463Z",
-      "openedAtTo": "2026-11-23T07:54:16.300Z",
-      "readAt": "2026-11-24T15:09:34.612Z"
+      "openedAtTo": "2026-11-24T11:46:17.191Z",
+      "readAt": "2026-11-25T02:11:39.493Z"
     },
     "quoterun": {
-      "attempted": 0,
+      "attempted": 1,
       "failures": 0,
       "stillOpen": 0
     },
     "sideAdjudication": {
       "source": "data/kalshi-pair-settlement.json",
-      "generatedAt": "2026-11-24T15:07:19Z",
+      "generatedAt": "2026-11-25T02:10:00Z",
       "pairsInArtifact": 41,
-      "legsAdjudicated": 37,
-      "storedSideFlagDisagreements": 13
+      "legsAdjudicated": 38,
+      "storedSideFlagDisagreements": 0
     },
     "matchedPriced": {
-      "n": 1,
-      "exitPnl": -10.13,
-      "venuePnl": -10.13,
+      "n": 2,
+      "exitPnl": -31.33,
+      "venuePnl": -31.33,
       "delta": 0,
       "basis": "same legs, same detEntry; exit-sign PnL vs venue-settlement PnL"
     },
