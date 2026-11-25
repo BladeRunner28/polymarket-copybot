@@ -180,3 +180,9 @@ data/cache/kalshi-pair-settlement/
 data/wallet-sells.jsonl
 data/c200-printthrough.jsonl
 data/kalshi-macro-quotes.jsonl
+
+# Settlement-clarification read (2026-11-25): these two caches are the keyless gamma side of
+# scripts/profit-clarification-read.py (~475 KB, refetched on miss). The READ (this doc + the
+# ledger entry) is committed; the cache is venue data, not evidence.
+data/cache/gamma-condition-id-map.json
+data/cache/gamma-market-clarifications.json
