@@ -1,7 +1,463 @@
 {
  "_meta": {
+  "collegeGeneratedAt": "2026-11-25T15:05:19Z",
+  "collegeSource": "pair-constrained vote over our college market ids (both slug codes on one same-day venue event)",
   "generatedAt": "2026-11-23T13:26:34Z",
   "leagues": {
+   "cbb": {
+    "ambiguousFormsDropped": [],
+    "codes": 58,
+    "contested": [],
+    "derivation": "pair-constrained vote (both codes on one same-day event)",
+    "missing": [],
+    "refused": {
+     "no-event-on-our-day": 18
+    },
+    "series": "KXNCAAMBGAME",
+    "venueCodes": {
+     "akron": "AKR",
+     "applst": "APP",
+     "bella": "BELL",
+     "bing": "BING",
+     "boise": "BSU",
+     "boscol": "BC",
+     "bowlgr": "BGSU",
+     "buck": "BUCK",
+     "cabap": "CBU",
+     "chat": "CHAT",
+     "chist": "CHS",
+     "chsou": "CHSO",
+     "clvst": "CLEV",
+     "cornel": "COR",
+     "dart": "DART",
+     "delst": "DSU",
+     "det": "DET",
+     "elon": "ELON",
+     "flst": "FSU",
+     "furman": "FUR",
+     "gb": "GB",
+     "geows": "GW",
+     "harvrd": "HARV",
+     "holy": "HC",
+     "hou": "HOU",
+     "iowast": "ISU",
+     "jmad": "JMU",
+     "kan": "KU",
+     "kenest": "KENN",
+     "lehi": "LEH",
+     "lou": "LOU",
+     "mdes": "UMES",
+     "mia": "MIA",
+     "miaoh": "MOH",
+     "navy": "NAVY",
+     "ncol": "UNCO",
+     "ndkst": "NDSU",
+     "nichls": "NICH",
+     "nw": "NW",
+     "ore": "ORE",
+     "oregst": "ORST",
+     "penn": "PENN",
+     "sc": "SCAR",
+     "sea": "SEA",
+     "smho": "SHSU",
+     "soumis": "USM",
+     "stjohn": "SJU",
+     "stmry": "SMC",
+     "tcu": "TCU",
+     "troy": "TROY",
+     "tulsa": "TLSA",
+     "txtech": "TTU",
+     "usc": "USC",
+     "utsa": "UTSA",
+     "vtech": "VT",
+     "wag": "WAG",
+     "winth": "WIN",
+     "yngst": "YSU"
+    },
+    "votes": {
+     "akron": 1,
+     "applst": 1,
+     "bella": 1,
+     "bing": 1,
+     "boise": 1,
+     "boscol": 1,
+     "bowlgr": 1,
+     "buck": 1,
+     "cabap": 1,
+     "chat": 1,
+     "chist": 1,
+     "chsou": 1,
+     "clvst": 1,
+     "cornel": 1,
+     "dart": 1,
+     "delst": 1,
+     "det": 1,
+     "elon": 1,
+     "flst": 1,
+     "furman": 1,
+     "gb": 1,
+     "geows": 1,
+     "harvrd": 1,
+     "holy": 3,
+     "hou": 1,
+     "iowast": 1,
+     "jmad": 1,
+     "kan": 1,
+     "kenest": 1,
+     "lehi": 1,
+     "lou": 1,
+     "mdes": 1,
+     "mia": 1,
+     "miaoh": 1,
+     "navy": 1,
+     "ncol": 1,
+     "ndkst": 1,
+     "nichls": 1,
+     "nw": 1,
+     "ore": 1,
+     "oregst": 1,
+     "penn": 1,
+     "sc": 1,
+     "sea": 1,
+     "smho": 1,
+     "soumis": 1,
+     "stjohn": 1,
+     "stmry": 1,
+     "tcu": 1,
+     "troy": 1,
+     "tulsa": 1,
+     "txtech": 1,
+     "usc": 1,
+     "utsa": 1,
+     "vtech": 1,
+     "wag": 1,
+     "winth": 1,
+     "yngst": 1
+    },
+    "walk": {
+     "KXNCAAFGAME/open": {
+      "cursorExhausted": true,
+      "events": 71,
+      "pages": 12
+     },
+     "KXNCAAFGAME/settled": {
+      "cursorExhausted": true,
+      "events": 1539,
+      "pages": 12
+     },
+     "KXNCAAMBGAME/open": {
+      "cursorExhausted": true,
+      "events": 190,
+      "pages": 12
+     },
+     "KXNCAAMBGAME/settled": {
+      "cursorExhausted": true,
+      "events": 1095,
+      "pages": 12
+     },
+     "KXNCAAWBGAME/open": {
+      "cursorExhausted": true,
+      "events": 194,
+      "pages": 12
+     },
+     "KXNCAAWBGAME/settled": {
+      "cursorExhausted": true,
+      "events": 1066,
+      "pages": 12
+     }
+    }
+   },
+   "cfb": {
+    "ambiguousFormsDropped": [],
+    "codes": 122,
+    "contested": [],
+    "derivation": "pair-constrained vote (both codes on one same-day event)",
+    "missing": [],
+    "refused": {
+     "no-event-on-our-day": 18
+    },
+    "series": "KXNCAAFGAME",
+    "venueCodes": {
+     "abchr": "AC",
+     "airf": "AFA",
+     "akron": "AKR",
+     "ala": "ALA",
+     "alcst": "ALCN",
+     "applst": "APP",
+     "army": "ARMY",
+     "ballst": "BALL",
+     "boise": "BSU",
+     "boscol": "BC",
+     "buf": "BUFF",
+     "byu": "BYU",
+     "charlt": "CHAR",
+     "cin": "CIN",
+     "clmb": "CLMB",
+     "cmich": "CMU",
+     "coast": "CCAR",
+     "col": "COLO",
+     "flam": "FAMU",
+     "flint": "FIU",
+     "flst": "FSU",
+     "frest": "FRES",
+     "ga": "UGA",
+     "gas": "GASO",
+     "gast": "GAST",
+     "grmbst": "GRAM",
+     "gtech": "GT",
+     "gtwn": "GTWN",
+     "hawaii": "HAW",
+     "holy": "HC",
+     "ill": "ILL",
+     "incar": "IW",
+     "ind": "IND",
+     "iowa": "IOWA",
+     "iowast": "ISU",
+     "jackst": "JKST",
+     "jmad": "JMU",
+     "kan": "KU",
+     "kanst": "KSU",
+     "kentst": "KENT",
+     "librty": "LIB",
+     "lou": "LOU",
+     "lsu": "LSU",
+     "marsh": "MRSH",
+     "mia": "MIA",
+     "miaoh": "MOH",
+     "mich": "MICH",
+     "minnst": "MINN",
+     "missr": "MIZZ",
+     "morgst": "MORG",
+     "mphs": "MEM",
+     "mrst": "MRST",
+     "mspst": "MSST",
+     "mst": "MSU",
+     "murst": "MURR",
+     "navy": "NAVY",
+     "ncar": "UNC",
+     "ncat": "NCAT",
+     "ncc": "NCCU",
+     "ncol": "UNCO",
+     "ncst": "NCST",
+     "nd": "ND",
+     "nebr": "NEB",
+     "nevada": "NEV",
+     "nmx": "UNM",
+     "nmxst": "NMSU",
+     "ntx": "UNT",
+     "nw": "NW",
+     "ohiost": "OSU",
+     "okl": "OKLA",
+     "okst": "OKST",
+     "old": "ODU",
+     "ore": "ORE",
+     "oregst": "ORST",
+     "pennst": "PSU",
+     "pitt": "PITT",
+     "pur": "PUR",
+     "ri": "URI",
+     "rice": "RICE",
+     "sacst": "SAC",
+     "sala": "USA",
+     "sc": "SCAR",
+     "sdst": "SDSU",
+     "selou": "SELA",
+     "sfaus": "SFA",
+     "sfl": "USF",
+     "smho": "SHSU",
+     "smu": "SMU",
+     "soumis": "USM",
+     "south": "SOU",
+     "stan": "STAN",
+     "stbr": "STON",
+     "syra": "SYR",
+     "tarl": "TARL",
+     "tcu": "TCU",
+     "templ": "TEM",
+     "tenn": "TENN",
+     "toledo": "TOL",
+     "tows": "TOWS",
+     "troy": "TROY",
+     "tulane": "TULN",
+     "tx": "TEX",
+     "txam": "TXAM",
+     "txst": "TXST",
+     "txtech": "TTU",
+     "ucf": "UCF",
+     "ucla": "UCLA",
+     "umass": "MASS",
+     "utah": "UTAH",
+     "utahst": "USU",
+     "utep": "UTEP",
+     "utrgv": "UTRGV",
+     "utsa": "UTSA",
+     "vir": "UVA",
+     "vtech": "VT",
+     "wake": "WAKE",
+     "wash": "WASH",
+     "washst": "WSU",
+     "wisc": "WIS",
+     "wmich": "WMU",
+     "wvir": "WVU",
+     "wyom": "WYO"
+    },
+    "votes": {
+     "abchr": 2,
+     "airf": 1,
+     "akron": 1,
+     "ala": 7,
+     "alcst": 1,
+     "applst": 4,
+     "army": 1,
+     "ballst": 2,
+     "boise": 5,
+     "boscol": 1,
+     "buf": 3,
+     "byu": 2,
+     "charlt": 4,
+     "cin": 1,
+     "clmb": 2,
+     "cmich": 2,
+     "coast": 1,
+     "col": 1,
+     "flam": 1,
+     "flint": 1,
+     "flst": 4,
+     "frest": 2,
+     "ga": 1,
+     "gas": 1,
+     "gast": 1,
+     "grmbst": 1,
+     "gtech": 1,
+     "gtwn": 1,
+     "hawaii": 3,
+     "holy": 1,
+     "ill": 5,
+     "incar": 1,
+     "ind": 1,
+     "iowa": 4,
+     "iowast": 2,
+     "jackst": 2,
+     "jmad": 3,
+     "kan": 2,
+     "kanst": 1,
+     "kentst": 1,
+     "librty": 1,
+     "lou": 2,
+     "lsu": 5,
+     "marsh": 1,
+     "mia": 3,
+     "miaoh": 5,
+     "mich": 1,
+     "minnst": 1,
+     "missr": 1,
+     "morgst": 1,
+     "mphs": 1,
+     "mrst": 1,
+     "mspst": 6,
+     "mst": 1,
+     "murst": 1,
+     "navy": 1,
+     "ncar": 1,
+     "ncat": 1,
+     "ncc": 1,
+     "ncol": 1,
+     "ncst": 1,
+     "nd": 1,
+     "nebr": 1,
+     "nevada": 3,
+     "nmx": 5,
+     "nmxst": 1,
+     "ntx": 1,
+     "nw": 3,
+     "ohiost": 1,
+     "okl": 1,
+     "okst": 4,
+     "old": 3,
+     "ore": 2,
+     "oregst": 2,
+     "pennst": 3,
+     "pitt": 1,
+     "pur": 1,
+     "ri": 1,
+     "rice": 1,
+     "sacst": 1,
+     "sala": 1,
+     "sc": 1,
+     "sdst": 1,
+     "selou": 1,
+     "sfaus": 1,
+     "sfl": 2,
+     "smho": 2,
+     "smu": 1,
+     "soumis": 2,
+     "south": 1,
+     "stan": 2,
+     "stbr": 2,
+     "syra": 1,
+     "tarl": 1,
+     "tcu": 2,
+     "templ": 1,
+     "tenn": 4,
+     "toledo": 1,
+     "tows": 1,
+     "troy": 2,
+     "tulane": 3,
+     "tx": 4,
+     "txam": 1,
+     "txst": 1,
+     "txtech": 3,
+     "ucf": 3,
+     "ucla": 2,
+     "umass": 4,
+     "utah": 3,
+     "utahst": 5,
+     "utep": 4,
+     "utrgv": 1,
+     "utsa": 3,
+     "vir": 1,
+     "vtech": 1,
+     "wake": 2,
+     "wash": 2,
+     "washst": 2,
+     "wisc": 1,
+     "wmich": 3,
+     "wvir": 1,
+     "wyom": 4
+    },
+    "walk": {
+     "KXNCAAFGAME/open": {
+      "cursorExhausted": true,
+      "events": 71,
+      "pages": 12
+     },
+     "KXNCAAFGAME/settled": {
+      "cursorExhausted": true,
+      "events": 1539,
+      "pages": 12
+     },
+     "KXNCAAMBGAME/open": {
+      "cursorExhausted": true,
+      "events": 190,
+      "pages": 12
+     },
+     "KXNCAAMBGAME/settled": {
+      "cursorExhausted": true,
+      "events": 1095,
+      "pages": 12
+     },
+     "KXNCAAWBGAME/open": {
+      "cursorExhausted": true,
+      "events": 194,
+      "pages": 12
+     },
+     "KXNCAAWBGAME/settled": {
+      "cursorExhausted": true,
+      "events": 1066,
+      "pages": 12
+     }
+    }
+   },
    "epl": {
     "ambiguousFormsDropped": [],
     "codes": 23,
@@ -36,6 +492,550 @@
    }
   },
   "source": "Kalshi event title/sub_title pairs (settled 90d + open)"
+ },
+ "cbb": {
+  "akron": [
+   "Akron"
+  ],
+  "applst": [
+   "Appalachian St."
+  ],
+  "bella": [
+   "Bellarmine"
+  ],
+  "bing": [
+   "Binghamton"
+  ],
+  "boise": [
+   "Boise St."
+  ],
+  "boscol": [
+   "Boston College"
+  ],
+  "bowlgr": [
+   "Bowling Green"
+  ],
+  "buck": [
+   "Bucknell"
+  ],
+  "cabap": [
+   "California Baptist"
+  ],
+  "chat": [
+   "Chattanooga"
+  ],
+  "chist": [
+   "Chicago St."
+  ],
+  "chsou": [
+   "Charleston Southern"
+  ],
+  "clvst": [
+   "Cleveland St."
+  ],
+  "cornel": [
+   "Cornell"
+  ],
+  "dart": [
+   "Dartmouth"
+  ],
+  "delst": [
+   "Delaware St."
+  ],
+  "det": [
+   "Detroit Mercy"
+  ],
+  "elon": [
+   "Elon"
+  ],
+  "flst": [
+   "Florida St."
+  ],
+  "furman": [
+   "Furman"
+  ],
+  "gb": [
+   "Green Bay"
+  ],
+  "geows": [
+   "George Washington"
+  ],
+  "harvrd": [
+   "Harvard"
+  ],
+  "holy": [
+   "Holy Cross"
+  ],
+  "hou": [
+   "Houston"
+  ],
+  "iowast": [
+   "Iowa St."
+  ],
+  "jmad": [
+   "James Madison"
+  ],
+  "kan": [
+   "Kansas"
+  ],
+  "kenest": [
+   "Kennesaw St."
+  ],
+  "lehi": [
+   "Lehigh"
+  ],
+  "lou": [
+   "Louisville"
+  ],
+  "mdes": [
+   "Maryland-Eastern Shore"
+  ],
+  "mia": [
+   "Miami (FL)"
+  ],
+  "miaoh": [
+   "Miami (OH)"
+  ],
+  "navy": [
+   "Navy"
+  ],
+  "ncol": [
+   "Northern Colorado"
+  ],
+  "ndkst": [
+   "North Dakota St."
+  ],
+  "nichls": [
+   "Nicholls St."
+  ],
+  "nw": [
+   "Northwestern"
+  ],
+  "ore": [
+   "Oregon"
+  ],
+  "oregst": [
+   "Oregon St."
+  ],
+  "penn": [
+   "Penn"
+  ],
+  "sc": [
+   "South Carolina"
+  ],
+  "sea": [
+   "Seattle"
+  ],
+  "smho": [
+   "Sam Houston"
+  ],
+  "soumis": [
+   "Southern Miss"
+  ],
+  "stjohn": [
+   "St. John's"
+  ],
+  "stmry": [
+   "Saint Mary's"
+  ],
+  "tcu": [
+   "TCU"
+  ],
+  "troy": [
+   "Troy"
+  ],
+  "tulsa": [
+   "Tulsa"
+  ],
+  "txtech": [
+   "Texas Tech"
+  ],
+  "usc": [
+   "USC"
+  ],
+  "utsa": [
+   "UTSA"
+  ],
+  "vtech": [
+   "Virginia Tech"
+  ],
+  "wag": [
+   "Wagner"
+  ],
+  "winth": [
+   "Winthrop"
+  ],
+  "yngst": [
+   "Youngstown St."
+  ]
+ },
+ "cfb": {
+  "abchr": [
+   "Abilene Christian"
+  ],
+  "airf": [
+   "Air Force"
+  ],
+  "akron": [
+   "Akron"
+  ],
+  "ala": [
+   "Alabama"
+  ],
+  "alcst": [
+   "Alcorn St."
+  ],
+  "applst": [
+   "Appalachian St."
+  ],
+  "army": [
+   "Army"
+  ],
+  "ballst": [
+   "Ball St."
+  ],
+  "boise": [
+   "Boise St."
+  ],
+  "boscol": [
+   "Boston College"
+  ],
+  "buf": [
+   "Buffalo"
+  ],
+  "byu": [
+   "BYU"
+  ],
+  "charlt": [
+   "Charlotte"
+  ],
+  "cin": [
+   "Cincinnati"
+  ],
+  "clmb": [
+   "Columbia"
+  ],
+  "cmich": [
+   "Central Michigan"
+  ],
+  "coast": [
+   "Coastal Carolina"
+  ],
+  "col": [
+   "Colorado"
+  ],
+  "flam": [
+   "Florida A&M"
+  ],
+  "flint": [
+   "Florida International"
+  ],
+  "flst": [
+   "Florida St."
+  ],
+  "frest": [
+   "Fresno St."
+  ],
+  "ga": [
+   "Georgia"
+  ],
+  "gas": [
+   "Georgia Southern"
+  ],
+  "gast": [
+   "Georgia St."
+  ],
+  "grmbst": [
+   "Grambling St."
+  ],
+  "gtech": [
+   "Georgia Tech"
+  ],
+  "gtwn": [
+   "Georgetown"
+  ],
+  "hawaii": [
+   "Hawai'i"
+  ],
+  "holy": [
+   "Holy Cross"
+  ],
+  "ill": [
+   "Illinois"
+  ],
+  "incar": [
+   "Incarnate Word"
+  ],
+  "ind": [
+   "Indiana"
+  ],
+  "iowa": [
+   "Iowa"
+  ],
+  "iowast": [
+   "Iowa St."
+  ],
+  "jackst": [
+   "Jackson St."
+  ],
+  "jmad": [
+   "James Madison"
+  ],
+  "kan": [
+   "Kansas"
+  ],
+  "kanst": [
+   "Kansas St."
+  ],
+  "kentst": [
+   "Kent St."
+  ],
+  "librty": [
+   "Liberty"
+  ],
+  "lou": [
+   "Louisville"
+  ],
+  "lsu": [
+   "LSU"
+  ],
+  "marsh": [
+   "Marshall"
+  ],
+  "mia": [
+   "Miami (FL)"
+  ],
+  "miaoh": [
+   "Miami (OH)"
+  ],
+  "mich": [
+   "Michigan"
+  ],
+  "minnst": [
+   "Minnesota"
+  ],
+  "missr": [
+   "Missouri"
+  ],
+  "morgst": [
+   "Morgan St."
+  ],
+  "mphs": [
+   "Memphis"
+  ],
+  "mrst": [
+   "Marist"
+  ],
+  "mspst": [
+   "Mississippi St."
+  ],
+  "mst": [
+   "Michigan St."
+  ],
+  "murst": [
+   "Murray St."
+  ],
+  "navy": [
+   "Navy"
+  ],
+  "ncar": [
+   "North Carolina"
+  ],
+  "ncat": [
+   "North Carolina A&T"
+  ],
+  "ncc": [
+   "North Carolina Central"
+  ],
+  "ncol": [
+   "Northern Colorado"
+  ],
+  "ncst": [
+   "NC St."
+  ],
+  "nd": [
+   "Notre Dame"
+  ],
+  "nebr": [
+   "Nebraska"
+  ],
+  "nevada": [
+   "Nevada"
+  ],
+  "nmx": [
+   "New Mexico"
+  ],
+  "nmxst": [
+   "New Mexico St."
+  ],
+  "ntx": [
+   "North Texas"
+  ],
+  "nw": [
+   "Northwestern"
+  ],
+  "ohiost": [
+   "Ohio St."
+  ],
+  "okl": [
+   "Oklahoma"
+  ],
+  "okst": [
+   "Oklahoma St."
+  ],
+  "old": [
+   "Old Dominion"
+  ],
+  "ore": [
+   "Oregon"
+  ],
+  "oregst": [
+   "Oregon St."
+  ],
+  "pennst": [
+   "Penn St."
+  ],
+  "pitt": [
+   "Pittsburgh"
+  ],
+  "pur": [
+   "Purdue"
+  ],
+  "ri": [
+   "Rhode Island"
+  ],
+  "rice": [
+   "Rice"
+  ],
+  "sacst": [
+   "Sacramento St."
+  ],
+  "sala": [
+   "South Alabama"
+  ],
+  "sc": [
+   "South Carolina"
+  ],
+  "sdst": [
+   "San Diego St."
+  ],
+  "selou": [
+   "Southeastern Louisiana"
+  ],
+  "sfaus": [
+   "Stephen F. Austin"
+  ],
+  "sfl": [
+   "South Florida"
+  ],
+  "smho": [
+   "Sam Houston"
+  ],
+  "smu": [
+   "SMU"
+  ],
+  "soumis": [
+   "Southern Miss"
+  ],
+  "south": [
+   "Southern University"
+  ],
+  "stan": [
+   "Stanford"
+  ],
+  "stbr": [
+   "Stony Brook"
+  ],
+  "syra": [
+   "Syracuse"
+  ],
+  "tarl": [
+   "Tarleton St."
+  ],
+  "tcu": [
+   "TCU"
+  ],
+  "templ": [
+   "Temple"
+  ],
+  "tenn": [
+   "Tennessee"
+  ],
+  "toledo": [
+   "Toledo"
+  ],
+  "tows": [
+   "Towson"
+  ],
+  "troy": [
+   "Troy"
+  ],
+  "tulane": [
+   "Tulane"
+  ],
+  "tx": [
+   "Texas"
+  ],
+  "txam": [
+   "Texas A&M"
+  ],
+  "txst": [
+   "Texas St."
+  ],
+  "txtech": [
+   "Texas Tech"
+  ],
+  "ucf": [
+   "UCF"
+  ],
+  "ucla": [
+   "UCLA"
+  ],
+  "umass": [
+   "UMass"
+  ],
+  "utah": [
+   "Utah"
+  ],
+  "utahst": [
+   "Utah St."
+  ],
+  "utep": [
+   "UTEP"
+  ],
+  "utrgv": [
+   "UT Rio Grande Valley"
+  ],
+  "utsa": [
+   "UTSA"
+  ],
+  "vir": [
+   "Virginia"
+  ],
+  "vtech": [
+   "Virginia Tech"
+  ],
+  "wake": [
+   "Wake Forest"
+  ],
+  "wash": [
+   "Washington"
+  ],
+  "washst": [
+   "Washington St."
+  ],
+  "wisc": [
+   "Wisconsin"
+  ],
+  "wmich": [
+   "Western Michigan"
+  ],
+  "wvir": [
+   "West Virginia"
+  ],
+  "wyom": [
+   "Wyoming"
+  ]
  },
  "epl": {
   "ars": [

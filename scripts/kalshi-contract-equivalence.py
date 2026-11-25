@@ -629,8 +629,40 @@ def self_test():
     arm("alias keeps Manchester City from matching Manchester United",
         alias_match("epl", "mac", "Manchester United", AL) is False
         and alias_match("epl", "mac", "Manchester City", AL) is True)
-    arm("alias table ABSTAINS on a code it does not list (college falls back to the heuristic)",
+    arm("alias table ABSTAINS on a code it does not list (falls back to the heuristic)",
         alias_match("cfb", "tenn", "Tennessee", AL) is None and team_match("cfb", "tenn", "Tennessee", AL))
+    # --- college (2026-11-25): the derived table, not an authored one -----------------
+    # The derivation (scripts/kalshi-team-aliases.py --derive-college) places a code by
+    # voting over same-day two-sided venue events; what the RESOLVER must now do is use it.
+    ALC = {"cfb": {"vtech": ["Virginia Tech"], "washst": ["Washington St."],
+                   "ga": ["Georgia"], "gast": ["Georgia St."], "smho": ["Sam Houston"]},
+           "cbb": {"vtech": ["Virginia Tech"], "nw": ["Northwestern"]}}
+    arm("college alias resolves a contracted code (vtech -> Virginia Tech)",
+        alias_match("cfb", "vtech", "Virginia Tech", ALC) is True)
+    arm("college alias keeps Georgia off Georgia St.",
+        alias_match("cfb", "ga", "Georgia St.", ALC) is False
+        and alias_match("cfb", "ga", "Georgia", ALC) is True)
+    arm("college alias places a 2-char code the heuristic cannot (nw -> Northwestern)",
+        alias_match("cbb", "nw", "Northwestern", ALC) is True
+        and code_match("nw", "Northwestern") is False)
+    arm("college moneyline EQUIV through the derived table",
+        verdict(our_contract("Virginia Tech Hokies vs. Northwestern Wildcats"),
+                kalshi_contract("Virginia Tech wins"),
+                {"sport": "cbb", "teams": ["vtech", "nw"], "day": 0, "tail": []}, ALC) == "EQUIV")
+    arm("college moneyline naming the OPPONENT is the same CONTRACT (the held side is separate)",
+        verdict(our_contract("Virginia Tech Hokies vs. Northwestern Wildcats"),
+                kalshi_contract("Northwestern wins"),
+                {"sport": "cbb", "teams": ["vtech", "nw"], "day": 0, "tail": []}, ALC) == "EQUIV")
+    arm("college moneyline naming a SCHOOL OUTSIDE our slug is refused",
+        verdict(our_contract("Virginia Tech Hokies vs. Northwestern Wildcats"),
+                kalshi_contract("Georgia St. wins"),
+                {"sport": "cbb", "teams": ["vtech", "nw"], "day": 0, "tail": []}, ALC)
+        == "DIFFERENT_CONTRACT")
+    arm("college spread EQUIV on the side the slug tail names",
+        verdict(our_contract("Spread: Georgia (-9.5)"),
+                kalshi_contract("Georgia wins by over 9.5 points"),
+                {"sport": "cfb", "teams": ["ga", "sc"], "day": 0,
+                 "tail": ["spread", "away", "9pt5"]}, ALC) == "EQUIV")
     _sl_home = {"sport": "nba", "teams": ["tor", "det"], "day": 0, "tail": ["spread", "home", "13pt5"]}
     _sl_away = {"sport": "nba", "teams": ["nop", "sas"], "day": 0, "tail": ["spread", "away", "5pt5"]}
     arm("spread side is read from the id tail",

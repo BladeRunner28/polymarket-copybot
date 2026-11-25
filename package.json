@@ -29,6 +29,7 @@
     "kalshi:contract-equivalence": "python3 scripts/kalshi-contract-equivalence.py",
     "kalshi:pair-settlement": "python3 scripts/kalshi-pair-settlement-read.py",
     "kalshi:team-aliases": "python3 scripts/kalshi-team-aliases.py --derive && python3 scripts/kalshi-team-aliases.py --check",
+    "kalshi:college-aliases": "python3 scripts/kalshi-team-aliases.py --derive-college && python3 scripts/kalshi-team-aliases.py --check && python3 scripts/kalshi-team-aliases.py --self-test",
     "ops:record": "python3 scripts/ops-record-lookup.py",
     "longshot:token-basis": "python3 scripts/longshot-token-basis.py",
     "wallet:selector-search": "python3 scripts/u2b-selector-search.py",
