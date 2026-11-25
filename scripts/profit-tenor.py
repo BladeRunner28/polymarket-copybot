@@ -125,6 +125,7 @@ def load_settled(c, min_rule, since_ms):
                         ntl=float(r["sz"]), pnl=float(r["pnl"]), days=days,
                         cd=float(r["sz"]) * days, ms=r["openedAt"], status=r["status"],
                         v=r["v"], conf=r["conf"], fs=r["fs"] or "",
+                        endms=end,
                         stair=("Short-TTR" in (r["reasons"] or ""))))
     for l in out:
         t = ttr_for(c, l["market"], l["ms"])
@@ -285,7 +286,12 @@ def selftest():
     # a losing leg must gain when its risk is cut; a small leg must be untouched
     assert abs(cap_delta(dict(ntl=100, pnl=-30), 25) - 22.5) < 1e-9
     assert cap_delta(dict(ntl=20, pnl=-6), 25) == 0.0
-    print("selftest 13/13 OK")
+    # S25 resize: PnL scales exactly with dollars at risk, and a leg under the cap is unchanged
+    big = resize(dict(ntl=100, pnl=-20, days=1.0), 10)
+    assert big["ntl"] == 10 and abs(big["pnl"] + 2.0) < 1e-9
+    small = dict(ntl=8, pnl=3, days=1.0)
+    assert resize(small, 10) is small
+    print("selftest 15/15 OK")
 
 
 def table(title, legs, extra=None):
@@ -769,6 +775,222 @@ def sec_clip_joint(legs, days, opens=None):
               f"  open ${sum(l['ntl'] for l in ow):>8.2f}  ({len(ow)} legs)")
 
 
+def _tape_touch():
+    """Load the venue minute tape once and return touch(leg, W) -> True/False/None.
+
+    Same reader as sec_fill_basis (scripts/profit-fill-tape.py, cached). Touch is
+    NECESSARY, not sufficient: queue position is unmodelled, so touched is an upper
+    bound on what we own -- which is the direction that matters for S24 (it can only
+    understate the adverse-selection gap, never overstate it).
+    """
+    import importlib.util as _iu
+    _s = _iu.spec_from_file_location("_pft", os.path.join(HERE, "profit-fill-tape.py"))
+    if _s is None or _s.loader is None:
+        return None, {}
+    pf = _iu.module_from_spec(_s)
+    _s.loader.exec_module(pf)
+    tlegs = [l for l in pf.load("2026-09-01")
+             if l.get("status") != "open" and l.get("realizedPnl") is not None
+             and (l.get("rv") or 0) >= 68]
+    pf.classify(tlegs, workers=8)
+    tape = {l["id"]: l for l in tlegs}
+
+    def touch(leg, W):
+        t = tape.get(leg["id"])
+        if t is None:
+            return None
+        s = t.get("tape_series")
+        if not s:
+            return None
+        t0 = t["openedTs"] // 1000
+        sub = [p for t2, p in s if t2 <= t0 + W]
+        if not sub:
+            return None
+        return min(sub) <= t["trueP"] + 0.001
+
+    return touch, tape
+
+
+def resize(leg, cap):
+    """Dollars at risk capped; PnL scales linearly (exact on a settled outcome)."""
+    if leg["ntl"] <= cap:
+        return leg
+    m = dict(leg)
+    m["pnl"] = leg["pnl"] * (cap / leg["ntl"])
+    m["ntl"] = cap
+    m["cd"] = cap * leg["days"]
+    return m
+
+
+def _worst_cells(legs, basis_label, k=3, min_n=5):
+    """The loss cells a rule LEAVES BEHIND: what the kept book looks like under a microscope."""
+    cells = {}
+    for l in legs:
+        tier = "<$15" if l["ntl"] < 15 else "$15-30" if l["ntl"] < 30 else "$30-60" if l["ntl"] < 60 else "$60+"
+        cells.setdefault((l["tb"], band_of(l["px"]), tier), []).append(l)
+    rows = [(v, key) for key, v in cells.items() if len(v) >= min_n]
+    rows.sort(key=lambda r: sum(l["pnl"] for l in r[0]))
+    for v, key in rows[:k]:
+        print(f"      {basis_label} left behind: {key[0]:<7}{key[1]}  clip {key[2]:<6} "
+              f"n={len(v):>3} ${sum(l['ntl'] for l in v):>6.0f} risk  "
+              f"PnL ${sum(l['pnl'] for l in v):>+8.1f}  ROI {roi(v):>+6.1f}%")
+
+
+def sec_owned(legs, days, opens):
+    """S24-S26 -- the book we actually OWN, and what each candidate rule leaves standing.
+
+    WHY THIS EXISTS
+    ---------------
+    Every $/day figure in S12-S23 prices a rule on the BOOKED ledger, where p(fill)=1.
+    The book carries two independent stamps of whether that assumption held: the
+    resolver's fillStatus and the venue's own minute tape. S24 prints them against each
+    other. If the two agree, the booked book is the owned book. If they disagree, the
+    difference is not a rounding error -- it is the sign of the strategy.
+    """
+    touch, tape = _tape_touch()
+    W5, W60 = 300, 3600
+    for l in legs:
+        l["t5"] = touch(l, W5) if touch else None
+        l["t60"] = touch(l, W60) if touch else None
+    # OWNED = the resolver says filled, or the venue traded at our price inside 5 min.
+    # CONFIRMED = resolver filled (the stricter, book-internal stamp).
+    for l in legs:
+        l["owned"] = (l["fs"] == "filled") or (l["t5"] is True)
+
+    print("\n== S24. FILL-CLASS INVERSION -- the legs we OWN are the losers ==")
+    print("   cost = dollars at risk; PnL = the ledger's own realisedPnL; CIs market-clustered")
+    print(f"{'fillStatus':<12}{'legs':>6}{'mkts':>6}{'notional $':>12}{'PnL $':>10}{'ROI':>9}"
+          f"{'$/1k cd':>9}   CI(PnL)")
+    for st, nm in (("filled", "filled"), ("unfilled", "unfilled"), ("", "null")):
+        v = [l for l in legs if l["fs"] == st]
+        if not v:
+            continue
+        print(f"{nm:<12}{len(v):>6}{len({l['market'] for l in v}):>6}"
+              f"{sum(l['ntl'] for l in v):>12.0f}{sum(l['pnl'] for l in v):>10.1f}"
+              f"{roi(v):>8.1f}%{per1k(v):>9.2f}   {fmt_ci(boot_pnl(v))}")
+    own = [l for l in legs if l["owned"]]
+    not_own = [l for l in legs if not l["owned"]]
+    print(f"\n   OWNED (resolver filled OR tape-touched <=5min): {len(own)} legs / "
+          f"${sum(l['ntl'] for l in own):.0f} / PnL ${sum(l['pnl'] for l in own):.1f} "
+          f"({roi(own):+.1f}%) {fmt_ci(boot_pnl(own))}")
+    print(f"   NOT owned (neither stamp):                      {len(not_own)} legs / "
+          f"${sum(l['ntl'] for l in not_own):.0f} / PnL ${sum(l['pnl'] for l in not_own):.1f} "
+          f"({roi(not_own):+.1f}%) {fmt_ci(boot_pnl(not_own))}")
+    gap = roi(own) - roi(not_own)
+    print(f"   the sign gap is {gap:+.1f}pp of ROI; the booked book is the average of the two.")
+
+    print("\n   do the two stamps agree? (rows = resolver, cols = venue tape within 5 min)")
+    print(f"     {'':<12}{'touched':>10}{'never':>10}{'no tape':>10}")
+    for st, nm in (("filled", "filled"), ("unfilled", "unfilled"), ("", "null")):
+        v = [l for l in legs if l["fs"] == st]
+        a = sum(1 for l in v if l["t5"] is True)
+        b = sum(1 for l in v if l["t5"] is False)
+        c = sum(1 for l in v if l["t5"] is None)
+        print(f"     {nm:<12}{a:>10}{b:>10}{c:>10}")
+    print("   the `unfilled` row is the defect: those legs are booked with PnL the venue says")
+    print("   never traded at our price inside 5 minutes.")
+
+    print("\n   the same book split by year-half, so a stale stamp cannot explain it")
+    for st, nm in (("filled", "owned (filled)"), ("unfilled", "booked only (unfilled)")):
+        v = [l for l in legs if l["fs"] == st]
+        ms = sorted(l["ms"] for l in v)
+        if len(ms) < 6:
+            continue
+        mid = ms[len(ms) // 2]
+        h1 = [l for l in v if l["ms"] <= mid]
+        h2 = [l for l in v if l["ms"] > mid]
+        print(f"     {nm:<26} half1 n={len(h1):>3} ROI {roi(h1):>+7.1f}%   "
+              f"half2 n={len(h2):>3} ROI {roi(h2):>+7.1f}%")
+
+    # ---------------------------------------------------------------- S25
+    print("\n== S25. THE KEPT BOOK -- a rule is judged by what it LEAVES, not what it cuts ==")
+    print("   delta ($/day) = improvement; LEVEL = what the book earns per day afterwards.")
+    print("   post-rule ROI is the number the ladder is actually paid on.")
+    rules = [
+        ("nothing (today)", lambda l: l),
+        ("cheap $10 (C-200 only)", lambda l: resize(l, 10)
+            if (l["bot"] == "BANKROLL_200" and not l["stair"] and l["px"] < 0.20 and l["ntl"] > 10) else l),
+        ("cheap $10 (both lanes)", lambda l: resize(l, 10)
+            if (not l["stair"] and l["px"] < 0.20 and l["ntl"] > 10) else l),
+        ("tenor $10 (C-200, 2-24h)", lambda l: resize(l, 10)
+            if (l["bot"] == "BANKROLL_200" and not l["stair"] and l["ttr"] is not None
+                and 2 <= l["ttr"] < 24 and l["ntl"] > 10) else l),
+        ("cheap $10 + tenor $10", lambda l: resize(l, 10)
+            if ((not l["stair"] and l["px"] < 0.20 and l["ntl"] > 10)
+                or (l["bot"] == "BANKROLL_200" and not l["stair"] and l["ttr"] is not None
+                    and 2 <= l["ttr"] < 24 and l["ntl"] > 10)) else l),
+        ("lane-wide $10 (all Kelly)", lambda l: resize(l, 10)
+            if (l["bot"] == "BANKROLL_200" and not l["stair"] and l["ntl"] > 10) else l),
+    ]
+    print(f"   {'rule':<26}{'basis':<10}{'legs':>6}{'notional $':>12}{'PnL $':>10}{'ROI':>9}"
+          f"{'ex-top-1':>10}{'ex-top-3':>10}{'$/day':>9}{'delta/d':>9}")
+    base = {}
+    for nm, f in rules:
+        for basis, sel in (("booked", lambda l: True),
+                           ("touched 1h", lambda l: l["t60"] is True),
+                           ("touched 5m", lambda l: l["t5"] is True)):
+            v = [f(l) for l in legs if sel(l)]
+            if not v:
+                continue
+            pnl = sum(l["pnl"] for l in v)
+            if nm.startswith("nothing"):
+                base[basis] = pnl
+            s = sorted(v, key=lambda l: -l["pnl"])
+            e1 = roi(s[1:]) if len(s) > 1 else 0.0
+            e3 = roi(s[3:]) if len(s) > 3 else 0.0
+            print(f"   {nm:<26}{basis:<10}{len(v):>6}{sum(l['ntl'] for l in v):>12.0f}"
+                  f"{pnl:>10.1f}{roi(v):>8.1f}%{e1:>9.1f}%{e3:>9.1f}%"
+                  f"{pnl/days:>+9.2f}{(pnl - base.get(basis, 0.0))/days:>+9.2f}")
+    print("\n   what the two surviving books still carry (touched 5m basis, cells with n>=5):")
+    cheap_kept = [resize(l, 10) if (l["px"] < 0.20 and l["ntl"] > 10) else l
+                  for l in legs if l["t5"] is True]
+    tenor_kept = [resize(l, 10) if (l["bot"] == "BANKROLL_200" and not l["stair"]
+                                    and l["ttr"] is not None and 2 <= l["ttr"] < 24
+                                    and l["ntl"] > 10) else l
+                  for l in legs if l["t5"] is True]
+    _worst_cells(cheap_kept, "cheap $10")
+    _worst_cells(tenor_kept, "tenor $10")
+
+    # ---------------------------------------------------------------- S26
+    print("\n== S26. THE LADDER ON THE OWNED BASIS -- the advance test is computed on which book? ==")
+    import datetime as dt
+    def day_key(ms):
+        return dt.datetime.utcfromtimestamp(ms / 1000).date()
+    daily_b, daily_o = {}, {}
+    for l in legs:
+        end = l.get("endms")
+        k = day_key(end) if end else day_key(l["ms"])
+        daily_b[k] = daily_b.get(k, 0.0) + l["pnl"]
+        if l["owned"]:
+            daily_o[k] = daily_o.get(k, 0.0) + l["pnl"]
+    keys = sorted(set(daily_b) | set(daily_o))
+    if keys:
+        print(f"   settlement days: {keys[0]} .. {keys[-1]} ({len(keys)} days)")
+        print(f"   {'window end':<12}{'booked 7d':>12}{'owned 7d':>12}{'ratio':>8}")
+        for i in range(max(1, len(keys) - 6), len(keys)):
+            end = keys[i]
+            lo = end - dt.timedelta(days=6)
+            b = sum(v for k, v in daily_b.items() if lo <= k <= end)
+            o = sum(v for k, v in daily_o.items() if lo <= k <= end)
+            print(f"   {str(end):<12}{b:>+12.2f}{o:>+12.2f}{(o / b if b else float('nan')):>8.2f}")
+        print("   rung 1 = $250/day = $1,750 per rolling 7d window (advance basis, v2 policy)")
+    b_tot = sum(l["pnl"] for l in legs) / days
+    o_tot = sum(l["pnl"] for l in legs if l["owned"]) / days
+    print(f"   book PnL/day: booked {b_tot:+.2f} | owned {o_tot:+.2f}")
+    o_roi = roi([l for l in legs if l["owned"]])
+    if o_roi > 0:
+        print(f"   at the OWNED ROI ({o_roi:+.1f}%) rung 1 needs "
+              f"${250 / (o_roi / 100):,.0f}/day of risk; "
+              f"today's owned flow is ${sum(l['ntl'] for l in legs if l['owned']) / days:,.0f}/day")
+    else:
+        print(f"   at the OWNED ROI ({o_roi:+.1f}%) rung 1 is UNREACHABLE by sizing at any flow: "
+              f"the owned book has no positive edge to scale. Owned flow is "
+              f"${sum(l['ntl'] for l in legs if l['owned']) / days:,.0f}/day of risk.")
+    print("\n   NOTE: `owned` here is a LOWER bound on the adverse-selection problem, not an")
+    print("   estimate of live PnL -- the tape cannot see queue position, and the resolver's")
+    print("   own stamp is the thing under test. It bounds the sign, not the magnitude.")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-rule", type=int, default=68)
@@ -1018,6 +1240,7 @@ def main():
 
     sec_fill_basis(legs, days)
     sec_clip_joint(legs, days, opens)
+    sec_owned(legs, days, opens)
 
     print("\n== S8. the same tenor cap applied to today's open book ==")
     for cap_h, label in ((720, "30d"), (2160, "90d"), (4320, "180d"), (8760, "365d")):
