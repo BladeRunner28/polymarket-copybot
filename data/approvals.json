@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-23T22:05:07-06:00",
+  "updatedAt": "2026-11-24T22:05:07-06:00",
   "counts": {
-    "pending": 1,
+    "pending": 3,
     "approved": 52,
     "declined": 1,
-    "excluded": 19,
-    "retired": 10
+    "excluded": 20,
+    "retired": 11
   },
   "items": [
     {
       "id": "apr-profit-mainpath-short-tenor-clip",
       "lane": "A",
       "status": "pending",
-      "title": "LANE A PROPOSAL \u2014 size main-path legs resolving inside 24h at the lane clip ($10): the loser gets $18.29 and the winner $11.87 in the same tenor, +$5.91/day after the approved cap",
+      "title": "LANE A PROPOSAL \u2014 cap C-200 Kelly clips at $10 when the leg resolves inside 24h: +$31.74/day booked, and the only scope in the book whose delta CI excludes zero on all three fill bases",
       "proposal": "WHY: at one tenor the book puts more dollars on the copy that loses than on the copy that earns. Post-cap, tape-touched <=1h (venue minute prices-history, cost = dollars at risk): main-path 2-24h = 147 legs / $2,688 / -$351.4 (-13.1%), ex-top-1 -14.9%, ex-top-3 -18.0%, ex-top-5 -21.0% (the loss DEEPENS as winners are removed), PnL CI [-695.2,+14.0], 111 markets; the 2-24h short-TTR lane in the same window = 146 legs / $1,733 / +$400.5 (+23.1%), 146 markets. A $10 cap on the main-path cell AFTER the approved $25 cheap-band cap binds 55 clips and is worth +$155.41 (+$5.91/day); $15 -> +$79.33; a full block -> the whole +$351.4 (+$13.4/day), but on a point estimate whose CI upper bound is \u2026",
       "evidence": "",
       "revert": "",
@@ -22,7 +22,39 @@
       "decidedAt": null,
       "decidedVia": null,
       "kanbanTaskId": null,
-      "_card_dates": "Proposed 2026-11-23 by the profit review (drafts/profit-recs-20261123.md \u00a7R2; instrument scripts/profit-tenor.py \u00a7S18-S19, --selftest 9/9). NOT APPLIED \u2014 Lane A: it changes how much the bot risks.",
+      "_card_dates": "Proposed 2026-11-23 by the profit review (drafts/profit-recs-20261123.md \u00a7R2; instrument scripts/profit-tenor.py \u00a7S18-S19, --selftest 9/9). NOT APPLIED \u2014 Lane A: it changes how much the bot risks. RE-PRICED 2026-11-24 (standalone +$31.74/day, CI-clean on all three bases) \u2014 ranked FIRST, above the approved band cap",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-db-retention-policy",
+      "lane": "B",
+      "status": "pending",
+      "title": "dev.db retention \u2014 BLOCKED on an ML coupling: a 60-day cut deletes 76% of the ML dataset's market universe",
+      "proposal": "13 GB = MarketSnapshot ~7.8 GB (4.87 GB data + 2.9 GB indexes) + ObservedTrade ~5.1 GB. Age split: 99.8% of MarketSnapshot is older than 30 days; 95.3% older than 60; only 19.7% older than 90. `freelist_count = 0` so VACUUM reclaims nothing before a delete. NOT DONE deliberately: no retention cron, no VACUUM, no row deletion was run \u2014 the disk emergency was resolved by moving cold bytes (worktrees, l2, models) instead, and this now needs a training-data decision rather than a mechanical prune. One rollback copy of record lives at /Volumes/Storage/db-snapshots/ (2026-11-15 pre-repair).",
+      "evidence": "",
+      "revert": "One rollback copy of record lives at /Volumes/Storage/db-snapshots/ (2026-11-15 pre-repair).",
+      "source": "roadmap:db-retention-policy",
+      "createdAt": "2026-11-24T07:05:07-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Measured 2026-11-24 (drafts/disk-cleanup-2026-11-24.md) \u00b7 row-deletion NOT applied \u2014 blocked pending a training-data decision \u00b7 disk pressure relieved by other means (208 GB free)",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-git-backup-data-rotation",
+      "lane": "B",
+      "status": "pending",
+      "title": "Git backup charges data/ growth twice \u2014 .git 3.6 GB / 80 MB per day, 3 artifacts permanently excluded",
+      "proposal": "The nightly backup commits whatever changed under data/, so growth is charged once on disk and again in the object store. Same class as the earlier 137 MB parquet rejection (git backup fix), which was fixed for one file class and never generalised.",
+      "evidence": "",
+      "revert": "",
+      "source": "roadmap:git-backup-data-rotation",
+      "createdAt": "2026-11-24T07:05:07-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Alarm active 2026-11-23 (repo-growth-budget: object store 3715 MB vs 2048 MB ceiling, median 80 MB/day vs 40 MB/day budget) \u00b7 root cause carded 2026-11-24",
       "_column": "Backlog"
     },
     {
@@ -406,7 +438,7 @@
       "decidedAt": "2026-11-12T16:45:08.281Z",
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_4fab33e0",
-      "_card_dates": "Proposed 2026-11-11 by the profit review (drafts/profit-recs-20261111.md, instrument scripts/profit-postfix-integrity.py \u00a7J). NOT APPLIED \u2014 Lane A: it changes how much each band risks. | LANE A READ 2026-11-11 (drafts/profit-band-clip-rebalance-20261111.md, instrument scripts/profit-band-clip-preflight.py, read-only): card figures reproduce; seven corrections; recommendation REVISED to cap-only, lift deferred. NOTHING APPLIED. | 2026-11-23 PROFIT REVIEW \u2014 STILL NOT IMPLEMENTED 12 DAYS AFTER APPROVAL: `grep -rn c200BandClipCaps src/` returns nothing (the field has no reader), RuleSet v73 carries no clip field, and scripts/apply-v73-c200-cheap-band-clip.ts has never run. Re-priced on the fill-verified population (venue minute tape, touch <=1h; drafts/profit-recs-20261123.md \u00a72, instrument scripts/profit-tenor.py \u00a7S16-S17): delta +$805.77 over 26.3d = +$30.67/day and the ownable book moves -5.3% -> +5.7%; <=5min basis +$943.21 CI [+485,+1460]; booked basis +$706.60 (+$26.89/day). Top-ranked action of that review; the 4 code edits (\u00a75.2) + apply + boundary probe are 1h.",
+      "_card_dates": "Proposed 2026-11-11 by the profit review (drafts/profit-recs-20261111.md, instrument scripts/profit-postfix-integrity.py \u00a7J). NOT APPLIED \u2014 Lane A: it changes how much each band risks. | LANE A READ 2026-11-11 (drafts/profit-band-clip-rebalance-20261111.md, instrument scripts/profit-band-clip-preflight.py, read-only): card figures reproduce; seven corrections; recommendation REVISED to cap-only, lift deferred. NOTHING APPLIED. | 2026-11-23 PROFIT REVIEW \u2014 STILL NOT IMPLEMENTED 12 DAYS AFTER APPROVAL: `grep -rn c200BandClipCaps src/` returns nothing (the field has no reader), RuleSet v73 carries no clip field, and scripts/apply-v73-c200-cheap-band-clip.ts has never run. Re-priced on the fill-verified population (venue minute tape, touch <=1h; drafts/profit-recs-20261123.md \u00a72, instrument scripts/profit-tenor.py \u00a7S16-S17): delta +$805.77 over 26.3d = +$30.67/day and the ownable book moves -5.3% -> +5.7%; <=5min basis +$943.21 CI [+485,+1460]; booked basis +$706.60 (+$26.89/day). Top-ranked action of that review; the 4 code edits (\u00a75.2) + apply + boundary probe are 1h.; LEVEL CORRECTED 2026-11-24 \u2014 $10 strictly dominates the approved $25 on all three fill bases; still unbuilt (no field, no reader)",
       "_column": "Scheduled"
     },
     {
@@ -626,7 +658,7 @@
       "decidedAt": "2026-11-16T16:54:05.189Z",
       "decidedVia": "approvals-inbox",
       "kanbanTaskId": "t_4eb720b1",
-      "_card_dates": "Proposed 2026-11-15 by the profit review (drafts/profit-recs-20261115.md; new read-only instrument scripts/profit-supply-ladder.py, self-tests 5/5). NOT APPLIED \u2014 Lane A: it changes how much the lane risks. No gate, threshold or band change. | 2026-11-16 PROPOSAL ANSWER (kanban t_4eb720b1, drafts/profit-c200-clip-cap-25-20261116.md): the approval's premise is REFUTED. Its tier table and cap shadow reproduce exactly, but lane-wide $25 buys +$102.92 vs the band-scoped arm's +$172.13 on the same legs \u2014 lane-wide MINUS band-scoped = -$69.21 (positions basis) / -$75.66 (booked basis) \u2014 because the only extra legs a lane-wide cap reaches are the profitable 0.80-1.00 ones (+$95.18, 7/7 wins). Recommendation: BAND-SCOPED ONLY (the profit-band-clip-rebalance / apply-v73 card) plus the new card profit-c200-price-frame-sizing; do not ship the lane-wide cap. Nothing applied.",
+      "_card_dates": "Proposed 2026-11-15 by the profit review (drafts/profit-recs-20261115.md; new read-only instrument scripts/profit-supply-ladder.py, self-tests 5/5). NOT APPLIED \u2014 Lane A: it changes how much the lane risks. No gate, threshold or band change. | 2026-11-16 PROPOSAL ANSWER (kanban t_4eb720b1, drafts/profit-c200-clip-cap-25-20261116.md): the approval's premise is REFUTED. Its tier table and cap shadow reproduce exactly, but lane-wide $25 buys +$102.92 vs the band-scoped arm's +$172.13 on the same legs \u2014 lane-wide MINUS band-scoped = -$69.21 (positions basis) / -$75.66 (booked basis) \u2014 because the only extra legs a lane-wide cap reaches are the profitable 0.80-1.00 ones (+$95.18, 7/7 wins). Recommendation: BAND-SCOPED ONLY (the profit-band-clip-rebalance / apply-v73 card) plus the new card profit-c200-price-frame-sizing; do not ship the lane-wide cap. Nothing applied.; FALSIFIED 2026-11-24 \u2014 lane-wide $25 is dominated by band-scoped $25 on all three fill bases; recommend WITHDRAW (see profit-mainpath-short-tenor-clip for what the population does support)",
       "_column": "Backlog"
     },
     {
@@ -1003,6 +1035,13 @@
       "title": "CLOSED \u2014 the $25 clip cap is withdrawn as a SECOND fix: after the 24h floor its remaining population is profitable \u2026",
       "column": "Done",
       "reason": "tag:closed"
+    },
+    {
+      "id": "apr-l2-retention-cron",
+      "card": "l2-retention-cron",
+      "title": "l2 recordings \u2014 cold-move DONE (20 GB off-volume); needs a recurring prune or it rebuilds",
+      "column": "Backlog",
+      "reason": "tag:applied"
     }
   ],
   "retired": [
@@ -1075,6 +1114,13 @@
       "status": "pending",
       "why": "card closed, de-tagged or absent from the roadmap",
       "at": "2026-11-22T10:05:06-06:00"
+    },
+    {
+      "id": "apr-agent-worktree-gc",
+      "card": "agent-worktree-gc",
+      "status": "pending",
+      "why": "card closed, de-tagged or absent from the roadmap",
+      "at": "2026-11-24T19:05:07-06:00"
     }
   ]
 }

@@ -422,10 +422,20 @@
    "audited": "2026-11-03 08:26 CST",
    "claimed": "2026-11-03 08:20 CST",
    "claimed_ts": 1793715638.7398882,
+   "decay": {
+    "action": "stalled",
+    "clause": "stalled-ask",
+    "days": 21,
+    "rule": "asset-queue-decay-v1",
+    "since": "2026-11-03 08:26",
+    "since_event": "audited",
+    "stalled_at": "2026-11-24 12:20 CST",
+    "ttl": 21
+   },
    "discovered": "2026-11-03 08:20 CST",
    "id": "mirabilis-agent/lip-ledger",
    "license": "MIT",
-   "note": "Read-only tools for Kalshi: exact Liquidity Incentive Program model, Weather Index clien",
+   "note": "Read-only tools for Kalshi: exact Liquidity Incentive Program model, Weather Index clien \u00b7 STALLED 21d at 2026-11-24 12:20 CST (stalled-ask, ttl 21d): the ask is still open on the user's side and is re-surfaced, never auto-withdrawn",
    "pushed": "2026-11-03",
    "recommendation": {
     "decision_rule": "If modelled LIP reward >= $0.0131/contract-hour (one taker fee at P=0.25, the card's own bar) NET of measured adverse selection over >=50 counted program-hours across >=20 distinct programs by 2026-11-24 then add the LIP line to the maker read's PnL; else record LIP as immaterial and close the card's reward leg",
@@ -587,6 +597,50 @@
    "status": "audited",
    "url": "https://github.com/ccxt/ccxt",
    "verdict": "watch"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-11-24 08:23 CST",
+    "state": "pending"
+   },
+   "audited": "2026-11-24 08:23 CST",
+   "claimed": "2026-11-24 08:20 CST",
+   "claimed_ts": 1795530007.662844,
+   "discovered": "2026-11-24 07:20 CST",
+   "id": "jman563412/linedrift",
+   "license": "MIT",
+   "note": "Vig-removed cross-venue sports fair-value reference (Pinnacle via PinnAPI, SX Bet + Polymarket keyless) with team-name aliasing + an eval harness; own results c",
+   "pushed": "2026-11-24",
+   "recommendation": {
+    "decision_rule": "if median net after both venues' fees <= 0 on >=30 settled odds-gap rows, close the sports leg of phase-data1 as recording-only; if >0 with the 95% range excluding 0, open a promotion measurement",
+    "effort": "~2h, read-only replay over data/odds-gaps.jsonl + prisma/dev.db resolutions",
+    "reversibility": "new script only, nothing live touches it \u2014 delete the file to revert",
+    "text": "Add scripts/odds-gaps-scorecard.py: judge every logged odds gap against settlement (Brier + fee-adjusted net cents + 95% range) so the phase-data1 sports leg is scored, not just counted"
+   },
+   "report": "drafts/asset-audit-linedrift-20261124.md",
+   "source": "gh search: MCP servers - Kalshi (radar 2026-11-24)",
+   "stars": 0,
+   "status": "audited",
+   "url": "https://github.com/jman563412/linedrift",
+   "verdict": "watch"
+  },
+  {
+   "audited": "2026-11-24 08:23 CST",
+   "claimed": "2026-11-24 08:20 CST",
+   "claimed_ts": 1795530007.662853,
+   "discovered": "2026-11-24 07:20 CST",
+   "id": "mvanhorn/last30days-skill",
+   "license": "MIT",
+   "note": "Agent-host research skill (73.8k stars, 6.5k forks, MIT, actively pushed) that searches Reddit/X/HN/YouTube/Polymarket. Only candidate seen that could restore t",
+   "pushed": "2026-11-24",
+   "report": "drafts/asset-audit-last30days-skill-20261124.md",
+   "source": "gh search: newest Polymarket tooling (radar 2026-11-24)",
+   "stars": 73843,
+   "status": "audited",
+   "url": "https://github.com/mvanhorn/last30days-skill",
+   "verdict": "drop"
   }
  ],
  "version": 1
