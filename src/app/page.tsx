@@ -46,10 +46,18 @@ export default async function Overview() {
       prisma.paperTrade.findMany({ where: { status: "open" } }),
       prisma.paperTrade.findMany({ where: { status: "resolved" } }),
       prisma.walletProfile.count({ where: { status: "track" } }),
+      // 2026-11-26 (self-audit, Lane B): "copy candidates today" was counted from UTC MIDNIGHT
+      // and over both populations. UTC midnight is 18:00 CST here, so every evening the card
+      // carried yesterday's 18:00→24:00 copies as if they were today's — measured live
+      // 2026-11-26 07:00 on the running dashboard basis: 9 shown vs 5 inside the local day with
+      // isDemo=0. It also disagreed with the EOD's "Signals today … (copy N)", which is
+      // local-day + isDemo:false, and with this same page's own closed-today read below, which
+      // already uses `startOfDay` (line 79). Same clock, same population, one page.
       prisma.decisionJournal.count({
         where: {
           decision: "paper_copy",
-          createdAt: { gte: new Date(new Date().toISOString().slice(0, 10)) },
+          isDemo: false,
+          createdAt: { gte: startOfDay },
         },
       }),
       prisma.dailyReport.findFirst({ orderBy: { date: "desc" } }),
