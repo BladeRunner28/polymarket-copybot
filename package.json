@@ -31,6 +31,7 @@
     "kalshi:team-aliases": "python3 scripts/kalshi-team-aliases.py --derive && python3 scripts/kalshi-team-aliases.py --check",
     "kalshi:college-aliases": "python3 scripts/kalshi-team-aliases.py --derive-college && python3 scripts/kalshi-team-aliases.py --check && python3 scripts/kalshi-team-aliases.py --self-test",
     "ops:record": "python3 scripts/ops-record-lookup.py",
+    "l2:retention": "tsx scripts/l2-retention.ts",
     "longshot:token-basis": "python3 scripts/longshot-token-basis.py",
     "wallet:selector-search": "python3 scripts/u2b-selector-search.py",
     "export:training": "tsx scripts/export-training-data.ts",

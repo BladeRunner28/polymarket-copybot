@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-11-26T02:06:34.937Z",
+  "basis": {
+    "population": "files in data/l2 (*.jsonl, one per CLOB asset id)",
+    "level": "one L2 file",
+    "clock": "file mtime (append-only corpus; mtime = last observation)",
+    "size": "apparent bytes (st_size)",
+    "policy": {
+      "minAgeDays": 60,
+      "ceilingBytes": 25769803776,
+      "allowUnattributed": false
+    }
+  },
+  "corpus": {
+    "files": 59316,
+    "bytes": 30675313690,
+    "oldestAgeDays": 86.5,
+    "growthBytesPerDayUpperBound": 394055227,
+    "assetMapLines": 16767,
+    "unmappedFiles": 26520,
+    "unmappedBytes": 6299962490
+  },
+  "guards": {
+    "protectedMarkets": 4602,
+    "openMarkets": 96,
+    "unstampedMarkets": 3801,
+    "liveIntentMarkets": 964,
+    "youngFiles": 23446,
+    "youngBytes": 20708894694,
+    "protectedFiles": 738,
+    "protectedBytes": 1095819081,
+    "unattributedFiles": 26520,
+    "unattributedBytes": 6299962490
+  },
+  "ceiling": {
+    "ceilingBytes": 25769803776,
+    "status": "over",
+    "overBytes": 4905509914,
+    "projectedDaysToCeiling": null
+  },
+  "plan": {
+    "deleteFiles": 8612,
+    "deleteBytes": 2570637425,
+    "deleteUnattributedBytes": 0,
+    "unreachableBytes": 2334872489,
+    "oldestDeleteAgeDays": 68.28376947397868,
+    "applied": false
+  }
+}

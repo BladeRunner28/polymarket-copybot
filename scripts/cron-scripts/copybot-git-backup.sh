@@ -135,4 +135,25 @@ else
   echo "⚠️  repo growth: check FAILED rc=${growth_rc} — ${growth_out:-no output} (growth is UNMEASURED tonight; do not read that as inside policy)"
 fi
 
+# --- L2 corpus retention (l2-retention-cron, Lane B, 2026-11-25) ---------------------
+# data/l2/ is an append-only book corpus (one file per CLOB asset id, 5s cadence) and it
+# had NO retention policy anywhere: 59,316 files / 28.57 GiB measured 2026-11-26T02:05Z.
+# scripts/l2-retention.ts prints nothing when the corpus is inside its ceiling and one
+# line per breach when it is not. Alarm only: this block never deletes. The deletion
+# itself is --apply + --i-know-this-is-irreversible and is the user's call (the files
+# cannot be re-recorded); rc 1 = outside policy, rc 2+ = the check itself failed.
+l2_out=$(cd /Users/xsnyde2/polymarket-copybot && npx tsx scripts/l2-retention.ts --quiet 2>&1)
+l2_rc=$?
+if [ "$l2_rc" -eq 0 ]; then
+  [ -n "$l2_out" ] && echo "$l2_out"
+elif [ "$l2_rc" -eq 1 ]; then
+  if [ -n "$l2_out" ]; then
+    echo "$l2_out"
+  else
+    echo "⚠️  l2 retention: check exited 1 with no output — the retention instrument is broken, not clean"
+  fi
+else
+  echo "⚠️  l2 retention: check FAILED rc=${l2_rc} — ${l2_out:-no output} (corpus size is UNMEASURED tonight)"
+fi
+
 [ "$failed" -eq 0 ] || exit 1
