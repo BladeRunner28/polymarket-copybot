@@ -22,6 +22,19 @@ const DAY = 86_400_000;
 
 const mode = (process.argv[2] || "auto") as string;
 const now = new Date();
+// 2026-11-26 (self-audit, Lane B): the header and the saved draft's name used
+// `now.toISOString().slice(0, 10)` — the UTC day. This job runs at 18:45 CST, i.e. 00:45Z
+// the NEXT day, so from DST end (2026-11-01) onward every run was labelled (and its draft
+// FILED) one calendar day ahead of itself: drafts/kelly-final-read-2026-11-26.md was written
+// on 2026-11-25 18:45 and its header said 2026-11-26 (48 such files; the last pre-DST file,
+// 2026-10-31, is correctly named because 18:45 CDT is 23:45Z). Every other daily surface
+// (EOD, capital report) labels local days, so this was the one report whose date disagreed
+// with the data under it. Prices/PnL are unaffected — only the day label.
+function localDayKey(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+const TODAY = localDayKey(now);
 const isFinal = mode === "final" || (mode === "auto" && now.getTime() > WINDOW_END);
 const isWeekly = mode === "weekly" || (mode === "auto" && now.getDay() === 1); // Mondays
 
@@ -200,7 +213,7 @@ async function main() {
   const regimeDays = Math.floor((now.getTime() - REGIME_V49_MS) / DAY) + 1;
   const daysLeft = Math.max(0, Math.ceil((WINDOW_END - now.getTime()) / DAY));
   const out: string[] = [];
-  out.push(`**Kelly Window Report — ${now.toISOString().slice(0, 10)}** (regime day ${regimeDays}${isFinal ? " — FINAL READ" : `, official window ends in ~${daysLeft}d`})`);
+  out.push(`**Kelly Window Report — ${TODAY}** (regime day ${regimeDays}${isFinal ? " — FINAL READ" : `, official window ends in ~${daysLeft}d`})`);
   out.push(`Rules v${st.rulesVersion}: kellyEnabled=${st.rules.kellyEnabled} fraction=${st.rules.kellyFraction} maxBankrollPct=${(st.rules.kellyMaxBankrollPct * 100).toFixed(0)}% maxSizeUsd=$${st.rules.kellyMaxSizeUsd} minBet=$${st.rules.kellyMinBetUsd} minEdge=${((st.rules.kellyMinEdgePct ?? 0.02) * 100).toFixed(0)}%`);
   out.push("");
   out.push("**State:** cash $" + (st.br?.cashBalance ?? 0).toFixed(0) + " | open $" + st.openNotional.toFixed(0) + " | net worth $" + st.netWorth.toFixed(0) + " | realized $" + (st.br?.realizedPnl ?? 0).toFixed(0) + " | exposure " + st.openNotional.toFixed(0) + "/$" + st.effCap.toFixed(0) + " | drawdown " + (st.dd === null ? "UNDETERMINED (peak unreadable: " + st.ddError + ")" : (st.dd * 100).toFixed(1) + "% (" + st.ddBasis + " basis, peak $" + (st.ddPeak ?? 0).toFixed(0) + " vs NW $" + (st.ddNW ?? 0).toFixed(0) + ")"));
@@ -291,9 +304,9 @@ async function main() {
     out.push("**Verdict fields (pre-registered §6):** concentration " + verdict.concentration + " | mid-band ≈0 " + verdict.midBand + " | drawdown " + (st.dd === null ? "UNDETERMINED (peak unreadable) vs " + (ddGate * 100).toFixed(0) + "% gate" : (st.dd * 100).toFixed(1) + "% (" + st.ddBasis + " basis) vs " + (ddGate * 100).toFixed(0) + "% gate " + (st.dd <= ddGate ? "✓" : "✗")));
     out.push("CAVEAT (design §6): λ̂ is a premium measure, not PnL — check band λ̂ vs realized alignment at the Sep 15 refit; mid-band skip is by zero-edge rule, not calibration sight.");
     const doc = out.join("\n");
-    const fp = join(__dirname, "..", "drafts", `kelly-final-read-${now.toISOString().slice(0, 10)}.md`);
+    const fp = join(__dirname, "..", "drafts", `kelly-final-read-${TODAY}.md`);
     writeFileSync(fp, doc + "\n");
-    out.push("📄 Final read saved: drafts/kelly-final-read-" + now.toISOString().slice(0, 10) + ".md");
+    out.push("📄 Final read saved: drafts/kelly-final-read-" + TODAY + ".md");
   }
   console.log(out.join("\n"));
 }
