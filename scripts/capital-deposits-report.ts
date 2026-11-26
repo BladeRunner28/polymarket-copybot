@@ -136,8 +136,19 @@ async function main() {
   D.push(
     `Today (${yest.day}, partial): deposit **${signed(yest.deposit)}** (booked ${signed(yest.booked)}, ledger ${signed(yest.injected)}) · ${yest.trades} trade(s) · closing capital ${usd(yest.closing)}`
   );
+  // 2026-11-26 (self-audit, Lane B): the `upDays/downDays/flatDays` and `streak` above are
+  // computed over the WHOLE window (s.points, 30d), but this digest line is labelled
+  // "7d deposits" — so it printed 30-day counts inside a 7-day sentence. Live on 2026-11-26 the
+  // line read "7d deposits: +$124.28 · streak 1 (best 2) · 9 up / 21 down / 0 flat": nine up
+  // days in a seven-day window is not a rounding error, it is a different population, and the
+  // 7d truth is 3 up / 4 down / 0 flat. Count the SAME slice the deposit figure sums, and say
+  // which window the streak's "best" is measured over.
+  const p7 = s.points.slice(-7);
+  const up7 = p7.filter((p) => p.deposit > 0).length;
+  const down7 = p7.filter((p) => p.deposit < 0).length;
+  const flat7 = p7.length - up7 - down7;
   D.push(
-    `7d deposits: **${signed(s.points.slice(-7).reduce((a, p) => a + p.deposit, 0))}** · streak ${streak.current} (best ${streak.best}) · ${upDays} up / ${downDays} down / ${flatDays} flat`
+    `7d deposits: **${signed(p7.reduce((a, p) => a + p.deposit, 0))}** · ${up7} up / ${down7} down / ${flat7} flat · current streak ${streak.current} (best ${streak.best} in ${s.points.length}d)`
   );
   D.push(
     `${s.points.length}d deposits: **${signed(s.bookedTotal + s.injectedTotal)}** = booked ${signed(s.bookedTotal)} + injected ${signed(s.injectedTotal)} → booked capital ${usd(s.openingUsd)} → **${usd(s.closingUsd)}**`
