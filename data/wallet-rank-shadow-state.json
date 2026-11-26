@@ -19,12 +19,12 @@
   "scripts/wallet-rank-shadow.py": "c33481d6ae79ddb54d5032e56199ac0434b5fd8ae4f974be69d1e75abc314e4d"
  },
  "last_run": {
-  "at": "2026-11-24T11:54:34Z",
-  "forward_bets": 197948,
-  "refit_hash": "e438b3fe25918d48",
+  "at": "2026-11-25T11:54:38Z",
+  "forward_bets": 214574,
+  "refit_hash": "f1d1c468a078742d",
   "scored_hash": "cbff41b4a168279c",
   "track_now_n": 25,
-  "truth_settled": 39876
+  "truth_settled": 40815
  },
  "preregistered_at": "2026-11-09T18:14:24Z",
  "rule": {
@@ -1029,6 +1029,24 @@
     }
    },
    "refit_hash": "e438b3fe25918d48"
+  },
+  {
+   "at": "2026-11-25T11:54:38Z",
+   "drift": {
+    "baseline": {
+     "added": 0,
+     "removed": 0
+    },
+    "hard_q": {
+     "added": 3,
+     "removed": 3
+    },
+    "shrunk": {
+     "added": 13,
+     "removed": 7
+    }
+   },
+   "refit_hash": "f1d1c468a078742d"
   }
  ],
  "shadow_start_iso": "2026-11-09T18:13:32Z",

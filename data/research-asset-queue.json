@@ -162,10 +162,20 @@
    "audited": "2026-10-15 20:26 CDT",
    "claimed": "2026-10-15 20:20 CDT",
    "claimed_ts": 1792113628.5648792,
+   "decay": {
+    "action": "expired",
+    "at": "2026-11-25 12:20 CST",
+    "clause": "abandoned-approved",
+    "days": 30,
+    "rule": "asset-queue-decay-v1",
+    "since": "2026-10-26 08:34",
+    "since_event": "approval-decided",
+    "ttl": 30
+   },
    "discovered": "2026-10-15 12:25 CDT",
    "id": "mnemox-ai/tradememory-protocol",
    "license": "MIT",
-   "note": "via LLMQuant/awesome-trading-agents (asset-audit 2026-10-15): outcome-weighted decision memory + pre-trade brake MCP (17 tools / 35+ REST); second axis (decisio",
+   "note": "via LLMQuant/awesome-trading-agents (asset-audit 2026-10-15): outcome-weighted decision memory + pre-trade brake MCP (17 tools / 35+ REST); second axis (decisio \u00b7 EXPIRED 2026-11-25 12:20 CST by asset-queue-decay-v1: abandoned-approved: 30d >= 30d since approval-decided; re-open with `asset-queue.py add --id mnemox-ai/tradememory-protocol --force`, never silently \u2014 the verdict was 'watch'",
    "pushed": "",
    "recommendation": {
     "decision_rule": "read-only: derive n_trials per axis from RuleChange rows (v40-v62) and compute DSR on the C-200 daily net PnL series, live regime 2026-09-04+; if p>=0.05 or INSUFFICIENT_DATA then the ladder/rule claims carry an explicit 'not distinguishable from selection' caveat, else record the p as the significance statement; no threshold moves either way",
@@ -176,7 +186,7 @@
    "report": "drafts/asset-audit-tradememory-protocol-20261015.md",
    "source": "agent",
    "stars": 1430,
-   "status": "audited",
+   "status": "expired",
    "url": "https://github.com/mnemox-ai/tradememory-protocol",
    "verdict": "watch"
   },
@@ -206,10 +216,20 @@
    "audited": "2026-10-18 08:24 CDT",
    "claimed": "2026-10-18 08:20 CDT",
    "claimed_ts": 1792329630.052201,
+   "decay": {
+    "action": "expired",
+    "at": "2026-11-25 12:20 CST",
+    "clause": "abandoned-approved",
+    "days": 30,
+    "rule": "asset-queue-decay-v1",
+    "since": "2026-10-26 08:34",
+    "since_event": "approval-decided",
+    "ttl": 30
+   },
    "discovered": "2026-10-18 07:17 CDT",
    "id": "vike-io/vike-data-cli",
    "license": "MIT",
-   "note": "Free Vike Data API CLI+MCP: Polymarket daily Parquet archive of full L2 order book since 2026-07-25 (CC BY 4.0), REST + MCP; free key vk_ needed for REST/MCP bu",
+   "note": "Free Vike Data API CLI+MCP: Polymarket daily Parquet archive of full L2 order book since 2026-07-25 (CC BY 4.0), REST + MCP; free key vk_ needed for REST/MCP bu \u00b7 EXPIRED 2026-11-25 12:20 CST by asset-queue-decay-v1: abandoned-approved: 30d >= 30d since approval-decided; re-open with `asset-queue.py add --id vike-io/vike-data-cli --force`, never silently \u2014 the verdict was 'watch'",
    "pushed": "",
    "recommendation": {
     "decision_rule": "if >=25% of the 1,130 gap-window C-200 legs flip to no-fill at intent-0.02, or implied fill rate moves >10pp vs the 08-31->now recorder baseline, adopt as the phase-d2 fill-model input; else keep as one-off calibration and drop the vendor relationship",
@@ -220,7 +240,7 @@
    "report": "drafts/asset-audit-vike-data-cli-20261018.md",
    "source": "agent",
    "stars": 0,
-   "status": "audited",
+   "status": "expired",
    "url": "https://github.com/vike-io/vike-data-cli",
    "verdict": "watch"
   },
@@ -250,10 +270,20 @@
    "audited": "2026-10-19 12:23 CDT",
    "claimed": "2026-10-19 12:20 CDT",
    "claimed_ts": 1792430430.6553879,
+   "decay": {
+    "action": "expired",
+    "at": "2026-11-25 12:20 CST",
+    "clause": "abandoned-approved",
+    "days": 30,
+    "rule": "asset-queue-decay-v1",
+    "since": "2026-10-26 08:34",
+    "since_event": "approval-decided",
+    "ttl": 30
+   },
    "discovered": "2026-10-19 08:33 CDT",
    "id": "crowdintel-xyz/polymarket-agent-kit",
    "license": "MIT",
-   "note": "Agent kit over crowdintel.xyz: scored wallets (ev_ci_low, Kish effective n, BH q-values, 90-day decay), wallet timing, insider scores, funding clusters; MCP+RES",
+   "note": "Agent kit over crowdintel.xyz: scored wallets (ev_ci_low, Kish effective n, BH q-values, 90-day decay), wallet timing, insider scores, funding clusters; MCP+RES \u00b7 EXPIRED 2026-11-25 12:20 CST by asset-queue-decay-v1: abandoned-approved: 30d >= 30d since approval-decided; re-open with `asset-queue.py add --id crowdintel-xyz/polymarket-agent-kit --force`, never silently \u2014 the verdict was 'audit'",
    "pushed": "",
    "recommendation": {
     "decision_rule": "if >=30% of currently track wallets fall below q=0.10 (or effective n < 8) then propose q-gated shadow ranking in src/lib/scoring/wallet.ts; else drop",
@@ -264,7 +294,7 @@
    "report": "drafts/asset-audit-polymarket-agent-kit-20261019.md",
    "source": "agent",
    "stars": 0,
-   "status": "audited",
+   "status": "expired",
    "url": "https://github.com/crowdintel-xyz/polymarket-agent-kit",
    "verdict": "audit"
   },
@@ -640,6 +670,22 @@
    "stars": 73843,
    "status": "audited",
    "url": "https://github.com/mvanhorn/last30days-skill",
+   "verdict": "drop"
+  },
+  {
+   "audited": "2026-11-25 08:20 CST",
+   "claimed": "2026-11-25 08:20 CST",
+   "claimed_ts": 1795616408.3498619,
+   "discovered": "2026-11-25 08:20 CST",
+   "id": "lori1635/krypolybot-polymarket-mcp-whale-trader",
+   "license": "NOASSERTION",
+   "note": "Krypolybot Polymarket Mcp Whale Trader [2026] \u2014 Standalone Windows 10/11 (x64) Release,",
+   "pushed": "2026-11-25",
+   "report": "drafts/asset-audit-krypolybot-polymarket-mcp-whale-trader-20261125.md",
+   "source": "radar-seed",
+   "stars": 130,
+   "status": "audited",
+   "url": "https://github.com/lori1635/krypolybot-polymarket-mcp-whale-trader",
    "verdict": "drop"
   }
  ],

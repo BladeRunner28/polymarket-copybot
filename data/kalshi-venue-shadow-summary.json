@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-25T04:24:07.985Z",
+  "asOf": "2026-11-26T04:24:08.628Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,12 +12,12 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1817,
-    "inWindow": 1422,
+    "copiesSeen": 1848,
+    "inWindow": 1453,
     "withKalshiQuote": 2,
     "crossListRate": 0.001,
     "staleSkips": 395,
-    "quoteFailures": 1322,
+    "quoteFailures": 1353,
     "unverifiedMatches": 98,
     "rejectionReasons": {
       "pre_guard_quote": 1,
@@ -57,15 +57,15 @@
   "deterministic": {
     "enabled": true,
     "attempted": 0,
-    "resolved": 446,
+    "resolved": 477,
     "verdicts": {
-      "OTHER_CLASS": 219,
-      "NO_EVENT_MATCH": 184,
-      "EQUIV": 41,
+      "OTHER_CLASS": 227,
+      "NO_EVENT_MATCH": 206,
+      "EQUIV": 42,
       "AMBIGUOUS_EVENT": 2
     },
-    "equiv": 41,
-    "priced": 5,
+    "equiv": 42,
+    "priced": 6,
     "derivationVersion": 2,
     "restamp": {
       "rederived": 0,
@@ -76,37 +76,26 @@
     },
     "stampedVersionCounts": {
       "v1": 401,
-      "v2": 45
+      "v2": 76
     },
-    "coverage": 0.092,
+    "coverage": 0.088,
     "fuzzyEquiv": 0,
-    "detOnlyEquiv": 41,
+    "detOnlyEquiv": 42,
     "book": {
-      "n": 3,
-      "pmPnl": -1.14,
-      "detPnl": -41.41,
-      "staked": 39.85,
-      "pmRoiPct": -2.85,
-      "detRoiPct": -103.91,
+      "n": 5,
+      "pmPnl": -2.3,
+      "detPnl": -72.97,
+      "staked": 69.82,
+      "pmRoiPct": -3.29,
+      "detRoiPct": -104.51,
       "detPnlBasis": "exit_sign",
       "venuePnlBasis": "kalshi_market_result",
-      "venueN": 3,
-      "venuePnl": -41.41,
-      "venueStaked": 39.85,
-      "venueRoiPct": -103.91
+      "venueN": 5,
+      "venuePnl": -72.97,
+      "venueStaked": 69.82,
+      "venueRoiPct": -104.51
     },
     "pairs": [
-      {
-        "question": "UFC Fight Night: Jared Cannonier vs. Ikram Aliskerov (Middleweight, Main Card)",
-        "detTicker": "KXUFCFIGHT-26NOV21CANALI-ALI",
-        "detTitle": "Ikram Aliskerov wins",
-        "ourSideIsYes": true,
-        "detEntry": null,
-        "pmEntry": 0.7313,
-        "fuzzyTicker": null,
-        "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
-      },
       {
         "question": "Pelicans vs. Spurs",
         "detTicker": "KXNBAGAME-26NOV21NOPSAS-NOP",
@@ -423,13 +412,23 @@
         "fuzzyTicker": null,
         "fuzzyVerified": false,
         "note": " rederive_v2_not_reconfirmed (resolver now AMBIGUOUS_EVENT); stamp kept"
+      },
+      {
+        "question": "Michigan vs. Ohio State",
+        "detTicker": "KXNCAAFGAME-26NOV28MICHOSU-OSU",
+        "detTitle": "Ohio St. wins",
+        "ourSideIsYes": true,
+        "detEntry": 0.78,
+        "pmEntry": 0.7713,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
       }
     ]
   },
   "settlementBasis": {
-    "population": 39,
-    "known": 39,
-    "agree": 27,
+    "population": 41,
+    "known": 41,
+    "agree": 29,
     "exitLossVenueWin": 12,
     "exitWinVenueLoss": 0,
     "venueUnknown": 0,
@@ -443,7 +442,7 @@
     "clock": {
       "openedAtFrom": "2026-11-16T18:10:45.463Z",
       "openedAtTo": "2026-11-24T11:46:17.191Z",
-      "readAt": "2026-11-25T04:24:07.985Z"
+      "readAt": "2026-11-26T04:24:08.629Z"
     },
     "quoterun": {
       "attempted": 0,
@@ -454,13 +453,13 @@
       "source": "data/kalshi-pair-settlement.json",
       "generatedAt": "2026-11-25T02:11:42Z",
       "pairsInArtifact": 41,
-      "legsAdjudicated": 39,
+      "legsAdjudicated": 41,
       "storedSideFlagDisagreements": 0
     },
     "matchedPriced": {
-      "n": 3,
-      "exitPnl": -41.41,
-      "venuePnl": -41.41,
+      "n": 5,
+      "exitPnl": -72.97,
+      "venuePnl": -72.97,
       "delta": 0,
       "basis": "same legs, same detEntry; exit-sign PnL vs venue-settlement PnL"
     },
