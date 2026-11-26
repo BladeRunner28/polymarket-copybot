@@ -229,3 +229,98 @@ export function ceilingVerdict(
     projectedDaysToCeiling: (ceilingBytes - totalBytes) / growthBytesPerDay,
   };
 }
+
+/* ------------------------------------------------------------------ attribution sources
+ *
+ * SECOND SOURCE (2026-11-26, card `l2-asset-map-backfill`): the recorder's map only starts
+ * ~2026-09-27, so 26,520 files recorded before it had no market. scripts/l2-asset-backfill.py
+ * attributes those through gamma (`?clob_token_ids=<tok>&closed=true`, accepted only when the
+ * returned market's own clobTokenIds contain the token) into a SEPARATE ledger, because
+ * appending to a file a live process also appends to is how a ledger gets a torn line in the
+ * middle. The retention read merges both, and the merge DECLARES its precedence: the recorder
+ * wins, and a disagreement is COUNTED rather than silently resolved, because two sources that
+ * disagree about one token is a defect somebody has to look at.
+ */
+
+export type AssetMapSource = "recorder" | "backfill";
+
+export type ParsedAssetMap = {
+  map: Map<string, string>;
+  /** Parsed rows that contributed at least one token. */
+  rows: number;
+  /** Rows that were present but contributed nothing (unparsable, or a non-resolved backfill row). */
+  skipped: number;
+};
+
+/**
+ * Parse one source. Tolerant by design: an append-only file can end mid-line, and a skip is
+ * counted, never thrown — a failed parse that throws would stop a read-only measurement.
+ *
+ *   recorder rows: {marketId, assetIds:[...]}
+ *   backfill rows: {tokenId, status:"resolved"|"notfound"|"mismatch"|"error", marketId?}
+ *                  ONLY `resolved` with a marketId attributes a file. `notfound` is a measured
+ *                  absence (gamma has no market for that token) and must never be read as one.
+ */
+export function parseAssetMap(text: string, source: AssetMapSource): ParsedAssetMap {
+  const map = new Map<string, string>();
+  let rows = 0;
+  let skipped = 0;
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    let row: Record<string, unknown>;
+    try {
+      row = JSON.parse(line) as Record<string, unknown>;
+    } catch {
+      skipped += 1; // torn last line
+      continue;
+    }
+    if (source === "recorder") {
+      const mid = row.marketId;
+      const ids = row.assetIds;
+      if (typeof mid !== "string" || !Array.isArray(ids)) {
+        skipped += 1;
+        continue;
+      }
+      for (const a of ids) if (typeof a === "string") map.set(a, mid);
+      rows += 1;
+    } else {
+      const tok = row.tokenId;
+      if (typeof tok !== "string") {
+        skipped += 1;
+        continue;
+      }
+      if (row.status !== "resolved" || typeof row.marketId !== "string") {
+        skipped += 1; // notfound/mismatch/error: an absence, not an attribution
+        continue;
+      }
+      map.set(tok, row.marketId);
+      rows += 1;
+    }
+  }
+  return { map, rows, skipped };
+}
+
+export type AssetMapConflict = { tokenId: string; primary: string; secondary: string };
+
+/**
+ * Merge two sources, primary wins. Conflicts are returned, not swallowed: on this corpus the
+ * backfill and the recorder must agree, so a non-zero count means one of them is wrong.
+ */
+export function mergeAssetMaps(
+  primary: Map<string, string>,
+  secondary: Map<string, string>,
+): { map: Map<string, string>; conflicts: AssetMapConflict[]; fromSecondary: number } {
+  const map = new Map(primary);
+  const conflicts: AssetMapConflict[] = [];
+  let fromSecondary = 0;
+  for (const [tok, mid] of secondary) {
+    const existing = map.get(tok);
+    if (existing === undefined) {
+      map.set(tok, mid);
+      fromSecondary += 1;
+    } else if (existing !== mid) {
+      conflicts.push({ tokenId: tok, primary: existing, secondary: mid });
+    }
+  }
+  return { map, conflicts, fromSecondary };
+}

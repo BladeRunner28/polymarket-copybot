@@ -10,7 +10,7 @@
  * Evidence for card `l2-retention-cron`. BASIS printed on every run:
  *   population = files in data/l2 (*.jsonl, one per CLOB asset id)
  *   level      = one file; clock = file mtime; size = apparent bytes
- *   guards     = young (<minAgeDays) / unattributed (no market in data/l2-asset-map.jsonl)
+ *   guards     = young (<minAgeDays) / unattributed (no market in data/l2-asset-map.jsonl or data/l2-asset-backfill.jsonl)
  *                / protected (market has an open leg, an un-stamped leg, or a live intent)
  */
 
@@ -20,6 +20,8 @@ import { join } from "path";
 import {
   DEFAULT_L2_POLICY,
   ceilingVerdict,
+  mergeAssetMaps,
+  parseAssetMap,
   planL2Retention,
   recentBytesPerDayUpperBound,
   DAY_MS,
@@ -29,6 +31,10 @@ import {
 const REPO = join(__dirname, "..");
 const L2_DIR = join(REPO, "data", "l2");
 const ASSET_MAP = join(REPO, "data", "l2-asset-map.jsonl");
+// Second attribution source (scripts/l2-asset-backfill.py). Separate file on purpose: the
+// recorder appends to ASSET_MAP while running, and two writers on one append-only ledger is
+// how a torn line gets in the middle of a file instead of at its end.
+const ASSET_BACKFILL = join(REPO, "data", "l2-asset-backfill.jsonl");
 const OUT = join(REPO, "data", "l2-retention-read.json");
 const LEDGER = join(REPO, "data", "l2-retention-ledger.jsonl");
 
@@ -49,23 +55,37 @@ const IRREVERSIBLE = flag("i-know-this-is-irreversible");
 const gib = (n: number) => (n / 1024 ** 3).toFixed(2) + " GiB";
 const pct = (n: number, d: number) => (d <= 0 ? "n/a" : ((n / d) * 100).toFixed(1) + "%");
 
-/** tokenId -> marketId from the recorder's own map (last line wins; it is append-only). */
-function readAssetMap(): { map: Map<string, string>; lines: number } {
-  const map = new Map<string, string>();
-  let lines = 0;
-  if (!fs.existsSync(ASSET_MAP)) return { map, lines };
-  for (const line of fs.readFileSync(ASSET_MAP, "utf8").split("\n")) {
-    if (!line.trim()) continue;
-    try {
-      const row = JSON.parse(line) as { marketId?: string; assetIds?: string[] };
-      if (!row.marketId || !Array.isArray(row.assetIds)) continue;
-      lines += 1;
-      for (const a of row.assetIds) map.set(String(a), String(row.marketId));
-    } catch {
-      /* a torn last line is not a read failure */
-    }
+/**
+ * tokenId -> marketId from BOTH sources: the recorder's map (primary) and the backfill ledger.
+ * Prints its own basis: rows read per source, rows skipped, and any disagreement between them.
+ */
+function readAssetMap(): {
+  map: Map<string, string>;
+  lines: number;
+  backfillLines: number;
+  backfillTokens: number;
+  skipped: number;
+  conflicts: number;
+} {
+  const read = (path: string): string => (fs.existsSync(path) ? fs.readFileSync(path, "utf8") : "");
+  const rec = parseAssetMap(read(ASSET_MAP), "recorder");
+  const back = parseAssetMap(read(ASSET_BACKFILL), "backfill");
+  const merged = mergeAssetMaps(rec.map, back.map);
+  if (merged.conflicts.length > 0) {
+    // Not silent, not fatal: print the first few and let the count speak.
+    console.error(
+      `WARNING: ${merged.conflicts.length} token(s) attributed differently by the recorder and the backfill; recorder wins`,
+    );
+    for (const c of merged.conflicts.slice(0, 5)) console.error(`  ${c.tokenId}: ${c.primary} (recorder) vs ${c.secondary} (backfill)`);
   }
-  return { map, lines };
+  return {
+    map: merged.map,
+    lines: rec.rows,
+    backfillLines: back.rows,
+    backfillTokens: merged.fromSecondary,
+    skipped: rec.skipped + back.skipped,
+    conflicts: merged.conflicts.length,
+  };
 }
 
 async function main() {
@@ -79,7 +99,8 @@ async function main() {
       files.push({ tokenId: f.slice(0, -".jsonl".length), bytes: st.size, mtimeMs: st.mtimeMs });
     }
 
-    const { map: tokenToMarket, lines: mapLines } = readAssetMap();
+    const assetMap = readAssetMap();
+    const tokenToMarket = assetMap.map;
 
     // Guards. Each is a distinct reason a file cannot be deleted, and each is printed with its own count.
     const openMarkets = await prisma.paperTrade.findMany({
@@ -122,7 +143,11 @@ async function main() {
         bytes: plan.totalBytes,
         oldestAgeDays: Number(plan.oldestAgeDays.toFixed(1)),
         growthBytesPerDayUpperBound: Math.round(growth),
-        assetMapLines: mapLines,
+        assetMapLines: assetMap.lines,
+        assetBackfillLines: assetMap.backfillLines,
+        assetBackfillTokens: assetMap.backfillTokens,
+        assetMapSkippedRows: assetMap.skipped,
+        assetMapConflicts: assetMap.conflicts,
         unmappedFiles: plan.unattributedFiles,
         unmappedBytes: plan.unattributedBytes,
       },
@@ -161,6 +186,10 @@ async function main() {
       );
       console.log(
         `corpus: ${plan.totalFiles} files / ${gib(plan.totalBytes)}; oldest ${plan.oldestAgeDays.toFixed(1)}d; growth <= ${gib(growth)}/day (upper bound: whole size of every file touched in 7d)`,
+      );
+      console.log(
+        `attribution: recorder ${assetMap.lines} rows + backfill ${assetMap.backfillLines} rows (${assetMap.backfillTokens} tokens) ` +
+          `= ${tokenToMarket.size} tokens; skipped ${assetMap.skipped}, conflicts ${assetMap.conflicts}`,
       );
       console.log(
         `guards: young ${plan.youngFiles} / ${gib(plan.youngBytes)} | protected ${plan.protectedFiles} / ${gib(plan.protectedBytes)} across ${protectedMarkets.size} markets (open ${openMarkets.length}, un-stamped ${unstampedMarkets.length}, live intents ${liveIntents.length}) | unattributed ${plan.unattributedFiles} / ${gib(plan.unattributedBytes)} (${pct(plan.unattributedBytes, plan.totalBytes)})`,

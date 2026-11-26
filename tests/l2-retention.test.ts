@@ -3,6 +3,8 @@ import {
   DAY_MS,
   DEFAULT_L2_POLICY,
   ceilingVerdict,
+  mergeAssetMaps,
+  parseAssetMap,
   planL2Retention,
   recentBytesPerDayUpperBound,
   type L2File,
@@ -155,5 +157,88 @@ describe("ceiling arithmetic", () => {
     expect(ceilingVerdict(30 * GB, 24 * GB, 1)).toEqual({ status: "over", overBytes: 6 * GB, projectedDaysToCeiling: null });
     expect(ceilingVerdict(4 * GB, 24 * GB, 1 * GB)).toEqual({ status: "inside", overBytes: 0, projectedDaysToCeiling: 20 });
     expect(ceilingVerdict(4 * GB, 24 * GB, 0).projectedDaysToCeiling).toBeNull();
+  });
+});
+
+describe("asset-map sources (recorder + backfill, card l2-asset-map-backfill)", () => {
+  it("parses recorder rows into one entry per asset id", () => {
+    const text = JSON.stringify({ ts: 1, marketId: "m1", assetIds: ["a", "b"] }) + "\n";
+    const p = parseAssetMap(text, "recorder");
+    expect(p.rows).toBe(1);
+    expect(p.map.size).toBe(2);
+    expect(p.map.get("b")).toBe("m1");
+  });
+
+  it("attributes a backfill token only when the row says resolved", () => {
+    const text = [
+      JSON.stringify({ tokenId: "t1", status: "resolved", marketId: "m1", via: "gamma:clob_token_ids&closed=true" }),
+      JSON.stringify({ tokenId: "t2", status: "notfound", reason: "gamma_empty" }),
+      JSON.stringify({ tokenId: "t3", status: "error", reason: "http_429" }),
+      JSON.stringify({ tokenId: "t4", status: "mismatch", reason: "token_absent_from_returned_market" }),
+    ].join("\n");
+    const p = parseAssetMap(text, "backfill");
+    expect(p.rows).toBe(1);
+    expect([...p.map.keys()]).toEqual(["t1"]);
+    // A measured absence is NOT an attribution: `notfound` must never become a market id.
+    expect(p.map.has("t2")).toBe(false);
+    expect(p.skipped).toBe(3);
+  });
+
+  it("survives a torn last line and counts it as skipped, not as data", () => {
+    const text = JSON.stringify({ tokenId: "t1", status: "resolved", marketId: "m1" }) + '\n{"tokenId":"t2","sta';
+    const p = parseAssetMap(text, "backfill");
+    expect(p.rows).toBe(1);
+    expect(p.skipped).toBe(1);
+  });
+
+  it("merge: the recorder wins and a disagreement is REPORTED", () => {
+    const rec = new Map([
+      ["a", "m1"],
+      ["b", "m2"],
+    ]);
+    const back = new Map([
+      ["a", "m1"],
+      ["b", "DIFFERENT"],
+      ["c", "m3"],
+    ]);
+    const merged = mergeAssetMaps(rec, back);
+    expect(merged.map.get("b")).toBe("m2"); // primary wins
+    expect(merged.map.get("c")).toBe("m3"); // secondary fills a hole
+    expect(merged.fromSecondary).toBe(1);
+    expect(merged.conflicts).toEqual([{ tokenId: "b", primary: "m2", secondary: "DIFFERENT" }]);
+  });
+
+  it("MUTATION ARM: a file the recorder never saw is unattributable alone and attributable once merged", () => {
+    const files = [f("old-token", 40 * GB, 200)];
+    const policy = { ...DEFAULT_L2_POLICY, ceilingBytes: 1 * GB };
+
+    const recorderOnly = planL2Retention(files, { nowMs: NOW, policy, tokenToMarket: new Map() });
+    expect(recorderOnly.unattributedFiles).toBe(1);
+    expect(recorderOnly.deleteFiles).toBe(0); // the guard refuses to plan it
+
+    const backfill = parseAssetMap(
+      JSON.stringify({ tokenId: "old-token", status: "resolved", marketId: "m-old" }) + "\n",
+      "backfill",
+    );
+    const merged = mergeAssetMaps(new Map(), backfill.map);
+    const planned = planL2Retention(files, { nowMs: NOW, policy, tokenToMarket: merged.map });
+    // Now it is a normal over-ceiling candidate: reasoned about, and deletable under policy.
+    expect(planned.unattributedFiles).toBe(0);
+    expect(planned.deleteFiles).toBe(1);
+    expect(planned.rows[0].marketId).toBe("m-old");
+  });
+
+  it("MUTATION ARM: a notfound token keeps the file in the unattributed guard", () => {
+    const files = [f("gone-token", 40 * GB, 200)];
+    const backfill = parseAssetMap(JSON.stringify({ tokenId: "gone-token", status: "notfound" }) + "\n", "backfill");
+    const merged = mergeAssetMaps(new Map(), backfill.map);
+    const planned = planL2Retention(files, {
+      nowMs: NOW,
+      policy: { ...DEFAULT_L2_POLICY, ceilingBytes: 1 * GB },
+      tokenToMarket: merged.map,
+    });
+    expect(merged.map.size).toBe(0);
+    expect(planned.unattributedFiles).toBe(1);
+    expect(planned.deleteFiles).toBe(0);
   });
 });

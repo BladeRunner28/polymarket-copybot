@@ -1,0 +1,32 @@
+{
+  "basis": {
+    "clock": "file mtime (retention read basis)",
+    "level": "one token (one file)",
+    "lookup": "gamma /markets?clob_token_ids=<tok>&closed=true, accepted only if the returned market's clobTokenIds contain the token",
+    "population": "files in data/l2 (*.jsonl, one per CLOB asset id)"
+  },
+  "coverage": {
+    "attributedBytes": 30201091815,
+    "attributedFiles": 57342,
+    "bySource": {
+      "backfill": 24430,
+      "recorder": 32912
+    },
+    "bytes": 30785641805,
+    "files": 59434,
+    "unattributedBytes": 584549990,
+    "unattributedFiles": 2092,
+    "unattributedPct": 1.9
+  },
+  "ledgerRows": 30054,
+  "run": {
+    "elapsedSeconds": 0.8,
+    "error": 0,
+    "mismatch": 0,
+    "notfound": 17,
+    "resolved": 2,
+    "siblingAttributed": 2,
+    "tokensAttempted": 19
+  },
+  "updatedAt": "2026-11-26T15:14:10Z"
+}

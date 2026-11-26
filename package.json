@@ -32,6 +32,8 @@
     "kalshi:college-aliases": "python3 scripts/kalshi-team-aliases.py --derive-college && python3 scripts/kalshi-team-aliases.py --check && python3 scripts/kalshi-team-aliases.py --self-test",
     "ops:record": "python3 scripts/ops-record-lookup.py",
     "l2:retention": "tsx scripts/l2-retention.ts",
+    "l2:asset-backfill": "python3 scripts/l2-asset-backfill.py",
+    "l2:asset-backfill:self-test": "python3 scripts/l2-asset-backfill.py --self-test",
     "longshot:token-basis": "python3 scripts/longshot-token-basis.py",
     "wallet:selector-search": "python3 scripts/u2b-selector-search.py",
     "export:training": "tsx scripts/export-training-data.ts",

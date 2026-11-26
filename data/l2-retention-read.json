@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T02:06:34.937Z",
+  "generatedAt": "2026-11-26T15:15:58.261Z",
   "basis": {
     "population": "files in data/l2 (*.jsonl, one per CLOB asset id)",
     "level": "one L2 file",
@@ -12,38 +12,42 @@
     }
   },
   "corpus": {
-    "files": 59316,
-    "bytes": 30675313690,
-    "oldestAgeDays": 86.5,
-    "growthBytesPerDayUpperBound": 394055227,
-    "assetMapLines": 16767,
-    "unmappedFiles": 26520,
-    "unmappedBytes": 6299962490
+    "files": 59434,
+    "bytes": 30785975701,
+    "oldestAgeDays": 87.1,
+    "growthBytesPerDayUpperBound": 403716297,
+    "assetMapLines": 16832,
+    "assetBackfillLines": 27962,
+    "assetBackfillTokens": 24430,
+    "assetMapSkippedRows": 2092,
+    "assetMapConflicts": 0,
+    "unmappedFiles": 2090,
+    "unmappedBytes": 407955028
   },
   "guards": {
     "protectedMarkets": 4602,
-    "openMarkets": 96,
+    "openMarkets": 79,
     "unstampedMarkets": 3801,
-    "liveIntentMarkets": 964,
-    "youngFiles": 23446,
-    "youngBytes": 20708894694,
-    "protectedFiles": 738,
-    "protectedBytes": 1095819081,
-    "unattributedFiles": 26520,
-    "unattributedBytes": 6299962490
+    "liveIntentMarkets": 963,
+    "youngFiles": 23460,
+    "youngBytes": 20726620721,
+    "protectedFiles": 2300,
+    "protectedBytes": 2186465024,
+    "unattributedFiles": 2090,
+    "unattributedBytes": 407955028
   },
   "ceiling": {
     "ceilingBytes": 25769803776,
     "status": "over",
-    "overBytes": 4905509914,
+    "overBytes": 5016171925,
     "projectedDaysToCeiling": null
   },
   "plan": {
-    "deleteFiles": 8612,
-    "deleteBytes": 2570637425,
+    "deleteFiles": 23695,
+    "deleteBytes": 5016925582,
     "deleteUnattributedBytes": 0,
-    "unreachableBytes": 2334872489,
-    "oldestDeleteAgeDays": 68.28376947397868,
+    "unreachableBytes": 0,
+    "oldestDeleteAgeDays": 87.09727634751496,
     "applied": false
   }
 }
