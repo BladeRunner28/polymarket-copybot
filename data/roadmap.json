@@ -5058,6 +5058,43 @@
         "needs-approval",
         "retention"
       ]
+    },
+    {
+      "id": "det-lag-vs-ttr-floor",
+      "column": "Done",
+      "title": "Detection lag inside the TTR skip class \u2014 MEASURED: the 2h floor is real, no cadence lever exists",
+      "effort": "scripts/det-lag-vs-ttr-read.py (~40 min, read-only replay over prisma/dev.db; artifact data/det-lag-vs-ttr-read.json)",
+      "dates": "Raised and measured by the copybot research daily 2026-11-26 (read-only, no lane touched, no approval needed)",
+      "gate": "CLOSED \u2014 do not propose a cadence tightening, a near-close sweep priority, or an API_DELAY_MS/MONITOR_CONCURRENCY change on the basis of the TTR skip class. Re-open ONLY if (a) p50 detection lag exceeds 0.30 h over a 30-day window, or (b) the cadence-recoverable slice (lead >= 2h at the wallet's fill with lag <= 0.5h) exceeds 5% of TTR-tagged skips. Same-data second passes are the thin-window error our rules forbid.",
+      "note": "WHY: the TTR floor is the single biggest skip class ('resolves in 0.0h < min 2h' = 237 of 1,294 newest-400 tag entries, 18%), and it has two readings that call for opposite actions \u2014 the wallet traded inside our 2h floor (gate doing its job) versus our sweep seeing a copyable trade late (cadence defect). Nobody had separated them.\n\nRESULT (read-only, 30 d, n=15,031 distinct TTR-tagged skip decisions): lag = DecisionJournal.createdAt - ObservedTrade.timestamp has p50 0.111 h, p75 0.163 h, p90 2.954 h, max 23.673 h. 87.0% of the class is detected within 15 minutes of the wallet's fill, so the skip is genuine. Of the 1,815 rows where the wallet's own lead cleared 2 h (lead = ttr + lag), only 113 (0.75% of the class, ~3.8/day) are cadence-recoverable (lag <= 0.5 h) and their entry move vs the wallet is p50 +0.005 USD; the other 1,680 (11.2%) were seen >2 h late = backfill on wallet add / pagination re-discovery, NOT sweep latency, and they carry entry move p50 +0.020 / p75 +0.421 USD with 60.5% adverse \u2014 copying those late would be materially worse.\n\nCONSEQUENCE: a tighter sweep buys ~3.8 legs/day at ~+0.5c worse entry (order $6/day at C-200's +16.1% lifetime ROI) for 2x the fetch load and the 429 risk the 11-24 window already demonstrated. Not worth it. The floor also earns its keep by accident: it catches the backfill class before admission. Verification of the numbers: `python3 scripts/det-lag-vs-ttr-read.py`.",
+      "tags": [
+        "measurement",
+        "negative-result",
+        "skip-reasons",
+        "ttr",
+        "cadence",
+        "closed",
+        "research-daily"
+      ]
+    },
+    {
+      "id": "profit-mainpath-short-tenor-block",
+      "title": "LANE A PROPOSAL \u2014 BLOCK (not cap) Kelly-path clips >= $60 that resolve in 2-24h: 31 legs, -$1,144.7 (-36.9%), the only delta on the board whose market-clustered CI excludes zero \u2014 +$39.02/day",
+      "column": "Backlog",
+      "effort": "1-2h (sibling of mainPathShortTtrClipUsd: a skip in the same clamp, keyed on the sizer branch, not the price)",
+      "dates": "Proposed 2026-11-26 by the profit review (drafts/profit-recs-20261126.md \u00a7R1; instrument scripts/profit-tenor.py \u00a7S27-S30, --selftest 18/18). NOT APPLIED \u2014 Lane A: it changes what the bot admits. Supersedes the RANKING of profit-mainpath-short-tenor-clip (its $10 cap, +$29.37/day) and of the approved cheap-band cap apply-v73 (0.0-0.2:10, +$27.79/day, delta CI [-648,+1826]).",
+      "note": "WHY: the book's loss has one address and the board has been pricing its neighbours. Measured on 686 settled v68+ legs / 572 markets / 29.3 days / $13,088 (cost = simulatedPositionSize = dollars at risk, deduped bot|wallet|market|outcome): clip tier <$15 433 legs +0.1%; $15-30 196 legs +$558.4 (+15.0%); $100 51 legs $5,100 -$991.4 (-19.4%, ex-top-3 -33.0%, ex-top-10 -39.8%). The same $100 clip at px>=0.80 is +6.7% (13 legs) \u2014 the clip is not bad, the clip WHERE WE ARE WRONG is bad. S30 ranks every rule on the same legs: block 2-24h main-path clips >=$60 31 legs / $3,100 / -$1,144.7 (-36.9%) -> kept book $9,988 / +$939.3 / +9.4% / +$39.02/day, blocked-PnL CI [-1665.7,-621.8] so delta CI [+621.8,+1665.7] EXCLUDES ZERO, halves -21.5% (n=16) then -53.3% (n=15); vs (f) block Kelly clips >=$60 px<0.60 +$36.74 (CI [-412,+2095]); (c) block the whole 2-24h main path +$34.96 (blocks 199 legs, -$1,025.6, -19.9%, and also removes the +11.2% $15-30 tier); (d) block Kelly >=$60 any tenor +$33.79 (CI [-530,+2077]); (a2) block cheap band +$30.41; (a) band cap :10 +$27.79 (CI spans zero); (b) Kelly cap $25 lane-wide +$21.51. WHY NOT THE FLOOR: minTimeToResolutionHours is still 2 in live RuleSet v73; the approved 2->24h floor blocks 552 legs / $9,223 / -$700 and lifts the kept book to +12.8%, BUT \u00a7S9 shows 2-24h is +8.0% on the short-TTR channel (353 legs, $4,069) and -19.9% on the main path (199 legs, $5,154) \u2014 a global floor kills a profitable channel to remove a losing one. WHY NOT LANE-WIDE: a $25 lane-wide cap (+$21.51/day) also crushes the $15-30 tier at +15.0% on 196 legs; the scope is the instrument, not the strength. SIZING IS NOT GENERALLY ANTI-PREDICTIVE (checked and refuted: Spearman(clip, realised ROI) = +0.027 on 364 nonzero legs) \u2014 the anti-signal is confined to this one cell.",
+      "decision_rule": "Ship as a RuleSet field mainPathShortTtrSkipClipUsd (default 0 = off), evaluated in the same block as mainPathShortTtrClipUsd: if the leg went through the Kelly sizer (params.kelly) AND maturityTtrHours < 24 AND size >= 60 -> skip the copy and journal the reason (read the branch, never the price). Boundary probe at 59.99/60.00/60.01 x ttr 23.9/24.0/24.1, plus one live cycle proving a $100 2-24h main-path leg is skipped while a $100 25-48h leg and the short-TTR lane's $10 legs are untouched. Do NOT ship together with the cheap-band cap: S15 shows the cap's residual scope after a 2-24h block is 17 legs at +6.7%, i.e. the cap becomes a cut on a positive cell. REFUTATION: forward 30 legs in exactly that class at ROI >= 0 on the booked basis, or a kept book < 0% ex-top-3, or the short-TTR channel's forward ROI below -5% (then the channel I am preserving is the one that broke) -> set the field back to 0 (byte-identical to today). Re-read: python3 scripts/profit-tenor.py | sed -n '/S30/,/S8/p'.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "sizing",
+        "clip",
+        "tenor",
+        "awaiting-approval",
+        "proposed-2026-11-26"
+      ],
+      "gate": "LANE A \u2014 nothing applied. No RuleSet read/write, no prisma write, DB mode=ro. Supersedes the build order of profit-mainpath-short-tenor-clip and of apply-v73-c200-cheap-band-clip; approve ONE."
     }
   ],
   "dates": {

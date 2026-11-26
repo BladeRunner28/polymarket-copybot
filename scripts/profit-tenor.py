@@ -291,7 +291,18 @@ def selftest():
     assert big["ntl"] == 10 and abs(big["pnl"] + 2.0) < 1e-9
     small = dict(ntl=8, pnl=3, days=1.0)
     assert resize(small, 10) is small
-    print("selftest 15/15 OK")
+    # S27: the deployed denominator can never exceed the booked one, and a $0.00 row must
+    # count as phantom on one basis and as a full position on the other — that gap is the point
+    bk = [dict(ntl=100, pnl=-25, fs="filled"), dict(ntl=100, pnl=0.0, fs="unfilled")]
+    dep = [l for l in bk if l["fs"] == "filled"]
+    assert abs(roi(bk) + 12.5) < 1e-9 and abs(roi(dep) + 25.0) < 1e-9
+    # S28: a cap is a linear rescale, so its delta is exactly (size-cap)/size of the PnL, and
+    # a leg under the cap must contribute nothing — the table is only exact if both hold
+    assert abs(cap_delta(dict(ntl=100, pnl=-20, px=0.12), 10) - 18.0) < 1e-9
+    assert cap_delta(dict(ntl=8, pnl=-5, px=0.12), 10) == 0.0
+    # S29: at 0.86 a fair book wins all of 19 legs 5.5% of the time — the binomial is the test
+    assert abs(0.86 ** 19 - 0.0556) < 0.002
+    print("selftest 18/18 OK")
 
 
 def table(title, legs, extra=None):
@@ -328,6 +339,251 @@ def boot_delta(legs, dvals, reps=2000, seed=17):
         out.append(sum(sum(g[keys[i]]) for i in pick))
     a = np.array(out)
     return float(np.percentile(a, 2.5)), float(np.percentile(a, 97.5))
+
+
+def sec_deployed_basis(legs):
+    """S27 — what share of the "booked" population was ever a position at all.
+
+    WHY: every ROI in S1-S26 divides PnL by the sum of `simulatedPositionSize` over booked
+    rows. Since the fill-aware flip the ledger keeps `unfilled` rows in the denominator at
+    exactly $0.00 PnL, so a leg that never traded still dilutes the ROI toward zero. This
+    section measures the dilution instead of asserting it, and prints the two bases side by
+    side so no downstream table can quote the booked rate without the deployed one beside it.
+
+    BASIS: cost = simulatedPositionSize (dollars at risk). deployed = fillStatus='filled'.
+    'adjudicated' = filled OR null (the resolver never spoke), which is the widest honest set.
+    """
+    print("\n== S27. DEPLOYED vs BOOKED: how much of the denominator was ever a position ==")
+    print(f"{'class':<26}{'legs':>6}{'notional $':>12}{'PnL $':>10}{'ROI':>9}{'phantom %':>11}")
+    for nm, sel in (("booked (all settled)", lambda l: True),
+                    ("deployed (filled)", lambda l: l["fs"] == "filled"),
+                    ("unadjudicated (null)", lambda l: l["fs"] == ""),
+                    ("unfilled", lambda l: l["fs"] == "unfilled")):
+        v = [l for l in legs if sel(l)]
+        if not v:
+            continue
+        ntl = sum(l["ntl"] for l in v)
+        zero = sum(1 for l in v if abs(l["pnl"]) < 1e-9)
+        print(f"{nm:<26}{len(v):>6}{ntl:>12.0f}{sum(l['pnl'] for l in v):>10.1f}"
+              f"{roi(v):>8.1f}%{100.0 * zero / len(v):>10.1f}%")
+    # the dilution factor, per lane: booked ROI x (booked notional / deployed notional)
+    for b in ("STANDARD", "BANKROLL_200"):
+        a = [l for l in legs if l["bot"] == b]
+        d = [l for l in a if l["fs"] == "filled"]
+        if not a or not d:
+            continue
+        nb = sum(l["ntl"] for l in a)
+        nd = sum(l["ntl"] for l in d)
+        print(f"  {b:<14} booked ROI {roi(a):>+7.1f}% on ${nb:>7.0f} | deployed ROI {roi(d):>+7.1f}% "
+              f"on ${nd:>7.0f} | a dollar of the booked denominator is {100.0 * nd / nb:>5.1f}c of a real one")
+    z = [l for l in legs if abs(l["pnl"]) < 1e-9]
+    print(f"  zero-PnL rows: {len(z)} / {len(legs)} legs, ${sum(l['ntl'] for l in z):.0f} of "
+          f"${sum(l['ntl'] for l in legs):.0f} notional; every one stamped "
+          f"'unfilled': {all(l['fs'] == 'unfilled' for l in z) if z else True}")
+    print("  NOTE: this is a READ-PATH restatement. It changes no rule and no booked row; it says")
+    print("  which denominator every downstream card must state before it quotes an ROI.")
+
+
+def sec_clip_axis(legs, days):
+    """S28 — is the cheap band's loss a PRICE class or a CLIP class?
+
+    WHY: the approved field (c200BandClipCaps, `0.0-0.2:25` -> proposed `:10`) treats
+    0.00-0.20 as one population. If the band's sign flips inside it — small clips earning,
+    large clips losing — then the band is not the axis and a band-scoped constant is a proxy
+    for a clip-scoped rule. This section measures the 2-D cell (band x clip tier) and then
+    prices the cap curve on both the booked and the deployed basis, with a market-clustered
+    CI on the delta. A cap delta is a SUM of per-leg deltas, so boot_delta is the right test:
+    a point estimate without it is the error that produced the 2026-10-20 defect.
+    """
+    print("\n== S28. band x CLIP tier on the Kelly path (C-200), cost = dollars at risk ==")
+    c200 = [l for l in legs if l["bot"] == "BANKROLL_200"]
+    print(f"{'band':<9}{'tier':<9}{'legs':>6}{'notional $':>12}{'PnL $':>10}{'ROI':>9}{'avg px':>8}")
+    for b in BANDS:
+        v0 = [l for l in c200 if band_of(l["px"]) == b]
+        if not v0:
+            continue
+        for nm, lo, hi in (("<$30", 0, 30), ("$30-60", 30, 60), ("$60+", 60, 1e9)):
+            v = [l for l in v0 if lo <= l["ntl"] < hi]
+            if not v:
+                continue
+            print(f"{b:<9}{nm:<9}{len(v):>6}{sum(l['ntl'] for l in v):>12.0f}"
+                  f"{sum(l['pnl'] for l in v):>10.1f}{roi(v):>8.1f}%{np.mean([l['px'] for l in v]):>8.3f}")
+
+    def scope(l):
+        return l["bot"] == "BANKROLL_200" and l["px"] < 0.20 and l["ntl"] > 10 and not l["stair"]
+
+    print("\n  cap curve on the field's own scope (bot=BANKROLL_200, px<0.20, notional>10, not short-TTR)")
+    sel = [l for l in legs if scope(l)]
+    print(f"  scope: {len(sel)} legs / {len({l['market'] for l in sel})} mkts / "
+          f"${sum(l['ntl'] for l in sel):.0f} risk / ${sum(l['pnl'] for l in sel):.1f} / "
+          f"ROI {roi(sel):+.1f}%")
+    for nm, pop in (("booked", legs), ("deployed", [l for l in legs if l["fs"] == "filled"])):
+        base = sum(l["pnl"] for l in pop)
+        print(f"  -- {nm} basis: base ${base:.1f} on ${sum(l['ntl'] for l in pop):.0f} "
+              f"(ROI {roi(pop):+.1f}%)")
+        print(f"     {'cap':<7}{'book $':>10}{'delta $':>10}{'$/day':>8}{'delta CI':>24}")
+        for cap in (0, 5, 10, 15, 20, 25, 50, 1e9):
+            dvals = [cap_delta(l, cap) if scope(l) else 0.0 for l in pop]
+            tot = sum(dvals)
+            ci = boot_delta(pop, dvals)
+            lab = "none" if cap > 1e8 else f"${cap:g}"
+            excl = "  EXCLUDES 0" if (ci[0] > 0 or ci[1] < 0) else ""
+            print(f"     {lab:<7}{base + tot:>10.1f}{tot:>10.1f}{tot / days:>8.2f}"
+                  f"{fmt_ci(ci):>24}{excl}")
+    print("  NOTE: a cap can only ever CUT dollars at risk; it cannot re-select which legs are")
+    print("  taken. On a cell whose per-leg ROI dispersion is ~130pp, the delta's CI is the")
+    print("  honest statement of what the rule is worth — quote it or quote nothing.")
+
+
+def sec_near_certainty(c, legs, days):
+    """S29 — the 0.80+ band: the best cell in the book, and why it cannot be scaled.
+
+    WHY: the standing doctrine says volume above 0.50 sits where edge is negative. Measured
+    by band the loss is 0.40-0.80; the 0.80-1.00 cells are the only ones that survive
+    concentration. So the question is not 'is the top band good' (it looks good) but 'is there
+    any supply there' — a cell that earns +16% on 0.4 legs/day is a curiosity, not a lever.
+    This section prices the cell AND counts the candidate supply the scorer refused in it,
+    with the gate that refused them, so the answer cannot be an opinion.
+    """
+    print("\n== S29. the top band (px >= 0.80): cell, concentration, and the supply behind it ==")
+    for lo, hi, nm in ((0.80, 1.01, "0.80-1.00"), (0.80, 0.90, "0.80-0.90"), (0.90, 1.01, "0.90-1.00")):
+        v = [l for l in legs if lo <= l["px"] < hi and abs(l["pnl"]) > 1e-9]
+        if len(v) < 5:
+            continue
+        s = sorted(v, key=lambda l: -l["pnl"])
+        ci = boot_pnl(v)
+        print(f"  {nm}: legs {len(v)} / mkts {len({l['market'] for l in v})} / "
+              f"wallets {len({l['wallet'] for l in v})} / risk ${sum(l['ntl'] for l in v):.0f} / "
+              f"PnL ${sum(l['pnl'] for l in v):.1f} / ROI {roi(v):+.1f}% / "
+              f"ex-top-3 {roi(s[3:]):+.1f}% / hit "
+              f"{100 * sum(1 for l in v if l['pnl'] > 0) / len(v):.0f}% / px {np.mean([l['px'] for l in v]):.3f}")
+        print(f"    PnL CI {fmt_ci(ci)} — a market-clustered bootstrap on a 100%-hit sample is")
+        print(f"    degenerate (it prices entry spread, not outcome variance). Use the binomial:")
+        p = float(np.mean([l["px"] for l in v]))
+        print(f"    P({len(v)}/{len(v)} winners | fair at {p:.3f}) = {p ** len(v):.3f}")
+    rows = c.execute(
+        """select priceAtDecision px, decision, reasonsJson, copyScore
+           from DecisionJournal where isDemo=0 and priceAtDecision>=0.80
+             and createdAt >= (strftime('%s','now') - ?) * 1000""",
+        (days * 86_400,),
+    ).fetchall()
+    if not rows:
+        return
+    print(f"\n  candidate supply at px >= 0.80 over the same {days:.0f} days (journal basis):")
+    by_dec = {}
+    for r in rows:
+        by_dec.setdefault(r["decision"], []).append(r)
+    for dec, v in sorted(by_dec.items(), key=lambda kv: -len(kv[1])):
+        pxs = [r["px"] for r in v if r["px"] is not None]
+        empty = sum(1 for r in v if (r["reasonsJson"] or "[]") == "[]")
+        print(f"    {dec:<14}{len(v):>5} rows / {len({r['px'] for r in v})} distinct prices / "
+              f"mean px {np.mean(pxs):.3f} / {empty} with an empty reasons array")
+    print("  the gate that refuses the top of the book: src/lib/scoring/trade.ts:126")
+    print("  `currentPrice > rules.maxEntryPrice` (0.88) -> 'near certainty — limited upside'.")
+    print("  A refusal at 0.956 is a fair refusal (upside 4.6c, downside 96c). A refusal at 0.86")
+    print("  is a bet declined on doctrine, not on arithmetic. The two must be counted apart.")
+
+
+def sec_clip_global(legs, days):
+    """S30 — is the clip the axis of the WHOLE book, or only of the cheap band?
+
+    WHY: S28 found the sign flip inside 0.00-0.20 (clips under $30 earn +22%, clips over
+    $60 lose -28%). If that is a property of the cheap band only, a band-scoped field is
+    right. If it holds in every band and every tenor — as S9/S10 suggest — then the band is
+    the proxy and the field that should move is the CLIP, lane-wide. This section prices
+    three shadows on the same legs so their deltas are comparable by construction:
+      (a) band-scoped cap 0.0-0.2:10 (the approved field, as proposed),
+      (b) lane-wide Kelly cap $25 (the card falsified on 2026-11-16 and 2026-11-24),
+      (c) block the 2-24h MAIN PATH (keep the short-TTR channel in the same window).
+    (c) is priced because the approved TTR floor 2->24h is GLOBAL and would kill the
+    short-TTR channel, which S9 shows is the only positive channel inside 2-24h.
+    """
+    print("\n== S30. clip tier across the WHOLE book (both lanes, all tenors) ==")
+    print(f"{'tier':<10}{'legs':>6}{'notional $':>12}{'PnL $':>10}{'ROI':>9}"
+          f"{'ex-top-3':>10}{'ex-top-10':>11}")
+    for nm, lo, hi in (("<$15", 0, 15), ("$15-30", 15, 30), ("$30-60", 30, 60),
+                       ("$60-100", 60, 100), ("$100+", 100, 1e9)):
+        v = [l for l in legs if lo <= l["ntl"] < hi]
+        if not v:
+            continue
+        s = sorted(v, key=lambda l: -l["pnl"])
+        print(f"{nm:<10}{len(v):>6}{sum(l['ntl'] for l in v):>12.0f}{sum(l['pnl'] for l in v):>10.1f}"
+              f"{roi(v):>8.1f}%{roi(s[3:]):>9.1f}%{roi(s[10:]):>10.1f}%")
+
+    def blk(l):
+        return l["ttr"] is not None and 2 <= l["ttr"] < 24 and not l["stair"]
+
+    base = sum(l["pnl"] for l in legs)
+    base_n = sum(l["ntl"] for l in legs)
+    print(f"\n  baseline: {len(legs)} legs / ${base_n:.0f} / ${base:.1f} ({100 * base / base_n:+.1f}%)")
+    print(f"{'shadow':<52}{'legs':>6}{'notional $':>12}{'book $':>10}{'ROI':>8}{'$/day':>8}")
+    arms = [
+        ("(a) band cap 0.0-0.2:10 (approved field)",
+         lambda l: l["bot"] == "BANKROLL_200" and l["px"] < 0.20 and l["ntl"] > 10 and not l["stair"], 10),
+        ("(a2) band block 0.0-0.2 with clip>$10",
+         lambda l: l["bot"] == "BANKROLL_200" and l["px"] < 0.20 and l["ntl"] > 10 and not l["stair"], 0),
+        ("(b) Kelly path cap $25, lane-wide",
+         lambda l: (not l["stair"]) and l["ntl"] > 25, 25),
+        ("(b2) Kelly path cap $60, lane-wide",
+         lambda l: (not l["stair"]) and l["ntl"] > 60, 60),
+    ]
+    for nm, sel, cap in arms:
+        tot, ntl, n = 0.0, 0.0, 0
+        for l in legs:
+            s = min(l["ntl"], cap) if sel(l) else l["ntl"]
+            n += 1 if sel(l) else 0
+            tot += l["pnl"] * (s / l["ntl"])
+            ntl += s
+        print(f"{nm:<52}{n:>6}{ntl:>12.0f}{tot:>10.1f}{100 * tot / ntl:>7.1f}%"
+              f"{(tot - base) / days:>8.2f}")
+    # (d)/(e): BLOCK the big clip instead of capping it. A cap keeps a fraction of a
+    # uniformly-negative cell; a block prices whether the cell has any right to exist.
+    for nm, sel in (
+        ("(d) BLOCK Kelly-path clips >= $60 (any tenor)",
+         lambda l: (not l["stair"]) and l["ntl"] >= 60),
+        ("(e) BLOCK main-path 2-24h clips >= $60 only",
+         lambda l: (not l["stair"]) and l["ntl"] >= 60 and l["ttr"] is not None and 2 <= l["ttr"] < 24),
+        ("(f) BLOCK Kelly-path clips >= $60 with px < 0.60",
+         lambda l: (not l["stair"]) and l["ntl"] >= 60 and l["px"] < 0.60),
+    ):
+        gone2 = [l for l in legs if sel(l)]
+        keep = [l for l in legs if not sel(l)]
+        ci = boot_pnl(gone2)
+        # a block's delta is minus the blocked PnL; horizons split at the median opentime
+        med = float(np.median([l["ms"] for l in gone2])) if gone2 else 0
+        h1 = [l for l in gone2 if l["ms"] <= med]
+        h2 = [l for l in gone2 if l["ms"] > med]
+        print(f"{nm:<52}{len(gone2):>6}{sum(l['ntl'] for l in keep):>12.0f}"
+              f"{sum(l['pnl'] for l in keep):>10.1f}{roi(keep):>7.1f}%"
+              f"{(sum(l['pnl'] for l in keep) - base) / days:>8.2f}")
+        print(f"     blocked PnL ${sum(l['pnl'] for l in gone2):.1f} (ROI {roi(gone2):+.1f}%) "
+              f"CI {fmt_ci(ci)} -> delta CI {fmt_ci((-ci[1], -ci[0]))} | halves "
+              f"{roi(h1):+.1f}% (n={len(h1)}) then {roi(h2):+.1f}% (n={len(h2)})")
+    kept = [l for l in legs if not blk(l)]
+    gone = [l for l in legs if blk(l)]
+    print(f"{'(c) block 2-24h MAIN PATH (keep short-TTR)':<52}{len(gone):>6}"
+          f"{sum(l['ntl'] for l in kept):>12.0f}{sum(l['pnl'] for l in kept):>10.1f}"
+          f"{roi(kept):>7.1f}%{(sum(l['pnl'] for l in kept) - base) / days:>8.2f}")
+    print(f"    blocked: {len(gone)} legs / ${sum(l['ntl'] for l in gone):.0f} / "
+          f"${sum(l['pnl'] for l in gone):.1f} ({roi(gone):+.1f}%)")
+    # the constant: mainPathShortTtrClipUsd is a CAP on the 2-24h main path. Price the curve
+    # so the field's value is chosen from measurement instead of from the card's first guess.
+    mp = [l for l in legs if (not l["stair"]) and l["ttr"] is not None and 2 <= l["ttr"] < 24]
+    print(f"\n  cap curve on the field's real scope (2-24h main path): {len(mp)} legs / "
+          f"${sum(l['ntl'] for l in mp):.0f} / ${sum(l['pnl'] for l in mp):.1f} ({roi(mp):+.1f}%)")
+    for cap in (5, 10, 15, 20, 25, 30, 40, 60, 1e9):
+        tot = sum(min(l["ntl"], cap) * (l["pnl"] / l["ntl"]) for l in mp) + \
+              sum(l["pnl"] for l in legs if l not in mp)
+        n_sel = sum(1 for l in mp if l["ntl"] > cap)
+        lab = "none" if cap > 1e8 else f"${cap:g}"
+        print(f"     cap {lab:<6} clips bound {n_sel:>3}  book ${tot:>8.1f}  "
+              f"delta ${tot - base:>8.1f}  {(tot - base) / days:>+7.2f}/day")
+    print("  NOTE: the cap curve and the block are the same decision at two strengths. If the")
+    print("  curve is monotone to zero, the cell has no measured right to exist at any size and")
+    print("  the honest constant is the smallest one the operator will accept, not the mid one.")
+    print("  NOTE: (a) and (c) overlap — S15 shows the cap's residual scope after a 2-24h")
+    print("  block is 17 legs at +6.7%. Two rules on the same legs are not additive, and the")
+    print("  one that acts on the larger population with the stabler sign is the one to ship.")
 
 
 def sec_fill_basis(legs, days, cap=25.0):
@@ -1241,6 +1497,10 @@ def main():
     sec_fill_basis(legs, days)
     sec_clip_joint(legs, days, opens)
     sec_owned(legs, days, opens)
+    sec_deployed_basis(legs)
+    sec_clip_axis(legs, days)
+    sec_near_certainty(c, legs, days)
+    sec_clip_global(legs, days)
 
     print("\n== S8. the same tenor cap applied to today's open book ==")
     for cap_h, label in ((720, "30d"), (2160, "90d"), (4320, "180d"), (8760, "365d")):
