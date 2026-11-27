@@ -14,9 +14,23 @@ export default async function Performance() {
     // Rollup-backed (scripts/rollup-pnl-hourly.ts): was a full PnlSnapshot
     // GROUP BY scan per request.
     hourlyPnlSeries(),
-    prisma.paperTrade.findMany({ where: { status: "resolved" }, orderBy: { resolvedAt: "asc" } }),
+    // SETTLED, not "resolved" (2026-11-26 self-audit). `status: "resolved"` is
+    // only the NATURAL settlements; early exits are `status: "closed"` and were
+    // silently dropped, so every figure below read a different population than
+    // the book it claims to describe: 4,095 natural legs vs 13,153 settled
+    // (closed|resolved). STANDARD alone went +$7,580.23 (2,698) -> +$9,147.09
+    // (10,067) — the page understated it by $1,567. Ordered in JS below on
+    // (closedAt ?? resolvedAt) because Prisma cannot coalesce a sort key and
+    // ordering by resolvedAt alone would put every early exit at the front
+    // (SQLite sorts NULL first ascending), i.e. a false chronology.
+    prisma.paperTrade.findMany({
+      where: { status: { in: ["closed", "resolved"] }, isDemo: false },
+      select: { id: true, botId: true, walletAddress: true, realizedPnl: true, openedAt: true, closedAt: true, resolvedAt: true, status: true },
+    }),
     computeBenchmarks(),
   ]);
+  const settledAt = (t: { closedAt: Date | null; resolvedAt: Date | null }) => (t.closedAt ?? t.resolvedAt ?? new Date(0)).getTime();
+  resolved.sort((a, b) => settledAt(a) - settledAt(b));
 
   // Cumulative PnL chart from database-aggregated snapshots
   const standardSeries = snapshots
@@ -39,8 +53,19 @@ export default async function Performance() {
   let wins = 0;
   resolved.forEach((t, i) => {
     if ((t.realizedPnl ?? 0) > 0) wins++;
-    wrPoints.push({ x: (t.resolvedAt ?? t.openedAt).toISOString().slice(5, 10), y: Math.round((wins / (i + 1)) * 1000) / 10 });
+    wrPoints.push({ x: (t.closedAt ?? t.resolvedAt ?? t.openedAt).toISOString().slice(5, 10), y: Math.round((wins / (i + 1)) * 1000) / 10 });
   });
+  // Per-lane finals for the basis line: the pooled curve above is a BLEND of two
+  // lanes that are 78% STANDARD by leg count, so the pooled number is neither
+  // lane's win rate. Printed so the chart cannot be read as "the bot's win rate".
+  const laneWr = new Map<string, { n: number; wins: number }>();
+  for (const t of resolved) {
+    const cur = laneWr.get(t.botId) ?? { n: 0, wins: 0 };
+    cur.n++;
+    if ((t.realizedPnl ?? 0) > 0) cur.wins++;
+    laneWr.set(t.botId, cur);
+  }
+  const pooledWr = resolved.length ? (wins / resolved.length) * 100 : null;
 
   // Per-wallet and per-category performance
   const byWallet = new Map<string, { pnl: number; n: number }>();
@@ -54,13 +79,26 @@ export default async function Performance() {
   const walletRows = [...byWallet.entries()].sort((a, b) => b[1].pnl - a[1].pnl);
 
   const decisions = await prisma.decisionJournal.findMany({
-    where: { paperTrades: { some: { status: "resolved", botId: "STANDARD" } } },
+    // Settled = closed|resolved (an early exit is a closed leg, not a loss of
+    // data) and the leg is picked explicitly by lane below rather than as
+    // `paperTrades[0]`, which was an unordered arbitrary pick from a decision
+    // that can hold both a STANDARD and a C-200 leg. Measured 2026-11-26 on the
+    // 2,698 decisions in this loop: the first leg was already the STANDARD one
+    // in 2,698/2,698 cases, so this is prevention, not a changed number.
+    where: { paperTrades: { some: { status: { in: ["closed", "resolved"] }, botId: "STANDARD" } } },
     include: { observedTrade: true, paperTrades: true },
   });
   const byCat = new Map<string, { pnl: number; n: number }>();
   for (const d of decisions) {
-    const cat = d.observedTrade.marketCategory ?? "uncategorized";
-    const pnl = d.paperTrades[0]?.realizedPnl ?? 0;
+    // The REAL category. `observedTrade.marketCategory` is the venue field that
+    // the schema documents as not a category (it holds slug first-tokens like
+    // "world"/"highest"/"elon"); marketCategoryClass is the coarse bucket written
+    // at ingest by src/lib/market-category.ts. Grouping on the junk field made
+    // the card read "world +$7,372.53" over 923 legs where the graded truth is
+    // sports +$6,254.76 over 1,326.
+    const cat = d.observedTrade.marketCategoryClass ?? "uncategorized";
+    const leg = d.paperTrades.find((t) => t.botId === "STANDARD" && (t.status === "closed" || t.status === "resolved"));
+    const pnl = leg?.realizedPnl ?? 0;
     const cur = byCat.get(cat) ?? { pnl: 0, n: 0 };
     cur.pnl += pnl;
     cur.n++;
@@ -100,6 +138,13 @@ export default async function Performance() {
         </Card>
         <Card title="Rolling Win Rate %">
           <LineChart points={wrPoints} formatY={(v) => `${v.toFixed(0)}%`} />
+          <p className="text-xs text-dim mt-2">
+            Basis: BOTH lanes pooled, level=leg, population = settled legs (closed|resolved), isDemo=0,
+            clock = closedAt ?? resolvedAt, win = realizedPnl &gt; 0 (our exit sign, not the market outcome).
+            {pooledWr !== null && ` Pooled final ${pooledWr.toFixed(1)}% over ${resolved.length.toLocaleString()} legs — a blend, not either lane:`}
+            {[...laneWr.entries()].map(([bot, v]) => ` ${bot} ${((v.wins / Math.max(1, v.n)) * 100).toFixed(1)}% (n=${v.n.toLocaleString()})`).join(" ·")}
+            . Per-lane lifetime win rates on the EOD report are the same query, split.
+          </p>
         </Card>
       </div>
 
@@ -138,7 +183,7 @@ export default async function Performance() {
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <Card title="Per-Wallet Paper PnL">
+        <Card title="Per-Wallet Paper PnL (STANDARD, settled legs)">
           {walletRows.length === 0 ? (
             <Empty message="No resolved paper trades yet." />
           ) : (
@@ -157,7 +202,7 @@ export default async function Performance() {
             </table>
           )}
         </Card>
-        <Card title="Per-Category Paper PnL">
+        <Card title="Per-Category Paper PnL (STANDARD, settled legs)">
           {byCat.size === 0 ? (
             <Empty message="No resolved paper trades yet." />
           ) : (
@@ -173,6 +218,11 @@ export default async function Performance() {
               </tbody>
             </table>
           )}
+          <p className="text-xs text-dim mt-2">
+            Category = ObservedTrade.marketCategoryClass (coarse bucket from the slug/question classifier), settled
+            legs, clock = closedAt ?? resolvedAt. NOT the venue&apos;s marketCategory field — the schema documents that
+            one as slug fragments, not a category.
+          </p>
         </Card>
       </div>
 
