@@ -5132,6 +5132,45 @@
         "carded-2026-11-26"
       ],
       "note": "CARDED BY the 2026-11-26 20:00 run (label-basis-census-scope-gate), which made the census gate over discovery and left this class NAMED rather than hidden: python3 scripts/label-basis-stdout-census.py prints 'BLIND 18 file(s)' every run. Population = files in scripts/, scripts/cron-scripts/, scripts/cron-gates/, src/lib/, src/app/ that emit a metric word but yield no detected arm; level = file; clock 2026-11-26T02:0xZ.\n\nTHE LIST AS OF THAT READ: archive-wallet-overlap.py, archive-wallet-persistence.py, archive-wallet-persistence-bandneutral.py, gate-winrate-basis-read.ts, kalshi-1c-queue-estimate.py, kalshi-contract-equivalence.py, ladder-credit-positions-only.py, pma-refresh-baseline.py, profit-exit-counterfactual.py, profit-exits.py, profit-fee-booking-preflight.py, profit-fee-reprice-filled.py, profit-maker-credit.py, profit-outcome-basis-remark.py, profit-taker-entry.py, profit-tenor.py, winrate-companion-census.py, winrate-companion-read.ts. NOT all 18 are arms: several are prose or breakeven statements (archive-wallet-overlap prints a timing line, profit-tenor prints 'a 100%-hit sample is'). So the deliverable is a per-file decision (arm -> name its basis, not an arm -> an explicit exclusion rule), not a blanket edit.\n\nWHY IT IS NOT A ONE-LINE FIX: classify() reads one physical line at a time, and a print whose metric word is on the first physical line and whose value is on the second splits the two. The obvious joiner (bracket depth over physical lines) was MEASURED AND REJECTED in that run: it lifted recall 170 -> 210 arms and 61 -> 99 files but mis-joined brackets inside comments, invented rows and HID ones (profit-velocity.py scored 0 arms joined, 2 unjoined). The honest fix joins on tokenize's LOGICAL-line information (Python) and on a real tokenizer for .ts/.sh, then re-audits.\n\nGATE FOR THIS CARD: census prints BLIND 0 files AND the arm count is stable across two consecutive runs; every file removed from BLIND has either a basis token or a printed exclusion reason. ROLLBACK: git revert."
+    },
+    {
+      "id": "profit-clip-queue-decision-20261127",
+      "title": "DECISION -- close the clip queue to ONE card: ship the >=$60 / ttr 2-24h BLOCK as an interim variance stop (post-rule book +6.01%, but -13.35% ex-top-1), and amend the lambda-hat card's scope instead of closing it",
+      "column": "Backlog",
+      "effort": "1h to apply the already-specced mainPathShortTtrClipUsd field; 0h to close the cap cards; 2h for the lambda-hat scope amendment",
+      "dates": "Proposed 2026-11-27 by the profit review (drafts/profit-recs-20261127.md; instrument scripts/profit-band-report.py --v4 SS E1-E7, --selftest-v4 7/7, committed the same day). LANE A -- nothing applied. This card does NOT invent a new rule: it prices the four existing clip cards against each other on the population that actually traded.",
+      "note": "WHY: the queue holds four overlapping clip cards (band cap $25 approved-but-unapplied, the $10 tenor cap, the $40/$20 residual long-dated cap, the lambda-hat refit) and none has been priced on the CARRIED population -- legs that held a position. Carried = 172 of 542 decided legs, $4,122 of $11,442 intent, 60d, v68+, deduped: book -$677.49 = -16.44% (the mixed basis reports -2.92%, 5.6x smaller). 21 legs of >=$60 clips carry -$635.65 = 93.8% of it. Priced on the same 172 legs: block >=$60 & ttr 2-24h -> +6.01%; cap $18 same scope -> +0.70%; block any tenor -> -2.07%; cap px<0.20 at $25 -> -4.50%; cap px<0.20 at $18 -> -3.19%; block px<0.20 (lambda-refit proxy) -> -0.70%; block ttr>=24h -> -27.77%. So: blocking beats capping, and NO variant in the queue produces a profitable book -- the most aggressive cheap-band intervention only reaches -0.70%. The best variant's +6.01% is +$6 on $2,922 and is -13.35% ex-top-1 (a single +$552.23 tennis leg at ttr 162.7h) and -22.18% ex-top-3. The delta CI (+853; wallet-clustered [+100,+2000]) is DEGENERATE -- every blocked leg is -100%, so any resample containing one is positive; it measures inclusion, not expectation. Yesterday's [+622,+1666] carries the same defect. Do not quote either as edge.",
+      "decision_rule": "Apply mainPathShortTtrClipUsd in BLOCK form (>= $60 AND ttr 2-24h) if the post-rule carried book reads >= 0% and the block touches >= 10 carried legs (it reads +6.01% / 12). Close profit-c200-clip-cap-25 and profit-residual-cheap-longdated-clip as sizing instruments for this cell (both leave a worse post-rule book). AMEND profit-lambda-owned-population rather than closing it: its refit population must be v68+ CARRIED legs, and per SS E7 the refit returns q ~ 12% (pre-v68 carried hit 24.9% at 10.8c -> v68+ carried 11.8% at 13.4c), i.e. f* ~ 0 and cheap-band size should go to the floor, not merely shrink. REFUTATION: 20 forward carried legs in the blocked class reading >= 0 ROI -> withdraw the block; OR >=150 v68+ carried cheap legs hitting >= 18% -> the era did not break, the live shortfall is noise, withdraw the lambda amendment and keep only the block.",
+      "tags": [
+        "profit-review",
+        "lane-a",
+        "sizing",
+        "clip",
+        "tenor",
+        "calibration",
+        "awaiting-approval",
+        "proposed-2026-11-27",
+        "closes-queue"
+      ],
+      "gate": "LANE A -- nothing applied. No RuleSet read/write, no prisma write, DB mode=ro. Re-read: python3 scripts/profit-band-report.py --v4 (SS E2-E3, E7)."
+    },
+    {
+      "id": "profit-category-blacklist-verdict-20261127",
+      "title": "MEASUREMENT -- do NOT add nba/dota2/will to c200Blacklist: only `will` survives wallet clustering and it is 8 filled $100 legs of the clip cell; dota2 is one wallet (88.2% of notional) already off track",
+      "column": "Done",
+      "effort": "0h (decision); instrument already committed",
+      "dates": "Proposed and closed 2026-11-27 by the profit review (drafts/profit-recs-20261127.md; instrument scripts/profit-band-report.py --v4 SS E4, --selftest-v4 7/7). Measurement only -- no RuleSet read or write, DB mode=ro.",
+      "note": "WHY: c200Blacklist already holds cs2/lol/val/nfl/mls/itf/sea (all ZERO legs this window, so the mechanism binds), and the three negative categories in the live book are ones it does not hold -- so 'add nba/dota2/will' is the obvious next move and is wrong. MEASURED (60d, v68+, deduped; carried = a position existed): dota2 34 legs -71.4% with 88.2% of notional from ONE wallet (0x52b7fc8a..., SimpleTony, -60% lifetime, whose OWN short-TTR slice in the same category is +$33.60 at +13.2% and which is already off track -- status `watch`, last leg 2026-11-18); nba 25 carried legs -47.2% but 96 of its 120 mixed-population legs are the book's BEST wallet (240 legs, +7.3%), and 4 strategies is too few to cluster (wallet CI prints n/a); will 24 carried legs -50.3% with a wallet CI [-69.6,-32.8] that DOES exclude zero -- the only one that survives -- but it is 8 filled $100 legs at a 10% average price, and 0/8 at p=0.10 is p=0.43 under fair pricing, i.e. not evidence. will- is also a slug prefix, not a category, so the field cannot bind on it even if approved.",
+      "decision_rule": "Blacklist a category only if ALL FOUR hold: >=40 carried legs, >=6 distinct wallets, wallet-clustered CI excludes zero, and no single wallet >40% of the category's notional. None of the three clears all four today (will fails only the leg count, 24). REFUTATION: a category clearing all four gates on forward data -> blacklist it, and the +14.8% short-TTR dota2 flow is the thing that would have to be re-priced first.",
+      "tags": [
+        "profit-review",
+        "measurement",
+        "category",
+        "blacklist",
+        "concentration",
+        "closed-2026-11-27"
+      ],
+      "gate": "Measurement only; nothing applied. Re-read: python3 scripts/profit-band-report.py --v4 (SS E4, both populations)."
     }
   ],
   "dates": {

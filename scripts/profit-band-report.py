@@ -1421,6 +1421,509 @@ def stop_replay(dedup=True):
         stop_replay(dedup=False)
 
 
+# =====================================================================================
+# E. FILL-AWARE ALLOCATION (--v4, 2026-11-27)
+#
+# WHY THIS SECTION EXISTS. Every ROI in sections A-D is computed over legs that were
+# *decided*. 71% of them never carried a position: `fillStatus='unfilled'` legs book
+# exactly $0.00 (src/lib/paper.ts bookedPnl) yet keep their simulatedPositionSize in the
+# denominator. The 2026-11-27 review found the effect is not cosmetic -- on the filled
+# population the book is a different animal, and three findings that look decisive on the
+# mixed population die once you (a) keep only legs that traded and (b) resample WALLETS
+# instead of markets, because a single wallet betting 96 markets is one strategy, not 96
+# independent observations.
+#
+# THE FOUR CHECKS, each aimed at a decision the review record has open:
+#
+#   E1  FILL AND DEPLOYMENT. Intent notional vs deployed notional vs positions/day. The
+#       ladder target is a daily dollar number; a book that fills 2.5 times a day cannot
+#       reach it whatever the clip size.
+#   E2  FILLED-ONLY CLIP TIERS. The clip-cap cards are fitted on the mixed population.
+#       Print the same tiers on filled legs only, with market AND wallet CIs.
+#   E3  TENOR SCOPE. Price the block/cap variants against each other on one population,
+#       with a paired cluster bootstrap of the dollar delta. This is how you choose
+#       between the four pending clip cards instead of shipping all four.
+#   E4  CATEGORY COHORTS. The blacklist mechanism invites "add nba/dota2". Report both
+#       CIs and the top-wallet share so a one-wallet loss cannot masquerade as a category.
+#   E5  SLIPPAGE BUDGET. For a BUY at p the break-even price IS the hit rate, so
+#       (hit - p) is the number of cents the fill may worsen before the edge is gone.
+#       That is the axis-5 number, and it is what decides whether a fill-rate lever pays.
+#   E6  WALLET PERSISTENCE on the v68+ era: does first-half wallet rank predict the
+#       second half? (section D does this on the 90d mixed corpus; this is the live era.)
+#
+# COST BASIS unchanged: cost = simulatedPositionSize = DOLLARS at risk. Never px * size.
+# =====================================================================================
+V4 = "--v4" in ARGS or "--all" in ARGS
+HOUR_MS = 3_600_000
+V4_DAYS = 60
+V4_MIN_RULE = 68
+
+
+def _v4_load(days=V4_DAYS, min_rule=V4_MIN_RULE, bot=None, max_rule=None):
+    """Deduped first leg per (bot|wallet|market|outcome); keeps fillStatus and entry TTR.
+
+    TTR = timeToResolution in HOURS from the last MarketSnapshot at or before entry
+    (same source and semantics as scripts/profit-tenor.py, reused rather than re-derived).
+    """
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    since = int((time.time() - days * 86400) * 1000)
+    sql = """
+        SELECT p.id, p.botId, p.walletAddress, p.marketId, p.outcome, p.entryPrice,
+               p.simulatedPositionSize, p.realizedPnl, p.status, p.openedAt,
+               p.fillStatus, j.ruleSetVersion, o.walletEntryPrice
+        FROM PaperTrade p
+        LEFT JOIN DecisionJournal j ON p.decisionJournalId = j.id
+        LEFT JOIN ObservedTrade o ON j.observedTradeId = o.id
+        WHERE p.isDemo = 0 AND p.status IN ('closed','resolved')
+          AND p.realizedPnl IS NOT NULL AND p.openedAt >= ? AND j.ruleSetVersion >= ?
+    """
+    params = [since, min_rule]
+    if max_rule is not None:
+        sql += " AND j.ruleSetVersion <= ?"
+        params.append(max_rule)
+    if bot:
+        sql += " AND p.botId = ?"
+        params.append(bot)
+    rows = con.execute(sql, params).fetchall()
+    seen, out = set(), []
+    for r in rows:
+        k = (r["botId"], r["walletAddress"], r["marketId"], r["outcome"])
+        if k in seen:
+            continue
+        seen.add(k)
+        if not r["entryPrice"] or r["entryPrice"] <= 0:
+            continue
+        snap = con.execute(
+            "select timeToResolution from MarketSnapshot where marketId=? and collectedAt<=? "
+            "and timeToResolution is not null order by collectedAt desc limit 1",
+            (r["marketId"], r["openedAt"])).fetchone()
+        out.append({"bot": r["botId"], "wallet": r["walletAddress"], "market": r["marketId"],
+                    "px": r["entryPrice"], "ntl": r["simulatedPositionSize"],
+                    "pnl": r["realizedPnl"], "fill": r["fillStatus"], "px_at": r["entryPrice"],
+                    "ttr": float(snap["timeToResolution"]) if snap else None,
+                    "ms": r["openedAt"], "status": r["status"],
+                    "wpx": r["walletEntryPrice"],
+                    "cat": r["marketId"].split("-")[0],
+                    "won": 1 if r["realizedPnl"] > 0 else 0})
+    return out
+
+
+def _boot(legs, key, reps=3000, seed=71, stat="roi", min_k=6):
+    """Cluster bootstrap. stat='roi' -> notional-weighted ROI %; stat='hit' -> hit %.
+
+    min_k guards the degenerate case: a bootstrap over 4-5 clusters has only a few hundred
+    distinct resamples, so its interval describes which clusters were drawn, not sampling
+    error. Below min_k this returns None and the caller must print 'n/a'.
+    """
+    if not legs:
+        return (0.0, 0.0)
+    by = {}
+    if stat == "hit":
+        for l in legs:
+            c = by.setdefault(l[key], [0.0, 0.0])
+            c[0] += l["won"]
+            c[1] += 1.0
+    else:
+        for l in legs:
+            c = by.setdefault(l[key], [0.0, 0.0])
+            c[0] += l["pnl"]
+            c[1] += l["ntl"]
+    keys = list(by)
+    if len(keys) < min_k:
+        return None
+    rng = np.random.default_rng(seed)
+    out = np.empty(reps)
+    for i in range(reps):
+        pick = rng.integers(0, len(keys), len(keys))
+        if stat == "hit":
+            w = n = 0.0
+            for j in pick:
+                w += by[keys[j]][0]
+                n += by[keys[j]][1]
+            out[i] = 100.0 * w / n if n else 0.0
+        else:
+            p = n = 0.0
+            for j in pick:
+                p += by[keys[j]][0]
+                n += by[keys[j]][1]
+            out[i] = 100.0 * p / n if n else 0.0
+    return (float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5)))
+
+
+def _ci_str(ci):
+    return "        n/a     " if ci is None else f"[{ci[0]:>+7.1f},{ci[1]:>+7.1f}]"
+
+
+def _roi(legs):
+    n = sum(l["ntl"] for l in legs)
+    return (100.0 * sum(l["pnl"] for l in legs) / n) if n else 0.0
+
+
+def _pnl(legs):
+    return sum(l["pnl"] for l in legs)
+
+
+def _apply(legs, pred, cap=0.0):
+    """Return (post_pnl, post_ntl, per_leg_delta) for 'block' (cap=0) or 'cap at $cap'."""
+    post_p, post_n, deltas = 0.0, 0.0, []
+    for l in legs:
+        s, p = l["ntl"], l["pnl"]
+        if pred(l):
+            if cap > 0:
+                ns = min(s, cap)
+                np_ = p * ns / s
+            else:
+                ns, np_ = 0.0, 0.0
+        else:
+            ns, np_ = s, p
+        post_p += np_
+        post_n += ns
+        deltas.append((np_ - p, l))
+    return post_p, post_n, deltas
+
+
+def _delta_ci(deltas, key="market", reps=3000, seed=83):
+    by = {}
+    for d, l in deltas:
+        by[l[key]] = by.get(l[key], 0.0) + d
+    keys = list(by)
+    rng = np.random.default_rng(seed)
+    out = np.empty(reps)
+    for i in range(reps):
+        s = 0.0
+        for j in rng.integers(0, len(keys), len(keys)):
+            s += by[keys[j]]
+        out[i] = s
+    return (float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5)))
+
+
+def _post_ci(legs, pred, cap, key, reps=3000, seed=97, min_k=6):
+    """Wallet/market-clustered CI of the POST-RULE book ROI (the number a reader would hold)."""
+    idx = [i for i, l in enumerate(legs) if pred(l)]
+    if not idx:
+        return (0.0, 0.0)
+    by = {}
+    for i, l in enumerate(legs):
+        c = by.setdefault(l[key], [0.0, 0.0])
+        if pred(l):
+            if cap > 0:
+                ns = min(l["ntl"], cap)
+                c[0] += l["pnl"] * ns / l["ntl"]
+                c[1] += ns
+        else:
+            c[0] += l["pnl"]
+            c[1] += l["ntl"]
+    keys = list(by)
+    if len(keys) < min_k:
+        return None
+    rng = np.random.default_rng(seed)
+    out = np.empty(reps)
+    for i in range(reps):
+        p = n = 0.0
+        for j in rng.integers(0, len(keys), len(keys)):
+            p += by[keys[j]][0]
+            n += by[keys[j]][1]
+        out[i] = 100.0 * p / n if n else 0.0
+    return (float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5)))
+
+
+def v4_fill_deployment(legs, label, days=V4_DAYS):
+    print("\n" + "=" * 84)
+    print(f"E1. FILL AND DEPLOYMENT -- {label}: intent is not exposure ({days}d, v{V4_MIN_RULE}+)")
+    print("=" * 84)
+    n = len(legs)
+    intent = sum(l["ntl"] for l in legs)
+    # CARRIED = a leg that actually held a position. `filled` is the stamped case; a NULL
+    # stamp (the whole STANDARD lane, plus C-200's pre-stamp era) booked P&L without one,
+    # so it is carried by construction. Only `unfilled` can be void, and only when it
+    # booked exactly $0 (bookedPnl returns 0 for it -- src/lib/paper.ts).
+    carried = [l for l in legs if l["fill"] == "filled" or l["fill"] is None]
+    void = [l for l in legs if l["fill"] == "unfilled" and l["pnl"] == 0]
+    late = [l for l in legs if l["fill"] == "unfilled" and l["pnl"] != 0]
+    dep = sum(l["ntl"] for l in carried)
+    print(f"  decided legs {n:5d} | intent notional ${intent:8,.0f} | carried ${dep:8,.0f} "
+          f"= {100*dep/intent if intent else 0:4.1f}%")
+    print(f"  carried {len(carried):4d} ({100*len(carried)/n if n else 0:4.1f}%: filled {sum(1 for l in carried if l['fill']=='filled')}, "
+          f"unstamped {sum(1 for l in carried if l['fill'] is None)}) | "
+          f"void-unfilled {len(void):4d} ({100*len(void)/n if n else 0:4.1f}%) | "
+          f"late-stamped {len(late):3d} (P&L, no fill stamp)")
+    print(f"  positions/day {len(carried)/days:5.2f} | carried risk/day ${dep/days:7.2f} | "
+          f"mean carried clip ${dep/len(carried) if carried else 0:6.2f}")
+    print(f"  carried book: P&L ${_pnl(carried):+9.2f} on ${dep:,.0f} = {_roi(carried):+6.2f}%"
+          f"   | mixed-population ROI {_roi(legs):+6.2f}% (the number that halves the loss)")
+    if late:
+        print(f"  late-stamped class alone: {len(late)} legs, ${_pnl(late):+.2f} on "
+              f"${sum(l['ntl'] for l in late):,.0f}")
+    return carried
+
+
+def v4_clip_tiers(filled):
+    print("\n" + "=" * 84)
+    print("E2. CARRIED-ONLY CLIP TIERS -- the clip cards are fitted on the mixed population")
+    print("=" * 84)
+    print(f"{'tier':8} {'n':>4} {'ntl$':>7} {'pnl$':>9} {'ROI%':>7} {'wins':>5} "
+          f"{'mkt CI':>17} {'wallet CI':>18} {'%of net':>8}")
+    base_loss = _pnl(filled)
+    for lab, f in (("<$15", lambda s: s < 15), ("$15-30", lambda s: 15 <= s < 30),
+                   ("$30-60", lambda s: 30 <= s < 60), (">=$60", lambda s: s >= 60)):
+        g = [l for l in filled if f(l["ntl"])]
+        if not g:
+            continue
+        m = _boot(g, "market")
+        w = _boot(g, "wallet")
+        share = (100.0 * _pnl(g) / base_loss) if base_loss else 0.0
+        print(f"{lab:8} {len(g):>4} {sum(l['ntl'] for l in g):>7,.0f} {_pnl(g):>+9.2f} "
+              f"{_roi(g):>+7.1f} {sum(l['won'] for l in g):>5} "
+              f"{_ci_str(m)} {_ci_str(w)} {share:>+7.1f}%")
+    print(f"  total    {len(filled):>4} {sum(l['ntl'] for l in filled):>7,.0f} {base_loss:>+9.2f} "
+          f"{_roi(filled):>+7.1f} {sum(l['won'] for l in filled):>5}")
+    n60 = sum(1 for l in filled if l["ntl"] >= 60)
+    if n60:
+        print(f"  NOTE a CI that includes 0 is printed as such on purpose: on {n60} legs the dollar")
+        print("       concentration is real, the EDGE claim is not. Do not quote ROI without it.")
+
+
+def v4_tenor_scope(filled):
+    print("\n" + "=" * 84)
+    print("E3. TENOR SCOPE -- price the pending clip cards against each other, one population")
+    print("=" * 84)
+    def t24(l):
+        return l["ttr"] is not None and 2 <= l["ttr"] < 24
+    variants = [
+        ("block >=$60, ttr 2-24h (R1)", lambda l: l["ntl"] >= 60 and t24(l), 0),
+        ("block >=$60, any tenor", lambda l: l["ntl"] >= 60, 0),
+        ("block >=$60, ttr >=24h", lambda l: l["ntl"] >= 60 and l["ttr"] is not None and l["ttr"] >= 24, 0),
+        ("cap >=$60 at $18, ttr 2-24h", lambda l: l["ntl"] >= 60 and t24(l), 18),
+        ("cap >=$60 at $18, any tenor", lambda l: l["ntl"] >= 60, 18),
+        ("cap px<0.20 at $25 (band card)", lambda l: l["px"] < 0.20, 25),
+        ("cap px<0.20 at $18", lambda l: l["px"] < 0.20, 18),
+        ("block px<0.20 (lambda-refit proxy)", lambda l: l["px"] < 0.20, 0),
+        ("block px<0.20 & ntl>=$60", lambda l: l["px"] < 0.20 and l["ntl"] >= 60, 0),
+    ]
+    bp, bn = _pnl(filled), sum(l["ntl"] for l in filled)
+    print(f"  base carried book: n={len(filled)} ntl=${bn:,.0f} pnl=${bp:+.2f} ROI={_roi(filled):+.2f}%")
+    print(f"  {'variant':32} {'hit':>4} {'blk$':>9} {'delta$':>9} {'delta CI $':>20} "
+          f"{'post ROI':>8} {'wallet CI':>18}")
+    for lab, pred, cap in variants:
+        g = [l for l in filled if pred(l)]
+        post_p, post_n, deltas = _apply(filled, pred, cap)
+        d = _delta_ci(deltas, "wallet")
+        wci = _post_ci(filled, pred, cap, "wallet")
+        print(f"  {lab:32} {len(g):>4} {_pnl(g):>+9.2f} {post_p - bp:>+9.2f} "
+              f"[{d[0]:>+8.0f},{d[1]:>+8.0f}] {100*post_p/post_n:>+7.2f}% "
+              f"{_ci_str(wci)}")
+    print("  deltaCI = paired wallet-clustered bootstrap of the block's dollar effect.")
+    print("  WARNING: when EVERY blocked leg is a loss the delta CI is DEGENERATE -- every")
+    print("  resample that includes one blocked leg is positive, so the interval measures")
+    print("  inclusion, not edge. The post-rule ROI CI is the honest column; read that one.")
+    print("  'hit' = legs the variant touches, not legs it keeps.")
+
+
+def v4_categories(populations, min_n=8):
+    print("\n" + "=" * 84)
+    print("E4. CATEGORY COHORTS -- market vs WALLET clustering (one wallet is one strategy)")
+    print("=" * 84)
+    for lab, legs in populations:
+        print(f"\n  population: {lab} (n={len(legs)})")
+        print(f"  {'cat':10} {'n':>4} {'mkt':>4} {'wal':>4} {'ntl$':>7} {'ROI%':>7} "
+              f"{'mkt CI':>17} {'wallet CI':>18} {'topWal%':>8}")
+        byc = {}
+        for l in legs:
+            byc.setdefault(l["cat"], []).append(l)
+        for c, g in sorted(byc.items(), key=lambda kv: _roi(kv[1])):
+            if len(g) < min_n:
+                continue
+            m, w = _boot(g, "market"), _boot(g, "wallet")
+            byw = {}
+            for l in g:
+                byw[l["wallet"]] = byw.get(l["wallet"], 0.0) + l["ntl"]
+            top = 100.0 * max(byw.values()) / sum(byw.values()) if byw else 0.0
+            print(f"  {c:10} {len(g):>4} {len({l['market'] for l in g}):>4} {len(byw):>4} "
+                  f"{sum(l['ntl'] for l in g):>7,.0f} {_roi(g):>+7.1f} "
+                  f"{_ci_str(m)} {_ci_str(w)} {top:>7.1f}%")
+    print("  READ: a wallet CI that includes 0 means the category result is one strategy.")
+
+
+def v4_slippage_budget(filled):
+    print("\n" + "=" * 84)
+    print("E5. SLIPPAGE BUDGET -- for a BUY at p, break-even price == hit rate")
+    print("=" * 84)
+    print("  headroom = hit% - avg paid px = how many CENTS the fill may worsen before")
+    print("  the band's edge is exactly zero. Negative = already past break-even.")
+    print(f"{'band':9} {'n':>4} {'hit%':>6} {'px':>6} {'headroom':>10} {'hit CI':>16} {'ROI%':>7}")
+    bands = [("0.0-0.2", 0.0, 0.2), ("0.2-0.4", 0.2, 0.4), ("0.4-0.6", 0.4, 0.6),
+             ("0.6-0.8", 0.6, 0.8), ("0.8-1.0", 0.8, 1.0001)]
+    for name, lo, hi in bands:
+        g = [l for l in filled if lo <= l["px"] < hi]
+        if len(g) < 5:
+            continue
+        px = sum(l["px"] for l in g) / len(g)
+        hit = 100.0 * sum(l["won"] for l in g) / len(g)
+        h = _boot(g, "market", stat="hit")
+        print(f"{name:9} {len(g):>4} {hit:>6.1f} {100*px:>6.1f} {hit-100*px:>+9.1f}c "
+              f"{_ci_str(h)} {_roi(g):>+7.1f}")
+    print("  A fill-rate lever (cross the spread / relax drift) is only worth it in a band")
+    print("  whose headroom is POSITIVE and whose hit CI excludes 0. Otherwise it buys volume")
+    print("  at a negative price -- the classic way a copy book grows into its own losses.")
+    print("\n  SOURCE TEST: the same headroom computed at the COPIED WALLET's own entry price.")
+    print("  If the wallet's entry is also above the realised hit rate, the copy source does")
+    print("  not clear its own price and no execution improvement can rescue the copy.")
+    print(f"  {'band':9} {'n':>4} {'hit%':>6} {'ourPx':>7} {'walPx':>7} {'ours':>9} {'wallet':>9}")
+    for name, lo, hi in bands:
+        g = [l for l in filled if lo <= l["px"] < hi and l.get("wpx")]
+        if len(g) < 5:
+            continue
+        px = 100.0 * sum(l["px"] for l in g) / len(g)
+        wpx = 100.0 * sum(l["wpx"] for l in g) / len(g)
+        hit = 100.0 * sum(l["won"] for l in g) / len(g)
+        print(f"  {name:9} {len(g):>4} {hit:>6.1f} {px:>6.1f}c {wpx:>6.1f}c "
+              f"{hit-px:>+8.1f}c {hit-wpx:>+8.1f}c")
+    allp = [l for l in filled if l.get("wpx")]
+    if allp:
+        px = 100.0 * sum(l["px"] for l in allp) / len(allp)
+        wpx = 100.0 * sum(l["wpx"] for l in allp) / len(allp)
+        print(f"  {'ALL':9} {len(allp):>4} {100.0*sum(l['won'] for l in allp)/len(allp):>6.1f} "
+              f"{px:>6.1f}c {wpx:>6.1f}c")
+        print(f"  copy cost (our px - wallet px) = {px-wpx:+.2f}c: we do NOT pay up to the")
+        print("  wallet -- the fill model gives us the reversion price, which is why execution")
+        print("  cannot be the explanation for a negative headroom.")
+
+
+def v4_cheap_window(band=0.20):
+    """E7. The cheap band's advertised edge is an ERA result. Print the v68+ read beside it.
+
+    This exists because the standing record quotes a +5.4pp cheap-band edge, and every card
+    that up-sizes the cheap band (lambda-hat refit, longshot ladders) rests on it. That number
+    is computed over a population that reaches back before v68. On the live era it does not
+    reproduce, so the era has to be on the page next to the band.
+    """
+    print("\n" + "=" * 84)
+    print("E7. ERA CUT ON THE CHEAP BAND (<%.2f) -- does the advertised edge still exist?" % band)
+    print("=" * 84)
+    print(f"  {'era / base':24} {'n':>4} {'hit%':>6} {'px':>6} {'edge':>8} {'hit CI':>16}")
+    eras = [("v68+ (live, 60d)", dict(days=60, min_rule=68)),
+            ("pre-v68 (180d back)", dict(days=180, min_rule=0, max_rule=67))]
+    for elab, kw in eras:
+        for bot, lab in (("BANKROLL_200", "C-200"), (None, "both lanes")):
+            legs = _v4_load(bot=bot, **kw)
+            for base, keep in (("mixed", lambda l: True),
+                               ("carried", lambda l: l["fill"] != "unfilled")):
+                g = [l for l in legs if l["px"] < band and keep(l)]
+                if len(g) < 20:
+                    continue
+                hit = 100.0 * sum(l["won"] for l in g) / len(g)
+                px = 100.0 * sum(l["px"] for l in g) / len(g)
+                h = _boot(g, "market", stat="hit")
+                print(f"  {elab+' '+lab+' '+base:24} {len(g):>4} {hit:>6.1f} {px:>6.1f} "
+                      f"{hit-px:>+7.1f}pp {_ci_str(h)}")
+    print("  If the sign differs between eras, the band is a regime, not an edge, and the")
+    print("  standing cheap-band number cannot support an up-size on the live era.")
+
+
+def v4_wallet_persistence(legs):
+    print("\n" + "=" * 84)
+    print("E6. WALLET PERSISTENCE on the live era -- does H1 wallet rank predict H2?")
+    print("=" * 84)
+    L = sorted([l for l in legs if l["ms"]], key=lambda l: l["ms"])
+    if len(L) < 40:
+        print("  too few legs")
+        return
+    mid = L[len(L) // 2]["ms"]
+    h1 = [l for l in L if l["ms"] < mid]
+    h2 = [l for l in L if l["ms"] >= mid]
+    by1, by2 = {}, {}
+    for l in h1:
+        by1.setdefault(l["wallet"], []).append(l)
+    for l in h2:
+        by2.setdefault(l["wallet"], []).append(l)
+    both = [w for w in by1 if len(by1[w]) >= 4 and len(by2.get(w, [])) >= 3]
+    print(f"  split at {time.strftime('%Y-%m-%d', time.gmtime(mid/1000))}: "
+          f"H1 {len(h1)} legs / H2 {len(h2)} legs; wallets with >=4 then >=3: {len(both)}")
+    if len(both) < 6:
+        print("  too few repeat wallets for a rank test -- report as UNMEASURED, not as zero")
+        return
+    r1 = np.array([_roi(by1[w]) for w in both])
+    r2 = np.array([_roi(by2[w]) for w in both])
+    o1 = np.argsort(np.argsort(r1))
+    o2 = np.argsort(np.argsort(r2))
+    rho = float(np.corrcoef(o1, o2)[0, 1])
+    k = max(1, len(both) // 3)
+    top = [w for w in sorted(both, key=lambda w: -_roi(by1[w]))[:k]]
+    bot = [w for w in sorted(both, key=lambda w: _roi(by1[w]))[:k]]
+    t2 = np.mean([_roi(by2[w]) for w in top])
+    b2 = np.mean([_roi(by2[w]) for w in bot])
+    print(f"  Spearman H1->H2 wallet ROI: {rho:+.3f} (n={len(both)})")
+    print(f"  H1 top{k} -> H2 {t2:+.1f}% | H1 bottom{k} -> H2 {b2:+.1f}% | spread {t2-b2:+.1f}pp")
+    print("  A spread near 0 means the wallet screen is not selecting a persistent edge;")
+    print("  a positive spread is the ONLY evidence that copying can work at all.")
+
+
+def v4_selftest():
+    """Synthetic assertions on the v4 math. Runs without touching the DB."""
+    print("v4 selftest")
+    legs = [
+        {"bot": "B", "wallet": "w1", "market": "m1", "px": 0.10, "ntl": 100.0, "pnl": -100.0,
+         "fill": "filled", "ttr": 5.0, "ms": 1, "status": "resolved", "cat": "nba", "won": 0},
+        {"bot": "B", "wallet": "w1", "market": "m2", "px": 0.20, "ntl": 100.0, "pnl": 400.0,
+         "fill": "filled", "ttr": 5.0, "ms": 2, "status": "resolved", "cat": "nba", "won": 1},
+        {"bot": "B", "wallet": "w2", "market": "m3", "px": 0.50, "ntl": 20.0, "pnl": 10.0,
+         "fill": "filled", "ttr": 200.0, "ms": 3, "status": "resolved", "cat": "atp", "won": 1},
+        {"bot": "B", "wallet": "w2", "market": "m4", "px": 0.30, "ntl": 10.0, "pnl": 0.0,
+         "fill": "unfilled", "ttr": 5.0, "ms": 4, "status": "resolved", "cat": "atp", "won": 0},
+    ]
+    assert abs(_roi(legs) - 100.0 * 310.0 / 230.0) < 1e-9, "roi"
+    filled = [l for l in legs if l["fill"] == "filled"]
+    assert abs(_roi(filled) - 100.0 * 310.0 / 220.0) < 1e-9, "filled roi"
+    # block both $100 legs: the -100 loss AND the +400 win both leave the book
+    p, n, _ = _apply(filled, lambda l: l["ntl"] >= 60, 0)
+    assert (p, n) == (10.0, 20.0), f"block: {p},{n}"
+    # cap both $100 legs at 18: -18 and +72 survive, 20 untouched
+    p, n, _ = _apply(filled, lambda l: l["ntl"] >= 60, 18)
+    assert (p, n) == (64.0, 56.0), f"cap18: {p},{n}"
+    # both $100 legs have ttr=5h, so the 2-24h scope must reach both
+    p, n, _ = _apply(filled, lambda l: l["ntl"] >= 60 and l["ttr"] is not None and 2 <= l["ttr"] < 24, 0)
+    assert (p, n) == (10.0, 20.0), f"tenor block should reach both 60+ legs: {p},{n}"
+    # and a ttr>=24h scope must reach NONE of them (m3 is $20, not $60)
+    p, n, _ = _apply(filled, lambda l: l["ntl"] >= 60 and l["ttr"] is not None and l["ttr"] >= 24, 0)
+    assert (p, n) == (310.0, 220.0), f"long-dated must reach nothing here: {p},{n}"
+    b = _boot(filled, "wallet", min_k=2)
+    assert b is not None and (b[0] <= _roi(filled) <= b[1] or b[0] <= 0 <= b[1]), f"boot bounds {b}"
+    assert _boot(filled, "wallet") is None, "the k<6 guard must suppress a 2-cluster CI"
+    # E5 identity: headroom = hit - px, in price units -> 1pp of hit = 1 cent
+    g = [l for l in filled if l["px"] < 0.2]
+    assert len(g) == 1 and abs(g[0]["px"] - 0.10) < 1e-12
+    assert abs((100.0 * sum(l["won"] for l in g) / len(g)) - 100.0 * 0.10 - (-10.0)) < 1e-9
+    print("  7/7 synthetic checks PASS")
+
+
+def v4():
+    legs = _v4_load()
+    print("\n" + "#" * 84)
+    print(f"# E. FILL-AWARE ALLOCATION -- v{V4_MIN_RULE}+ era, {V4_DAYS}d, deduped per "
+          f"(bot|wallet|market|outcome)")
+    print("#" * 84)
+    carried = {}
+    for bot, lab in (("BANKROLL_200", "C-200"), ("STANDARD", "STANDARD")):
+        bl = [l for l in legs if l["bot"] == bot]
+        if bl:
+            carried[bot] = v4_fill_deployment(bl, lab)
+            v4_clip_tiers(carried[bot])
+    c200 = [l for l in legs if l["bot"] == "BANKROLL_200"]
+    cf = carried.get("BANKROLL_200", [])
+    v4_tenor_scope(cf)
+    v4_categories([("C-200 carried (traded)", cf), ("C-200 all decided (mixed)", c200)])
+    v4_slippage_budget(cf)
+    v4_wallet_persistence(c200)
+    v4_cheap_window()
+
+
+if "--selftest-v4" in ARGS:
+    v4_selftest()
+
+if V4:
+    v4()
+
 if "--v2" in ARGS or "--all" in ARGS:
     calibration_report()
     inband_concentration()
