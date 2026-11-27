@@ -15,17 +15,31 @@ async function main() {
     orderBy: { globalScore: "desc" },
     take: 50,
   });
+  // The take:50 cap used to be invisible: the log said "Scoring … for N tracked
+  // wallets" where N was the CAPPED length, so a 60-wallet track pool would have
+  // read as 50 and the 10 never examined would have left no trace. 25 today, so
+  // no number changes now — the count is read so it cannot silently understate.
+  const trackedTotal = await prisma.walletProfile.count({ where: { status: "track", isDemo: false } });
   if (tracked.length === 0) {
     log("No tracked wallets.");
     return;
   }
 
-  log(`Scoring insider/anomaly for ${tracked.length} tracked wallets…`);
+  log(`Scoring insider/anomaly for ${tracked.length} tracked wallets${tracked.length < trackedTotal ? ` (of ${trackedTotal} — the read takes the top ${tracked.length} by globalScore)` : ""}…`);
   const results = [];
+  let skippedNoLegs = 0;
+  let failed = 0;
   for (const w of tracked) {
     try {
       const r = await computeInsiderScore(w.address);
-      if (!r) continue;
+      // null = this wallet has ZERO settled paper legs, so there is nothing to
+      // score. That used to vanish: the summary printed "16 scored, 0 flagged,
+      // 0 watch" for 25 tracked wallets, and a reader cannot tell 9 were never
+      // examined. A flag count over 16 of 25 is not a clean bill of health.
+      if (!r) {
+        skippedNoLegs++;
+        continue;
+      }
       await prisma.walletInsiderScore.upsert({
         where: { walletAddress: w.address },
         create: {
@@ -46,6 +60,7 @@ async function main() {
       });
       results.push(r);
     } catch (e) {
+      failed++;
       logError(`Insider scoring failed for ${w.address.slice(0, 10)}…: ${e instanceof Error ? e.message : e}`);
     }
   }
@@ -62,12 +77,19 @@ async function main() {
         `preNews=${c.preNewsTiming.toFixed(2)} cluster=${c.clusterCorrelation.toFixed(2)}`
     );
   }
-  log(`Insider scoring complete: ${results.length} scored, ${flagged.length} flagged, ${watch.length} watch.`);
+  log(
+    `Insider scoring complete: ${results.length}/${trackedTotal} tracked scored` +
+      `${skippedNoLegs ? ` · ${skippedNoLegs} UNSCORED (0 settled paper legs for that wallet — nothing to score)` : ""}` +
+      `${failed ? ` · ${failed} FAILED (see errors above)` : ""}` +
+      ` — ${flagged.length} flagged, ${watch.length} watch OF THE ${results.length} SCORED.` +
+      ` Basis: n = OUR settled copies of the wallet (status closed|resolved, isDemo=0), not the wallet's own record;` +
+      ` wr/brier read the market outcome where known, never the exit PnL.`
+  );
 
   if (flagged.length > 0 || watch.length > 0) {
     const lines = [
       "🕵️ **Insider/Anomaly Wallet Scan**",
-      `Scored ${results.length} tracked wallets (weighted 11-component score; pre-news timing, Brier, timing alpha…).`,
+      `Scored ${results.length} of ${trackedTotal} tracked wallets (weighted 11-component score; pre-news timing, Brier, timing alpha…). Flags describe the scored set only.`,
     ];
     for (const r of [...flagged, ...watch]) {
       lines.push(
