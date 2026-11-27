@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-25T22:05:08-06:00",
+  "updatedAt": "2026-11-26T22:05:08-06:00",
   "counts": {
-    "pending": 3,
+    "pending": 4,
     "approved": 52,
     "declined": 1,
     "excluded": 20,
@@ -55,6 +55,22 @@
       "decidedVia": null,
       "kanbanTaskId": null,
       "_card_dates": "Alarm active 2026-11-23 (repo-growth-budget: object store 3715 MB vs 2048 MB ceiling, median 80 MB/day vs 40 MB/day budget) \u00b7 root cause carded 2026-11-24",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-mainpath-short-tenor-block",
+      "lane": "A",
+      "status": "pending",
+      "title": "LANE A PROPOSAL \u2014 BLOCK (not cap) Kelly-path clips >= $60 that resolve in 2-24h: 31 legs, -$1,144.7 (-36.9%), the only delta on the board whose market-clustered CI excludes zero \u2014 +$39.02/day",
+      "proposal": "WHY: the book's loss has one address and the board has been pricing its neighbours. Measured on 686 settled v68+ legs / 572 markets / 29.3 days / $13,088 (cost = simulatedPositionSize = dollars at risk, deduped bot|wallet|market|outcome): clip tier <$15 433 legs +0.1%; $15-30 196 legs +$558.4 (+15.0%); $100 51 legs $5,100 -$991.4 (-19.4%, ex-top-3 -33.0%, ex-top-10 -39.8%). The same $100 clip at px>=0.80 is +6.7% (13 legs) \u2014 the clip is not bad, the clip WHERE WE ARE WRONG is bad. S30 ranks every rule on the same legs: block 2-24h main-path clips >=$60 31 legs / $3,100 / -$1,144.7 (-36.9%) -> kept book $9,988 / +$939.3 / +9.4% / +$39.02/day, blocked-PnL CI [-1665.7,-621.8] so delta CI \u2026",
+      "evidence": "Measured on 686 settled v68+ legs / 572 markets / 29.3 days / $13,088 (cost = simulatedPositionSize = dollars at risk, deduped bot|wallet|market|outcome): clip tier <$15 433 legs +0.1%;",
+      "revert": "",
+      "source": "roadmap:profit-mainpath-short-tenor-block",
+      "createdAt": "2026-11-26T08:05:08-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-26 by the profit review (drafts/profit-recs-20261126.md \u00a7R1; instrument scripts/profit-tenor.py \u00a7S27-S30, --selftest 18/18). NOT APPLIED \u2014 Lane A: it changes what the bot admits. Supersedes the RANKING of profit-mainpath-short-tenor-clip (its $10 cap, +$29.37/day) and of the approved cheap-band cap apply-v73 (0.0-0.2:10, +$27.79/day, delta CI [-648,+1826]).",
       "_column": "Backlog"
     },
     {

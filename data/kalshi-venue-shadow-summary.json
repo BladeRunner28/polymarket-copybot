@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-26T04:24:08.628Z",
+  "asOf": "2026-11-27T04:24:09.328Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,12 +12,12 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1848,
-    "inWindow": 1453,
+    "copiesSeen": 1864,
+    "inWindow": 1469,
     "withKalshiQuote": 2,
     "crossListRate": 0.001,
     "staleSkips": 395,
-    "quoteFailures": 1353,
+    "quoteFailures": 1369,
     "unverifiedMatches": 98,
     "rejectionReasons": {
       "pre_guard_quote": 1,
@@ -57,15 +57,15 @@
   "deterministic": {
     "enabled": true,
     "attempted": 0,
-    "resolved": 477,
+    "resolved": 493,
     "verdicts": {
-      "OTHER_CLASS": 227,
-      "NO_EVENT_MATCH": 206,
-      "EQUIV": 42,
+      "OTHER_CLASS": 235,
+      "NO_EVENT_MATCH": 213,
+      "EQUIV": 43,
       "AMBIGUOUS_EVENT": 2
     },
-    "equiv": 42,
-    "priced": 6,
+    "equiv": 43,
+    "priced": 7,
     "derivationVersion": 2,
     "restamp": {
       "rederived": 0,
@@ -76,11 +76,11 @@
     },
     "stampedVersionCounts": {
       "v1": 401,
-      "v2": 76
+      "v2": 92
     },
-    "coverage": 0.088,
+    "coverage": 0.087,
     "fuzzyEquiv": 0,
-    "detOnlyEquiv": 42,
+    "detOnlyEquiv": 43,
     "book": {
       "n": 5,
       "pmPnl": -2.3,
@@ -96,17 +96,6 @@
       "venueRoiPct": -104.51
     },
     "pairs": [
-      {
-        "question": "Pelicans vs. Spurs",
-        "detTicker": "KXNBAGAME-26NOV21NOPSAS-NOP",
-        "detTitle": "New Orleans wins",
-        "ourSideIsYes": true,
-        "detEntry": null,
-        "pmEntry": 0.09444,
-        "fuzzyTicker": null,
-        "fuzzyVerified": false,
-        "note": "not_tradeable:finalized"
-      },
       {
         "question": "Spread: Nevada (-13.5)",
         "detTicker": "KXNCAAFSPREAD-26NOV21HAWNEV-NEV14",
@@ -422,6 +411,16 @@
         "pmEntry": 0.7713,
         "fuzzyTicker": null,
         "fuzzyVerified": false
+      },
+      {
+        "question": "Spread: Texas Tech (-9.5)",
+        "detTicker": "KXNCAAFSPREAD-26NOV26TCUTTU-TTU10",
+        "detTitle": "Texas Tech wins by over 9.5 points",
+        "ourSideIsYes": true,
+        "detEntry": 0.63,
+        "pmEntry": 0.6513,
+        "fuzzyTicker": null,
+        "fuzzyVerified": false
       }
     ]
   },
@@ -442,7 +441,7 @@
     "clock": {
       "openedAtFrom": "2026-11-16T18:10:45.463Z",
       "openedAtTo": "2026-11-24T11:46:17.191Z",
-      "readAt": "2026-11-26T04:24:08.629Z"
+      "readAt": "2026-11-27T04:24:09.329Z"
     },
     "quoterun": {
       "attempted": 0,

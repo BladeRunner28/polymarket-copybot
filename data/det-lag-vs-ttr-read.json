@@ -1,0 +1,64 @@
+{
+ "ranAt": "2026-11-26T13:20:24Z",
+ "days": 30,
+ "ttr_tagged_skips": 15031,
+ "lag_hours": {
+  "n": 15031,
+  "p10": 0.025,
+  "p25": 0.057,
+  "p50": 0.111,
+  "p75": 0.163,
+  "p90": 2.954,
+  "max": 23.673
+ },
+ "lead_cleared_count": 1815,
+ "lead_cleared_share": 0.1208,
+ "buckets": {
+  "cadence<=0.5h": {
+   "n": 113,
+   "share_of_tagged": 0.0075,
+   "priced": 113,
+   "entry_move_usd": {
+    "n": 113,
+    "p10": -0.035,
+    "p25": -0.005,
+    "p50": 0.005,
+    "p75": 0.005,
+    "p90": 0.025,
+    "max": 0.325
+   },
+   "adverse_share": 0.637
+  },
+  "mid0.5-2h": {
+   "n": 22,
+   "share_of_tagged": 0.0015,
+   "priced": 22,
+   "entry_move_usd": {
+    "n": 22,
+    "p10": -0.005,
+    "p25": -0.005,
+    "p50": 0.002,
+    "p75": 0.035,
+    "p90": 0.035,
+    "max": 0.14
+   },
+   "adverse_share": 0.682
+  },
+  "late>2h": {
+   "n": 1680,
+   "share_of_tagged": 0.1118,
+   "priced": 1680,
+   "entry_move_usd": {
+    "n": 1680,
+    "p10": -0.46,
+    "p25": -0.04,
+    "p50": 0.02,
+    "p75": 0.421,
+    "p90": 0.52,
+    "max": 0.89
+   },
+   "adverse_share": 0.605
+  }
+ },
+ "conclusion": "cadence lever REFUTED on this basis: the cadence-recoverable slice is small and the late (>2h) rows are backfill, not sweep latency"
+}

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T13:20:08Z",
+  "generated_at": "2026-11-26T13:20:08Z",
   "mode": "forward",
   "approval_date": "2026-10-23",
   "basis_corrected_at": "2026-11-23",
@@ -7,7 +7,7 @@
   "decision_population": "ALL",
   "window": "n-driven (no calendar deadline)",
   "superseded_shadow_days": 14,
-  "days_elapsed": 33.56,
+  "days_elapsed": 34.56,
   "bot": "ALL",
   "lanes_reported": [
     "BANKROLL_200",
@@ -30,22 +30,22 @@
   "population_basis": "PaperTrade isDemo=0, every botId unless --only-bot, settled (closed|resolved, realizedPnl not null), openedAt >= approval, deduped to one leg per bot|wallet|market|outcome",
   "bands": {
     "at_risk_2_24h": {
-      "legs": 545,
-      "markets": 473,
-      "notional": 9353.47,
-      "pnl": -1218.95,
-      "roi": -0.13032067717943313,
-      "resolved_legs": 521,
-      "resolved_roi": -0.12410989083479329
+      "legs": 589,
+      "markets": 511,
+      "notional": 9943.37,
+      "pnl": -1267.52,
+      "roi": -0.12747393897180181,
+      "resolved_legs": 564,
+      "resolved_roi": -0.12166577033863361
     },
     "kept_24h_plus": {
-      "legs": 140,
-      "markets": 101,
-      "notional": 3963.39,
-      "pnl": 533.76,
-      "roi": 0.1346726726101396,
-      "resolved_legs": 92,
-      "resolved_roi": 0.47707109181375995
+      "legs": 142,
+      "markets": 102,
+      "notional": 4081.39,
+      "pnl": 515.76,
+      "roi": 0.12636878708600036,
+      "resolved_legs": 93,
+      "resolved_roi": 0.4636871885721437
     },
     "under_live_floor_lt_2h": {
       "legs": 0,
@@ -60,20 +60,20 @@
   "by_lane": {
     "BANKROLL_200": {
       "at_risk_2_24h": {
-        "legs": 431,
-        "markets": 426,
-        "notional": 8272.07,
-        "pnl": -1054.81,
-        "roi": -0.12751470099459336,
-        "resolved_legs": 407,
-        "resolved_roi": -0.1201276492104162
+        "legs": 467,
+        "markets": 460,
+        "notional": 8794.86,
+        "pnl": -1072.79,
+        "roi": -0.12197919095444117,
+        "resolved_legs": 442,
+        "resolved_roi": -0.11480842962673955
       },
       "kept_24h_plus": {
-        "legs": 91,
-        "markets": 89,
-        "notional": 3040.61,
+        "legs": 92,
+        "markets": 90,
+        "notional": 3140.61,
         "pnl": 244.37,
-        "roi": 0.08036880536868049,
+        "roi": 0.07780978444870784,
         "resolved_legs": 43,
         "resolved_roi": 0.6213161882904344
       },
@@ -89,22 +89,22 @@
     },
     "STANDARD": {
       "at_risk_2_24h": {
-        "legs": 114,
-        "markets": 112,
-        "notional": 1081.4,
-        "pnl": -164.14,
-        "roi": -0.15178472350656555,
-        "resolved_legs": 114,
-        "resolved_roi": -0.15178472350656555
+        "legs": 122,
+        "markets": 119,
+        "notional": 1148.51,
+        "pnl": -194.73,
+        "roi": -0.16955085088876407,
+        "resolved_legs": 122,
+        "resolved_roi": -0.16955085088876407
       },
       "kept_24h_plus": {
-        "legs": 49,
-        "markets": 48,
-        "notional": 922.78,
-        "pnl": 289.39,
-        "roi": 0.3136067101584343,
-        "resolved_legs": 49,
-        "resolved_roi": 0.3136067101584343
+        "legs": 50,
+        "markets": 49,
+        "notional": 940.78,
+        "pnl": 271.39,
+        "roi": 0.28847339441739833,
+        "resolved_legs": 50,
+        "resolved_roi": 0.28847339441739833
       },
       "under_live_floor_lt_2h": {
         "legs": 0,
@@ -120,20 +120,20 @@
   "by_lane_undeduped": {
     "BANKROLL_200": {
       "at_risk_2_24h": {
-        "legs": 433,
-        "markets": 426,
-        "notional": 8300.04,
-        "pnl": -1054.81,
-        "roi": -0.12708499948452257,
-        "resolved_legs": 409,
-        "resolved_roi": -0.1196822263853826
+        "legs": 469,
+        "markets": 460,
+        "notional": 8822.83,
+        "pnl": -1072.79,
+        "roi": -0.1215924996657119,
+        "resolved_legs": 444,
+        "resolved_roi": -0.11440943135669729
       },
       "kept_24h_plus": {
-        "legs": 94,
-        "markets": 89,
-        "notional": 3094.59,
+        "legs": 95,
+        "markets": 90,
+        "notional": 3194.59,
         "pnl": 253.95,
-        "roi": 0.08206250347686941,
+        "roi": 0.07949370930623269,
         "resolved_legs": 46,
         "resolved_roi": 0.5995272659465731
       },
@@ -149,22 +149,22 @@
     },
     "STANDARD": {
       "at_risk_2_24h": {
-        "legs": 116,
-        "markets": 112,
-        "notional": 1099.4,
-        "pnl": -126.76,
-        "roi": -0.11529925413862105,
-        "resolved_legs": 116,
-        "resolved_roi": -0.11529925413862105
+        "legs": 124,
+        "markets": 119,
+        "notional": 1166.51,
+        "pnl": -157.35,
+        "roi": -0.13489012048812477,
+        "resolved_legs": 124,
+        "resolved_roi": -0.13489012048812477
       },
       "kept_24h_plus": {
-        "legs": 55,
-        "markets": 48,
-        "notional": 1038.78,
-        "pnl": 378.53,
-        "roi": 0.3643986214597894,
-        "resolved_legs": 55,
-        "resolved_roi": 0.3643986214597894
+        "legs": 56,
+        "markets": 49,
+        "notional": 1056.78,
+        "pnl": 360.53,
+        "roi": 0.34115899241090863,
+        "resolved_legs": 56,
+        "resolved_roi": 0.34115899241090863
       },
       "under_live_floor_lt_2h": {
         "legs": 0,
@@ -179,22 +179,22 @@
   },
   "band_admission_path": {
     "short_ttr_lane": {
-      "legs": 344,
-      "markets": 340,
-      "notional": 3981.32,
-      "pnl": 162.08,
-      "roi": 0.040710152484389105,
-      "resolved_legs": 325,
-      "resolved_roi": 0.059723351323427445
+      "legs": 376,
+      "markets": 371,
+      "notional": 4350.13,
+      "pnl": 144.1,
+      "roi": 0.03312547285107373,
+      "resolved_legs": 357,
+      "resolved_roi": 0.04994971735338866
     },
     "main_funnel": {
-      "legs": 201,
-      "markets": 135,
-      "notional": 5372.15,
-      "pnl": -1381.03,
-      "roi": -0.2570721522488936,
-      "resolved_legs": 196,
-      "resolved_roi": -0.26464090134627244
+      "legs": 213,
+      "markets": 142,
+      "notional": 5593.24,
+      "pnl": -1411.62,
+      "roi": -0.252379695427727,
+      "resolved_legs": 207,
+      "resolved_roi": -0.2600781238201681
     },
     "note": "Admission path is read from DecisionJournal.reasonsJson ('Short-TTR lane: ...'), not inferred from price or size. Both paths are inside the lane window [2, 72]h, so a floor raise is cleared by the rescue on either."
   },
@@ -208,31 +208,31 @@
     "lane_max_drift": 0.05,
     "ruleset_version_read": 73,
     "reachable_band_legs": 0,
-    "band_legs": 545,
+    "band_legs": 589,
     "unresolved_eligibility": 0,
     "probe": "npx tsx scripts/ttr-floor-reach-probe.ts",
     "probe_result": "0 of 22464 grid cases change under the live ruleset; controls A/B/C reach 75/15/1115",
     "note": "reachable_band_legs counts settled band legs the rescue would NOT clear, i.e. the legs a 2->24h raise would actually block. A band-removal counterfactual over ALL band legs (scripts/profit-tenor.py \u00a7S15) is NOT this number -- it prices a block that cannot happen."
   },
-  "raw_undeduped_band_legs": 549,
+  "raw_undeduped_band_legs": 593,
   "bands_undeduped": {
     "at_risk_2_24h": {
-      "legs": 549,
-      "markets": 473,
-      "notional": 9399.44,
-      "pnl": -1181.57,
-      "roi": -0.1257064860076433,
-      "resolved_legs": 525,
-      "resolved_roi": -0.11912468287150206
+      "legs": 593,
+      "markets": 511,
+      "notional": 9989.34,
+      "pnl": -1230.14,
+      "roi": -0.12314532981784582,
+      "resolved_legs": 568,
+      "resolved_roi": -0.11700216538163079
     },
     "kept_24h_plus": {
-      "legs": 149,
-      "markets": 101,
-      "notional": 4133.37,
-      "pnl": 632.48,
-      "roi": 0.153017908385227,
-      "resolved_legs": 101,
-      "resolved_roi": 0.4853129390210394
+      "legs": 151,
+      "markets": 102,
+      "notional": 4251.37,
+      "pnl": 614.48,
+      "roi": 0.14453685573820066,
+      "resolved_legs": 102,
+      "resolved_roi": 0.47291522195929375
     },
     "under_live_floor_lt_2h": {
       "legs": 0,
@@ -245,16 +245,16 @@
     }
   },
   "dedupe_note": "bands/by_lane are the decision basis (one leg per bot|wallet|market|outcome, the basis of the S15 measurement and the 2026-11-21 profit review). bands_undeduped is the pre-2026-11-23 basis and the one the historical calibration reproduces; it is reported so a reader can see what the dedupe moves rather than having to trust it.",
-  "opened_legs_in_band": 579,
+  "opened_legs_in_band": 602,
   "trailing_rate_window_days": 14,
-  "trailing_openings_per_day": 18.36,
-  "projected_days_to_n": -22,
+  "trailing_openings_per_day": 19.5,
+  "projected_days_to_n": -23,
   "unclassified_ttr": 0,
   "verdict": "FLIP",
   "verdict_population": "ALL",
-  "action": "DO NOT APPLY: the raise is INERT under the live ruleset (0 of 545 band legs change admission). A floor raise cannot block a band the short-TTR lane window [2, 72]h already rescues; to block it, move shortTtrMaxHours below 24 (Lane A), or size the main-path band legs instead (Lane A).",
-  "reason": "band net ROI -13.03% < +3.0% at n=545",
-  "flip_effect": "INERT: 0 of 545 settled band legs would change admission under the live ruleset (344 already take the short-TTR lane path; 201 are main-path legs whose only added skip is the floor's and are rescued back onto the same path). Measure with `npx tsx scripts/ttr-floor-reach-probe.ts` (0 of 22,464 grid cases move; controls armed).",
+  "action": "DO NOT APPLY: the raise is INERT under the live ruleset (0 of 589 band legs change admission). A floor raise cannot block a band the short-TTR lane window [2, 72]h already rescues; to block it, move shortTtrMaxHours below 24 (Lane A), or size the main-path band legs instead (Lane A).",
+  "reason": "band net ROI -12.75% < +3.0% at n=589",
+  "flip_effect": "INERT: 0 of 589 settled band legs would change admission under the live ruleset (376 already take the short-TTR lane path; 213 are main-path legs whose only added skip is the floor's and are rescued back onto the same path). Measure with `npx tsx scripts/ttr-floor-reach-probe.ts` (0 of 22,464 grid cases move; controls armed).",
   "not_yet_evaluable": [
     "refutation (b): flat 0.6-1.0 cells widening to >= +10% on 150 forward legs",
     "refutation (c): 3-7d ex-top-10 below 0% on a 60d read"

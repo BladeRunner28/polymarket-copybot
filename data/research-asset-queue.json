@@ -687,6 +687,50 @@
    "status": "audited",
    "url": "https://github.com/lori1635/krypolybot-polymarket-mcp-whale-trader",
    "verdict": "drop"
+  },
+  {
+   "approval": {
+    "decided": null,
+    "decided_note": null,
+    "requested": "2026-11-26 08:23 CST",
+    "state": "pending"
+   },
+   "audited": "2026-11-26 08:23 CST",
+   "claimed": "2026-11-26 08:20 CST",
+   "claimed_ts": 1795702808.7801118,
+   "discovered": "2026-11-26 07:20 CST",
+   "id": "govinterset-dotcom/polymarket-algos",
+   "license": "NOASSERTION",
+   "note": "source-available licence: research use permitted (2a-2c), production order submission must carry the donor's builder code (3) -- code read-only, nothing vendored; CS yes but RED 3/3 and only compileall+builder-attribution check, no tests; dataset claim ~12,600 windows not backed by any artifact (zero releases), shipped July-2026 pre-TWAP archive = 1,488 BTC windows verified 809/391-418/v2 matching",
+   "pushed": "",
+   "recommendation": {
+    "decision_rule": "market-clustered 95% CI lower bound on realized WR exceeds the band break-even (95.33% at ask 0.95, 97.20% at 0.97, from rate*p*(1-p) at 0.07) on n>=300 windows by 2026-12-31 -> propose a size-capped C-200 arm; else drop with the number recorded",
+    "effort": "~2h, read-only replay",
+    "reversibility": "measurement artifact only; delete data/btc-late-favourite-replay-*.json",
+    "text": "measure the late-window-favourite arm (leader at >=25% of window, ask>=0.95) against our captured btc-updown quotes as a third arm of card btx2"
+   },
+   "report": "drafts/asset-audit-polymarket-algos-20261126.md",
+   "source": "agent",
+   "stars": 2,
+   "status": "audited",
+   "url": "https://github.com/govinterset-dotcom/polymarket-algos",
+   "verdict": "watch"
+  },
+  {
+   "audited": "2026-11-26 08:23 CST",
+   "claimed": "2026-11-26 08:20 CST",
+   "claimed_ts": 1795702808.780118,
+   "discovered": "2026-11-26 07:20 CST",
+   "id": "darup67/market-lab",
+   "license": "NOASSERTION",
+   "note": "RE-SURFACE: standing audit research-weekly-20261102 \u00a72 row 2 = drop. LICENSE read in full this pass: proprietary all-rights-reserved, no permission to use/copy/modify - stricter than NOASSERTION. Kalshi recorder PAUSED since 2026-10-08 and still paused (PAUSED-KALSHI-RECORDER.md present), data frozen at 6.5MB/4 files; 100+ commits since are paper-lab/event-desk data churn on other products; premis",
+   "pushed": "",
+   "report": "drafts/market-lab-reaudit-20261126.md",
+   "source": "agent",
+   "stars": 1,
+   "status": "audited",
+   "url": "https://github.com/darup67/market-lab",
+   "verdict": "drop"
   }
  ],
  "version": 1
