@@ -221,6 +221,7 @@ def load():
 
 
 def main():
+    print("[basis EXIT: win% = realizedPnl>0 on our leg; cost$ = dollars at risk; NOT the market outcome]")
     obs, leg_rows, scans = load()
     scan = {r[0]: r for r in scans}
 

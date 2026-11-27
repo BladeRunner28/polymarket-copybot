@@ -24,6 +24,17 @@ arithmetic ("breakeven hit rate = mean price") and the SQL table named `hit` as 
 label arms. A declaration banner (`print("[basis EXIT: ...]")`) now names every arm BELOW it in
 the same file, and the declared family is checked against the label derivation found in the code
 (a banner that says EXIT over a file that labels on the venue winner is reported as a MISMATCH).
+
+BLIND CLASS CLOSED (2026-11-27, Lane B, card label-basis-census-blind-join): 18 files were named
+BLIND because the detector read ONE PHYSICAL LINE, and a `.py` print split as
+`print(f"  hit rate ...: " f"{x:.1f}%")` puts the word and its value on different lines. Python is
+now joined on tokenize's LOGICAL statements (NL vs NEWLINE), which is exact; the depth-counter
+joiner is kept above only as the record of a measured rejection. `.ts/.js/.sh` are deliberately NOT
+joined -- a line that visibly continues is reported BLIND instead. And every line that carries a
+metric word and is NOT an arm now prints the RULE that excluded it (no rendered value, breakeven
+arithmetic, SQL table `hit`, slug/path, bar constant), so removing a file from BLIND can never be a
+silent edit. BLIND is a FAILURE, not a footnote: printing the list under RESULT: PASS is exactly how
+18 files sat unexplained.
 """
 import io
 import os
@@ -38,6 +49,9 @@ VALUE = re.compile(r":\s*[^}]*[fdeg]\s*\}|%[-+ 0-9.]*[fd]|fmt\(")
 # the braces (`win_rate[...]={manifest['win_rate']}`). A line that interpolates anything renders
 # a number; that is the property this census needs, not a particular format spec.
 RENDERS = re.compile(r"\{[^}]*\}|%\s*[-+ 0-9.]*[dfs]|fmt\(")
+# 2026-11-27 (Lane B): a string literal followed by a COMMA is a call passing further arguments,
+# i.e. a rendered value in the form .ts actually uses. A lone label string is not.
+RENDERS_ARG = re.compile(r"""["'`]\s*,""")
 TOKEN_RE = re.compile(r"basis|outcome|(?:^|[^a-z])exit(?:$|[^a-z])|(?:^|[^a-z])mark(?:$|[^a-z])", re.I)
 # 2026-11-06 (self-audit, Lane B): the original pattern missed the form our cron status
 # blocks actually use -- `win=46%` / `win=  49%` (copybot-kalshi-shadow.sh), `win%`-only.
@@ -53,7 +67,7 @@ HITARM = re.compile(r"\bhit\b|\bwins?\b\s*[:=]\s*\{", re.I)
 # A table HEADER is an arm too: `{'hit%':>6}` names the column the rows below fill.
 HEADER_HIT = re.compile(r"'hit ?%'|\"hit ?%\"|'hit':|'wins':", re.I)
 # Precision: `hit` as a SQLite table name, as a timing word, as prose, is not an arm.
-NOT_ARM = re.compile(r"FROM\s+hit\b|hit\s+table|hit-px|100%-hit|\bhit\s+(?:the|in|by|rate of|table)", re.I)
+NOT_ARM = re.compile(r"FROM\s+hit\b|hit\s+table|hit-px\s*==|100%-hit|\bhit\s+(?:the|in|by|rate of|table)", re.I)
 # Precision: a printed BAR (threshold constant) is not a measured arm -- ml1-bar-restatement
 # prints "AUC >= ${BAR.margin}" as a definition and would otherwise read as three unnamed arms.
 NOT_ARM2 = re.compile(r"\bBAR\.|BAR_SLACK|\bin-force bar\b|absolute bar|slack check|beats_bar_", re.I)
@@ -62,6 +76,46 @@ BREAKEVEN_ARITH = re.compile(
     r"(?:break[- ]?even|breakeven|hurdle)\s+(?:entry\s+)?(?:hit\s+rate|hit\b)|"
     r"breakeven entry|break[- ]?even hit|bnr\s*=", re.I)
 # An explicit declaration banner: names the basis for every arm below it in the same file.
+# 2026-11-27 (Lane B, card label-basis-census-blind-join): deciding BLIND needs to see a metric
+# WORD, not a substring of a slug or a filename. `band_winrate` is a variable and
+# `data/gate-winrate-basis.json` is a path: neither prints a win rate. Arm COUNTING keeps the
+# looser METRIC/HITARM above so no arm changes population on a detector tweak.
+METRIC_STRICT = re.compile(
+    r"(?<![A-Za-z0-9_])win[ _-]?rate(?![A-Za-z0-9_])"
+    r"|(?<![A-Za-z0-9_])win%(?![A-Za-z0-9_])"
+    r"|(?<![A-Za-z0-9_])win(?:%?\[[A-Za-z_]+\]|%)?\s*="
+    r"|(?<![A-Za-z0-9])AUC(?![A-Za-z0-9])"
+    r"|(?<![A-Za-z0-9])[Bb]rier(?![A-Za-z0-9_])"
+    r"|(?<![A-Za-z0-9_])hit rate(?![A-Za-z0-9_])"
+    r"|(?<![A-Za-z0-9_])hit%(?![A-Za-z0-9_])")
+HITARM_STRICT = re.compile(r"(?<![A-Za-z0-9_])(?:hit|hits|wins?)(?![A-Za-z0-9_])", re.I)
+PATHLIKE = re.compile(r"[A-Za-z0-9_./-]*(?:winrate|win-rate|win_rate)[A-Za-z0-9_./-]*"
+                      r"\.(?:json|jsonl|ts|js|py|sh|csv|md)\b", re.I)
+# A hyphen/underscore SLUG is a NAME, not a metric mention: `band_winrate`,
+# `gate-winrate-basis-read`, `win-rate-by-price`. Prose writes "win rate" with a space; a bare
+# `winrate` / `win rate` / `hit%` is a metric. This is what separates L229 of
+# gate-winrate-basis-read.ts (a path it wrote) from an arm.
+SLUG = re.compile(
+    r"(?<![A-Za-z0-9_])(?:[A-Za-z0-9]+[-_]){1,}(?:win[-_]?rate|winrate)(?:[-_][A-Za-z0-9]+)*"
+    r"|(?<![A-Za-z0-9_])(?:win[-_]?rate|winrate)(?:[-_][A-Za-z0-9]+)+(?![A-Za-z0-9_])")
+
+
+def looks_continued(s):
+    """A physical line that cannot have ENDED its statement (unjoined .ts/.js/.sh only).
+
+    It chooses a REASON; it never joins anything (the depth joiner was rejected on measurement).
+    A trailing `;` CLOSES a JS statement, so the closed forms are NO-RENDERED-VALUE, not blind.
+    """
+    t = s.rstrip()
+    return t.endswith((",", "(", "[", "{", "+", "`", "&&", "||", "?"))
+
+
+def has_metric_word(s):
+    """Does this text print a metric WORD once names/paths are removed?"""
+    return bool(METRIC_STRICT.search(SLUG.sub(" ", PATHLIKE.sub(" ", s)))
+                or HITARM_STRICT.search(SLUG.sub(" ", PATHLIKE.sub(" ", s))))
+
+
 DECL = re.compile(r"\[\s*basis\s+(EXIT|OUTCOME|MARK)\b", re.I)
 # The label derivation the code actually uses, so a declaration can be checked, not just read.
 DERIV = {
@@ -158,6 +212,43 @@ def logical(lines, skip=None):
     return out
 
 
+def logical_py(lines, skip=None):
+    """(first physical line, joined text, last physical line) per LOGICAL statement.
+
+    2026-11-27 (Lane B): the depth-counter joiner above was REJECTED on measurement because it
+    GUESSES where a statement ends (brackets inside comments, unbalanced quotes) and both invented
+    and hid rows. tokenize does not guess -- it emits NL for a line that continues inside brackets
+    and NEWLINE only when the statement is complete -- so a multi-line print joins exactly and
+    nothing else can merge. A statement whose tokens are all STRING (a module docstring, which may
+    well QUOTE a print call) is skipped: text in a docstring never runs.
+    Python only; .ts/.js/.sh are deliberately NOT joined (see audit()).
+    """
+    out = []
+    ign = {tokenize.INDENT, tokenize.DEDENT, tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
+           tokenize.ENCODING, tokenize.ENDMARKER}
+    start, kinds, names = None, set(), set()
+    try:
+        toks = list(tokenize.generate_tokens(io.StringIO("\n".join(lines)).readline))
+    except (tokenize.TokenError, IndentationError):
+        return out
+    for t in toks:
+        if t.type in (tokenize.NEWLINE, tokenize.ENDMARKER):
+            if start is not None and kinds - {tokenize.STRING}:
+                txt = " ".join(lines[r - 1].strip() for r in range(start[0], t.start[0] + 1)
+                                if 0 < r <= len(lines))
+                out.append((start[0], txt, t.start[0], names))
+            start, kinds, names = None, set(), set()
+            continue
+        if t.type in ign:
+            continue
+        if start is None:
+            start = t.start
+        kinds.add(t.type)
+        if t.type == tokenize.NAME:
+            names.add(t.string)
+    return out
+
+
 def string_lines(lines):
     """Line numbers inside a MULTI-LINE string literal.
 
@@ -179,23 +270,27 @@ def string_lines(lines):
 def classify(lines, skip=None, join=False):
     """Arms in one file: (line, text, named?) for every printed probability metric."""
     metric, last, banner = [], -1000, None
-    seq = logical(lines, skip) if join else [(i, l) for i, l in enumerate(lines, 1)
-                                              if i not in (skip or set())]
-    for i, l in seq:
+    seq = logical_py(lines, skip) if join else [(i, l, i, None) for i, l in enumerate(lines, 1)
+                                                if i not in (skip or set())]
+    for i, l, _end, names in seq:
         s = l.strip()
         if not s or s[0] in ("#", "*"):
             continue
-        if EMIT.search(s):
+        # A joined .py statement emits only when `print` is a real NAME token: a triple-quoted
+        # string that happens to CONTAIN the text of a print call is not one (2026-11-27).
+        emits = ("print" in names) if names is not None else bool(EMIT.search(s))
+        if emits:
             d = DECL.search(s)
             if d:
                 banner = d.group(1).upper()
                 last = i
-        if EMIT.search(s) and TOKEN_RE.search(s):
+        if emits and TOKEN_RE.search(s):
             last = i
-        if not EMIT.search(s):
+        if not emits:
             continue
         header = HEADER_HIT.search(s)
-        if not header and not (VALUE.search(s) or RENDERS.search(s)):
+        if not header and not (VALUE.search(s) or RENDERS.search(s)
+                               or (RENDERS_ARG.search(s) and has_metric_word(s))):
             continue
         if NOT_ARM.search(s) or NOT_ARM2.search(s) or BREAKEVEN_ARITH.search(s):
             continue
@@ -221,6 +316,52 @@ def classify_with_banner(lines):
                 banner = d.group(1).upper()
     metric, unnamed = classify(lines, skip)
     return metric, unnamed, banner
+
+
+def explain(lines, skip, py, metric):
+    """One DISPOSITION per statement that carries a metric word: why it is not an arm.
+
+    2026-11-27 (Lane B, card label-basis-census-blind-join): the old blind test asked only 'does a
+    printed line contain a metric word and yield no arm', which flagged 18 files -- 14 of which are
+    prose, a section heading, breakeven arithmetic, a SQLite table named `hit`, a filename, or a
+    sentence ABOUT a metric. A list of 18 pseudo-defects teaches the reader to ignore the list.
+    Every excluded line now names the RULE that excluded it, and the only line with no rule left is
+    reported BLIND -- which fails the gate instead of being a footnote.
+    """
+    arms = {i for i, _s, _n in metric}
+    out = []
+    if py:
+        seq = logical_py(lines, skip)
+    else:
+        seq = [(i, l, i, None) for i, l in enumerate(lines, 1) if i not in (skip or set())]
+    for i, s, _end, names in seq:
+        t = s.strip()
+        if not t or t[0] in ("#", "*"):
+            continue
+        emits = ("print" in names) if names is not None else bool(EMIT.search(s))
+        if not (emits and (METRIC.search(s) or HITARM.search(s))):
+            continue
+        if i in arms:
+            continue
+        m = NOT_ARM.search(s)
+        if m:
+            why = "NOT_ARM (%s)" % m.group(0)[:26]
+        elif NOT_ARM2.search(s):
+            why = "BAR CONSTANT"
+        elif BREAKEVEN_ARITH.search(s):
+            why = "BREAKEVEN ARITHMETIC"
+        elif not has_metric_word(s):
+            why = "SLUG/PATH, not a metric word"
+        elif not (VALUE.search(s) or RENDERS.search(s)):
+            # Python: the statement is complete, so no value can be hiding on another line.
+            # .ts/.js/.sh: nothing is joined, so a line that visibly continues (trailing comma or
+            # open bracket) MIGHT carry the value below -- reported BLIND rather than assumed clean.
+            why = "NO RENDERED VALUE" if py else ("BLIND" if looks_continued(s) else
+                                                  "NO RENDERED VALUE")
+        else:
+            why = "BLIND"
+        out.append((i, why, t[:110]))
+    return out
 
 
 def derive(lines):
@@ -261,7 +402,7 @@ def audit(root):
     for rel, basis in CENSUS.items():
         if rel not in pop:
             pop[rel] = (0, 0)
-    rows, failures, blind = [], [], []
+    rows, failures, blind, explained = [], [], [], []
     total = named = unnamed_n = 0
     for rel in sorted(pop):
         p = os.path.join(root, rel)
@@ -272,7 +413,8 @@ def audit(root):
             continue
         lines = open(p, errors="replace").read().split("\n")
         skip = string_lines(lines)
-        metric, unnamed = classify(lines, skip)
+        py = rel.endswith(".py")
+        metric, unnamed = classify(lines, skip, join=py)
         banner = None
         for i, l in enumerate(lines, 1):
             if i in skip:
@@ -288,17 +430,22 @@ def audit(root):
         unnamed_n += len(unnamed)
         rows.append((rel, basis or "", len(metric), len(metric) - len(unnamed), len(unnamed),
                      banner, fams))
-        # A file with a metric WORD but no detected arm is the remaining blind spot: the word and
-        # its rendered value can sit on different physical lines of an implicit concatenation, which
-        # this detector (one physical line at a time) cannot join. Named here rather than counted
-        # as coverage -- 4 of the 29 hand-listed files already sit in this bucket.
-        if not metric and any(EMIT.search(l) and (METRIC.search(l) or HITARM.search(l)) for l in lines):
-            blind.append(rel)
+        # Every statement that carries a metric word now gets a DISPOSITION. A statement this
+        # detector cannot join to a value is BLIND and FAILS the gate (2026-11-27): printing the
+        # list while calling the run PASS is what let 18 files sit unexplained.
+        for ln, why, txt in explain(lines, skip, py, metric):
+            if why == "BLIND":
+                blind.append((rel, ln, txt))
+            else:
+                explained.append((rel, ln, why))
         if unnamed:
             failures.append((rel, "UNNAMED"))
+        if any(b[0] == rel for b in blind):
+            for ln, txt in [(b[1], b[2]) for b in blind if b[0] == rel]:
+                failures.append((rel, "BLIND:L%d" % ln))
         if banner and fams and banner not in fams:
             failures.append((rel, "MISMATCH:%s-vs-%s" % (banner, "+".join(fams))))
-    return rows, failures, (total, named, unnamed_n), blind
+    return rows, failures, (total, named, unnamed_n), blind, explained
 
 
 def self_test():
@@ -350,14 +497,69 @@ def self_test():
         _, fails3 = audit(td)[:2]
         arm("a banner that contradicts the code is a MISMATCH",
             any("MISMATCH" in f[1] for f in fails3 if "zz-new" in f[0]))
+    # ---- 2026-11-27 arms: the BLIND class is closed on RULES, not on a curated exemption list
+    j, ju = classify(['print(f"   settle win rate [EXIT: realizedPnl>0] on the settled subset: "',
+                      '      f"{100 * n / m:.1f}% vs mean entry price")'], join=True)
+    arm("a multi-line print joins into ONE arm (tokenize, not bracket depth)",
+        len(j) == 1 and not ju)
+    j2, j2u = classify(['print(f"   settle win rate on the settled subset: "',
+                        '      f"{100 * n / m:.1f}%")'], join=True)
+    arm("...and stays UNNAMED when the joined statement names no basis",
+        len(j2) == 1 and len(j2u) == 1)
+    doc2, _ = classify(['"""', 'print(f"  win rate {x:.2f}")', '"""'], join=True)
+    arm("a docstring that QUOTES a print is not an arm", len(doc2) == 0)
+    arm("a slug is not a metric word (band_winrate)", not has_metric_word("skill as band_winrate"))
+    arm("a path is not a metric word (data/gate-winrate-basis.json)",
+        not has_metric_word("wrote data/gate-winrate-basis.json"))
+    arm("an error envelope naming the script is not a metric word",
+        not has_metric_word('console.error("gate-winrate-basis-read FAILED:", e)'))
     with tempfile.TemporaryDirectory() as td:
         os.makedirs(os.path.join(td, "scripts"))
-        with open(os.path.join(td, "scripts", "zz-blind.py"), "w") as fh:
-            fh.write('print(f"  win rate on the settled subset: ")\n')
-            fh.write('print(f"      {w:.3f}")\n')
-        blind = audit(td)[3]
-        arm("a metric word with no detected arm is reported BLIND, not clean",
-            "scripts/zz-blind.py" in blind)
+        # two SEPARATE prints are two statements: the census joins one statement, never neighbours
+        with open(os.path.join(td, "scripts", "zz-split.py"), "w") as fh:
+            fh.write('print("  win rate on the settled subset: ")\n')
+            fh.write('print("      {:.3f}".format(w))\n')
+        rows4, fails4, _t4, blind4, expl4 = audit(td)
+        arm("two separate prints are NOT merged into one arm",
+            _t4[0] == 0 and not blind4)
+        arm("...and the word-only label still gets a printed disposition",
+            any(e[0] == "scripts/zz-split.py" for e in expl4))
+            # a metric line this detector cannot join is BLIND and RED
+        os.makedirs(os.path.join(td, "src", "lib"))
+        with open(os.path.join(td, "src", "lib", "zz-blind.ts"), "w") as fh:
+            fh.write('console.log("  win rate on the settled subset:",\n')
+            fh.write("            x.toFixed(3));\n")
+        _r5, fails5, _t5, blind5, _e5 = audit(td)
+        arm("a .ts call split after its comma is caught (arm, unnamed)",
+            any(f[0] == "src/lib/zz-blind.ts" for f in fails5))
+        # BLIND itself: a word and a concatenation that carries the value below, no console.log
+        # on the value line, so nothing can attach a basis to it.
+        with open(os.path.join(td, "src", "lib", "zz-blind.ts"), "w") as fh:
+            fh.write('console.log("  hit rate " +\n')
+            fh.write("            x.toFixed(3));\n")
+        _r5b, fails5b, _t5b, blind5b, _e5b = audit(td)
+        arm("a .ts line that visibly continues with no value is BLIND",
+            any(b[0] == "src/lib/zz-blind.ts" for b in blind5b))
+        arm("...and BLIND FAILS the gate (a footnote in a PASS run shipped 18 files)",
+            any(f[0] == "src/lib/zz-blind.ts" for f in fails5b))
+        with open(os.path.join(td, "src", "lib", "zz-blind.ts"), "w") as fh:
+            fh.write('console.log("  hit rate [EXIT: pnl>0] " + x.toFixed(3));\n')
+        _r6, fails6, _t6, blind6, _e6 = audit(td)
+        arm("...and PASSES once the value and the basis are on one line",
+            not any(f[0] == "src/lib/zz-blind.ts" for f in fails6) and not blind6)
+        with open(os.path.join(td, "src", "lib", "zz-blind.ts"), "w") as fh:
+            fh.write('console.log("   ranker    AUC(win)  wallet-clustered CI");\n')
+        _r7, fails7, _t7, blind7, _e7 = audit(td)
+        arm("a .ts column header prints no figure, so it is not blind",
+            not blind7 and not any(f[0] == "src/lib/zz-blind.ts" for f in fails7))
+    with tempfile.TemporaryDirectory() as td:
+        os.makedirs(os.path.join(td, "scripts"))
+        with open(os.path.join(td, "scripts", "zz-det.py"), "w") as fh:
+            fh.write('print("  AUC {:.4f} hit {:.1f}%".format(a, h))\n')
+        a1, f1, t1, b1, e1 = audit(td)
+        a2, f2, t2, b2, e2 = audit(td)
+        arm("the census is deterministic across two consecutive runs",
+            t1 == t2 and f1 == f2 and b1 == b2)
     print("SELF-TEST " + ("PASS" if ok else "FAIL"))
     return 0 if ok else 1
 
@@ -366,7 +568,7 @@ def main(argv):
     if "--self-test" in argv:
         return self_test()
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    rows, failures, (total, named, unnamed_n), blind = audit(root)
+    rows, failures, (total, named, unnamed_n), blind, explained = audit(root)
     print("LABEL-BASIS CENSUS -- every arm that PRINTS a win-rate/AUC/Brier/hit-rate line")
     print("%-54s %-42s %5s %5s %5s %-8s" % ("file", "basis", "arms", "named", "UNNAMED", "decl"))
     for rel, basis, arms, nm, un, banner, fams in rows:
@@ -383,12 +585,25 @@ def main(argv):
     print("ARM LINES %d | NAMED %d | UNNAMED %d" % (total, named, unnamed_n))
     print("POPULATION %d files = %d hand-listed + %d found by discovery (all of them GATED now)"
           % (len(rows), hand, len(rows) - hand))
+    # 2026-11-27 (Lane B): every line that carries a metric WORD and is not an arm now names the
+    # rule that excluded it. The list is printed in full, so removing a file from BLIND can never be
+    # a silent edit: either a basis token appeared, or one of these named rules applies.
+    byrule = {}
+    for rel, ln, why in explained:
+        byrule.setdefault(why, []).append("%s:L%d" % (rel, ln))
+    print("WORD LINES THAT ARE NOT ARMS %d, each with the rule that excludes it:" % len(explained))
+    for why in sorted(byrule, key=lambda w: (-len(byrule[w]), w)):
+        print("  %-34s %4d  %s" % (why[:34], len(byrule[why]), ", ".join(byrule[why])[:150]))
     if blind:
-        print("BLIND %d file(s) print a metric WORD but no arm was detected (word and value on"
-              " different physical lines): %s" % (len(blind), ", ".join(sorted(blind))))
+        print("BLIND %d statement(s) print a metric WORD and a VALUE this detector cannot join:"
+              % len(blind))
+        for rel, ln, txt in blind:
+            print("  %-46s L%-5d %s" % (rel, ln, txt[:110]))
     print("An UNNAMED arm is not by itself a wrong NUMBER -- it is a printed figure that does not")
     print("say what it measures, which is the exact class this card closed. Any UNNAMED line is FAIL.")
     print("A MISMATCH is worse than an UNNAMED: the file says one basis and computes another.")
+    print("A BLIND statement is a printed figure this detector could not attach to a basis at all;")
+    print("since 2026-11-27 it FAILS the gate instead of being a footnote in a PASS run.")
     print("RESULT: " + ("FAIL" if failures else "PASS"))
     return 1 if failures else 0
 

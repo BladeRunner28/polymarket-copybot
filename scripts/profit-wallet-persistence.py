@@ -194,6 +194,8 @@ def rank_power(ns=(9, 15, 17, 20, 30, 45), rhos=(0.4, 0.6), null_reps=2000, alt_
 
 
 def main():
+    print("[basis EXIT: hit = realizedPnl>0 on our own leg (a PnL label, NOT the market outcome); "
+          "paid = mean entryPrice; headroom = hit% - paid%] ")
     legs = load()
     fit = [l for l in legs if l["era"] == "fit"]
     live = [l for l in legs if l["era"] == "live"]

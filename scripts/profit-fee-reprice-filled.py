@@ -265,6 +265,8 @@ def main():
 
     print(f"fill-confirmed deduped legs: {len(rows)}  "
           f"markets: {len({r['marketId'] for r in rows})}")
+    print("[basis EXIT: hit = realizedPnl>0 on the filled leg; be = the breakeven entry at the "
+          "NET fee]")
 
     # --- FR.1 book ---
     a = agg(rows, OLD, NEW)

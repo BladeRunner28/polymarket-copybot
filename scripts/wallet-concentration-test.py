@@ -332,8 +332,9 @@ def decile_table(L, key, title):
     ranked = sorted({l["wallet"] for l in L}, key=val)
     q = max(1, len(ranked) // 10)
     print("\n  %s" % title)
-    print("  %-6s %-16s %5s %5s %6s %10s %9s %8s %7s %8s" %
-          ("decile", "share range", "wal", "legs", "cost$", "realized$", "mean leg$", "median$", "win%", "edge%"))
+    print("  %-6s %-16s %5s %5s %6s %10s %9s %8s %12s %8s" %
+          ("decile", "share range", "wal", "legs", "cost$", "realized$", "mean leg$", "median$",
+           "win%[EXIT]", "edge%"))
     mon = _monotone_means(L, ranked, q, val)
     for i in range(10):
         grp = ranked[i * q:(i + 1) * q] if i < 9 else ranked[i * q:]
@@ -403,6 +404,7 @@ def pct(v):
 
 
 def main():
+    print("[basis EXIT: win% = realizedPnl>0 on our leg; cost$ = dollars at risk; NOT the market outcome]")
     obs = load_observed()
     leg_rows, scans = load_legs()
     scan_by_wallet = {r[0]: r for r in scans}

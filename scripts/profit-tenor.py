@@ -455,7 +455,7 @@ def sec_near_certainty(c, legs, days):
         print(f"  {nm}: legs {len(v)} / mkts {len({l['market'] for l in v})} / "
               f"wallets {len({l['wallet'] for l in v})} / risk ${sum(l['ntl'] for l in v):.0f} / "
               f"PnL ${sum(l['pnl'] for l in v):.1f} / ROI {roi(v):+.1f}% / "
-              f"ex-top-3 {roi(s[3:]):+.1f}% / hit "
+              f"ex-top-3 {roi(s[3:]):+.1f}% / hit[EXIT: pnl>0] "
               f"{100 * sum(1 for l in v if l['pnl'] > 0) / len(v):.0f}% / px {np.mean([l['px'] for l in v]):.3f}")
         print(f"    PnL CI {fmt_ci(ci)} — a market-clustered bootstrap on a 100%-hit sample is")
         print(f"    degenerate (it prices entry spread, not outcome variance). Use the binomial:")
