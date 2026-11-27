@@ -1,0 +1,617 @@
+{
+ "basis": {
+  "cost": "simulatedPositionSize (dollars at risk)",
+  "pnl": "realizedPnl status IN (closed,resolved) TR-15 OR, isDemo=0",
+  "dedupe": "first leg per bot|wallet|market|outcome",
+  "clock": "entry vintage openedAt; era = DecisionJournal.ruleSetVersion>=68",
+  "hit": "realizedPnl>0",
+  "ci": "market-clustered bootstrap 2000 draws"
+ },
+ "populations": {
+  "all": {
+   "n": 6169,
+   "cost": 73156.01,
+   "pnl": 7227.17,
+   "roi": 9.9,
+   "hit": 51.6,
+   "paid": 48.8,
+   "headroom_pp": 2.7,
+   "markets": 4614,
+   "wallets": 246
+  },
+  "fit_pre_v68": {
+   "n": 5467,
+   "cost": 59858.59,
+   "pnl": 7383.57,
+   "roi": 12.3,
+   "hit": 55.1,
+   "paid": 51.5,
+   "headroom_pp": 3.7,
+   "markets": 4030,
+   "wallets": 230
+  },
+  "live_v68": {
+   "n": 702,
+   "cost": 13297.42,
+   "pnl": -156.4,
+   "roi": -1.2,
+   "hit": 23.8,
+   "paid": 36.9,
+   "headroom_pp": -13.1,
+   "markets": 587,
+   "wallets": 33
+  }
+ },
+ "bases": {
+  "booked_cost>0": {
+   "n": 6169,
+   "cost": 73156.01,
+   "pnl": 7227.17,
+   "roi": 9.9,
+   "hit": 51.6,
+   "paid": 48.8,
+   "headroom_pp": 2.7,
+   "markets": 4614,
+   "wallets": 246
+  },
+  "carried_filled": {
+   "n": 328,
+   "cost": 4989.62,
+   "pnl": -772.28,
+   "roi": -15.5,
+   "hit": 40.5,
+   "paid": 24.7,
+   "headroom_pp": 15.8,
+   "markets": 320,
+   "wallets": 39
+  },
+  "unfilled": {
+   "n": 705,
+   "cost": 10749.45,
+   "pnl": 2269.5,
+   "roi": 21.1,
+   "hit": 20.1,
+   "paid": 30.7,
+   "headroom_pp": -10.6,
+   "markets": 689,
+   "wallets": 42
+  },
+  "unstamped_NULL": {
+   "n": 5136,
+   "cost": 57416.94,
+   "pnl": 5729.95,
+   "roi": 10.0,
+   "hit": 56.6,
+   "paid": 54.3,
+   "headroom_pp": 2.3,
+   "markets": 3749,
+   "wallets": 231
+  }
+ },
+ "concentration": {
+  "fit_pre_v68": {
+   "wallets": 230,
+   "top5_cost_share_pct": 0.3,
+   "top5": [
+    {
+     "wallet": "0x8b8b9c56",
+     "n": 9,
+     "roi": 488.4,
+     "cost": 71.79
+    },
+    {
+     "wallet": "0x6db983ff",
+     "n": 3,
+     "roi": 373.0,
+     "cost": 28.2
+    },
+    {
+     "wallet": "0xfd144099",
+     "n": 2,
+     "roi": 251.1,
+     "cost": 35.99
+    },
+    {
+     "wallet": "0xd06c49e1",
+     "n": 1,
+     "roi": 194.1,
+     "cost": 17.99
+    },
+    {
+     "wallet": "0xc1de5ffb",
+     "n": 2,
+     "roi": 178.8,
+     "cost": 10.24
+    }
+   ]
+  },
+  "live_v68": {
+   "wallets": 33,
+   "top5_cost_share_pct": 2.9,
+   "top5": [
+    {
+     "wallet": "0x565c09cd",
+     "n": 2,
+     "roi": 551.0,
+     "cost": 120.0
+    },
+    {
+     "wallet": "0xbe23032d",
+     "n": 1,
+     "roi": 193.8,
+     "cost": 17.99
+    },
+    {
+     "wallet": "0x8c6ad9f9",
+     "n": 2,
+     "roi": 151.7,
+     "cost": 37.99
+    },
+    {
+     "wallet": "0xda3407be",
+     "n": 2,
+     "roi": 72.2,
+     "cost": 19.95
+    },
+    {
+     "wallet": "0x1f08255a",
+     "n": 13,
+     "roi": 53.3,
+     "cost": 187.21
+    }
+   ]
+  }
+ },
+ "live_wallet_headroom": [
+  {
+   "n": 13,
+   "cost": 187.21,
+   "pnl": 99.86,
+   "roi": 53.3,
+   "hit": 38.5,
+   "paid": 40.7,
+   "headroom_pp": -2.2,
+   "markets": 8,
+   "wallets": 1,
+   "wallet": "0x1f08255a13ac12875f77e70fd7a6ba6dea5ec518",
+   "status": "watch"
+  },
+  {
+   "n": 5,
+   "cost": 62.99,
+   "pnl": 24.21,
+   "roi": 38.4,
+   "hit": 80.0,
+   "paid": 64.6,
+   "headroom_pp": 15.4,
+   "markets": 3,
+   "wallets": 1,
+   "wallet": "0x713d129636144ae32c089e9ef7a8f8d191ce3efc",
+   "status": "watch"
+  },
+  {
+   "n": 45,
+   "cost": 1015.51,
+   "pnl": 176.9,
+   "roi": 17.4,
+   "hit": 24.4,
+   "paid": 22.5,
+   "headroom_pp": 1.9,
+   "markets": 31,
+   "wallets": 1,
+   "wallet": "0x80896d05a92082ac31ac4a6cd5568c8d3bbdf935",
+   "status": "track"
+  },
+  {
+   "n": 33,
+   "cost": 868.85,
+   "pnl": 136.89,
+   "roi": 15.8,
+   "hit": 69.7,
+   "paid": 75.4,
+   "headroom_pp": -5.7,
+   "markets": 20,
+   "wallets": 1,
+   "wallet": "0xf5a3504ad3a8b079974620b3aa4fcca3f7579e12",
+   "status": "track"
+  },
+  {
+   "n": 8,
+   "cost": 67.1,
+   "pnl": 6.94,
+   "roi": 10.3,
+   "hit": 50.0,
+   "paid": 58.6,
+   "headroom_pp": -8.6,
+   "markets": 7,
+   "wallets": 1,
+   "wallet": "0xc4a68d127318fd917a188c35e839a0707e374e4e",
+   "status": "watch"
+  },
+  {
+   "n": 25,
+   "cost": 388.68,
+   "pnl": 30.76,
+   "roi": 7.9,
+   "hit": 24.0,
+   "paid": 29.2,
+   "headroom_pp": -5.2,
+   "markets": 21,
+   "wallets": 1,
+   "wallet": "0xeaac36f714563e13d88db7a4f0a0898388f2d71d",
+   "status": "watch"
+  },
+  {
+   "n": 276,
+   "cost": 4571.66,
+   "pnl": 287.38,
+   "roi": 6.3,
+   "hit": 18.8,
+   "paid": 47.6,
+   "headroom_pp": -28.7,
+   "markets": 248,
+   "wallets": 1,
+   "wallet": "0x885ffdf360e5b0b6e6acb963fb3f8ba2344c8ed9",
+   "status": "track"
+  },
+  {
+   "n": 7,
+   "cost": 358.75,
+   "pnl": 15.74,
+   "roi": 4.4,
+   "hit": 28.6,
+   "paid": 18.8,
+   "headroom_pp": 9.7,
+   "markets": 5,
+   "wallets": 1,
+   "wallet": "0xede186f37ead91aa618cf8101db2bfe6b6c57dd1",
+   "status": "track"
+  },
+  {
+   "n": 6,
+   "cost": 262.99,
+   "pnl": -19.61,
+   "roi": -7.5,
+   "hit": 33.3,
+   "paid": 13.2,
+   "headroom_pp": 20.1,
+   "markets": 2,
+   "wallets": 1,
+   "wallet": "0x26165df18c4dae74bfc20b8f266f0887fedbc6aa",
+   "status": "watch"
+  },
+  {
+   "n": 6,
+   "cost": 236.0,
+   "pnl": -21.37,
+   "roi": -9.1,
+   "hit": 16.7,
+   "paid": 16.2,
+   "headroom_pp": 0.4,
+   "markets": 4,
+   "wallets": 1,
+   "wallet": "0xc3744a19f42266ce6fa2736f52eae6e178b20f3e",
+   "status": "watch"
+  },
+  {
+   "n": 106,
+   "cost": 1186.34,
+   "pnl": -131.91,
+   "roi": -11.1,
+   "hit": 23.6,
+   "paid": 42.0,
+   "headroom_pp": -18.4,
+   "markets": 95,
+   "wallets": 1,
+   "wallet": "0xd29312e2446a746bbd94408e1c475f1ec6d7d683",
+   "status": "track"
+  },
+  {
+   "n": 56,
+   "cost": 1280.25,
+   "pnl": -195.5,
+   "roi": -15.3,
+   "hit": 19.6,
+   "paid": 25.1,
+   "headroom_pp": -5.5,
+   "markets": 55,
+   "wallets": 1,
+   "wallet": "0x17dd123a0ad9675e6ed3155724a92b4632af944c",
+   "status": "watch"
+  },
+  {
+   "n": 8,
+   "cost": 178.87,
+   "pnl": -47.92,
+   "roi": -26.8,
+   "hit": 12.5,
+   "paid": 19.9,
+   "headroom_pp": -7.4,
+   "markets": 7,
+   "wallets": 1,
+   "wallet": "0x14767de7346a328d71f8fd4aed260d1cd67dec90",
+   "status": "watch"
+  },
+  {
+   "n": 10,
+   "cost": 274.34,
+   "pnl": -95.81,
+   "roi": -34.9,
+   "hit": 10.0,
+   "paid": 11.9,
+   "headroom_pp": -1.9,
+   "markets": 9,
+   "wallets": 1,
+   "wallet": "0xe36756aa4756928b9f501dc1acf1dccb09752104",
+   "status": "track"
+  },
+  {
+   "n": 18,
+   "cost": 397.97,
+   "pnl": -152.66,
+   "roi": -38.4,
+   "hit": 16.7,
+   "paid": 21.7,
+   "headroom_pp": -5.1,
+   "markets": 10,
+   "wallets": 1,
+   "wallet": "0xe156c859fc8a3aace3f2f981459d8f989eea134b",
+   "status": "track"
+  }
+ ],
+ "rank_persistence": {
+  "wallets_with_both": 9,
+  "fit_min_legs": 8,
+  "live_min_legs": 3,
+  "spearman_rho": -0.25,
+  "perm_p_ge": 0.753,
+  "perm_ci95": [
+   -0.667,
+   0.667
+  ],
+  "n_pairs": 9,
+  "spearman_headroom_pp": -0.333,
+  "thirds": {
+   "top third (fit)": {
+    "n": 407,
+    "cost": 6146.68,
+    "pnl": 186.23,
+    "roi": 3.0,
+    "hit": 20.4,
+    "paid": 45.3,
+    "headroom_pp": -24.9,
+    "markets": 361,
+    "wallets": 3
+   },
+   "bottom third (fit)": {
+    "n": 96,
+    "cost": 2282.34,
+    "pnl": 161.13,
+    "roi": 7.1,
+    "hit": 38.5,
+    "paid": 42.5,
+    "headroom_pp": -4.0,
+    "markets": 61,
+    "wallets": 3
+   }
+  },
+  "power": {
+   "9": {
+    "n": 9,
+    "crit95": 0.533,
+    "power": {
+     "rho=0.4": 0.36,
+     "rho=0.6": 0.57
+    }
+   },
+   "15": {
+    "n": 15,
+    "crit95": 0.446,
+    "power": {
+     "rho=0.4": 0.38,
+     "rho=0.6": 0.74
+    }
+   },
+   "17": {
+    "n": 17,
+    "crit95": 0.417,
+    "power": {
+     "rho=0.4": 0.45,
+     "rho=0.6": 0.78
+    }
+   },
+   "20": {
+    "n": 20,
+    "crit95": 0.362,
+    "power": {
+     "rho=0.4": 0.59,
+     "rho=0.6": 0.85
+    }
+   },
+   "30": {
+    "n": 30,
+    "crit95": 0.301,
+    "power": {
+     "rho=0.4": 0.71,
+     "rho=0.6": 0.97
+    }
+   },
+   "45": {
+    "n": 45,
+    "crit95": 0.257,
+    "power": {
+     "rho=0.4": 0.78,
+     "rho=0.6": 0.99
+    }
+   }
+  },
+  "wallets_needed_80pct_at_rho06": 20
+ },
+ "selection": {
+  "top5_by_fit_roi": {
+   "n": 106,
+   "cost": 1186.34,
+   "pnl": -131.91,
+   "roi": -11.1,
+   "hit": 23.6,
+   "paid": 42.0,
+   "headroom_pp": -18.4,
+   "markets": 95,
+   "wallets": 1
+  },
+  "top10_by_fit_roi": {
+   "n": 108,
+   "cost": 1206.29,
+   "pnl": -117.51,
+   "roi": -9.7,
+   "hit": 24.1,
+   "paid": 41.8,
+   "headroom_pp": -17.7,
+   "markets": 97,
+   "wallets": 2
+  },
+  "top25_by_fit_roi": {
+   "n": 386,
+   "cost": 5895.95,
+   "pnl": 164.63,
+   "roi": 2.8,
+   "hit": 20.5,
+   "paid": 45.9,
+   "headroom_pp": -25.4,
+   "markets": 347,
+   "wallets": 4
+  },
+  "top10_live_hindsight_n10": {
+   "n": 623,
+   "cost": 11159.23,
+   "pnl": -436.75,
+   "roi": -3.9,
+   "hit": 23.0,
+   "paid": 39.4,
+   "headroom_pp": -16.5,
+   "markets": 533,
+   "wallets": 10
+  }
+ },
+ "status_split": {
+  "track": {
+   "n": 508,
+   "cost": 8939.83,
+   "pnl": 95.15,
+   "roi": 1.1,
+   "hit": 23.2,
+   "paid": 42.6,
+   "headroom_pp": -19.4,
+   "markets": 425,
+   "wallets": 12
+  },
+  "watch": {
+   "n": 194,
+   "cost": 4357.59,
+   "pnl": -251.55,
+   "roi": -5.8,
+   "hit": 25.3,
+   "paid": 25.2,
+   "headroom_pp": 0.1,
+   "markets": 168,
+   "wallets": 21
+  },
+  "ignore": {
+   "n": 0,
+   "cost": 0.0,
+   "pnl": 0.0,
+   "roi": null,
+   "hit": null,
+   "paid": null,
+   "headroom_pp": null,
+   "markets": 0,
+   "wallets": 0
+  }
+ },
+ "status_lane_split": {
+  "BANKROLL_200|track": {
+   "n": 389,
+   "cost": 7629.55,
+   "pnl": 61.53,
+   "roi": 0.8,
+   "hit": 15.2,
+   "paid": 41.1,
+   "headroom_pp": -25.9,
+   "markets": 384,
+   "wallets": 12
+  },
+  "BANKROLL_200|watch": {
+   "n": 153,
+   "cost": 3812.59,
+   "pnl": -395.76,
+   "roi": -10.4,
+   "hit": 18.3,
+   "paid": 22.8,
+   "headroom_pp": -4.5,
+   "markets": 151,
+   "wallets": 19
+  },
+  "STANDARD|track": {
+   "n": 119,
+   "cost": 1310.28,
+   "pnl": 33.62,
+   "roi": 2.6,
+   "hit": 49.6,
+   "paid": 51.7,
+   "headroom_pp": -2.1,
+   "markets": 118,
+   "wallets": 9
+  },
+  "STANDARD|watch": {
+   "n": 41,
+   "cost": 545.0,
+   "pnl": 144.21,
+   "roi": 26.5,
+   "hit": 51.2,
+   "paid": 41.5,
+   "headroom_pp": 9.7,
+   "markets": 39,
+   "wallets": 15
+  }
+ },
+ "score_forward": {
+  "wallets": 17,
+  "spearman_score_vs_live_roi": -0.045,
+  "perm_p_ge": 0.565
+ },
+ "live_clip": {
+  "<$30": {
+   "n": 645,
+   "cost": 7897.42,
+   "pnl": 609.79,
+   "roi": 7.7,
+   "hit": 24.3,
+   "paid": 40.1,
+   "headroom_pp": -15.8,
+   "markets": 569,
+   "wallets": 33
+  },
+  "$30-60": {
+   "n": 6,
+   "cost": 300.0,
+   "pnl": 225.21,
+   "roi": 75.1,
+   "hit": 66.7,
+   "paid": 50.4,
+   "headroom_pp": 16.3,
+   "markets": 6,
+   "wallets": 4
+  },
+  ">=$60": {
+   "n": 51,
+   "cost": 5100.0,
+   "pnl": -991.4,
+   "roi": -19.4,
+   "hit": 11.8,
+   "paid": 31.1,
+   "headroom_pp": -19.4,
+   "markets": 51,
+   "wallets": 17
+  }
+ }
+}

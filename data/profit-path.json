@@ -1,22 +1,22 @@
 {
  "basis": "(stated because every figure depends on it):\n  cost   = PaperTrade.simulatedPositionSize  (DOLLARS AT RISK, not notional)\n  pnl    = realizedPnl, status IN ('closed','resolved')  (TR-15 OR)\n  dedupe = first leg per (botId, walletAddress, marketId, outcome)\n  label  = realizedPnl > 0  (a PnL label, NOT the market outcome)\n  clock  = entry vintage (openedAt), never settlement date\n  CI     = market-clustered bootstrap, because legs on one market are one bet",
- "n_all": 6153,
- "n_filled": 320,
+ "n_all": 6169,
+ "n_filled": 328,
  "filled_by_category": [
   {
    "cell": "cfb",
-   "n": 19,
-   "markets": 19,
+   "n": 20,
+   "markets": 20,
    "wallets": 5,
-   "cost": 119.66,
-   "pnl": 154.91,
-   "roi_pct": 129.5,
-   "win_pct": 52.6,
-   "avg_win": 21.24,
+   "cost": 129.58,
+   "pnl": 160.22,
+   "roi_pct": 123.6,
+   "win_pct": 55.0,
+   "avg_win": 19.79,
    "avg_loss": -6.39,
-   "breakeven_win_pct": 23.1,
-   "ex_top3_pnl": -44.63,
-   "ex_top3_roi_pct": -37.3
+   "breakeven_win_pct": 24.4,
+   "ex_top3_pnl": -41.17,
+   "ex_top3_roi_pct": -31.8
   },
   {
    "cell": "nhl",
@@ -140,35 +140,50 @@
   },
   {
    "cell": "dota2",
-   "n": 67,
-   "markets": 63,
-   "wallets": 10,
-   "cost": 1293.4,
-   "pnl": -736.24,
-   "roi_pct": -56.9,
-   "win_pct": 34.3,
+   "n": 70,
+   "markets": 66,
+   "wallets": 11,
+   "cost": 1347.39,
+   "pnl": -790.21,
+   "roi_pct": -58.6,
+   "win_pct": 32.9,
    "avg_win": 16.22,
-   "avg_loss": -25.21,
-   "breakeven_win_pct": 60.9,
-   "ex_top3_pnl": -849.7,
-   "ex_top3_roi_pct": -65.7
+   "avg_loss": -24.75,
+   "breakeven_win_pct": 60.4,
+   "ex_top3_pnl": -903.67,
+   "ex_top3_roi_pct": -67.1
   }
  ],
  "filled_by_band": [
   {
+   "cell": "0.10-0.20",
+   "n": 36,
+   "markets": 36,
+   "wallets": 14,
+   "cost": 2047.97,
+   "pnl": 69.43,
+   "roi_pct": 3.4,
+   "win_pct": 16.7,
+   "avg_win": 260.76,
+   "avg_loss": -49.84,
+   "breakeven_win_pct": 16.0,
+   "ex_top3_pnl": -1165.57,
+   "ex_top3_roi_pct": -56.9
+  },
+  {
    "cell": "0.60-0.80",
-   "n": 64,
-   "markets": 64,
+   "n": 67,
+   "markets": 67,
    "wallets": 15,
-   "cost": 454.17,
-   "pnl": 28.34,
-   "roi_pct": 6.2,
-   "win_pct": 70.3,
-   "avg_win": 3.22,
-   "avg_loss": -6.13,
-   "breakeven_win_pct": 65.6,
-   "ex_top3_pnl": 9.28,
-   "ex_top3_roi_pct": 2.0
+   "cost": 483.95,
+   "pnl": 27.47,
+   "roi_pct": 5.7,
+   "win_pct": 70.1,
+   "avg_win": 3.27,
+   "avg_loss": -6.32,
+   "breakeven_win_pct": 65.9,
+   "ex_top3_pnl": 8.41,
+   "ex_top3_roi_pct": 1.7
   },
   {
    "cell": "0.40-0.60",
@@ -186,34 +201,19 @@
    "ex_top3_roi_pct": 13.6
   },
   {
-   "cell": "0.10-0.20",
-   "n": 35,
-   "markets": 35,
-   "wallets": 14,
-   "cost": 2027.97,
-   "pnl": -19.67,
-   "roi_pct": -1.0,
-   "win_pct": 14.3,
-   "avg_win": 295.09,
-   "avg_loss": -49.84,
-   "breakeven_win_pct": 14.4,
-   "ex_top3_pnl": -1254.67,
-   "ex_top3_roi_pct": -61.9
-  },
-  {
    "cell": "0.20-0.40",
-   "n": 128,
-   "markets": 124,
-   "wallets": 26,
-   "cost": 1471.2,
-   "pnl": -47.9,
-   "roi_pct": -3.3,
-   "win_pct": 28.1,
-   "avg_win": 26.45,
-   "avg_loss": -10.87,
-   "breakeven_win_pct": 29.1,
-   "ex_top3_pnl": -194.12,
-   "ex_top3_roi_pct": -13.2
+   "n": 132,
+   "markets": 128,
+   "wallets": 27,
+   "cost": 1535.16,
+   "pnl": -81.66,
+   "roi_pct": -5.3,
+   "win_pct": 28.0,
+   "avg_win": 26.28,
+   "avg_loss": -11.1,
+   "breakeven_win_pct": 29.7,
+   "ex_top3_pnl": -227.88,
+   "ex_top3_roi_pct": -14.8
   },
   {
    "cell": "0.00-0.10",
@@ -234,33 +234,33 @@
  "filled_by_clip": [
   {
    "cell": "$18-39",
-   "n": 22,
-   "markets": 22,
+   "n": 23,
+   "markets": 23,
    "wallets": 7,
-   "cost": 440.0,
-   "pnl": 44.41,
-   "roi_pct": 10.1,
-   "win_pct": 13.6,
-   "avg_win": 136.98,
+   "cost": 460.0,
+   "pnl": 133.51,
+   "roi_pct": 29.0,
+   "win_pct": 17.4,
+   "avg_win": 125.01,
    "avg_loss": -19.29,
-   "breakeven_win_pct": 12.3,
-   "ex_top3_pnl": -366.54,
-   "ex_top3_roi_pct": -83.3
+   "breakeven_win_pct": 13.4,
+   "ex_top3_pnl": -277.44,
+   "ex_top3_roi_pct": -60.3
   },
   {
    "cell": "<$18",
-   "n": 273,
-   "markets": 265,
-   "wallets": 35,
-   "cost": 2085.89,
-   "pnl": -50.26,
-   "roi_pct": -2.4,
+   "n": 280,
+   "markets": 272,
+   "wallets": 36,
+   "cost": 2179.62,
+   "pnl": -84.89,
+   "roi_pct": -3.9,
    "win_pct": 45.4,
-   "avg_win": 9.3,
-   "avg_loss": -8.08,
-   "breakeven_win_pct": 46.5,
-   "ex_top3_pnl": -196.48,
-   "ex_top3_roi_pct": -9.4
+   "avg_win": 9.31,
+   "avg_loss": -8.28,
+   "breakeven_win_pct": 47.1,
+   "ex_top3_pnl": -231.11,
+   "ex_top3_roi_pct": -10.6
   },
   {
    "cell": "$100",
@@ -281,17 +281,17 @@
  "all_by_category": [
   {
    "cell": "will",
-   "n": 1574,
-   "markets": 986,
+   "n": 1575,
+   "markets": 987,
    "wallets": 79,
-   "cost": 20222.1,
-   "pnl": 5368.81,
-   "roi_pct": 26.5,
+   "cost": 20231.1,
+   "pnl": 5372.4,
+   "roi_pct": 26.6,
    "win_pct": 61.5,
-   "avg_win": 11.87,
+   "avg_win": 11.86,
    "avg_loss": -10.09,
    "breakeven_win_pct": 46.0,
-   "ex_top3_pnl": 2542.24,
+   "ex_top3_pnl": 2545.83,
    "ex_top3_roi_pct": 12.6
   },
   {
@@ -386,18 +386,18 @@
   },
   {
    "cell": "cbb",
-   "n": 46,
-   "markets": 41,
+   "n": 49,
+   "markets": 44,
    "wallets": 1,
-   "cost": 890.27,
-   "pnl": 225.33,
-   "roi_pct": 25.3,
-   "win_pct": 8.7,
+   "cost": 930.17,
+   "pnl": 215.41,
+   "roi_pct": 23.2,
+   "win_pct": 8.2,
    "avg_win": 73.34,
-   "avg_loss": -1.62,
-   "breakeven_win_pct": 2.2,
-   "ex_top3_pnl": -67.49,
-   "ex_top3_roi_pct": -7.6
+   "avg_loss": -1.73,
+   "breakeven_win_pct": 2.3,
+   "ex_top3_pnl": -77.41,
+   "ex_top3_roi_pct": -8.3
   },
   {
    "cell": "mlb",
@@ -416,18 +416,18 @@
   },
   {
    "cell": "col",
-   "n": 24,
-   "markets": 20,
+   "n": 27,
+   "markets": 22,
    "wallets": 7,
-   "cost": 286.8,
-   "pnl": 165.18,
-   "roi_pct": 57.6,
-   "win_pct": 58.3,
+   "cost": 323.72,
+   "pnl": 156.18,
+   "roi_pct": 48.2,
+   "win_pct": 51.9,
    "avg_win": 18.66,
-   "avg_loss": -9.6,
-   "breakeven_win_pct": 34.0,
-   "ex_top3_pnl": -1.33,
-   "ex_top3_roi_pct": -0.5
+   "avg_loss": -8.08,
+   "breakeven_win_pct": 30.2,
+   "ex_top3_pnl": -10.33,
+   "ex_top3_roi_pct": -3.2
   },
   {
    "cell": "lec",
@@ -550,6 +550,21 @@
    "ex_top3_roi_pct": -5.9
   },
   {
+   "cell": "uel",
+   "n": 17,
+   "markets": 14,
+   "wallets": 7,
+   "cost": 144.62,
+   "pnl": 44.85,
+   "roi_pct": 31.0,
+   "win_pct": 41.2,
+   "avg_win": 18.24,
+   "avg_loss": -8.29,
+   "breakeven_win_pct": 31.2,
+   "ex_top3_pnl": -75.12,
+   "ex_top3_roi_pct": -51.9
+  },
+  {
    "cell": "itsb",
    "n": 17,
    "markets": 16,
@@ -655,6 +670,21 @@
    "ex_top3_roi_pct": -12.7
   },
   {
+   "cell": "bra",
+   "n": 34,
+   "markets": 31,
+   "wallets": 6,
+   "cost": 344.6,
+   "pnl": -19.33,
+   "roi_pct": -5.6,
+   "win_pct": 44.1,
+   "avg_win": 6.35,
+   "avg_loss": -6.03,
+   "breakeven_win_pct": 48.7,
+   "ex_top3_pnl": -73.96,
+   "ex_top3_roi_pct": -21.5
+  },
+  {
    "cell": "crichundred",
    "n": 15,
    "markets": 12,
@@ -668,21 +698,6 @@
    "breakeven_win_pct": 53.9,
    "ex_top3_pnl": -55.9,
    "ex_top3_roi_pct": -35.2
-  },
-  {
-   "cell": "bra",
-   "n": 33,
-   "markets": 30,
-   "wallets": 6,
-   "cost": 334.68,
-   "pnl": -23.07,
-   "roi_pct": -6.9,
-   "win_pct": 42.4,
-   "avg_win": 6.54,
-   "avg_loss": -6.03,
-   "breakeven_win_pct": 48.0,
-   "ex_top3_pnl": -77.7,
-   "ex_top3_roi_pct": -23.2
   },
   {
    "cell": "den",
@@ -850,21 +865,6 @@
    "ex_top3_roi_pct": -65.4
   },
   {
-   "cell": "uel",
-   "n": 14,
-   "markets": 11,
-   "wallets": 7,
-   "cost": 104.67,
-   "pnl": -64.46,
-   "roi_pct": -61.6,
-   "win_pct": 35.7,
-   "avg_win": 3.68,
-   "avg_loss": -9.21,
-   "breakeven_win_pct": 71.4,
-   "ex_top3_pnl": -80.89,
-   "ex_top3_roi_pct": -77.3
-  },
-  {
    "cell": "arg",
    "n": 21,
    "markets": 20,
@@ -956,18 +956,18 @@
   },
   {
    "cell": "cfb",
-   "n": 141,
-   "markets": 129,
+   "n": 142,
+   "markets": 130,
    "wallets": 12,
-   "cost": 1676.58,
-   "pnl": -140.37,
-   "roi_pct": -8.4,
-   "win_pct": 40.4,
-   "avg_win": 11.63,
+   "cost": 1686.51,
+   "pnl": -135.06,
+   "roi_pct": -8.0,
+   "win_pct": 40.8,
+   "avg_win": 11.52,
    "avg_loss": -9.57,
-   "breakeven_win_pct": 45.1,
-   "ex_top3_pnl": -552.39,
-   "ex_top3_roi_pct": -32.9
+   "breakeven_win_pct": 45.4,
+   "ex_top3_pnl": -547.08,
+   "ex_top3_roi_pct": -32.4
   },
   {
    "cell": "cs2",
@@ -986,18 +986,18 @@
   },
   {
    "cell": "dota2",
-   "n": 224,
-   "markets": 165,
-   "wallets": 32,
-   "cost": 3068.72,
-   "pnl": -295.39,
-   "roi_pct": -9.6,
-   "win_pct": 50.0,
+   "n": 227,
+   "markets": 168,
+   "wallets": 33,
+   "cost": 3122.71,
+   "pnl": -349.36,
+   "roi_pct": -11.2,
+   "win_pct": 49.3,
    "avg_win": 13.28,
-   "avg_loss": -15.91,
-   "breakeven_win_pct": 54.5,
-   "ex_top3_pnl": -423.43,
-   "ex_top3_roi_pct": -13.8
+   "avg_loss": -15.97,
+   "breakeven_win_pct": 54.6,
+   "ex_top3_pnl": -477.4,
+   "ex_top3_roi_pct": -15.3
   },
   {
    "cell": "lol",
@@ -1033,80 +1033,80 @@
  "all_by_vertical": [
   {
    "cell": "question",
-   "n": 2942,
-   "markets": 2133,
+   "n": 2943,
+   "markets": 2134,
    "wallets": 80,
-   "cost": 35414.07,
-   "pnl": 6212.18,
+   "cost": 35423.07,
+   "pnl": 6215.77,
    "roi_pct": 17.5,
    "win_pct": 61.7,
    "avg_win": 9.86,
    "avg_loss": -10.36,
    "breakeven_win_pct": 51.2,
-   "ex_top3_pnl": 2884.14,
-   "ex_top3_roi_pct": 8.1
+   "ex_top3_pnl": 2887.73,
+   "ex_top3_roi_pct": 8.2
   },
   {
    "cell": "sports",
-   "n": 1826,
-   "markets": 1416,
+   "n": 1837,
+   "markets": 1426,
    "wallets": 125,
-   "cost": 21220.86,
-   "pnl": 2611.47,
-   "roi_pct": 12.3,
+   "cost": 21357.47,
+   "pnl": 2710.91,
+   "roi_pct": 12.7,
    "win_pct": 42.8,
-   "avg_win": 13.61,
-   "avg_loss": -7.69,
-   "breakeven_win_pct": 36.1,
-   "ex_top3_pnl": 957.29,
-   "ex_top3_roi_pct": 4.5
+   "avg_win": 13.69,
+   "avg_loss": -7.66,
+   "breakeven_win_pct": 35.9,
+   "ex_top3_pnl": 1056.73,
+   "ex_top3_roi_pct": 4.9
   },
   {
    "cell": "other",
-   "n": 561,
-   "markets": 470,
+   "n": 562,
+   "markets": 471,
    "wallets": 68,
-   "cost": 6958.98,
+   "cost": 6968.91,
    "pnl": -814.16,
    "roi_pct": -11.7,
    "win_pct": 33.5,
    "avg_win": 12.06,
-   "avg_loss": -8.26,
-   "breakeven_win_pct": 40.7,
+   "avg_loss": -8.24,
+   "breakeven_win_pct": 40.6,
    "ex_top3_pnl": -1238.7,
    "ex_top3_roi_pct": -17.8
   },
   {
    "cell": "esports",
-   "n": 824,
-   "markets": 580,
-   "wallets": 87,
-   "cost": 9352.58,
-   "pnl": -831.38,
-   "roi_pct": -8.9,
-   "win_pct": 47.7,
+   "n": 827,
+   "markets": 583,
+   "wallets": 88,
+   "cost": 9406.56,
+   "pnl": -885.35,
+   "roi_pct": -9.4,
+   "win_pct": 47.5,
    "avg_win": 11.0,
-   "avg_loss": -11.96,
-   "breakeven_win_pct": 52.1,
-   "ex_top3_pnl": -970.26,
-   "ex_top3_roi_pct": -10.4
+   "avg_loss": -12.0,
+   "breakeven_win_pct": 52.2,
+   "ex_top3_pnl": -1024.23,
+   "ex_top3_roi_pct": -10.9
   }
  ],
  "filled_by_vertical": [
   {
    "cell": "sports",
-   "n": 123,
-   "markets": 119,
+   "n": 128,
+   "markets": 124,
    "wallets": 16,
-   "cost": 1215.76,
-   "pnl": 1071.03,
-   "roi_pct": 88.1,
-   "win_pct": 48.8,
-   "avg_win": 28.59,
+   "cost": 1275.5,
+   "pnl": 1179.47,
+   "roi_pct": 92.5,
+   "win_pct": 50.0,
+   "avg_win": 28.65,
    "avg_loss": -10.23,
-   "breakeven_win_pct": 26.4,
-   "ex_top3_pnl": -163.97,
-   "ex_top3_roi_pct": -13.5
+   "breakeven_win_pct": 26.3,
+   "ex_top3_pnl": -55.53,
+   "ex_top3_roi_pct": -4.4
   },
   {
    "cell": "other",
@@ -1124,21 +1124,6 @@
    "ex_top3_roi_pct": -58.2
   },
   {
-   "cell": "esports",
-   "n": 67,
-   "markets": 63,
-   "wallets": 10,
-   "cost": 1293.4,
-   "pnl": -736.24,
-   "roi_pct": -56.9,
-   "win_pct": 34.3,
-   "avg_win": 16.22,
-   "avg_loss": -25.21,
-   "breakeven_win_pct": 60.9,
-   "ex_top3_pnl": -849.7,
-   "ex_top3_roi_pct": -65.7
-  },
-  {
    "cell": "question",
    "n": 55,
    "markets": 55,
@@ -1152,6 +1137,21 @@
    "breakeven_win_pct": 51.2,
    "ex_top3_pnl": -986.88,
    "ex_top3_roi_pct": -64.1
+  },
+  {
+   "cell": "esports",
+   "n": 70,
+   "markets": 66,
+   "wallets": 11,
+   "cost": 1347.39,
+   "pnl": -790.21,
+   "roi_pct": -58.6,
+   "win_pct": 32.9,
+   "avg_win": 16.22,
+   "avg_loss": -24.75,
+   "breakeven_win_pct": 60.4,
+   "ex_top3_pnl": -903.67,
+   "ex_top3_roi_pct": -67.1
   }
  ],
  "filled_by_band_ci": [
@@ -1176,40 +1176,40 @@
   },
   {
    "band": "0.10-0.20",
-   "n": 35,
-   "markets": 35,
+   "n": 36,
+   "markets": 36,
    "wallets": 14,
-   "cost": 2027.97,
-   "pnl": -19.67,
-   "roi_pct": -1.0,
-   "win_pct": 14.3,
-   "avg_win": 295.09,
+   "cost": 2047.97,
+   "pnl": 69.43,
+   "roi_pct": 3.4,
+   "win_pct": 16.7,
+   "avg_win": 260.76,
    "avg_loss": -49.84,
-   "breakeven_win_pct": 14.4,
-   "ex_top3_pnl": -1254.67,
-   "ex_top3_roi_pct": -61.9,
+   "breakeven_win_pct": 16.0,
+   "ex_top3_pnl": -1165.57,
+   "ex_top3_roi_pct": -56.9,
    "ci95": [
-    -73.6,
-    94.8
+    -69.4,
+    102.9
    ]
   },
   {
    "band": "0.20-0.40",
-   "n": 128,
-   "markets": 124,
-   "wallets": 26,
-   "cost": 1471.2,
-   "pnl": -47.9,
-   "roi_pct": -3.3,
-   "win_pct": 28.1,
-   "avg_win": 26.45,
-   "avg_loss": -10.87,
-   "breakeven_win_pct": 29.1,
-   "ex_top3_pnl": -194.12,
-   "ex_top3_roi_pct": -13.2,
+   "n": 132,
+   "markets": 128,
+   "wallets": 27,
+   "cost": 1535.16,
+   "pnl": -81.66,
+   "roi_pct": -5.3,
+   "win_pct": 28.0,
+   "avg_win": 26.28,
+   "avg_loss": -11.1,
+   "breakeven_win_pct": 29.7,
+   "ex_top3_pnl": -227.88,
+   "ex_top3_roi_pct": -14.8,
    "ci95": [
-    -31.6,
-    27.5
+    -32.4,
+    22.8
    ]
   },
   {
@@ -1233,21 +1233,21 @@
   },
   {
    "band": "0.60-0.80",
-   "n": 64,
-   "markets": 64,
+   "n": 67,
+   "markets": 67,
    "wallets": 15,
-   "cost": 454.17,
-   "pnl": 28.34,
-   "roi_pct": 6.2,
-   "win_pct": 70.3,
-   "avg_win": 3.22,
-   "avg_loss": -6.13,
-   "breakeven_win_pct": 65.6,
-   "ex_top3_pnl": 9.28,
-   "ex_top3_roi_pct": 2.0,
+   "cost": 483.95,
+   "pnl": 27.47,
+   "roi_pct": 5.7,
+   "win_pct": 70.1,
+   "avg_win": 3.27,
+   "avg_loss": -6.32,
+   "breakeven_win_pct": 65.9,
+   "ex_top3_pnl": 8.41,
+   "ex_top3_roi_pct": 1.7,
    "ci95": [
-    -12.1,
-    25.0
+    -12.2,
+    22.2
    ]
   }
  ],
@@ -1300,23 +1300,23 @@
   {
    "vertical": "question",
    "era": "post",
-   "n": 1074,
-   "markets": 846,
+   "n": 1075,
+   "markets": 847,
    "wallets": 34,
-   "cost": 16855.91,
-   "pnl": 4739.06,
+   "cost": 16864.91,
+   "pnl": 4742.65,
    "roi_pct": 28.1,
    "win_pct": 46.1,
-   "avg_win": 24.41,
+   "avg_win": 24.37,
    "avg_loss": -12.68,
    "breakeven_win_pct": 34.2,
-   "ex_top3_pnl": 1411.02,
+   "ex_top3_pnl": 1414.61,
    "ex_top3_roi_pct": 8.4,
    "adjudicated": 117,
    "adj_pct": 10.9,
-   "mapped_legs": 377,
-   "mapped_pct": 35.1,
-   "mapped_pnl": 3099.0
+   "mapped_legs": 378,
+   "mapped_pct": 35.2,
+   "mapped_pnl": 3102.0
   },
   {
    "vertical": "sports",
@@ -1342,23 +1342,23 @@
   {
    "vertical": "sports",
    "era": "post",
-   "n": 1002,
-   "markets": 841,
+   "n": 1013,
+   "markets": 851,
    "wallets": 55,
-   "cost": 12691.47,
-   "pnl": 2442.92,
-   "roi_pct": 19.2,
+   "cost": 12828.09,
+   "pnl": 2542.36,
+   "roi_pct": 19.8,
    "win_pct": 38.0,
-   "avg_win": 18.69,
-   "avg_loss": -7.53,
-   "breakeven_win_pct": 28.7,
-   "ex_top3_pnl": 788.74,
-   "ex_top3_roi_pct": 6.2,
-   "adjudicated": 561,
-   "adj_pct": 56.0,
-   "mapped_legs": 866,
-   "mapped_pct": 86.4,
-   "mapped_pnl": 2607.0
+   "avg_win": 18.8,
+   "avg_loss": -7.48,
+   "breakeven_win_pct": 28.5,
+   "ex_top3_pnl": 888.18,
+   "ex_top3_roi_pct": 6.9,
+   "adjudicated": 571,
+   "adj_pct": 56.4,
+   "mapped_legs": 877,
+   "mapped_pct": 86.6,
+   "mapped_pnl": 2706.0
   },
   {
    "vertical": "esports",
@@ -1384,23 +1384,23 @@
   {
    "vertical": "esports",
    "era": "post",
-   "n": 130,
-   "markets": 117,
-   "wallets": 22,
-   "cost": 2266.72,
-   "pnl": -593.57,
-   "roi_pct": -26.2,
-   "win_pct": 36.2,
+   "n": 133,
+   "markets": 120,
+   "wallets": 23,
+   "cost": 2320.7,
+   "pnl": -647.54,
+   "roi_pct": -27.9,
+   "win_pct": 35.3,
    "avg_win": 20.7,
-   "avg_loss": -18.87,
+   "avg_loss": -18.84,
    "breakeven_win_pct": 47.7,
-   "ex_top3_pnl": -727.95,
-   "ex_top3_roi_pct": -32.1,
-   "adjudicated": 94,
-   "adj_pct": 72.3,
-   "mapped_legs": 123,
-   "mapped_pct": 94.6,
-   "mapped_pnl": -544.0
+   "ex_top3_pnl": -781.92,
+   "ex_top3_roi_pct": -33.7,
+   "adjudicated": 97,
+   "adj_pct": 72.9,
+   "mapped_legs": 126,
+   "mapped_pct": 94.7,
+   "mapped_pnl": -598.0
   },
   {
    "vertical": "other",
@@ -1426,22 +1426,22 @@
   {
    "vertical": "other",
    "era": "post",
-   "n": 370,
-   "markets": 320,
+   "n": 371,
+   "markets": 321,
    "wallets": 29,
-   "cost": 5030.02,
+   "cost": 5039.94,
    "pnl": -864.0,
-   "roi_pct": -17.2,
-   "win_pct": 27.3,
+   "roi_pct": -17.1,
+   "win_pct": 27.2,
    "avg_win": 12.17,
-   "avg_loss": -7.78,
-   "breakeven_win_pct": 39.0,
+   "avg_loss": -7.75,
+   "breakeven_win_pct": 38.9,
    "ex_top3_pnl": -1136.98,
    "ex_top3_roi_pct": -22.6,
-   "adjudicated": 247,
+   "adjudicated": 248,
    "adj_pct": 66.8,
-   "mapped_legs": 322,
-   "mapped_pct": 87.0,
+   "mapped_legs": 323,
+   "mapped_pct": 87.1,
    "mapped_pnl": -727.0
   }
  ],
@@ -1467,17 +1467,17 @@
   {
    "era": "oct+",
    "fillStatus": "filled",
-   "n": 285,
-   "cost": 4610.3,
-   "pnl": -762.31,
-   "late_n": 169,
-   "late_pnl": 2.85
+   "n": 293,
+   "cost": 4724.03,
+   "pnl": -707.84,
+   "late_n": 170,
+   "late_pnl": -15.14
   },
   {
    "era": "oct+",
    "fillStatus": "unfilled",
-   "n": 635,
-   "cost": 10059.23,
+   "n": 641,
+   "cost": 10137.02,
    "pnl": 1418.08,
    "late_n": 312,
    "late_pnl": 1418.08
@@ -1486,14 +1486,14 @@
  "coverage_by_lane": [
   {
    "botId": "BANKROLL_200",
-   "n": 3073,
-   "adj": 1026,
-   "filled": 323,
-   "coverage_pct": 33.4
+   "n": 3087,
+   "adj": 1040,
+   "filled": 331,
+   "coverage_pct": 33.7
   },
   {
    "botId": "STANDARD",
-   "n": 10065,
+   "n": 10067,
    "adj": 0,
    "filled": null,
    "coverage_pct": 0.0
@@ -1502,9 +1502,27 @@
  "coverage_recent_by_week": [
   {
    "botId": "BANKROLL_200",
-   "week": "2026-11-26",
-   "n": 9,
+   "week": "2026-11-27",
+   "n": 11,
    "coverage_pct": 100.0
+  },
+  {
+   "botId": "STANDARD",
+   "week": "2026-11-27",
+   "n": 4,
+   "coverage_pct": 0.0
+  },
+  {
+   "botId": "BANKROLL_200",
+   "week": "2026-11-26",
+   "n": 15,
+   "coverage_pct": 100.0
+  },
+  {
+   "botId": "STANDARD",
+   "week": "2026-11-26",
+   "n": 1,
+   "coverage_pct": 0.0
   },
   {
    "botId": "BANKROLL_200",
@@ -1631,18 +1649,6 @@
    "week": "2026-11-15",
    "n": 6,
    "coverage_pct": 0.0
-  },
-  {
-   "botId": "BANKROLL_200",
-   "week": "2026-11-11",
-   "n": 8,
-   "coverage_pct": 100.0
-  },
-  {
-   "botId": "STANDARD",
-   "week": "2026-11-11",
-   "n": 1,
-   "coverage_pct": 0.0
   }
  ],
  "filled_by_hold": [
@@ -1663,55 +1669,55 @@
   },
   {
    "cell": "<1d",
-   "n": 246,
-   "markets": 239,
-   "wallets": 31,
-   "cost": 3769.33,
-   "pnl": -543.26,
-   "roi_pct": -14.4,
-   "win_pct": 41.9,
-   "avg_win": 23.04,
-   "avg_loss": -20.4,
-   "breakeven_win_pct": 47.0,
-   "ex_top3_pnl": -1778.26,
-   "ex_top3_roi_pct": -47.2
+   "n": 254,
+   "markets": 247,
+   "wallets": 32,
+   "cost": 3883.06,
+   "pnl": -488.79,
+   "roi_pct": -12.6,
+   "win_pct": 42.1,
+   "avg_win": 23.29,
+   "avg_loss": -20.28,
+   "breakeven_win_pct": 46.5,
+   "ex_top3_pnl": -1723.79,
+   "ex_top3_roi_pct": -44.4
   }
  ],
  "filled_ci": [
   {
    "cell": "filled:ALL",
-   "n": 320,
-   "roi_pct": -17.0,
+   "n": 328,
+   "roi_pct": -15.5,
    "ci95": [
-    -48.4,
-    26.1
+    -47.0,
+    27.1
    ]
   },
   {
    "cell": "filled:ex-$100-clip",
-   "n": 298,
-   "roi_pct": -4.4,
+   "n": 306,
+   "roi_pct": -2.2,
    "ci95": [
-    -28.4,
-    22.4
+    -26.2,
+    24.0
    ]
   },
   {
    "cell": "filled:sports",
-   "n": 123,
-   "roi_pct": 88.1,
+   "n": 128,
+   "roi_pct": 92.5,
    "ci95": [
-    -18.8,
-    192.0
+    -12.1,
+    192.9
    ]
   },
   {
    "cell": "filled:sports ex-top3",
-   "n": 120,
-   "roi_pct": -16.5,
+   "n": 125,
+   "roi_pct": -5.3,
    "ci95": [
-    -47.8,
-    26.3
+    -40.7,
+    41.5
    ]
   },
   {
@@ -1725,11 +1731,11 @@
   },
   {
    "cell": "filled:esports",
-   "n": 67,
-   "roi_pct": -56.9,
+   "n": 70,
+   "roi_pct": -58.6,
    "ci95": [
-    -79.5,
-    -21.9
+    -80.6,
+    -27.0
    ]
   }
  ],
@@ -1738,23 +1744,23 @@
    "table": "FILL-CONFIRMED by market category",
    "minn": 8,
    "suppressed": {
-    "n": 71,
-    "markets": 69,
+    "n": 75,
+    "markets": 73,
     "wallets": 12,
-    "cost": 907.87,
-    "pnl": 952.1,
-    "roi_pct": 104.9,
-    "win_pct": 46.5,
-    "avg_win": 43.49,
-    "avg_loss": -12.71,
-    "breakeven_win_pct": 22.6,
-    "ex_top3_pnl": -242.44,
-    "ex_top3_roi_pct": -26.7
+    "cost": 957.7,
+    "pnl": 1055.23,
+    "roi_pct": 110.2,
+    "win_pct": 48.0,
+    "avg_win": 43.01,
+    "avg_loss": -12.64,
+    "breakeven_win_pct": 22.7,
+    "ex_top3_pnl": -139.31,
+    "ex_top3_roi_pct": -14.5
    },
    "population": {
-    "n": 320,
-    "cost": 4875.89,
-    "pnl": -826.75
+    "n": 328,
+    "cost": 4989.62,
+    "pnl": -772.28
    }
   },
   {
@@ -1775,32 +1781,32 @@
     "ex_top3_roi_pct": 0.0
    },
    "population": {
-    "n": 320,
-    "cost": 4875.89,
-    "pnl": -826.75
+    "n": 328,
+    "cost": 4989.62,
+    "pnl": -772.28
    }
   },
   {
    "table": "ALL SETTLED by market category (incl. unadjudicated)",
    "minn": 8,
    "suppressed": {
-    "n": 299,
-    "markets": 250,
+    "n": 300,
+    "markets": 251,
     "wallets": 56,
-    "cost": 3362.11,
+    "cost": 3372.03,
     "pnl": -298.71,
     "roi_pct": -8.9,
-    "win_pct": 41.1,
+    "win_pct": 41.0,
     "avg_win": 12.46,
-    "avg_loss": -10.4,
-    "breakeven_win_pct": 45.5,
+    "avg_loss": -10.35,
+    "breakeven_win_pct": 45.4,
     "ex_top3_pnl": -723.25,
-    "ex_top3_roi_pct": -21.5
+    "ex_top3_roi_pct": -21.4
    },
    "population": {
-    "n": 6153,
-    "cost": 72946.48,
-    "pnl": 7178.11
+    "n": 6169,
+    "cost": 73156.01,
+    "pnl": 7227.17
    }
   },
   {
@@ -1821,9 +1827,9 @@
     "ex_top3_roi_pct": -19.2
    },
    "population": {
-    "n": 320,
-    "cost": 4875.89,
-    "pnl": -826.75
+    "n": 328,
+    "cost": 4989.62,
+    "pnl": -772.28
    }
   }
  ]
