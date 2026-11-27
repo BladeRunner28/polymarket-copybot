@@ -66,6 +66,8 @@ CORE = (9, 12, 15)             # the window where a same-day decision still has 
 W = 14                         # causal bias/climatology window, days
 
 
+print("[basis OUTCOME: observed station value vs the forecast bracket -- every hit/win-rate column this script prints]")
+
 def _get(url: str, tries: int = 4) -> bytes:
     last = None
     for i in range(tries):

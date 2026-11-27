@@ -56,6 +56,8 @@ V2 = "--v2" in ARGS or "--all" in ARGS
 V3 = "--v3" in ARGS or "--all" in ARGS
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_name(lo, hi):
     return f"{lo:.1f}-{hi:.1f}" if hi <= 1 else "0.8-1.0"
 

@@ -37,6 +37,8 @@ POLFIN = ["election", "president", "senate", "congress", "nominee", "parliament"
 DEFAULT_RATE = 0.05
 
 
+print("[basis OUTCOME: the dataset's actual outcome label (y), not the exit sign -- every hit/win-rate column this script prints]")
+
 def fee_rate(text: str) -> float:
     t = (text or "").lower()
     if any(w in t for w in CRYPTO):

@@ -54,6 +54,8 @@ MIRROR_TOL = 0.06
 SEP_TOL = 0.10
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg (true-price rows use true_pnl) -- every hit/win-rate column this script prints]")
+
 def band_name(lo, hi):
     return "0.8-1.0" if hi > 1 else f"{lo:.1f}-{hi:.1f}"
 

@@ -50,6 +50,8 @@ NUM_FEATURES = ["yesPrice", "ask", "mid", "spread", "premium", "fee_ps", "liquid
 CAT_FEATURES = ["band", "ttr_band", "fee_band"]
 
 
+print("[basis EXIT: roi_net>0 on the market-level row -- every hit/win-rate column this script prints]")
+
 def fee_band(rate):
     if rate is None or pd.isna(rate):
         return "na"

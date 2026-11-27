@@ -93,6 +93,8 @@ BANDS = [("0.00-0.10", 0.0, 0.10), ("0.10-0.20", 0.10, 0.20), ("0.20-0.40", 0.20
          ("0.40-0.60", 0.40, 0.60), ("0.60-0.80", 0.60, 0.80), ("0.80-1.00", 0.80, 1.0001)]
 
 
+print("[basis OUTCOME: settlement truth tokens[].winner -- every hit/win-rate column this script prints]")
+
 def con():
     c = sqlite3.connect(DB)
     c.row_factory = sqlite3.Row

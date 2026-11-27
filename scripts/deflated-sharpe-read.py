@@ -445,7 +445,7 @@ def print_summary(res):
     for c in res["claims"]:
         m, k = c.get("moments") or {}, c.get("concentration") or {}
         print("\n-- %s" % c["claim"])
-        print("   n=%s mean=%s dollar-wtd=%s median=%s trim10=%s exTop10=%s win=%s%s"
+        print("[basis EXIT: share of periods with positive P&L, not a leg win rate]    n=%s mean=%s dollar-wtd=%s median=%s trim10=%s exTop10=%s win=%s%s"
               % (m.get("n"), _f(m.get("mean")), _f(c.get("dollar_weighted_mean")),
                  _f(k.get("median")), _f(k.get("trimmed_mean_10pct")),
                  _f(k.get("ex_top10_mean")), _f(k.get("win_share"), 3),

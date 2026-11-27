@@ -92,6 +92,8 @@ NAMES = ("0.00-0.20", "0.20-0.40", "0.40-0.60", "0.60-0.80", "0.80-1.01")
 ND = NormalDist()
 
 
+print("[basis EXIT: the live table's label 1 if realizedPnl>0 -- every hit/win-rate column this script prints]")
+
 def _mod(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     m = importlib.util.module_from_spec(spec)

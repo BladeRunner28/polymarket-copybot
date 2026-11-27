@@ -535,7 +535,7 @@ async function main() {
     ];
     console.log(`\\n=== HOLD-OUT RANKER COMPARISON ===`);
     console.log(`  time split at ${iso(cut)}: scored on ${scoreLegs.length} legs, evaluated on ${evalRows.length} legs / ${new Set(evalRows.map((r) => r.wallet)).size} wallets / ${new Set(evalRows.map((r) => r.marketId)).size} markets`);
-    console.log(`  label A = settled WIN (payout 1): ${nPos}/${evalRows.length} = ${pct(nPos / Math.max(1, evalRows.length))}; leg-level MDE at AUC 0.5 (optimistic, ignores clustering) ${aucHalfMde(nPos, evalRows.length - nPos).toFixed(3)}`);
+    console.log(`[basis OUTCOME: venue settlement winner]   label A = settled WIN (payout 1): ${nPos}/${evalRows.length} = ${pct(nPos / Math.max(1, evalRows.length))}; leg-level MDE at AUC 0.5 (optimistic, ignores clustering) ${aucHalfMde(nPos, evalRows.length - nPos).toFixed(3)}`);
     console.log("   ranker              AUC(win)  wallet-clustered CI     AUC(profitable@1h)");
     const ranked: Array<{ name: string; aucWin: number; lo: number; hi: number; aucProf: number }> = [];
     for (const rk of rankers) {
@@ -568,7 +568,7 @@ async function main() {
         (sample) => auc(sample.map(persist.score), sample.map((r) => r.payout)),
         (sample) => auc(sample.map(rk.score), sample.map((r) => r.payout))
       );
-      console.log(`  paired delta AUC(persistence@1h - ${rk.name.padEnd(16)}) = ${d.point >= 0 ? "+" : ""}${d.point.toFixed(4)}  CI [${d.low.toFixed(4)}, ${d.high.toFixed(4)}]  P(persistence better) = ${(100 * d.pGreater).toFixed(1)}%`);
+      console.log(`[basis OUTCOME: payout from venue settlement]   paired delta AUC(persistence@1h - ${rk.name.padEnd(16)}) = ${d.point >= 0 ? "+" : ""}${d.point.toFixed(4)}  CI [${d.low.toFixed(4)}, ${d.high.toFixed(4)}]  P(persistence better) = ${(100 * d.pGreater).toFixed(1)}%`);
       deltas.push({ vs: rk.name, delta: Number(d.point.toFixed(4)), ci95: [Number(d.low.toFixed(4)), Number(d.high.toFixed(4))], pGreater: Number(d.pGreater.toFixed(4)) });
     }
 

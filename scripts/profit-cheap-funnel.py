@@ -69,6 +69,8 @@ SEED = 20261114
 cache = None
 
 
+print("[basis EXIT: realizedPnl>0 on a resolved leg -- every hit/win-rate column this script prints]")
+
 def con():
     c = sqlite3.connect(DB, uri=True)
     c.row_factory = sqlite3.Row

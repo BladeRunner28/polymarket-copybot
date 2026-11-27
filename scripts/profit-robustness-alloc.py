@@ -46,6 +46,8 @@ BANDS = [(0.0, 0.2, "<0.20"), (0.2, 0.4, "0.2-0.4"), (0.4, 0.6, "0.4-0.6"),
 ARGS = sys.argv[1:]
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_of(p):
     for lo, hi, name in BANDS:
         if lo <= p < hi:

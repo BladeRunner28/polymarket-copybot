@@ -103,6 +103,8 @@ WHERE j.isDemo = 0 AND j.ruleSetVersion >= ?
 SPREAD_RE = re.compile(r"spread\s+([0-9.]+)\s*>")
 
 
+print("[basis OUTCOME: decision outcome text vs the venue winner (tokens[].winner) -- every hit/win-rate column this script prints]")
+
 def con():
     c = sqlite3.connect(DB, uri=True)
     c.row_factory = sqlite3.Row

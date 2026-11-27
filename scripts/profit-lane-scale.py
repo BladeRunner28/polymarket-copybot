@@ -46,6 +46,8 @@ CAP_LEGACY = 20.00
 SINCE_V49 = "--since-v49" in sys.argv
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_name(lo, hi):
     return f"{lo:.1f}-{hi:.1f}" if hi <= 1 else "0.8-1.0"
 

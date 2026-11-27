@@ -27,6 +27,8 @@ DB = "prisma/dev.db"
 TEST_FRACTION = 0.30
 
 
+print("[basis EXIT: resolvedAt-only subset, realizedPnl>0 (caveat printed) -- every hit/win-rate column this script prints]")
+
 def load():
     con = sqlite3.connect(DB)
     q = """

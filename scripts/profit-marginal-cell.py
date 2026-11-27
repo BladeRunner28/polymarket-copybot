@@ -52,6 +52,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
 
+print("[basis OUTCOME: decision outcome vs the venue winner (tokens[].winner) -- every hit/win-rate column this script prints]")
+
 def _mod(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     m = importlib.util.module_from_spec(spec)

@@ -49,6 +49,8 @@ CLAMP = 100.0        # kellyMaxSizeUsd
 LEGACY = 20.0        # CAP_LEGACY / lane per-bet ceiling
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_of(p):
     for lo, hi, n in BANDS:
         if lo <= p < hi:

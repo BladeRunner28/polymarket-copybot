@@ -53,6 +53,8 @@ BANDS = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.0001)]
 NAMES = ["<0.20", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0"]
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_of(p):
     for (lo, hi), nm in zip(BANDS, NAMES):
         if lo <= p < hi:

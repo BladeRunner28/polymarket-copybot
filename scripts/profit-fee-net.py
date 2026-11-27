@@ -74,6 +74,8 @@ CAT_PAT = [
 ]
 
 
+print("[basis EXIT: implied exit price > 0.5, reconstructed from realizedPnl -- every hit/win-rate column this script prints]")
+
 def band_of(p):
     for lo, hi, name in BANDS:
         if lo <= p < hi:

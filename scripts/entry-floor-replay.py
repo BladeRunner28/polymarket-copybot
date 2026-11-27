@@ -76,6 +76,8 @@ RESOLVE_FILES = [
 ]
 
 
+print("[basis EXIT: replay pnl>0 on the replayed leg -- every hit/win-rate column this script prints]")
+
 def cell_label(lo: float, hi: float) -> str:
     return f"<{hi:.2f}" if lo == 0 else f"{lo:.2f}-{hi:.2f}" if hi <= 0.20 else f">={lo:.2f}"
 

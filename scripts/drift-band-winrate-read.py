@@ -61,6 +61,8 @@ BANDS = [(0.00, 0.20), (0.20, 0.40), (0.40, 0.60), (0.60, 0.80), (0.80, 1.01)]
 NOW = datetime.now(timezone.utc)
 
 
+print("[basis OUTCOME: resolved token value vs entry, not the exit sign -- every hit/win-rate column this script prints]")
+
 def mean_se(xs):
     n = len(xs)
     if n == 0:

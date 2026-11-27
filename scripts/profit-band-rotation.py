@@ -39,6 +39,8 @@ MIN_RULE = 0 if "--all" in sys.argv else 49
 REPS = 800
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_of(p):
     for lo, hi, n in BANDS:
         if lo <= p < hi:

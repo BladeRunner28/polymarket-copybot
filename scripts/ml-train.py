@@ -53,6 +53,8 @@ NUMERIC = [
 CATEGORICAL = ["decision", "outcome", "side", "category_class", "category_fine", "research_category"]
 
 
+print("[basis OUTCOME: y_side_win, the token's resolved side -- every hit/win-rate column this script prints]")
+
 def logit(p):
     p = np.clip(np.asarray(p, dtype=float), 1e-4, 1 - 1e-4)
     return np.log(p / (1 - p))

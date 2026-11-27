@@ -60,6 +60,8 @@ READ-ONLY. `file:prisma/dev.db?mode=ro`. Writes no row, no RuleSet, no report.
 Usage:
     python3 scripts/profit-price-side.py [--self-test] [--no-snapshot]
 """
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 import sqlite3
 import statistics
 import sys

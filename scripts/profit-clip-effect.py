@@ -68,6 +68,8 @@ TIERS = [(0.0, 5.0, "<$5"), (5.0, 10.0, "$5-10"), (10.0, 18.0, "$10-18"),
 PRICE_BIN = 0.02
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def band_of(p):
     for lo, hi, n in BANDS:
         if lo <= p < hi:

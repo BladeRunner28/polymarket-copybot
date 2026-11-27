@@ -59,6 +59,8 @@ if DB.startswith("file:") and "mode=ro" not in DB:
     DB = DB + "?mode=ro"
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def _mod(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     m = importlib.util.module_from_spec(spec)

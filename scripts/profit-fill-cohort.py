@@ -54,6 +54,8 @@ ppi = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ppi)
 
 
+print("[basis EXIT: realizedPnl>0 on the closed leg -- every hit/win-rate column this script prints]")
+
 def _con():
     uri = "file:" + os.path.join(ROOT, "prisma", "dev.db") + "?mode=ro"
     c = sqlite3.connect(uri, uri=True)

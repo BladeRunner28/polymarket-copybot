@@ -31,6 +31,8 @@ FALLBACK_LIQ = "liquidity $0 < min"
 FALLBACK_SPRD = "spread 0.100 > max"
 
 
+print("[basis OUTCOME: y_side_win, the token's resolved side -- every hit/win-rate column this script prints]")
+
 def is_annot(s: str) -> bool:
     return any(a in s.lower() for a in ANNOT)
 

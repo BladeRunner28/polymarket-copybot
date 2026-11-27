@@ -125,6 +125,8 @@ SUBJECT_MAP = [
 ]
 
 
+print("[basis EXIT: card §5 sign test, realizedPnl sign on the settled leg -- every hit/win-rate column this script prints]")
+
 def action_class(action_text):
     """-> (class_name, polarity, confidence). Unmatched -> neutral."""
     t = (action_text or "").lower()
