@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-26T22:05:08-06:00",
+  "updatedAt": "2026-11-27T22:05:09-06:00",
   "counts": {
-    "pending": 4,
+    "pending": 5,
     "approved": 52,
     "declined": 1,
-    "excluded": 20,
+    "excluded": 19,
     "retired": 11
   },
   "items": [
@@ -71,6 +71,22 @@
       "decidedVia": null,
       "kanbanTaskId": null,
       "_card_dates": "Proposed 2026-11-26 by the profit review (drafts/profit-recs-20261126.md \u00a7R1; instrument scripts/profit-tenor.py \u00a7S27-S30, --selftest 18/18). NOT APPLIED \u2014 Lane A: it changes what the bot admits. Supersedes the RANKING of profit-mainpath-short-tenor-clip (its $10 cap, +$29.37/day) and of the approved cheap-band cap apply-v73 (0.0-0.2:10, +$27.79/day, delta CI [-648,+1826]).",
+      "_column": "Backlog"
+    },
+    {
+      "id": "apr-profit-clip-queue-decision-20261127",
+      "lane": "A",
+      "status": "pending",
+      "title": "DECISION -- close the clip queue to ONE card: ship the >=$60 / ttr 2-24h BLOCK as an interim variance stop (post-rule book +6.01%, but -13.35% ex-top-1), and amend the lambda-hat card's scope instead \u2026",
+      "proposal": "WHY: the queue holds four overlapping clip cards (band cap $25 approved-but-unapplied, the $10 tenor cap, the $40/$20 residual long-dated cap, the lambda-hat refit) and none has been priced on the CARRIED population -- legs that held a position. Carried = 172 of 542 decided legs, $4,122 of $11,442 intent, 60d, v68+, deduped: book -$677.49 = -16.44% (the mixed basis reports -2.92%, 5.6x smaller). 21 legs of >=$60 clips carry -$635.65 = 93.8% of it. Priced on the same 172 legs: block >=$60 & ttr 2-24h -> +6.01%; cap $18 same scope -> +0.70%; block any tenor -> -2.07%; cap px<0.20 at $25 -> -4.50%; cap px<0.20 at $18 -> -3.19%; block px<0.20 (lambda-refit proxy) -> -0.70%; block ttr>=24h -> \u2026",
+      "evidence": "",
+      "revert": "",
+      "source": "roadmap:profit-clip-queue-decision-20261127",
+      "createdAt": "2026-11-27T08:05:08-06:00",
+      "decidedAt": null,
+      "decidedVia": null,
+      "kanbanTaskId": null,
+      "_card_dates": "Proposed 2026-11-27 by the profit review (drafts/profit-recs-20261127.md; instrument scripts/profit-band-report.py --v4 SS E1-E7, --selftest-v4 7/7, committed the same day). LANE A -- nothing applied. This card does NOT invent a new rule: it prices the four existing clip cards against each other on the population that actually traded.",
       "_column": "Backlog"
     },
     {
@@ -946,13 +962,6 @@
       "title": "ML-1 declined-arm coverage \u2014 ALREADY SHIPPED: the entry set carries skip+watchlist at 78.3% label coverage; the 0.76% \u2026",
       "column": "Done",
       "reason": "tag:done-2026-10-27"
-    },
-    {
-      "id": "apr-standard-esports-bleed",
-      "card": "standard-esports-bleed",
-      "title": "STANDARD esports bleed \u2014 NO CUT (no league CI clears zero at 618 legs); 'revisit at 2,500' trigger retired",
-      "column": "Backlog",
-      "reason": "title:NO CUT"
     },
     {
       "id": "apr-exposure-cap-porting-refused",

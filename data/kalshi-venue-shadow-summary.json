@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-27T04:24:09.328Z",
+  "asOf": "2026-11-28T04:24:09.811Z",
   "kind": "forward-venue-shadow",
   "windowStart": "2026-09-13T15:16:51.397Z",
   "note": "Forward-only venue comparison: each C-200 copy booked at Polymarket's actual entry and at Kalshi's own top-of-book, same size, each venue's own taker fee. Not a backfill — Kalshi order books are not archived.",
@@ -12,12 +12,12 @@
     "no real Kalshi orders were placed and none will be — paper only."
   ],
   "coverage": {
-    "copiesSeen": 1864,
-    "inWindow": 1469,
+    "copiesSeen": 1897,
+    "inWindow": 1502,
     "withKalshiQuote": 2,
     "crossListRate": 0.001,
     "staleSkips": 395,
-    "quoteFailures": 1369,
+    "quoteFailures": 1402,
     "unverifiedMatches": 98,
     "rejectionReasons": {
       "pre_guard_quote": 1,
@@ -57,10 +57,10 @@
   "deterministic": {
     "enabled": true,
     "attempted": 0,
-    "resolved": 493,
+    "resolved": 526,
     "verdicts": {
-      "OTHER_CLASS": 235,
-      "NO_EVENT_MATCH": 213,
+      "OTHER_CLASS": 247,
+      "NO_EVENT_MATCH": 234,
       "EQUIV": 43,
       "AMBIGUOUS_EVENT": 2
     },
@@ -76,18 +76,18 @@
     },
     "stampedVersionCounts": {
       "v1": 401,
-      "v2": 92
+      "v2": 125
     },
-    "coverage": 0.087,
+    "coverage": 0.082,
     "fuzzyEquiv": 0,
     "detOnlyEquiv": 43,
     "book": {
-      "n": 5,
-      "pmPnl": -2.3,
-      "detPnl": -72.97,
-      "staked": 69.82,
-      "pmRoiPct": -3.29,
-      "detRoiPct": -104.51,
+      "n": 6,
+      "pmPnl": 2.84,
+      "detPnl": -67.4,
+      "staked": 79.75,
+      "pmRoiPct": 3.56,
+      "detRoiPct": -84.51,
       "detPnlBasis": "exit_sign",
       "venuePnlBasis": "kalshi_market_result",
       "venueN": 5,
@@ -425,12 +425,12 @@
     ]
   },
   "settlementBasis": {
-    "population": 41,
+    "population": 42,
     "known": 41,
     "agree": 29,
     "exitLossVenueWin": 12,
     "exitWinVenueLoss": 0,
-    "venueUnknown": 0,
+    "venueUnknown": 1,
     "exitUnknown": 0,
     "disagree": 12,
     "exitWins": 5,
@@ -440,8 +440,8 @@
     "venueBasis": "Kalshi /markets/<ticker> result on our side as adjudicated by the pair audit (PM token winner only as the fallback)",
     "clock": {
       "openedAtFrom": "2026-11-16T18:10:45.463Z",
-      "openedAtTo": "2026-11-24T11:46:17.191Z",
-      "readAt": "2026-11-27T04:24:09.329Z"
+      "openedAtTo": "2026-11-26T16:44:18.948Z",
+      "readAt": "2026-11-28T04:24:09.811Z"
     },
     "quoterun": {
       "attempted": 0,
